@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab2KHUWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 15:22:46 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42648 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab2KHUWo (ORCPT
+	id S1756827Ab2KHUYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 15:24:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43210 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756696Ab2KHUYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 15:22:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352405111.29589.476.camel@haakon2.linux-iscsi.org>
-References: <509A915B.30105@redhat.com>
-	<CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
-	<509B117A.6070708@genband.com>
-	<509BE460.6010404@redhat.com>
-	<1352405111.29589.476.camel@haakon2.linux-iscsi.org>
-Date: Fri, 9 Nov 2012 06:22:42 +1000
-Message-ID: <CAPM=9tw+SMCXXoDjkTETPxOk+Oj8jOfR-9tbx8KYpsWh5_WeAg@mail.gmail.com>
-Subject: Re: scsi target, likely GPL violation
-From: Dave Airlie <airlied@gmail.com>
-To: nab@risingtidesystems.com
-Cc: Andy Grover <agrover@redhat.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Jon Mason <jdmason@kudzu.us>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marc Fleischmann <mwf@risingtidesystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Nov 2012 15:24:22 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org
+Subject: [PATCH] vmxnet3: convert BUG_ON(true) into a simple BUG()
+Date: Thu,  8 Nov 2012 15:23:03 -0500
+Message-Id: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> ...and then turn around and submit it to Nick since he's the target
->> subsystem maintainer? Nick is probably the one who wrote it!
->>
->> I'm happy to do that, but we should recognize something is seriously
->> skewed when the person nominally in charge of the in-kernel code also
->> has a vested interest in *not* seeing new features added, since it then
->> competes better with his company's offering.
->>
->> RTS is trying to use an "open core" business model. This works fine for
->> BSD-licensed code or code originally authored entirely by you, but their
->> code (all of it even the new stuff) is a derivative work of the Linux
->> kernel source code, and the GPL says they need to contribute it back.
->>
->
-> Andy,
->
-> Accusing us of violating GPL is a serious legal claim.
->
-> In fact, we are not violating GPL.  In short, this is because we wrote
-> the code you are referring to (the SCSI target core in our commercial
-> RTS OS product), we have exclusive copyright ownership of it, and this
-> code contains no GPL code from the community.  GPL obligations only
-> apply downstream to licensees, and not to the author of the code.  Those
-> who use the code under GPL are subject to its conditions; we are not.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Just to clarify since I'm not a major GPL expert. Are you:
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 0ae1bcc..7e9622f 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1922,7 +1922,7 @@ vmxnet3_free_irqs(struct vmxnet3_adapter *adapter)
+ 		free_irq(adapter->pdev->irq, adapter->netdev);
+ 		break;
+ 	default:
+-		BUG_ON(true);
++		BUG();
+ 	}
+ }
+ 
+-- 
+1.7.10.4
 
-a) distributing a Linux kernel
-
-b) with a module built against it to be linked into it, whether
-completely written in house or not?
-
-Then the module is under the GPL, if you think you are like nvidia or
-someone then think again, the corner case they live under is that they
-don't distribute a Linux kernel with their module *ever*, and they
-have a clear call for non-derived work status since its 90% the same
-code as in their Windows drivers.
-
-But if you distribute a kernel and a module in one place which I
-assume RTS OS does, then you are in dangerous territory and could be
-hit with cease and desist notices, which has happened to people
-shipping kernels and linked nvidia binary drivers before.
-
-Dave.
