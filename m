@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab2KHOXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:23:44 -0500
-Received: from fep11.mx.upcmail.net ([62.179.121.31]:33454 "EHLO
-	fep11.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab2KHOXn (ORCPT
+	id S1756038Ab2KHOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:24:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41739 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab2KHOY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:23:43 -0500
-X-SourceIP: 178.83.228.246
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <509BC06A.8000401@odi.ch>
-Date: Thu, 08 Nov 2012 15:23:38 +0100
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 8 Nov 2012 09:24:57 -0500
+Date: Thu, 8 Nov 2012 06:24:52 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] cgroup: set 'start' with the right value in cgroup_path.
+Message-ID: <20121108142452.GB12973@htj.dyndns.org>
+References: <1352381798-2357-1-git-send-email-tm@tao.ma>
 MIME-Version: 1.0
-To: Luming Yu <luming.yu@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [headache] 3.7.0-rc2 can't handle mutt (with 3.7G mail file)
- +FF (4 tabs) on a 4G memory+4 core system ?
-References: <509BA0F9.304@odi.ch> <CAJRGBZxkGzjJix8me8KZgvwV5QeKJvWvgwQApJeSUawXN_oJoA@mail.gmail.com> <509BB4FE.60903@odi.ch> <CAJRGBZyQJD0Ctq+H-aWv00eSKCbAWf_AaRBYy6fve-QB3E39zw@mail.gmail.com> <CAJRGBZx7GOQCWqGg9DVztNwCxoU4B7V_vzhuDTNjCiXpx6o=xw@mail.gmail.com>
-In-Reply-To: <CAJRGBZx7GOQCWqGg9DVztNwCxoU4B7V_vzhuDTNjCiXpx6o=xw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352381798-2357-1-git-send-email-tm@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.11.2012 15:14, Luming Yu wrote:
->> hmm....make sens? maybe we can't use tmp-on-tmpfs feature in f18
-> but why not having disk to backup tmpfs under memory pressure?
+Hello,
 
-It should. tmpfs should use all available RAM+swap. But then I guess you 
-have no swap, and the kernel simply is desperately trying to find memory 
-for a slab/slub or whatever. OOM killer can't help because the temp file 
-uses the space, not a process.
+On Thu, Nov 08, 2012 at 09:36:38PM +0800, Tao Ma wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
+> 
+> 'start' is set to buf + buflen and do the '--' immediately.
+> Just set it to 'buf + buflen - 1' directly.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
 
+You're missing S-O-B.  I added it while applying.  Please ack if you
+agree.
+
+Heh, I'm not sure how much of an improvement this is but there's
+obviously nothing wrong with it either.  Applying to cgroup/for-3.8.
+
+Thanks.
+
+-- 
+tejun
