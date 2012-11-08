@@ -1,163 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2KHN5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:57:45 -0500
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:43454 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755680Ab2KHN5n (ORCPT
+	id S1755707Ab2KHN6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:58:50 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49179 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2KHN6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:57:43 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] gpiolib: iron out include ladder mistakes
-Date: Thu, 8 Nov 2012 14:57:19 +0100
-Message-ID: <1352383039-12269-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 8 Nov 2012 08:58:49 -0500
+Message-ID: <509BBA9C.7050007@gmail.com>
+Date: Thu, 08 Nov 2012 21:58:52 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        rientjes@google.com, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 2/2] oom: rework dump_tasks to optimize memcg-oom situation
+References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com> <1352277719-21760-1-git-send-email-handai.szj@taobao.com> <20121107223437.GC26382@dhcp22.suse.cz>
+In-Reply-To: <20121107223437.GC26382@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On 11/08/2012 06:34 AM, Michal Hocko wrote:
+> On Wed 07-11-12 16:41:59, Sha Zhengju wrote:
+>> From: Sha Zhengju<handai.szj@taobao.com>
+>>
+>> If memcg oom happening, don't scan all system tasks to dump memory state of
+>> eligible tasks, instead we iterates only over the process attached to the oom
+>> memcg and avoid the rcu lock.
+> you have replaced rcu lock by css_set_lock which is, well, heavier than
+> rcu. Besides that the patch is not correct because you have excluded
+> all tasks that are from subgroups because you iterate only through the
+> top level one.
+> I am not sure the whole optimization would be a win even if implemented
+> correctly. Well, we scan through more tasks currently and most of them
+> are not relevant but then you would need to exclude task_in_mem_cgroup
+> from oom_unkillable_task and that would be more code churn than the
+> win.
 
-The <*/gpio.h> includes are updated again: now we need to account
-for the problem introduced by commit:
-595679a8038584df7b9398bf34f61db3c038bfea
-"gpiolib: fix up function prototypes etc"
+Thanks for your and David's advice.
+This piece is trying to save some expense while dumping memcg tasks, but 
+failed to
+scanning subgroups by iterating the cgroup. I'm agreed with your cost&win
+opinion, so I decide to give up this one. : )
 
-Actually we need static inlines in include/asm-generic/gpio.h
-as well since we may have GPIOLIB but not PINCTRL.
-Make sure to move all the CONFIG_PINCTRL business
-to the end of the file so we are sure we have
-declared struct gpio_chip.
 
-And we need to keep the static inlines in <linux/gpio.h>
-but here for the !CONFIG_GENERIC_GPIO case, and then we
-may as well throw in a few warnings like the other
-prototypes there, if someone would have the bad taste
-of compiling without GENERIC_GPIO even.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Move function prototypes below all other #ifdefs at the
-  bottom of the file so we know we have struct irq_chip
-  defines
-- Provide a proper return value from the
-  gpiochip_add_pin_range() stub
-- Thanks to Stephen Rothwell for pointing this out.
----
- include/asm-generic/gpio.h | 56 +++++++++++++++++++++++++++++-----------------
- include/linux/gpio.h       |  7 +++---
- 2 files changed, 38 insertions(+), 25 deletions(-)
-
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 50d995e..2b84fc3 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -48,27 +48,6 @@ struct seq_file;
- struct module;
- struct device_node;
- 
--#ifdef CONFIG_PINCTRL
--
--/**
-- * struct gpio_pin_range - pin range controlled by a gpio chip
-- * @head: list for maintaining set of pin ranges, used internally
-- * @pctldev: pinctrl device which handles corresponding pins
-- * @range: actual range of pins controlled by a gpio controller
-- */
--
--struct gpio_pin_range {
--	struct list_head node;
--	struct pinctrl_dev *pctldev;
--	struct pinctrl_gpio_range range;
--};
--
--int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--			   unsigned int pin_base, unsigned int npins);
--void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
--
--#endif
--
- /**
-  * struct gpio_chip - abstract a GPIO controller
-  * @label: for diagnostics
-@@ -288,4 +267,39 @@ static inline void gpio_unexport(unsigned gpio)
- }
- #endif	/* CONFIG_GPIO_SYSFS */
- 
-+#ifdef CONFIG_PINCTRL
-+
-+/**
-+ * struct gpio_pin_range - pin range controlled by a gpio chip
-+ * @head: list for maintaining set of pin ranges, used internally
-+ * @pctldev: pinctrl device which handles corresponding pins
-+ * @range: actual range of pins controlled by a gpio controller
-+ */
-+
-+struct gpio_pin_range {
-+	struct list_head node;
-+	struct pinctrl_dev *pctldev;
-+	struct pinctrl_gpio_range range;
-+};
-+
-+int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-+			   unsigned int pin_base, unsigned int npins);
-+void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
-+
-+#else
-+
-+static inline int
-+gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-+		       unsigned int pin_base, unsigned int npins)
-+{
-+	return 0;
-+}
-+
-+static inline void
-+gpiochip_remove_pin_ranges(struct gpio_chip *chip)
-+{
-+}
-+
-+#endif /* CONFIG_PINCTRL */
-+
- #endif /* _ASM_GENERIC_GPIO_H */
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 81bbfe5..7ba2762 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -231,21 +231,20 @@ static inline int irq_to_gpio(unsigned irq)
- 	return -EINVAL;
- }
- 
--#ifdef CONFIG_PINCTRL
--
- static inline int
- gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 		       unsigned int pin_base, unsigned int npins)
- {
-+	WARN_ON(1);
-+	return -EINVAL;
- }
- 
- static inline void
- gpiochip_remove_pin_ranges(struct gpio_chip *chip)
- {
-+	WARN_ON(1);
- }
- 
--#endif /* CONFIG_PINCTRL */
--
- #endif /* ! CONFIG_GENERIC_GPIO */
- 
- #endif /* __LINUX_GPIO_H */
--- 
-1.7.11.3
+Thanks,
+Sha
 
