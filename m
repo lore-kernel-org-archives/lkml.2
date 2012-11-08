@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2KHWbr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 17:31:47 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:58940 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756659Ab2KHWbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 17:31:46 -0500
-Message-ID: <509C32B4.7050105@parallels.com>
-Date: Thu, 8 Nov 2012 23:31:16 +0100
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1757069Ab2KHWjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 17:39:06 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61719 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab2KHWjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 17:39:04 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-26-git-send-email-glommer@parallels.com> <20121105164813.2eba5ecb.akpm@linux-foundation.org> <509A0A04.2030503@parallels.com> <20121106231627.3610c908.akpm@linux-foundation.org> <509A2849.9090509@parallels.com> <20121107144612.e822986f.akpm@linux-foundation.org> <0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com> <20121108112120.fc964c29.akpm@linux-foundation.org>
-In-Reply-To: <20121108112120.fc964c29.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.2.50.55]
+In-Reply-To: <509C1A92.9080407@ahsoftware.de>
+References: <509C1A92.9080407@ahsoftware.de>
+Date: Thu, 8 Nov 2012 14:39:02 -0800
+X-Google-Sender-Auth: TorjZ9FeLTk_FzeqLLCqiRO9VL4
+Message-ID: <CAE9FiQWeie62NYt2vyq2q+Um8NeA5xWQGy-nULmFidt4XxW=BA@mail.gmail.com>
+Subject: Re: [RFC] arm: memtest
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2012 08:21 PM, Andrew Morton wrote:
-> On Thu, 8 Nov 2012 17:15:36 +0000
-> Christoph Lameter <cl@linux.com> wrote:
-> 
->> On Wed, 7 Nov 2012, Andrew Morton wrote:
->>
->>> What's up with kmem_cache_shrink?  It's global and exported to modules
->>> but its only external caller is some weird and hopelessly poorly
->>> documented site down in drivers/acpi/osl.c.  slab and slob implement
->>> kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
->>> trying to actually do there, then do it properly, then killkillkill!
->>
->> kmem_cache_shrink is also used internally. Its simply releasing unused
->> cached objects.
-> 
-> Only in slub.  It could be removed outright from the others and
-> simplified in slub.
-> 
->>> Secondly, as slab and slub (at least) have the ability to shed cached
->>> memory, why aren't they hooked into the core cache-shinking machinery.
->>> After all, it's called "shrink_slab"!
->>
->> Because the core cache shrinking needs the slab caches to free up memory
->> from inodes and dentries. We could call kmem_cache_shrink at the end of
->> the shrink passes in vmscan. The price would be that the caches would have
->> to be repopulated when new allocations occur.
-> 
-> Well, the shrinker shouldn't strips away all the cache.  It will perform
-> a partial trim, the magnitude of which increases with perceived
-> external memory pressure.
-> 
-> AFACIT, this is correct and desirable behaviour for shrinking
-> slab's internal caches.
-> 
+On Thu, Nov 8, 2012 at 12:48 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Hello,
+>
+> I've recently discovered the lack of the command line parameter memtest for
+> ARM. So I've made a patch.
+>
+> But I have some questions:
+>
+> 1. arch/x86/mm/memtest.c looks platform independ.
+> The only thing why I don't use it for arm, is because it uses 64bit
+> pointers. Maybe it could be moved to mm/memtest.c. If so, the memtest32.c
+> I'm using (basically a copy of memtest.c) could be moved there too.
+>
+> 2. Because the below memtest32.c is basically a copy of
+> arch/x86/mm/memtest.c, I'm not sure if the mapping from physical to virtual
+> locations there does fit (always) for ARM too. I know almost as much about
+> the in-kernel memory organization on x86 as on ARM, which is not really that
+> much (some theory about TLBs, some source code explorations, ..., but I'm
+> working on it). ;)
 
-I believe calling this from shrink_slab() is not a bad idea at all. If
-you're all in favour, I'll cook a patch for this soon
+We are using arch/x86/mm/memtest.c for x86 32bit and 64bit.
 
+So it should be ok to use it with arm 32bit and 64bit directly.
+
+Yinghai
