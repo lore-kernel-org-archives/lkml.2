@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab2KHJKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:10:52 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:45871 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab2KHJK3 (ORCPT
+	id S1755279Ab2KHJLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:11:15 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61397 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab2KHJLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:10:29 -0500
+	Thu, 8 Nov 2012 04:11:09 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20121108154949.552d05430f0c46ed2e188667@canb.auug.org.au>
-References: <20121108154949.552d05430f0c46ed2e188667@canb.auug.org.au>
-Date: Thu, 8 Nov 2012 10:10:29 +0100
-Message-ID: <CA+icZUVSZSXr+DiJmqfxjGmGn+DojXRH8MkdLjbgapGdi6gXdg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Nov 8
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 8 Nov 2012 17:11:09 +0800
+Message-ID: <CAPgLHd8oC5zLyeP68GXWXachmO9-+UJ3TMNBpYTCes9WcenaFQ@mail.gmail.com>
+Subject: [PATCH -next] staging: comedi: usbduxfast: remove unused variable in usbduxfastsub_ai_Irq()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 5:49 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20121107:
->
-[...]
->
-> The v4l-dvb tree still has its build failure so I used the version from
-> next-20121026.
->
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Hi,
+The variable 'p' is initialized but never used otherwise, so
+remove the unused variable.
 
-I am just wondering why this v4l-dvb issues are still present...
-...since 26-Oct-2012...
-...Maintainer on holidays :-)?
-I know most Linux kernel people are visting Barcelona this week.
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-Regards,
-- Sedat -
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/comedi/drivers/usbduxfast.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index b4e987b..574e4b7 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -312,7 +312,6 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
+ 	struct usbduxfastsub_s *udfs;
+ 	struct comedi_device *this_comedidev;
+ 	struct comedi_subdevice *s;
+-	uint16_t *p;
+ 
+ 	/* sanity checks - is the urb there? */
+ 	if (!urb) {
+@@ -379,7 +378,6 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
+ 		return;
+ 	}
+ 
+-	p = urb->transfer_buffer;
+ 	if (!udfs->ignore) {
+ 		if (!udfs->ai_continous) {
+ 			/* not continuous, fixed number of samples */
+
+
