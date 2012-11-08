@@ -1,226 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2KHJ1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:27:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42592 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab2KHJ1D (ORCPT
+	id S1753967Ab2KHJfm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:35:42 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:61187 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2KHJfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:27:03 -0500
-Date: Thu, 8 Nov 2012 01:27:00 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch 2/2] mm, oom: fix race when specifying a thread as the oom
- origin
-In-Reply-To: <alpine.DEB.2.00.1211080125150.3450@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1211080126390.3450@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1211080125150.3450@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 8 Nov 2012 04:35:39 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 8 Nov 2012 17:35:38 +0800
+Message-ID: <CAPgLHd96n4i905x6WdYtKM5wkSGo7V+zLKzE1mjCXBJ2v6-EbA@mail.gmail.com>
+Subject: [PATCH -next] mtip32xx: fix potential NULL pointer dereference in mtip_timeout_function()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: axboe@kernel.dk, smani@micron.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-test_set_oom_score_adj() and compare_swap_oom_score_adj() are used to
-specify that current should be killed first if an oom condition occurs in
-between the two calls.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-The usage is
+The dereference to port should be moved below the NULL test.
 
-	short oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
-	...
-	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-to store the thread's oom_score_adj, temporarily change it to the maximum
-score possible, and then restore the old value if it is still the same.
-
-This happens to still be racy, however, if the user writes
-OOM_SCORE_ADJ_MAX to /proc/pid/oom_score_adj in between the two calls.
-The compare_swap_oom_score_adj() will then incorrectly reset the old
-value prior to the write of OOM_SCORE_ADJ_MAX.
-
-To fix this, introduce a new oom_flags_t member in struct signal_struct
-that will be used for per-thread oom killer flags.  KSM and swapoff can
-now use a bit in this member to specify that threads should be killed
-first in oom conditions without playing around with oom_score_adj.
-
-This also allows the correct oom_score_adj to always be shown when
-reading /proc/pid/oom_score.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- include/linux/oom.h   |   19 +++++++++++++++++--
- include/linux/sched.h |    1 +
- include/linux/types.h |    1 +
- mm/ksm.c              |    7 ++-----
- mm/oom_kill.c         |   49 +++++++------------------------------------------
- mm/swapfile.c         |    5 ++---
- 6 files changed, 30 insertions(+), 52 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -29,8 +29,23 @@ enum oom_scan_t {
- 	OOM_SCAN_SELECT,	/* always select this thread first */
- };
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index adc6f36..fe16b32 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -559,7 +559,7 @@ static void mtip_timeout_function(unsigned long int data)
+ 	struct mtip_cmd *command;
+ 	int tag, cmdto_cnt = 0;
+ 	unsigned int bit, group;
+-	unsigned int num_command_slots = port->dd->slot_groups * 32;
++	unsigned int num_command_slots;
+ 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
  
--extern void compare_swap_oom_score_adj(short old_val, short new_val);
--extern short test_set_oom_score_adj(short new_val);
-+/* Thread is the potential origin of an oom condition; kill first on oom */
-+#define OOM_FLAG_ORIGIN		((__force oom_flags_t)0x1)
-+
-+static inline void set_current_oom_origin(void)
-+{
-+	current->signal->oom_flags |= OOM_FLAG_ORIGIN;
-+}
-+
-+static inline void clear_current_oom_origin(void)
-+{
-+	current->signal->oom_flags &= ~OOM_FLAG_ORIGIN;
-+}
-+
-+static inline bool oom_task_origin(const struct task_struct *p)
-+{
-+	return !!(p->signal->oom_flags & OOM_FLAG_ORIGIN);
-+}
+ 	if (unlikely(!port))
+@@ -572,6 +572,7 @@ static void mtip_timeout_function(unsigned long int data)
+ 	}
+ 	/* clear the tag accumulator */
+ 	memset(tagaccum, 0, SLOTBITS_IN_LONGS * sizeof(long));
++	num_command_slots = port->dd->slot_groups * 32;
  
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
-diff --git a/include/linux/sched.h b/include/linux/sched.h
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -631,6 +631,7 @@ struct signal_struct {
- 	struct rw_semaphore group_rwsem;
- #endif
- 
-+	oom_flags_t oom_flags;
- 	short oom_score_adj;		/* OOM kill score adjustment */
- 	short oom_score_adj_min;	/* OOM kill score adjustment min value.
- 					 * Only settable by CAP_SYS_RESOURCE. */
-diff --git a/include/linux/types.h b/include/linux/types.h
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -156,6 +156,7 @@ typedef u32 dma_addr_t;
- #endif
- typedef unsigned __bitwise__ gfp_t;
- typedef unsigned __bitwise__ fmode_t;
-+typedef unsigned __bitwise__ oom_flags_t;
- 
- #ifdef CONFIG_PHYS_ADDR_T_64BIT
- typedef u64 phys_addr_t;
-diff --git a/mm/ksm.c b/mm/ksm.c
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1929,12 +1929,9 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	if (ksm_run != flags) {
- 		ksm_run = flags;
- 		if (flags & KSM_RUN_UNMERGE) {
--			short oom_score_adj;
--
--			oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
-+			set_current_oom_origin();
- 			err = unmerge_and_remove_all_rmap_items();
--			compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX,
--								oom_score_adj);
-+			clear_current_oom_origin();
- 			if (err) {
- 				ksm_run = KSM_RUN_STOP;
- 				count = err;
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -44,48 +44,6 @@ int sysctl_oom_kill_allocating_task;
- int sysctl_oom_dump_tasks = 1;
- static DEFINE_SPINLOCK(zone_scan_lock);
- 
--/*
-- * compare_swap_oom_score_adj() - compare and swap current's oom_score_adj
-- * @old_val: old oom_score_adj for compare
-- * @new_val: new oom_score_adj for swap
-- *
-- * Sets the oom_score_adj value for current to @new_val iff its present value is
-- * @old_val.  Usually used to reinstate a previous value to prevent racing with
-- * userspacing tuning the value in the interim.
-- */
--void compare_swap_oom_score_adj(short old_val, short new_val)
--{
--	struct sighand_struct *sighand = current->sighand;
--
--	spin_lock_irq(&sighand->siglock);
--	if (current->signal->oom_score_adj == old_val)
--		current->signal->oom_score_adj = new_val;
--	trace_oom_score_adj_update(current);
--	spin_unlock_irq(&sighand->siglock);
--}
--
--/**
-- * test_set_oom_score_adj() - set current's oom_score_adj and return old value
-- * @new_val: new oom_score_adj value
-- *
-- * Sets the oom_score_adj value for current to @new_val with proper
-- * synchronization and returns the old value.  Usually used to temporarily
-- * set a value, save the old value in the caller, and then reinstate it later.
-- */
--short test_set_oom_score_adj(short new_val)
--{
--	struct sighand_struct *sighand = current->sighand;
--	int old_val;
--
--	spin_lock_irq(&sighand->siglock);
--	old_val = current->signal->oom_score_adj;
--	current->signal->oom_score_adj = new_val;
--	trace_oom_score_adj_update(current);
--	spin_unlock_irq(&sighand->siglock);
--
--	return old_val;
--}
--
- #ifdef CONFIG_NUMA
- /**
-  * has_intersects_mems_allowed() - check task eligiblity for kill
-@@ -310,6 +268,13 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
- 	if (!task->mm)
- 		return OOM_SCAN_CONTINUE;
- 
-+	/*
-+	 * If task is allocating a lot of memory and has been marked to be
-+	 * killed first if it triggers an oom, then select it.
-+	 */
-+	if (oom_task_origin(task))
-+		return OOM_SCAN_SELECT;
-+
- 	if (task->flags & PF_EXITING) {
+ 	for (tag = 0; tag < num_command_slots; tag++) {
  		/*
- 		 * If task is current and is in the process of releasing memory,
-diff --git a/mm/swapfile.c b/mm/swapfile.c
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1484,7 +1484,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	struct address_space *mapping;
- 	struct inode *inode;
- 	struct filename *pathname;
--	short oom_score_adj;
- 	int i, type, prev;
- 	int err;
- 
-@@ -1544,9 +1543,9 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	p->flags &= ~SWP_WRITEOK;
- 	spin_unlock(&swap_lock);
- 
--	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
-+	set_current_oom_origin();
- 	err = try_to_unuse(type, false, 0); /* force all pages to be unused */
--	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
-+	clear_current_oom_origin();
- 
- 	if (err) {
- 		/*
+
+
