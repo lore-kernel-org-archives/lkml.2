@@ -1,167 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2KHMsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:48:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52585 "EHLO mx2.suse.de"
+	id S1755515Ab2KHMsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:48:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37840 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab2KHMr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:47:59 -0500
-Date: Thu, 8 Nov 2012 13:47:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 7/9] cgroup_freezer: introduce
- CGROUP_FREEZING_[SELF|PARENT]
-Message-ID: <20121108124755.GG31821@dhcp22.suse.cz>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-8-git-send-email-tj@kernel.org>
+	id S1755486Ab2KHMsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 07:48:15 -0500
+Date: Thu, 8 Nov 2012 13:48:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Amnon Shiloh <u3557@miso.sublimeip.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Chris Evans <scarybeasts@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>, u3557@dialix.com.au,
+        security@kernel.org, linux-kernel@vger.kernel.org
+Subject: PF_NO_SIGSTOP (Was: PT_EXITKILL)
+Message-ID: <20121108124853.GC20917@redhat.com>
+References: <20121107150934.GA27606@redhat.com> <20121108062935.BFF3A592024@miso.sublimeip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351931915-1701-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121108062935.BFF3A592024@miso.sublimeip.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 03-11-12 01:38:33, Tejun Heo wrote:
-> Introduce FREEZING_SELF and FREEZING_PARENT and make FREEZING OR of
-> the two flags.  This is to prepare for full hierarchy support.
-> 
-> freezer_apply_date() is updated such that it can handle setting and
-> clearing of both flags.  The two flags are also exposed to userland
-> via read-only files self_freezing and parent_freezing.
-> 
-> Other than the added cgroupfs files, this patch doesn't introduce any
-> behavior change.
+On 11/08, Amnon Shiloh wrote:
+>
+> > > What I wish is that I could request (using "prctl" or whatever):
+> > > "If a non-privileged user sends me a SIGSTOP, then let it be converted into...",
+> >
+> > I hope we won't do this ;) But I am not going to argue if you convince
+> > other people.
+> >
+> > To me it would be better to simply allow to catch SIGSTOP, but I hope
+> > we won't do this too.
+>
+> I don't think anyone should seriously contemplate catching SIGSTOP -
+> that would break so many applications, including mine.
+>
+> Now about "convincing", I have that application that really needs this
+> feature, and I believe that others may be in the same predicament, which is:
+>
+> 1. The application is a SUID-root service, available to ordinary users.
+> 2. Users who started this application are allowed at any time to signal
+>    or kill their instance(s) of this application.
 
-OK, I can imagine that this might be useful to find the first parent
-group that needs to be thawed to unfreeze the group I am interested
-in. Could you also update Documentation/cgroups/freezer-subsystem.txt to
-clarify the intended usage?
+Is this the only reason why this service keeps its original real-UID?
+(see below)
 
-Minor nit. Same as mentioned in the previous patch freezer_apply_state
-should get enum freezer_state_flags state parameter.
+> 3. It is alright for the application to be killed by SIGKILL.
+> 4. The application catches and does something useful and positive with
+>    all other signals sent to it by the invoking user, including SIGTSTP,
+>    SIGTTIN and SIGTTOU.
+> 5. If the application is unpreparedly stopped by SIGSTOP, which it cannot
+>    catch, then this may disrupt other instances of this application by
+>    other users (including, in my case, on other computers connected with
+>    the application by TCP/IP sockets).
+>
+> What I ask is simple and can be so easily implemented, essentially in
+> "kernel/signal.c":
+>
+> static int check_kill_permission(int sig, struct siginfo *info,
+> 				 struct task_struct *t)
+> {
+> ...
+> +	if (sig == SIGSTOP && (t->flags & PF_NO_SIGSTOP) && !capable(CAP_KILL))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+No, this is not enough. At least PF_NO_SIGSTOP should be per-process,
+not per-thread. But I agree, it is simpe to implement.
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+So once again, no need to convince me ;) I try to never argue with
+the new features, even if personally I do not really like this idea.
+If someone acks your idea I will be happy to help with the patch.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-> ---
->  kernel/cgroup_freezer.c | 55 ++++++++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 47 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index e76aa9f..b8ad93c 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -23,8 +23,12 @@
->  #include <linux/seq_file.h>
->  
->  enum freezer_state_flags {
-> -	CGROUP_FREEZING		= (1 << 1), /* this freezer is freezing */
-> +	CGROUP_FREEZING_SELF	= (1 << 1), /* this freezer is freezing */
-> +	CGROUP_FREEZING_PARENT	= (1 << 2), /* the parent freezer is freezing */
->  	CGROUP_FROZEN		= (1 << 3), /* this and its descendants frozen */
-> +
-> +	/* mask for all FREEZING flags */
-> +	CGROUP_FREEZING		= CGROUP_FREEZING_SELF | CGROUP_FREEZING_PARENT,
->  };
->  
->  struct freezer {
-> @@ -245,8 +249,13 @@ static void unfreeze_cgroup(struct freezer *freezer)
->   * freezer_apply_state - apply state change to a single cgroup_freezer
->   * @freezer: freezer to apply state change to
->   * @freeze: whether to freeze or unfreeze
-> + * @state: CGROUP_FREEZING_* flag to set or clear
-> + *
-> + * Set or clear @state on @cgroup according to @freeze, and perform
-> + * freezing or thawing as necessary.
->   */
-> -static void freezer_apply_state(struct freezer *freezer, bool freeze)
-> +static void freezer_apply_state(struct freezer *freezer, bool freeze,
-> +				unsigned int state)
->  {
->  	/* also synchronizes against task migration, see freezer_attach() */
->  	lockdep_assert_held(&freezer->lock);
-> @@ -254,13 +263,19 @@ static void freezer_apply_state(struct freezer *freezer, bool freeze)
->  	if (freeze) {
->  		if (!(freezer->state & CGROUP_FREEZING))
->  			atomic_inc(&system_freezing_cnt);
-> -		freezer->state |= CGROUP_FREEZING;
-> +		freezer->state |= state;
->  		freeze_cgroup(freezer);
->  	} else {
-> -		if (freezer->state & CGROUP_FREEZING)
-> -			atomic_dec(&system_freezing_cnt);
-> -		freezer->state &= ~(CGROUP_FREEZING | CGROUP_FROZEN);
-> -		unfreeze_cgroup(freezer);
-> +		bool was_freezing = freezer->state & CGROUP_FREEZING;
-> +
-> +		freezer->state &= ~state;
-> +
-> +		if (!(freezer->state & CGROUP_FREEZING)) {
-> +			if (was_freezing)
-> +				atomic_dec(&system_freezing_cnt);
-> +			freezer->state &= ~CGROUP_FROZEN;
-> +			unfreeze_cgroup(freezer);
-> +		}
->  	}
->  }
->  
-> @@ -275,7 +290,7 @@ static void freezer_change_state(struct freezer *freezer, bool freeze)
->  {
->  	/* update @freezer */
->  	spin_lock_irq(&freezer->lock);
-> -	freezer_apply_state(freezer, freeze);
-> +	freezer_apply_state(freezer, freeze, CGROUP_FREEZING_SELF);
->  	spin_unlock_irq(&freezer->lock);
->  }
->  
-> @@ -295,6 +310,20 @@ static int freezer_write(struct cgroup *cgroup, struct cftype *cft,
->  	return 0;
->  }
->  
-> +static u64 freezer_self_freezing_read(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	struct freezer *freezer = cgroup_freezer(cgroup);
-> +
-> +	return (bool)(freezer->state & CGROUP_FREEZING_SELF);
-> +}
-> +
-> +static u64 freezer_parent_freezing_read(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	struct freezer *freezer = cgroup_freezer(cgroup);
-> +
-> +	return (bool)(freezer->state & CGROUP_FREEZING_PARENT);
-> +}
-> +
->  static struct cftype files[] = {
->  	{
->  		.name = "state",
-> @@ -302,6 +331,16 @@ static struct cftype files[] = {
->  		.read_seq_string = freezer_read,
->  		.write_string = freezer_write,
->  	},
-> +	{
-> +		.name = "self_freezing",
-> +		.flags = CFTYPE_NOT_ON_ROOT,
-> +		.read_u64 = freezer_self_freezing_read,
-> +	},
-> +	{
-> +		.name = "parent_freezing",
-> +		.flags = CFTYPE_NOT_ON_ROOT,
-> +		.read_u64 = freezer_parent_freezing_read,
-> +	},
->  	{ }	/* terminate */
->  };
->  
-> -- 
-> 1.7.11.7
-> 
+And I have another idea... Not that I like it very much, but it looks
+simple and maybe useful.
 
--- 
-Michal Hocko
-SUSE Labs
+What if we introduce SA_NOSECURITY? So that if an application does
+
+	sa.sa_flags = SA_NOSECURITY | ...;
+
+	sigaction(SIG, &sa, NULL);
+
+then sys_kill/etc bypasses security checks.
+
+This way your service can run as root and still recieve the signals
+from the ordinary users. Yes, except SIGKILL/SIGSTOP.
+
+Oleg.
+
