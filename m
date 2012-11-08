@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2KHUYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 15:24:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43397 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab2KHUYn (ORCPT
+	id S1756848Ab2KHU11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 15:27:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40282 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624Ab2KHU1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 15:24:43 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: use BUG_ON where possible
-Date: Thu,  8 Nov 2012 15:23:07 -0500
-Message-Id: <1352406191-14303-5-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 8 Nov 2012 15:27:25 -0500
+Date: Thu, 8 Nov 2012 12:27:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]backlight: lm3639: fix coccinelle warning.
+Message-Id: <20121108122724.d602a134.akpm@linux-foundation.org>
+In-Reply-To: <1352357089-4819-1-git-send-email-gshark.jeong@gmail.com>
+References: <1352357089-4819-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just use BUG_ON() instead of constructions such as:
+On Thu,  8 Nov 2012 15:44:49 +0900
+"G.Shark Jeong" <gshark.jeong@gmail.com> wrote:
 
-	if (...)
-		BUG()
+> From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+> 
+> Fix coccinelle warning.
 
-A simplified version of the semantic patch that makes this transformation
-is as follows: (http://coccinelle.lip6.fr/)
+Please always quote the warning or error message text in the changelog
+when fixing an error or warning.
 
-// <smpl>
-@@
-expression e;
-@@
-- if (e) BUG();
-+ BUG_ON(e);
-// </smpl>
+> diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
+> index 585949b..868a9da 100644
+> --- a/drivers/video/backlight/lm3639_bl.c
+> +++ b/drivers/video/backlight/lm3639_bl.c
+> @@ -403,9 +403,9 @@ static int __devexit lm3639_remove(struct i2c_client *client)
+>  
+>  	regmap_write(pchip->regmap, REG_ENABLE, 0x00);
+>  
+> -	if (&pchip->cdev_torch)
+> +	if ((&pchip->cdev_torch)!=NULL)
+>  		led_classdev_unregister(&pchip->cdev_torch);
+> -	if (&pchip->cdev_flash)
+> +	if ((&pchip->cdev_flash)!=NULL)
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- arch/arm/mach-exynos/common.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Please use scripts/checkpatch.pl.
 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 4e577f6..6a55a5a 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -465,10 +465,8 @@ static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int i
- 	else
- 		max_nr = EXYNOS4_MAX_COMBINER_NR;
- 
--	if (combiner_nr >= max_nr)
--		BUG();
--	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
--		BUG();
-+	BUG_ON(combiner_nr >= max_nr);
-+	BUG_ON(irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0);
- 	irq_set_chained_handler(irq, combiner_handle_cascade_irq);
- }
- 
--- 
-1.7.10.4
+
+
+This code is just pointless.  The expression "&anything" will never
+evaluate to NULL.
 
