@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2KHSYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 13:24:31 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39794 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756500Ab2KHSYa (ORCPT
+	id S1756621Ab2KHS3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 13:29:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63259 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756500Ab2KHS3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 13:24:30 -0500
-Message-ID: <1352399063.2309.6.camel@thor>
-Subject: Re: [PATCH 5/5] drivers: mfd: Fix resource request for [mem
- 0x00000000]
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Aaron Sierra <asierra@xes-inc.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 08 Nov 2012 13:24:23 -0500
-In-Reply-To: <cd909a40-1ba3-471e-b6c4-b54432a626df@zimbra>
-References: <cd909a40-1ba3-471e-b6c4-b54432a626df@zimbra>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.4-0build1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Thu, 8 Nov 2012 13:29:39 -0500
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com
+Cc: rjw@sisk.pl, wency@cn.fujitsu.com, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-mm@kvack.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Subject: [RFC PATCH 0/3] acpi: Introduce prepare_remove device operation
+Date: Thu,  8 Nov 2012 19:29:28 +0100
+Message-Id: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-08 at 11:04 -0600, Aaron Sierra wrote:
-> > The older southbridges supported by the lpc_ich driver do not
-> > provide memory-mapped space of the root complex. The driver
-> > correctly avoids computing the iomem address in this case, yet
-> > submits a zeroed resource request anyway (via mfd_add_devices()).
-> > 
-> > Remove the iomem resource from the resource array submitted to the
-> > mfd core for the older southbridges.
-> > 
-> 
-> Peter, thanks for catching this.
-> 
-> > +	} else {
-> > +		/* So don't register iomem for TCO ver 1 */
-> > +		--lpc_ich_cells[LPC_WDT].num_resources;
-> 
-> My only complaint is that pre-decrementing num_resources isn't
-> necessary and doesn't match the other cases where num_resources is
-> decremented (post-decremented), like here:
-> 
->         if (!base_addr) {
->                 dev_err(&dev->dev, "I/O space for ACPI uninitialized\n");
->                 lpc_ich_cells[LPC_GPIO].num_resources--;
->                 goto gpe0_done;
->         }
+As discussed in
+https://patchwork.kernel.org/patch/1581581/
+the driver core remove function needs to always succeed. This means we need
+to know that the device can be successfully removed before acpi_bus_trim / 
+acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+eject (echo 1 > /sys/bus/acpi/devices/PNP/eject) of memory devices fails, since
+the ACPI core goes ahead and ejects the device regardless of whether the memory
+is still in use or not.
 
-Sorry, C++ force-of-habit. How's this instead?  (please note, I also
-retitled the patch to refer to lpc_ich specifically)
+For this reason a new acpi_device operation called prepare_remove is introduced.
+This operation should be registered for acpi devices whose removal (from kernel
+perspective) can fail.  Memory devices fall in this category.
 
--- >8 --
-Subject: [PATCH v2 5/5] mfd: lpc_ich: Fix resource request for [mem 0x00000000]
+acpi_bus_hot_remove_device is changed to handle removal in 2 steps:
+- preparation for removal i.e. perform part of removal that can fail outside of
+  ACPI core. Should succeed for device and all its children.
+- if above step was successfull, proceed to actual ACPI removal
 
-The older southbridges supported by the lpc_ich driver do not
-provide memory-mapped space of the root complex. The driver
-correctly avoids computing the iomem address in this case, yet
-submits a zeroed resource request anyway (via mfd_add_devices()).
+acpi_bus_trim is changed accordingly to handle preparation for removal and
+actual removal.
 
-Remove the iomem resource from the resource array submitted to the
-mfd core for the older southbridges.
+With this patchset, only acpi memory devices use the new prepare_remove
+device operation. The actual memory removal (VM-related offline and other memory
+cleanups) is moved to prepare_remove. The old remove operation just cleans up
+the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
+haven't tested yet with an ACPI container which contains memory devices.
 
-Cc: Aaron Sierra <asierra@xes-inc.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
+Other ACPI devices (e.g. CPU) do not register prepare_remove callbacks, and
+their OSPM-side eject should not be affected.
 
-v2: post-decrement to match existing style
-    retitle patch subject
+I am not happy with the name prepare_remove. Comments welcome. Let me know if I
+should work more in this direction (I think Yasuaki might also look into this
+and might have a simpler idea)
 
- drivers/mfd/lpc_ich.c | 3 +++
- 1 file changed, 3 insertions(+)
+Patches are on top of Rafael's linux-pm/linux-next
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index a22544f..f507c09 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -842,6 +842,9 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev *dev,
- 		res = wdt_mem_res(ICH_RES_MEM_GCS);
- 		res->start = base_addr + ACPIBASE_GCS_OFF;
- 		res->end = base_addr + ACPIBASE_GCS_END;
-+	} else {
-+		/* So don't register iomem for TCO ver 1 */
-+		lpc_ich_cells[LPC_WDT].num_resources--;
- 	}
- 
- 	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_WDT], id);
+Vasilis Liaskovitis (3):
+  acpi: Introduce prepare_remove operation in acpi_device_ops
+  acpi: Make acpi_bus_trim handle device removal preparation
+  acpi_memhotplug: Add prepare_remove operation
+
+ drivers/acpi/acpi_memhotplug.c     |   24 +++++++++++++++++++++---
+ drivers/acpi/dock.c                |    2 +-
+ drivers/acpi/scan.c                |   32 +++++++++++++++++++++++++++++---
+ drivers/pci/hotplug/acpiphp_glue.c |    4 ++--
+ drivers/pci/hotplug/sgi_hotplug.c  |    2 +-
+ include/acpi/acpi_bus.h            |    4 +++-
+ 6 files changed, 57 insertions(+), 11 deletions(-)
+
 -- 
-1.8.0
-
-
-
+1.7.9
 
