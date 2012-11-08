@@ -1,58 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab2KHJLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:11:15 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61397 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab2KHJLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:11:09 -0500
-MIME-Version: 1.0
-Date: Thu, 8 Nov 2012 17:11:09 +0800
-Message-ID: <CAPgLHd8oC5zLyeP68GXWXachmO9-+UJ3TMNBpYTCes9WcenaFQ@mail.gmail.com>
-Subject: [PATCH -next] staging: comedi: usbduxfast: remove unused variable in usbduxfastsub_ai_Irq()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755137Ab2KHJCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:02:47 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36581 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab2KHJCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 04:02:34 -0500
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, david@fromorbit.com,
+        cmm@us.ibm.com, swhiteho@redhat.com, dave@jikos.cz,
+        darrick.wong@oracle.com, andi@firstfloor.org, northrup.james@gmail.com,
+        gregkh@linuxfoundation.org, linuxram@linux.vnet.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v1 hot_track 05/18] vfs: add hooks to enable hot tracking
+Date: Thu,  8 Nov 2012 17:01:12 +0800
+Message-Id: <1352365285-32419-6-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1352365285-32419-1-git-send-email-zwu.kernel@gmail.com>
+References: <1352365285-32419-1-git-send-email-zwu.kernel@gmail.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110809-5806-0000-0000-00001B8B346F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-The variable 'p' is initialized but never used otherwise, so
-remove the unused variable.
+  Miscellaneous features that implement hot data tracking
+and generally make the hot data functions a bit more friendly.
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- drivers/staging/comedi/drivers/usbduxfast.c | 2 --
- 1 file changed, 2 deletions(-)
+ fs/direct-io.c      |    6 ++++++
+ mm/filemap.c        |    6 ++++++
+ mm/page-writeback.c |   12 ++++++++++++
+ mm/readahead.c      |    7 +++++++
+ 4 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index b4e987b..574e4b7 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -312,7 +312,6 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
- 	struct usbduxfastsub_s *udfs;
- 	struct comedi_device *this_comedidev;
- 	struct comedi_subdevice *s;
--	uint16_t *p;
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index f86c720..51f13f4 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -37,6 +37,7 @@
+ #include <linux/uio.h>
+ #include <linux/atomic.h>
+ #include <linux/prefetch.h>
++#include "hot_tracking.h"
  
- 	/* sanity checks - is the urb there? */
- 	if (!urb) {
-@@ -379,7 +378,6 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
- 		return;
- 	}
+ /*
+  * How many user pages to map in one call to get_user_pages().  This determines
+@@ -1297,6 +1298,11 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	prefetch(bdev->bd_queue);
+ 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
  
--	p = urb->transfer_buffer;
- 	if (!udfs->ignore) {
- 		if (!udfs->ai_continous) {
- 			/* not continuous, fixed number of samples */
-
++	/* Hot data tracking */
++	hot_update_freqs(inode, offset,
++			iov_length(iov, nr_segs),
++			rw & WRITE);
++
+ 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
+ 				     nr_segs, get_block, end_io,
+ 				     submit_io, flags);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..49a1da9 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -33,6 +33,7 @@
+ #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+ #include <linux/memcontrol.h>
+ #include <linux/cleancache.h>
++#include <linux/hot_tracking.h>
+ #include "internal.h"
+ 
+ /*
+@@ -1224,6 +1225,11 @@ readpage:
+ 		 * PG_error will be set again if readpage fails.
+ 		 */
+ 		ClearPageError(page);
++
++		/* Hot data tracking */
++		hot_update_freqs(inode, page->index << PAGE_CACHE_SHIFT,
++				PAGE_CACHE_SIZE, 0);
++
+ 		/* Start the actual read. The read will unlock the page. */
+ 		error = mapping->a_ops->readpage(filp, page);
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 830893b..27db4c1 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -35,6 +35,7 @@
+ #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
+ #include <linux/pagevec.h>
+ #include <linux/timer.h>
++#include <linux/hot_tracking.h>
+ #include <trace/events/writeback.h>
+ 
+ /*
+@@ -1903,13 +1904,24 @@ EXPORT_SYMBOL(generic_writepages);
+ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ {
+ 	int ret;
++	pgoff_t start = 0;
++	size_t count = 0;
+ 
+ 	if (wbc->nr_to_write <= 0)
+ 		return 0;
++
++	start = mapping->writeback_index << PAGE_CACHE_SHIFT;
++	count = wbc->nr_to_write;
++
+ 	if (mapping->a_ops->writepages)
+ 		ret = mapping->a_ops->writepages(mapping, wbc);
+ 	else
+ 		ret = generic_writepages(mapping, wbc);
++
++	/* Hot data tracking */
++	hot_update_freqs(mapping->host, (loff_t)start,
++			(count - (u64)wbc->nr_to_write) * PAGE_CACHE_SIZE, 1);
++
+ 	return ret;
+ }
+ 
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 7963f23..40a0e7f 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -19,6 +19,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/syscalls.h>
+ #include <linux/file.h>
++#include <linux/hot_tracking.h>
+ 
+ /*
+  * Initialise a struct file's readahead state.  Assumes that the caller has
+@@ -138,6 +139,12 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+ out:
+ 	blk_finish_plug(&plug);
+ 
++	/* Hot data tracking */
++	hot_update_freqs(mapping->host,
++		(list_entry(pages->prev, struct page, lru)->index)
++			<< PAGE_CACHE_SHIFT,
++		nr_pages * PAGE_CACHE_SIZE, 0);
++
+ 	return ret;
+ }
+ 
+-- 
+1.7.6.5
 
