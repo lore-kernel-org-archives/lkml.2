@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2KHPKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:10:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60365 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab2KHPKG (ORCPT
+	id S1756078Ab2KHPML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:12:11 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60998 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2KHPMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:10:06 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: jgarzik@pobox.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] ata: pata_arasan: Initialize cf clock to 166MHz
-Date: Thu,  8 Nov 2012 20:39:54 +0530
-Message-Id: <382d2087350ff0955ba14f125294ace4ed28382b.1352387366.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Thu, 8 Nov 2012 10:12:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the arm-soc tree with the l2-mtd and pinctrl trees
+Date: Thu, 8 Nov 2012 15:11:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>
+References: <20121107142916.824003a6c863320fbf379652@canb.auug.org.au>
+In-Reply-To: <20121107142916.824003a6c863320fbf379652@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211081511.54467.arnd@arndb.de>
+X-Provags-ID: V02:K0:CiDINEl+zgWvWsCfA3z3DL5ZYcDe5N5qihkcBPbmft7
+ QDKa0IkM2FdC4xSNZbqMNxaWoVjo6zrdRlRTqhQFWqtshBJ1wb
+ LSEn9jdr9JwLWbfPd7RQw7PIhOJXSs7Kz4rfkl4RGwveern2b0
+ gBVNxoGnsMV3kNuUwf7n6y+y7wzhz817RlkgGmMjnng3xZEBw0
+ ViLoNUFWXZPsbn4p7dmGxJ46wOGS/5UYL0Mq/hBt2Y+M/rQzvT
+ UMIcT2CqqHeYG4O0hwQMnR0y3Oe9EPgFvsiKEi5UCkJtfk3snt
+ q+Wzul1qtp6w6vQ1VuPjL1DVsZb6yr416LeaBaAkRfKEw61MFt
+ 1eELh+R5iOLi/LMPhouM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On Wednesday 07 November 2012, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/mach-nomadik/board-nhk8815.c between commit 1cd2fc449091 ("ARM:
+> nomadik: fixup some FSMC merge problems") from the l2-mtd tree, commits
+> bb16bd9b9da4 ("pinctrl/nomadik: move the platform data header") from the
+> pinctrl and commit 44e47ccf8ab6 ("Merge branch 'next/multiplatform' into
+> for-next") from the arm-soc tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
 
-PATA arasan driver expects the clock to be set to 166 MHz for proper functioning.
-This patch sets clk to 166 MHz in probe.
+Hi Stephen,
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/ata/pata_arasan_cf.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+I think this one turned out wrong, and is missing this part:
 
-diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
-index 26201eb..71111f2 100644
---- a/drivers/ata/pata_arasan_cf.c
-+++ b/drivers/ata/pata_arasan_cf.c
-@@ -317,6 +317,12 @@ static int cf_init(struct arasan_cf_dev *acdev)
- 		return ret;
- 	}
- 
-+	ret = clk_set_rate(acdev->clk, 166000000);
-+	if (ret) {
-+		dev_warn(acdev->host->dev, "clock set rate failed");
-+		return ret;
-+	}
-+
- 	spin_lock_irqsave(&acdev->host->lock, flags);
- 	/* configure CF interface clock */
- 	writel((pdata->cf_if_clk <= CF_IF_CLK_200M) ? pdata->cf_if_clk :
--- 
-1.7.12.rc2.18.g61b472e
+diff --git a/arch/arm/mach-nomadik/board-nhk8815.c b/arch/arm/mach-nomadik/board-nhk8815.c
+index 5ccdf53..69769b7 100644
+--- a/arch/arm/mach-nomadik/board-nhk8815.c
++++ b/arch/arm/mach-nomadik/board-nhk8815.c
+@@ -26,7 +26,6 @@
+ #include <linux/pinctrl/machine.h>
+ #include <linux/platform_data/pinctrl-nomadik.h>
+ #include <linux/platform_data/clocksource-nomadik-mtu.h>
+-#include <linux/platform_data/mtd-nomadik-nand.h>
+ #include <asm/hardware/vic.h>
+ #include <asm/sizes.h>
+ #include <asm/mach-types.h>
 
+
+The mtd-nomadik-nand.h inclusion was removed in the l2-mtd tree, but
+moved to a different line in the arm-soc tree. It needs to be removed
+because the header is gone now.
+
+	Arnd
