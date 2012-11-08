@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2KHIlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 03:41:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45119 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab2KHIlV (ORCPT
+	id S1751416Ab2KHIsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 03:48:19 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:28229 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2KHIsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 03:41:21 -0500
+	Thu, 8 Nov 2012 03:48:18 -0500
+X-IronPort-AV: E=Sophos;i="4.80,736,1344211200"; 
+   d="scan'208";a="213851270"
+Message-ID: <1352364376.12977.93.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH] add tpm_xenu.ko: Xen Virtual TPM frontend
+ driver
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Matthew Fioravante <matthew.fioravante@jhuapl.edu>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Date: Thu, 8 Nov 2012 09:46:16 +0100
+In-Reply-To: <20121108011006.GC21302@phenom.dumpdata.com>
+References: <1352128197-1539-1-git-send-email-matthew.fioravante@jhuapl.edu>
+	 <20121107144625.GA14628@ennui.austin.ibm.com>	<509AA501.1090701@jhuapl.edu>
+	 <20121108011006.GC21302@phenom.dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Date: Thu, 8 Nov 2012 09:41:19 +0100
-Message-ID: <CACRpkdYWOq32_fX7RsHfk6iivf9iJMAUPrYh1yBwwG1coKmwmg@mail.gmail.com>
-Subject: [GIT PULL] pinctrl fixes for v3.7 rc:s
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Axel Lin <axel.lin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> > >>+typedef struct tpmif_tx_request tpmif_tx_request_t;
+> > >   checkpatch warned on this new typedef - please run through checkpatch
+> > >and fix up that stuff.
+> > tpmif.h has a couple of typedefs which do trigger checkpatch
+> > warnings. However it looks like the paradigm for xen is to have
+> > these interface/io/<dev>if.h files and all of them have typedefs. I
+> > think in this case the typedef should probably stay.
+> > 
+> > Konrad your thoughts here?
+> 
+> Rip them out plea
 
-here is a set of pinctrl fixes for the current -rc series.
-Details in the signed tag.
+This is somewhere that Linux coding style and Xen coding style differ,
+so the typedefs should be removed from the Linux copy of these
+interfaces to match the Linux coding style, but they should stay in the
+Xen side canonical copy though.
 
-Please pull it in!
+Ian.
 
-Yours,
-Linus Walleij
-
-The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
-
-  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-for-v3.7-rc5
-
-for you to fetch changes up to 924da31416f20a8ee7a9008dd4e6e6054bc36b1b:
-
-  pinctrl: samsung and exynos need to depend on OF && GPIOLIB
-(2012-11-06 10:02:14 +0100)
-
-----------------------------------------------------------------
-Some pinctrl fixes for the v3.7 series:
-- A set of SPEAr pinctrl fixes that recently arrived
-- A fixup for the Samsung/Exynos Kconfig deps
-
-----------------------------------------------------------------
-Axel Lin (1):
-      pinctrl: samsung and exynos need to depend on OF && GPIOLIB
-
-Deepak Sikri (2):
-      pinctrl: SPEAr320: Correct pad mux entries for rmii/smii
-      pinctrl: SPEAr1340: Make DDR reset & clock pads as gpio
-
-Shiraz Hashim (3):
-      pinctrl: SPEAr3xx: correct register space to configure pwm
-      pinctrl: SPEAr1310: fix clcd high resolution pin group name
-      pinctrl: SPEAr1310: add register entries for enabling pad direction
-
-Vipul Kumar Samar (3):
-      pinctrl: SPEAr1310: Fix value of PERIP_CFG reigster and MCIF_SEL_SHIFT
-      pinctrl: SPEAr1310: Separate out pci pins from pcie_sata pin group
-      pinctrl: SPEAr1340: Add clcd sleep mode pin configuration
-
-Viresh Kumar (1):
-      pinctrl: SPEAr: Don't update all non muxreg bits on pinctrl_disable
-
- drivers/pinctrl/Kconfig                   |   2 +
- drivers/pinctrl/spear/pinctrl-spear.c     |   2 +-
- drivers/pinctrl/spear/pinctrl-spear1310.c | 365 ++++++++++++++++++++++++++----
- drivers/pinctrl/spear/pinctrl-spear1340.c |  41 +++-
- drivers/pinctrl/spear/pinctrl-spear320.c  |   8 +-
- drivers/pinctrl/spear/pinctrl-spear3xx.h  |   1 +
- 6 files changed, 369 insertions(+), 50 deletions(-)
