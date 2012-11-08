@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2KHLqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 06:46:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:56116 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2KHLqa (ORCPT
+	id S1751705Ab2KHLuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 06:50:13 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61724 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab2KHLuK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 06:46:30 -0500
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH] pwm: lpc32xx - Fix the PWM polarity
-Date: Thu,  8 Nov 2012 12:46:24 +0100
-Message-Id: <1352375184-4920-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20121108122345.72aa0f6c@avionic-0020.adnet.avionic-design.de>
-References: <20121108122345.72aa0f6c@avionic-0020.adnet.avionic-design.de>
-X-Provags-ID: V02:K0:lC9ZU0Shq2wQQZZ9VnEToH+zF0uMXqEKNcUAXZiGaqp
- KXYL91exqGvUZDzFArnMw1JMXl5XvILfCDTzKk6rrxoQHm5g90
- iT0d7zhcOm208quDAL+iwaP9fgaKx71MOibTjwErBvNA5M32CC
- NSIjl2rZsovqrsB3Z2YivRS9MgZBWrhpWCuIyVve6QklPn2wxB
- +KsRkRjb9N2IMsDcHSIugdaBZCyqhPnypkaHl7oNTkusmdR34e
- tuHpKsbLU8GKSdfgL/kF1QbnpxN+1ztsycw6FZ+5hmRSVzf4YX
- dWWjEDVlvPmjC+9wpIGOcFgf2unvMLIBu1lV/GX03Za/PMv607
- /W6LD4TsoRBXZrottm/P4jKLRzKdltFGu+N6JtfcPj4TEOr0xz
- sXQkxiXvAEztFMN5yfDgUoLDLNhweMCKjl+zdfPG/gcTuzD4Dx
- nS6z3
+	Thu, 8 Nov 2012 06:50:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352371427-32363-1-git-send-email-cornelia.huck@de.ibm.com>
+References: <1352371427-32363-1-git-send-email-cornelia.huck@de.ibm.com>
+Date: Thu, 8 Nov 2012 12:50:09 +0100
+Message-ID: <CAJK669bgpLoypjBWn4qs4pAizcnzR7g7zsszjTyCQ4QtOAPdjg@mail.gmail.com>
+Subject: Re: [PATCH] virtio: Don't access index after unregister.
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The duty cycles value goes from 1 (99% HIGH) to 256 (0% HIGH) but it
-is stored modulo 256 in the register as it is only 8 bits wide.
+On Thu, Nov 8, 2012 at 11:43 AM, Cornelia Huck <cornelia.huck@de.ibm.com> wrote:
+> Virtio wants to release used indices after the corresponding
+> virtio device has been unregistered. However, virtio does not
+> hold an extra reference, giving up its last reference with
+> device_unregister(), making accessing dev->index afterwards
+> invalid.
+>
+> I actually saw problems when testing my (not-yet-merged)
+> virtio-ccw code:
+>
+> - device_add virtio-net,id=xxx
+> -> creates device virtio<n> with n>0
+>
+> - device_del xxx
+> -> deletes virtio<n>, but calls ida_simple_remove with an
+>    index of 0
+>
+> - device_add virtio-net,id=xxx
+> -> tries to add virtio0, which is still in use...
+>
+> So let's save the index we want to release before calling
+> device_unregister().
+>
+> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> ---
+>  drivers/virtio/virtio.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+> index 1e8659c..809b0de 100644
+> --- a/drivers/virtio/virtio.c
+> +++ b/drivers/virtio/virtio.c
+> @@ -225,8 +225,10 @@ EXPORT_SYMBOL_GPL(register_virtio_device);
+>
+>  void unregister_virtio_device(struct virtio_device *dev)
+>  {
+> +       int index = dev->index; /* save for after device release */
+> +
+>         device_unregister(&dev->dev);
+> -       ida_simple_remove(&virtio_index_ida, dev->index);
+> +       ida_simple_remove(&virtio_index_ida, index);
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_virtio_device);
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- drivers/pwm/pwm-lpc32xx.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index adb87f0..2590f8d 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -51,7 +51,9 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 
- 	c = 256 * duty_ns;
- 	do_div(c, period_ns);
--	duty_cycles = c;
-+	if (c > 255)
-+		c = 255;
-+	duty_cycles = 256 - c;
- 
- 	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
- 		lpc32xx->base + (pwm->hwpwm << 2));
--- 
-1.7.0.4
+Great minds think alike! I discovered issues with this implementation
+a while back and Michael suggested an identical patch:
+https://lkml.org/lkml/2012/9/4/173
+https://lkml.org/lkml/2012/9/7/105
 
+The issue I ran into was that when virtio devices are created by remoteproc
+the device memory might be freed when calling  device_unregister(), and
+the value of dev->index is then undefined. So this bug bites when
+unregistering a Virtio devices from remoteproc with CONFIG_DEBUG_SLAB
+enabled. However this bug is not triggered by virtio_pci as it implements a
+non-standard device release-function that does not free the device memory.
+
+Thanks,
+Sjur
