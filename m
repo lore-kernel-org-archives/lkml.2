@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2KHURx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 15:17:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45961 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756614Ab2KHURw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 15:17:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,739,1344236400"; 
-   d="scan'208";a="215196499"
-Date: Thu, 8 Nov 2012 22:20:42 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121108202042.GD16012@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1493573.krE1QVlUux@vostro.rjw.lan>
- <20121107130548.GZ24532@intel.com>
- <30766811.i5oXHLoU7e@vostro.rjw.lan>
+	id S1756769Ab2KHUWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 15:22:46 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42648 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab2KHUWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 15:22:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <30766811.i5oXHLoU7e@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352405111.29589.476.camel@haakon2.linux-iscsi.org>
+References: <509A915B.30105@redhat.com>
+	<CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
+	<509B117A.6070708@genband.com>
+	<509BE460.6010404@redhat.com>
+	<1352405111.29589.476.camel@haakon2.linux-iscsi.org>
+Date: Fri, 9 Nov 2012 06:22:42 +1000
+Message-ID: <CAPM=9tw+SMCXXoDjkTETPxOk+Oj8jOfR-9tbx8KYpsWh5_WeAg@mail.gmail.com>
+Subject: Re: scsi target, likely GPL violation
+From: Dave Airlie <airlied@gmail.com>
+To: nab@risingtidesystems.com
+Cc: Andy Grover <agrover@redhat.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Jon Mason <jdmason@kudzu.us>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marc Fleischmann <mwf@risingtidesystems.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 08, 2012 at 01:46:24AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 07, 2012 03:05:48 PM Mika Westerberg wrote:
-> > On Wed, Nov 07, 2012 at 12:14:31PM +0100, Rafael J. Wysocki wrote:
-> > > > So is the idea now that the ACPI core parses the resources and passes them
-> > > > forward via struct acpi_device? I'm just wondering how to proceed with
-> > > > these I2C and SPI enumeration patches.
-> > > 
-> > > Well, we definitely don't want to duplicate what drivers/pnp/pnpacpi/rsparser.c
-> > > does, so the idea is to move the code from there to the core in such a way that
-> > > both the SPI/I2C patches and the PNP layer can use it.
-> > 
-> > Ok.
-> > 
-> > > I'll have some prototype code ready shortly, hopefully, and I'll post it
-> > > in that form for comments (and so that you know what to expect).
-> > 
-> > Sounds good. Thanks!
-> 
-> There you go.
-> 
-> I haven't even try to compile it, so most likely it breaks things left, right
-> and in between, but I hope it shows the idea.
+>> ...and then turn around and submit it to Nick since he's the target
+>> subsystem maintainer? Nick is probably the one who wrote it!
+>>
+>> I'm happy to do that, but we should recognize something is seriously
+>> skewed when the person nominally in charge of the in-kernel code also
+>> has a vested interest in *not* seeing new features added, since it then
+>> competes better with his company's offering.
+>>
+>> RTS is trying to use an "open core" business model. This works fine for
+>> BSD-licensed code or code originally authored entirely by you, but their
+>> code (all of it even the new stuff) is a derivative work of the Linux
+>> kernel source code, and the GPL says they need to contribute it back.
+>>
+>
+> Andy,
+>
+> Accusing us of violating GPL is a serious legal claim.
+>
+> In fact, we are not violating GPL.  In short, this is because we wrote
+> the code you are referring to (the SCSI target core in our commercial
+> RTS OS product), we have exclusive copyright ownership of it, and this
+> code contains no GPL code from the community.  GPL obligations only
+> apply downstream to licensees, and not to the author of the code.  Those
+> who use the code under GPL are subject to its conditions; we are not.
 
-Thanks Rafael!
+Just to clarify since I'm not a major GPL expert. Are you:
 
-I'll try this tomorrow (we had problems with the HW today so I wasn't able
-to do any testing).
+a) distributing a Linux kernel
 
-I'll convert the SPI and I2C enumeration patches to use this method.
+b) with a module built against it to be linked into it, whether
+completely written in house or not?
 
-> It does a couple of things at the same time, so it should be split into a few
-> simpler patches.  First, it moves some code from drivers/pnp/pnpacpi/rsparser.c
-> to a new file drivers/acpi/resource.c and makes pnpacpi use functions from
-> there.  Second, it changes acpi_platform.c to use those functions too.
-> Finally, it adds a list of ACPI resources to struct acpi_device and
-> makes acpi_platform.c use that list intead of evaluating _CRS and parsing its
-> output with acpi_walk_resources().
-> 
-> While changing acpi_platform.c I noticed that we had a bug in there, because
-> GSIs were registered for the struct acpi_device object, although they should be
-> registered for the struct platform_device one created by that code.  I didn't
-> try to fix that in the patch below, but it generally needs fixing.
+Then the module is under the GPL, if you think you are like nvidia or
+someone then think again, the corner case they live under is that they
+don't distribute a Linux kernel with their module *ever*, and they
+have a clear call for non-derived work status since its 90% the same
+code as in their Windows drivers.
 
-Good point.
+But if you distribute a kernel and a module in one place which I
+assume RTS OS does, then you are in dangerous territory and could be
+hit with cease and desist notices, which has happened to people
+shipping kernels and linked nvidia binary drivers before.
 
-I wonder if the acpi_register_gsi() wants a device that is registered to
-the Linux device framework? At least with the SPI and I2C we generally
-don't have such until we call i2c_new_device() or spi_add_device() and they
-are getting passed the IRQ number which should be translated to the Linux
-IRQ before that...
+Dave.
