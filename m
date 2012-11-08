@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab2KHCZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 21:25:41 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52568 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab2KHCZj (ORCPT
+	id S1753659Ab2KHC1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 21:27:43 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46839 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2KHC1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 21:25:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352331754.2748.14.camel@edumazet-glaptop>
-References: <CAODwPW9kiG-jo=n0zedv5KT-8-gJcEUrdC3F2mAEjt78tne18g@mail.gmail.com>
-	<1352316791-16491-1-git-send-email-jwerner@chromium.org>
-	<1352317219.5552.6.camel@edumazet-glaptop>
-	<CAODwPW8mBJspF3k5SCBR-BShNvBLQpD-vyhLRh5Cq-4h=VZDgg@mail.gmail.com>
-	<1352331192.2748.10.camel@edumazet-glaptop>
-	<1352331754.2748.14.camel@edumazet-glaptop>
-Date: Wed, 7 Nov 2012 18:25:37 -0800
-X-Google-Sender-Auth: DZXRrZZxvTVbidqaQscyFZfTIy0
-Message-ID: <CAODwPW90mZuCDgYPZEJtYNOGGt752VpP=S_EYACUCGua_x=WjA@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Avoid infinite loop on recvmsg bug
-From: Julius Werner <jwerner@chromium.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        James Morris <jmorris@namei.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>, Dave Jones <davej@redhat.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Nov 2012 21:27:42 -0500
+Message-ID: <1352341649.19098.1.camel@phoenix>
+Subject: [PATCH] gpio: mvebu: Set free callback for gpio_chip
+From: Axel Lin <axel.lin@ingics.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
+Date: Thu, 08 Nov 2012 10:27:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So you probably are fighting a bug we already fixed in upstream kernel.
->
-> (commit c8628155ece363 "tcp: reduce out_of_order memory use" did not
-> played well with cloned skbs.)
->
-> This issue was already discussed on netdev in the past.
+We call pinctrl_request_gpio() in request callback, thus we need to call
+pinctrl_free_gpio() in free callback.
 
-Thanks for the hint. Unfortunately, we have not pulled c8628 into our
-tree yet, so that's not it. Is there another point where the cloned
-skb or the faked truesize might make it break? We have been running
-this test with that hardware some 30 times in the last months and only
-seen it once, so it cannot be that common.
+Both mvebu_gpio_request() and mvebu_gpio_free() are not referenced outside of
+this file, make them static.
 
-I have noticed that you have already proposed a patch to repair
-smsc95xx (replacing the clone with a copy) on this list a few times...
-what's the status on that? Will it be committed eventually or did you
-abandon that approach?
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/gpio/gpio-mvebu.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Regardless of that, I still think that the bug handling in tcp_recvmsg
-should be updated in one way or the other.
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index 325c3de..a515b92 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -168,12 +168,12 @@ static void __iomem *mvebu_gpioreg_level_mask(struct mvebu_gpio_chip *mvchip)
+  * Functions implementing the gpio_chip methods
+  */
+ 
+-int mvebu_gpio_request(struct gpio_chip *chip, unsigned pin)
++static int mvebu_gpio_request(struct gpio_chip *chip, unsigned pin)
+ {
+ 	return pinctrl_request_gpio(chip->base + pin);
+ }
+ 
+-void mvebu_gpio_free(struct gpio_chip *chip, unsigned pin)
++static void mvebu_gpio_free(struct gpio_chip *chip, unsigned pin)
+ {
+ 	pinctrl_free_gpio(chip->base + pin);
+ }
+@@ -546,6 +546,7 @@ static int __devinit mvebu_gpio_probe(struct platform_device *pdev)
+ 	mvchip->chip.label = dev_name(&pdev->dev);
+ 	mvchip->chip.dev = &pdev->dev;
+ 	mvchip->chip.request = mvebu_gpio_request;
++	mvchip->chip.free = mvebu_gpio_free;
+ 	mvchip->chip.direction_input = mvebu_gpio_direction_input;
+ 	mvchip->chip.get = mvebu_gpio_get;
+ 	mvchip->chip.direction_output = mvebu_gpio_direction_output;
+-- 
+1.7.9.5
+
+
+
