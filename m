@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab2KHNJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:09:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7521 "EHLO mga01.intel.com"
+	id S1755647Ab2KHNDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:03:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60814 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755657Ab2KHND4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:03:56 -0500
+	id S1755622Ab2KHNDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 08:03:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,737,1344236400"; 
-   d="scan'208";a="244102197"
+   d="scan'208";a="244102077"
 From: dragos.tatulea@intel.com
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, cjb@laptop.org
 Cc: kirill.shutemov@linux.intel.com, irina.tirdea@intel.com,
         octavian.purdila@intel.com, tony.luck@intel.com, keescook@chromium.org,
         dragos.tatulea@gmail.com, Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v2 09/26] mmc: panic write: suppress host not claimed warnings
-Date: Thu,  8 Nov 2012 15:06:07 +0200
-Message-Id: <1352379984-18381-10-git-send-email-dragos.tatulea@intel.com>
+Subject: [PATCH v2 05/26] block: add panic write
+Date: Thu,  8 Nov 2012 15:06:03 +0200
+Message-Id: <1352379984-18381-6-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
 References: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
@@ -26,163 +26,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
+Add a small interface to allow block devices to attempt to write
+during an oops or panic.
+
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/core/core.c     |   13 +++++++------
- drivers/mmc/core/mmc.c      |    4 ++--
- drivers/mmc/core/sd.c       |    4 ++--
- drivers/mmc/core/sdio.c     |    4 ++--
- drivers/mmc/core/sdio_irq.c |    4 ++--
- 5 files changed, 15 insertions(+), 14 deletions(-)
+ drivers/block/Kconfig  |    3 ++
+ include/linux/blkdev.h |   77 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/genhd.h  |    3 ++
+ 3 files changed, 83 insertions(+)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 6b2377a..0b904bc 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -224,7 +224,7 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
- 			 mrq->stop->arg, mrq->stop->flags);
- 	}
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index af5b325..922cfd6 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -554,4 +554,7 @@ config BLK_DEV_OOPS
  
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
+ 	  See <file:Documentation/blockdev/blkoops.txt> for more information.
  
- 	mrq->cmd->error = 0;
- 	mrq->cmd->mrq = mrq;
-@@ -558,7 +558,7 @@ int mmc_wait_for_cmd(struct mmc_host *host, struct mmc_command *cmd, int retries
- {
- 	struct mmc_request mrq = {NULL};
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	memset(cmd->resp, 0, sizeof(cmd->resp));
- 	cmd->retries = retries;
-@@ -843,7 +843,7 @@ void mmc_release_host(struct mmc_host *host)
- {
- 	unsigned long flags;
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	if (host->ops->disable && host->claim_cnt == 1)
- 		host->ops->disable(host);
-@@ -1433,7 +1433,7 @@ void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops)
- 	BUG_ON(!host);
- 	BUG_ON(!ops);
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	spin_lock_irqsave(&host->lock, flags);
- 
-@@ -1456,7 +1456,7 @@ void mmc_detach_bus(struct mmc_host *host)
- 
- 	BUG_ON(!host);
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 	WARN_ON(!host->bus_ops);
- 
- 	spin_lock_irqsave(&host->lock, flags);
-@@ -2106,7 +2106,8 @@ int mmc_detect_card_removed(struct mmc_host *host)
- 	struct mmc_card *card = host->card;
- 	int ret;
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
++config BLK_DEV_PANIC_WRITE
++	bool
 +
+ endif # BLK_DEV
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1756001..bedfaab 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1461,6 +1461,83 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
  
- 	if (!card)
- 		return 1;
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 7cc4638..9cc36c4 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -823,7 +823,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 	u8 *ext_csd = NULL;
+ #endif /* CONFIG_BLK_DEV_INTEGRITY */
  
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
++#ifdef CONFIG_BLK_DEV_PANIC_WRITE
++
++/**
++ * struct panic_write_operations - operations to support writing during an oops
++ *				   or panic.
++ * @init: allocate resources
++ * @cleanup: release resources
++ * @write: called in an oops or panic context to write data
++ * @flush: called in an oops or panic context to finish write operations
++ *
++ * @write may need resources that cannot be allocated in a panic or oops
++ * context.  @init can be used to allocate those resources in advance.
++ * @cleanup is called if panic writing becomes disabled.
++ */
++struct panic_write_operations {
++	int (*init)(struct block_device *);
++	void (*cleanup)(struct block_device *);
++	int (*write)(struct block_device *, sector_t, void *, unsigned long);
++	int (*flush)(struct block_device *);
++};
++
++static inline int blk_panic_init(struct block_device *bdev)
++{
++	if (!bdev->bd_disk->pwops || !bdev->bd_disk->pwops->write)
++		return -EOPNOTSUPP;
++	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->init)
++		return bdev->bd_disk->pwops->init(bdev);
++	return 0;
++}
++
++static inline void blk_panic_cleanup(struct block_device *bdev)
++{
++	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->cleanup)
++		bdev->bd_disk->pwops->cleanup(bdev);
++}
++
++static inline int blk_panic_write(struct block_device *bdev, sector_t sect,
++				  void *addr, unsigned long len)
++{
++	if (!bdev->bd_disk->pwops || !bdev->bd_disk->pwops->write)
++		return -EOPNOTSUPP;
++	if (bdev != bdev->bd_contains)
++		sect += bdev->bd_part->start_sect;
++	return bdev->bd_disk->pwops->write(bdev, sect, addr, len);
++}
++
++static inline int blk_panic_flush(struct block_device *bdev)
++{
++	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->flush)
++		return bdev->bd_disk->pwops->flush(bdev);
++	return 0;
++}
++
++#else
++
++static inline int blk_panic_init(struct block_device *bdev)
++{
++	return -EOPNOTSUPP;
++}
++
++static inline void blk_panic_cleanup(struct block_device *bdev)
++{
++}
++
++static inline int blk_panic_write(struct block_device *bdev, sector_t sect,
++				  void *addr, unsigned long len)
++{
++	return -EOPNOTSUPP;
++}
++
++static inline int blk_panic_flush(struct block_device *bdev)
++{
++	return -EOPNOTSUPP;
++}
++
++#endif /* CONFIG_BLK_DEV_PANIC_WRITE */
++
+ struct block_device_operations {
+ 	int (*open) (struct block_device *, fmode_t);
+ 	int (*release) (struct gendisk *, fmode_t);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 4f440b3..73470af 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -195,6 +195,9 @@ struct gendisk {
+ #ifdef  CONFIG_BLK_DEV_INTEGRITY
+ 	struct blk_integrity *integrity;
+ #endif
++#ifdef CONFIG_BLK_DEV_PANIC_WRITE
++	const struct panic_write_operations *pwops;
++#endif
+ 	int node_id;
+ };
  
- 	/* Set correct bus mode for MMC before attempting init */
- 	if (!mmc_host_is_spi(host))
-@@ -1478,7 +1478,7 @@ int mmc_attach_mmc(struct mmc_host *host)
- 	u32 ocr;
- 
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	/* Set correct bus mode for MMC before attempting attach */
- 	if (!mmc_host_is_spi(host))
-diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
-index 74972c2..4ad079f 100644
---- a/drivers/mmc/core/sd.c
-+++ b/drivers/mmc/core/sd.c
-@@ -899,7 +899,7 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
- 	u32 rocr = 0;
- 
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	err = mmc_sd_get_cid(host, ocr, cid, &rocr);
- 	if (err)
-@@ -1146,7 +1146,7 @@ int mmc_attach_sd(struct mmc_host *host)
- 	u32 ocr;
- 
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	/* Disable preset value enable if already set since last time */
- 	if (host->ops->enable_preset_value) {
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index 2273ce6..af89c84 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -585,7 +585,7 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
- 	int err;
- 
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	/*
- 	 * Inform the card of the voltage
-@@ -1051,7 +1051,7 @@ int mmc_attach_sdio(struct mmc_host *host)
- 	struct mmc_card *card;
- 
- 	BUG_ON(!host);
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	err = mmc_send_io_op_cond(host, 0, &ocr);
- 	if (err)
-diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-index 3d8ceb4..719701c 100644
---- a/drivers/mmc/core/sdio_irq.c
-+++ b/drivers/mmc/core/sdio_irq.c
-@@ -175,7 +175,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
- {
- 	struct mmc_host *host = card->host;
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 
- 	if (!host->sdio_irqs++) {
- 		atomic_set(&host->sdio_irq_thread_abort, 0);
-@@ -196,7 +196,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
- {
- 	struct mmc_host *host = card->host;
- 
--	WARN_ON(!host->claimed);
-+	WARN_ON(!host->claimed && !mmc_am_panic_task(host));
- 	BUG_ON(host->sdio_irqs < 1);
- 
- 	if (!--host->sdio_irqs) {
 -- 
 1.7.9.5
 
