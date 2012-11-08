@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2KHTxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:53:00 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60756 "EHLO
+	id S1756505Ab2KHTxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:53:45 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33523 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2KHTw6 (ORCPT
+	with ESMTP id S1753283Ab2KHTxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:52:58 -0500
+	Thu, 8 Nov 2012 14:53:43 -0500
 From: YAMANE Toshiaki <yamanetoshi@gmail.com>
 To: Jarod Wilson <jarod@wilsonet.com>,
         Mauro Carvalho Chehab <mchehab@infradead.org>
@@ -15,225 +15,149 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Rusty Russell <rusty@rustcorp.com.au>, linux-media@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/media: Use dev_ or pr_ printks in lirc/lirc_sasem.c
-Date: Fri,  9 Nov 2012 04:52:49 +0900
-Message-Id: <1352404370-7564-1-git-send-email-yamanetoshi@gmail.com>
+Subject: [PATCH] staging/media: Use pr_ printks in lirc/lirc_sir.c
+Date: Fri,  9 Nov 2012 04:53:37 +0900
+Message-Id: <1352404417-7598-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 fixed below checkpatch warnings.
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
 - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
 and add pr_fmt.
 
 Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- drivers/staging/media/lirc/lirc_sasem.c |   65 ++++++++++++++++---------------
- 1 file changed, 33 insertions(+), 32 deletions(-)
+ drivers/staging/media/lirc/lirc_sir.c |   36 +++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/media/lirc/lirc_sasem.c b/drivers/staging/media/lirc/lirc_sasem.c
-index f4e4d90..9be4d3f 100644
---- a/drivers/staging/media/lirc/lirc_sasem.c
-+++ b/drivers/staging/media/lirc/lirc_sasem.c
-@@ -34,6 +34,8 @@
-  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+diff --git a/drivers/staging/media/lirc/lirc_sir.c b/drivers/staging/media/lirc/lirc_sir.c
+index 4afc3b4..9a88f05 100644
+--- a/drivers/staging/media/lirc/lirc_sir.c
++++ b/drivers/staging/media/lirc/lirc_sir.c
+@@ -33,6 +33,8 @@
+  *   parts cut'n'pasted from sa1100_ir.c (C) 2000 Russell King
   */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
+ #include <linux/module.h>
+ #include <linux/sched.h>
  #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -171,7 +173,7 @@ static void delete_context(struct sasem_context *context)
- 	kfree(context);
+@@ -495,7 +497,7 @@ static int init_chrdev(void)
+ 	driver.dev = &lirc_sir_dev->dev;
+ 	driver.minor = lirc_register_driver(&driver);
+ 	if (driver.minor < 0) {
+-		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
++		pr_err("init_chrdev() failed.\n");
+ 		return -EIO;
+ 	}
+ 	return 0;
+@@ -604,7 +606,7 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
+ 	}
  
- 	if (debug)
--		printk(KERN_INFO "%s: context deleted\n", __func__);
-+		pr_info("%s: context deleted\n", __func__);
+ 	if (status & UTSR0_TFS)
+-		printk(KERN_ERR "transmit fifo not full, shouldn't happen\n");
++		pr_err("transmit fifo not full, shouldn't happen\n");
+ 
+ 	/* We must clear certain bits. */
+ 	status &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
+@@ -787,7 +789,7 @@ static int init_hardware(void)
+ #ifdef LIRC_ON_SA1100
+ #ifdef CONFIG_SA1100_BITSY
+ 	if (machine_is_bitsy()) {
+-		printk(KERN_INFO "Power on IR module\n");
++		pr_info("Power on IR module\n");
+ 		set_bitsy_egpio(EGPIO_BITSY_IR_ON);
+ 	}
+ #endif
+@@ -885,8 +887,7 @@ static int init_hardware(void)
+ 	udelay(1500);
+ 
+ 	/* read previous control byte */
+-	printk(KERN_INFO LIRC_DRIVER_NAME
+-	       ": 0x%02x\n", sinp(UART_RX));
++	pr_info("0x%02x\n", sinp(UART_RX));
+ 
+ 	/* Set DLAB 1. */
+ 	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
+@@ -964,8 +965,7 @@ static int init_port(void)
+ 	/* get I/O port access and IRQ line */
+ #ifndef LIRC_ON_SA1100
+ 	if (request_region(io, 8, LIRC_DRIVER_NAME) == NULL) {
+-		printk(KERN_ERR LIRC_DRIVER_NAME
+-		       ": i/o port 0x%.4x already in use.\n", io);
++		pr_err("i/o port 0x%.4x already in use.\n", io);
+ 		return -EBUSY;
+ 	}
+ #endif
+@@ -975,15 +975,11 @@ static int init_port(void)
+ #               ifndef LIRC_ON_SA1100
+ 		release_region(io, 8);
+ #               endif
+-		printk(KERN_ERR LIRC_DRIVER_NAME
+-			": IRQ %d already in use.\n",
+-			irq);
++		pr_err("IRQ %d already in use.\n", irq);
+ 		return retval;
+ 	}
+ #ifndef LIRC_ON_SA1100
+-	printk(KERN_INFO LIRC_DRIVER_NAME
+-		": I/O port 0x%.4x, IRQ %d.\n",
+-		io, irq);
++	pr_info("I/O port 0x%.4x, IRQ %d.\n", io, irq);
+ #endif
+ 
+ 	init_timer(&timerlist);
+@@ -1213,8 +1209,7 @@ static int init_lirc_sir(void)
+ 	if (retval < 0)
+ 		return retval;
+ 	init_hardware();
+-	printk(KERN_INFO LIRC_DRIVER_NAME
+-		": Installed.\n");
++	pr_info("Installed.\n");
+ 	return 0;
  }
  
- static void deregister_from_lirc(struct sasem_context *context)
-@@ -181,11 +183,10 @@ static void deregister_from_lirc(struct sasem_context *context)
+@@ -1243,23 +1238,20 @@ static int __init lirc_sir_init(void)
  
- 	retval = lirc_unregister_driver(minor);
- 	if (retval)
--		printk(KERN_ERR "%s: unable to deregister from lirc (%d)\n",
--			__func__, retval);
-+		pr_err("%s: unable to deregister from lirc (%d)\n",
-+		       __func__, retval);
- 	else
--		printk(KERN_INFO "Deregistered Sasem driver (minor:%d)\n",
--		       minor);
-+		pr_info("Deregistered Sasem driver (minor:%d)\n", minor);
+ 	retval = platform_driver_register(&lirc_sir_driver);
+ 	if (retval) {
+-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
+-		       "failed!\n");
++		pr_err("Platform driver register failed!\n");
+ 		return -ENODEV;
+ 	}
  
+ 	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
+ 	if (!lirc_sir_dev) {
+-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
+-		       "failed!\n");
++		pr_err("Platform device alloc failed!\n");
+ 		retval = -ENOMEM;
+ 		goto pdev_alloc_fail;
+ 	}
+ 
+ 	retval = platform_device_add(lirc_sir_dev);
+ 	if (retval) {
+-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
+-		       "failed!\n");
++		pr_err("Platform device add failed!\n");
+ 		retval = -ENODEV;
+ 		goto pdev_add_fail;
+ 	}
+@@ -1292,7 +1284,7 @@ static void __exit lirc_sir_exit(void)
+ 	drop_port();
+ 	platform_device_unregister(lirc_sir_dev);
+ 	platform_driver_unregister(&lirc_sir_driver);
+-	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
++	pr_info("Uninstalled.\n");
  }
  
-@@ -206,8 +207,7 @@ static int vfd_open(struct inode *inode, struct file *file)
- 	subminor = iminor(inode);
- 	interface = usb_find_interface(&sasem_driver, subminor);
- 	if (!interface) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: could not find interface for minor %d\n",
-+		pr_err("%s: could not find interface for minor %d\n",
- 		       __func__, subminor);
- 		retval = -ENODEV;
- 		goto exit;
-@@ -252,8 +252,7 @@ static long vfd_ioctl(struct file *file, unsigned cmd, unsigned long arg)
- 	context = (struct sasem_context *) file->private_data;
- 
- 	if (!context) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: no context for device\n", __func__);
-+		pr_err("%s: no context for device\n", __func__);
- 		return -ENODEV;
- 	}
- 
-@@ -266,7 +265,7 @@ static long vfd_ioctl(struct file *file, unsigned cmd, unsigned long arg)
- 		context->vfd_contrast = (unsigned int)arg;
- 		break;
- 	default:
--		printk(KERN_INFO "Unknown IOCTL command\n");
-+		pr_info("Unknown IOCTL command\n");
- 		mutex_unlock(&context->ctx_lock);
- 		return -ENOIOCTLCMD;  /* not supported */
- 	}
-@@ -287,8 +286,7 @@ static int vfd_close(struct inode *inode, struct file *file)
- 	context = (struct sasem_context *) file->private_data;
- 
- 	if (!context) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: no context for device\n", __func__);
-+		pr_err("%s: no context for device\n", __func__);
- 		return -ENODEV;
- 	}
- 
-@@ -299,7 +297,7 @@ static int vfd_close(struct inode *inode, struct file *file)
- 		retval = -EIO;
- 	} else {
- 		context->vfd_isopen = 0;
--		printk(KERN_INFO "VFD port closed\n");
-+		dev_info(&context->dev->dev, "VFD port closed\n");
- 		if (!context->dev_present && !context->ir_isopen) {
- 
- 			/* Device disconnected before close and IR port is
-@@ -373,16 +371,14 @@ static ssize_t vfd_write(struct file *file, const char *buf,
- 
- 	context = (struct sasem_context *) file->private_data;
- 	if (!context) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: no context for device\n", __func__);
-+		pr_err("%s: no context for device\n", __func__);
- 		return -ENODEV;
- 	}
- 
- 	mutex_lock(&context->ctx_lock);
- 
- 	if (!context->dev_present) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: no Sasem device present\n", __func__);
-+		pr_err("%s: no Sasem device present\n", __func__);
- 		retval = -ENODEV;
- 		goto exit;
- 	}
-@@ -519,7 +515,7 @@ static int ir_open(void *data)
- 			__func__, retval);
- 	else {
- 		context->ir_isopen = 1;
--		printk(KERN_INFO "IR port opened\n");
-+		dev_info(&context->dev->dev, "IR port opened\n");
- 	}
- 
- exit:
-@@ -538,8 +534,7 @@ static void ir_close(void *data)
- 
- 	context = (struct sasem_context *)data;
- 	if (!context) {
--		printk(KERN_ERR KBUILD_MODNAME
--		       ": %s: no context for device\n", __func__);
-+		pr_err("%s: no context for device\n", __func__);
- 		return;
- 	}
- 
-@@ -547,7 +542,7 @@ static void ir_close(void *data)
- 
- 	usb_kill_urb(context->rx_urb);
- 	context->ir_isopen = 0;
--	printk(KERN_INFO "IR port closed\n");
-+	pr_info("IR port closed\n");
- 
- 	if (!context->dev_present) {
- 
-@@ -584,8 +579,9 @@ static void incoming_packet(struct sasem_context *context,
- 	int i;
- 
- 	if (len != 8) {
--		printk(KERN_WARNING "%s: invalid incoming packet size (%d)\n",
--		     __func__, len);
-+		dev_warn(&context->dev->dev,
-+			 "%s: invalid incoming packet size (%d)\n",
-+			 __func__, len);
- 		return;
- 	}
- 
-@@ -663,7 +659,7 @@ static void usb_rx_callback(struct urb *urb)
- 		break;
- 
- 	default:
--		printk(KERN_WARNING "%s: status (%d): ignored",
-+		dev_warn(&urb->dev->dev, "%s: status (%d): ignored",
- 			 __func__, urb->status);
- 		break;
- 	}
-@@ -830,8 +826,9 @@ static int sasem_probe(struct usb_interface *interface,
- 		retval = lirc_minor;
- 		goto unlock;
- 	} else
--		printk(KERN_INFO "%s: Registered Sasem driver (minor:%d)\n",
--			__func__, lirc_minor);
-+		dev_info(&interface->dev,
-+			 "%s: Registered Sasem driver (minor:%d)\n",
-+			 __func__, lirc_minor);
- 
- 	/* Needed while unregistering! */
- 	driver->minor = lirc_minor;
-@@ -852,15 +849,18 @@ static int sasem_probe(struct usb_interface *interface,
- 	if (vfd_ep_found) {
- 
- 		if (debug)
--			printk(KERN_INFO "Registering VFD with sysfs\n");
-+			dev_info(&interface->dev,
-+				 "Registering VFD with sysfs\n");
- 		if (usb_register_dev(interface, &sasem_class))
- 			/* Not a fatal error, so ignore */
--			printk(KERN_INFO "%s: could not get a minor number "
--			       "for VFD\n", __func__);
-+			dev_info(&interface->dev,
-+				 "%s: could not get a minor number for VFD\n",
-+				 __func__);
- 	}
- 
--	printk(KERN_INFO "%s: Sasem device on usb<%d:%d> initialized\n",
--			__func__, dev->bus->busnum, dev->devnum);
-+	dev_info(&interface->dev,
-+		 "%s: Sasem device on usb<%d:%d> initialized\n",
-+		 __func__, dev->bus->busnum, dev->devnum);
- unlock:
- 	mutex_unlock(&context->ctx_lock);
- 
-@@ -903,7 +903,8 @@ static void sasem_disconnect(struct usb_interface *interface)
- 	context = usb_get_intfdata(interface);
- 	mutex_lock(&context->ctx_lock);
- 
--	printk(KERN_INFO "%s: Sasem device disconnected\n", __func__);
-+	dev_info(&interface->dev, "%s: Sasem device disconnected\n",
-+		 __func__);
- 
- 	usb_set_intfdata(interface, NULL);
- 	context->dev_present = 0;
+ module_init(lirc_sir_init);
 -- 
 1.7.9.5
 
