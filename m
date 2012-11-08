@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab2KHNJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:09:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6707 "EHLO mga01.intel.com"
+	id S1755838Ab2KHNJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:09:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19797 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755642Ab2KHNDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755635Ab2KHNDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Nov 2012 08:03:55 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,737,1344236400"; 
-   d="scan'208";a="244102168"
+   d="scan'208";a="244102147"
 From: dragos.tatulea@intel.com
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, cjb@laptop.org
 Cc: kirill.shutemov@linux.intel.com, irina.tirdea@intel.com,
         octavian.purdila@intel.com, tony.luck@intel.com, keescook@chromium.org,
         dragos.tatulea@gmail.com, Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v2 08/26] mmc: panic write: bypass request completion
-Date: Thu,  8 Nov 2012 15:06:06 +0200
-Message-Id: <1352379984-18381-9-git-send-email-dragos.tatulea@intel.com>
+Subject: [PATCH v2 07/26] mmc: panic write: bypass host claiming
+Date: Thu,  8 Nov 2012 15:06:05 +0200
+Message-Id: <1352379984-18381-8-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
 References: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
@@ -26,37 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
+We don't want to claim/release host during a panic dump.
+
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/core/core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/mmc/core/core.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index dbe5332..6b2377a 100644
+index 06c42cf..dbe5332 100644
 --- a/drivers/mmc/core/core.c
 +++ b/drivers/mmc/core/core.c
-@@ -148,6 +148,9 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 			cmd->retries = 0;
- 	}
+@@ -767,6 +767,9 @@ int __mmc_claim_host(struct mmc_host *host, atomic_t *abort)
+ 	unsigned long flags;
+ 	int stop;
+ 
++	if (mmc_am_panic_task(host))
++		return 0;
++
+ 	might_sleep();
+ 
+ 	add_wait_queue(&host->wq, &wait);
+@@ -807,6 +810,9 @@ int mmc_try_claim_host(struct mmc_host *host)
+ 	int claimed_host = 0;
+ 	unsigned long flags;
+ 
++	if (mmc_am_panic_task(host))
++		return 1;
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	if (!host->claimed || host->claimer == current) {
+ 		host->claimed = 1;
+@@ -837,6 +843,9 @@ void mmc_release_host(struct mmc_host *host)
+ 	if (host->ops->disable && host->claim_cnt == 1)
+ 		host->ops->disable(host);
  
 +	if (mmc_am_panic_task(host))
 +		return;
 +
- 	if (err && cmd->retries && !mmc_card_removed(host->card)) {
- 		/*
- 		 * Request starter must handle retries - see
-@@ -340,7 +343,9 @@ static void mmc_wait_for_req_done(struct mmc_host *host,
- 	struct mmc_command *cmd;
- 
- 	while (1) {
--		wait_for_completion(&mrq->completion);
-+		/* Panic task requests must be completed in ->request() */
-+		if (!mmc_am_panic_task(host))
-+			wait_for_completion(&mrq->completion);
- 
- 		cmd = mrq->cmd;
- 		if (!cmd->error || !cmd->retries ||
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	if (--host->claim_cnt) {
+ 		/* Release for nested claim */
 -- 
 1.7.9.5
 
