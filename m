@@ -1,137 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab2KHS7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 13:59:13 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33379 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab2KHS7K (ORCPT
+	id S1756511Ab2KHTDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:03:19 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:38352 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab2KHTDS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 13:59:10 -0500
+	Thu, 8 Nov 2012 14:03:18 -0500
+From: "Chini, Georg (HP App Services)" <georg.chini@hp.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [REGRESSION] Kernel 3.5 to 3.7-rc4 / GMA500 / DPMS sometimes
+ crashes system
+Thread-Topic: [REGRESSION] Kernel 3.5 to 3.7-rc4 / GMA500 / DPMS sometimes
+ crashes system
+Thread-Index: Ac2juQFVn+V67GgiRmOwkCLDpckQtQaJJ9fw
+Date: Thu, 8 Nov 2012 19:02:33 +0000
+Message-ID: <B3A09DD14C7DC341B8B4D309FE5DD1BE1515A4D4@G2W2525.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1351928793-14375-4-git-send-email-mika.westerberg@linux.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-4-git-send-email-mika.westerberg@linux.intel.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 8 Nov 2012 18:58:47 +0000
-X-Google-Sender-Auth: dA9LdD55Qp9tXQmvMFKwaOAFpzY
-Message-ID: <CACxGe6vgKrqu9UwDc3gytMWpODhV4Q6yezQRwQmg730BpBxXrA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] i2c / ACPI: add ACPI enumeration support
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 7:46 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-> and configure the I2C slave devices behind the I2C controller. This patch
-> adds helper functions to support I2C slave enumeration.
->
-> An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-> in order to get its slave devices enumerated, created and bound to the
-> corresponding ACPI handle.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/Kconfig     |    6 ++
->  drivers/acpi/Makefile    |    1 +
->  drivers/acpi/acpi_i2c.c  |  234 ++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/i2c/i2c-core.c   |    9 ++
->  include/linux/acpi_i2c.h |   29 ++++++
->  5 files changed, 279 insertions(+)
->  create mode 100644 drivers/acpi/acpi_i2c.c
->  create mode 100644 include/linux/acpi_i2c.h
->
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 119d58d..0300bf6 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -181,6 +181,12 @@ config ACPI_DOCK
->           This driver supports ACPI-controlled docking stations and removable
->           drive bays such as the IBM Ultrabay and the Dell Module Bay.
->
-> +config ACPI_I2C
-> +       def_tristate I2C
-> +       depends on I2C
-> +       help
-> +         ACPI I2C enumeration support.
-> +
->  config ACPI_PROCESSOR
->         tristate "Processor"
->         select THERMAL
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index a7badb5..8573346 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -69,6 +69,7 @@ obj-$(CONFIG_ACPI_HED)                += hed.o
->  obj-$(CONFIG_ACPI_EC_DEBUGFS)  += ec_sys.o
->  obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
->  obj-$(CONFIG_ACPI_BGRT)                += bgrt.o
-> +obj-$(CONFIG_ACPI_I2C)         += acpi_i2c.o
->
->  # processor has its own "processor." module_param namespace
->  processor-y                    := processor_driver.o processor_throttling.o
-> diff --git a/drivers/acpi/acpi_i2c.c b/drivers/acpi/acpi_i2c.c
-> new file mode 100644
-> index 0000000..dc6997e
-> --- /dev/null
-> +++ b/drivers/acpi/acpi_i2c.c
-> @@ -0,0 +1,234 @@
-> +/*
-> + * ACPI I2C enumeration support
-> + *
-> + * Copyright (C) 2012, Intel Corporation
-> + * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/acpi.h>
-> +#include <linux/i2c.h>
-> +#include <linux/module.h>
-> +
-> +struct acpi_i2c {
-> +       acpi_status (*callback)(struct acpi_device *, void *);
-> +       void *data;
-> +};
-> +
-> +static acpi_status acpi_i2c_enumerate_device(acpi_handle handle, u32 level,
-> +                                            void *data, void **return_value)
-> +{
-> +       struct acpi_i2c *acpi_i2c = data;
-> +       struct acpi_device *adev;
-> +
-> +       if (acpi_bus_get_device(handle, &adev))
-> +               return AE_OK;
-> +       if (acpi_bus_get_status(adev) || !adev->status.present)
-> +               return AE_OK;
-> +
-> +       return acpi_i2c->callback(adev, acpi_i2c->data);
-> +}
-> +
-> +static acpi_status acpi_i2c_enumerate(acpi_handle handle,
-> +       acpi_status (*callback)(struct acpi_device *, void *), void *data)
-> +{
-> +       struct acpi_i2c acpi_i2c;
-> +
-> +       acpi_i2c.callback = callback;
-> +       acpi_i2c.data = data;
-> +
-> +       return acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-> +                                  acpi_i2c_enumerate_device, NULL,
-> +                                  &acpi_i2c, NULL);
-> +}
+Hello,
 
-Same comment here as for the SPI patch. The two levels of indirection
-is more convoluted than it needs to be. Can acpi_i2c_find_client and
-acpi_i2c_add_device be passed directly to acpi_walk_namespace?
+I have an issue with the GMA500 driver for kernels from 3.5 up to 3.7-rc4.
+I am using an Intel board with a D2700 Atom processor running Debian unstable.
+Sometimes when DPMS switches off the screen the system reboots. More often it
+does not reboot but shows a white screen on reactivation. Then I can ssh into
+the box from another host but the white screen remains even if I restart X or
+change VT. This never seems to happen the first time the screen is switched off,
+generally it takes 3 or 4 cycles to trigger the bug. Kernel 3.4.3 works fine.
+There are no messages in the logs. Any idea what might cause this or how I
+can debug it any further? I will supply more details on my setup if needed.
+Please CC me in your reply as I am not subscribed to the list.
 
-g.
+Thanks in advance
+                 Georg Chini
