@@ -1,355 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2KHBRD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 20:17:03 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48668 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2KHBRA (ORCPT
+	id S1753710Ab2KHBVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 20:21:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40201 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2KHBVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 20:17:00 -0500
-Date: Wed, 7 Nov 2012 17:16:54 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] percpu_rw_semaphore: reimplement to not block the
- readers unnecessarily
-Message-ID: <20121108011654.GJ2541@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com>
- <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <20121030184800.GA16129@redhat.com>
- <20121031194135.GA504@redhat.com>
- <20121031194158.GB504@redhat.com>
- <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
- <20121102180606.GA13255@redhat.com>
- <20121102180629.GB13255@redhat.com>
+	Wed, 7 Nov 2012 20:21:53 -0500
+Date: Wed, 7 Nov 2012 20:08:36 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Message-ID: <20121108010836.GB21302@phenom.dumpdata.com>
+References: <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
+ <20121106164303.GO9966@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B99E@SHSMSX101.ccr.corp.intel.com>
+ <20121107160301.GF18615@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233537BB2F@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121102180629.GB13255@redhat.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233537BB2F@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110801-3620-0000-0000-0000004B81EA
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 07:06:29PM +0100, Oleg Nesterov wrote:
-> Currently the writer does msleep() plus synchronize_sched() 3 times
-> to acquire/release the semaphore, and during this time the readers
-> are blocked completely. Even if the "write" section was not actually
-> started or if it was already finished.
+On Wed, Nov 07, 2012 at 04:52:50PM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Wed, Nov 07, 2012 at 12:58:19PM +0000, Liu, Jinsong wrote:
+> >>>>> 
+> >>>>> If it is generic ACPI code, than it can depend only on ACPI.
+> >>>>> If it is ACPI code that contains X86 specific info, than it needs
+> >>>>> to depend on X86 too.
+> >>>> 
+> >>>> No x86 specific so let's depend on ACPI.
+> >>> 
+> >>> Huh? This feature is x86 specific isn't it? I mean it is in the ACPI
+> >>> spec, but only x86 does it right?
+> >> 
+> >> OK, updated w/ ACPI & X86 dependency, and per other comments.
+> > 
+> > Ok. Could you send all the patchset in one go. I am bit lost of which
+> > one to review as none of them seem to have the version information
+> > [vX: Did this yyy]
 > 
-> With this patch down_write/up_write does synchronize_sched() twice
-> and down_read/up_read are still possible during this time, just they
-> use the slow path.
+> Not quite clear your meaning, do you mean not reply old email and start a new thread with title like
+> [PATCH vX 1/2]: xen/acpi: ACPI PAD driver
+> [PATCH vX 2/2]: ...
+
+Have you ever used git-send email? If you repost them all it comes out threaded
+and it makes it easy to apply the whole patchset in one go.
+
+> ?
 > 
-> percpu_down_write() first forces the readers to use rw_semaphore and
-> increment the "slow" counter to take the lock for reading, then it
-> takes that rw_semaphore for writing and blocks the readers.
+> > 
+> > right above your name or in the title:
+> > [PATCH vX 1/2]: yyyy
+> > 
+> > anyhow, some comments below.
+> > 
 > 
-> Also. With this patch the code relies on the documented behaviour of
-> synchronize_sched(), it doesn't try to pair synchronize_sched() with
-> barrier.
+> OK.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/percpu-rwsem.h |   83 +++++------------------------
->  lib/Makefile                 |    2 +-
->  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 137 insertions(+), 71 deletions(-)
->  create mode 100644 lib/percpu-rwsem.c
-> 
-> diff --git a/include/linux/percpu-rwsem.h b/include/linux/percpu-rwsem.h
-> index 250a4ac..592f0d6 100644
-> --- a/include/linux/percpu-rwsem.h
-> +++ b/include/linux/percpu-rwsem.h
-> @@ -2,82 +2,25 @@
->  #define _LINUX_PERCPU_RWSEM_H
-> 
->  #include <linux/mutex.h>
-> +#include <linux/rwsem.h>
->  #include <linux/percpu.h>
-> -#include <linux/rcupdate.h>
-> -#include <linux/delay.h>
-> +#include <linux/wait.h>
-> 
->  struct percpu_rw_semaphore {
-> -	unsigned __percpu *counters;
-> -	bool locked;
-> -	struct mutex mtx;
-> +	unsigned int __percpu	*fast_read_ctr;
-> +	struct mutex		writer_mutex;
-> +	struct rw_semaphore	rw_sem;
-> +	atomic_t		slow_read_ctr;
-> +	wait_queue_head_t	write_waitq;
->  };
-> 
-> -#define light_mb()	barrier()
-> -#define heavy_mb()	synchronize_sched()
-> +extern void percpu_down_read(struct percpu_rw_semaphore *);
-> +extern void percpu_up_read(struct percpu_rw_semaphore *);
-> 
-> -static inline void percpu_down_read(struct percpu_rw_semaphore *p)
-> -{
-> -	rcu_read_lock_sched();
-> -	if (unlikely(p->locked)) {
-> -		rcu_read_unlock_sched();
-> -		mutex_lock(&p->mtx);
-> -		this_cpu_inc(*p->counters);
-> -		mutex_unlock(&p->mtx);
-> -		return;
-> -	}
-> -	this_cpu_inc(*p->counters);
-> -	rcu_read_unlock_sched();
-> -	light_mb(); /* A, between read of p->locked and read of data, paired with D */
-> -}
-> +extern void percpu_down_write(struct percpu_rw_semaphore *);
-> +extern void percpu_up_write(struct percpu_rw_semaphore *);
-> 
-> -static inline void percpu_up_read(struct percpu_rw_semaphore *p)
-> -{
-> -	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
-> -	this_cpu_dec(*p->counters);
-> -}
-> -
-> -static inline unsigned __percpu_count(unsigned __percpu *counters)
-> -{
-> -	unsigned total = 0;
-> -	int cpu;
-> -
-> -	for_each_possible_cpu(cpu)
-> -		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
-> -
-> -	return total;
-> -}
-> -
-> -static inline void percpu_down_write(struct percpu_rw_semaphore *p)
-> -{
-> -	mutex_lock(&p->mtx);
-> -	p->locked = true;
-> -	synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
-> -	while (__percpu_count(p->counters))
-> -		msleep(1);
-> -	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
-> -}
-> -
-> -static inline void percpu_up_write(struct percpu_rw_semaphore *p)
-> -{
-> -	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
-> -	p->locked = false;
-> -	mutex_unlock(&p->mtx);
-> -}
-> -
-> -static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
-> -{
-> -	p->counters = alloc_percpu(unsigned);
-> -	if (unlikely(!p->counters))
-> -		return -ENOMEM;
-> -	p->locked = false;
-> -	mutex_init(&p->mtx);
-> -	return 0;
-> -}
-> -
-> -static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
-> -{
-> -	free_percpu(p->counters);
-> -	p->counters = NULL; /* catch use after free bugs */
-> -}
-> +extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
-> +extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
-> 
->  #endif
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 821a162..4dad4a7 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->  	 idr.o int_sqrt.o extable.o \
->  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
-> -	 is_single_threaded.o plist.o decompress.o
-> +	 is_single_threaded.o plist.o decompress.o percpu-rwsem.o
-> 
->  lib-$(CONFIG_MMU) += ioremap.o
->  lib-$(CONFIG_SMP) += cpumask.o
-> diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
-> new file mode 100644
-> index 0000000..0e3bc0f
-> --- /dev/null
-> +++ b/lib/percpu-rwsem.c
-> @@ -0,0 +1,123 @@
-> +#include <linux/percpu-rwsem.h>
-> +#include <linux/rcupdate.h>
-> +#include <linux/sched.h>
-> +
-> +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
-> +{
-> +	brw->fast_read_ctr = alloc_percpu(int);
-> +	if (unlikely(!brw->fast_read_ctr))
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&brw->writer_mutex);
-> +	init_rwsem(&brw->rw_sem);
-> +	atomic_set(&brw->slow_read_ctr, 0);
-> +	init_waitqueue_head(&brw->write_waitq);
-> +	return 0;
-> +}
-> +
-> +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
-> +{
-> +	free_percpu(brw->fast_read_ctr);
-> +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
-> +}
-> +
-> +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
-> +{
-> +	bool success = false;
-> +
-> +	preempt_disable();
-> +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
-> +		__this_cpu_add(*brw->fast_read_ctr, val);
-> +		success = true;
-> +	}
-> +	preempt_enable();
-> +
-> +	return success;
-> +}
-> +
-> +/*
-> + * Like the normal down_read() this is not recursive, the writer can
-> + * come after the first percpu_down_read() and create the deadlock.
-> + */
-> +void percpu_down_read(struct percpu_rw_semaphore *brw)
-> +{
-> +	if (likely(update_fast_ctr(brw, +1)))
-> +		return;
-> +
-> +	down_read(&brw->rw_sem);
-> +	atomic_inc(&brw->slow_read_ctr);
-> +	up_read(&brw->rw_sem);
-> +}
-> +
-> +void percpu_up_read(struct percpu_rw_semaphore *brw)
-> +{
-> +	if (likely(update_fast_ctr(brw, -1)))
-> +		return;
-> +
-> +	/* false-positive is possible but harmless */
-> +	if (atomic_dec_and_test(&brw->slow_read_ctr))
-> +		wake_up_all(&brw->write_waitq);
-> +}
-> +
-> +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
-> +{
-> +	unsigned int sum = 0;
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		sum += per_cpu(*brw->fast_read_ctr, cpu);
-> +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
-> +	}
-> +
-> +	return sum;
-> +}
-> +
-> +/*
-> + * A writer takes ->writer_mutex to exclude other writers and to force the
-> + * readers to switch to the slow mode, note the mutex_is_locked() check in
-> + * update_fast_ctr().
-> + *
-> + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
-> + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
-> + * counter it represents the number of active readers.
-> + *
-> + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
-> + * then waits until the slow counter becomes zero.
-> + */
-> +void percpu_down_write(struct percpu_rw_semaphore *brw)
-> +{
-> +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
-> +	mutex_lock(&brw->writer_mutex);
-> +
-> +	/*
-> +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
-> +	 *    so that update_fast_ctr() can't succeed.
-> +	 *
-> +	 * 2. Ensures we see the result of every previous this_cpu_add() in
-> +	 *    update_fast_ctr().
-> +	 *
-> +	 * 3. Ensures that if any reader has exited its critical section via
-> +	 *    fast-path, it executes a full memory barrier before we return.
-> +	 */
-> +	synchronize_sched();
-> +
-> +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
-> +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
-> +
-> +	/* block the new readers completely */
-> +	down_write(&brw->rw_sem);
-> +
-> +	/* wait for all readers to complete their percpu_up_read() */
-> +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
-> +}
-> +
-> +void percpu_up_write(struct percpu_rw_semaphore *brw)
-> +{
-> +	/* allow the new readers, but only the slow-path */
-> +	up_write(&brw->rw_sem);
-> +
-> +	/* insert the barrier before the next fast-path in down_read */
-> +	synchronize_sched();
-
-Ah, my added comments describing the memory-order properties of
-synchronize_sched() were incomplete.  As you say in the comment above,
-a valid RCU implementation must ensure that each CPU executes a memory
-barrier between the time that synchronize_sched() starts executing and
-the time that this same CPU starts its first RCU read-side critical
-section that ends after synchronize_sched() finishes executing.  (This
-is symmetric with the requirement discussed earlier.)
-
-This works for the user-level RCU implementations as well -- some of
-them supply the memory barriers under the control of the synchronize_rcu(),
-while others supply them at the beginnings and ends of the RCU read-side
-critical section.  Either way works, as required.
-
-(Why do I care about potential implementations with memory barriers in
-the read-side primitives?  Well, I hope that I never have reason to.
-But if memory barriers do some day become free and if energy efficiency
-continues to grow in importance, some hardware might prefer the memory
-barriers in rcu_read_lock() and rcu_read_unlock() to interrupting CPUs
-to force them to execute memory barriers.)
-
-This in turn means that if a given RCU read-side critical section is
-totally overlapped by a synchronize_sched(), there are no guarantees
-of any memory barriers.  Which is OK, you don't rely on this.
-
-> +	mutex_unlock(&brw->writer_mutex);
-
-And if a reader sees brw->writer_mutex as unlocked, then that reader's
-RCU read-side critical section must end after the above synchronize_sched()
-completes, which in turn means that there must have been a memory barrier
-on that reader's CPU after the synchronize_sched() started, so that the
-reader correctly sees the writer's updates.
-
-> +}
-
-Sorry to be such a pain (and a slow pain at that) on this one, but
-we really needed to get this right.  But please let me know what you
-think of the added memory-order constraint.  Note that a CPU that never
-ever executes any RCU read-side critical sections need not execute any
-synchronize_sched()-induced memory barriers.
-
-So:
-
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-							Thanx, Paul
-
+> Thanks,
+> Jinsong
