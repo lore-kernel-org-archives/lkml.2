@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2KHRMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 12:12:44 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:44897 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab2KHRMn convert rfc822-to-8bit (ORCPT
+	id S1756413Ab2KHRPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 12:15:40 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:42390 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754563Ab2KHRPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 12:12:43 -0500
-Date: Thu, 8 Nov 2012 19:14:22 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 1/3] mm: Add VM pressure notifications
-Message-ID: <20121108171421.GA4824@shutemov.name>
-References: <20121107105348.GA25549@lizard>
- <20121107110128.GA30462@lizard>
- <20121108170124.GB8218@suse.de>
+	Thu, 8 Nov 2012 12:15:37 -0500
+Date: Thu, 8 Nov 2012 17:15:36 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
+In-Reply-To: <20121107144612.e822986f.akpm@linux-foundation.org>
+Message-ID: <0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-26-git-send-email-glommer@parallels.com> <20121105164813.2eba5ecb.akpm@linux-foundation.org> <509A0A04.2030503@parallels.com> <20121106231627.3610c908.akpm@linux-foundation.org>
+ <509A2849.9090509@parallels.com> <20121107144612.e822986f.akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20121108170124.GB8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 08, 2012 at 05:01:24PM +0000, Mel Gorman wrote:
-> (Sorry about being very late reviewing this)
-> 
-> On Wed, Nov 07, 2012 at 03:01:28AM -0800, Anton Vorontsov wrote:
-> > This patch introduces vmpressure_fd() system call. The system call creates
-> > a new file descriptor that can be used to monitor Linux' virtual memory
-> > management pressure. There are three discrete levels of the pressure:
-> > 
-> 
-> Why was eventfd unsuitable? It's a bit trickier to use but there are
-> examples in the kernel where an application is required to do something like
-> 
-> 1. open eventfd
-> 2. open a control file, say /proc/sys/vm/vmpressure or if cgroups
->    /sys/fs/cgroup/something/vmpressure
-> 3. write fd_event fd_control [low|medium|oom]. Can be a binary structure
->    you write
-> 
-> and then poll the eventfd. The trickiness is awkward but a library
-> implementation of vmpressure_fd() that mapped onto eventfd properly should
-> be trivial.
-> 
-> I confess I'm not super familiar with eventfd and if this can actually
-> work in practice
+On Wed, 7 Nov 2012, Andrew Morton wrote:
 
-You've described how it works for memory thresholds and oom notifications
-in memcg. So it works. I also prefer this kind of interface.
+> What's up with kmem_cache_shrink?  It's global and exported to modules
+> but its only external caller is some weird and hopelessly poorly
+> documented site down in drivers/acpi/osl.c.  slab and slob implement
+> kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
+> trying to actually do there, then do it properly, then killkillkill!
 
-See Documentation/cgroups/cgroups.txt section 2.4 and
-Documentation/cgroups/memory.txt sections 9 and 10.
+kmem_cache_shrink is also used internally. Its simply releasing unused
+cached objects.
 
--- 
- Kirill A. Shutemov
+> Secondly, as slab and slub (at least) have the ability to shed cached
+> memory, why aren't they hooked into the core cache-shinking machinery.
+> After all, it's called "shrink_slab"!
+
+Because the core cache shrinking needs the slab caches to free up memory
+from inodes and dentries. We could call kmem_cache_shrink at the end of
+the shrink passes in vmscan. The price would be that the caches would have
+to be repopulated when new allocations occur.
+>
+> If we can fix all that up then I wonder whether this particular patch
+> needs to exist at all.  If the kmem_cache is no longer used then we
+> can simply leave it floating around in memory and the regular cache
+> shrinking code out of shrink_slab() will clean up any remaining pages.
+> The kmem_cache itself can be reclaimed via another shrinker, if
+> necessary?
+
+The kmem_cache can only be released if all its objects (used and unused)
+are released.  kmem_cache_shrink drops the unused objects on some internal
+slab specific list. That may enable us to release the kmem_cache
+structure.
+
