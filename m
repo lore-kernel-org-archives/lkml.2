@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab2KHOSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:18:55 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45962 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab2KHOSx (ORCPT
+	id S1756031Ab2KHOWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:22:50 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45020 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab2KHOWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:18:53 -0500
-Date: Thu, 8 Nov 2012 06:18:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 9/9 v2] cgroup_freezer: implement proper hierarchy support
-Message-ID: <20121108141848.GA12973@htj.dyndns.org>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-10-git-send-email-tj@kernel.org>
- <20121107163919.GC2660@mtj.dyndns.org>
- <20121108140852.GI31821@dhcp22.suse.cz>
+	Thu, 8 Nov 2012 09:22:49 -0500
+Message-ID: <509BC026.4040209@gmail.com>
+Date: Thu, 08 Nov 2012 22:22:30 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121108140852.GI31821@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
+References: <5093EE59.8010609@gmail.com> <0000013ac23ac528-19a0dd1b-3144-45df-9d6e-471999d6ae31-000000@email.amazonses.com>
+In-Reply-To: <0000013ac23ac528-19a0dd1b-3144-45df-9d6e-471999d6ae31-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
-
-On Thu, Nov 08, 2012 at 03:08:52PM +0100, Michal Hocko wrote:
-> This seems to be racy because parent->state access is not linearized.
-> Say we have parallel freeze and thawing on a tree like the following:
-> 	A
-> 	|
-> 	B
->         |
->         C 
+Christoph Lameter said, at 2012/11/3 1:46:
+>>  		u64_stats_update_begin(&stats->sync);
+>>  		stats->tx_packets++;
 > 
-> pre_order will visit them in B, C order.
-> 	CPU1						CPU2
-> freezer_apply_state(A, true)
-> A->state & FREEZING == true		freezer_apply_state(A, false)
-> 					A->state & FREEZING == false
-> 					freezer_apply_state(B, false)
-> 					B->state & FREEZING == false
-> freezer_apply_state(B, true)
-> 
-> B->state & FREEZING == true
-> freezer_apply_state(C, true)
-> 					freezer_apply_state(C, false)
-> 
-> So A, C are thawed while B is frozen. Or am I missing something which
-> would prevent from this kind of race?
+> Use this_cpu_inc(vport->percpu_stats->packets) here?
+ 
+Lots of network drivers use u64_stats_sync infrastructure for statistics
+on 32bit or 64bit hosts no matter how many members in per-cpu variable. 
 
-The rule is that there will be at least one inheritance operation
-after a parent is updated.  The exact order of propagation doesn't
-matter as long as there's at least one inheritance event after the
-latest update to a parent.  This works because inheritance operations
-are atomic to each other.  If one inheritance operation "saw" an
-update to its parent, the next inheritance operation is guaranteed to
-see at least upto that update.
+keep them be consistent, so no plan to change them.
 
-So, in the above example in CPU2, (B->state & FREEZING) test and
-freezer_apply_state(C, false) can't be interleaved with the same
-inheritance operation from CPU1.  They either happen before or after.
+Thanks 
 
-Maybe it's too subtle.  The only reason I didn't use a giant
-freezer_mutex was that I wanted to demonstrate how to do state
-propagation without depending on single giant lock.  Maybe nobody
-wants that and this should use one mutex to protect the hierarchy.  I
-don't know.
-
-Thanks.
-
--- 
-tejun
