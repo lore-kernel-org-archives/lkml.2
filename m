@@ -1,165 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab2KHQin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 11:38:43 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61147 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab2KHQil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 11:38:41 -0500
-Date: Thu, 8 Nov 2012 08:38:35 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Subject: Re: [PATCH 1/3] input: spear-keyboard: Use devm_*() routines
-Message-ID: <20121108163835.GA8877@core.coreip.homeip.net>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
+	id S1756399Ab2KHQmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 11:42:14 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43804 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930Ab2KHQmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 11:42:10 -0500
+Date: Thu, 8 Nov 2012 08:27:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] percpu_rw_semaphore: reimplement to not block
+	the readers unnecessarily
+Message-ID: <20121108162706.GB2519@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <20121030184800.GA16129@redhat.com>
+ <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121102180629.GB13255@redhat.com>
+ <20121108011654.GJ2541@linux.vnet.ibm.com>
+ <20121108133327.GA23425@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
+In-Reply-To: <20121108133327.GA23425@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110816-5930-0000-0000-00000DF1C129
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-On Thu, Nov 08, 2012 at 07:10:47PM +0530, Viresh Kumar wrote:
-> This patch frees spear-keyboard driver from tension of freeing resources :)
-> devm_* derivatives of multiple routines are used while allocating resources,
-> which would be freed automatically by kernel.
-
-It also breaks the error unwinding/removal of the driver as it frees
-input device while IRQ handler is still active.
-
-I will push the patch which implements devm_input_allocate_device() to
-my 'next' branch in a few, please use it because it will make sure input
-device will stick around long enough.
-
-Also below.
-
+On Thu, Nov 08, 2012 at 02:33:27PM +0100, Oleg Nesterov wrote:
+> On 11/07, Paul E. McKenney wrote:
+> >
+> > On Fri, Nov 02, 2012 at 07:06:29PM +0100, Oleg Nesterov wrote:
+> > > +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> > > +{
+> > > +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> > > +	mutex_lock(&brw->writer_mutex);
+> > > +
+> > > +	/*
+> > > +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> > > +	 *    so that update_fast_ctr() can't succeed.
+> > > +	 *
+> > > +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> > > +	 *    update_fast_ctr().
+> > > +	 *
+> > > +	 * 3. Ensures that if any reader has exited its critical section via
+> > > +	 *    fast-path, it executes a full memory barrier before we return.
+> > > +	 */
+> > > +	synchronize_sched();
+> > > +
+> > > +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
+> > > +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+> > > +
+> > > +	/* block the new readers completely */
+> > > +	down_write(&brw->rw_sem);
+> > > +
+> > > +	/* wait for all readers to complete their percpu_up_read() */
+> > > +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+> > > +}
+> > > +
+> > > +void percpu_up_write(struct percpu_rw_semaphore *brw)
+> > > +{
+> > > +	/* allow the new readers, but only the slow-path */
+> > > +	up_write(&brw->rw_sem);
+> > > +
+> > > +	/* insert the barrier before the next fast-path in down_read */
+> > > +	synchronize_sched();
+> >
+> > Ah, my added comments describing the memory-order properties of
+> > synchronize_sched() were incomplete.  As you say in the comment above,
+> > a valid RCU implementation must ensure that each CPU executes a memory
+> > barrier between the time that synchronize_sched() starts executing and
+> > the time that this same CPU starts its first RCU read-side critical
+> > section that ends after synchronize_sched() finishes executing.  (This
+> > is symmetric with the requirement discussed earlier.)
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/input/keyboard/spear-keyboard.c | 37 +++++++++++----------------------
->  1 file changed, 12 insertions(+), 25 deletions(-)
+> I think, yes. Let me repeat my example (changed a little bit). Suppose
+> that we have
 > 
-> diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
-> index c7ca97f..1d24fb2 100644
-> --- a/drivers/input/keyboard/spear-keyboard.c
-> +++ b/drivers/input/keyboard/spear-keyboard.c
-> @@ -203,7 +203,7 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->  		return irq;
->  	}
->  
-> -	kbd = kzalloc(sizeof(*kbd), GFP_KERNEL);
-> +	kbd = devm_kzalloc(&pdev->dev, sizeof(*kbd), GFP_KERNEL);
->  	input_dev = input_allocate_device();
->  	if (!kbd || !input_dev) {
->  		dev_err(&pdev->dev, "out of memory\n");
-> @@ -224,25 +224,25 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->  		kbd->suspended_rate = pdata->suspended_rate;
->  	}
->  
-> -	kbd->res = request_mem_region(res->start, resource_size(res),
-> -				      pdev->name);
-> +	kbd->res = devm_request_mem_region(&pdev->dev, res->start,
-> +			resource_size(res), pdev->name);
->  	if (!kbd->res) {
->  		dev_err(&pdev->dev, "keyboard region already claimed\n");
->  		error = -EBUSY;
->  		goto err_free_mem;
->  	}
->  
-> -	kbd->io_base = ioremap(res->start, resource_size(res));
-> +	kbd->io_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+> 	int A = 0, B = 0, STOP = 0;
+> 
+> 	// can be called at any time, and many times
+> 	void func(void)
+> 	{
+> 		rcu_read_lock_sched();
+> 		if (!STOP) {
+> 			A++;
+> 			B++;
+> 		}
+> 		rcu_read_unlock_sched();
+> 	}
+> 
+> Then I believe the following code should be correct:
+> 
+> 	STOP = 1;
+> 
+> 	synchronize_sched();
+> 
+> 	BUG_ON(A != B);
 
-There is devm_request_and_ioremap() which you can use here.
+Agreed, but covered by my earlier definition.
 
->  	if (!kbd->io_base) {
->  		dev_err(&pdev->dev, "ioremap failed for kbd_region\n");
->  		error = -ENOMEM;
-> -		goto err_release_mem_region;
-> +		goto err_free_mem;
->  	}
->  
-> -	kbd->clk = clk_get(&pdev->dev, NULL);
-> +	kbd->clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(kbd->clk)) {
->  		error = PTR_ERR(kbd->clk);
-> -		goto err_iounmap;
-> +		goto err_free_mem;
->  	}
->  
->  	input_dev->name = "Spear Keyboard";
-> @@ -259,7 +259,7 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->  					   kbd->keycodes, input_dev);
->  	if (error) {
->  		dev_err(&pdev->dev, "Failed to build keymap\n");
-> -		goto err_put_clk;
-> +		goto err_free_mem;
->  	}
->  
->  	if (kbd->rep)
-> @@ -268,16 +268,17 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->  
->  	input_set_drvdata(input_dev, kbd);
->  
-> -	error = request_irq(irq, spear_kbd_interrupt, 0, "keyboard", kbd);
-> +	error = devm_request_irq(&pdev->dev, irq, spear_kbd_interrupt, 0,
-> +			"keyboard", kbd);
->  	if (error) {
->  		dev_err(&pdev->dev, "request_irq fail\n");
-> -		goto err_put_clk;
-> +		goto err_free_mem;
->  	}
->  
->  	error = input_register_device(input_dev);
->  	if (error) {
->  		dev_err(&pdev->dev, "Unable to register keyboard device\n");
-> -		goto err_free_irq;
-> +		goto err_free_mem;
->  	}
->  
->  	device_init_wakeup(&pdev->dev, 1);
-> @@ -285,17 +286,8 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
->  
->  	return 0;
->  
-> -err_free_irq:
-> -	free_irq(kbd->irq, kbd);
-> -err_put_clk:
-> -	clk_put(kbd->clk);
-> -err_iounmap:
-> -	iounmap(kbd->io_base);
-> -err_release_mem_region:
-> -	release_mem_region(res->start, resource_size(res));
->  err_free_mem:
->  	input_free_device(input_dev);
-> -	kfree(kbd);
->  
->  	return error;
->  }
-> @@ -304,12 +296,7 @@ static int __devexit spear_kbd_remove(struct platform_device *pdev)
->  {
->  	struct spear_kbd *kbd = platform_get_drvdata(pdev);
->  
-> -	free_irq(kbd->irq, kbd);
->  	input_unregister_device(kbd->input);
-> -	clk_put(kbd->clk);
-> -	iounmap(kbd->io_base);
-> -	release_mem_region(kbd->res->start, resource_size(kbd->res));
-> -	kfree(kbd);
->  
->  	device_init_wakeup(&pdev->dev, 0);
->  	platform_set_drvdata(pdev, NULL);
-> -- 
-> 1.7.12.rc2.18.g61b472e
+> We should see the result of the previous increments, and func() should
+> see STOP != 0 if it races with BUG_ON().
+
+Alternatively, if we have something like:
+
+	if (!STOP) {
+		A++;
+		B++;
+		if (random() & 0xffff) {
+			synchronize_sched();
+			STOP = 1;
+		}
+	}
+
+Then if we also have elsewhere:
+
+	rcu_read_lock_sched();
+	if (STOP)
+		BUG_ON(A != B);
+	rcu_read_unlock_sched();
+
+The BUG_ON() should never fire.
+
+This one requires the other guarantee, that if a given RCU read-side
+critical section ends after a given synchronize_sched(), then the CPU
+executing that RCU read-side critical section is guaranteed to have
+executed a memory barrier between the start of that synchronize_sched()
+and the start of that RCU read-side critical section.
+
+> > And if a reader sees brw->writer_mutex as unlocked, then that reader's
+> > RCU read-side critical section must end after the above synchronize_sched()
+> > completes, which in turn means that there must have been a memory barrier
+> > on that reader's CPU after the synchronize_sched() started, so that the
+> > reader correctly sees the writer's updates.
+> 
+> Yes.
+> 
+> > But please let me know what you
+> > think of the added memory-order constraint.
+> 
+> I am going to (try to) do other changes on top of this patch, and I'll
+> certainly try to think more about this, thanks.
+
+Looking forward to hearing your thoughts!
+
+							Thanx, Paul
+
+> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Great! thanks a lot Paul.
+> 
+> Oleg.
 > 
 
-Thanks.
-
--- 
-Dmitry
