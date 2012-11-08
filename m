@@ -1,34 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab2KHNfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:35:04 -0500
-Received: from fep11.mx.upcmail.net ([62.179.121.31]:33019 "EHLO
-	fep11.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2KHNfD (ORCPT
+	id S1752083Ab2KHNjC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:39:02 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39133 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751118Ab2KHNjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:35:03 -0500
-X-SourceIP: 178.83.228.246
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <509BB4FE.60903@odi.ch>
-Date: Thu, 08 Nov 2012 14:34:54 +0100
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Luming Yu <luming.yu@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [headache] 3.7.0-rc2 can't handle mutt (with 3.7G mail file)
- +FF (4 tabs) on a 4G memory+4 core system ?
-References: <509BA0F9.304@odi.ch> <CAJRGBZxkGzjJix8me8KZgvwV5QeKJvWvgwQApJeSUawXN_oJoA@mail.gmail.com>
-In-Reply-To: <CAJRGBZxkGzjJix8me8KZgvwV5QeKJvWvgwQApJeSUawXN_oJoA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Nov 2012 08:39:00 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] cgroup: set 'start' with the right value in cgroup_path.
+Date: Thu,  8 Nov 2012 21:36:38 +0800
+Message-Id: <1352381798-2357-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 122.224.222.226 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tao Ma <boyu.mt@taobao.com>
 
+'start' is set to buf + buflen and do the '--' immediately.
+Just set it to 'buf + buflen - 1' directly.
 
-On 08.11.2012 14:28, Luming Yu wrote:
-> As I just noticed that I couldn't quit from mutt due to tmpfs is full.
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-That's also pointing towards high memory pressure.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index f24f724..a9f8388 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1821,9 +1821,9 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ 		return 0;
+ 	}
+ 
+-	start = buf + buflen;
++	start = buf + buflen - 1;
+ 
+-	*--start = '\0';
++	*start = '\0';
+ 	for (;;) {
+ 		int len = dentry->d_name.len;
+ 
+-- 
+1.7.1
+
