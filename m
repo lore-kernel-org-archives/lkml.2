@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab2KHVCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:02:51 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60887 "EHLO
+	id S964878Ab2KHVDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:03:21 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52628 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964854Ab2KHVCa (ORCPT
+	with ESMTP id S964789Ab2KHVC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:02:30 -0500
+	Thu, 8 Nov 2012 16:02:29 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 10/11] ARM: remove struct sys_timer suspend and resume fields
-Date: Thu,  8 Nov 2012 14:01:55 -0700
-Message-Id: <1352408516-21988-12-git-send-email-swarren@wwwdotorg.org>
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 09/11] ARM: samsung: register syscore_ops for timer resume directly
+Date: Thu,  8 Nov 2012 14:01:54 -0700
+Message-Id: <1352408516-21988-11-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
 References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
@@ -26,99 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-These fields duplicate e.g. struct clock_event_device's suspend and
-resume fields, so remove them now that nothing is using them. The aim
-is to remove all fields from struct sys_timer except .init, then replace
-the ARM machine descriptor's .timer field with a .init_time function
-instead, and delete struct sys_timer.
+Instead of using struct sys_timer's resume function, register syscore_ops
+directly in s3c2410_timer_init(). This will allow the sys_timer suspend/
+resume fields to be removed, and eventually lead to a complete removal of
+struct sys_timer.
 
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/include/asm/mach/time.h |   11 -----------
- arch/arm/kernel/time.c           |   34 ----------------------------------
- 2 files changed, 0 insertions(+), 45 deletions(-)
+ arch/arm/plat-samsung/time.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/time.h b/arch/arm/include/asm/mach/time.h
-index cac8d9c..d316d76 100644
---- a/arch/arm/include/asm/mach/time.h
-+++ b/arch/arm/include/asm/mach/time.h
-@@ -17,15 +17,6 @@
-  *   Initialise the kernels jiffy timer source, claim interrupt
-  *   using setup_irq.  This is called early on during initialisation
-  *   while interrupts are still disabled on the local CPU.
-- * - suspend
-- *   Suspend the kernel jiffy timer source, if necessary.  This
-- *   is called with interrupts disabled, after all normal devices
-- *   have been suspended.  If no action is required, set this to
-- *   NULL.
-- * - resume
-- *   Resume the kernel jiffy timer source, if necessary.  This
-- *   is called with interrupts disabled before any normal devices
-- *   are resumed.  If no action is required, set this to NULL.
-  * - offset
-  *   Return the timer offset in microseconds since the last timer
-  *   interrupt.  Note: this must take account of any unprocessed
-@@ -33,8 +24,6 @@
-  */
- struct sys_timer {
- 	void			(*init)(void);
--	void			(*suspend)(void);
--	void			(*resume)(void);
- };
+diff --git a/arch/arm/plat-samsung/time.c b/arch/arm/plat-samsung/time.c
+index 67206df..773745a 100644
+--- a/arch/arm/plat-samsung/time.c
++++ b/arch/arm/plat-samsung/time.c
+@@ -27,6 +27,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
++#include <linux/syscore_ops.h>
  
- extern void timer_tick(void);
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index ea36bfa..0b51a7c 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -21,7 +21,6 @@
- #include <linux/timex.h>
- #include <linux/errno.h>
- #include <linux/profile.h>
--#include <linux/syscore_ops.h>
- #include <linux/timer.h>
- #include <linux/irq.h>
+ #include <asm/mach-types.h>
  
-@@ -119,39 +118,6 @@ int __init register_persistent_clock(clock_access_fn read_boot,
- 	return -EINVAL;
+@@ -271,6 +272,10 @@ static void __init s3c2410_timer_resources(void)
+ 	clk_enable(tin);
  }
  
--#if defined(CONFIG_PM) && !defined(CONFIG_GENERIC_CLOCKEVENTS)
--static int timer_suspend(void)
--{
--	if (system_timer->suspend)
--		system_timer->suspend();
--
--	return 0;
--}
--
--static void timer_resume(void)
--{
--	if (system_timer->resume)
--		system_timer->resume();
--}
--#else
--#define timer_suspend NULL
--#define timer_resume NULL
--#endif
--
--static struct syscore_ops timer_syscore_ops = {
--	.suspend	= timer_suspend,
--	.resume		= timer_resume,
--};
--
--static int __init timer_init_syscore_ops(void)
--{
--	register_syscore_ops(&timer_syscore_ops);
--
--	return 0;
--}
--
--device_initcall(timer_init_syscore_ops);
--
- void __init time_init(void)
++static struct syscore_ops s3c24xx_syscore_ops = {
++	.resume		= s3c2410_timer_setup,
++};
++
+ static void __init s3c2410_timer_init(void)
  {
- 	system_timer = machine_desc->timer;
+ 	arch_gettimeoffset = s3c2410_gettimeoffset;
+@@ -278,9 +283,9 @@ static void __init s3c2410_timer_init(void)
+ 	s3c2410_timer_resources();
+ 	s3c2410_timer_setup();
+ 	setup_irq(IRQ_TIMER4, &s3c2410_timer_irq);
++	register_syscore_ops(&s3c24xx_syscore_ops);
+ }
+ 
+ struct sys_timer s3c24xx_timer = {
+ 	.init		= s3c2410_timer_init,
+-	.resume		= s3c2410_timer_setup
+ };
 -- 
 1.7.0.4
 
