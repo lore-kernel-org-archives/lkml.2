@@ -1,55 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2KHPr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:47:28 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:41722 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323Ab2KHPr0 (ORCPT
+	id S1756205Ab2KHPri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:47:38 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:45639 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756165Ab2KHPrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:47:26 -0500
-Date: Thu, 8 Nov 2012 07:47:25 -0800 (PST)
-From: Andy King <acking@vmware.com>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Cc: David Miller <davem@davemloft.net>, pv-drivers@vmware.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
-        georgezhang@vmware.com
-Message-ID: <800083268.16640150.1352389645222.JavaMail.root@vmware.com>
-In-Reply-To: <509A06AB.2020700@redhat.com>
-Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
+	Thu, 8 Nov 2012 10:47:33 -0500
+Message-ID: <509BD3F0.9030409@ti.com>
+Date: Thu, 8 Nov 2012 10:46:56 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <hs@denx.de>, <nsekhar@ti.com>, <mikedunn@newsguy.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <gregkh@linuxfoundation.org>, <hdoyu@nvidia.com>,
+        <santosh.shilimkar@ti.com>
+Subject: Re: [RFC v2 PATCH 1/2] memory: davinci - add aemif controller platform
+ driver
+References: <1352238427-26085-1-git-send-email-m-karicheri2@ti.com> <1352238427-26085-2-git-send-email-m-karicheri2@ti.com> <509ABF12.5080804@wwwdotorg.org>
+In-Reply-To: <509ABF12.5080804@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.160.14]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC23 (Mac)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gerd,
+Stephen,
 
->> Also, there was some interest from RedHat into using vSockets as
->> a unified interface, routed over a hypervisor-specific transport
->> (virtio or otherwise, although for now VMCI is the only one
->> implemented).
-> 
-> Can you outline how this can be done?  From a quick look over the
-> code it seems like vsock has a hard dependency on vmci, is that
-> correct?
+Thanks for reviewing this. See my responses below
+On 11/07/2012 03:05 PM, Stephen Warren wrote:
+> On 11/06/2012 02:47 PM, Murali Karicheri wrote:
+>> This is a platform driver for asynchronous external memory interface
+>> available on TI SoCs. This driver was previously located inside the
+>> mach-davinci folder. As this DaVinci IP is re-used across multiple
+>> family of devices such as c6x, keystone etc, the driver is moved to drivers.
+>> The driver configures async bus parameters associated with a particular
+>> chip select. For DaVinci NAND controller driver and driver for other async
+>> devices such as NOR flash, ASRAM etc, the bus confuguration is
+>> done by this driver at probe. A set of APIs (set/get) are provided to
+>> update the values based on specific driver usage.
+>> diff --git a/Documentation/devicetree/bindings/memory/davinci-aemif.txt b/Documentation/devicetree/bindings/memory/davinci-aemif.txt
+>> +* Texas Instruments Davinci AEMIF bus interface
+>> +
+>> +This file provides information for the davinci-emif device and
+>> +async bus bindings.
+>> +
+>> +Required properties:=
+>> +- compatible: "ti,davinci-aemif";
+>> +- #address-cells : Should be either two or three.  The first cell is the
+>> +                   chipselect number, and the remaining cells are the
+>> +                   offset into the chipselect.
+>> +- #size-cells : Either one or two, depending on how large each chipselect
+>> +                can be.
+> What about "how large each chipselect can be" determines 2-vs-3
+> (address) or 1-vs-2 (size) cells? I assume it's 32-vs-64-bit bus? It
+> might be best to make that explicit.
+I have re-used the bindings from another patch and don't know why the 
+above description is used.
+I am using a value of 2 for address cells and 1 for size-cells which I 
+believe is how these will be used as shown below.
 
-That's correct, VMCI is wired into vSockets and we don't currently
-provide any way to insert another transport.
+                         ranges = <2 0 0x70000000 0x08000000
+                                 3 0 0x74000000 0x04000000
+                                 4 0 0x78000000 0x04000000
+                                 5 0 0x7C000000 0x04000000
+                                 6 0 0x20c00000 0x100>;
 
-> When making vsock a generic, reusable kernel service it should be
-> the other way around:  vsock should provide the core implementation
-> and an interface where hypervisor-specific transports (vmci,
-> virtio, xenbus, ...) can register themself.
+So I will change the description as below.
 
-Sorry, that was a bad explanation on my part.  You're absolutely
-correct as to how it _should_ work.  But it's up to Red Hat or others
-to get the ball rolling and motivate the necessary work on vSockets
-to make this happen.  As Greg says, "everyone is lazy and just wants
-their code accepted" ;)
+- compatible: must be "ti,davinci-aemif"
+- reg: AEMIF control registers base and size
+- #address-cells: must be 2 (chip-select + offset)
+- #size-cells: must be 1
+- ranges: mapping from EMIF space to parent space. Each range 
+corresponds to a single chip select, and covers the entire access window 
+as configured.
+>> +- reg : contains offset/length value for AEMIF control registers space
+>> +- ranges : Each range corresponds to a single chipselect, and cover
+> add "s" at the end of that line.
+Ok
+>> +           the entire access window as configured.
+>> +
+>> +Child device nodes describe the devices connected to IFC such as NOR (e.g.
+>> +cfi-flash) and NAND (ti,davinci-nand, see Documentation/devicetree/bindings/
+>> +mtd/davinci-nand.txt). There might be board specific devices like FPGAs.
+>> +
+>> +In addition, optional child sub nodes contains bindings for the async bus
+>> +interface for a given chip select.
+> Hmmm. That's two different kinds of children, which appear to use
+> different addressing schemes given the examples below; more on that below.
+>
+>> +Optional cs node properties:-
+>> +- compatible: "ti,davinci-cs"
+>> +
+>> +  All of the params below in nanoseconds and are optional
+>> +
+>> +- ti,davinci-cs-asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
+> Perhaps s/asize/bus-width/? Also, directly using values 8 and 16 would
+> be a lot more obvious to read than 0 and 1.
+Ok. Will fix,
+>
+>> +- ti,davinci-cs-ta - Minimum turn around time
+>> +- ti,davinci-cs-rhold - read hold width
+>> +- ti,davinci-cs-rstobe - read strobe width
+>> +- ti,davinci-cs-rsetup - read setup width
+>> +- ti,davinci-cs-whold - write hold width
+>> +- ti,davinci-cs-wstrobe - write strobe width
+>> +- ti,davinci-cs-wsetup - write setup width
+> The comments in the examples indicate these are in nS. This should be
+> mentioned here instead I think.
+Ok.
+>
+> Does there need to be a specification of bus clock rate? How does the
+> driver convert nS into number-of-clock-cycles, which I assume is what
+> the HW would be programmed with?
+aemif driver clk is either specified as a clk device node or as a device 
+bindings. Aemif driver gets the clk rate and do the conversion of ns to 
+emif clk cycles internally in the driver.
+>> +- ti,davinci-cs-ss - enable/disable select strobe (0 - disable, 1 - enable)
+>> +- ti,davinci-cs-ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
+> Boolean properties are usually represented as present (on/enabled/1) or
+> missing (off/disabled/0). Shouldn't these two properties work that way?
+> I see the comment below:
+>> +if any of the above parameters are absent, hardware register default or that
+>> +set by a boot loader are used.
+> implied they're really tri-state (explicitly off or on, or just not
+> programmed). However, I think it'd be better if the DT always
+> represented the complete configuration, since the DT and binding should
+> be a full description of the HW rather than just the data you expect a
+> particular Linux driver to need after a particular boot loader has
+> executed first.
+Actually this driver has to work on various platforms some of them set 
+values in boot loader, others explicitly specify it in bindings or 
+platform data. If set in boot loader, these bindings are not required 
+(so that it is compatible with old implementation) to be configured in 
+Linux kernel. So I believe I should be using something like
 
-Thanks!
-- Andy
+ti,davinci-cs-enable-ss - "on", "off"
+
+As cs node is optional, If not present, hw values will be used. I don't 
+think it make sense to make it tri-state based on my explanation above.
+>> +Example for aemif, davinci nand and nor flash chip select shown below.
+>> +
+>> +aemif@60000000 {
+>> +	compatible = "ti,davinci-aemif";
+>> +	#address-cells = <2>;
+>> +	#size-cells = <1>;
+>> +	reg = <0x68000000 0x80000>;
+>> +	ranges = <2 0 0x60000000 0x02000000
+>> +		  3 0 0x62000000 0x02000000
+>> +		  4 0 0x64000000 0x02000000
+>> +		  5 0 0x66000000 0x02000000
+>> +		  6 0 0x68000000 0x02000000>;
+>> +
+>> +	nand_cs:cs2@60000000 {
+> This node has no reg property, but it needs one if you use a unit
+> address ("@60000000") in the node name.
+So let  me drop the unit address as it is not needed for the cs node. 
+The AEMIF control register address is specified by the parent reg 
+property and is common to all chip selects.
+> The numbering scheme unit address above doesn't seem to match the
+> addresses provided to child nodes by the ranges property. Perhaps the
+> node layout you want is:
+>
+>
+> aemif {
+>      chip-selects {
+>          nand_cs:cs2@60000000 {
+>          };
+>      };
+>      devices {
+>          nand@3,0 {
+>          }
+>      };
+> };
+>
+> so that the chip-selects and devices nodes can both set appropriate and
+> different #address-cells and #size-cells?
+>
+> That does feel a bit wierd though, and I imagine writing the ranges
+> property in the aemif node would be hard.
+>
+> Perhaps the chip-select timings should just be written as properties in
+> the aemif controller, rather than child nodes?
+>
+> ti,cs-timings =
+>      < ... > /* 0 */
+>      < ... > /* 1 */
+>      < ... > /* 2 */
+>      ;
+>
+> with each <...> being a list of n cells in a specific order?
+>
+  To make this simple, I will drop the unit address from cs node and 
+represent it as
+
+nand_cs:cs2 {
+
+};
+
+nor_cs:cs3 {
+
+};
+
+
++		compatible = "ti,davinci-cs";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		/* all timings in nanoseconds */
++		ti,davinci-cs-ta = <0>;
++		ti,davinci-cs-rhold = <7>;
++		ti,davinci-cs-rstrobe = <42>;
++		ti,davinci-cs-rsetup = <14>;
++		ti,davinci-cs-whold = <7>;
++		ti,davinci-cs-wstrobe = <42>;
++		ti,davinci-cs-wsetup = <14>;
++	};
+
+> ...
+>> +	nand@3,0 {
+>> +		compatible = "ti,davinci-nand";
+>> +		reg = <3 0x0 0x807ff
+>> +			6 0x0 0x8000>;
+>> +		#address-cells = <1>;
+>> +		#size-cells = <1>;
+>> +
+>> +		.. See Documentation/devicetree/bindings/mtd/davinci-nand.txt
+>> +	};
+>
+>
+>
+
