@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab2KHL0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 06:26:50 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44144 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2KHL0t (ORCPT
+	id S1751924Ab2KHLqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 06:46:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56116 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2KHLqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 06:26:49 -0500
-Date: Thu, 8 Nov 2012 11:31:48 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] DMA: remove unused support for MEMSET operations
-Message-ID: <20121108113148.36bebd50@pyramind.ukuu.org.uk>
-In-Reply-To: <201211081222.05612.b.zolnierkie@samsung.com>
-References: <201211081058.17897.b.zolnierkie@samsung.com>
-	<20121108111231.1fc95397@pyramind.ukuu.org.uk>
-	<201211081222.05612.b.zolnierkie@samsung.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Nov 2012 06:46:30 -0500
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+Date: Thu,  8 Nov 2012 12:46:24 +0100
+Message-Id: <1352375184-4920-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20121108122345.72aa0f6c@avionic-0020.adnet.avionic-design.de>
+References: <20121108122345.72aa0f6c@avionic-0020.adnet.avionic-design.de>
+X-Provags-ID: V02:K0:lC9ZU0Shq2wQQZZ9VnEToH+zF0uMXqEKNcUAXZiGaqp
+ KXYL91exqGvUZDzFArnMw1JMXl5XvILfCDTzKk6rrxoQHm5g90
+ iT0d7zhcOm208quDAL+iwaP9fgaKx71MOibTjwErBvNA5M32CC
+ NSIjl2rZsovqrsB3Z2YivRS9MgZBWrhpWCuIyVve6QklPn2wxB
+ +KsRkRjb9N2IMsDcHSIugdaBZCyqhPnypkaHl7oNTkusmdR34e
+ tuHpKsbLU8GKSdfgL/kF1QbnpxN+1ztsycw6FZ+5hmRSVzf4YX
+ dWWjEDVlvPmjC+9wpIGOcFgf2unvMLIBu1lV/GX03Za/PMv607
+ /W6LD4TsoRBXZrottm/P4jKLRzKdltFGu+N6JtfcPj4TEOr0xz
+ sXQkxiXvAEztFMN5yfDgUoLDLNhweMCKjl+zdfPG/gcTuzD4Dx
+ nS6z3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Nov 2012 12:22:05 +0100
-Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+The duty cycles value goes from 1 (99% HIGH) to 256 (0% HIGH) but it
+is stored modulo 256 in the register as it is only 8 bits wide.
 
-> On Thursday 08 November 2012 12:12:31 Alan Cox wrote:
-> > On Thu, 08 Nov 2012 10:58:17 +0100
-> > Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> > 
-> > > From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > Subject: [PATCH] DMA: remove unused support for MEMSET operations
-> > > 
-> > > There have never been any real users of MEMSET operations
-> > 
-> > In tree users.
-> 
-> Please show me them. 
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ drivers/pwm/pwm-lpc32xx.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Sorry ? There are potentially lots of out of tree users in both the ARM
-and x86 communities.
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index adb87f0..2590f8d 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -51,7 +51,9 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 
+ 	c = 256 * duty_ns;
+ 	do_div(c, period_ns);
+-	duty_cycles = c;
++	if (c > 255)
++		c = 255;
++	duty_cycles = 256 - c;
+ 
+ 	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
+ 		lpc32xx->base + (pwm->hwpwm << 2));
+-- 
+1.7.0.4
 
-> > And is it broken, if not why do you want to break it ?
-> 
-> Well, it is partially broken as async_memset.c doesn't even built
-> currently in next (I've posted fix for that before noticing that
-> the whole code can be removed).
-
-Ok that does suggest it's not being used at all but it would be wise to
-check more widely.
-
-Alan
