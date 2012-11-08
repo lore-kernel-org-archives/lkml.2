@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab2KHW11 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 17:27:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28667 "EHLO mx1.redhat.com"
+	id S1757221Ab2KHWbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 17:31:47 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:58940 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756707Ab2KHW1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 17:27:25 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: axboe@kernel.dk, dchinner@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
-References: <1350379305-13858-1-git-send-email-lczerner@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 08 Nov 2012 16:53:01 -0500
-In-Reply-To: <1350379305-13858-1-git-send-email-lczerner@redhat.com> (Lukas
-	Czerner's message of "Tue, 16 Oct 2012 11:21:45 +0200")
-Message-ID: <x49k3tvrcci.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756659Ab2KHWbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 17:31:46 -0500
+Message-ID: <509C32B4.7050105@parallels.com>
+Date: Thu, 8 Nov 2012 23:31:16 +0100
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-26-git-send-email-glommer@parallels.com> <20121105164813.2eba5ecb.akpm@linux-foundation.org> <509A0A04.2030503@parallels.com> <20121106231627.3610c908.akpm@linux-foundation.org> <509A2849.9090509@parallels.com> <20121107144612.e822986f.akpm@linux-foundation.org> <0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com> <20121108112120.fc964c29.akpm@linux-foundation.org>
+In-Reply-To: <20121108112120.fc964c29.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.2.50.55]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On 11/08/2012 08:21 PM, Andrew Morton wrote:
+> On Thu, 8 Nov 2012 17:15:36 +0000
+> Christoph Lameter <cl@linux.com> wrote:
+> 
+>> On Wed, 7 Nov 2012, Andrew Morton wrote:
+>>
+>>> What's up with kmem_cache_shrink?  It's global and exported to modules
+>>> but its only external caller is some weird and hopelessly poorly
+>>> documented site down in drivers/acpi/osl.c.  slab and slob implement
+>>> kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
+>>> trying to actually do there, then do it properly, then killkillkill!
+>>
+>> kmem_cache_shrink is also used internally. Its simply releasing unused
+>> cached objects.
+> 
+> Only in slub.  It could be removed outright from the others and
+> simplified in slub.
+> 
+>>> Secondly, as slab and slub (at least) have the ability to shed cached
+>>> memory, why aren't they hooked into the core cache-shinking machinery.
+>>> After all, it's called "shrink_slab"!
+>>
+>> Because the core cache shrinking needs the slab caches to free up memory
+>> from inodes and dentries. We could call kmem_cache_shrink at the end of
+>> the shrink passes in vmscan. The price would be that the caches would have
+>> to be repopulated when new allocations occur.
+> 
+> Well, the shrinker shouldn't strips away all the cache.  It will perform
+> a partial trim, the magnitude of which increases with perceived
+> external memory pressure.
+> 
+> AFACIT, this is correct and desirable behaviour for shrinking
+> slab's internal caches.
+> 
 
-> +	if (lo->lo_bio_count >= lo->lo_queue->nr_requests) {
-> +		unsigned int nr;
-> +		spin_unlock_irq(&lo->lo_lock);
-> +		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
-> +		wait_event_interruptible(lo->lo_req_wait,
-> +					 lo->lo_bio_count < nr);
-> +		spin_lock_irq(&lo->lo_lock);
-> +	}
+I believe calling this from shrink_slab() is not a bad idea at all. If
+you're all in favour, I'll cook a patch for this soon
 
-So, blk_queue_make_request already initialized q->nr_congestion_on and
-q->nr_congestion_off.  Is there a reason you didn't simply use
-queue_congestion_on_threshold and queue_congestion_off_threshold?
-
-Cheers,
-Jeff
