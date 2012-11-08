@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2KHALt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 19:11:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55689 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab2KHALs (ORCPT
+	id S1754014Ab2KHAP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 19:15:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab2KHAP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 19:11:48 -0500
-Date: Wed, 7 Nov 2012 16:11:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 5/7] virtio_balloon: introduce migration primitives
- to balloon pages
-Message-Id: <20121107161146.b99dc4a8.akpm@linux-foundation.org>
-In-Reply-To: <87625h3tl1.fsf@rustcorp.com.au>
-References: <cover.1352256081.git.aquini@redhat.com>
-	<265aaff9a79f503672f0cdcdff204114b5b5ba5b.1352256088.git.aquini@redhat.com>
-	<87625h3tl1.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 19:15:56 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Solda <dso@cypress.com>
+Cc: Troy Abercrombia <ta@cypress.com>, Kamal Mostafa <kamal@canonical.com>,
+        Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozancag@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        customercare <customercare@cypress.com>,
+        "mario_limonciello@dell.com" <mario_limonciello@dell.com>
+Subject: Re: Why Cypress does not upstream its trackpad driver?
+Date: Wed, 07 Nov 2012 16:15:49 -0800
+Message-ID: <2208882.BvOrfBvj6F@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc3+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <EE629F2C-DD83-403C-AD73-E9ED966EEA91@cypress.com>
+References: <CAFub=KTf2dWxM9=saG2JaNJpEioJM8rM3UBG9BkyxRN-+j0psQ@mail.gmail.com> <C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net> <EE629F2C-DD83-403C-AD73-E9ED966EEA91@cypress.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Nov 2012 09:32:18 +1030
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+Hi David,
 
-> Rafael Aquini <aquini@redhat.com> writes:
-> > + * virtballoon_migratepage - perform the balloon page migration on behalf of
-> > + *			     a compation thread.     (called under page lock)
+On Wednesday, November 07, 2012 06:30:11 PM David Solda wrote:
+> Kamal,
 > 
-> > +	if (!mutex_trylock(&vb->balloon_lock))
-> > +		return -EAGAIN;
-> 
-> Erk, OK...
+> My name is Dave Solda and I would be happy to answer any other questions
+> that you have. Troy's response is correct however as in order to support
+> the default Linux mouse class, our firmware would also have to be modified
+> to do so, which cannot be done in system. Our packet protocol maxes out at
+> an 8 byte packet, which requires a change to the Linux standard in this
+> case.
 
-Not really.  As is almost always the case with a trylock, it needs a
-comment explaining why we couldn't use the far superior mutex_lock(). 
-Data: this reader doesn't know!
+I am unable to parse this... I do not believe anyone asks you to change
+your firmware and if your protocol needs 8 bytes to transmit device state -
+that's fine.
 
-> > +	/* balloon's page migration 1st step  -- inflate "newpage" */
-> > +	spin_lock_irqsave(&vb_dev_info->pages_lock, flags);
-> > +	balloon_page_insert(newpage, mapping, &vb_dev_info->pages);
-> > +	vb_dev_info->isolated_pages--;
-> > +	spin_unlock_irqrestore(&vb_dev_info->pages_lock, flags);
-> > +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
-> > +	set_page_pfns(vb->pfns, newpage);
-> > +	tell_host(vb, vb->inflate_vq);
-> 
-> tell_host does wait_event(), so you can't call it under the page_lock.
-> Right?
+> Our goal in working with canonical was to provide something on Linux that
+> would support multi-touch and not only have default single finger movement
+> supported.
+ 
+> If I am mistaken and he Linux kernel would accept this, then we can proceed
+> to upstream, however all indications we have is that this patch would be
+> rejected.  If you (or others on from the locus alias) have any inputs, I
+> would be happy to receive them.
 
-Sleeping inside lock_page() is OK.  More problematic is that GFP_KERNEL
-allocation.  iirc it _should_ be OK.  Core VM uses trylock_page() and
-the filesystems shouldn't be doing a synchronous lock_page() in the
-pageout path.  But I suspect it isn't a well-tested area.
+This really depends on whether the changes to the psmouse framework make
+sense or not. Please start submitting patches for review/discussion and
+we can go from there.
 
-> You probably get away with it because current qemu will service you
-> immediately.  You could spin here in this case for the moment.
-> 
-> There's a second call to tell_host():
-> 
-> > +	/*
-> > +	 * balloon's page migration 2nd step -- deflate "page"
-> > +	 *
-> > +	 * It's safe to delete page->lru here because this page is at
-> > +	 * an isolated migration list, and this step is expected to happen here
-> > +	 */
-> > +	balloon_page_delete(page);
-> > +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
-> > +	set_page_pfns(vb->pfns, page);
-> > +	tell_host(vb, vb->deflate_vq);
-> 
-> The first one can be delayed, the second one can be delayed if the host
-> didn't ask for VIRTIO_BALLOON_F_MUST_TELL_HOST (qemu doesn't).
-> 
-> We could implement a proper request queue for these, and return -EAGAIN
-> if the queue fills.  Though in practice, it's not important (it might
-> help performance).
+Thanks.
 
+-- 
+Dmitry
