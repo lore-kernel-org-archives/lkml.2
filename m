@@ -1,132 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab2KHBK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 20:10:58 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:49173 "EHLO e8.ny.us.ibm.com"
+	id S1754769Ab2KHBPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 20:15:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34972 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753352Ab2KHBK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 20:10:57 -0500
-Date: Wed, 7 Nov 2012 17:10:35 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        eranian@google.com
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: perf: POWER-event translation questions
-Message-ID: <20121108011035.GA20670@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110801-9360-0000-0000-00000C89EA40
+	id S1750720Ab2KHBPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 20:15:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,735,1344236400"; 
+   d="scan'208";a="238796277"
+Message-ID: <1352337308.7176.28.camel@yhuang-dev>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
+ forbidden
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Thu, 08 Nov 2012 09:15:08 +0800
+In-Reply-To: <38669905.umVnjWsO2W@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1211071653140.1188-100000@iolanthe.rowland.org>
+	 <1748065.Php9fUYGsh@vostro.rjw.lan> <38669905.umVnjWsO2W@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-11-08 at 00:09 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 07, 2012 11:51:15 PM Rafael J. Wysocki wrote:
+> > On Wednesday, November 07, 2012 04:56:49 PM Alan Stern wrote:
+> > > On Wed, 7 Nov 2012, Rafael J. Wysocki wrote:
+> > > 
+> > > > > Right.  The reasoning behind my proposal goes like this: When there's
+> > > > > no driver, the subsystem can let userspace directly control the
+> > > > > device's power level through the power/control attribute.
+> > > > 
+> > > > Well, we might as well just leave the runtime PM of PCI devices enabled, even
+> > > > if they have no drivers, but modify the PCI bus type's runtime PM callbacks
+> > > > to ignore devices with no drivers.
+> > > > 
+> > > > IIRC the reason why we decided to disable runtime PM for PCI device with no
+> > > > drivers was that some of them refused to work again after being put by the
+> > > > core into D3.  By making the PCI bus type's runtime PM callbacks ignore them
+> > > > we'd avoid this problem without modifying the core's behavior.
+> > > 
+> > > It comes down to a question of the parent.  If a driverless PCI device
+> > > isn't being used, shouldn't its parent be allowed to go into runtime
+> > > suspend?  As things stand now, we do allow it.
+> > > 
+> > > The problem is that we don't disallow it when the driverless device
+> > > _is_ being used.
+> > 
+> > We can make it depend on what's there in the control file.  Let's say if that's
+> > "on" (ie. the devices usage counter is not zero), we won't allow the parent
+> > to be suspended.
+> > 
+> > So, as I said, why don't we keep the runtime PM of PCI devices always enabled,
+> > regardless of whether or not there is a driver, and arrange things in such a
+> > way that the device is automatically "suspended" if user space writes "auto"
+> > to the control file.  IOW, I suppose we can do something like this:
+> 
+> It probably is better to treat the "no driver" case in a special way, though:
+> 
+> ---
+>  drivers/pci/pci-driver.c |   45 +++++++++++++++++++++++++--------------------
+>  drivers/pci/pci.c        |    2 ++
+>  2 files changed, 27 insertions(+), 20 deletions(-)
+> 
+> Index: linux-pm/drivers/pci/pci-driver.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-driver.c
+> +++ linux-pm/drivers/pci/pci-driver.c
+> @@ -263,22 +263,17 @@ static long local_pci_probe(void *_ddi)
+>  	/* The parent bridge must be in active state when probing */
+>  	if (parent)
+>  		pm_runtime_get_sync(parent);
+> -	/* Unbound PCI devices are always set to disabled and suspended.
+> -	 * During probe, the device is set to enabled and active and the
+> -	 * usage count is incremented.  If the driver supports runtime PM,
+> -	 * it should call pm_runtime_put_noidle() in its probe routine and
+> +	/*
+> +	 * During probe, the device is set to active and the usage count is
+> +	 * incremented.  If the driver supports runtime PM, it should call
+> +	 * pm_runtime_put_noidle() in its probe routine and
+>  	 * pm_runtime_get_noresume() in its remove routine.
+>  	 */
+> -	pm_runtime_get_noresume(dev);
+> -	pm_runtime_set_active(dev);
+> -	pm_runtime_enable(dev);
+> -
+> +	pm_runtime_get_sync(dev);
+>  	rc = ddi->drv->probe(ddi->dev, ddi->id);
+> -	if (rc) {
+> -		pm_runtime_disable(dev);
+> -		pm_runtime_set_suspended(dev);
+> -		pm_runtime_put_noidle(dev);
+> -	}
+> +	if (rc)
+> +		pm_runtime_put_sync(dev);
+> +
+>  	if (parent)
+>  		pm_runtime_put(parent);
+>  	return rc;
+> @@ -369,9 +364,7 @@ static int pci_device_remove(struct devi
+>  	}
+>  
+>  	/* Undo the runtime PM settings in local_pci_probe() */
+> -	pm_runtime_disable(dev);
+> -	pm_runtime_set_suspended(dev);
+> -	pm_runtime_put_noidle(dev);
+> +	pm_runtime_put_sync(dev);
+>  
+>  	/*
+>  	 * If the device is still on, set the power state as "unknown",
+> @@ -998,10 +991,14 @@ static int pci_pm_restore(struct device
+>  static int pci_pm_runtime_suspend(struct device *dev)
+>  {
+>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +	const struct dev_pm_ops *pm;
+>  	pci_power_t prev = pci_dev->current_state;
+>  	int error;
+>  
+> +	if (!dev->driver)
+> +		return 0;
+> +
+> +	pm = dev->driver->pm;
+>  	if (!pm || !pm->runtime_suspend)
+>  		return -ENOSYS;
+>  
+> @@ -1035,8 +1032,12 @@ static int pci_pm_runtime_resume(struct
+>  {
+>  	int rc;
+>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +	const struct dev_pm_ops *pm;
+> +
+> +	if (!dev->driver)
+> +		return 0;
+>  
+> +	pm = dev->driver->pm;
+>  	if (!pm || !pm->runtime_resume)
+>  		return -ENOSYS;
+>  
+> @@ -1054,8 +1055,12 @@ static int pci_pm_runtime_resume(struct
+>  
+>  static int pci_pm_runtime_idle(struct device *dev)
+>  {
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +	const struct dev_pm_ops *pm;
+> +
+> +	if (!dev->driver)
+> +		goto out:
+>  
+> +	pm = dev->driver->pm;
+>  	if (!pm)
+>  		return -ENOSYS;
+>  
+> @@ -1065,8 +1070,8 @@ static int pci_pm_runtime_idle(struct de
+>  			return ret;
+>  	}
+>  
+> + out:
+>  	pm_runtime_suspend(dev);
+> -
+>  	return 0;
+>  }
+>  
+> Index: linux-pm/drivers/pci/pci.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci.c
+> +++ linux-pm/drivers/pci/pci.c
+> @@ -1868,6 +1868,8 @@ void pci_pm_init(struct pci_dev *dev)
+>  	u16 pmc;
+>  
+>  	pm_runtime_forbid(&dev->dev);
+> +	pm_runtime_set_active(dev);
+> +	pm_runtime_enable(&dev->dev);
+>  	device_enable_async_suspend(&dev->dev);
+>  	dev->wakeup_prepared = false;
+>  
 
+I think the patch can fix the issue in a better way.
 
-Looking for feedback on this prototype for making POWER-specific event
-translations available in sysfs. It is based on the patchset:
+Do we still need to clarify state about disabled and forbidden?  When a
+device is forbidden and the usage_count > 0, is it a good idea to allow
+to set device state to SUSPENDED if the device is disabled?
 
-	https://lkml.org/lkml/2012/11/7/402
+Best Regards,
+Huang Ying
 
-which makes the translations for _generic_ events in POWER available in sysfs:
-
-Since this is in POWER7 specific code I am assigning the names given in the
-POWER7 CPU spec for now.
-
-I had earlier tried mapping these events to generic names outside sysfs:
-
-	Power7 name		Generic name
-
-	cmpl-stall-fxu		stalled-cycles-fixed-point
-	cmpl-stall-lsu		stalled-cycles-load-store
-	cmpl-stall-ifu		stalled-cycles-instruction-fetch
-	cmpl-stall-bru 		stalled-cycles-branch-unit
-
-But like Stephane Eranian pointed out mapping such events across architectures
-can be confusing.
-
-Another challenge I suspect we will have is the extremely long generic names
-we could end up with as the events get more specific.
-
-1. Can we have more than one name for an event ? i.e two sysfs entries,
-   eg: 'cmpl-stall-fxu' and 'stalled-cycles-fixed-point' for an event ?
-
-2. Can we allow hyphens in the {name} token  (please see my change to
-   util/parse-events.l below). With this change, I can run:
-
-	  perf stat -e cpu/cmplu-stall-bru /tmp/nop
-
-   without any changes to the user level tool (parse-events.l) I have
-   tested some common cases, not sure if it will break something :-)
-
-   If we are going to create generic or arch specific sysfs entries in
-   /sys/bus/event_source/devices/cpu/events, do we need to add corresponding
-   entry in tools/perf/util/parse-events.l ?
-
-Sukadev
-
----
- arch/powerpc/perf/power7-pmu.c |   13 +++++++++++++
- tools/perf/util/parse-events.l |    2 +-
- 2 files changed, 14 insertions(+), 1 deletions(-)
-
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index aa9f588..9f46abc 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -303,6 +303,10 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
- #define	PM_LD_MISS_L1			0x400f0
- #define	PM_BRU_FIN			0x10068
- #define	PM_BRU_MPRED			0x400f6
-+#define	PM_CMPLU_STALL_FXU		0x20014
-+#define	PM_CMPLU_STALL_LSU		0x20012
-+#define	PM_CMPLU_STALL_IFU		0x4004c
-+#define	PM_CMPLU_STALL_BRU		0x4004e
- 
- static int power7_generic_events[] = {
- 	[PERF_COUNT_HW_CPU_CYCLES] = 			PM_CYC,
-@@ -369,6 +373,11 @@ EVENT_ATTR(cache-misses,               LD_MISS_L1);
- EVENT_ATTR(branch-instructions,        BRU_FIN);
- EVENT_ATTR(branch-misses,              BRU_MPRED);
- 
-+EVENT_ATTR(cmplu-stall-fxu,            CMPLU_STALL_FXU);
-+EVENT_ATTR(cmplu-stall-lsu,            CMPLU_STALL_LSU);
-+EVENT_ATTR(cmplu-stall-ifu,            CMPLU_STALL_IFU);
-+EVENT_ATTR(cmplu-stall-bru,            CMPLU_STALL_BRU);
-+
- static struct attribute *power7_events_attr[] = {
- 	EVENT_PTR(CYC),
- 	EVENT_PTR(GCT_NOSLOT_CYC),
-@@ -378,6 +387,10 @@ static struct attribute *power7_events_attr[] = {
- 	EVENT_PTR(LD_MISS_L1),
- 	EVENT_PTR(BRU_FIN),
- 	EVENT_PTR(BRU_MPRED),
-+	EVENT_PTR(CMPLU_STALL_FXU),
-+	EVENT_PTR(CMPLU_STALL_LSU),
-+	EVENT_PTR(CMPLU_STALL_IFU),
-+	EVENT_PTR(CMPLU_STALL_BRU),
- 	NULL,
- };
- 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index c87efc1..1967bb2 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -80,7 +80,7 @@ event		[^,{}/]+
- num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
--name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
-+name		[-a-zA-Z_*?][-a-zA-Z0-9_*?]*
- modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]{1,3}
- 
--- 
-1.7.1
 
