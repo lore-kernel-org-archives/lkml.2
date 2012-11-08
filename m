@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab2KHC4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 21:56:46 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:50309 "EHLO
+	id S1755026Ab2KHC4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 21:56:50 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54846 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754966Ab2KHC4o (ORCPT
+	with ESMTP id S1754998Ab2KHC4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 21:56:44 -0500
+	Wed, 7 Nov 2012 21:56:47 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Hurley <peter@hurleysoftware.com>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 2/5] resources: Print resource conflicts for failed requests
-Date: Wed,  7 Nov 2012 21:55:53 -0500
-Message-Id: <1352343356-4006-3-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 3/5] resources: Print warning when inserting resource [mem 0x00000000]
+Date: Wed,  7 Nov 2012 21:55:54 -0500
+Message-Id: <1352343356-4006-4-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com>
 References: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com>
@@ -24,32 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When resource requests fail, the conflicting resource is not
-always apparent. Emit diagnostic print when resource conflicts prevent
-resource requests. For example,
-  kernel: resource: Requested i5k_amb [mem 0xfe000000-0xfe01ffff flags 0x80000000] conflicts with PCI Bus 0000:00 [mem 0xf0000000-0xfe000000 flags 0x200]
+Inserting iomem resource [0x0-0x0] is most likely a bug; at least
+print a warning message. Eg.,
+  resource: inserting NULL resource iTCO_wdt [mem 0x00000000]
 
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- kernel/resource.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/resource.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/kernel/resource.c b/kernel/resource.c
-index 461c2e0..268b5fa 100644
+index 268b5fa..ab758bb 100644
 --- a/kernel/resource.c
 +++ b/kernel/resource.c
-@@ -924,6 +924,10 @@ struct resource * __request_region(struct resource *parent,
- 			write_lock(&resource_lock);
- 			continue;
- 		}
+@@ -589,6 +589,9 @@ static struct resource * __insert_resource(struct resource *parent, struct resou
+ {
+ 	struct resource *first, *next;
+ 
++	if (new->flags & IORESOURCE_MEM && !new->start && !new->end)
++		pr_warn("inserting NULL resource %s %pR", new->name, new);
 +
-+		pr_debug("Requested %s %pr conflicts with %s %pr\n",
-+			 res->name, res, conflict->name, conflict);
-+
- 		/* Uhhuh, that didn't work out.. */
- 		kfree(res);
- 		res = NULL;
+ 	for (;; parent = first) {
+ 		first = __request_resource(parent, new);
+ 		if (!first)
 -- 
 1.7.12.3
 
