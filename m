@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab2KHOM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:12:59 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54954 "EHLO arroyo.ext.ti.com"
+	id S1755983Ab2KHONz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:13:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28487 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab2KHOM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:12:58 -0500
-Date: Thu, 8 Nov 2012 16:06:49 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
-Message-ID: <20121108140649.GD19533@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <50929233.7030609@gmail.com>
- <50967BFD.6000308@gmail.com>
- <20121106112751.GD11931@arwen.pp.htv.fi>
- <CAOUdcc_z=LbvNmapSKA0n7bny6wO+Ke67BQtF9J87TkV=ygSbw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mSxgbZZZvrAyzONB"
-Content-Disposition: inline
-In-Reply-To: <CAOUdcc_z=LbvNmapSKA0n7bny6wO+Ke67BQtF9J87TkV=ygSbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755493Ab2KHONy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 09:13:54 -0500
+From: Tomas Hozza <thozza@redhat.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, kys@microsoft.com
+Cc: Tomas Hozza <thozza@redhat.com>
+Subject: [PATCH] Tools: hv: Fix for long file names from readdir
+Date: Thu,  8 Nov 2012 15:13:15 +0100
+Message-Id: <1352383995-13856-1-git-send-email-thozza@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mSxgbZZZvrAyzONB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
+sized buffers which could be too small to store really long names.
 
-Hi,
+Buffer sizes have been increased and length checks added via snprintf.
 
-(please, never top-post)
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c | 25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-On Wed, Nov 07, 2012 at 02:14:00PM +0100, Dmytro Milinevskyy wrote:
-> Unfortunately I have some issues with git send-email.
-> I've attached the patch itself ..
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 13c2a14..bbd426c 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -592,26 +592,22 @@ static char *kvp_get_if_name(char *guid)
+ 	DIR *dir;
+ 	struct dirent *entry;
+ 	FILE    *file;
+-	char    *p, *q, *x;
++	char    *p, *x;
+ 	char    *if_name = NULL;
+ 	char    buf[256];
+ 	char *kvp_net_dir = "/sys/class/net/";
+-	char dev_id[256];
++	char dev_id[512];
+ 
+ 	dir = opendir(kvp_net_dir);
+ 	if (dir == NULL)
+ 		return NULL;
+ 
+-	snprintf(dev_id, sizeof(dev_id), "%s", kvp_net_dir);
+-	q = dev_id + strlen(kvp_net_dir);
+-
+ 	while ((entry = readdir(dir)) != NULL) {
+ 		/*
+ 		 * Set the state for the next pass.
+ 		 */
+-		*q = '\0';
+-		strcat(dev_id, entry->d_name);
+-		strcat(dev_id, "/device/device_id");
++		snprintf(dev_id, sizeof(dev_id), "%s%s/device/device_id", kvp_net_dir,
++				entry->d_name);
+ 
+ 		file = fopen(dev_id, "r");
+ 		if (file == NULL)
+@@ -684,28 +680,23 @@ static char *kvp_mac_to_if_name(char *mac)
+ 	DIR *dir;
+ 	struct dirent *entry;
+ 	FILE    *file;
+-	char    *p, *q, *x;
++	char    *p, *x;
+ 	char    *if_name = NULL;
+ 	char    buf[256];
+ 	char *kvp_net_dir = "/sys/class/net/";
+-	char dev_id[256];
++	char dev_id[512];
+ 	int i;
+ 
+ 	dir = opendir(kvp_net_dir);
+ 	if (dir == NULL)
+ 		return NULL;
+ 
+-	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
+-	q = dev_id + strlen(kvp_net_dir);
+-
+ 	while ((entry = readdir(dir)) != NULL) {
+ 		/*
+ 		 * Set the state for the next pass.
+ 		 */
+-		*q = '\0';
+-
+-		strcat(dev_id, entry->d_name);
+-		strcat(dev_id, "/address");
++		snprintf(dev_id, sizeof(dev_id), "%s%s/address", kvp_net_dir,
++                entry->d_name);
+ 
+ 		file = fopen(dev_id, "r");
+ 		if (file == NULL)
+-- 
+1.7.11.7
 
-I'll apply it like that this time, but try to figure out how to send
-patches properly. We have some very helpful hints on
-Documentation/email-clients.txt which are hugely underused ;-)
-
---=20
-balbi
-
---mSxgbZZZvrAyzONB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQm7x5AAoJEIaOsuA1yqREBD0P/1vIUr/fxsWJcah2PDFU2Md3
-Q4CTfjT683r0NHtWKKCHt0Fh2XNJcI9i3Ayuc2dbqul817n2D/W+wGJX6GKbJjVf
-v+K9hBhvVnZNU9pmYMACkNjw2pC7GTucAOyC8XQFbqJLZaaDD1c4fvmmTG64UqQ8
-1MJSY1SP/jCKjlW8Q0H+6RW1Eesh9STB5z7cZtqZtww7G8VCMKTThHQBdQMYwnit
-X0iSWUFhuEquQsmzWNcpnmMhck9GAY+OuNXlpd0CIWBVYKWkKTCLEAC/SQ1mdj/j
-oNxo2iUWMi8xbRxlofznQL0h7sjvAcnWx9ABBMojsYk4j93JNtmX8pRlP3Bwt02V
-FEDYSeKyNSpHKqchMJ3RVCX1wCJq48MoSm9b6bS6cv2qkE8NO4L0v+BB5tnNtBSR
-6oEzDXq8ny7CamLj8J7pSrQJaOZNagCD8PeQ/d4ilHlshDkl3XRtZEwk4zqjg7vS
-h3uCn+QvGXWDCOcZ0J47XPuT7ZZGFCvc9NozyxHxtWT4w02wVEQu/30/8971F7NX
-dGKl/DTZPFvK7luNnowPM842VMJbzqzuxxmq8cWMTW2QM1rMH98tkCu7AXIYFUQl
-ZitDy7ssSwNrgHkXUcyT929qLxeM/NFo754Fl3VLGKYrxU+CfdJpJb6/RzVT72YN
-u7xUMAp36cExWWdgZLF2
-=gVvW
------END PGP SIGNATURE-----
-
---mSxgbZZZvrAyzONB--
