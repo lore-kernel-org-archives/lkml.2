@@ -1,215 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2KHMhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:37:45 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49227 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2KHMhn (ORCPT
+	id S1752205Ab2KHMiD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:38:03 -0500
+Received: from www84.your-server.de ([213.133.104.84]:49250 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2KHMiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:37:43 -0500
-Message-ID: <509BA799.505@gmail.com>
-Date: Thu, 08 Nov 2012 20:37:45 +0800
-From: Sha Zhengju <handai.szj@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, mhocko@suse.cz,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memcg, oom: provide more precise dump info while
- memcg oom happening
-References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com> <1352277696-21724-1-git-send-email-handai.szj@taobao.com> <alpine.DEB.2.00.1211070956540.27451@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1211070956540.27451@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 8 Nov 2012 07:38:00 -0500
+Message-ID: <1352378235.15351.9.camel@wall-e>
+Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
+From: Stefani Seibold <stefani@seibold.net>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Thu, 08 Nov 2012 13:37:15 +0100
+In-Reply-To: <20121108122409.GN18293@yliu-dev.sh.intel.com>
+References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
+	 <20121029135935.bb8b0b2a.akpm@linux-foundation.org>
+	 <20121031055916.GC29509@yliu-dev.sh.intel.com>
+	 <1351665033.23165.6.camel@wall-e>
+	 <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
+	 <20121108122409.GN18293@yliu-dev.sh.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2012 02:02 AM, David Rientjes wrote:
-> On Wed, 7 Nov 2012, Sha Zhengju wrote:
->
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 0eab7d5..2df5e72 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -118,6 +118,14 @@ static const char * const mem_cgroup_events_names[] = {
->>   	"pgmajfault",
->>   };
->>
->> +static const char * const mem_cgroup_lru_names[] = {
->> +	"inactive_anon",
->> +	"active_anon",
->> +	"inactive_file",
->> +	"active_file",
->> +	"unevictable",
->> +};
->> +
->>   /*
->>    * Per memcg event counter is incremented at every pagein/pageout. With THP,
->>    * it will be incremated by the number of pages. This counter is used for
->> @@ -1501,8 +1509,59 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
->>   	spin_unlock_irqrestore(&memcg->move_lock, *flags);
->>   }
->>
->> +#define K(x) ((x)<<  (PAGE_SHIFT-10))
->> +static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
->> +{
->> +	struct mem_cgroup *mi;
->> +	unsigned int i;
->> +
->> +	if (!memcg->use_hierarchy&&  memcg != root_mem_cgroup) {
->> +		for (i = 0; i<  MEM_CGROUP_STAT_NSTATS; i++) {
->> +			if (i == MEM_CGROUP_STAT_SWAP&&  !do_swap_account)
->> +				continue;
->> +			printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
-> This printk isn't continuing any previous printk, so using KERN_CONT here
-> will require a short header to be printed first ("Memcg: "?) with
-> KERN_INFO before the iterations.
->
+Am Donnerstag, den 08.11.2012, 20:24 +0800 schrieb Yuanhan Liu:
+> On Tue, Oct 30, 2012 at 11:52:10PM -0700, Andrew Morton wrote:
+> > On Wed, 31 Oct 2012 07:30:33 +0100 Stefani Seibold <stefani@seibold.net> wrote:
+> > 
+> > > > Yes, and I guess the same to give them a 64-element one.
+> > > > 
+> > > > > 
+> > > > > If there's absolutely no prospect that the kfifo code will ever support
+> > > > > 100-byte fifos then I guess we should rework the API so that the caller
+> > > > > has to pass in log2 of the size, not the size itself.  That way there
+> > > > > will be no surprises and no mistakes.
+> > > > > 
+> > > > > That being said, the power-of-2 limitation isn't at all intrinsic to a
+> > > > > fifo, so we shouldn't do this.  Ideally, we'd change the kfifo
+> > > > > implementation so it does what the caller asked it to do!
+> > > > 
+> > > > I'm fine with removing the power-of-2 limitation. Stefani, what's your
+> > > > comment on that?
+> > > > 
+> > > 
+> > > You can't remove the power-of-2-limitation, since this would result in a
+> > > performance decrease (bit wise and vs. modulo operation).
+> > 
+> > Probably an insignificant change in performance.
+> > 
+> > It could be made much smaller by just never doing the modulus operation
+> > - instead do
+> > 
+> > 	if (++index == max)
+> > 		index = 0;
+> > 
+> > this does introduce one problem: it's no longer possible to distinguish
+> > the "full" and "empty" states by comparing the head and tail indices. 
+> > But that is soluble.
+> 
+> Hi Andrew,
+> 
+> Yes, it is soluble. How about the following solution?
+> 
+> Add 2 more fields(in_off and out_off) in __kfifo structure, so that in
+> and out will keep increasing each time, while in_off and out_off will be
+> wrapped to head if goes to the end of fifo buffer.
+> 
+> So, we can use in and out for counting unused space, and distinguish the
+> "full" and "empty" state, and also, of course no need for locking.
+> 
+> Stefani, sorry for quite late reply. I checked all the code used kfifo_alloc
+> and kfifo_init. Firstly, there are a lot of users ;-)
+> 
+> And secondly, I did find some examples used kfifo as it supports
+> none-power-of-2 kfifo. Say, the one at drivers/hid/hid-logitech-dj.c:
+>        if (kfifo_alloc(&djrcv_dev->notif_fifo,
+>                        DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report),
+>                        GFP_KERNEL)) {
+> 
+> which means it wants to allocate a kfifo buffer which can store
+> DJ_MAX_NUMBER_NOTIFICATIONS(8 here) dj_report(each 15 bytes) at once.
+> 
+> And DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report) = 8 * 15.
+> Then current code would allocate a size of rounddown_power_of_2(120) =
+> 64 bytes, which can hold 4 dj_report only once, which is a half of expected.
+> 
 
-Yep...I think I lost it while rebasing... sorry for the stupid mistake.
+This will go away with a log API.
 
->> +				K(mem_cgroup_read_stat(memcg, i)));
->> +		}
->> +
->> +		for (i = 0; i<  MEM_CGROUP_EVENTS_NSTATS; i++)
->> +			printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
->> +				mem_cgroup_read_events(memcg, i));
->> +
->> +		for (i = 0; i<  NR_LRU_LISTS; i++)
->> +			printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
->> +				K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
->> +	} else {
->> +
-> Spurious newline.
->
-> Eek, is there really no way to avoid this if-conditional and just use
-> for_each_mem_cgroup_tree() for everything and use
->
-> 	mem_cgroup_iter_break(memcg, iter);
-> 	break;
->
-> for !memcg->use_hierarchy?
->
+> There are few more examples like this.
+> 
+> And, kfifo_init used a pre-allocated buffer, it would be a little strange
+> to ask user to pre-allocate a power of 2 size aligned buffer.
+> 
+> So, I guess it's would be good to support none-power-of-2 kfifo?
+> 
+> I know you care the performance a lot. Well, as Andrew said, it may
+> introduce a little insignificant drop(no modulus, few more add/dec).
+> Thus, do you have some benchmarks for that? I can have a test to check
+> if it is a insignificant change on performance or not :)
+> 
 
-Now I'm shamed at my bad brain of yesterday by sending this chunk out...
-Yes, the if-part code above is obviously unwanted, and the 
-for_each_mem_cgroup_tree
-can handle hierarchy already.
+Dirty, Ugly, Hacky and this will produce a lot of overhead, especially
+for kfifo_put and kfifo_get which are inlined code.
 
+In the kernel world it was always a regular use case to use power-of-2
+restricted API's, f.e. the slab cache.
 
->> +		for (i = 0; i<  MEM_CGROUP_STAT_NSTATS; i++) {
->> +			long long val = 0;
->> +
->> +			if (i == MEM_CGROUP_STAT_SWAP&&  !do_swap_account)
->> +				continue;
->> +			for_each_mem_cgroup_tree(mi, memcg)
->> +				val += mem_cgroup_read_stat(mi, i);
->> +			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
->> +		}
->> +
->> +		for (i = 0; i<  MEM_CGROUP_EVENTS_NSTATS; i++) {
->> +			unsigned long long val = 0;
->> +
->> +			for_each_mem_cgroup_tree(mi, memcg)
->> +				val += mem_cgroup_read_events(mi, i);
->> +			printk(KERN_CONT "%s:%llu ",
->> +				mem_cgroup_events_names[i], val);
->> +		}
->> +
->> +		for (i = 0; i<  NR_LRU_LISTS; i++) {
->> +			unsigned long long val = 0;
->> +
->> +			for_each_mem_cgroup_tree(mi, memcg)
->> +				val += mem_cgroup_nr_lru_pages(mi, BIT(i));
->> +			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
->> +		}
->> +	}
->> +	printk(KERN_CONT "\n");
->> +}
->>   /**
->> - * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
->>    * @memcg: The memory cgroup that went over limit
->>    * @p: Task that is going to be killed
->>    *
->> @@ -1569,6 +1628,8 @@ done:
->>   		res_counter_read_u64(&memcg->kmem, RES_USAGE)>>  10,
->>   		res_counter_read_u64(&memcg->kmem, RES_LIMIT)>>  10,
->>   		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
->> +
->> +	mem_cgroup_print_oom_stat(memcg);
-> I think this should be folded into mem_cgroup_print_oom_info(), I don't
-> see a need for a new function.
->
->>   }
->>
->>   /*
->> @@ -5195,14 +5256,6 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->>   }
->>   #endif /* CONFIG_NUMA */
->>
->> -static const char * const mem_cgroup_lru_names[] = {
->> -	"inactive_anon",
->> -	"active_anon",
->> -	"inactive_file",
->> -	"active_file",
->> -	"unevictable",
->> -};
->> -
->>   static inline void mem_cgroup_lru_names_not_uptodate(void)
->>   {
->>   	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 7e9e911..4b8a6dd 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -421,8 +421,10 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
->>   	cpuset_print_task_mems_allowed(current);
->>   	task_unlock(current);
->>   	dump_stack();
->> -	mem_cgroup_print_oom_info(memcg, p);
->> -	show_mem(SHOW_MEM_FILTER_NODES);
->> +	if (memcg)
->> +		mem_cgroup_print_oom_info(memcg, p);
-> mem_cgroup_print_oom_info() already returns immediately for !memcg, so I'm
-> not sure why this change is made.
->
+I see no benefit for a none-power-of-2 kfifo, only drawbacks.
 
-Here the if-else checking is aiming at printing distinct messages for 
-memcg & non-memcg.
-IMHO, global state has little actual use for memcg-oom and why not we 
-wipe off it？
-Though mem_cgroup_print_oom_info already checking for !memcg, the 
-if-statement
-can avoid one function call and save the deep-enough oom call stack a 
-little.
-
->> +	else
->> +		show_mem(SHOW_MEM_FILTER_NODES);
-> Well that's disappointing if memcg == root_mem_cgroup, we'd probably like
-> to know the global memory state to determine what the problem is.
->
-
-I really wondering if there is any case that can pass root_mem_cgroup 
-down here.
-It's called by global or memcg oom killer and the global oom will set 
-memcg=NULL
-directly instead of root_mem_cgroup. Besides, root memcg will not go 
-through charging
-and there is no chance to call mem_cgroup_out_of_memory for root cgroup 
-tasks.
-
-
-
-Thanks,
-Sha
-
-
->>   	if (sysctl_oom_dump_tasks)
->>   		dump_tasks(memcg, nodemask);
->>   }
-> .
->
 
