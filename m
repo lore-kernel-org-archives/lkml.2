@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab2KHNPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:15:44 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58141 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab2KHNPT (ORCPT
+	id S1755865Ab2KHNQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:16:07 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40803 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab2KHNPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:15:19 -0500
+	Thu, 8 Nov 2012 08:15:14 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 7/7] printk: Wake up klogd using irq_work
-Date: Thu,  8 Nov 2012 14:14:58 +0100
-Message-Id: <1352380498-23132-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/7] nohz: Add API to check tick state
+Date: Thu,  8 Nov 2012 14:14:55 +0100
+Message-Id: <1352380498-23132-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
 References: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
@@ -25,16 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-klogd is woken up asynchronously from the tick in order
-to do it safely.
-
-However if printk is called when the tick is stopped, the reader
-won't be woken up until the next interrupt, which might not fire
-for a while. As a result, the user may miss some message.
-
-To fix this, lets implement the printk tick using a lazy irq work.
-This subsystem takes care of the timer tick state and can
-fix up accordingly.
+We need some quick way to check if the CPU has stopped
+its tick. This will be useful to implement the printk tick
+using the irq work subsystem.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -44,133 +37,64 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/printk.h   |    3 ---
- init/Kconfig             |    1 +
- kernel/printk.c          |   36 ++++++++++++++++++++----------------
+ include/linux/tick.h     |   17 ++++++++++++++++-
  kernel/time/tick-sched.c |    2 +-
- kernel/timer.c           |    1 -
- 5 files changed, 22 insertions(+), 21 deletions(-)
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 9afc01e..86c4b62 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -98,9 +98,6 @@ int no_printk(const char *fmt, ...)
- extern asmlinkage __printf(1, 2)
- void early_printk(const char *fmt, ...);
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index f37fceb..2307dd3 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -8,6 +8,8 @@
  
--extern int printk_needs_cpu(int cpu);
--extern void printk_tick(void);
--
- #ifdef CONFIG_PRINTK
- asmlinkage __printf(5, 0)
- int vprintk_emit(int facility, int level,
-diff --git a/init/Kconfig b/init/Kconfig
-index cdc152c..c575566 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1196,6 +1196,7 @@ config HOTPLUG
- config PRINTK
- 	default y
- 	bool "Enable support for printk" if EXPERT
-+	select IRQ_WORK
- 	help
- 	  This option enables normal printk support. Removing it
- 	  eliminates most of the message strings from the kernel image
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 2d607f4..c9104fe 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -42,6 +42,7 @@
- #include <linux/notifier.h>
- #include <linux/rculist.h>
- #include <linux/poll.h>
-+#include <linux/irq_work.h>
+ #include <linux/clockchips.h>
+ #include <linux/irqflags.h>
++#include <linux/percpu.h>
++#include <linux/hrtimer.h>
  
- #include <asm/uaccess.h>
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
  
-@@ -1955,30 +1956,32 @@ int is_console_locked(void)
- static DEFINE_PER_CPU(int, printk_pending);
- static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
+@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
  
--void printk_tick(void)
-+static void wake_up_klogd_work_func(struct irq_work *irq_work)
- {
--	if (__this_cpu_read(printk_pending)) {
--		int pending = __this_cpu_xchg(printk_pending, 0);
--		if (pending & PRINTK_PENDING_SCHED) {
--			char *buf = __get_cpu_var(printk_sched_buf);
--			printk(KERN_WARNING "[sched_delayed] %s", buf);
--		}
--		if (pending & PRINTK_PENDING_WAKEUP)
--			wake_up_interruptible(&log_wait);
-+	int pending = __this_cpu_xchg(printk_pending, 0);
+ # ifdef CONFIG_NO_HZ
++DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
 +
-+	if (pending & PRINTK_PENDING_SCHED) {
-+		char *buf = __get_cpu_var(printk_sched_buf);
-+		printk(KERN_WARNING "[sched_delayed] %s", buf);
- 	}
--}
- 
--int printk_needs_cpu(int cpu)
--{
--	if (cpu_is_offline(cpu))
--		printk_tick();
--	return __this_cpu_read(printk_pending);
-+	if (pending & PRINTK_PENDING_WAKEUP)
-+		wake_up_interruptible(&log_wait);
- }
- 
-+static DEFINE_PER_CPU(struct irq_work, wake_up_klogd_work) = {
-+	.func = wake_up_klogd_work_func,
-+	.flags = IRQ_WORK_LAZY,
-+};
++static inline int tick_nohz_tick_stopped(void)
++{
++	return __this_cpu_read(tick_cpu_sched.tick_stopped);
++}
 +
- void wake_up_klogd(void)
- {
--	if (waitqueue_active(&log_wait))
-+	preempt_disable();
-+	if (waitqueue_active(&log_wait)) {
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
-+		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+	}
-+	preempt_enable();
- }
+ extern void tick_nohz_idle_enter(void);
+ extern void tick_nohz_idle_exit(void);
+ extern void tick_nohz_irq_exit(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+-# else
++
++# else /* !CONFIG_NO_HZ */
++static inline int tick_nohz_tick_stopped(void)
++{
++	return 0;
++}
++
+ static inline void tick_nohz_idle_enter(void) { }
+ static inline void tick_nohz_idle_exit(void) { }
  
- static void console_cont_flush(char *text, size_t size)
-@@ -2458,6 +2461,7 @@ int printk_sched(const char *fmt, ...)
- 	va_end(args);
- 
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
-+	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
- 	local_irq_restore(flags);
- 
- 	return r;
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index f249e8c..822d757 100644
+index a402608..9e945aa 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -289,7 +289,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 		time_delta = timekeeping_max_deferment();
- 	} while (read_seqretry(&xtime_lock, seq));
+@@ -28,7 +28,7 @@
+ /*
+  * Per cpu nohz control structure
+  */
+-static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
++DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
  
--	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
-+	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
- 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 367d008..ff3b516 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1351,7 +1351,6 @@ void update_process_times(int user_tick)
- 	account_process_tick(p, user_tick);
- 	run_local_timers();
- 	rcu_check_callbacks(cpu, user_tick);
--	printk_tick();
- #ifdef CONFIG_IRQ_WORK
- 	if (in_irq())
- 		irq_work_run();
+ /*
+  * The time, when the last jiffy update happened. Protected by xtime_lock.
 -- 
 1.7.5.4
 
