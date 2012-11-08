@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2KHKny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 05:43:54 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:57720 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2KHKnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 05:43:53 -0500
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] virtio: Don't access index after unregister.
-Date: Thu,  8 Nov 2012 11:43:47 +0100
-Message-Id: <1352371427-32363-1-git-send-email-cornelia.huck@de.ibm.com>
-X-Mailer: git-send-email 1.7.12.4
-x-cbid: 12110810-4966-0000-0000-00000406F9A2
+	id S1755326Ab2KHKpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 05:45:46 -0500
+Received: from antcom.de ([188.40.178.216]:38163 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754705Ab2KHKpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 05:45:45 -0500
+Message-ID: <509B8D20.6070208@antcom.de>
+Date: Thu, 08 Nov 2012 11:44:48 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Alban Bedel <alban.bedel@avionic-design.de>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+References: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de> <1352301955-15960-1-git-send-email-alban.bedel@avionic-design.de> <509B80A7.1060700@antcom.de> <20121108113353.4fdbb25c@avionic-0020.adnet.avionic-design.de>
+In-Reply-To: <20121108113353.4fdbb25c@avionic-0020.adnet.avionic-design.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Virtio wants to release used indices after the corresponding
-virtio device has been unregistered. However, virtio does not
-hold an extra reference, giving up its last reference with
-device_unregister(), making accessing dev->index afterwards
-invalid.
+On 08/11/12 11:33, Alban Bedel wrote:
+> On Thu, 08 Nov 2012 10:51:35 +0100
+> Roland Stigge <stigge@antcom.de> wrote:
+> 
+>> On 07/11/12 16:25, Alban Bedel wrote:
+>>> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+>>> ---
+>>>  drivers/pwm/pwm-lpc32xx.c |    6 +++++-
+>>>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+>>> index adb87f0..0dc278d 100644
+>>> --- a/drivers/pwm/pwm-lpc32xx.c
+>>> +++ b/drivers/pwm/pwm-lpc32xx.c
+>>> @@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>>>  
+>>>  	c = 256 * duty_ns;
+>>>  	do_div(c, period_ns);
+>>> -	duty_cycles = c;
+>>> +	if (c == 0)
+>>> +		c = 256;
+>>> +	if (c > 255)
+>>> +		c = 255;
+>>> +	duty_cycles = 256 - c;
+>>
+>> Except for the range check (for the original c > 255), this results in:
+>>
+>> 	duty_cycles = 256 - c
+>>
+>> except for (c == 0) where
+>>
+>> 	duty_cycles = 1
+> 
+> No it lead to duty_cycles = 0
 
-I actually saw problems when testing my (not-yet-merged)
-virtio-ccw code:
+Let's do it step by step with the above code:
 
-- device_add virtio-net,id=xxx
--> creates device virtio<n> with n>0
+c == 0
 
-- device_del xxx
--> deletes virtio<n>, but calls ida_simple_remove with an
-   index of 0
+>>> +	if (c == 0)
+>>> +		c = 256;
 
-- device_add virtio-net,id=xxx
--> tries to add virtio0, which is still in use...
+c == 256
 
-So let's save the index we want to release before calling
-device_unregister().
+>>> +	if (c > 255)
+>>> +		c = 255;
 
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
----
- drivers/virtio/virtio.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+c == 255
 
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index 1e8659c..809b0de 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -225,8 +225,10 @@ EXPORT_SYMBOL_GPL(register_virtio_device);
- 
- void unregister_virtio_device(struct virtio_device *dev)
- {
-+	int index = dev->index; /* save for after device release */
-+
- 	device_unregister(&dev->dev);
--	ida_simple_remove(&virtio_index_ida, dev->index);
-+	ida_simple_remove(&virtio_index_ida, index);
- }
- EXPORT_SYMBOL_GPL(unregister_virtio_device);
- 
--- 
-1.7.12.4
+>>> +	duty_cycles = 256 - c;
 
+c == 1
+
+See?
+
+> 
+>> which actually is
+>>
+>> 	duty_cycles = (256 - c) - 255
+>>
+>> (think with the original c)
+>>
+>> i.e. nearly a polarity inversion in the case of (c == 0).
+>>
+>> Why is the case (c == 0) so special here? Maybe you can document this,
+>> if it is really intended?
+> 
+> It is intended, the formular for duty value in the register is:
+> 
+> duty = (256 - 256*duty_ns/period_ns) % 256
+
+Where does this modulo defined? In the Manual, there is sth. like this
+defined for RELOADV (tables 606+607), but not for DUTY.
+
+Maybe I missed sth. in the manual. Link or hint appreciated!
+
+Thanks,
+
+Roland
