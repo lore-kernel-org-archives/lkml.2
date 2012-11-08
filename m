@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab2KHEZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 23:25:55 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44933 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab2KHEZx (ORCPT
+	id S1753011Ab2KHE0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 23:26:38 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44677 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab2KHE0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 23:25:53 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <509B343E.3050706@jp.fujitsu.com>
-Date: Thu, 08 Nov 2012 13:25:34 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl, linux-pm@vger.kernel.org,
-        fweisbec@gmail.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 5/9] cgroup_freezer: prepare freezer_change_state() for
- full hierarchy support
-References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-6-git-send-email-tj@kernel.org>
-In-Reply-To: <1351931915-1701-6-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 23:26:36 -0500
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        durgadoss.r@intel.com, lenb@kernel.org, rui.zhang@intel.com,
+        linux-acpi@vger.kernel.org, amit.kachhap@linaro.org,
+        jonghwa3.lee@samsung.com
+Subject: [PATCH 0/4] thermal: Add support for interrupt based notification to thermal layer
+Date: Thu,  8 Nov 2012 09:56:23 +0530
+Message-Id: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/03 17:38), Tejun Heo wrote:
-> * Make freezer_change_state() take bool @freeze instead of enum
->    freezer_state.
->
-> * Separate out freezer_apply_state() out of freezer_change_state().
->    This makes freezer_change_state() a rather silly thin wrapper.  It
->    will be filled with hierarchy handling later on.
->
-> This patch doesn't introduce any behavior change.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+The patch submitted by Jonghwa Lee (https://patchwork.kernel.org/patch/1683441/)
+adds support for interrupt based notification to thermal layer. This is a good
+feature but the current thermal framework needs polling/regular notification for
+invoking suitable cooling action. So adding 2 new thermal trend type to implement
+this feature.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+All these patches are based on thermal maintainer next tree.
+git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
 
+Amit Daniel Kachhap (3):
+  thermal: Add new thermal trend type to support quick cooling
+  thermal: exynos: Miscellaneous fixes to support falling threshold
+    interrupt
+  thermal: exynos: Use the new thermal trend type for quick cooling
+    action.
+
+Jonghwa Lee (1):
+  Thermal: exynos: Add support for temperature falling interrupt.
+
+ drivers/thermal/exynos_thermal.c             |  105 +++++++++++++++-----------
+ drivers/thermal/step_wise.c                  |   19 ++++-
+ include/linux/platform_data/exynos_thermal.h |    3 +
+ include/linux/thermal.h                      |    2 +
+ 4 files changed, 80 insertions(+), 49 deletions(-)
 
