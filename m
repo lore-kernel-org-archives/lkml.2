@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab2KHVFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:05:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38910 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab2KHVCL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:02:11 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Subject: [PATCH 01/11] cris: move usec/nsec conversion to do_slow_gettimeoffset
-Date: Thu,  8 Nov 2012 14:01:46 -0700
-Message-Id: <1352408516-21988-3-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
-References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	id S1756987Ab2KHVLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:11:25 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:34978 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756651Ab2KHVLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 16:11:24 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: David Rientjes <rientjes@google.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [patch] acpi, pm: fix build breakage
+Date: Thu, 08 Nov 2012 22:15:36 +0100
+Message-ID: <3279768.UJJiLZErXa@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
+References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com> <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Thursday, November 08, 2012 11:20:01 AM David Rientjes wrote:
+> Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
+> states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
+> it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
+> error:
+> 
+> drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
+> drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
+> drivers/built-in.o: In function `acpi_dev_suspend_late':
+> drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
+> drivers/built-in.o: In function `acpi_pm_device_sleep_state':
+> drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
+> 
+> Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
+> for other configs.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Move usec to nsec conversion from arch_gettimeoffset() to
-do_slow_gettimeoffset(); in a future patch, do_slow_gettimeoffset()
-will be used directly as the implementation of arch_gettimeoffset(),
-so needs to perform all required calculations.
+I've received the patch and will apply it when I get back home from Spain.
 
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- arch/cris/arch-v10/kernel/time.c |    4 ++--
- arch/cris/kernel/time.c          |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Thanks,
+Rafael
 
-diff --git a/arch/cris/arch-v10/kernel/time.c b/arch/cris/arch-v10/kernel/time.c
-index bcffcb6..162892f 100644
---- a/arch/cris/arch-v10/kernel/time.c
-+++ b/arch/cris/arch-v10/kernel/time.c
-@@ -65,8 +65,8 @@ unsigned long do_slow_gettimeoffset(void)
- 	 */
- 	count = *R_TIMER0_DATA;
- 
--	/* Convert timer value to usec */
--	return (TIMER0_DIV - count) * ((NSEC_PER_SEC/1000)/HZ)/TIMER0_DIV;
-+	/* Convert timer value to nsec */
-+	return (TIMER0_DIV - count) * (NSEC_PER_SEC/HZ)/TIMER0_DIV;
- }
- 
- /* Excerpt from the Etrax100 HSDD about the built-in watchdog:
-diff --git a/arch/cris/kernel/time.c b/arch/cris/kernel/time.c
-index 277ffc4..b063c92 100644
---- a/arch/cris/kernel/time.c
-+++ b/arch/cris/kernel/time.c
-@@ -46,7 +46,7 @@ static unsigned long (*do_gettimeoffset)(void) = do_slow_gettimeoffset;
- 
- u32 arch_gettimeoffset(void)
- {
--       return do_gettimeoffset() * 1000;
-+	return do_gettimeoffset();
- }
- #endif
- 
+
+> ---
+>  include/acpi/acpi_bus.h |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
+>  #endif
+>  
+>  #ifdef CONFIG_PM_SLEEP
+> -u32 acpi_target_system_state(void);
+>  int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
+>  int acpi_pm_device_sleep_wake(struct device *, bool);
+>  #else
+> -static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
+>  static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
+>  					   u32 target_state, bool enable)
+>  {
+> @@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_ACPI_SLEEP
+> +u32 acpi_target_system_state(void);
+> +#else
+> +static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
+> +#endif
+> +
+>  static inline bool acpi_device_power_manageable(struct acpi_device *adev)
+>  {
+>  	return adev->flags.power_manageable;
+> 
 -- 
-1.7.0.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
