@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2KHHKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 02:10:30 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:49330 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2KHHK3 (ORCPT
+	id S1755111Ab2KHHKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 02:10:43 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33060 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab2KHHKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 02:10:29 -0500
-Date: Thu, 8 Nov 2012 08:10:19 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: mvebu: Set free callback for gpio_chip
-Message-ID: <20121108081019.4e133962@skate>
-In-Reply-To: <1352341649.19098.1.camel@phoenix>
-References: <1352341649.19098.1.camel@phoenix>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Nov 2012 02:10:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352281674-2186-9-git-send-email-vgupta@synopsys.com>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	<1352281674-2186-9-git-send-email-vgupta@synopsys.com>
+Date: Thu, 8 Nov 2012 08:10:34 +0100
+Message-ID: <CACM3HyHYiuhGb6tcY0kS43y+kquWF11Du+g45pzoJukSpE0ANw@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 08/31] ARC: Fundamental ARCH data-types/defines
+From: Jonas Bonn <jonas.bonn@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, arnd@arndb.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7 November 2012 10:47, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+> new file mode 100644
+> index 0000000..c178357
+> --- /dev/null
+> +++ b/arch/arc/include/asm/ptrace.h
+> @@ -0,0 +1,120 @@
+> +/* THE pt_regs: Defines how regs are saved during entry into kernel */
+> +
+> +struct pt_regs {
 
-On Thu, 08 Nov 2012 10:27:29 +0800, Axel Lin wrote:
-> We call pinctrl_request_gpio() in request callback, thus we need to call
-> pinctrl_free_gpio() in free callback.
-> 
-> Both mvebu_gpio_request() and mvebu_gpio_free() are not referenced outside of
-> this file, make them static.
+I'd recommend not exporting the pt_regs structure to userspace.  This
+struct is used heavily within the kernel and it's nice to have the
+leeway to be able to modify it as things evolve.  GDB doesn't need to
+know about this struct anymore as it should be using regset's for any
+recent architectures anyway, so it's the regset layout that should be
+ABI stable instead of pt_regs.
 
-Indeed, thanks.
+You can check the openrisc architecture as an example of how to do this.
 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+/Jonas
