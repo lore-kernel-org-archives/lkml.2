@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab2KHXmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 18:42:16 -0500
-Received: from hibox-130.abo.fi ([130.232.216.130]:59230 "EHLO centre.hibox.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757234Ab2KHXmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 18:42:15 -0500
-Message-ID: <509C4339.2090506@hibox.fi>
-Date: Fri, 09 Nov 2012 01:41:45 +0200
-From: Marcus Sundman <marcus@hibox.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-References: <508DB432.2030208@hibox.fi> <20121101190119.GA27294@quack.suse.cz> <50932DAC.7040702@hibox.fi> <20121107161730.GB23654@quack.suse.cz>
-In-Reply-To: <20121107161730.GB23654@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam_score: -2.7
-X-Spam_bar: --
+	id S1757312Ab2KHXxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 18:53:31 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35351 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2KHXxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 18:53:30 -0500
+Date: Fri, 9 Nov 2012 10:53:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Merav Sicron <meravs@broadcom.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20121109105318.e24e2fa2b899af6e4d444b30@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.11.2012 18:17, Jan Kara wrote:
-> On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
->> On 01.11.2012 21:01, Jan Kara wrote:
->>> On Mon 29-10-12 00:39:46, Marcus Sundman wrote:
->>>    Hello,
->>>
->>>> I have a big problem with the system freezing and would appreciate
->>>> any help on debugging this and pinpointing where exactly the problem
->>>> is, so it could be fixed.
->>>>
->>>> So, whenever I write to the disk the system comes to a crawl or
->>>> freezes altogether. This happens even when the writing processes are
->>>> running on nice '19' and ionice 'idle'. (E.g. a 10 second compile
->>>> could freeze the system for several minutes, rendering the computer
->>>> pretty much unusable for anything interesting.)
->>>>
->>>> Here you can see a 20 second gap even in superhigh priority:
->>>> # nice -n -20 ionice -c1 iostat -t -m -d -x 1 > http://pastebin.com/j5qnh2VV
->>>>
->>>> I'm currently running 3.5.0-17-lowlatency on the ZenBook UX31E,
->>>> using the NOOP I/O scheduler on the SanDisk SSD U100. The chipset
->>>> seems to be Intel QS67. I've had this same problem on 3.2.0 generic
->>>> and lowlatency kernels.
->>>    These are Ubuntu kernels. Any chance to reproduce the issue with vanilla
->>> kernels - i.e. kernels without any Ubuntu patches?
->> I'm afraid it's going to take a week to compile a kernel with this
->> freezing going on, but I suppose I could get another computer to do
->> the compiling. Or should I install some pre-compiled version? If so,
->> which one?
->    You can install anything precompiled. It's just that I want to rule out
-> some Ubuntu specific patches...
+--Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, I tried it with a vanilla 3.6.6 -- "uname -a" says "Linux hal 
-3.6.6-030606-generic #201211050512 SMP Mon Nov 5 10:12:53 UTC 2012 
-x86_64 x86_64 x86_64 GNU/Linux"
+Hi all,
 
->>> Also when you speak of
->>> system freezing - can you e.g. type to terminal while the system is frozen?
->>> Or is it just that running commands freezes?
->> Typing usually doesn't work very well. It works for a word or two
->> and then stops working for a while and if I continue to type then
->> when it resumes only the last few characters appears. Typing in the
->> console is a bit better than in a terminal in X (not counting the
->> several minutes it can take to switch to the console (Ctrl-Alt-F1)).
->    I see.
->
->> Also, and this might be important, according to iotop there is
->> almost no disk writing going on during the freeze. (Occasionally
->> there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
->> when an iotop running on nice -20 hasn't frozen completely, which it
->> does during the more severe freezes.
->    OK, it seems as if your machine has some problems with memory
-> allocations. Can you capture /proc/vmstat before the freeze and after the
-> freeze and send them for comparison. Maybe it will show us what is the
-> system doing.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
+477864ddd365 ("bnx2x: Disable FCoE for 57840 since not yet supported by
+FW") from Linus' tree and commit 55c11941e382 ("bnx2x: Support loading
+cnic resources at run-time") from the net-next tree.
 
-t=01:06 http://sundman.iki.fi/vmstat.pre-freeze.txt
-t=01:08 http://sundman.iki.fi/vmstat.during-freeze.txt
-t=01:12 http://sundman.iki.fi/vmstat.post-freeze.txt
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
->    Also you can try doing:
-> echo never >/sys/kernel/mm/transparent_hugepage/enabled
->    and see whether it changes anything.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It's already set to 'nerver'. I think I configured this in the very 
-beginning when trying to do something about these freezes.
+diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index bd1fd3d,0546cf4..0000000
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@@ -11899,22 -12065,10 +12066,20 @@@ static int __devinit bnx2x_init_one(s=
+tr
+  	/* calc qm_cid_count */
+  	bp->qm_cid_count =3D bnx2x_set_qm_cid_count(bp);
+ =20
+- #ifdef BCM_CNIC
+- 	/* disable FCOE L2 queue for E1x */
++ 	/* disable FCOE L2 queue for E1x*/
+  	if (CHIP_IS_E1x(bp))
+  		bp->flags |=3D NO_FCOE_FLAG;
++=20
+ +	/* disable FCOE for 57840 device, until FW supports it */
+ +	switch (ent->driver_data) {
+ +	case BCM57840_O:
+ +	case BCM57840_4_10:
+ +	case BCM57840_2_20:
+ +	case BCM57840_MFO:
+ +	case BCM57840_MF:
+ +		bp->flags |=3D NO_FCOE_FLAG;
+ +	}
+- #endif
+-=20
+ +
+  	/* Set bp->num_queues for MSI-X mode*/
+  	bnx2x_set_num_queues(bp);
+ =20
 
-I also have these in sysctl:
-vm.swappiness=1
-vm.vfs_cache_pressure=50
-vm.dirty_ratio = 15
-vm.dirty_background_ratio = 8
+--Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR
+Content-Type: application/pgp-signature
 
-And /sys/block/sda/device/queue_depth is 1.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQnEXuAAoJEECxmPOUX5FEP00QAIrY1EAHh1MVpVIFwcijQ6Hj
+NZ+U01SQfLOXikbm98uLcHgHeAOrUZu+I4potFHCqwIAJZRegeTf7siPptvv0q+0
+Y2hW6F4qbvr6Pl8dbx71BIzl3zgh0jgfMx+9U2VgB18+6aOZeDcvut1w0bZBkl4z
+TMC0ONivXxPYgQUY7Y7IJw2ds95jdoe97eCUxtlwQzwk/CZw35FjbJenCMPv3vt8
+cRmD5JPBumztpPqRNYCbwLx3ZdRvLun0wO3Fvnx9XomK/kFa+LdYxKNsxEpk0rjK
+4j5FqBKYMNN7v+N59QrzWfkNqE1akZnGEzlH6JCagGx9L6z0wAM/VTfUiwc2DDBY
+a0m1cm8VdndaemQ8TcXQXHxcCa98KU38FCRQY5LJo0t5in/9rU0Fy5koBRqit0rA
+J6x+z74f8m+EwfarbqmKdbCfS8w66JE7XkdiTT9k257QB7FcWtbGXMS1N+JcMdVu
+sUFsbGx/JEbonsjDB9o/QGc/ElI0gGAjDCUyty2jg+N/l1xNlU3Qh/oRAWvk8pex
+R5od2rAS4eOWjBbYQ1wKU2RefEQkrgUW8QwoFDKoiGeUM4uCi4XrkIsJSroo8AwS
+EZfgALjxEPPdK6Dsr04naNH0wNxMp6SqEjF9gzSDm9RtHuRKWM+44KwTyQxp415D
+pzC//v6QxU3EW7pTgPCs
+=Fub3
+-----END PGP SIGNATURE-----
 
-Regards,
-Marcus
-
+--Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR--
