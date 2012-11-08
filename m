@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab2KHTKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:10:19 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:33621 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806Ab2KHTKQ convert rfc822-to-8bit (ORCPT
+	id S1756673Ab2KHTOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:14:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39913 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab2KHTOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:10:16 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-Thread-Topic: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-Thread-Index: AQHNvM0BFksUY6JXgECBeI+BGapsJJfeFNiAgAI25B8=
-Date: Thu, 8 Nov 2012 19:09:20 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230750D9871@in01wembx1.internal.synopsys.com>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>,<201211071436.52035.arnd@arndb.de>
-In-Reply-To: <201211071436.52035.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.144.160.2]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 8 Nov 2012 14:14:20 -0500
+Date: Thu, 8 Nov 2012 11:14:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: axboe@kernel.dk, dchinner@redhat.com, jmoyer@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
+Message-Id: <20121108111418.bcaad11d.akpm@linux-foundation.org>
+In-Reply-To: <1350379305-13858-1-git-send-email-lczerner@redhat.com>
+References: <1350379305-13858-1-git-send-email-lczerner@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Tue, 16 Oct 2012 11:21:45 +0200
+Lukas Czerner <lczerner@redhat.com> wrote:
 
-Thanks for your valuable comments I will rework the port.
+> Currently there is not limitation of number of requests in the loop bio
+> list. This can lead into some nasty situations when the caller spawns
+> tons of bio requests taking huge amount of memory. This is even more
+> obvious with discard where blkdev_issue_discard() will submit all bios
+> for the range and wait for them to finish afterwards. On really big loop
+> devices and slow backing file system this can lead to OOM situation as
+> reported by Dave Chinner.
+> 
+> With this patch we will wait in loop_make_request() if the number of
+> bios in the loop bio list would exceed 'nr_requests' number of requests.
+> We'll wake up the process as we process the bios form the list. Some
+> threshold hysteresis is in place to avoid high frequency oscillation.
+> 
 
-P.S. Sorry for top-posting. 
+What's happening with this?
 
-Thanks,
-Vineet
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -463,6 +463,7 @@ out:
+>   */
+>  static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+>  {
+> +	lo->lo_bio_count++;
+>  	bio_list_add(&lo->lo_bio_list, bio);
+>  }
+>  
+> @@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+>   */
+>  static struct bio *loop_get_bio(struct loop_device *lo)
+>  {
+> +	lo->lo_bio_count--;
+>  	return bio_list_pop(&lo->lo_bio_list);
+>  }
+>  
+> @@ -489,6 +491,14 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+>  		goto out;
+>  	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+>  		goto out;
+> +	if (lo->lo_bio_count >= lo->lo_queue->nr_requests) {
+> +		unsigned int nr;
+> +		spin_unlock_irq(&lo->lo_lock);
+> +		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
+> +		wait_event_interruptible(lo->lo_req_wait,
+> +					 lo->lo_bio_count < nr);
+> +		spin_lock_irq(&lo->lo_lock);
+> +	}
 
-On Wednesday 07 November 2012, Vineet Gupta wrote:
-> This patchset based off-of 3.7-rc3, introduces the Linux kernel port to
-> ARC700 processor family (750D and 770D) from Synopsys.
->
-> ARC700 is highly configurable and power efficient 32-bit RISC core with MMU.
-> It is embedded in SoCs deployed in TV Set Top boxes, Digital Media Players,
-> all the way to Network-on-Chips.
+Two things.
 
-Hi Vineet,
+a) wait_event_interruptible() will return immediately if a signal is
+   pending (eg, someone hit ^C).  This is not the behaviour you want. 
+   If the calling process is always a kernel thread then
+   wait_event_interruptible() is OK and is the correct thing to use. 
+   Otherwise, it will need to be an uninterruptible sleep.
 
-I'm largely quite happy with how the series has turned out, having looked
-at earlier versions of the ARC kernel a couple of years ago. I've commented
-already on individual patches, but overall, I see two main issues that
-need to be resolved in order to merge the port:
+b) Why is it safe to drop lo_lock here?  What data is that lock protecting?
 
-* You have to use the generic syscall interface, and that means not using
-  any of the legacy system calls that have since been replaced by newer
-  versions of the same.
 
-* You are missing dynamic hardware detection. Rather than building a kernel
-  with everything known about the hardware at compile time, new ports these
-  days are normally able to run on all kinds of hardware and detect the
-  differences by looking at configuration registers (e.g. PCI), asking
-  firmware (Open Firmware, ACPI, ...) or by interpreting a device tree
-  that is passed by the boot loader (most embedded systems).
-  I assume that device tree is the right solution for you because a lot of
-  the hardware you use is likely shared with ARM, PowerPC or MIPS based
-  SoCs and they are all using (or getting migrated to) DT now instead of
-  static platform devices,
-
-        Arnd
