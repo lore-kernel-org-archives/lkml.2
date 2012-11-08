@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab2KHOiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:38:11 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45640 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab2KHOiG (ORCPT
+	id S1756103Ab2KHOjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:39:01 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45471 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab2KHOi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:38:06 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: akpm@linux-foundation.org
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        a.zummo@towertech.it, spear-devel@list.st.com,
-        Deepak Sikri <deepak.sikri@st.com>
-Subject: [PATCH 3/3] rtc: rtc-spear: Provide flag for no support of UIE mode
-Date: Thu,  8 Nov 2012 20:07:41 +0530
-Message-Id: <c1177da521b7b44c7641b2806c580998d66b1be5.1352385320.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <bb089953c3f5b07c9a299b409ed4ed26dfbc3c62.1352385320.git.viresh.kumar@linaro.org>
-References: <bb089953c3f5b07c9a299b409ed4ed26dfbc3c62.1352385320.git.viresh.kumar@linaro.org>
-In-Reply-To: <bb089953c3f5b07c9a299b409ed4ed26dfbc3c62.1352385320.git.viresh.kumar@linaro.org>
-References: <bb089953c3f5b07c9a299b409ed4ed26dfbc3c62.1352385320.git.viresh.kumar@linaro.org>
+	Thu, 8 Nov 2012 09:38:58 -0500
+Date: Thu, 8 Nov 2012 06:38:53 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl, linux-pm@vger.kernel.org,
+        fweisbec@gmail.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH 6/9] cgroup_freezer: make freezer->state mask of flags
+Message-ID: <20121108143853.GC12973@htj.dyndns.org>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-7-git-send-email-tj@kernel.org>
+ <509B371E.9050005@jp.fujitsu.com>
+ <20121108044255.GG2660@mtj.dyndns.org>
+ <509B3C72.3050904@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <509B3C72.3050904@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Deepak Sikri <deepak.sikri@st.com>
+Hello, Kamezawa.
 
-The applciations can set the RTC hardware to trigger interrupts in one
-of three modes:
-    * AIE: Alarm interrupt
-    * UIE: Update interrupt (ie: once per second)
-    * PIE: Periodic interrupt (sub-second irqs)
+On Thu, Nov 08, 2012 at 02:00:34PM +0900, Kamezawa Hiroyuki wrote:
+> (2012/11/08 13:42), Tejun Heo wrote:
+> >Hello, Kame.
+> >
+> >On Thu, Nov 08, 2012 at 01:37:50PM +0900, Kamezawa Hiroyuki wrote:
+> >>How about
+> >>enum {
+> >>    __CGROUP_FREEZING,
+> >>    __CGROUP_FROZEN,
+> >>};
+> >>
+> >>#define CGROUP_FREEZER_STATE_MASK  0x3
+> >>#define CGROUP_FREEZER_STATE(state)	((state) & CGROUP_FREEZER_STATE_MASK)
+> >>#define CGROUP_THAW(state)	(CGROUP_FREEZER_STATE(state) == 0)
+> >>#define CGROUP_FREEZING(state)	(CGROUP_FREEZER_STATE(state) == __CGROUP_FREEZING)
+> >>#define CGROUP_FROZEN(state)\
+> >>	(CGROUP_FREEZER_STATE(state) == (__CGROUP_FREEZING | __CGROUP_FROZEN))
+> >
+> >I think it's a bit overdone and we have cases where we test for
+> >FREEZING regardless of FROZEN and cases where test for FREEZING &&
+> >!FROZEN.  We can have, say, CGROUP_FREZING() and then
+> >CGROUP_FREEZING_BUT_NOT_FROZEN(), but it feels more like obfuscation
+> >than anything else.
+> >
+> 
+> Hm, then, I'm glad if I can see what combinations of flags are valid and
+> meanings of them in source code comments.
 
-The above defined 3 modes are to be supported in the RTC HW in form of
-interrupts. The SPEAr RTC hardware does not support the later two modes.
+Ooh, the following comment is added by a later patch when the whole
+thing is complete.
 
-There have been refinements in the RTC core in mainline related to
-use of timer queue infrastructure to manage events in RTC. Please refer
-the below mentioned patch for details:
-	* RTC: Rework RTC code to use timerqueue for events
-	* SHA ID: 6610e0893b8bc6f59b14fed7f089c5997f035f88
+/*
+ * A cgroup is freezing if any FREEZING flags are set.  FREEZING_SELF is
+ * set if "FROZEN" is written to freezer.state cgroupfs file, and cleared
+ * for "THAWED".  FREEZING_PARENT is set if the parent freezer is FREEZING
+ * for whatever reason.  IOW, a cgroup has FREEZING_PARENT set if one of
+ * its ancestors has FREEZING_SELF set.
+ */
 
-There have been provisions added to support hardware that do not have
-support the UIE mode. Please refer the following patch.
-	* rtc: Provide flag for rtc devices that don't support UIE
-	* SHA ID: 4a649903f91232d02284d53724b0a45728111767
+Thanks.
 
-The patch makes use of the provision defined in the above patch to
-update the hardware status of UIE mode.
-
-Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
----
- drivers/rtc/rtc-spear.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
-index 990de02..0c4805c 100644
---- a/drivers/rtc/rtc-spear.c
-+++ b/drivers/rtc/rtc-spear.c
-@@ -417,6 +417,8 @@ static int __devinit spear_rtc_probe(struct platform_device *pdev)
- 		goto err_disable_clock;
- 	}
- 
-+	config->rtc->uie_unsupported = 1;
-+
- 	if (!device_can_wakeup(&pdev->dev))
- 		device_init_wakeup(&pdev->dev, 1);
- 
 -- 
-1.7.12.rc2.18.g61b472e
-
+tejun
