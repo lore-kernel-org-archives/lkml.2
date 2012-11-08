@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab2KHKHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 05:07:23 -0500
+	id S1755293Ab2KHKHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 05:07:33 -0500
 Received: from mailout1.samsung.com ([203.254.224.24]:19689 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab2KHKHW (ORCPT
+	with ESMTP id S1755170Ab2KHKHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 05:07:22 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-06-509b8458bb55
+	Thu, 8 Nov 2012 05:07:23 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-0a-509b845959c9
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH] DMA: add cpu_relax() to busy-loop in dma_sync_wait()
-Date: Thu, 08 Nov 2012 11:02:07 +0100
+Subject: [PATCH] async_tx: fix checking of dma_wait_for_async_tx() return value
+Date: Thu, 08 Nov 2012 11:03:16 +0100
 User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
 Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
         Tomasz Figa <t.figa@samsung.com>,
@@ -19,26 +19,26 @@ Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
 MIME-version: 1.0
 Content-type: Text/Plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-Message-id: <201211081102.07811.b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd2IltkBBiuvqllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MtZvmMRWc4Kh4cquLrYFxNnsXIyeHhICJxJ6f7xghbDGJC/fW
-	s3UxcnEICSxilPhz+DULhLOUSeLE+b+sIFVsAlYSE9tXgXWICChIbO59BhTn4BAWcJV4/rcC
-	JMwioCox6e4HZhBbVMBBonPqBLChzAITGCV+rT3MApLgFRCU+DH5HpjNLKAl0fxmEyOELS+x
-	ec1bZogaS4mj81awTWDkm4WkZRaSlllIWhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93E
-	CA6pZ9I7GFc1WBxiFOBgVOLh1ZCcHSDEmlhWXJl7iFGCg1lJhHeZM1CINyWxsiq1KD++qDQn
-	tfgQozQHi5I4b7NHSoCQQHpiSWp2ampBahFMlomDU6qBsbBqY+n0q567tlzU3GKs+UQ8Md3M
-	cu1xrTu1NQtmT5HeujjX6n2g/0veQwInlP9/eJn7wWt1O/fia82ninZMe5vfxJvbHLxjv/50
-	7t7npyca/eGf/svq6FarcDPxm+edZ63Us21I2P/+km1h54Lyttgzb0pPlogd6v3SmPV0psoC
-	B3W3tE/RzUosxRmJhlrMRcWJAIkV7WslAgAA
+Message-id: <201211081103.16707.b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd3IltkBBhs2illc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MDyseMBc84qm429XC0sB4i6uLkZNDQsBE4uCFa6wQtpjEhXvr
+	2boYuTiEBBYxSky4t4cVwlnKJPG3Zw87SBWbgJXExPZVjCC2iICCxObeZ2DdwgL+ErenrwWq
+	4eBgEVCVmNFlBxIWFXCQ6Jw6AWwos8AERolfaw+zgCR4BQQlfky+B2YzC2hJNL/ZxAhhy0ts
+	XvOWGaLGUuLVovdMExj5ZiFpmYWkZRaSlgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcx
+	gkPqmfQOxlUNFocYBTgYlXh4NSRnBwixJpYVV+YeYpTgYFYS4V3mDBTiTUmsrEotyo8vKs1J
+	LT7EKM3BoiTO2+yREiAkkJ5YkpqdmlqQWgSTZeLglGpgTJ7QIuJoyXI/LqH2mJXallqmRXYb
+	l7xkNdZ1vut1NN6uzETMS3WDf/Mx7b+mEY/8Gie5Ptn+3+zy55KP8+fYfwly2Kbm/PycPbPt
+	Q9msrzdzzyw10lAu4uP2Mt1wWFR36/QN/XE7E8K66mfOdH3isnxLwf2Xos8Tmv6Itmk6yX01
+	lltwt3qmEktxRqKhFnNRcSIAhYApCSUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH] DMA: add cpu_relax() to busy-loop in dma_sync_wait()
+Subject: [PATCH] async_tx: fix checking of dma_wait_for_async_tx() return value
 
-Removal of the busy-loop from dma_sync_wait() is not a trivial
-task so just add cpu_relax() to the loop for now.
+dma_wait_for_async_tx() can also return DMA_PAUSED (which
+should be considered as error).
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
@@ -46,22 +46,33 @@ Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/dma/dmaengine.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ crypto/async_tx/async_tx.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Index: b/drivers/dma/dmaengine.c
+Index: b/crypto/async_tx/async_tx.c
 ===================================================================
---- a/drivers/dma/dmaengine.c	2012-11-07 16:12:41.776876102 +0100
-+++ b/drivers/dma/dmaengine.c	2012-11-07 16:13:04.956876097 +0100
-@@ -266,7 +266,10 @@ enum dma_status dma_sync_wait(struct dma
- 			pr_err("%s: timeout!\n", __func__);
- 			return DMA_ERROR;
+--- a/crypto/async_tx/async_tx.c	2012-11-07 16:30:47.940875970 +0100
++++ b/crypto/async_tx/async_tx.c	2012-11-07 16:31:34.888875965 +0100
+@@ -128,8 +128,8 @@ async_tx_channel_switch(struct dma_async
  		}
--	} while (status == DMA_IN_PROGRESS);
-+		if (status != DMA_IN_PROGRESS)
-+			break;
-+		cpu_relax();
-+	} while (1);
- 
- 	return status;
- }
+ 		device->device_issue_pending(chan);
+ 	} else {
+-		if (dma_wait_for_async_tx(depend_tx) == DMA_ERROR)
+-			panic("%s: DMA_ERROR waiting for depend_tx\n",
++		if (dma_wait_for_async_tx(depend_tx) != DMA_SUCCESS)
++			panic("%s: DMA error waiting for depend_tx\n",
+ 			      __func__);
+ 		tx->tx_submit(tx);
+ 	}
+@@ -280,8 +280,9 @@ void async_tx_quiesce(struct dma_async_t
+ 		 * we are referring to the correct operation
+ 		 */
+ 		BUG_ON(async_tx_test_ack(*tx));
+-		if (dma_wait_for_async_tx(*tx) == DMA_ERROR)
+-			panic("DMA_ERROR waiting for transaction\n");
++		if (dma_wait_for_async_tx(*tx) != DMA_SUCCESS)
++			panic("%s: DMA error waiting for transaction\n",
++			      __func__);
+ 		async_tx_ack(*tx);
+ 		*tx = NULL;
+ 	}
