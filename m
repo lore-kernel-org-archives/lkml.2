@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab2KHHNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 02:13:31 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:44506 "EHLO mx2.parallels.com"
+	id S1755107Ab2KHHOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 02:14:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41904 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753716Ab2KHHNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 02:13:30 -0500
-Message-ID: <509B5B86.4040106@parallels.com>
-Date: Thu, 8 Nov 2012 08:13:10 +0100
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1753716Ab2KHHOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 02:14:41 -0500
+Message-ID: <509B5BDC.3030005@ti.com>
+Date: Thu, 8 Nov 2012 08:14:36 +0100
+From: =?UTF-8?B?UMOpdGVyIFVqZmFsdXNp?= <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Tejun Heo" <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Suleiman Souhlal" <suleiman@google.com>
-Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-26-git-send-email-glommer@parallels.com> <20121105164813.2eba5ecb.akpm@linux-foundation.org> <509A0A04.2030503@parallels.com> <20121106231627.3610c908.akpm@linux-foundation.org> <509A2849.9090509@parallels.com> <20121107144612.e822986f.akpm@linux-foundation.org>
-In-Reply-To: <20121107144612.e822986f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.2.50.55]
+To: Grazvydas Ignotas <notasas@gmail.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/3] pwm: New driver to support PWMs on TWL4030/6030 series
+ of PMICs
+References: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com> <1352299488-11351-3-git-send-email-peter.ujfalusi@ti.com> <CANOLnOM7sp+O+KBKjiRk2drWh_63D6-bY86dx+upWkrvs7pp9w@mail.gmail.com>
+In-Reply-To: <CANOLnOM7sp+O+KBKjiRk2drWh_63D6-bY86dx+upWkrvs7pp9w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 11:46 PM, Andrew Morton wrote:
-> On Wed, 7 Nov 2012 10:22:17 +0100
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->>>>> container synchronously.  If those objects are normally left floating
->>>>> around in an allocated but reclaimable state then we can address that
->>>>> by synchronously freeing them if their container has been destroyed.
->>>>>
->>>>> Or something like that.  If it's something else then fine, but not this.
->>>>>
->>>>> What do we need to do to fix this?
->>>>>
->>>> The original patch had a unlikely() test in the free path, conditional
->>>> on whether or not the cache is dead, that would then call this is the
->>>> cache would now be empty.
->>>>
->>>> I got several requests to remove it and change it to something like
->>>> this, because that is a fast path (I myself think an unlikely branch is
->>>> not that bad)
->>>>
->>>> If you think such a test is acceptable, I can bring it back and argue in
->>>> the basis of "akpm made me do it!". But meanwhile I will give this extra
->>>> though to see if there is any alternative way I can do it...
->>>
->>> OK, thanks, please do take a look at it.
->>>
->>> I'd be interested in seeing the old version of the patch which had this
->>> test-n-branch.  Perhaps there's some trick we can pull to lessen its cost.
->>>
->> Attached.
->>
->> This is the last version that used it (well, I believe it is). There is
->> other unrelated things in this patch, that I got rid of. Look for
->> kmem_cache_verify_dead().
->>
->> In a summary, all calls to the free function would as a last step do:
->> kmem_cache_verify_dead() that would either be an empty placeholder, or:
->>
->> +static inline void kmem_cache_verify_dead(struct kmem_cache *s)
+On 11/07/2012 06:50 PM, Grazvydas Ignotas wrote:
+>> +static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 >> +{
->> +       if (unlikely(s->memcg_params.dead))
->> +               schedule_work(&s->memcg_params.cache_shrinker);
+>> +       int ret;
+>> +       u8 val;
+>> +
+>> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+>> +       if (ret < 0) {
+>> +               dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+>> +               return ret;
+>> +       }
+>> +
+>> +       val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_BITS);
+> 
+> In my experience doing it like this doesn't work reliably, i.e.
+> sometimes it just won't enable. I had to first set CLK_ENABLE bit, and
+> then ENABLE bit with separate i2c write. Perhaps it needs a cycle or
+> two of 32k clock or something (that doesn't seem to be documented
+> though).
+
+Thanks, I'll change to the reliable sequence. I do not have HW where I can
+test the twl4030 PWMs.
+
+> 
+>> +
+>> +       ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+>> +       if (ret < 0)
+>> +               dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
+>> +
+>> +       return ret;
 >> +}
+>> +
+>> +static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>> +{
+>> +       int ret;
+>> +       u8 val;
+>> +
+>> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+>> +       if (ret < 0) {
+>> +               dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+>> +               return;
+>> +       }
+>> +
+>> +       val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_BITS);
 > 
-> hm, a few things.
-> 
-> What's up with kmem_cache_shrink?  It's global and exported to modules
-> but its only external caller is some weird and hopelessly poorly
-> documented site down in drivers/acpi/osl.c.  slab and slob implement
-> kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
-> trying to actually do there, then do it properly, then killkillkill!
-> 
-> Secondly, as slab and slub (at least) have the ability to shed cached
-> memory, why aren't they hooked into the core cache-shinking machinery. 
-> After all, it's called "shrink_slab"!
-> 
-> 
-> If we can fix all that up then I wonder whether this particular patch
-> needs to exist at all.  If the kmem_cache is no longer used then we
-> can simply leave it floating around in memory and the regular cache
-> shrinking code out of shrink_slab() will clean up any remaining pages. 
-> The kmem_cache itself can be reclaimed via another shrinker, if
-> necessary?
-> 
+> Same problem here, I would sometimes get LED stuck at full brightness
+> after this, first clearing ENABLE and then CLK_ENABLE fixed it (we
+> have charger LED connected to PWM1 on pandora).
 
-So my motivation here, is that when you free the last object on a cache,
-or even the last object on a specific page, it won't necessarily free
-the page.
+I would guessed that if we need special care we should have turned off CLK
+followed by disabling the PWM.
+I'll use the sequence you described in the next version.
 
-The page is left there in the system, until kmem_cache_shrink is called.
-Because I am taking action on pages, not objects, I would like them to
-be released, so I know the cache went down,  and I can destroy it. As a
-matter of fact, at least the slub, when kmem_cache_destroy is explicitly
-called, will call flush_slab, which is pretty much the core of
-kmem_cache_shrink().
+> 
+>> +
+>> +       ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+>> +       if (ret < 0)
+>> +               dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
+>> +}
+>> +
+>> +static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
+>> +{
+>> +       struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
+>> +                                               chip);
+>> +       int ret;
+>> +       u8 val, mask, bits;
+>> +
+>> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
+>> +       if (ret < 0) {
+>> +               dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
+>> +               return ret;
+>> +       }
+>> +
+>> +       if (pwm->hwpwm) {
+>> +               /* PWM 1 */
+>> +               mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
+>> +               bits = TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
+>> +       } else {
+>> +               /* PWM 0 */
+>> +               mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
+>> +               bits = TWL4030_GPIO6_PWM0_MUTE_PWM0;
+>> +       }
+>> +
+>> +       /* Save the current MUX configuration for the PWM */
+>> +       twl->twl4030_pwm_mux &= ~mask;
+>> +       twl->twl4030_pwm_mux |= (val & mask);
+> 
+> Do we really need this mask clearing here? After probe twl4030_pwm_mux
+> should be zero, and if twl4030_pwm_request is called twice you don't
+> clear the important bits before |=, I think 'twl4030_pwm_mux = val &
+> mask' would be better here.
 
-shrink_slab() will only call into caches with a registered shrinker, so
-my fear was that if I don't call kmem_cache_shrink() explicitly, that
-memory may not ever be released.
+I'm storing both PWM's state in the same variable, but in different offsets:
+PWM0: bits 2-3
+PWM1: bits 4-5
+Probably it is over engineering to clear the relevant bits in the backup
+storage, but better to be safe IMHO.
+I would leave this part as it is.
 
-If you have any idea about to fix that, I am all years. I don't actually
-like this patch very much, it was a PITA to get right =(
-I will love to ditch it.
-
-Maybe we can do this from vmscan.c? It would be still calling the same
-function, we don't get any beauty points for that, but at least it is
-done in a place that makes sense
+-- 
+Péter
