@@ -1,140 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab2KHLXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 06:23:55 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57939 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab2KHLXt (ORCPT
+	id S1755365Ab2KHLXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 06:23:30 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:21977 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348Ab2KHLX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 06:23:49 -0500
-Date: Thu, 8 Nov 2012 12:23:45 +0100
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
-Message-ID: <20121108122345.72aa0f6c@avionic-0020.adnet.avionic-design.de>
-In-Reply-To: <509B8D20.6070208@antcom.de>
-References: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
-	<1352301955-15960-1-git-send-email-alban.bedel@avionic-design.de>
-	<509B80A7.1060700@antcom.de>
-	<20121108113353.4fdbb25c@avionic-0020.adnet.avionic-design.de>
-	<509B8D20.6070208@antcom.de>
-Organization: Avionic Design
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:g3tD8LJqoq6WweCHtzzhuCjt9/nsq03XOMVSw65/EJe
- NNflW12S9cg5dLHh6BInfl5Ekjv/zqHqtoumuDQ2I9ZxGpuf8c
- b5c2bSvFnszDeQi4aOqCSulkF79DoUl0jaFHoDBxXT8HYWdoAW
- oytaSogWm26pqTCSCIZ4scf70zrohofbrRKtY/AAkky61bmcPP
- yIoPq2ySbpqYRACQvSk7FZgxsYKieeqyXU23oOJ6LaG8WbNwnn
- TCcnSxb1rCCFWLcK6ZDK540K8Tmv3nDQVniMXjEFt1IQd1yBU4
- bLQyG83KCNcWx89TaQKZD1xhq24BaJZ6yaHPARaYIHxpHSVgUY
- n3WWukUDObBP6OlS3exgCqeMhw38aPHf/6I7BqaLhU41xzx0EP
- Lh/2AhFitjbN23MKtHZ9YRhJcwJunKnvdXbo72Dv18upuiovYA
- YHH/y
+	Thu, 8 Nov 2012 06:23:27 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-80-509b962e5569
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] raid5: panic() on dma_wait_for_async_tx() error
+Date: Thu, 08 Nov 2012 12:20:55 +0100
+User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+References: <201211081106.29980.b.zolnierkie@samsung.com>
+ <20121108111526.40c705a0@pyramind.ukuu.org.uk>
+In-reply-to: <20121108111526.40c705a0@pyramind.ukuu.org.uk>
+MIME-version: 1.0
+Content-type: Text/Plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+Message-id: <201211081220.55281.b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQV29abMDDNYs5LS4vGsOm0X7/F2M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGV8fr2BueAsb8Xap2tYGhj7uLsYOTkkBEwk/rU+Y4Ow
+	xSQu3FsPZHNxCAlMZ5Q4duU4K4TTwiRxdOUfVpAqNgEriYntqxhBbBEBdYmpK6aDdQsLuEg8
+	v/MErIZFQFVi/rx7YHFRAQeJzqkTwKYyC7xilJh65ABQMwfQ1CyJy6viQGo4Bawl1l38wwxi
+	8woISvyYfI8FxGYW0JJofrOJEcKWl9i85i1UjaXE6l1HGCcwCsxC0jILScssJC0LGJlXMYqm
+	FiQXFCel5xrqFSfmFpfmpesl5+duYgQH4zOpHYwrGywOMQpwMCrx8GpIzg4QYk0sK67MPcQo
+	wcGsJMLLMQEoxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvEwSnV
+	wGjW+XmLxg2d64t5s8RCVkdtebf81EfF2jOL5ZX2q03bekAoc8Xj0/cKjpeyJIa/Xs2w7Ob8
+	q78snq3IOLj2ctXu/n83Vn39+J7PYKFR2aOZl7PEfYrPX+7d5n/r12fP1cGRsYmTbpZNf3qi
+	VXXvD4kUdV652IS9K6dKbecMvXnC4qJuZ+bOB93RSizFGYmGWsxFxYkA0VAmo0ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Nov 2012 11:44:48 +0100
-Roland Stigge <stigge@antcom.de> wrote:
-
-> On 08/11/12 11:33, Alban Bedel wrote:
-> > On Thu, 08 Nov 2012 10:51:35 +0100
-> > Roland Stigge <stigge@antcom.de> wrote:
+On Thursday 08 November 2012 12:15:26 Alan Cox wrote:
+> On Thu, 08 Nov 2012 11:06:29 +0100
+> Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> 
+> > From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Subject: [PATCH] raid5: panic() on dma_wait_for_async_tx() error
 > > 
-> >> On 07/11/12 16:25, Alban Bedel wrote:
-> >>> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
-> >>> ---
-> >>>  drivers/pwm/pwm-lpc32xx.c |    6 +++++-
-> >>>  1 files changed, 5 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-> >>> index adb87f0..0dc278d 100644
-> >>> --- a/drivers/pwm/pwm-lpc32xx.c
-> >>> +++ b/drivers/pwm/pwm-lpc32xx.c
-> >>> @@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> >>>  
-> >>>  	c = 256 * duty_ns;
-> >>>  	do_div(c, period_ns);
-> >>> -	duty_cycles = c;
-> >>> +	if (c == 0)
-> >>> +		c = 256;
-> >>> +	if (c > 255)
-> >>> +		c = 255;
-> >>> +	duty_cycles = 256 - c;
-> >>
-> >> Except for the range check (for the original c > 255), this results in:
-> >>
-> >> 	duty_cycles = 256 - c
-> >>
-> >> except for (c == 0) where
-> >>
-> >> 	duty_cycles = 1
+> > There is not much we can do on dma_wait_for_async_tx() error
+> > so just panic() for now.
 > > 
-> > No it lead to duty_cycles = 0
-> 
-> Let's do it step by step with the above code:
-> 
-> c == 0
-> 
-> >>> +	if (c == 0)
-> >>> +		c = 256;
-> 
-> c == 256
-> 
-> >>> +	if (c > 255)
-> >>> +		c = 255;
-> 
-> c == 255
-> 
-> >>> +	duty_cycles = 256 - c;
-> 
-> c == 1
-> 
-> See?
-
-Right, my bad.
- 
+> > Cc: Neil Brown <neilb@suse.de>
+> > Cc: Vinod Koul <vinod.koul@intel.com>
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Tomasz Figa <t.figa@samsung.com>
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  drivers/md/raid5.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
 > > 
-> >> which actually is
-> >>
-> >> 	duty_cycles = (256 - c) - 255
-> >>
-> >> (think with the original c)
-> >>
-> >> i.e. nearly a polarity inversion in the case of (c == 0).
-> >>
-> >> Why is the case (c == 0) so special here? Maybe you can document this,
-> >> if it is really intended?
-> > 
-> > It is intended, the formular for duty value in the register is:
-> > 
-> > duty = (256 - 256*duty_ns/period_ns) % 256
+> > Index: b/drivers/md/raid5.c
+> > ===================================================================
+> > --- a/drivers/md/raid5.c	2012-11-07 16:25:19.480876012 +0100
+> > +++ b/drivers/md/raid5.c	2012-11-07 16:27:46.244875992 +0100
+> > @@ -3223,7 +3223,9 @@ static void handle_stripe_expansion(stru
+> >  	/* done submitting copies, wait for them to complete */
+> >  	if (tx) {
+> >  		async_tx_ack(tx);
+> > -		dma_wait_for_async_tx(tx);
+> > +		if (dma_wait_for_async_tx(tx) != DMA_SUCCESS)
+> > +			panic("%s: DMA error waiting for transaction\n",
+> > +			      __func__);
 > 
-> Where does this modulo defined? In the Manual, there is sth. like this
-> defined for RELOADV (tables 606+607), but not for DUTY.
-> 
-> Maybe I missed sth. in the manual. Link or hint appreciated!
+> Thats a really horrible place to panic.
 
-The manual doesn't mention this explicitly but you can see that without
-the modulo when duty_ns==0 DUTY would be 256, but the register is only
-8 bits wide (ie. modulo 256). I made a few test and looked at the PWM
-output on a scope they confirm this:
+Still it seems better thing to do than silently ignoring errors
+and trying to continue operations with inconsistent data.
 
- DUTY     HIGH LEVEL
-  1         99.9%
-  25        90.0%
-  128       50.0%
-  220       10.0%
-  255        0.1%
-  0          0.0%
+Unfortunately higher-layers don't support error conditions and
+fixing them seems to be non-trivial task.
 
-I'll resubmit the patch with the clamping in the correct order.
-
-Alban
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung Poland R&D Center
