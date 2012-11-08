@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab2KHP62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:58:28 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60452 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab2KHP6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:58:24 -0500
-Message-ID: <509BD67E.2090200@ti.com>
-Date: Thu, 8 Nov 2012 10:57:50 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1756247Ab2KHP72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:59:28 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:56995
+	"EHLO na01-by2-obe.mail.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756209Ab2KHP71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 10:59:27 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.244.37;KIP:(null);UIP:(null);(null);H:CH1PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzzz31h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0l1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Tomas Hozza <thozza@redhat.com>, Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH] Tools: hv: Fix for long file names from readdir
+Thread-Topic: [PATCH] Tools: hv: Fix for long file names from readdir
+Thread-Index: AQHNvbtZhEJZkpkrY0yrW3KCP0es1Jff/KWAgAAJToCAAA+cYA==
+Date: Thu, 8 Nov 2012 15:51:42 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E0242D@CH1PRD0310MB381.namprd03.prod.outlook.com>
+References: <20121108141925.GA20083@aepfle.de>
+ <999858348.7901147.1352386363812.JavaMail.root@redhat.com>
+In-Reply-To: <999858348.7901147.1352386363812.JavaMail.root@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.144]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <hs@denx.de>, <nsekhar@ti.com>, <mikedunn@newsguy.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <gregkh@linuxfoundation.org>, <hdoyu@nvidia.com>,
-        <santosh.shilimkar@ti.com>
-Subject: Re: [RFC v2 PATCH 2/2] mtd: davinci - remove DaVinci architecture
- depedency
-References: <1352238427-26085-1-git-send-email-m-karicheri2@ti.com> <1352238427-26085-3-git-send-email-m-karicheri2@ti.com> <509ABFD9.8090704@wwwdotorg.org>
-In-Reply-To: <509ABFD9.8090704@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: CH1PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(377454001)(13464001)(6806001)(16676001)(33656001)(47776002)(46102001)(50466001)(4396001)(50986001)(31966008)(47736001)(47976001)(44976002)(51856001)(74662001)(47446002)(23676001)(76482001)(49866001)(54316001)(53806001)(54356001)(74502001)(55846005);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 06592CCE58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA8FxWDR026829
 
-On 11/07/2012 03:08 PM, Stephen Warren wrote:
-> On 11/06/2012 02:47 PM, Murali Karicheri wrote:
->> DaVinci NAND driver is a controller driver based on the AEMIF hardware
->> IP found on TI SoCs. It is also used on SoCs that are not DaVinci based. This
->> patch removes the driver dependency on DaVinci architecture so that it
->> can be used on other architectures such as c6x, keystone etc.
->>
->> Also migrate the driver to use the new AEMIF platform driver API and
->> moving Documentation to Documentation/devicetree/bindings/mtd/davinci-nand.txt
->> as this is expected to be used outside of arm/davinci.
->>   delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
->>   create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
->>   create mode 100644 include/linux/platform_data/davinci-nand.h
-> Using "git format-patch -M" might show this as a file move/rename rather
-> than a delete/add, which would be useful to highlight any changes you
-> made at the same time.
->
->> diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
->> +Example (enbw_cmc board):
->> +aemif@60000000 {
->> +	compatible = "ti,davinci-aemif";
->> +	#address-cells = <2>;
->> +	#size-cells = <1>;
->> +	reg = <0x68000000 0x80000>;
->> +	ranges = <2 0 0x60000000 0x02000000
->> +		  3 0 0x62000000 0x02000000
->> +		  4 0 0x64000000 0x02000000
->> +		  5 0 0x66000000 0x02000000
->> +		  6 0 0x68000000 0x02000000>;
->> +	nand@3,0 {
-> Here, isn't 3,0 the aemif chip-select ID that is decoding the NAND accesses?
->
-Yes.
->> +		compatible = "ti,davinci-nand";
->> +		reg = <3 0x0 0x807ff
->> +			6 0x0 0x8000>;
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +		ti,davinci-chipselect = <1>;
-> So I don't understand why that chipselect property is needed, or has a
-> different value. Is this muxing the AEMIF output chip-selects onto
-> different SoC package pins or something? Seems like a job for pinctrl
-> perhaps?
-Actually this was added by somebody else. Do you know what 0 in 3,0 
-stands for? Is there a way I can retrieve the chip-select id so that I 
-can remove the davinci-chipselect property. The driver uses a cs index 
-of 0-3 and the hardware documentation refers CS2-5. Actually cs2 is CE0 
-signal. So internally driver
-translates to 2-5 to 0-3. pinmux is currently done in platform specific 
-init code and probably need to migrate to use pictrl later.
 
-Murali
->
->
 
+> -----Original Message-----
+> From: Tomas Hozza [mailto:thozza@redhat.com]
+> Sent: Thursday, November 08, 2012 9:53 AM
+> To: Olaf Hering
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com; KY
+> Srinivasan
+> Subject: Re: [PATCH] Tools: hv: Fix for long file names from readdir
+> 
+> > > -        char dev_id[256];
+> > > +        char dev_id[512];
+> >
+> > Shouldnt that be PATH_MAX or similar?
+> 
+> dirent->d_name should be PATH_MAX, but it is mostly
+> not guaranteed. And then the dev_id is concatenated
+> with two strings so it can exceed 256 bytes.
+
+PATH_MAX (currently 4096 bytes) I think should suffice.
+
+Regards,
+
+K. Y
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
