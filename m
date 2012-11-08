@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2KHCWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 21:22:03 -0500
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:50525 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2KHCWA (ORCPT
+	id S1754902Ab2KHCZl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 21:25:41 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52568 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2KHCZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 21:22:00 -0500
-From: Colin Cross <ccross@android.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>, stable <stable@vger.kernel.org>,
-        "Dae S. Kim" <dae@velatum.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] Revert "Staging: Android alarm: IOCTL command encoding fix"
-Date: Wed,  7 Nov 2012 18:21:51 -0800
-Message-Id: <1352341313-1274-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 7 Nov 2012 21:25:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352331754.2748.14.camel@edumazet-glaptop>
+References: <CAODwPW9kiG-jo=n0zedv5KT-8-gJcEUrdC3F2mAEjt78tne18g@mail.gmail.com>
+	<1352316791-16491-1-git-send-email-jwerner@chromium.org>
+	<1352317219.5552.6.camel@edumazet-glaptop>
+	<CAODwPW8mBJspF3k5SCBR-BShNvBLQpD-vyhLRh5Cq-4h=VZDgg@mail.gmail.com>
+	<1352331192.2748.10.camel@edumazet-glaptop>
+	<1352331754.2748.14.camel@edumazet-glaptop>
+Date: Wed, 7 Nov 2012 18:25:37 -0800
+X-Google-Sender-Auth: DZXRrZZxvTVbidqaQscyFZfTIy0
+Message-ID: <CAODwPW90mZuCDgYPZEJtYNOGGt752VpP=S_EYACUCGua_x=WjA@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Avoid infinite loop on recvmsg bug
+From: Julius Werner <jwerner@chromium.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Patrick McHardy <kaber@trash.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>, Dave Jones <davej@redhat.com>,
+        Sameer Nanda <snanda@chromium.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6bd4a5d96c08dc2380f8053b1bd4f879f55cd3c9 changed the
-ANDROID_ALARM_GET_TIME ioctls from IOW to IOR.  While technically
-correct, the _IOC_DIR bits are ignored by alarm_ioctl, so the
-commit breaks a userspace ABI used by all existing Android devices
-for a purely cosmetic reason.  Revert it.
+> So you probably are fighting a bug we already fixed in upstream kernel.
+>
+> (commit c8628155ece363 "tcp: reduce out_of_order memory use" did not
+> played well with cloned skbs.)
+>
+> This issue was already discussed on netdev in the past.
 
-Cc: stable <stable@vger.kernel.org>
-Cc: Dae S. Kim <dae@velatum.com>
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/staging/android/android_alarm.h |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Thanks for the hint. Unfortunately, we have not pulled c8628 into our
+tree yet, so that's not it. Is there another point where the cloned
+skb or the faked truesize might make it break? We have been running
+this test with that hardware some 30 times in the last months and only
+seen it once, so it cannot be that common.
 
-diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
-index f2ffd96..d0cafd6 100644
---- a/drivers/staging/android/android_alarm.h
-+++ b/drivers/staging/android/android_alarm.h
-@@ -51,12 +51,10 @@ enum android_alarm_return_flags {
- #define ANDROID_ALARM_WAIT                  _IO('a', 1)
- 
- #define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
--#define ALARM_IOR(c, type, size)            _IOR('a', (c) | ((type) << 4), size)
--
- /* Set alarm */
- #define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
- #define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
--#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOR(4, type, struct timespec)
-+#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
- #define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
- #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
- #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
--- 
-1.7.7.3
+I have noticed that you have already proposed a patch to repair
+smsc95xx (replacing the clone with a copy) on this list a few times...
+what's the status on that? Will it be committed eventually or did you
+abandon that approach?
 
+Regardless of that, I still think that the bug handling in tcp_recvmsg
+should be updated in one way or the other.
