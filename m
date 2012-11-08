@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2KHMsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:48:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37840 "EHLO mx1.redhat.com"
+	id S1755512Ab2KHMwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:52:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486Ab2KHMsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:48:15 -0500
-Date: Thu, 8 Nov 2012 13:48:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Amnon Shiloh <u3557@miso.sublimeip.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Chris Evans <scarybeasts@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>, u3557@dialix.com.au,
-        security@kernel.org, linux-kernel@vger.kernel.org
-Subject: PF_NO_SIGSTOP (Was: PT_EXITKILL)
-Message-ID: <20121108124853.GC20917@redhat.com>
-References: <20121107150934.GA27606@redhat.com> <20121108062935.BFF3A592024@miso.sublimeip.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121108062935.BFF3A592024@miso.sublimeip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755459Ab2KHMwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 07:52:17 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: acme@ghostprotocols.net
+cc: dhowells@redhat.com, mingo@kernel.org, tglx@linutronix.de, bp@alien8.de,
+        namhyung@gmail.com, torvalds@linux-foundation.org, paulus@samba.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: [GIT PULL] UAPI: perf fixes
+Date: Thu, 08 Nov 2012 12:51:50 +0000
+Message-ID: <1378.1352379110@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Amnon Shiloh wrote:
->
-> > > What I wish is that I could request (using "prctl" or whatever):
-> > > "If a non-privileged user sends me a SIGSTOP, then let it be converted into...",
-> >
-> > I hope we won't do this ;) But I am not going to argue if you convince
-> > other people.
-> >
-> > To me it would be better to simply allow to catch SIGSTOP, but I hope
-> > we won't do this too.
->
-> I don't think anyone should seriously contemplate catching SIGSTOP -
-> that would break so many applications, including mine.
->
-> Now about "convincing", I have that application that really needs this
-> feature, and I believe that others may be in the same predicament, which is:
->
-> 1. The application is a SUID-root service, available to ordinary users.
-> 2. Users who started this application are allowed at any time to signal
->    or kill their instance(s) of this application.
 
-Is this the only reason why this service keeps its original real-UID?
-(see below)
+Hi Arnaldo,
 
-> 3. It is alright for the application to be killed by SIGKILL.
-> 4. The application catches and does something useful and positive with
->    all other signals sent to it by the invoking user, including SIGTSTP,
->    SIGTTIN and SIGTTOU.
-> 5. If the application is unpreparedly stopped by SIGSTOP, which it cannot
->    catch, then this may disrupt other instances of this application by
->    other users (including, in my case, on other computers connected with
->    the application by TCP/IP sockets).
->
-> What I ask is simple and can be so easily implemented, essentially in
-> "kernel/signal.c":
->
-> static int check_kill_permission(int sig, struct siginfo *info,
-> 				 struct task_struct *t)
-> {
-> ...
-> +	if (sig == SIGSTOP && (t->flags & PF_NO_SIGSTOP) && !capable(CAP_KILL))
-                               ^^^^^^^^^^^^^^^^^^^^^^^^
-No, this is not enough. At least PF_NO_SIGSTOP should be per-process,
-not per-thread. But I agree, it is simpe to implement.
+Assuming my patches should be based on your perf/core branch, could you pull
+from my git tree at tag perf-uapi-20121108 into your perf/core branch?
 
-So once again, no need to convince me ;) I try to never argue with
-the new features, even if personally I do not really like this idea.
-If someone acks your idea I will be happy to help with the patch.
+Note the tree also contains a uapi-perf-x86-20121108 tag that has the UAPI
+disintegration branch for x86 merged on top for reference.
 
+There are six commits, three preliminary patches:
 
-And I have another idea... Not that I like it very much, but it looks
-simple and maybe useful.
+ (1) A patch to export asm/svm.h, asm/vmx.h and asm/perf_regs.h to UAPI.
 
-What if we introduce SA_NOSECURITY? So that if an application does
+ (2) A merge for (1) - the patch in (1) is premerged by the UAPI disintegration
+     for x86 also, and I'd rather not include your perf/core branch in that if
+     I can avoid it.
 
-	sa.sa_flags = SA_NOSECURITY | ...;
+ (3) A patch to export and disintegrate linux/hw_breakpoint.h.  It looks like
+     it should perhaps have been exported already, given the __KERNEL__ markers
+     in it.
 
-	sigaction(SIG, &sa, NULL);
+and then the main three patches:
 
-then sys_kill/etc bypasses security checks.
+ (4) Use a makefile $(call ...) function in tools/Makefile to make it easier
+     to deal with.
 
-This way your service can run as root and still recieve the signals
-from the ordinary users. Yes, except SIGKILL/SIGSTOP.
+ (5) Fix handling of O= with a relative path when doing something like:
 
-Oleg.
+	make tools/perf O=foo
 
+     from the top-level directory in the kernel source tree for all tools.
+
+ (6) Make perf work for x86 by adding -I flags and changing long #includes
+     with "../../include" in them into short <asm/foo.h> type things.
+
+David
+---
+The following changes since commit 8dfec403e39b7c37fd6e8813bacc01da1e1210ab:
+
+  perf tests: Removing 'optional' field (2012-11-05 14:03:59 -0300)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/perf-uapi-20121108
+
+for you to fetch changes up to 028c2c390c71d3d37f91291ac8e827f5028f7975:
+
+  perf: Make perf build for x86 with UAPI disintegration applied (2012-11-08 11:55:58 +0000)
+
+----------------------------------------------------------------
+perf fixes 2012-11-08
+
+----------------------------------------------------------------
+David Howells (6):
+      x86: Export asm/{svm.h,vmx.h,perf_regs.h}
+      UAPI: Merge pre-disintegration bits for x86
+      UAPI: Export and disintegrate linux/hw_breakpoint.h
+      tools: Define a Makefile function to do subdir processing
+      tools: Honour the O= flag when tool build called from a higher Makefile
+      perf: Make perf build for x86 with UAPI disintegration applied
+
+ Makefile                                |  6 ++++--
+ arch/x86/include/asm/Kbuild             |  3 +++
+ include/linux/hw_breakpoint.h           | 31 +------------------------------
+ include/uapi/linux/Kbuild               |  1 +
+ include/uapi/linux/hw_breakpoint.h      | 30 ++++++++++++++++++++++++++++++
+ tools/Makefile                          | 24 ++++++++++++------------
+ tools/perf/Makefile                     | 28 +++++++++++++++++++++++++++-
+ tools/perf/arch/x86/include/perf_regs.h |  2 +-
+ tools/perf/builtin-kvm.c                |  6 +++---
+ tools/perf/perf.h                       | 16 +++-------------
+ tools/perf/tests/builtin-test.c         |  2 +-
+ tools/perf/tests/parse-events.c         |  2 +-
+ tools/perf/util/evsel.c                 |  4 ++--
+ tools/perf/util/evsel.h                 |  2 +-
+ tools/perf/util/header.h                |  2 +-
+ tools/perf/util/parse-events.c          |  2 +-
+ tools/perf/util/parse-events.h          |  2 +-
+ tools/perf/util/pmu.h                   |  2 +-
+ tools/perf/util/session.h               |  2 +-
+ tools/scripts/Makefile.include          | 23 ++++++++++++++++++++---
+ 20 files changed, 115 insertions(+), 75 deletions(-)
+ create mode 100644 include/uapi/linux/hw_breakpoint.h
