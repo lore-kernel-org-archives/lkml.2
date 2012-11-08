@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab2KHOI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:08:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56544 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab2KHOIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:08:55 -0500
-Date: Thu, 8 Nov 2012 15:08:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 9/9 v2] cgroup_freezer: implement proper hierarchy support
-Message-ID: <20121108140852.GI31821@dhcp22.suse.cz>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-10-git-send-email-tj@kernel.org>
- <20121107163919.GC2660@mtj.dyndns.org>
+	id S1755979Ab2KHOJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:09:33 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:46083
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755644Ab2KHOJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 09:09:30 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dIzz1de0h1202h1d1ah1d2ahzzz2dh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+Message-ID: <509BBD0F.3030702@freescale.com>
+Date: Thu, 8 Nov 2012 08:09:19 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Firefox/16.0 SeaMonkey/2.13.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107163919.GC2660@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: Ryan Mallon <rmallon@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        Matt Porter <mporter@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <6AE080B68D46FC4BA2D2769E68D765B708174B7D@039-SN2MPN1-023.039d.mgd.msft.net> <509AE247.3000404@gmail.com> <356155A1-776B-4AA5-A912-14CE7D9AE42C@dominion.thruhere.net>
+In-Reply-To: <356155A1-776B-4AA5-A912-14CE7D9AE42C@dominion.thruhere.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-11-12 08:39:19, Tejun Heo wrote:
-[...]
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-[...]
-> @@ -320,14 +388,39 @@ static void freezer_apply_state(struct f
->   * @freezer: freezer of interest
->   * @freeze: whether to freeze or thaw
->   *
-> - * Freeze or thaw @cgroup according to @freeze.
-> + * Freeze or thaw @freezer according to @freeze.  The operations are
-> + * recursive - all descendants of @freezer will be affected.
->   */
->  static void freezer_change_state(struct freezer *freezer, bool freeze)
->  {
-> +	struct cgroup *pos;
-> +
->  	/* update @freezer */
->  	spin_lock_irq(&freezer->lock);
->  	freezer_apply_state(freezer, freeze, CGROUP_FREEZING_SELF);
->  	spin_unlock_irq(&freezer->lock);
-> +
-> +	/*
-> +	 * Update all its descendants in pre-order traversal.  Each
-> +	 * descendant will try to inherit its parent's FREEZING state as
-> +	 * CGROUP_FREEZING_PARENT.
-> +	 */
-> +	rcu_read_lock();
-> +	cgroup_for_each_descendant_pre(pos, freezer->css.cgroup) {
-> +		struct freezer *pos_f = cgroup_freezer(pos);
-> +		struct freezer *parent = parent_freezer(pos_f);
-> +
-> +		/*
-> +		 * Our update to @parent->state is already visible which is
-> +		 * all we need.  No need to lock @parent.  For more info on
-> +		 * synchronization, see freezer_post_create().
-> +		 */
-> +		spin_lock_irq(&pos_f->lock);
-> +		freezer_apply_state(pos_f, parent->state & CGROUP_FREEZING,
-> +				    CGROUP_FREEZING_PARENT);
-> +		spin_unlock_irq(&pos_f->lock);
-> +	}
-> +	rcu_read_unlock();
->  }
+Koen Kooi wrote:
+> And as Pantelis mentioned before, I really don't want my users to change the bootloader whenever they add a new LED.
 
-This seems to be racy because parent->state access is not linearized.
-Say we have parallel freeze and thawing on a tree like the following:
-	A
-	|
-	B
-        |
-        C 
+Well, U-Boot does allow you to manipulate the device tree from the
+command-line, but I understand that this feature doesn't work that well.
 
-pre_order will visit them in B, C order.
-	CPU1						CPU2
-freezer_apply_state(A, true)
-A->state & FREEZING == true		freezer_apply_state(A, false)
-					A->state & FREEZING == false
-					freezer_apply_state(B, false)
-					B->state & FREEZING == false
-freezer_apply_state(B, true)
-
-B->state & FREEZING == true
-freezer_apply_state(C, true)
-					freezer_apply_state(C, false)
-
-So A, C are thawed while B is frozen. Or am I missing something which
-would prevent from this kind of race?
-
-The easy fix is to move spin_unlock_irq(&freezer->lock); after
-rcu_read_unlock.
 -- 
-Michal Hocko
-SUSE Labs
+Timur Tabi
+Linux kernel developer at Freescale
+
