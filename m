@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2KHM3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:29:54 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44735 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab2KHM3x convert rfc822-to-8bit (ORCPT
+	id S1755468Ab2KHMan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:30:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49693 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab2KHMam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:29:53 -0500
+	Thu, 8 Nov 2012 07:30:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/2] ARM: ux500: add PRCM register base for pinctrl
+Date: Thu, 8 Nov 2012 12:30:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1352375731-29570-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1352375731-29570-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <509B6087.2040004@ti.com>
-References: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
-	<1352299488-11351-4-git-send-email-peter.ujfalusi@ti.com>
-	<CANOLnONc29=cDZE=UXubs7DYOUWbgLJspPPVT2Hfq9E3zXkgVQ@mail.gmail.com>
-	<509B6087.2040004@ti.com>
-Date: Thu, 8 Nov 2012 14:29:52 +0200
-Message-ID: <CANOLnONQf6HH4GbVo2M9RbMytS4GfihypU5grOvDRs8LyP+M6Q@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pwm: New driver to support PWM driven LEDs on
- TWL4030/6030 series of PMICs
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: =?ISO-8859-1?Q?P=E9ter_Ujfalusi?= <peter.ujfalusi@ti.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211081230.11595.arnd@arndb.de>
+X-Provags-ID: V02:K0:HgeuJeOT6XXmFNVAWO+OVldLMSC51W5u1A0aLbMO+uP
+ QHESjpHTn98KyQUCffqy9KWmYoWQcy4Me4/fWU1iqJ+4o/rvcu
+ F24hKHbu4+zK5jOdkFffc+Srui4GcLtyB4hkryLsZHFCpiLvFu
+ DTtNRjx/WVVWGpI0O1rWwcRcvB2aRUJc8yDL/chzc58rHa45/j
+ cqcWsTTnWJ3ZRZeq+9N2jKoFViFMNSj+0lCkZI7r5FzPrN6M0w
+ vGVURGeR5LWED5LG/XzQ3pqvXTv+K7RdYRnNCscjYzvW5tt+Wg
+ jryOFa5ujqOwZt3Ea5kHVlCuIsp8KFfh8c5Weg0pXEX+J70j0y
+ 4GwFMXh9IfzDxy7kjYnA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 9:34 AM, Péter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> On 11/07/2012 07:12 PM, Grazvydas Ignotas wrote:
->>> +static int twl4030_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
->>> +                             int duty_ns, int period_ns)
->>> +{
->>> +       int duty_cycle = (duty_ns * TWL4030_LED_MAX) / period_ns;
->>> +       u8 on_time;
->>> +       u8 pwm_config[2];
->>> +       int base, ret;
->>> +
->>> +       if (duty_cycle >= TWL4030_LED_MAX)
->>> +               on_time = TWL4030_LED_MAX;
->>> +       else if (!duty_cycle)
->>> +               on_time = TWL4030_LED_MAX - 1;
->>> +       else
->>> +               on_time = TWL4030_LED_MAX - duty_cycle;
->>> +
->>> +       base = pwm->hwpwm * 2 + TWL4030_PWMA_REG;
->>> +
->>> +       pwm_config[0] = on_time;
->>> +       pwm_config[1] = TWL4030_LED_MAX;
->>> +
->>> +       ret = twl_i2c_write(TWL4030_MODULE_LED, pwm_config, base, 2);
->>
->> Shouldn't this use TWL4030_MODULE_PWMA and TWL4030_MODULE_PWMB as
->> first argument? I can guess it works your way too, but
->> TWL4030_MODULE_PWMx would match the TRM better.
->
-> I don't have strong opinion regarding to this. You mean changing from:
->
-> base = pwm->hwpwm * 2 + TWL4030_PWMA_REG;
-> ret = twl_i2c_write(TWL4030_MODULE_LED, pwm_config, base, 2);
->
-> to:
->
-> if (pwm->hwpwm)
->         module = TWL4030_MODULE_PWMB;
-> else
->         module = TWL4030_MODULE_PWMA;
-> ret = twl_i2c_write(module, pwm_config, 0, 2);
->
-> But I want to note that I'm currently trying to clean up the mess around
-> twl-core. In my view we have quite a bit of redundancy in there. The PWM A/B
-> is for driving the LED A/B outputs. We should have only these modules for
-> PWM/LED in twl-core:
-> TWL_MODULE_PWM - offset for PWM0ON register in twl4030 and PWM1ON for twl6030
-> TWL_MODULE_LED - offset for LEDEN register in twl4030 and LED_PWM_CTRL1
->                  for twl6030
->
-> From here the driver can figure out what to do IMHO.
->
-> There's no need to have separate TWL 'modules' for:
-> TWL4030_BASEADD_PWM0
-> TWL4030_BASEADD_PWM1
-> TWL4030_BASEADD_PWMA
-> TWL4030_BASEADD_PWMB
+On Thursday 08 November 2012, Linus Walleij wrote:
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
+> 
+> This adds the PRCM register range base as a resource to
+> the pinctrl driver do we can break the dependency to the
+> PRCMU driver and handle these registers in the driver
+> alone.
+> 
+> Cc: arm@kernel.org
+> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Well all these seem to come from TRM, no hard feelings here too but if
-you are going to remove them, probably worth adding a comment.
-
--- 
-Gražvydas
+Acked-by: Arnd Bergmann <arnd@arndb.de>
