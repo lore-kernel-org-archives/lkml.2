@@ -1,239 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2KHPri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:47:38 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45639 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165Ab2KHPrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:47:33 -0500
-Message-ID: <509BD3F0.9030409@ti.com>
-Date: Thu, 8 Nov 2012 10:46:56 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1755131Ab2KHPvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:51:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33600 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab2KHPvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 10:51:15 -0500
+Date: Thu, 8 Nov 2012 16:51:12 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 2/2] mm, oom: fix race when specifying a thread as the
+ oom origin
+Message-ID: <20121108155112.GN31821@dhcp22.suse.cz>
+References: <alpine.DEB.2.00.1211080125150.3450@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211080126390.3450@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <hs@denx.de>, <nsekhar@ti.com>, <mikedunn@newsguy.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <gregkh@linuxfoundation.org>, <hdoyu@nvidia.com>,
-        <santosh.shilimkar@ti.com>
-Subject: Re: [RFC v2 PATCH 1/2] memory: davinci - add aemif controller platform
- driver
-References: <1352238427-26085-1-git-send-email-m-karicheri2@ti.com> <1352238427-26085-2-git-send-email-m-karicheri2@ti.com> <509ABF12.5080804@wwwdotorg.org>
-In-Reply-To: <509ABF12.5080804@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211080126390.3450@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
+On Thu 08-11-12 01:27:00, David Rientjes wrote:
+> test_set_oom_score_adj() and compare_swap_oom_score_adj() are used to
+> specify that current should be killed first if an oom condition occurs in
+> between the two calls.
+> 
+> The usage is
+> 
+> 	short oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
+> 	...
+> 	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
+> 
+> to store the thread's oom_score_adj, temporarily change it to the maximum
+> score possible, and then restore the old value if it is still the same.
+> 
+> This happens to still be racy, however, if the user writes
+> OOM_SCORE_ADJ_MAX to /proc/pid/oom_score_adj in between the two calls.
+> The compare_swap_oom_score_adj() will then incorrectly reset the old
+> value prior to the write of OOM_SCORE_ADJ_MAX.
+> 
+> To fix this, introduce a new oom_flags_t member in struct signal_struct
+> that will be used for per-thread oom killer flags.  KSM and swapoff can
+> now use a bit in this member to specify that threads should be killed
+> first in oom conditions without playing around with oom_score_adj.
+> 
+> This also allows the correct oom_score_adj to always be shown when
+> reading /proc/pid/oom_score.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Thanks for reviewing this. See my responses below
-On 11/07/2012 03:05 PM, Stephen Warren wrote:
-> On 11/06/2012 02:47 PM, Murali Karicheri wrote:
->> This is a platform driver for asynchronous external memory interface
->> available on TI SoCs. This driver was previously located inside the
->> mach-davinci folder. As this DaVinci IP is re-used across multiple
->> family of devices such as c6x, keystone etc, the driver is moved to drivers.
->> The driver configures async bus parameters associated with a particular
->> chip select. For DaVinci NAND controller driver and driver for other async
->> devices such as NOR flash, ASRAM etc, the bus confuguration is
->> done by this driver at probe. A set of APIs (set/get) are provided to
->> update the values based on specific driver usage.
->> diff --git a/Documentation/devicetree/bindings/memory/davinci-aemif.txt b/Documentation/devicetree/bindings/memory/davinci-aemif.txt
->> +* Texas Instruments Davinci AEMIF bus interface
->> +
->> +This file provides information for the davinci-emif device and
->> +async bus bindings.
->> +
->> +Required properties:=
->> +- compatible: "ti,davinci-aemif";
->> +- #address-cells : Should be either two or three.  The first cell is the
->> +                   chipselect number, and the remaining cells are the
->> +                   offset into the chipselect.
->> +- #size-cells : Either one or two, depending on how large each chipselect
->> +                can be.
-> What about "how large each chipselect can be" determines 2-vs-3
-> (address) or 1-vs-2 (size) cells? I assume it's 32-vs-64-bit bus? It
-> might be best to make that explicit.
-I have re-used the bindings from another patch and don't know why the 
-above description is used.
-I am using a value of 2 for address cells and 1 for size-cells which I 
-believe is how these will be used as shown below.
+I didn't like the previous playing with the oom_score_adj and what you
+propose looks much nicer.
+Maybe s/oom_task_origin/task_oom_origin/ would be a better fit with
+{set,clear}_current_oom_origin but I do not care much.
 
-                         ranges = <2 0 0x70000000 0x08000000
-                                 3 0 0x74000000 0x04000000
-                                 4 0 0x78000000 0x04000000
-                                 5 0 0x7C000000 0x04000000
-                                 6 0 0x20c00000 0x100>;
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-So I will change the description as below.
+Thanks!
+> ---
+>  include/linux/oom.h   |   19 +++++++++++++++++--
+>  include/linux/sched.h |    1 +
+>  include/linux/types.h |    1 +
+>  mm/ksm.c              |    7 ++-----
+>  mm/oom_kill.c         |   49 +++++++------------------------------------------
+>  mm/swapfile.c         |    5 ++---
+>  6 files changed, 30 insertions(+), 52 deletions(-)
+> 
+> diff --git a/include/linux/oom.h b/include/linux/oom.h
+> --- a/include/linux/oom.h
+> +++ b/include/linux/oom.h
+> @@ -29,8 +29,23 @@ enum oom_scan_t {
+>  	OOM_SCAN_SELECT,	/* always select this thread first */
+>  };
+>  
+> -extern void compare_swap_oom_score_adj(short old_val, short new_val);
+> -extern short test_set_oom_score_adj(short new_val);
+> +/* Thread is the potential origin of an oom condition; kill first on oom */
+> +#define OOM_FLAG_ORIGIN		((__force oom_flags_t)0x1)
+> +
+> +static inline void set_current_oom_origin(void)
+> +{
+> +	current->signal->oom_flags |= OOM_FLAG_ORIGIN;
+> +}
+> +
+> +static inline void clear_current_oom_origin(void)
+> +{
+> +	current->signal->oom_flags &= ~OOM_FLAG_ORIGIN;
+> +}
+> +
+> +static inline bool oom_task_origin(const struct task_struct *p)
+> +{
+> +	return !!(p->signal->oom_flags & OOM_FLAG_ORIGIN);
+> +}
+>  
+>  extern unsigned long oom_badness(struct task_struct *p,
+>  		struct mem_cgroup *memcg, const nodemask_t *nodemask,
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -631,6 +631,7 @@ struct signal_struct {
+>  	struct rw_semaphore group_rwsem;
+>  #endif
+>  
+> +	oom_flags_t oom_flags;
+>  	short oom_score_adj;		/* OOM kill score adjustment */
+>  	short oom_score_adj_min;	/* OOM kill score adjustment min value.
+>  					 * Only settable by CAP_SYS_RESOURCE. */
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -156,6 +156,7 @@ typedef u32 dma_addr_t;
+>  #endif
+>  typedef unsigned __bitwise__ gfp_t;
+>  typedef unsigned __bitwise__ fmode_t;
+> +typedef unsigned __bitwise__ oom_flags_t;
+>  
+>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>  typedef u64 phys_addr_t;
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -1929,12 +1929,9 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	if (ksm_run != flags) {
+>  		ksm_run = flags;
+>  		if (flags & KSM_RUN_UNMERGE) {
+> -			short oom_score_adj;
+> -
+> -			oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
+> +			set_current_oom_origin();
+>  			err = unmerge_and_remove_all_rmap_items();
+> -			compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX,
+> -								oom_score_adj);
+> +			clear_current_oom_origin();
+>  			if (err) {
+>  				ksm_run = KSM_RUN_STOP;
+>  				count = err;
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -44,48 +44,6 @@ int sysctl_oom_kill_allocating_task;
+>  int sysctl_oom_dump_tasks = 1;
+>  static DEFINE_SPINLOCK(zone_scan_lock);
+>  
+> -/*
+> - * compare_swap_oom_score_adj() - compare and swap current's oom_score_adj
+> - * @old_val: old oom_score_adj for compare
+> - * @new_val: new oom_score_adj for swap
+> - *
+> - * Sets the oom_score_adj value for current to @new_val iff its present value is
+> - * @old_val.  Usually used to reinstate a previous value to prevent racing with
+> - * userspacing tuning the value in the interim.
+> - */
+> -void compare_swap_oom_score_adj(short old_val, short new_val)
+> -{
+> -	struct sighand_struct *sighand = current->sighand;
+> -
+> -	spin_lock_irq(&sighand->siglock);
+> -	if (current->signal->oom_score_adj == old_val)
+> -		current->signal->oom_score_adj = new_val;
+> -	trace_oom_score_adj_update(current);
+> -	spin_unlock_irq(&sighand->siglock);
+> -}
+> -
+> -/**
+> - * test_set_oom_score_adj() - set current's oom_score_adj and return old value
+> - * @new_val: new oom_score_adj value
+> - *
+> - * Sets the oom_score_adj value for current to @new_val with proper
+> - * synchronization and returns the old value.  Usually used to temporarily
+> - * set a value, save the old value in the caller, and then reinstate it later.
+> - */
+> -short test_set_oom_score_adj(short new_val)
+> -{
+> -	struct sighand_struct *sighand = current->sighand;
+> -	int old_val;
+> -
+> -	spin_lock_irq(&sighand->siglock);
+> -	old_val = current->signal->oom_score_adj;
+> -	current->signal->oom_score_adj = new_val;
+> -	trace_oom_score_adj_update(current);
+> -	spin_unlock_irq(&sighand->siglock);
+> -
+> -	return old_val;
+> -}
+> -
+>  #ifdef CONFIG_NUMA
+>  /**
+>   * has_intersects_mems_allowed() - check task eligiblity for kill
+> @@ -310,6 +268,13 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+>  	if (!task->mm)
+>  		return OOM_SCAN_CONTINUE;
+>  
+> +	/*
+> +	 * If task is allocating a lot of memory and has been marked to be
+> +	 * killed first if it triggers an oom, then select it.
+> +	 */
+> +	if (oom_task_origin(task))
+> +		return OOM_SCAN_SELECT;
+> +
+>  	if (task->flags & PF_EXITING) {
+>  		/*
+>  		 * If task is current and is in the process of releasing memory,
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -1484,7 +1484,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+>  	struct address_space *mapping;
+>  	struct inode *inode;
+>  	struct filename *pathname;
+> -	short oom_score_adj;
+>  	int i, type, prev;
+>  	int err;
+>  
+> @@ -1544,9 +1543,9 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+>  	p->flags &= ~SWP_WRITEOK;
+>  	spin_unlock(&swap_lock);
+>  
+> -	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
+> +	set_current_oom_origin();
+>  	err = try_to_unuse(type, false, 0); /* force all pages to be unused */
+> -	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
+> +	clear_current_oom_origin();
+>  
+>  	if (err) {
+>  		/*
 
-- compatible: must be "ti,davinci-aemif"
-- reg: AEMIF control registers base and size
-- #address-cells: must be 2 (chip-select + offset)
-- #size-cells: must be 1
-- ranges: mapping from EMIF space to parent space. Each range 
-corresponds to a single chip select, and covers the entire access window 
-as configured.
->> +- reg : contains offset/length value for AEMIF control registers space
->> +- ranges : Each range corresponds to a single chipselect, and cover
-> add "s" at the end of that line.
-Ok
->> +           the entire access window as configured.
->> +
->> +Child device nodes describe the devices connected to IFC such as NOR (e.g.
->> +cfi-flash) and NAND (ti,davinci-nand, see Documentation/devicetree/bindings/
->> +mtd/davinci-nand.txt). There might be board specific devices like FPGAs.
->> +
->> +In addition, optional child sub nodes contains bindings for the async bus
->> +interface for a given chip select.
-> Hmmm. That's two different kinds of children, which appear to use
-> different addressing schemes given the examples below; more on that below.
->
->> +Optional cs node properties:-
->> +- compatible: "ti,davinci-cs"
->> +
->> +  All of the params below in nanoseconds and are optional
->> +
->> +- ti,davinci-cs-asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
-> Perhaps s/asize/bus-width/? Also, directly using values 8 and 16 would
-> be a lot more obvious to read than 0 and 1.
-Ok. Will fix,
->
->> +- ti,davinci-cs-ta - Minimum turn around time
->> +- ti,davinci-cs-rhold - read hold width
->> +- ti,davinci-cs-rstobe - read strobe width
->> +- ti,davinci-cs-rsetup - read setup width
->> +- ti,davinci-cs-whold - write hold width
->> +- ti,davinci-cs-wstrobe - write strobe width
->> +- ti,davinci-cs-wsetup - write setup width
-> The comments in the examples indicate these are in nS. This should be
-> mentioned here instead I think.
-Ok.
->
-> Does there need to be a specification of bus clock rate? How does the
-> driver convert nS into number-of-clock-cycles, which I assume is what
-> the HW would be programmed with?
-aemif driver clk is either specified as a clk device node or as a device 
-bindings. Aemif driver gets the clk rate and do the conversion of ns to 
-emif clk cycles internally in the driver.
->> +- ti,davinci-cs-ss - enable/disable select strobe (0 - disable, 1 - enable)
->> +- ti,davinci-cs-ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
-> Boolean properties are usually represented as present (on/enabled/1) or
-> missing (off/disabled/0). Shouldn't these two properties work that way?
-> I see the comment below:
->> +if any of the above parameters are absent, hardware register default or that
->> +set by a boot loader are used.
-> implied they're really tri-state (explicitly off or on, or just not
-> programmed). However, I think it'd be better if the DT always
-> represented the complete configuration, since the DT and binding should
-> be a full description of the HW rather than just the data you expect a
-> particular Linux driver to need after a particular boot loader has
-> executed first.
-Actually this driver has to work on various platforms some of them set 
-values in boot loader, others explicitly specify it in bindings or 
-platform data. If set in boot loader, these bindings are not required 
-(so that it is compatible with old implementation) to be configured in 
-Linux kernel. So I believe I should be using something like
-
-ti,davinci-cs-enable-ss - "on", "off"
-
-As cs node is optional, If not present, hw values will be used. I don't 
-think it make sense to make it tri-state based on my explanation above.
->> +Example for aemif, davinci nand and nor flash chip select shown below.
->> +
->> +aemif@60000000 {
->> +	compatible = "ti,davinci-aemif";
->> +	#address-cells = <2>;
->> +	#size-cells = <1>;
->> +	reg = <0x68000000 0x80000>;
->> +	ranges = <2 0 0x60000000 0x02000000
->> +		  3 0 0x62000000 0x02000000
->> +		  4 0 0x64000000 0x02000000
->> +		  5 0 0x66000000 0x02000000
->> +		  6 0 0x68000000 0x02000000>;
->> +
->> +	nand_cs:cs2@60000000 {
-> This node has no reg property, but it needs one if you use a unit
-> address ("@60000000") in the node name.
-So let  me drop the unit address as it is not needed for the cs node. 
-The AEMIF control register address is specified by the parent reg 
-property and is common to all chip selects.
-> The numbering scheme unit address above doesn't seem to match the
-> addresses provided to child nodes by the ranges property. Perhaps the
-> node layout you want is:
->
->
-> aemif {
->      chip-selects {
->          nand_cs:cs2@60000000 {
->          };
->      };
->      devices {
->          nand@3,0 {
->          }
->      };
-> };
->
-> so that the chip-selects and devices nodes can both set appropriate and
-> different #address-cells and #size-cells?
->
-> That does feel a bit wierd though, and I imagine writing the ranges
-> property in the aemif node would be hard.
->
-> Perhaps the chip-select timings should just be written as properties in
-> the aemif controller, rather than child nodes?
->
-> ti,cs-timings =
->      < ... > /* 0 */
->      < ... > /* 1 */
->      < ... > /* 2 */
->      ;
->
-> with each <...> being a list of n cells in a specific order?
->
-  To make this simple, I will drop the unit address from cs node and 
-represent it as
-
-nand_cs:cs2 {
-
-};
-
-nor_cs:cs3 {
-
-};
-
-
-+		compatible = "ti,davinci-cs";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		/* all timings in nanoseconds */
-+		ti,davinci-cs-ta = <0>;
-+		ti,davinci-cs-rhold = <7>;
-+		ti,davinci-cs-rstrobe = <42>;
-+		ti,davinci-cs-rsetup = <14>;
-+		ti,davinci-cs-whold = <7>;
-+		ti,davinci-cs-wstrobe = <42>;
-+		ti,davinci-cs-wsetup = <14>;
-+	};
-
-> ...
->> +	nand@3,0 {
->> +		compatible = "ti,davinci-nand";
->> +		reg = <3 0x0 0x807ff
->> +			6 0x0 0x8000>;
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +
->> +		.. See Documentation/devicetree/bindings/mtd/davinci-nand.txt
->> +	};
->
->
->
-
+-- 
+Michal Hocko
+SUSE Labs
