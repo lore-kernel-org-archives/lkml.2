@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab2KHVLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:11:25 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:34978 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756651Ab2KHVLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:11:24 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [patch] acpi, pm: fix build breakage
-Date: Thu, 08 Nov 2012 22:15:36 +0100
-Message-ID: <3279768.UJJiLZErXa@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com> <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
+	id S1757010Ab2KHVNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:13:37 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:62601 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756653Ab2KHVNf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 16:13:35 -0500
+Message-ID: <1352409211.2771.22.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [rfc net-next v6 3/3] virtio-net: change the number of queues
+ through ethtool
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: <mst@redhat.com>, <davem@davemloft.net>,
+        <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <krkumar2@in.ibm.com>, <kvm@vger.kernel.org>
+Date: Thu, 8 Nov 2012 21:13:31 +0000
+In-Reply-To: <1351591403-23065-4-git-send-email-jasowang@redhat.com>
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+	 <1351591403-23065-4-git-send-email-jasowang@redhat.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 08, 2012 11:20:01 AM David Rientjes wrote:
-> Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
-> states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
-> it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
-> error:
+On Tue, 2012-10-30 at 18:03 +0800, Jason Wang wrote:
+> This patch implement the {set|get}_channels method of ethool to allow user to
+> change the number of queues dymaically when the device is running. This would
+> let the user to tune the device for specific applications.
 > 
-> drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
-> drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
-> drivers/built-in.o: In function `acpi_dev_suspend_late':
-> drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
-> drivers/built-in.o: In function `acpi_pm_device_sleep_state':
-> drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
-> 
-> Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
-> for other configs.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-
-I've received the patch and will apply it when I get back home from Spain.
-
-Thanks,
-Rafael
-
-
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  include/acpi/acpi_bus.h |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
+>  drivers/net/virtio_net.c |   43 +++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 43 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 8cc43e5..66fc129 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1616,10 +1616,53 @@ static struct virtio_driver virtio_net_driver = {
 >  #endif
+>  };
 >  
->  #ifdef CONFIG_PM_SLEEP
-> -u32 acpi_target_system_state(void);
->  int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
->  int acpi_pm_device_sleep_wake(struct device *, bool);
->  #else
-> -static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
->  static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
->  					   u32 target_state, bool enable)
->  {
-> @@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
->  }
->  #endif
->  
-> +#ifdef CONFIG_ACPI_SLEEP
-> +u32 acpi_target_system_state(void);
-> +#else
-> +static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
-> +#endif
+> +/* TODO: Eliminate OOO packets during switching */
+> +static int virtnet_set_channels(struct net_device *dev,
+> +				struct ethtool_channels *channels)
+> +{
+> +	struct virtnet_info *vi = netdev_priv(dev);
+> +	u16 queue_pairs = channels->combined_count;
 > +
->  static inline bool acpi_device_power_manageable(struct acpi_device *adev)
->  {
->  	return adev->flags.power_manageable;
-> 
+> +	/* Only two modes were support currently */
+> +	if (queue_pairs == 0)
+> +		return -EINVAL;
+> +	if (queue_pairs != vi->total_queue_pairs - 1 && queue_pairs != 1)
+> +		return -EINVAL;
+
+You should also check that all of the other counts are == 0.
+
+> +	vi->num_queue_pairs = queue_pairs > 1 ? queue_pairs + 1 : 1;
+
+This doesn't make sense.  You're setting vi->num_queue_pairs to be
+combined_count + 1...
+
+> +	BUG_ON(virtnet_set_queues(vi));
+> +
+> +	netif_set_real_num_tx_queues(dev, vi->num_queue_pairs);
+> +	netif_set_real_num_rx_queues(dev, vi->num_queue_pairs);
+> +
+> +	return 0;
+> +}
+> +
+> +static void virtnet_get_channels(struct net_device *dev,
+> +				 struct ethtool_channels *channels)
+> +{
+> +	struct virtnet_info *vi = netdev_priv(dev);
+> +
+> +	if (vi->total_queue_pairs != 1) {
+> +		channels->combined_count = vi->num_queue_pairs;
+
+but here you report combined_count as being vi->num_queue_pairs.  Do you
+need to subtract 1 here?
+
+Ben.
+
+> +		channels->max_combined = vi->total_queue_pairs - 1;
+> +	} else {
+> +		channels->combined_count = 1;
+> +		channels->max_combined = 1;
+> +	}
+> +
+> +	channels->max_other = 0;
+> +	channels->rx_count = 0;
+> +	channels->tx_count = 0;
+> +	channels->other_count = 0;
+> +}
+> +
+>  static const struct ethtool_ops virtnet_ethtool_ops = {
+>  	.get_drvinfo = virtnet_get_drvinfo,
+>  	.get_link = ethtool_op_get_link,
+>  	.get_ringparam = virtnet_get_ringparam,
+> +	.set_channels = virtnet_set_channels,
+> +	.get_channels = virtnet_get_channels,
+>  };
+>  
+>  static int __init init(void)
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
