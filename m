@@ -1,114 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab2KHNQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:16:44 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51151 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab2KHNPJ (ORCPT
+	id S1755587Ab2KHNTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:19:04 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.31]:22052
+	"EHLO na01-by2-obe.mail.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752108Ab2KHNTC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:15:09 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anish Kumar <anish198519851985@gmail.com>
-Subject: [PATCH 2/7] irq_work: Fix racy check on work pending flag
-Date: Thu,  8 Nov 2012 14:14:53 +0100
-Message-Id: <1352380498-23132-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
-References: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
+	Thu, 8 Nov 2012 08:19:02 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0l1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Tomas Hozza <thozza@redhat.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH] tools: hv: Netlink source address validation allows DoS
+Thread-Topic: [PATCH] tools: hv: Netlink source address validation allows DoS
+Thread-Index: AQHNvZcZsR9QAfSilE6p0XX7e3nVfpff6s6Q
+Date: Thu, 8 Nov 2012 13:18:08 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930DFC341@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1352368409-18809-1-git-send-email-thozza@redhat.com>
+In-Reply-To: <1352368409-18809-1-git-send-email-thozza@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(377454001)(13464001)(31966008)(16676001)(44976002)(53806001)(74502001)(6806001)(51856001)(47776002)(4396001)(76482001)(54316001)(5343635001)(23726001)(33656001)(46102001)(74662001)(47736001)(47446002)(49866001)(50986001)(50466001)(47976001)(54356001)(46406002)(55846005);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 06592CCE58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Work claiming wants to be SMP-safe.
 
-And by the time we try to claim a work, if it is already executing
-concurrently on another CPU, we want to succeed the claiming and queue
-the work again because the other CPU may have missed the data we wanted
-to handle in our work if it's about to complete there.
 
-This scenario is summarized below:
+> -----Original Message-----
+> From: Tomas Hozza [mailto:thozza@redhat.com]
+> Sent: Thursday, November 08, 2012 4:53 AM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; KY Srinivasan
+> Cc: Tomas Hozza
+> Subject: [PATCH] tools: hv: Netlink source address validation allows DoS
+> 
+> The source code without this patch caused hypervkvpd to exit when it processed
+> a spoofed Netlink packet which has been sent from an untrusted local user.
+> Now Netlink messages with a non-zero nl_pid source address are ignored
+> and a warning is printed into the syslog.
+> 
+> Signed-off-by: Tomas Hozza <thozza@redhat.com>
+Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
 
-        CPU 1                                   CPU 2
-        -----                                   -----
-        (flags = 0)
-        cmpxchg(flags, 0, IRQ_WORK_FLAGS)
-        (flags = 3)
-        [...]
-        xchg(flags, IRQ_WORK_BUSY)
-        (flags = 2)
-        func()
-                                                if (flags & IRQ_WORK_PENDING)
-                                                        (not true)
-                                                cmpxchg(flags, flags, IRQ_WORK_FLAGS)
-                                                (flags = 3)
-                                                [...]
-        cmpxchg(flags, IRQ_WORK_BUSY, 0);
-        (fail, pending on CPU 2)
+> ---
+>  tools/hv/hv_kvp_daemon.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> index 13c2a14..c1d9102 100755
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -1486,13 +1486,19 @@ int main(void)
+>  		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
+>  				addr_p, &addr_l);
+> 
+> -		if (len < 0 || addr.nl_pid) {
+> +		if (len < 0) {
+>  			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+>  					addr.nl_pid, errno, strerror(errno));
+>  			close(fd);
+>  			return -1;
+>  		}
+> 
+> +		if (addr.nl_pid) {
+> +			syslog(LOG_WARNING, "Received packet from untrusted
+> pid:%u",
+> +					addr.nl_pid);
+> +			continue;
+> +		}
+> +
+>  		incoming_msg = (struct nlmsghdr *)kvp_recv_buffer;
+>  		incoming_cn_msg = (struct cn_msg
+> *)NLMSG_DATA(incoming_msg);
+>  		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
+> --
+> 1.7.11.7
+> 
+> 
 
-This state machine is synchronized using [cmp]xchg() on the flags.
-As such, the early IRQ_WORK_PENDING check in CPU 2 above is racy.
-By the time we check it, we may be dealing with a stale value because
-we aren't using an atomic accessor. As a result, CPU 2 may "see"
-that the work is still pending on another CPU while it may be
-actually completing the work function exection already, leaving
-our data unprocessed.
-
-To fix this, we start by speculating about the value we wish to be
-in the work->flags but we only make any conclusion after the value
-returned by the cmpxchg() call that either claims the work or let
-the current owner handle the pending work for us.
-
-Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Anish Kumar <anish198519851985@gmail.com>
----
- kernel/irq_work.c |   16 +++++++++++-----
- 1 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 57be1a6..64eddd5 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -34,15 +34,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
-  */
- static bool irq_work_claim(struct irq_work *work)
- {
--	unsigned long flags, nflags;
-+	unsigned long flags, oflags, nflags;
- 
-+	/*
-+	 * Start with our best wish as a premise but only trust any
-+	 * flag value after cmpxchg() result.
-+	 */
-+	flags = work->flags & ~IRQ_WORK_PENDING;
- 	for (;;) {
--		flags = work->flags;
--		if (flags & IRQ_WORK_PENDING)
--			return false;
- 		nflags = flags | IRQ_WORK_FLAGS;
--		if (cmpxchg(&work->flags, flags, nflags) == flags)
-+		oflags = cmpxchg(&work->flags, flags, nflags);
-+		if (oflags == flags)
- 			break;
-+		if (oflags & IRQ_WORK_PENDING)
-+			return false;
-+		flags = oflags;
- 		cpu_relax();
- 	}
- 
--- 
-1.7.5.4
 
