@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2KHTUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:20:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57678 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662Ab2KHTUG (ORCPT
+	id S1756693Ab2KHTVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:21:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39932 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661Ab2KHTVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:20:06 -0500
-Date: Thu, 8 Nov 2012 11:20:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [patch] acpi, pm: fix build breakage
-In-Reply-To: <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <1456107.KxymqUQLId@vostro.rjw.lan> <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 Nov 2012 14:21:22 -0500
+Date: Thu, 8 Nov 2012 11:21:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
+Message-Id: <20121108112120.fc964c29.akpm@linux-foundation.org>
+In-Reply-To: <0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<1351771665-11076-26-git-send-email-glommer@parallels.com>
+	<20121105164813.2eba5ecb.akpm@linux-foundation.org>
+	<509A0A04.2030503@parallels.com>
+	<20121106231627.3610c908.akpm@linux-foundation.org>
+	<509A2849.9090509@parallels.com>
+	<20121107144612.e822986f.akpm@linux-foundation.org>
+	<0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
-states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
-it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
-error:
+On Thu, 8 Nov 2012 17:15:36 +0000
+Christoph Lameter <cl@linux.com> wrote:
 
-drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
-drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
-drivers/built-in.o: In function `acpi_dev_suspend_late':
-drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
-drivers/built-in.o: In function `acpi_pm_device_sleep_state':
-drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
+> On Wed, 7 Nov 2012, Andrew Morton wrote:
+> 
+> > What's up with kmem_cache_shrink?  It's global and exported to modules
+> > but its only external caller is some weird and hopelessly poorly
+> > documented site down in drivers/acpi/osl.c.  slab and slob implement
+> > kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
+> > trying to actually do there, then do it properly, then killkillkill!
+> 
+> kmem_cache_shrink is also used internally. Its simply releasing unused
+> cached objects.
 
-Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
-for other configs.
+Only in slub.  It could be removed outright from the others and
+simplified in slub.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/acpi/acpi_bus.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> > Secondly, as slab and slub (at least) have the ability to shed cached
+> > memory, why aren't they hooked into the core cache-shinking machinery.
+> > After all, it's called "shrink_slab"!
+> 
+> Because the core cache shrinking needs the slab caches to free up memory
+> from inodes and dentries. We could call kmem_cache_shrink at the end of
+> the shrink passes in vmscan. The price would be that the caches would have
+> to be repopulated when new allocations occur.
 
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
- #endif
- 
- #ifdef CONFIG_PM_SLEEP
--u32 acpi_target_system_state(void);
- int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
- int acpi_pm_device_sleep_wake(struct device *, bool);
- #else
--static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
- static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
- 					   u32 target_state, bool enable)
- {
-@@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
- }
- #endif
- 
-+#ifdef CONFIG_ACPI_SLEEP
-+u32 acpi_target_system_state(void);
-+#else
-+static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
-+#endif
-+
- static inline bool acpi_device_power_manageable(struct acpi_device *adev)
- {
- 	return adev->flags.power_manageable;
+Well, the shrinker shouldn't strips away all the cache.  It will perform
+a partial trim, the magnitude of which increases with perceived
+external memory pressure.
+
+AFACIT, this is correct and desirable behaviour for shrinking
+slab's internal caches.
+
+> >
+> > If we can fix all that up then I wonder whether this particular patch
+> > needs to exist at all.  If the kmem_cache is no longer used then we
+> > can simply leave it floating around in memory and the regular cache
+> > shrinking code out of shrink_slab() will clean up any remaining pages.
+> > The kmem_cache itself can be reclaimed via another shrinker, if
+> > necessary?
+> 
+> The kmem_cache can only be released if all its objects (used and unused)
+> are released.  kmem_cache_shrink drops the unused objects on some internal
+> slab specific list. That may enable us to release the kmem_cache
+> structure.
