@@ -1,174 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab2KHJx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:53:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45518 "EHLO mx2.suse.de"
+	id S1755198Ab2KHJya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:54:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22287 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab2KHJxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:53:55 -0500
-Date: Thu, 8 Nov 2012 10:53:53 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 4/9] cgroup_freezer: trivial cleanups
-Message-ID: <20121108095353.GB31821@dhcp22.suse.cz>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-5-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351931915-1701-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752787Ab2KHJy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 04:54:29 -0500
+From: Tomas Hozza <thozza@redhat.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, kys@microsoft.com
+Cc: Tomas Hozza <thozza@redhat.com>
+Subject: [PATCH] tools: hv: Netlink source address validation allows DoS
+Date: Thu,  8 Nov 2012 10:53:29 +0100
+Message-Id: <1352368409-18809-1-git-send-email-thozza@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 03-11-12 01:38:30, Tejun Heo wrote:
-> * Clean-up indentation and line-breaks.  Drop the invalid comment
->   about freezer->lock.
-> 
-> * Make all internal functions take @freezer instead of both @cgroup
->   and @freezer.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+The source code without this patch caused hypervkvpd to exit when it processed
+a spoofed Netlink packet which has been sent from an untrusted local user.
+Now Netlink messages with a non-zero nl_pid source address are ignored
+and a warning is printed into the syslog.
 
-Looks reasonable
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-> ---
->  kernel/cgroup_freezer.c | 41 +++++++++++++++++++----------------------
->  1 file changed, 19 insertions(+), 22 deletions(-)
-> 
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index bedefd9..975b3d8 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -29,17 +29,15 @@ enum freezer_state {
->  };
->  
->  struct freezer {
-> -	struct cgroup_subsys_state css;
-> -	enum freezer_state state;
-> -	spinlock_t lock; /* protects _writes_ to state */
-> +	struct cgroup_subsys_state	css;
-> +	enum freezer_state		state;
-> +	spinlock_t			lock;
->  };
->  
-> -static inline struct freezer *cgroup_freezer(
-> -		struct cgroup *cgroup)
-> +static inline struct freezer *cgroup_freezer(struct cgroup *cgroup)
->  {
-> -	return container_of(
-> -		cgroup_subsys_state(cgroup, freezer_subsys_id),
-> -		struct freezer, css);
-> +	return container_of(cgroup_subsys_state(cgroup, freezer_subsys_id),
-> +			    struct freezer, css);
->  }
->  
->  static inline struct freezer *task_freezer(struct task_struct *task)
-> @@ -180,8 +178,9 @@ out:
->   * migrated into or out of @cgroup, so we can't verify task states against
->   * @freezer state here.  See freezer_attach() for details.
->   */
-> -static void update_if_frozen(struct cgroup *cgroup, struct freezer *freezer)
-> +static void update_if_frozen(struct freezer *freezer)
->  {
-> +	struct cgroup *cgroup = freezer->css.cgroup;
->  	struct cgroup_iter it;
->  	struct task_struct *task;
->  
-> @@ -211,12 +210,11 @@ notyet:
->  static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
->  			struct seq_file *m)
->  {
-> -	struct freezer *freezer;
-> +	struct freezer *freezer = cgroup_freezer(cgroup);
->  	enum freezer_state state;
->  
-> -	freezer = cgroup_freezer(cgroup);
->  	spin_lock_irq(&freezer->lock);
-> -	update_if_frozen(cgroup, freezer);
-> +	update_if_frozen(freezer);
->  	state = freezer->state;
->  	spin_unlock_irq(&freezer->lock);
->  
-> @@ -225,8 +223,9 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
->  	return 0;
->  }
->  
-> -static void freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
-> +static void freeze_cgroup(struct freezer *freezer)
->  {
-> +	struct cgroup *cgroup = freezer->css.cgroup;
->  	struct cgroup_iter it;
->  	struct task_struct *task;
->  
-> @@ -236,8 +235,9 @@ static void freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
->  	cgroup_iter_end(cgroup, &it);
->  }
->  
-> -static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
-> +static void unfreeze_cgroup(struct freezer *freezer)
->  {
-> +	struct cgroup *cgroup = freezer->css.cgroup;
->  	struct cgroup_iter it;
->  	struct task_struct *task;
->  
-> @@ -247,11 +247,9 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
->  	cgroup_iter_end(cgroup, &it);
->  }
->  
-> -static void freezer_change_state(struct cgroup *cgroup,
-> +static void freezer_change_state(struct freezer *freezer,
->  				 enum freezer_state goal_state)
->  {
-> -	struct freezer *freezer = cgroup_freezer(cgroup);
-> -
->  	/* also synchronizes against task migration, see freezer_attach() */
->  	spin_lock_irq(&freezer->lock);
->  
-> @@ -260,13 +258,13 @@ static void freezer_change_state(struct cgroup *cgroup,
->  		if (freezer->state != CGROUP_THAWED)
->  			atomic_dec(&system_freezing_cnt);
->  		freezer->state = CGROUP_THAWED;
-> -		unfreeze_cgroup(cgroup, freezer);
-> +		unfreeze_cgroup(freezer);
->  		break;
->  	case CGROUP_FROZEN:
->  		if (freezer->state == CGROUP_THAWED)
->  			atomic_inc(&system_freezing_cnt);
->  		freezer->state = CGROUP_FREEZING;
-> -		freeze_cgroup(cgroup, freezer);
-> +		freeze_cgroup(freezer);
->  		break;
->  	default:
->  		BUG();
-> @@ -275,8 +273,7 @@ static void freezer_change_state(struct cgroup *cgroup,
->  	spin_unlock_irq(&freezer->lock);
->  }
->  
-> -static int freezer_write(struct cgroup *cgroup,
-> -			 struct cftype *cft,
-> +static int freezer_write(struct cgroup *cgroup, struct cftype *cft,
->  			 const char *buffer)
->  {
->  	enum freezer_state goal_state;
-> @@ -288,7 +285,7 @@ static int freezer_write(struct cgroup *cgroup,
->  	else
->  		return -EINVAL;
->  
-> -	freezer_change_state(cgroup, goal_state);
-> +	freezer_change_state(cgroup_freezer(cgroup), goal_state);
->  	return 0;
->  }
->  
-> -- 
-> 1.7.11.7
-> 
-
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 13c2a14..c1d9102 100755
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1486,13 +1486,19 @@ int main(void)
+ 		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
+ 				addr_p, &addr_l);
+ 
+-		if (len < 0 || addr.nl_pid) {
++		if (len < 0) {
+ 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+ 					addr.nl_pid, errno, strerror(errno));
+ 			close(fd);
+ 			return -1;
+ 		}
+ 
++		if (addr.nl_pid) {
++			syslog(LOG_WARNING, "Received packet from untrusted pid:%u",
++					addr.nl_pid);
++			continue;
++		}
++
+ 		incoming_msg = (struct nlmsghdr *)kvp_recv_buffer;
+ 		incoming_cn_msg = (struct cn_msg *)NLMSG_DATA(incoming_msg);
+ 		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
 -- 
-Michal Hocko
-SUSE Labs
+1.7.11.7
+
