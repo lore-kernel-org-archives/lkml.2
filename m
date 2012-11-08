@@ -1,226 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab2KHXlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 18:41:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19357 "EHLO mx1.redhat.com"
+	id S1757310Ab2KHXmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 18:42:16 -0500
+Received: from hibox-130.abo.fi ([130.232.216.130]:59230 "EHLO centre.hibox.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757234Ab2KHXlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 18:41:36 -0500
-Date: Thu, 8 Nov 2012 18:41:10 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
- block the readers unnecessarily
-In-Reply-To: <20121108210843.GF2519@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com>
-References: <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com>
- <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com>
- <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
- <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com>
- <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org>
- <20121108210843.GF2519@linux.vnet.ibm.com>
+	id S1757234Ab2KHXmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 18:42:15 -0500
+Message-ID: <509C4339.2090506@hibox.fi>
+Date: Fri, 09 Nov 2012 01:41:45 +0200
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+References: <508DB432.2030208@hibox.fi> <20121101190119.GA27294@quack.suse.cz> <50932DAC.7040702@hibox.fi> <20121107161730.GB23654@quack.suse.cz>
+In-Reply-To: <20121107161730.GB23654@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07.11.2012 18:17, Jan Kara wrote:
+> On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
+>> On 01.11.2012 21:01, Jan Kara wrote:
+>>> On Mon 29-10-12 00:39:46, Marcus Sundman wrote:
+>>>    Hello,
+>>>
+>>>> I have a big problem with the system freezing and would appreciate
+>>>> any help on debugging this and pinpointing where exactly the problem
+>>>> is, so it could be fixed.
+>>>>
+>>>> So, whenever I write to the disk the system comes to a crawl or
+>>>> freezes altogether. This happens even when the writing processes are
+>>>> running on nice '19' and ionice 'idle'. (E.g. a 10 second compile
+>>>> could freeze the system for several minutes, rendering the computer
+>>>> pretty much unusable for anything interesting.)
+>>>>
+>>>> Here you can see a 20 second gap even in superhigh priority:
+>>>> # nice -n -20 ionice -c1 iostat -t -m -d -x 1 > http://pastebin.com/j5qnh2VV
+>>>>
+>>>> I'm currently running 3.5.0-17-lowlatency on the ZenBook UX31E,
+>>>> using the NOOP I/O scheduler on the SanDisk SSD U100. The chipset
+>>>> seems to be Intel QS67. I've had this same problem on 3.2.0 generic
+>>>> and lowlatency kernels.
+>>>    These are Ubuntu kernels. Any chance to reproduce the issue with vanilla
+>>> kernels - i.e. kernels without any Ubuntu patches?
+>> I'm afraid it's going to take a week to compile a kernel with this
+>> freezing going on, but I suppose I could get another computer to do
+>> the compiling. Or should I install some pre-compiled version? If so,
+>> which one?
+>    You can install anything precompiled. It's just that I want to rule out
+> some Ubuntu specific patches...
+
+OK, I tried it with a vanilla 3.6.6 -- "uname -a" says "Linux hal 
+3.6.6-030606-generic #201211050512 SMP Mon Nov 5 10:12:53 UTC 2012 
+x86_64 x86_64 x86_64 GNU/Linux"
+
+>>> Also when you speak of
+>>> system freezing - can you e.g. type to terminal while the system is frozen?
+>>> Or is it just that running commands freezes?
+>> Typing usually doesn't work very well. It works for a word or two
+>> and then stops working for a while and if I continue to type then
+>> when it resumes only the last few characters appears. Typing in the
+>> console is a bit better than in a terminal in X (not counting the
+>> several minutes it can take to switch to the console (Ctrl-Alt-F1)).
+>    I see.
+>
+>> Also, and this might be important, according to iotop there is
+>> almost no disk writing going on during the freeze. (Occasionally
+>> there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
+>> when an iotop running on nice -20 hasn't frozen completely, which it
+>> does during the more severe freezes.
+>    OK, it seems as if your machine has some problems with memory
+> allocations. Can you capture /proc/vmstat before the freeze and after the
+> freeze and send them for comparison. Maybe it will show us what is the
+> system doing.
+
+t=01:06 http://sundman.iki.fi/vmstat.pre-freeze.txt
+t=01:08 http://sundman.iki.fi/vmstat.during-freeze.txt
+t=01:12 http://sundman.iki.fi/vmstat.post-freeze.txt
+
+>    Also you can try doing:
+> echo never >/sys/kernel/mm/transparent_hugepage/enabled
+>    and see whether it changes anything.
+
+It's already set to 'nerver'. I think I configured this in the very 
+beginning when trying to do something about these freezes.
+
+I also have these in sysctl:
+vm.swappiness=1
+vm.vfs_cache_pressure=50
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 8
+
+And /sys/block/sda/device/queue_depth is 1.
 
 
-On Thu, 8 Nov 2012, Paul E. McKenney wrote:
+Regards,
+Marcus
 
-> On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
-> > On Thu, 8 Nov 2012 14:48:49 +0100
-> > Oleg Nesterov <oleg@redhat.com> wrote:
-> > 
-> > > Currently the writer does msleep() plus synchronize_sched() 3 times
-> > > to acquire/release the semaphore, and during this time the readers
-> > > are blocked completely. Even if the "write" section was not actually
-> > > started or if it was already finished.
-> > > 
-> > > With this patch down_write/up_write does synchronize_sched() twice
-> > > and down_read/up_read are still possible during this time, just they
-> > > use the slow path.
-> > > 
-> > > percpu_down_write() first forces the readers to use rw_semaphore and
-> > > increment the "slow" counter to take the lock for reading, then it
-> > > takes that rw_semaphore for writing and blocks the readers.
-> > > 
-> > > Also. With this patch the code relies on the documented behaviour of
-> > > synchronize_sched(), it doesn't try to pair synchronize_sched() with
-> > > barrier.
-> > > 
-> > > ...
-> > >
-> > >  include/linux/percpu-rwsem.h |   83 +++++------------------------
-> > >  lib/Makefile                 |    2 +-
-> > >  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
-> > 
-> > The patch also uninlines everything.
-> > 
-> > And it didn't export the resulting symbols to modules, so it isn't an
-> > equivalent.  We can export thing later if needed I guess.
-> > 
-> > It adds percpu-rwsem.o to lib-y, so the CONFIG_BLOCK=n kernel will
-> > avoid including the code altogether, methinks?
-> > 
-> > >
-> > > ...
-> > >
-> > > --- /dev/null
-> > > +++ b/lib/percpu-rwsem.c
-> > > @@ -0,0 +1,123 @@
-> > 
-> > That was nice and terse ;)
-> > 
-> > > +#include <linux/percpu-rwsem.h>
-> > > +#include <linux/rcupdate.h>
-> > > +#include <linux/sched.h>
-> > 
-> > This list is nowhere near sufficient to support this file's
-> > requirements.  atomic.h, percpu.h, rwsem.h, wait.h, errno.h and plenty
-> > more.  IOW, if it compiles, it was sheer luck.
-> > 
-> > > +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	brw->fast_read_ctr = alloc_percpu(int);
-> > > +	if (unlikely(!brw->fast_read_ctr))
-> > > +		return -ENOMEM;
-> > > +
-> > > +	mutex_init(&brw->writer_mutex);
-> > > +	init_rwsem(&brw->rw_sem);
-> > > +	atomic_set(&brw->slow_read_ctr, 0);
-> > > +	init_waitqueue_head(&brw->write_waitq);
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	free_percpu(brw->fast_read_ctr);
-> > > +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
-> > > +}
-> > > +
-> > > +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
-> > > +{
-> > > +	bool success = false;
-> > > +
-> > > +	preempt_disable();
-> > > +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
-> > > +		__this_cpu_add(*brw->fast_read_ctr, val);
-> > > +		success = true;
-> > > +	}
-> > > +	preempt_enable();
-> > > +
-> > > +	return success;
-> > > +}
-> > > +
-> > > +/*
-> > > + * Like the normal down_read() this is not recursive, the writer can
-> > > + * come after the first percpu_down_read() and create the deadlock.
-> > > + */
-> > > +void percpu_down_read(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	if (likely(update_fast_ctr(brw, +1)))
-> > > +		return;
-> > > +
-> > > +	down_read(&brw->rw_sem);
-> > > +	atomic_inc(&brw->slow_read_ctr);
-> > > +	up_read(&brw->rw_sem);
-> > > +}
-> > > +
-> > > +void percpu_up_read(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	if (likely(update_fast_ctr(brw, -1)))
-> > > +		return;
-> > > +
-> > > +	/* false-positive is possible but harmless */
-> > > +	if (atomic_dec_and_test(&brw->slow_read_ctr))
-> > > +		wake_up_all(&brw->write_waitq);
-> > > +}
-> > > +
-> > > +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	unsigned int sum = 0;
-> > > +	int cpu;
-> > > +
-> > > +	for_each_possible_cpu(cpu) {
-> > > +		sum += per_cpu(*brw->fast_read_ctr, cpu);
-> > > +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
-> > > +	}
-> > > +
-> > > +	return sum;
-> > > +}
-> > > +
-> > > +/*
-> > > + * A writer takes ->writer_mutex to exclude other writers and to force the
-> > > + * readers to switch to the slow mode, note the mutex_is_locked() check in
-> > > + * update_fast_ctr().
-> > > + *
-> > > + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
-> > > + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
-> > > + * counter it represents the number of active readers.
-> > > + *
-> > > + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
-> > > + * then waits until the slow counter becomes zero.
-> > > + */
-> > 
-> > Some overview of how fast/slow_read_ctr are supposed to work would be
-> > useful.  This comment seems to assume that the reader already knew
-> > that.
-> > 
-> > > +void percpu_down_write(struct percpu_rw_semaphore *brw)
-> > > +{
-> > > +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
-> > > +	mutex_lock(&brw->writer_mutex);
-> > > +
-> > > +	/*
-> > > +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
-> > > +	 *    so that update_fast_ctr() can't succeed.
-> > > +	 *
-> > > +	 * 2. Ensures we see the result of every previous this_cpu_add() in
-> > > +	 *    update_fast_ctr().
-> > > +	 *
-> > > +	 * 3. Ensures that if any reader has exited its critical section via
-> > > +	 *    fast-path, it executes a full memory barrier before we return.
-> > > +	 */
-> > > +	synchronize_sched();
-> > 
-> > Here's where I get horridly confused.  Your patch completely deRCUifies
-> > this code, yes?  Yet here we're using an RCU primitive.  And we seem to
-> > be using it not as an RCU primitive but as a handy thing which happens
-> > to have desirable side-effects.  But the implementation of
-> > synchronize_sched() differs considerably according to which rcu
-> > flavor-of-the-minute you're using.
-> 
-> The trick is that the preempt_disable() call in update_fast_ctr()
-> acts as an RCU read-side critical section WRT synchronize_sched().
-> 
-> The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
-> synchronize_rcu() in place of preempt_disable()/preempt_enable() and
-> synchronize_sched().  The real-time guys would prefer the change
-> to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
-> you mention it.
-> 
-> Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
-> and synchronize_rcu()?
-> 
-> 							Thanx, Paul
-
-preempt_disable/preempt_enable is faster than 
-rcu_read_lock/rcu_read_unlock for preemptive kernels.
-
-Regarding real-time response - the region blocked with 
-preempt_disable/preempt_enable contains a few instructions (one test for 
-mutex_is_locked and one increment of percpu variable), so it isn't any 
-threat to real time response. There are plenty of longer regions in the 
-kernel that are executed with interrupts or preemption disabled.
-
-Mikulas
