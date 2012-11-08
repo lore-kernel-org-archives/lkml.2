@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964775Ab2KHVCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:02:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60033 "EHLO
+	id S1757028Ab2KHVCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:02:13 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37998 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab2KHVCI (ORCPT
+	with ESMTP id S1756994Ab2KHVCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:02:08 -0500
+	Thu, 8 Nov 2012 16:02:09 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH 00/11] arch_gettimeoffset and ARM timer rework
-Date: Thu,  8 Nov 2012 14:01:44 -0700
-Message-Id: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH] ARM: delete struct sys_timer
+Date: Thu,  8 Nov 2012 14:01:45 -0700
+Message-Id: <1352408516-21988-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,90 +26,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-The overall aim of this series is to allow ARM (or indeed any) timer
-drivers to be moved into drivers/clocksource without requiring a
-struct or function prototype for each individual driver in include/linux.
-The intent is eventually to create a single e.g. of_clocksource_init()
+Now that the only field in struct sys_timer is .init, delete the struct,
+and replace the machine descriptor .timer field with the initialization
+function itself.
+
+This will enable moving timer drivers into drivers/clocksource without
+having to place a public prototype of each struct sys_timer object into
+include/linux; the intent is to create a single of_clocksource_init()
 function that determines which timer driver to initialize by scanning
 the device dtree, much like the proposed irqchip_init() at:
 http://www.spinics.net/lists/arm-kernel/msg203686.html
 
-This requires some rework prior to implementing of_clocksource_init():
+RFC: This will be quite a large patch since it'll end up touching tens
+or hundreds of ARM board files, timer drivers, etc. Perhaps it'd be
+better to create patches that:
 
-ARM uses struct sys_timer to represent the individual machine's timer
-driver. Many of the patches in this series are ARM-specific changes to
-get rid of this struct, leaving just a single init function instead.
+1) Add .init_time field to machine descriptor, update ARM's time_init to
+   use that if present, else fall back to .timer.init.
+2) 1 patch per ARM sub-architecture to convert to from .timer to
+   .init_time.
+3) Remove sys_timer and machine descriptor .timer field.
 
-One function pointer in the struct provides the implementation of
-arch_gettimeoffset(). Removing the struct and moving drivers into the
-generic drivers/clocksource directory requires an arch-agnostic way of
-registering the implementation of this function. The first few patches
-in the series provide that, and rework various architectures to make use
-of this facility rather than implementing the same thing themselves.
+For now, this patch only converts Tegra as an example of my intent.
 
-It would probably be easiest to merge this whole series through the
-arm-soc tree. Anything else would require some co-ordination.
-
-Stephen Warren (11):
-  cris: move usec/nsec conversion to do_slow_gettimeoffset
-  time: convert arch_gettimeoffset to a pointer
-  m68k: set arch_gettimeoffset directly
-  ARM: set arch_gettimeoffset directly
-  ARM: at91: convert timer suspend/resume to clock_event_device
-  ARM: pxa: convert timer suspend/resume to clock_event_device
-  ARM: sa1100: convert timer suspend/resume to clock_event_device
-  ARM: ux500: convert timer suspend/resume to clock_event_device
-  ARM: samsung: register syscore_ops for timer resume directly
-  ARM: remove struct sys_timer suspend and resume fields
-  ARM: delete struct sys_timer
-
- arch/arm/include/asm/mach/arch.h       |    3 +-
- arch/arm/include/asm/mach/time.h       |   30 ------------
- arch/arm/kernel/time.c                 |   53 +----------------------
- arch/arm/mach-at91/at91sam926x_time.c  |   47 +++++++++++---------
- arch/arm/mach-at91/at91x40_time.c      |    8 ++-
- arch/arm/mach-ebsa110/core.c           |    7 ++-
- arch/arm/mach-ep93xx/core.c            |   23 +++++-----
- arch/arm/mach-h720x/common.c           |    6 +-
- arch/arm/mach-h720x/common.h           |    2 +-
- arch/arm/mach-h720x/cpu-h7201.c        |    3 +-
- arch/arm/mach-h720x/cpu-h7202.c        |    3 +-
- arch/arm/mach-pxa/time.c               |   76 ++++++++++++++++----------------
- arch/arm/mach-rpc/time.c               |    6 +-
- arch/arm/mach-sa1100/time.c            |   66 ++++++++++++++--------------
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/include/asm/mach/arch.h       |    3 +--
+ arch/arm/include/asm/mach/time.h       |   16 ----------------
+ arch/arm/kernel/time.c                 |    9 +--------
  arch/arm/mach-tegra/board-dt-tegra20.c |    2 +-
  arch/arm/mach-tegra/board-dt-tegra30.c |    2 +-
  arch/arm/mach-tegra/board.h            |    2 +-
- arch/arm/mach-tegra/timer.c            |    6 +--
- arch/arm/mach-ux500/timer.c            |    7 ---
- arch/arm/plat-samsung/time.c           |   14 ++++--
- arch/blackfin/kernel/time.c            |    6 ++-
- arch/cris/arch-v10/kernel/time.c       |   10 +++--
- arch/cris/kernel/time.c                |   11 -----
- arch/m32r/kernel/time.c                |    4 +-
- arch/m68k/amiga/config.c               |   10 ++--
- arch/m68k/apollo/config.c              |    9 ++--
- arch/m68k/atari/config.c               |    4 +-
- arch/m68k/atari/time.c                 |    6 +-
- arch/m68k/bvme6000/config.c            |   10 ++--
- arch/m68k/hp300/config.c               |    2 +-
- arch/m68k/hp300/time.c                 |    4 +-
- arch/m68k/hp300/time.h                 |    2 +-
- arch/m68k/include/asm/machdep.h        |    2 +-
- arch/m68k/kernel/setup_mm.c            |    1 -
- arch/m68k/kernel/time.c                |   15 ++----
- arch/m68k/mac/config.c                 |    4 +-
- arch/m68k/mac/via.c                    |    4 +-
- arch/m68k/mvme147/config.c             |    8 ++--
- arch/m68k/mvme16x/config.c             |    8 ++--
- arch/m68k/q40/config.c                 |    8 ++--
- arch/m68k/sun3/config.c                |    4 +-
- arch/m68k/sun3/intersil.c              |    4 +-
- arch/m68k/sun3x/config.c               |    2 +-
- arch/m68k/sun3x/time.c                 |    2 +-
- arch/m68k/sun3x/time.h                 |    2 +-
- drivers/clocksource/nomadik-mtu.c      |   33 ++++++++-----
- include/linux/time.h                   |    4 +-
- kernel/time/timekeeping.c              |   20 +++++++-
- 48 files changed, 249 insertions(+), 316 deletions(-)
+ arch/arm/mach-tegra/timer.c            |    6 +-----
+ 7 files changed, 6 insertions(+), 34 deletions(-)
+
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 917d4fc..308ad7d 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -12,7 +12,6 @@
+ 
+ struct tag;
+ struct meminfo;
+-struct sys_timer;
+ struct pt_regs;
+ struct smp_operations;
+ #ifdef CONFIG_SMP
+@@ -48,7 +47,7 @@ struct machine_desc {
+ 	void			(*map_io)(void);/* IO mapping function	*/
+ 	void			(*init_early)(void);
+ 	void			(*init_irq)(void);
+-	struct sys_timer	*timer;		/* system tick timer	*/
++	void			(*init_time)(void);
+ 	void			(*init_machine)(void);
+ 	void			(*init_late)(void);
+ #ifdef CONFIG_MULTI_IRQ_HANDLER
+diff --git a/arch/arm/include/asm/mach/time.h b/arch/arm/include/asm/mach/time.h
+index d316d76..90c12e1 100644
+--- a/arch/arm/include/asm/mach/time.h
++++ b/arch/arm/include/asm/mach/time.h
+@@ -10,22 +10,6 @@
+ #ifndef __ASM_ARM_MACH_TIME_H
+ #define __ASM_ARM_MACH_TIME_H
+ 
+-/*
+- * This is our kernel timer structure.
+- *
+- * - init
+- *   Initialise the kernels jiffy timer source, claim interrupt
+- *   using setup_irq.  This is called early on during initialisation
+- *   while interrupts are still disabled on the local CPU.
+- * - offset
+- *   Return the timer offset in microseconds since the last timer
+- *   interrupt.  Note: this must take account of any unprocessed
+- *   timer interrupt which may be pending.
+- */
+-struct sys_timer {
+-	void			(*init)(void);
+-};
+-
+ extern void timer_tick(void);
+ 
+ struct timespec;
+diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+index 0b51a7c..955d92d 100644
+--- a/arch/arm/kernel/time.c
++++ b/arch/arm/kernel/time.c
+@@ -30,11 +30,6 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
+ 
+-/*
+- * Our system timer.
+- */
+-static struct sys_timer *system_timer;
+-
+ #if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
+     defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+ /* this needs a better home */
+@@ -120,8 +115,6 @@ int __init register_persistent_clock(clock_access_fn read_boot,
+ 
+ void __init time_init(void)
+ {
+-	system_timer = machine_desc->timer;
+-	system_timer->init();
++	machine_desc->init_time();
+ 	sched_clock_postinit();
+ }
+-
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 22f5a9b..3777b03 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -192,7 +192,7 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+ 	.init_early	= tegra20_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.timer		= &tegra_sys_timer,
++	.init_time	= tegra_init_timer,
+ 	.init_machine	= tegra_dt_init,
+ 	.init_late	= tegra_dt_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index cd30338..08d3b19 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -104,7 +104,7 @@ DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
+ 	.init_early	= tegra30_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.timer		= &tegra_sys_timer,
++	.init_time	= tegra_init_timer,
+ 	.init_machine	= tegra30_dt_init,
+ 	.init_late	= tegra_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index 91fbe73..744cdd2 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -55,5 +55,5 @@ static inline int harmony_pcie_init(void) { return 0; }
+ 
+ void __init tegra_paz00_wifikill_init(void);
+ 
+-extern struct sys_timer tegra_sys_timer;
++extern void tegra_init_timer(void);
+ #endif
+diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
+index e4863f3..b0036e5 100644
+--- a/arch/arm/mach-tegra/timer.c
++++ b/arch/arm/mach-tegra/timer.c
+@@ -168,7 +168,7 @@ static const struct of_device_id rtc_match[] __initconst = {
+ 	{}
+ };
+ 
+-static void __init tegra_init_timer(void)
++void __init tegra_init_timer(void)
+ {
+ 	struct device_node *np;
+ 	struct clk *clk;
+@@ -273,10 +273,6 @@ static void __init tegra_init_timer(void)
+ 	register_persistent_clock(NULL, tegra_read_persistent_clock);
+ }
+ 
+-struct sys_timer tegra_sys_timer = {
+-	.init = tegra_init_timer,
+-};
+-
+ #ifdef CONFIG_PM
+ static u32 usec_config;
+ 
+-- 
+1.7.0.4
 
