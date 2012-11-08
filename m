@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab2KHGWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 01:22:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:17942 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab2KHGWG (ORCPT
+	id S1754528Ab2KHGZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:25:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49034 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2KHGZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 01:22:06 -0500
-Message-ID: <509B4F78.4060007@oracle.com>
-Date: Thu, 08 Nov 2012 14:21:44 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Thu, 8 Nov 2012 01:25:12 -0500
+Message-ID: <509B5038.8090304@oracle.com>
+Date: Thu, 08 Nov 2012 14:24:56 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, akpm@linux-foundation.org,
-        aedilger@gmail.com, alan@linux.intel.com, gregkh@linuxfoundation.org,
-        jakub@redhat.com, james.l.morris@oracle.com, john.sobecki@oracle.com,
-        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
- added to -mm tree
-References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com> <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com> <20121107093246.GD21960@thunk.org> <CAGXu5jKY9SdZU7BibZf9kLx-MO3tVASPWE2hHZJXSPRkWfivKQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jKY9SdZU7BibZf9kLx-MO3tVASPWE2hHZJXSPRkWfivKQ@mail.gmail.com>
+To: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>
+Subject: 82571EB: Detected Hardware Unit Hang
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 11:10 PM, Kees Cook wrote:
-> On Wed, Nov 7, 2012 at 1:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Tue, Nov 06, 2012 at 05:11:17PM -0800, Kees Cook wrote:
->>> Hrm, I don't like this. get_random_int() specifically says: "Get a
->>> random word for internal kernel use only." The intent of AT_RANDOM is
->>> for userspace pRNG seeding (though glibc currently uses it directly
->>> for stack protector and pointer mangling), which is not "internal
->>> kernel use only". :) Though I suppose this is already being used for
->>> the randomize_stack_top(), but I think it'd still be better to use
->>> higher quality bits.
->>
->> Well, in practice, right now, get_random_int() is only being used for
->> different cases of ASLR of one variety or another (either by the
->> kernel in exec or mmap, or in userspace).  So I'm not sure it really
->> is a major issue.
-> 
-> Hrm, yes. I see that the network code uses random32, not
-> get_random_int(). How are these different? Is one demonstrably better?
-I also have the same question in this point.
-Both generators are NOT considered safe for cryptographic use, but the
-comments of get_random_int() indicates that it could be used for several
-uses the cost of depleting entropy is too high, that's why I chose it.
-> 
->> If we also change get_random_int() to use a more secure cryptographic
->> random generator (i.e., maybe AES instead of MD5), would that be
->> sufficient to address your concerns?  We're not using get_random_int()
->> for anything that's timing sensitive, so that shouldn't be a problem.
-> 
-> I wonder if using AES would have a measurable impact on fork speeds?
-> 
->> Or maybe we should just add an explicit CRNG set of routines (like the
->> similar discussions to make an explicitly named PRNG set of routines),
->> so callers can use whatever random number generator is appropriate for
->> their performance and security needs.
-> 
-> If we do use get_random_int() here, I'd at least like to see its
-> comment changed to reflect its actual purpose (since it's not
-> "internal use only") as well as its expected unpredictability. (This
-> would help document the utility of get_random_bytes() vs
-> get_random_int() vs random32().)
-> 
-> -Kees
-Thanks,
--Jeff
+Hi list,
+
+IHAC reported "82571EB Detected Hardware Unit Hang" on HP ProLiant DL360 G6, and
+have to reboot the server to recover:
+
+e1000e 0000:06:00.1: eth3: Detected Hardware Unit Hang:
+  TDH                  <1a>
+  TDT                  <1a>
+  next_to_use          <1a>
+  next_to_clean        <18>
+buffer_info[next_to_clean]:
+  time_stamp           <10047a74e>
+  next_to_watch        <18>
+  jiffies              <10047a88c>
+  next_to_watch.status <1>
+MAC Status             <80383>
+PHY Status             <792d>
+PHY 1000BASE-T Status  <3800>
+PHY Extended Status    <3000>
+PCI Status             <10>
+
+With newer kernel 2.0.0.1 the issue still reproducible.
+
+Device info:
+06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
+06:00.1 0200: 8086:10bc (rev 06)
+
+I compared lspci output before and after the issue, different as below:
+ 06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
+ 	Subsystem: Hewlett-Packard Company NC364T PCI Express Quad Port Gigabit Server Adapter
+ 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx-
+-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
++	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx+
 
 
+Would you please help to it?
+
+Thanks in advance,
+Joe
+
+-- 
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
