@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab2KHOb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:31:27 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:38709 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755695Ab2KHOb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:31:26 -0500
-Message-ID: <509BC238.6000306@tao.ma>
-Date: Thu, 08 Nov 2012 22:31:20 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1756068Ab2KHOd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:33:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57644 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755695Ab2KHOd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 09:33:58 -0500
+Date: Thu, 8 Nov 2012 15:33:54 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>, JoonSoo Kim <js1304@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v6 19/29] memcg: infrastructure to match an allocation to
+ the right cache
+Message-ID: <20121108143354.GJ31821@dhcp22.suse.cz>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+ <1351771665-11076-20-git-send-email-glommer@parallels.com>
+ <20121105162837.5fdac20c.akpm@linux-foundation.org>
+ <20121106080354.GA21167@dhcp22.suse.cz>
+ <20121108110513.GE31821@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup: set 'start' with the right value in cgroup_path.
-References: <1352381798-2357-1-git-send-email-tm@tao.ma> <20121108142452.GB12973@htj.dyndns.org>
-In-Reply-To: <20121108142452.GB12973@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 122.224.222.226 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121108110513.GE31821@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2012 10:24 PM, Tejun Heo wrote:
-> Hello,
+On Thu 08-11-12 12:05:13, Michal Hocko wrote:
+> On Tue 06-11-12 09:03:54, Michal Hocko wrote:
+> > On Mon 05-11-12 16:28:37, Andrew Morton wrote:
+> > > On Thu,  1 Nov 2012 16:07:35 +0400
+> > > Glauber Costa <glommer@parallels.com> wrote:
+> > > 
+> > > > +static __always_inline struct kmem_cache *
+> > > > +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+> > > 
+> > > I still don't understand why this code uses __always_inline so much.
+> > 
+> > AFAIU, __always_inline (resp. __attribute__((always_inline))) is the
+> > same thing as inline if optimizations are enabled
+> > (http://ohse.de/uwe/articles/gcc-attributes.html#func-always_inline).
 > 
-> On Thu, Nov 08, 2012 at 09:36:38PM +0800, Tao Ma wrote:
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> 'start' is set to buf + buflen and do the '--' immediately.
->> Just set it to 'buf + buflen - 1' directly.
->>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Li Zefan <lizefan@huawei.com>
-> 
-> You're missing S-O-B.  I added it while applying.  Please ack if you
-> agree.
-oops, sorry, please add
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> And this doesn't tell the whole story because there is -fearly-inlining
+> which enabled by default and it makes a difference when optimizations
+> are enabled so __always_inline really enforces inlining.
 
-Thanks
-Tao
-> 
-> Heh, I'm not sure how much of an improvement this is but there's
-> obviously nothing wrong with it either.  Applying to cgroup/for-3.8.
-> 
-> Thanks.
-> 
+and -fearly-inlining is another doc trap. I have tried with -O2
+-fno-early-inlining and __always_inline code has been inlined with gcc
+4.3 and 4.7 while simple inline is ignored so it really seems that
+__always_inline is always inlined but man page is little a bit mean to
+tell us all the details.
 
+-- 
+Michal Hocko
+SUSE Labs
