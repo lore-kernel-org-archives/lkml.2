@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab2KHNQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:16:07 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40803 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab2KHNPO (ORCPT
+	id S1755821Ab2KHNQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:16:06 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43230 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab2KHNPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:15:14 -0500
+	Thu, 8 Nov 2012 08:15:15 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 4/7] nohz: Add API to check tick state
-Date: Thu,  8 Nov 2012 14:14:55 +0100
-Message-Id: <1352380498-23132-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/7] irq_work: Don't stop the tick with pending works
+Date: Thu,  8 Nov 2012 14:14:56 +0100
+Message-Id: <1352380498-23132-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
 References: <1352380498-23132-1-git-send-email-fweisbec@gmail.com>
@@ -25,9 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need some quick way to check if the CPU has stopped
-its tick. This will be useful to implement the printk tick
-using the irq work subsystem.
+Don't stop the tick if we have pending irq works on the
+queue, otherwise if the arch can't raise self-IPIs, we may not
+find an opportunity to execute the pending works for a while.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -37,64 +37,69 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/tick.h     |   17 ++++++++++++++++-
- kernel/time/tick-sched.c |    2 +-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ include/linux/irq_work.h |    6 ++++++
+ kernel/irq_work.c        |   11 +++++++++++
+ kernel/time/tick-sched.c |    3 ++-
+ 3 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f37fceb..2307dd3 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -8,6 +8,8 @@
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..a69704f 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -20,4 +20,10 @@ bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
  
- #include <linux/clockchips.h>
- #include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/hrtimer.h>
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- 
-@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
- # ifdef CONFIG_NO_HZ
-+DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
++#ifdef CONFIG_IRQ_WORK
++bool irq_work_needs_cpu(void);
++#else
++static bool irq_work_needs_cpu(void) { return false; }
++#endif
 +
-+static inline int tick_nohz_tick_stopped(void)
+ #endif /* _LINUX_IRQ_WORK_H */
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 64eddd5..b3c113a 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -99,6 +99,17 @@ bool irq_work_queue(struct irq_work *work)
+ }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
++bool irq_work_needs_cpu(void)
 +{
-+	return __this_cpu_read(tick_cpu_sched.tick_stopped);
++	struct llist_head *this_list;
++
++	this_list = &__get_cpu_var(irq_work_list);
++	if (llist_empty(this_list))
++		return false;
++
++	return true;
 +}
 +
- extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
--# else
-+
-+# else /* !CONFIG_NO_HZ */
-+static inline int tick_nohz_tick_stopped(void)
-+{
-+	return 0;
-+}
-+
- static inline void tick_nohz_idle_enter(void) { }
- static inline void tick_nohz_idle_exit(void) { }
- 
+ /*
+  * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+  * context with local IRQs disabled.
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index a402608..9e945aa 100644
+index 9e945aa..f249e8c 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -28,7 +28,7 @@
- /*
-  * Per cpu nohz control structure
-  */
--static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
-+DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+@@ -20,6 +20,7 @@
+ #include <linux/profile.h>
+ #include <linux/sched.h>
+ #include <linux/module.h>
++#include <linux/irq_work.h>
  
- /*
-  * The time, when the last jiffy update happened. Protected by xtime_lock.
+ #include <asm/irq_regs.h>
+ 
+@@ -289,7 +290,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 	} while (read_seqretry(&xtime_lock, seq));
+ 
+ 	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
+-	    arch_needs_cpu(cpu)) {
++	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
+ 	} else {
 -- 
 1.7.5.4
 
