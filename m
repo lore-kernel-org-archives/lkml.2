@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2KHJQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:16:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4735 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab2KHJQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:16:43 -0500
-X-IronPort-AV: E=Sophos;i="4.80,737,1344182400"; 
-   d="scan'208";a="6161222"
-Message-ID: <509B79DB.1010208@cn.fujitsu.com>
-Date: Thu, 08 Nov 2012 17:22:35 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1755128Ab2KHJRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:17:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5953 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385Ab2KHJRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 04:17:30 -0500
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: sjur@brendeland.net, "Michael S. Tsirkin" <mst@redhat.com>,
+        linus.walleij@linaro.org, masami.hiramatsu.pt@hitachi.com,
+        ohad@wizery.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [[PATCH v9 3/3] 1/1] virtio_console: Remove buffers from out_vq at port removal
+Date: Thu,  8 Nov 2012 10:17:03 +0100
+Message-Id: <029d7029bc1186fbd2ec74123dc88922b9600660.1352366215.git.amit.shah@redhat.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        lai jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH v2] memory-hotplug: fix NR_FREE_PAGES mismatch's fix
-References: <509B75FF.6070806@cn.fujitsu.com>
-In-Reply-To: <509B75FF.6070806@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/08 17:16:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/08 17:16:43,
-	Serialize complete at 2012/11/08 17:16:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/08/2012 05:06 PM, Wen Congyang Wrote:
-> 
-> When a page is freed and put into pcp list, get_freepage_migratetype()
-> doesn't return MIGRATE_ISOLATE even if this pageblock is isolated.
-> So we should use get_freepage_migratetype() instead of mt to check
-> whether it is isolated.
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-In my local tree, there are some patches from isimatu, so I don't add
--s option when generating the patch. So I forgot to add:
+Remove buffers from the out-queue when a port is removed. Rproc_serial
+communicates with remote processors that may crash and leave buffers in
+the out-queue. The virtio serial ports may have buffers in the out-queue
+as well, e.g. for non-blocking ports and the host didn't consume them
+yet.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Reported-by: Jianguo Wu <wujianguo106@gmail.com>
+[Amit: Remove WARN_ON for generic ports case.]
 
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/char/virtio_console.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> ---
->  mm/page_alloc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 027afd0..795875f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -667,7 +667,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
->  			__free_one_page(page, zone, 0, mt);
->  			trace_mm_page_pcpu_drain(page, 0, mt);
-> -			if (likely(mt != MIGRATE_ISOLATE)) {
-> +			if (likely(get_pageblock_migratetype(page) != MIGRATE_ISOLATE)) {
->  				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
->  				if (is_migrate_cma(mt))
->  					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 9ebadcb..5ff3b3e 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1521,6 +1521,10 @@ static void remove_port_data(struct port *port)
+ 	/* Remove buffers we queued up for the Host to send us data in. */
+ 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+ 		free_buf(buf, true);
++
++	/* Remove buffers we queued up for the Host to consume */
++	while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
++		free_buf(buf, true);
+ }
+ 
+ /*
+-- 
+1.7.7.6
 
