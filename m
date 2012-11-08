@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2KHXUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 18:20:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab2KHXUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 18:20:33 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230750D9832@in01wembx1.internal.synopsys.com>
-References: <C2D7FE5348E1B147BCA15975FBA230750D9832@in01wembx1.internal.synopsys.com> <509251CA.8050008@synopsys.com> <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>,<8419.1352387261@warthog.procyon.org.uk>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: dhowells@redhat.com, James Hogan <james@albanarts.com>,
-        "torvalds@osdl.org" <torvalds@osdl.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "hpa@zytor.com" <hpa@zytor.com>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
-Subject: Re: UAPI for new arches (was Re: [GIT PULL] User API Disintegrate: Preparatory patches)
-Date: Thu, 08 Nov 2012 23:19:48 +0000
-Message-ID: <14356.1352416788@warthog.procyon.org.uk>
+	id S1757271Ab2KHXZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 18:25:56 -0500
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:43988 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2KHXZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 18:25:55 -0500
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Puneet Kumar <puneetster@chromium.org>
+Subject: [PATCH] mm: Fix calculation of dirtyable memory
+Date: Thu,  8 Nov 2012 15:25:35 -0800
+Message-Id: <1352417135-25122-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+The system uses global_dirtyable_memory() to calculate
+number of dirtyable pages/pages that can be allocated
+to the page cache.  A bug causes an underflow thus making
+the page count look like a big unsigned number.  This in turn
+confuses the dirty writeback throttling to aggressively write
+back pages as they become dirty (usually 1 page at a time).
 
-> While I'd done some of the prep work in my code such as splitting __KERNEL__
-> && __ASSEMBLY__ into two separate lines, majority of orig headers didn't
-> have #ifdef __KERNEL__ guard despite the code not being meant for user-space
-> ABI. Is that fundamental to UAPI split scripting
+Fix is to ensure there is no underflow while doing the math.
 
-Yes.  My scripts work purely along __KERNEL__ lines.  If there are no
-__KERNEL__ markers and the header is marked for export, it is simply moved.
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Signed-off-by: Puneet Kumar <puneetster@chromium.org>
+---
+ mm/page-writeback.c |   17 +++++++++++++----
+ 1 files changed, 13 insertions(+), 4 deletions(-)
 
-> because it seems to be causing setup.h to be in uapi despite seemingly being
-> kernel internal only.
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 830893b..2a6356c 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -194,11 +194,19 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 	unsigned long x = 0;
+ 
+ 	for_each_node_state(node, N_HIGH_MEMORY) {
++		unsigned long nr_pages;
+ 		struct zone *z =
+ 			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 
+-		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
++		nr_pages = zone_page_state(z, NR_FREE_PAGES) +
++			zone_reclaimable_pages(z);
++		/*
++		 * Unreclaimable memory (kernel memory or anonymous memory
++		 * without swap) can bring down the dirtyable pages below
++		 * the zone's dirty balance reserve.
++		 */
++		if (nr_pages >= z->dirty_balance_reserve)
++			x += nr_pages - z->dirty_balance_reserve;
+ 	}
+ 	/*
+ 	 * Make sure that the number of highmem pages is never larger
+@@ -222,8 +230,9 @@ static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+-	    dirty_balance_reserve;
++	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	if (x >= dirty_balance_reserve)
++		x -= dirty_balance_reserve;
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+-- 
+1.7.7.3
 
-Check also include/uapi/asm-generic/Kbuild.asm.  That exports setup.h, whether
-you think it should be exported or not.
-
-Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
-
-> Per you email from last week, When I ran the disintergrate-one.pl script
-> myself I saw a whole bunch of empty UAPI files being generated with
-> references in orig header.  I'm not sure what I'm doing wrong.
-
-Can you give an example of such a header?
-
-> For any ABI changes to headers per review of the new port on list
-> (e.g. don't export pt_regs) would mean moving the code manually from uapi to
-> orig header - right. And if the file becomes empty just nuke it completely.
-
-You can't necessarily remove a UAPI header completely.  Userspace may depend
-on its existence, even if it gets no content from there.
-
-> How do you reckon we go about fixing these. I don't want to bother you
-> multiple times hence it would be best if I could reproduce this at my end.
-
-The best advice I can give you without more specific examples is to compare
-what's in your arch's headers to those of, say, hexagon or arm64.  Those are
-recent additions and should be pretty clean as to what they contain.
-
-David
