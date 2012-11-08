@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2KHOd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:33:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57644 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab2KHOd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:33:58 -0500
-Date: Thu, 8 Nov 2012 15:33:54 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>, JoonSoo Kim <js1304@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v6 19/29] memcg: infrastructure to match an allocation to
- the right cache
-Message-ID: <20121108143354.GJ31821@dhcp22.suse.cz>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
- <1351771665-11076-20-git-send-email-glommer@parallels.com>
- <20121105162837.5fdac20c.akpm@linux-foundation.org>
- <20121106080354.GA21167@dhcp22.suse.cz>
- <20121108110513.GE31821@dhcp22.suse.cz>
+	id S1756074Ab2KHOeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:34:37 -0500
+Received: from mo-p04-ob.rzone.de ([81.169.146.177]:60969 "EHLO
+	mo-p04-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2KHOeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 09:34:36 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Nov 2012 09:34:35 EST
+X-RZG-CLASS-ID: mo04
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRNV67U=
+Date: Thu, 8 Nov 2012 15:19:25 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Tomas Hozza <thozza@redhat.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Subject: Re: [PATCH] Tools: hv: Fix for long file names from readdir
+Message-ID: <20121108141925.GA20083@aepfle.de>
+References: <1352383995-13856-1-git-send-email-thozza@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121108110513.GE31821@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352383995-13856-1-git-send-email-thozza@redhat.com>
+User-Agent: Mutt/1.5.21.rev5558 (2012-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 08-11-12 12:05:13, Michal Hocko wrote:
-> On Tue 06-11-12 09:03:54, Michal Hocko wrote:
-> > On Mon 05-11-12 16:28:37, Andrew Morton wrote:
-> > > On Thu,  1 Nov 2012 16:07:35 +0400
-> > > Glauber Costa <glommer@parallels.com> wrote:
-> > > 
-> > > > +static __always_inline struct kmem_cache *
-> > > > +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-> > > 
-> > > I still don't understand why this code uses __always_inline so much.
-> > 
-> > AFAIU, __always_inline (resp. __attribute__((always_inline))) is the
-> > same thing as inline if optimizations are enabled
-> > (http://ohse.de/uwe/articles/gcc-attributes.html#func-always_inline).
-> 
-> And this doesn't tell the whole story because there is -fearly-inlining
-> which enabled by default and it makes a difference when optimizations
-> are enabled so __always_inline really enforces inlining.
+On Thu, Nov 08, Tomas Hozza wrote:
 
-and -fearly-inlining is another doc trap. I have tried with -O2
--fno-early-inlining and __always_inline code has been inlined with gcc
-4.3 and 4.7 while simple inline is ignored so it really seems that
-__always_inline is always inlined but man page is little a bit mean to
-tell us all the details.
+> kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
+> sized buffers which could be too small to store really long names.
 
--- 
-Michal Hocko
-SUSE Labs
+> -	char dev_id[256];
+> +	char dev_id[512];
+
+Shouldnt that be PATH_MAX or similar?
+
+Olaf
