@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab2KHMkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:40:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43362 "EHLO mga02.intel.com"
+	id S1755402Ab2KHMnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:43:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab2KHMkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:40:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,737,1344236400"; 
-   d="scan'208";a="216774144"
-Date: Thu, 8 Nov 2012 20:40:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, changlongx.xie@intel.com,
-        Steve Glendinning <steve.glendinning@smsc.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next:master 209/235] drivers/net/usb/smsc95xx.c:1134:39-50:
- ERROR: reference preceded by free on line 1136
-Message-ID: <20121108124024.GA9627@localhost>
-References: <509b644e.GcrhQalfrxVfFLjF%yuanhan.liu@linux.intel.com>
- <alpine.DEB.2.02.1211080907340.1945@localhost6.localdomain6>
+	id S1752004Ab2KHMns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 07:43:48 -0500
+Date: Thu, 8 Nov 2012 13:44:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <palves@redhat.com>
+Cc: Amnon Shiloh <u3557@miso.sublimeip.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Chris Evans <scarybeasts@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>, u3557@dialix.com.au,
+        security@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: PT_EXITKILL (Was: pdeath_signal)
+Message-ID: <20121108124424.GB20917@redhat.com>
+References: <20121106152050.GA18218@sergelap> <20121106201428.9D72959201A@miso.sublimeip.com> <20121107150934.GA27606@redhat.com> <509BA2B0.2080204@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1211080907340.1945@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <509BA2B0.2080204@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia,
+On 11/08, Pedro Alves wrote:
+>
+> On 11/07/2012 03:09 PM, Oleg Nesterov wrote:
+>
+> > OK. Please see the untested/uncompiled (but trivial) patch below
+> >
+> > 	- it adds PTRACE_O_EXITKILL. A better name?
+> >
+> > 	- A better numeric value? Note that the new option is not equal to
+> > 	  the last-ptrace-option << 1. Because currently all options have
+> > 	  the event, and the new one starts the eventless group. 1 << 16
+> > 	  means we have the room for 8 more events.
+> >
+> > 	- it needs the convincing changelog for akpm
+>
+>
+> If this isn't inherited by the ptrace child's children, a fork child can
+> end up detached if the tracer dies before it had a chance of setting
+> the PTRACE_O_EXITKILL on the new auto-attached child.
 
-On Thu, Nov 08, 2012 at 09:08:04AM +0100, Julia Lawall wrote:
-> It's a false positive because check_warn_return does a return.
+It is copied like the other options.
 
-Right.
+> Which sounds like another argument for PTRACE_O_INHERIT, as in:
+> http://sourceware.org/ml/archer/2011-q1/msg00026.html
 
-> But I wonder if there is a way that we can encourage people not to
-> do things like that?
+	The point of PTRACE_O_INHERIT would be to attach newly-created threads and
+	children without causing an event stop and the attendant overhead.
 
-Well I suspect the memory leak bug 06a221be0 tries to fix might be
-due to check_warn_return() hiding the otherwise very obvious syntax
-highlighted 'return' statement.
+this is another thing, I guess.
 
-Thanks,
-Fengguang
+> (it sounds like you need to use PTRACE_SEIZE+options too to plug
+> the race between PTRACE_ME/PTRACE_ATTACH and
+> setting PTRACE_SETOPTIONS).
 
-> >TO: Ming Lei <ming.lei@canonical.com>
-> >CC: netdev@vger.kernel.org
-> >
-> >
-> >Hi Ming,
-> >
-> >FYI, there are coccinelle warnings in
-> >
-> >tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
-> >head:   f1e0b5b4f1eae56a3192688177f36e2bdf0e01ac
-> >commit: 06a221be022c2cc98a48e0808a4ef0dc8f0b3a34 [209/235] usbnet: smsc95xx: fix memory leak in smsc95xx_suspend
-> >:::::: branch date: 8 hours ago
-> >:::::: commit date: 23 hours ago
-> >
-> >+ drivers/net/usb/smsc95xx.c:1134:39-50: ERROR: reference preceded by free on line 1136
-> > drivers/net/usb/smsc95xx.c:1139:8-19: ERROR: reference preceded by free on line 1136
-> >
-> >git remote update net-next
-> >git checkout 06a221be022c2cc98a48e0808a4ef0dc8f0b3a34
-> >vim +1134 drivers/net/usb/smsc95xx.c
-> >
-> >bbd9f9ee Steve Glendinning 2012-10-26  1128  			offset[filter/4] |= 0x00 << ((filter % 4) * 8);
-> >bbd9f9ee Steve Glendinning 2012-10-26  1129  			crc[filter/2] |= smsc_crc(dev->net->dev_addr, ETH_ALEN, filter);
-> >bbd9f9ee Steve Glendinning 2012-10-26  1130  			filter++;
-> >bbd9f9ee Steve Glendinning 2012-10-26  1131  		}
-> >bbd9f9ee Steve Glendinning 2012-10-26  1132
-> >bbd9f9ee Steve Glendinning 2012-10-26  1133  		for (i = 0; i < (pdata->wuff_filter_count * 4); i++) {
-> >bbd9f9ee Steve Glendinning 2012-10-26 @1134  			ret = smsc95xx_write_reg(dev, WUFF, filter_mask[i]);
-> >06a221be Ming Lei          2012-11-06  1135  			if (ret < 0)
-> >06a221be Ming Lei          2012-11-06 @1136  				kfree(filter_mask);
-> >bbd9f9ee Steve Glendinning 2012-10-26  1137  			check_warn_return(ret, "Error writing WUFF");
-> >bbd9f9ee Steve Glendinning 2012-10-26  1138  		}
-> >06a221be Ming Lei          2012-11-06  1139  		kfree(filter_mask);
-> >
-> >:::::: The code at line 1134 was first introduced by commit:
-> >:::::: bbd9f9e smsc95xx: add wol support for more frame types
-> >
-> >:::::: TO: Steve Glendinning <steve.glendinning@shawell.net>
-> >:::::: CC: David S. Miller <davem@davemloft.net>
-> >
-> >---
-> >0-DAY kernel build testing backend         Open Source Technology Center
-> >Fengguang Wu, Yuanhan Liu                              Intel Corporation
-> >
+Agreed, PTRACE_SEIZE+options is better.
+
+> (For completeness, Windows' age old equivalent,
+> DebugSetProcessKillOnExit, it a tracer option, not tracee option, though
+> that's not as flexible.)
+
+Thanks ;)
+
+Oleg.
+
