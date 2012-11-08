@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab2KHQdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 11:33:13 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:38505 "EHLO coraid.com"
+	id S1756351Ab2KHQfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 11:35:05 -0500
+Received: from dupo.coraid.com ([208.71.232.133]:51882 "EHLO coraid.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756273Ab2KHQdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 11:33:02 -0500
-Message-Id: <9a089f76a8e21e64c89556d155833bcb286e48be.1352316179.git.ecashin@coraid.com>
+	id S1756305Ab2KHQfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 11:35:03 -0500
+Message-Id: <481d2013c3a8f728c6fe030770eb72c63a324923.1352316179.git.ecashin@coraid.com>
 In-Reply-To: <d63a612e77d92e4f7c13fc2bb545a762a664522d.1352316179.git.ecashin@coraid.com>
 References: <d63a612e77d92e4f7c13fc2bb545a762a664522d.1352316179.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 2/8] aoe: provide ATA identify device content to user on request
+Subject: [PATCH 3/8] aoe: improve network congestion handling
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
 From: Ed Cashin <ecashin@coraid.com>
 X-Mailer: nedmail
-Date: Thu, 8 Nov 2012 11:32:09 -0500
+Date: Thu, 8 Nov 2012 11:34:09 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
@@ -23,113 +23,418 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the aoe driver follow expected behavior when
-the user uses ioctl to get the ATA device identify information.
+The aoe driver already had some congestion handling, but it was
+limited in its ability to cope with the kind of congestion that
+can arise on more complex networks such as those involving paths
+through multiple ethernet switches.
+
+Some of the lessons from TCP's history of development can be
+applied to improving the congestion control and avoidance on AoE
+storage networks.  These changes use familar concepts from Van
+Jacobson's "Congestion Avoidance and Control" paper from '88,
+without adding significant overhead.
+
+This patch depends on an upcoming patch that covers the failover
+case when AoE commands being retransmitted are transferred from
+one retransmit queue to another.
 
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- drivers/block/aoe/aoe.h    |    1 +
- drivers/block/aoe/aoeblk.c |   30 ++++++++++++++++++++++++++++++
- drivers/block/aoe/aoecmd.c |   16 ++++++++++++++++
- 3 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/block/aoe/aoe.h    |   16 +++--
+ drivers/block/aoe/aoecmd.c |  173 +++++++++++++++++++++++++++-----------------
+ drivers/block/aoe/aoedev.c |    6 +-
+ 3 files changed, 121 insertions(+), 74 deletions(-)
 
 diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index 536942b..f6e0c03 100644
+index f6e0c03..9e884ac 100644
 --- a/drivers/block/aoe/aoe.h
 +++ b/drivers/block/aoe/aoe.h
-@@ -169,6 +169,7 @@ struct aoedev {
+@@ -86,8 +86,11 @@ enum {
+ 	NFACTIVE = 61,
+ 
+ 	TIMERTICK = HZ / 10,
+-	MINTIMER = HZ >> 2,
++	RTTSCALE = 8,
++	RTTDSCALE = 3,
+ 	MAXTIMER = HZ << 1,
++	RTTAVG_INIT = HZ / 4 << RTTSCALE,
++	RTTDEV_INIT = RTTAVG_INIT / 4,
+ };
+ 
+ struct buf {
+@@ -127,10 +130,11 @@ struct aoetgt {
+ 	struct list_head ffree;			/* list of free frames */
+ 	struct aoeif ifs[NAOEIFS];
+ 	struct aoeif *ifp;	/* current aoeif in use */
+-	ushort nout;
++	ushort nout;		/* value of nout when skb was sent */
+ 	ushort maxout;		/* current value for max outstanding */
++	ushort next_cwnd;	/* incr maxout after decrementing to zero */
++	ushort ssthresh;	/* slow start threshold */
+ 	ulong falloc;		/* number of allocated frames */
+-	ulong lastwadj;		/* last window adjustment */
+ 	int minbcnt;
+ 	int wpkts, rpkts;
+ };
+@@ -142,8 +146,8 @@ struct aoedev {
+ 	u16 aoeminor;
+ 	u16 flags;
+ 	u16 nopen;		/* (bd_openers isn't available without sleeping) */
+-	u16 rttavg;		/* round trip average of requests/responses */
+-	u16 mintimer;
++	u16 rttavg;		/* scaled AoE round trip time average */
++	u16 rttdev;		/* scaled round trip time mean deviation */
+ 	u16 fw_ver;		/* version of blade's firmware */
+ 	u16 lasttag;		/* last tag sent */
+ 	u16 useme;
+@@ -164,6 +168,7 @@ struct aoedev {
+ 	} ip;
+ 	ulong maxbcnt;
+ 	struct list_head factive[NFACTIVE];	/* hash of active frames */
++	struct list_head rexmitq; /* deferred retransmissions */
+ 	struct aoetgt *targets[NTARGETS];
+ 	struct aoetgt **tgt;	/* target in use when working */
  	struct aoetgt *htgt;	/* target needing rexmit assistance */
- 	ulong ntargets;
- 	ulong kicked;
-+	char ident[512];
- };
- 
- /* kthread tracking */
-diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
-index 56736cd..7ba0fcf 100644
---- a/drivers/block/aoe/aoeblk.c
-+++ b/drivers/block/aoe/aoeblk.c
-@@ -17,6 +17,7 @@
- #include <linux/mutex.h>
- #include <linux/export.h>
- #include <linux/moduleparam.h>
-+#include <scsi/sg.h>
- #include "aoe.h"
- 
- static DEFINE_MUTEX(aoeblk_mutex);
-@@ -212,9 +213,38 @@ aoeblk_getgeo(struct block_device *bdev, struct hd_geometry *geo)
- 	return 0;
- }
- 
-+static int
-+aoeblk_ioctl(struct block_device *bdev, fmode_t mode, uint cmd, ulong arg)
-+{
-+	struct aoedev *d;
-+
-+	if (!arg)
-+		return -EINVAL;
-+
-+	d = bdev->bd_disk->private_data;
-+	if ((d->flags & DEVFL_UP) == 0) {
-+		pr_err("aoe: disk not up\n");
-+		return -ENODEV;
-+	}
-+
-+	if (cmd == HDIO_GET_IDENTITY) {
-+		if (!copy_to_user((void __user *) arg, &d->ident,
-+			sizeof(d->ident)))
-+			return 0;
-+		return -EFAULT;
-+	}
-+
-+	/* udev calls scsi_id, which uses SG_IO, resulting in noise */
-+	if (cmd != SG_IO)
-+		pr_info("aoe: unknown ioctl 0x%x\n", cmd);
-+
-+	return -ENOTTY;
-+}
-+
- static const struct block_device_operations aoe_bdops = {
- 	.open = aoeblk_open,
- 	.release = aoeblk_release,
-+	.ioctl = aoeblk_ioctl,
- 	.getgeo = aoeblk_getgeo,
- 	.owner = THIS_MODULE,
- };
+@@ -196,6 +201,7 @@ void aoecmd_cfg(ushort aoemajor, unsigned char aoeminor);
+ struct sk_buff *aoecmd_ata_rsp(struct sk_buff *);
+ void aoecmd_cfg_rsp(struct sk_buff *);
+ void aoecmd_sleepwork(struct work_struct *);
++void aoecmd_wreset(struct aoetgt *t);
+ void aoecmd_cleanslate(struct aoedev *);
+ void aoecmd_exit(void);
+ int aoecmd_init(void);
 diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 3ce01f6..c4ff70b 100644
+index c4ff70b..f849fa2 100644
 --- a/drivers/block/aoe/aoecmd.c
 +++ b/drivers/block/aoe/aoecmd.c
-@@ -799,6 +799,17 @@ aoecmd_sleepwork(struct work_struct *work)
+@@ -59,6 +59,23 @@ new_skb(ulong len)
+ }
+ 
+ static struct frame *
++getframe_deferred(struct aoedev *d, u32 tag)
++{
++	struct list_head *head, *pos, *nx;
++	struct frame *f;
++
++	head = &d->rexmitq;
++	list_for_each_safe(pos, nx, head) {
++		f = list_entry(pos, struct frame, head);
++		if (f->tag == tag) {
++			list_del(pos);
++			return f;
++		}
++	}
++	return NULL;
++}
++
++static struct frame *
+ getframe(struct aoedev *d, u32 tag)
+ {
+ 	struct frame *f;
+@@ -553,10 +570,29 @@ sthtith(struct aoedev *d)
  }
  
  static void
-+ata_ident_fixstring(u16 *id, int ns)
++rexmit_deferred(struct aoedev *d)
 +{
-+	u16 s;
++	struct aoetgt *t;
++	struct frame *f;
++	struct list_head *pos, *nx, *head;
 +
-+	while (ns-- > 0) {
-+		s = *id;
-+		*id++ = s >> 8 | s << 8;
++	head = &d->rexmitq;
++	list_for_each_safe(pos, nx, head) {
++		f = list_entry(pos, struct frame, head);
++		t = f->t;
++		if (t->nout >= t->maxout)
++			continue;
++		list_del(pos);
++		t->nout++;
++		resend(d, f);
 +	}
 +}
 +
 +static void
- ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
+ rexmit_timer(ulong vp)
  {
- 	u64 ssize;
-@@ -833,6 +844,11 @@ ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
- 		d->geo.sectors = get_unaligned_le16(&id[56 << 1]);
+ 	struct aoedev *d;
+-	struct aoetgt *t, **tt, **te;
++	struct aoetgt *t;
+ 	struct aoeif *ifp;
+ 	struct frame *f;
+ 	struct list_head *head, *pos, *nx;
+@@ -567,9 +603,11 @@ rexmit_timer(ulong vp)
+ 
+ 	d = (struct aoedev *) vp;
+ 
+-	/* timeout is always ~150% of the moving average */
+-	timeout = d->rttavg;
+-	timeout += timeout >> 1;
++	/* timeout based on observed timings and variations */
++	timeout = 2 * d->rttavg >> RTTSCALE;
++	timeout += 8 * d->rttdev >> RTTDSCALE;
++	if (timeout == 0)
++		timeout = 1;
+ 
+ 	spin_lock_irqsave(&d->lock, flags);
+ 
+@@ -589,29 +627,12 @@ rexmit_timer(ulong vp)
+ 			list_move_tail(pos, &flist);
+ 		}
+ 	}
+-	/* window check */
+-	tt = d->targets;
+-	te = tt + d->ntargets;
+-	for (; tt < te && (t = *tt); tt++) {
+-		if (t->nout == t->maxout
+-		&& t->maxout < t->nframes
+-		&& (jiffies - t->lastwadj)/HZ > 10) {
+-			t->maxout++;
+-			t->lastwadj = jiffies;
+-		}
+-	}
+-
+-	if (!list_empty(&flist)) {	/* retransmissions necessary */
+-		n = d->rttavg <<= 1;
+-		if (n > MAXTIMER)
+-			d->rttavg = MAXTIMER;
+-	}
+ 
+ 	/* process expired frames */
+ 	while (!list_empty(&flist)) {
+ 		pos = flist.next;
+ 		f = list_entry(pos, struct frame, head);
+-		n = f->waited += timeout;
++		n = f->waited += tsince(f->tag);
+ 		n /= HZ;
+ 		if (n > aoe_deadsecs) {
+ 			/* Waited too long.  Device failure.
+@@ -620,18 +641,16 @@ rexmit_timer(ulong vp)
+ 			 */
+ 			list_splice(&flist, &d->factive[0]);
+ 			aoedev_downdev(d);
+-			break;
++			goto out;
+ 		}
+-		list_del(pos);
+ 
+ 		t = f->t;
+ 		if (n > aoe_deadsecs/2)
+ 			d->htgt = t; /* see if another target can help */
+ 
+-		if (t->nout == t->maxout) {
+-			if (t->maxout > 1)
+-				t->maxout--;
+-			t->lastwadj = jiffies;
++		if (t->maxout != 1) {
++			t->ssthresh = t->maxout / 2;
++			t->maxout = 1;
+ 		}
+ 
+ 		ifp = getif(t, f->skb->dev);
+@@ -640,9 +659,12 @@ rexmit_timer(ulong vp)
+ 			ejectif(t, ifp);
+ 			ifp = NULL;
+ 		}
+-		resend(d, f);
++		list_move_tail(pos, &d->rexmitq);
++		t->nout--;
+ 	}
++	rexmit_deferred(d);
+ 
++out:
+ 	if ((d->flags & DEVFL_KICKME || d->htgt) && d->blkq) {
+ 		d->flags &= ~DEVFL_KICKME;
+ 		d->blkq->request_fn(d->blkq);
+@@ -766,6 +788,7 @@ aoecmd_work(struct aoedev *d)
+ {
+ 	if (d->htgt && !sthtith(d))
+ 		return;
++	rexmit_deferred(d);
+ 	while (aoecmd_ata_rw(d))
+ 		;
+ }
+@@ -868,26 +891,28 @@ ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
+ }
+ 
+ static void
+-calc_rttavg(struct aoedev *d, int rtt)
++calc_rttavg(struct aoedev *d, struct aoetgt *t, int rtt)
+ {
+ 	register long n;
+ 
+ 	n = rtt;
+-	if (n < 0) {
+-		n = -rtt;
+-		if (n < MINTIMER)
+-			n = MINTIMER;
+-		else if (n > MAXTIMER)
+-			n = MAXTIMER;
+-		d->mintimer += (n - d->mintimer) >> 1;
+-	} else if (n < d->mintimer)
+-		n = d->mintimer;
+-	else if (n > MAXTIMER)
+-		n = MAXTIMER;
+-
+-	/* g == .25; cf. Congestion Avoidance and Control, Jacobson & Karels; 1988 */
+-	n -= d->rttavg;
+-	d->rttavg += n >> 2;
++
++	/* cf. Congestion Avoidance and Control, Jacobson & Karels, 1988 */
++	n -= d->rttavg >> RTTSCALE;
++	d->rttavg += n;
++	if (n < 0)
++		n = -n;
++	n -= d->rttdev >> RTTDSCALE;
++	d->rttdev += n;
++
++	if (!t || t->maxout >= t->nframes)
++		return;
++	if (t->maxout < t->ssthresh)
++		t->maxout += 1;
++	else if (t->nout == t->maxout && t->next_cwnd-- == 0) {
++		t->maxout += 1;
++		t->next_cwnd = t->maxout;
++	}
+ }
+ 
+ static struct aoetgt *
+@@ -1147,7 +1172,6 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 	struct aoedev *d;
+ 	struct aoe_hdr *h;
+ 	struct frame *f;
+-	struct aoetgt *t;
+ 	u32 n;
+ 	ulong flags;
+ 	char ebuf[128];
+@@ -1168,23 +1192,28 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 
+ 	n = be32_to_cpu(get_unaligned(&h->tag));
+ 	f = getframe(d, n);
+-	if (f == NULL) {
+-		calc_rttavg(d, -tsince(n));
+-		spin_unlock_irqrestore(&d->lock, flags);
+-		aoedev_put(d);
+-		snprintf(ebuf, sizeof ebuf,
+-			"%15s e%d.%d    tag=%08x@%08lx\n",
+-			"unexpected rsp",
+-			get_unaligned_be16(&h->major),
+-			h->minor,
+-			get_unaligned_be32(&h->tag),
+-			jiffies);
+-		aoechr_error(ebuf);
+-		return skb;
++	if (f) {
++		calc_rttavg(d, f->t, tsince(n));
++		f->t->nout--;
++	} else {
++		f = getframe_deferred(d, n);
++		if (f) {
++			calc_rttavg(d, NULL, tsince(n));
++		} else {
++			calc_rttavg(d, NULL, tsince(n));
++			spin_unlock_irqrestore(&d->lock, flags);
++			aoedev_put(d);
++			snprintf(ebuf, sizeof(ebuf),
++				 "%15s e%d.%d    tag=%08x@%08lx\n",
++				 "unexpected rsp",
++				 get_unaligned_be16(&h->major),
++				 h->minor,
++				 get_unaligned_be32(&h->tag),
++				 jiffies);
++			aoechr_error(ebuf);
++			return skb;
++		}
+ 	}
+-	t = f->t;
+-	calc_rttavg(d, tsince(f->tag));
+-	t->nout--;
+ 	aoecmd_work(d);
+ 
+ 	spin_unlock_irqrestore(&d->lock, flags);
+@@ -1241,7 +1270,8 @@ aoecmd_ata_id(struct aoedev *d)
+ 
+ 	skb->dev = t->ifp->nd;
+ 
+-	d->rttavg = MAXTIMER;
++	d->rttavg = RTTAVG_INIT;
++	d->rttdev = RTTDEV_INIT;
+ 	d->timer.function = rexmit_timer;
+ 
+ 	return skb_clone(skb, GFP_ATOMIC);
+@@ -1273,7 +1303,7 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
+ 	t->d = d;
+ 	memcpy(t->addr, addr, sizeof t->addr);
+ 	t->ifp = t->ifs;
+-	t->maxout = t->nframes;
++	aoecmd_wreset(t);
+ 	INIT_LIST_HEAD(&t->ffree);
+ 	return *tt = t;
+ }
+@@ -1382,7 +1412,7 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
+ 	if (t) {
+ 		t->nframes = n;
+ 		if (n < t->maxout)
+-			t->maxout = n;
++			aoecmd_wreset(t);
+ 	} else {
+ 		t = addtgt(d, h->src, n);
+ 		if (!t)
+@@ -1412,17 +1442,26 @@ bail:
+ }
+ 
+ void
++aoecmd_wreset(struct aoetgt *t)
++{
++	t->maxout = 1;
++	t->ssthresh = t->nframes / 2;
++	t->next_cwnd = t->nframes;
++}
++
++void
+ aoecmd_cleanslate(struct aoedev *d)
+ {
+ 	struct aoetgt **t, **te;
+ 
+-	d->mintimer = MINTIMER;
++	d->rttavg = RTTAVG_INIT;
++	d->rttdev = RTTDEV_INIT;
+ 	d->maxbcnt = 0;
+ 
+ 	t = d->targets;
+ 	te = t + NTARGETS;
+ 	for (; t < te && *t; t++)
+-		(*t)->maxout = (*t)->nframes;
++		aoecmd_wreset(*t);
+ }
+ 
+ void
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 63b2660..3c3aef2 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -198,7 +198,7 @@ aoedev_downdev(struct aoedev *d)
+ 	tt = d->targets;
+ 	te = tt + NTARGETS;
+ 	for (; tt < te && (t = *tt); tt++) {
+-		t->maxout = t->nframes;
++		aoecmd_wreset(t);
+ 		t->nout = 0;
  	}
  
-+	ata_ident_fixstring((u16 *) &id[10<<1], 10);	/* serial */
-+	ata_ident_fixstring((u16 *) &id[23<<1], 4);	/* firmware */
-+	ata_ident_fixstring((u16 *) &id[27<<1], 20);	/* model */
-+	memcpy(d->ident, id, sizeof(d->ident));
-+
- 	if (d->ssize != ssize)
- 		printk(KERN_INFO
- 			"aoe: %pm e%ld.%d v%04x has %llu sectors\n",
+@@ -391,10 +391,12 @@ aoedev_by_aoeaddr(ulong maj, int min, int do_alloc)
+ 	d->ref = 1;
+ 	for (i = 0; i < NFACTIVE; i++)
+ 		INIT_LIST_HEAD(&d->factive[i]);
++	INIT_LIST_HEAD(&d->rexmitq);
+ 	d->sysminor = sysminor;
+ 	d->aoemajor = maj;
+ 	d->aoeminor = min;
+-	d->mintimer = MINTIMER;
++	d->rttavg = RTTAVG_INIT;
++	d->rttdev = RTTDEV_INIT;
+ 	d->next = devlist;
+ 	devlist = d;
+  out:
 -- 
 1.7.1
 
