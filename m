@@ -1,85 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2KHQCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 11:02:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36054 "EHLO mx1.redhat.com"
+	id S1756308Ab2KHQZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 11:25:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34988 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab2KHQC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 11:02:29 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tests: Move attr.py temp dir cleanup into finally section
-Date: Thu,  8 Nov 2012 17:01:01 +0100
-Message-Id: <1352390461-15404-1-git-send-email-jolsa@redhat.com>
+	id S1756285Ab2KHQZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 11:25:44 -0500
+Date: Thu, 8 Nov 2012 17:25:39 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        rientjes@google.com, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3] memcg, oom: provide more precise dump info while
+ memcg oom happening
+Message-ID: <20121108162539.GP31821@dhcp22.suse.cz>
+References: <1352389967-23270-1-git-send-email-handai.szj@taobao.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352389967-23270-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if there's 'Unsup' exception raised, we do not clean
-up the temp directory. Solving this by adding 'finally' to
-make the cleanup in any case.
+On Thu 08-11-12 23:52:47, Sha Zhengju wrote:
+[...]
+> (2) After change
+> [  269.225628] mal invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
+> [  269.225633] mal cpuset=/ mems_allowed=0-1
+> [  269.225636] Pid: 4616, comm: mal Not tainted 3.6.0+ #25
+> [  269.225637] Call Trace:
+> [  269.225647]  [<ffffffff8111b9c4>] dump_header+0x84/0xd0
+> [  269.225650]  [<ffffffff8111c691>] oom_kill_process+0x331/0x350
+> [  269.225710]  .......(call trace)
+> [  269.225713]  [<ffffffff81517325>] page_fault+0x25/0x30
+> [  269.225716] Task in /1/2 killed as a result of limit of /1
+> [  269.225718] memory: usage 511732kB, limit 512000kB, failcnt 5071
+> [  269.225720] memory+swap: usage 563200kB, limit 563200kB, failcnt 57
+> [  269.225721] kmem: usage 0kB, limit 9007199254740991kB, failcnt 0
+> [  269.225722] Memory cgroup stats:cache:8KB rss:511724KB mapped_file:4KB swap:51468KB inactive_anon:265864KB active_anon:245832KB inactive_file:0KB active_file:0KB unevictable:0KB
+> [  269.225741] [ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name
+> [  269.225757] [ 4554]     0  4554    16626      473      17       25             0 bash
+> [  269.225759] [ 4611]     0  4611   103328    90231     208    12260             0 mal
+> [  269.225762] [ 4616]     0  4616   103328    32799      88     7562             0 mal
+> [  269.225764] Memory cgroup out of memory: Kill process 4611 (mal) score 699 or sacrifice child
+> [  269.225766] Killed process 4611 (mal) total-vm:413312kB, anon-rss:360632kB, file-rss:292kB
+> 
+> This version provides more pointed info for memcg in "Memory cgroup stats" section.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/attr.py | 30 ++++++++++++++++--------------
- 1 file changed, 16 insertions(+), 14 deletions(-)
+Looks much better!
 
-diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
-index 9b25b33c..e702b82 100644
---- a/tools/perf/tests/attr.py
-+++ b/tools/perf/tests/attr.py
-@@ -228,24 +228,26 @@ class Test(object):
-     def run(self):
-         tempdir = tempfile.mkdtemp();
- 
--        # run the test script
--        self.run_cmd(tempdir);
-+        try:
-+            # run the test script
-+            self.run_cmd(tempdir);
- 
--        # load events expectation for the test
--        log.info("  loading result events");
--        for f in glob.glob(tempdir + '/event*'):
--            self.load_events(f, self.result);
-+            # load events expectation for the test
-+            log.info("  loading result events");
-+            for f in glob.glob(tempdir + '/event*'):
-+                self.load_events(f, self.result);
- 
--        # resolve group_fd to event names
--        self.resolve_groups(self.expect);
--        self.resolve_groups(self.result);
-+            # resolve group_fd to event names
-+            self.resolve_groups(self.expect);
-+            self.resolve_groups(self.result);
- 
--        # do the expectation - results matching - both ways
--        self.compare(self.expect, self.result)
--        self.compare(self.result, self.expect)
-+            # do the expectation - results matching - both ways
-+            self.compare(self.expect, self.result)
-+            self.compare(self.result, self.expect)
- 
--        # cleanup
--        shutil.rmtree(tempdir)
-+        finally:
-+            # cleanup
-+            shutil.rmtree(tempdir)
- 
- 
- def run_tests(options):
+> 
+> Change log:
+> v3 <--- v2
+> 	1. fix towards hierarchy
+> 	2. undo rework dump_tasks
+> v2 <--- v1
+> 	1. some modification towards hierarchy
+> 	2. rework dump_tasks
+> 	3. rebased on Michal's mm tree since-3.6
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>  mm/memcontrol.c |   41 +++++++++++++++++++++++++++++++----------
+>  mm/oom_kill.c   |    6 ++++--
+>  2 files changed, 35 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0eab7d5..17317fa 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -1501,8 +1509,8 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+>  	spin_unlock_irqrestore(&memcg->move_lock, *flags);
+>  }
+>  
+> +#define K(x) ((x) << (PAGE_SHIFT-10))
+>  /**
+> - * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
+
+No need to remove this just fix it:
+ * mem_cgroup_print_oom_info: Print OOM information relevant to memory controller.
+
+>   * @memcg: The memory cgroup that went over limit
+>   * @p: Task that is going to be killed
+>   *
+> @@ -1520,8 +1528,10 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>  	 */
+>  	static char memcg_name[PATH_MAX];
+>  	int ret;
+> +	struct mem_cgroup *mi;
+> +	unsigned int i;
+>  
+> -	if (!memcg || !p)
+> +	if (!p)
+>  		return;
+>  
+>  	rcu_read_lock();
+> @@ -1569,6 +1579,25 @@ done:
+>  		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
+>  		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
+>  		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+> +
+> +	printk(KERN_INFO "Memory cgroup stats:");
+
+"Memory cgroup hierarchy stats" is probably a better fit with the
+current implementation.
+
+> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +		long long val = 0;
+> +		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+> +			continue;
+> +		for_each_mem_cgroup_tree(mi, memcg)
+> +			val += mem_cgroup_read_stat(mi, i);
+> +		printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
+> +	}
+> +
+> +	for (i = 0; i < NR_LRU_LISTS; i++) {
+> +		unsigned long long val = 0;
+> +
+> +		for_each_mem_cgroup_tree(mi, memcg)
+> +			val += mem_cgroup_nr_lru_pages(mi, BIT(i));
+> +		printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
+> +	}
+> +	printk(KERN_CONT "\n");
+
+This is nice and simple I am just thinking whether it is enough. Say
+that you have a deeper hierarchy and the there is a safety limit in the
+its root
+        A (limit)
+       /|\
+      B C D
+          |\
+	  E F
+
+and we trigger an OOM on the A's limit. Now we know that something blew
+up but what it was we do not know. Wouldn't it be better to swap the for
+and for_each_mem_cgroup_tree loops? Then we would see the whole
+hierarchy and can potentially point at the group which doesn't behave.
+Memory cgroup stats for A/: ...
+Memory cgroup stats for A/B/: ...
+Memory cgroup stats for A/C/: ...
+Memory cgroup stats for A/D/: ...
+Memory cgroup stats for A/D/E/: ...
+Memory cgroup stats for A/D/F/: ...
+
+Would it still fit in with your use case?
+[...]
 -- 
-1.7.11.7
-
+Michal Hocko
+SUSE Labs
