@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab2KHVzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:55:17 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34543 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab2KHVzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:55:15 -0500
-Date: Thu, 8 Nov 2012 13:55:12 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KY Srinivasan <kys@microsoft.com>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>
-Subject: RE: [PATCH 1/2] mm: Export vm_committed_as
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930DFC381@SN2PRD0310MB382.namprd03.prod.outlook.com>
-Message-ID: <alpine.DEB.2.00.1211081354550.19214@chino.kir.corp.google.com>
-References: <1349654347-18337-1-git-send-email-kys@microsoft.com> <1349654386-18378-1-git-send-email-kys@microsoft.com> <20121008004358.GA12342@kroah.com> <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20121008133539.GA15490@kroah.com> <20121009124755.ce1087b4.akpm@linux-foundation.org> <426367E2313C2449837CD2DE46E7EAF930DF7FBB@SN2PRD0310MB382.namprd03.prod.outlook.com> <20121105134456.f655b85a.akpm@linux-foundation.org>
- <426367E2313C2449837CD2DE46E7EAF930DFA7B8@SN2PRD0310MB382.namprd03.prod.outlook.com> <20121106090539.GB21167@dhcp22.suse.cz> <426367E2313C2449837CD2DE46E7EAF930DFC381@SN2PRD0310MB382.namprd03.prod.outlook.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757177Ab2KHV7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:59:51 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:60048 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752466Ab2KHV7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 16:59:49 -0500
+Date: Thu, 8 Nov 2012 06:47:08 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <stephan.mueller@atsec.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: drivers/char/random.c: variable type mismatch
+Message-ID: <20121108114708.GB5859@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <stephan.mueller@atsec.com>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <509AFDA6.7070005@atsec.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <509AFDA6.7070005@atsec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Nov 2012, KY Srinivasan wrote:
-
-> > Thanks Michal. Yes, the kernel driver reports this metric to the host.
-> > Andrew, let me know how I should proceed here.
+On Thu, Nov 08, 2012 at 01:32:38AM +0100, Stephan Mueller wrote:
 > 
-> Ping.
-> 
+> However, due to the fact that jiffies provides very few entropy, the
+> event value provides (almost) none, the majority of entropy comes from
+> the processor cycles. Assuming that the processor cycles increase once
+> per nanosecond, after 2**32 cycles (about 4 seconds), the counter wraps.
 
-Could you respond to my email in this thread?
+Sure, we can make this change, but it doesn't make as much difference
+as you think.  The high 32 bits gets incremented about ounce every 4
+seconds, while jiffies gets incremented once every 1/HZ seconds.  But
+the point is they are pretty well correlated (i.e., if you know the
+jiffies values A' and A'', and I know the high 32 bits of the cycles
+B', and you can determine the likely value of B'' to a very high
+degree of accuracy.  Values which are correlated don't actually
+entropy.
+
+							- Ted
