@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab2KHGVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 01:21:37 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18116 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab2KHGVg (ORCPT
+	id S1754468Ab2KHGWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:22:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17942 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2KHGWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 01:21:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 07 Nov 2012 22:08:13 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: How about a gpio_get(device *, char *) function?
-Date: Thu, 8 Nov 2012 15:23:22 +0900
-Message-ID: <1503934.I4tc7K6I6s@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.2 (Linux/3.6.4-1-ARCH; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
-References: <38620644.IyR5R8rjKP@percival> <1801189.6J3flQFRCq@percival> <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
+	Thu, 8 Nov 2012 01:22:06 -0500
+Message-ID: <509B4F78.4060007@oracle.com>
+Date: Thu, 08 Nov 2012 14:21:44 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Kees Cook <keescook@chromium.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>, akpm@linux-foundation.org,
+        aedilger@gmail.com, alan@linux.intel.com, gregkh@linuxfoundation.org,
+        jakub@redhat.com, james.l.morris@oracle.com, john.sobecki@oracle.com,
+        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
+ added to -mm tree
+References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com> <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com> <20121107093246.GD21960@thunk.org> <CAGXu5jKY9SdZU7BibZf9kLx-MO3tVASPWE2hHZJXSPRkWfivKQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jKY9SdZU7BibZf9kLx-MO3tVASPWE2hHZJXSPRkWfivKQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 November 2012 05:24:19 Linus Walleij wrote:
-> On Tue, Nov 6, 2012 at 2:33 AM, Alex Courbot <acourbot@nvidia.com> wrote:
-> > How about, in a first time (and because I'd also like to get the power
-> > seqs
-> > moving on), a typedef from int to gpio_handle_t and a first implementation
-> > of the gpio_handle_*() API that would just call the existing
-> > integer-based API (apart from gpio_handle_get())? That way things will
-> > not break when we switch to a real handle.
+On 11/07/2012 11:10 PM, Kees Cook wrote:
+> On Wed, Nov 7, 2012 at 1:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> On Tue, Nov 06, 2012 at 05:11:17PM -0800, Kees Cook wrote:
+>>> Hrm, I don't like this. get_random_int() specifically says: "Get a
+>>> random word for internal kernel use only." The intent of AT_RANDOM is
+>>> for userspace pRNG seeding (though glibc currently uses it directly
+>>> for stack protector and pointer mangling), which is not "internal
+>>> kernel use only". :) Though I suppose this is already being used for
+>>> the randomize_stack_top(), but I think it'd still be better to use
+>>> higher quality bits.
+>>
+>> Well, in practice, right now, get_random_int() is only being used for
+>> different cases of ASLR of one variety or another (either by the
+>> kernel in exec or mmap, or in userspace).  So I'm not sure it really
+>> is a major issue.
 > 
-> I'm afraid of typedef:ing gpio_handle_t to int because it sort of
-> encourages non-handlers to be used mixed with the old integers.
+> Hrm, yes. I see that the network code uses random32, not
+> get_random_int(). How are these different? Is one demonstrably better?
+I also have the same question in this point.
+Both generators are NOT considered safe for cryptographic use, but the
+comments of get_random_int() indicates that it could be used for several
+uses the cost of depleting entropy is too high, that's why I chose it.
 > 
-> I would prefer to create, e.g. in <linux/gpio/consumer.h>
-> something like:
+>> If we also change get_random_int() to use a more secure cryptographic
+>> random generator (i.e., maybe AES instead of MD5), would that be
+>> sufficient to address your concerns?  We're not using get_random_int()
+>> for anything that's timing sensitive, so that shouldn't be a problem.
 > 
-> struct gpio;
+> I wonder if using AES would have a measurable impact on fork speeds?
 > 
-> struct gpio *gpio_get(struct device *dev, const char *name);
+>> Or maybe we should just add an explicit CRNG set of routines (like the
+>> similar discussions to make an explicitly named PRNG set of routines),
+>> so callers can use whatever random number generator is appropriate for
+>> their performance and security needs.
 > 
-> int gpio_get_value(struct gpio *g);
+> If we do use get_random_int() here, I'd at least like to see its
+> comment changed to reflect its actual purpose (since it's not
+> "internal use only") as well as its expected unpredictability. (This
+> would help document the utility of get_random_bytes() vs
+> get_random_int() vs random32().)
 > 
-> Nothing more! I.e. struct gpio is an opaque cookie, nothing to be known
-> about it.
+> -Kees
+Thanks,
+-Jeff
 
-However these is already a struct gpio declared in linux/gpio.h. Shall the 
-opaque handler be renamed something like "struct gpioh", or is your idea to 
-make both APIs mutually exclusive?
-
-Alex.
 
