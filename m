@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2KHLxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 06:53:45 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53714 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2KHLxo convert rfc822-to-8bit (ORCPT
+	id S1755378Ab2KHLzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 06:55:55 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:54968 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751893Ab2KHLzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 06:53:44 -0500
+	Thu, 8 Nov 2012 06:55:53 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <arm@kernel.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] ARM: ux500: add PRCM register base for pinctrl
+Date: Thu, 8 Nov 2012 12:55:31 +0100
+Message-ID: <1352375731-29570-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-In-Reply-To: <509B5BDC.3030005@ti.com>
-References: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
-	<1352299488-11351-3-git-send-email-peter.ujfalusi@ti.com>
-	<CANOLnOM7sp+O+KBKjiRk2drWh_63D6-bY86dx+upWkrvs7pp9w@mail.gmail.com>
-	<509B5BDC.3030005@ti.com>
-Date: Thu, 8 Nov 2012 13:53:43 +0200
-Message-ID: <CANOLnOM6dp2_WthKUo31X_0os4cwax9Y42qSLqi09XiR-HF-Uw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pwm: New driver to support PWMs on TWL4030/6030
- series of PMICs
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: =?ISO-8859-1?Q?P=E9ter_Ujfalusi?= <peter.ujfalusi@ti.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 9:14 AM, Péter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> On 11/07/2012 06:50 PM, Grazvydas Ignotas wrote:
->>> +       if (pwm->hwpwm) {
->>> +               /* PWM 1 */
->>> +               mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
->>> +               bits = TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
->>> +       } else {
->>> +               /* PWM 0 */
->>> +               mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
->>> +               bits = TWL4030_GPIO6_PWM0_MUTE_PWM0;
->>> +       }
->>> +
->>> +       /* Save the current MUX configuration for the PWM */
->>> +       twl->twl4030_pwm_mux &= ~mask;
->>> +       twl->twl4030_pwm_mux |= (val & mask);
->>
->> Do we really need this mask clearing here? After probe twl4030_pwm_mux
->> should be zero, and if twl4030_pwm_request is called twice you don't
->> clear the important bits before |=, I think 'twl4030_pwm_mux = val &
->> mask' would be better here.
->
-> I'm storing both PWM's state in the same variable, but in different offsets:
-> PWM0: bits 2-3
-> PWM1: bits 4-5
-> Probably it is over engineering to clear the relevant bits in the backup
-> storage, but better to be safe IMHO.
-> I would leave this part as it is.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-Oh, it should be good then.
+This adds the PRCM register range base as a resource to
+the pinctrl driver do we can break the dependency to the
+PRCMU driver and handle these registers in the driver
+alone.
 
+Cc: arm@kernel.org
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ARM SoC guys: this patch is better contained in the
+pinctrl tree, can I have your ACK to push it through
+pinctrl? Thanks.
+---
+ arch/arm/mach-ux500/cpu-db8500.c     | 2 +-
+ arch/arm/mach-ux500/devices-common.h | 8 +++++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 87a8f9f..113d9c4 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -158,7 +158,7 @@ static void __init db8500_add_gpios(struct device *parent)
+ 
+ 	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
+ 			 IRQ_DB8500_GPIO0, &pdata);
+-	dbx500_add_pinctrl(parent, "pinctrl-db8500");
++	dbx500_add_pinctrl(parent, "pinctrl-db8500", U8500_PRCMU_BASE);
+ }
+ 
+ static int usb_db8500_rx_dma_cfg[] = {
+diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
+index 7fbf0ba..96fa4ac 100644
+--- a/arch/arm/mach-ux500/devices-common.h
++++ b/arch/arm/mach-ux500/devices-common.h
+@@ -129,12 +129,18 @@ void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
+ 		      int irq, struct nmk_gpio_platform_data *pdata);
+ 
+ static inline void
+-dbx500_add_pinctrl(struct device *parent, const char *name)
++dbx500_add_pinctrl(struct device *parent, const char *name,
++		   resource_size_t base)
+ {
++	struct resource res[] = {
++		DEFINE_RES_MEM(base, SZ_8K),
++	};
+ 	struct platform_device_info pdevinfo = {
+ 		.parent = parent,
+ 		.name = name,
+ 		.id = -1,
++		.res = res,
++		.num_res = ARRAY_SIZE(res),
+ 	};
+ 
+ 	platform_device_register_full(&pdevinfo);
 -- 
-Gražvydas
+1.7.11.3
+
