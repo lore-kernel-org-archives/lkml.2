@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2KHKdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 05:33:16 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42538 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2KHKdN (ORCPT
+	id S1755184Ab2KHKeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 05:34:01 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56249 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2KHKd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 05:33:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <00f401cdb733$97e429a0$c7ac7ce0$%choi@samsung.com>
-References: <00f401cdb733$97e429a0$c7ac7ce0$%choi@samsung.com>
-Date: Thu, 8 Nov 2012 16:03:12 +0530
-Message-ID: <CAK44p20gtJ=ywOvZVu8eZKFBVCNgJSndhffhOJOuRuuGNHXiTA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] therma: exynos: Supports thermal tripping
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: open list <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Nov 2012 05:33:59 -0500
+Date: Thu, 8 Nov 2012 11:33:53 +0100
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+Message-ID: <20121108113353.4fdbb25c@avionic-0020.adnet.avionic-design.de>
+In-Reply-To: <509B80A7.1060700@antcom.de>
+References: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
+	<1352301955-15960-1-git-send-email-alban.bedel@avionic-design.de>
+	<509B80A7.1060700@antcom.de>
+Organization: Avionic Design
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:DGE5tKOJrn0mzhhXWpj3OS1jFsydrx6BOyn2y+3U/NP
+ PMxN0i4cQtd8ew7ayUtOM4l3yuocvT9pchCjS6lksWmgk7S9WV
+ GGhnT++BV1ZHaf32+uqQX80SHl9sXi4s9i5pdfmUB64quI57Tl
+ VDdIuLPvU1DgoaEjBPl45LeeNsbvXYhH+cvwnO7XaGiNimsZE6
+ 8WhNAxu4AJnhqlqdQK4TK01qHOPyh2IRqAPB22x1Ji9BvlAxVX
+ tOpuRA6Av5e9xB5pymmlreU1s8yc6mGjNmpGpQV56qRpub8zK3
+ WgBJ2qJF+MgBOtPGDGc367Dw+xoSRb70DBGQTq/Bv1faKGhcpG
+ 7BYmKeMyPQ4dmOTuouMQ6GOCKdPNJPyeualGECf2eA46kBbNpt
+ utoY2w5d7t+MnEVqPl0jr24KC6qloRgDEM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 October 2012 12:17, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> TMU urgently sends active-high signal (thermal trip) to PMU,
-> and thermal tripping by hardware logic i.e PMU is performed.
-> Thermal tripping means that PMU cut off the whole power of SoC
-> by controlling external voltage regulator.
->
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  drivers/thermal/exynos_thermal.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/thermal/exynos_thermal.c
-> b/drivers/thermal/exynos_thermal.c
-> index 6ce6667..5672e95 100644
-> --- a/drivers/thermal/exynos_thermal.c
-> +++ b/drivers/thermal/exynos_thermal.c
-> @@ -53,6 +53,7 @@
->  #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
->  #define EXYNOS_TMU_GAIN_SHIFT          8
->  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
-> +#define EXYNOS_TMU_TRIP_EN             BIT(12)
->  #define EXYNOS_TMU_CORE_ON             1
->  #define EXYNOS_TMU_CORE_OFF            0
->  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
-> @@ -656,6 +657,9 @@ static void exynos_tmu_control(struct platform_device
-> *pdev, bool on)
->         if (data->soc == SOC_ARCH_EXYNOS) {
->                 con |= pdata->noise_cancel_mode <<
-> EXYNOS_TMU_TRIP_MODE_SHIFT;
->                 con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-> +
-> +               if (pdata->trigger_level3_en)
-> +                       con |= EXYNOS_TMU_TRIP_EN;
-Hi Jonghwan Choi,
+On Thu, 08 Nov 2012 10:51:35 +0100
+Roland Stigge <stigge@antcom.de> wrote:
 
-IMO, Also you need to write 4th trigger level, Currently only 3
-trigger levels are stored in register THD_TEMP_RISE.
+> On 07/11/12 16:25, Alban Bedel wrote:
+> > Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+> > ---
+> >  drivers/pwm/pwm-lpc32xx.c |    6 +++++-
+> >  1 files changed, 5 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+> > index adb87f0..0dc278d 100644
+> > --- a/drivers/pwm/pwm-lpc32xx.c
+> > +++ b/drivers/pwm/pwm-lpc32xx.c
+> > @@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> >  
+> >  	c = 256 * duty_ns;
+> >  	do_div(c, period_ns);
+> > -	duty_cycles = c;
+> > +	if (c == 0)
+> > +		c = 256;
+> > +	if (c > 255)
+> > +		c = 255;
+> > +	duty_cycles = 256 - c;
+> 
+> Except for the range check (for the original c > 255), this results in:
+> 
+> 	duty_cycles = 256 - c
+> 
+> except for (c == 0) where
+> 
+> 	duty_cycles = 1
 
-Thanks,
-Amit Daniel
->         }
->
->         if (on) {
-> --
-> 1.7.4.1
->
+No it lead to duty_cycles = 0
+
+> which actually is
+> 
+> 	duty_cycles = (256 - c) - 255
+> 
+> (think with the original c)
+> 
+> i.e. nearly a polarity inversion in the case of (c == 0).
+> 
+> Why is the case (c == 0) so special here? Maybe you can document this,
+> if it is really intended?
+
+It is intended, the formular for duty value in the register is:
+
+duty = (256 - 256*duty_ns/period_ns) % 256
+
+But the code avoid the modulo by clamping '256*duty_ns/period_ns' to 1-256.
+
+Perhaps something like:
+
+if (c > 255)
+	c = 255;
+duty_cycles = (256 - c) % 256;
+
+would be easier to understand.
+
+Alban
