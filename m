@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2KHE1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 23:27:00 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44206 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2KHE0y (ORCPT
+	id S1753146Ab2KHEbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 23:31:15 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:40800 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab2KHEbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 23:26:54 -0500
-From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        durgadoss.r@intel.com, lenb@kernel.org, rui.zhang@intel.com,
-        linux-acpi@vger.kernel.org, amit.kachhap@linaro.org,
-        jonghwa3.lee@samsung.com
-Subject: [PATCH 3/4] thermal: exynos: Miscellaneous fixes to support falling threshold interrupt
-Date: Thu,  8 Nov 2012 09:56:26 +0530
-Message-Id: <1352348786-24255-4-git-send-email-amit.kachhap@linaro.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
-References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	Wed, 7 Nov 2012 23:31:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <509B0B7F.3030308@cn.fujitsu.com>
+References: <CAPgLHd_=OTwu-3tVXT0o8+x=N_9dZOkQ4A7HFr0SNdUiyAy_yw@mail.gmail.com>
+	<509B0B7F.3030308@cn.fujitsu.com>
+Date: Thu, 8 Nov 2012 12:31:12 +0800
+Message-ID: <CAPgLHd8a45+GfNFwox6M-QLbLmZNZHHz1a2BZjGV4Po1a0b6gg@mail.gmail.com>
+Subject: Re: [PATCH -next] ACPI: fix missing unlock on error in acpi_memory_remove_memory()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: wency@cn.fujitsu.com
+Cc: lenb@kernel.org, rjw@sisk.pl, yongjun_wei@trendmicro.com.cn,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below fixes are done to support falling threshold interrupt,
-* Falling interrupt status macro corrected according to exynos5 data sheet.
-* The get trend function modified to calculate trip temperature correctly.
-* The clearing of interrupt status in the isr is now done after handling
-  the the event that caused the interrupt.
+Hi Wen,
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
----
- drivers/thermal/exynos_thermal.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+On 11/08/2012 09:31 AM, Wen Congyang wrote:
+> Hi, wei
+>
+> At 11/07/2012 08:38 PM, Wei Yongjun Wrote:
+>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>
+>> Add the missing mutex_unlock() before return from function
+>> acpi_memory_remove_memory() in the error handling case.
+>>
+>> Introduce by commit 85fcb3758c10e063a2a30dfad75017097999deed
+>> 'ACPI / memory-hotplug: introduce a mutex lock to protect the list in acpi_memory_device'
+>>
+>> dpatch engine is used to auto generate this patch.
+>> (https://github.com/weiyj/dpatch)
+>>
+>> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Thanks for your patch.
+>
+> Dan Carpenter has told me this problem. I fix it, but don't
+> resend it because it is in test now.
 
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index f6667e8..bbaff56 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -82,7 +82,7 @@
- 
- #define EXYNOS_TRIMINFO_RELOAD		0x1
- #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
--#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 16)
-+#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
- #define EXYNOS_MUX_ADDR_VALUE		6
- #define EXYNOS_MUX_ADDR_SHIFT		20
- #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-@@ -365,12 +365,19 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
- static int exynos_get_trend(struct thermal_zone_device *thermal,
- 			int trip, enum thermal_trend *trend)
- {
--	if (thermal->temperature >= trip)
-+	int ret = 0;
-+	unsigned long trip_temp;
-+
-+	ret = exynos_get_trip_temp(thermal, trip, &trip_temp);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (thermal->temperature >= trip_temp)
- 		*trend = THERMAL_TREND_RAISING;
- 	else
- 		*trend = THERMAL_TREND_DROPPING;
- 
--	return 0;
-+	return ret;
- }
- /* Operation callback functions for thermal zone */
- static struct thermal_zone_device_ops const exynos_dev_ops = {
-@@ -704,10 +711,9 @@ static void exynos_tmu_work(struct work_struct *work)
- 	struct exynos_tmu_data *data = container_of(work,
- 			struct exynos_tmu_data, irq_work);
- 
-+	exynos_report_trigger();
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
--
--
- 	if (data->soc == SOC_ARCH_EXYNOS)
- 		writel(EXYNOS_TMU_CLEAR_RISE_INT |
- 				EXYNOS_TMU_CLEAR_FALL_INT,
-@@ -715,10 +721,8 @@ static void exynos_tmu_work(struct work_struct *work)
- 	else
- 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
- 				data->base + EXYNOS_TMU_REG_INTCLEAR);
--
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
--	exynos_report_trigger();
- 	enable_irq(data->irq);
- }
- 
--- 
-1.7.1
+I saw your patchset has already applied to linux-pm.git tree:
+http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=shortlog;h=refs/heads/linux-next
+
+So I think what need is to send a new patch to fix it, not
+resend the full patchset.
+
+Regards,
+Yongjun Wei
 
