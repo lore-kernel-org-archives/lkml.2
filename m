@@ -1,101 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2KHONz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 09:13:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28487 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755493Ab2KHONy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 09:13:54 -0500
-From: Tomas Hozza <thozza@redhat.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, kys@microsoft.com
-Cc: Tomas Hozza <thozza@redhat.com>
-Subject: [PATCH] Tools: hv: Fix for long file names from readdir
-Date: Thu,  8 Nov 2012 15:13:15 +0100
-Message-Id: <1352383995-13856-1-git-send-email-thozza@redhat.com>
+	id S1755986Ab2KHOOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 09:14:48 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:55915 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab2KHOOr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 09:14:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJRGBZyQJD0Ctq+H-aWv00eSKCbAWf_AaRBYy6fve-QB3E39zw@mail.gmail.com>
+References: <509BA0F9.304@odi.ch>
+	<CAJRGBZxkGzjJix8me8KZgvwV5QeKJvWvgwQApJeSUawXN_oJoA@mail.gmail.com>
+	<509BB4FE.60903@odi.ch>
+	<CAJRGBZyQJD0Ctq+H-aWv00eSKCbAWf_AaRBYy6fve-QB3E39zw@mail.gmail.com>
+Date: Thu, 8 Nov 2012 09:14:45 -0500
+Message-ID: <CAJRGBZx7GOQCWqGg9DVztNwCxoU4B7V_vzhuDTNjCiXpx6o=xw@mail.gmail.com>
+Subject: Re: [headache] 3.7.0-rc2 can't handle mutt (with 3.7G mail file) +FF
+ (4 tabs) on a 4G memory+4 core system ?
+From: Luming Yu <luming.yu@gmail.com>
+To: =?UTF-8?Q?Ortwin_Gl=C3=BCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
-sized buffers which could be too small to store really long names.
-
-Buffer sizes have been increased and length checks added via snprintf.
-
-Signed-off-by: Tomas Hozza <thozza@redhat.com>
----
- tools/hv/hv_kvp_daemon.c | 25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
-
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 13c2a14..bbd426c 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -592,26 +592,22 @@ static char *kvp_get_if_name(char *guid)
- 	DIR *dir;
- 	struct dirent *entry;
- 	FILE    *file;
--	char    *p, *q, *x;
-+	char    *p, *x;
- 	char    *if_name = NULL;
- 	char    buf[256];
- 	char *kvp_net_dir = "/sys/class/net/";
--	char dev_id[256];
-+	char dev_id[512];
- 
- 	dir = opendir(kvp_net_dir);
- 	if (dir == NULL)
- 		return NULL;
- 
--	snprintf(dev_id, sizeof(dev_id), "%s", kvp_net_dir);
--	q = dev_id + strlen(kvp_net_dir);
--
- 	while ((entry = readdir(dir)) != NULL) {
- 		/*
- 		 * Set the state for the next pass.
- 		 */
--		*q = '\0';
--		strcat(dev_id, entry->d_name);
--		strcat(dev_id, "/device/device_id");
-+		snprintf(dev_id, sizeof(dev_id), "%s%s/device/device_id", kvp_net_dir,
-+				entry->d_name);
- 
- 		file = fopen(dev_id, "r");
- 		if (file == NULL)
-@@ -684,28 +680,23 @@ static char *kvp_mac_to_if_name(char *mac)
- 	DIR *dir;
- 	struct dirent *entry;
- 	FILE    *file;
--	char    *p, *q, *x;
-+	char    *p, *x;
- 	char    *if_name = NULL;
- 	char    buf[256];
- 	char *kvp_net_dir = "/sys/class/net/";
--	char dev_id[256];
-+	char dev_id[512];
- 	int i;
- 
- 	dir = opendir(kvp_net_dir);
- 	if (dir == NULL)
- 		return NULL;
- 
--	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
--	q = dev_id + strlen(kvp_net_dir);
--
- 	while ((entry = readdir(dir)) != NULL) {
- 		/*
- 		 * Set the state for the next pass.
- 		 */
--		*q = '\0';
--
--		strcat(dev_id, entry->d_name);
--		strcat(dev_id, "/address");
-+		snprintf(dev_id, sizeof(dev_id), "%s%s/address", kvp_net_dir,
-+                entry->d_name);
- 
- 		file = fopen(dev_id, "r");
- 		if (file == NULL)
--- 
-1.7.11.7
-
+On Thu, Nov 8, 2012 at 9:00 AM, Luming Yu <luming.yu@gmail.com> wrote:
+> On Thu, Nov 8, 2012 at 8:34 AM, Ortwin Glück <odi@odi.ch> wrote:
+>>
+>>
+>> On 08.11.2012 14:28, Luming Yu wrote:
+>>>
+>>> As I just noticed that I couldn't quit from mutt due to tmpfs is full.
+>>
+>>
+>> That's also pointing towards high memory pressure.
+>
+> watch "cat /proc/meminfo" just showed me the progress
+> mutt  was creating a very large tmp file in /tmp/ until  "memfree" reached a
+> watermark then failed with a message like " no space in /tmp"
+>
+> sounds like I can't use mutt if my mutt mail file is close to the
+> physical memory
+> I have when tmp-on-tmpfs is enabled..
+>
+> hmm....make sens? maybe we can't use tmp-on-tmpfs feature in f18
+but why not having disk to backup tmpfs under memory pressure?
