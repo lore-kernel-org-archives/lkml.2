@@ -1,251 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab2KHKKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 05:10:17 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:50160 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab2KHKKP (ORCPT
+	id S1755285Ab2KHKSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 05:18:10 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57692 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab2KHKSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 05:10:15 -0500
-Date: Thu, 8 Nov 2012 11:10:06 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for the 3.7-rc5
-Message-ID: <20121108111006.4be14a7d@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12110810-2966-0000-0000-000005CF786F
+	Thu, 8 Nov 2012 05:18:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121107145518.GB30662@srcf.ucam.org>
+References: <87fw4nv1vj.fsf@xmission.com>
+	<20121106035352.GA24698@srcf.ucam.org>
+	<87hap3s3yl.fsf@xmission.com>
+	<878vafqi5q.fsf@mid.deneb.enyo.de>
+	<50992946.4060101@genband.com>
+	<87625iwgao.fsf@mid.deneb.enyo.de>
+	<7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com>
+	<20121106224920.3b9d4a86@pyramind.ukuu.org.uk>
+	<a35e035b-de9d-4253-9e7d-ae1f1c2e2f88@email.android.com>
+	<CAMFK0gt7oAr4ArD8FmD8QE+i4g4rSTmQjbbLcjs02xwQeXGx-A@mail.gmail.com>
+	<20121107145518.GB30662@srcf.ucam.org>
+Date: Thu, 8 Nov 2012 10:18:04 +0000
+Message-ID: <CAAMvbhEpmgE3badW0e7p4X4aeZwRd5Md3_5Q+g2s8r3p7dm5+w@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Olivier Galibert <galibert@pobox.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Florian Weimer <fw@deneb.enyo.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Josh Boyer <jwboyer@gmail.com>,
+        LKML Mailing List <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-please pull from the 'for-linus' branch of
+The basis for any secure boot is a way to detect that the system has
+been tampered with or not. "Tamper Evidence".
+There are two main vectors for a system to be tampered with. Someone
+local to the machine and remote users who can access the machine
+across a network interface. (this includes the local user installing a
+program from a remote source)
+You have a fair chance of protecting via physical means (Locked rooms,
+Background checks on users etc.) of preventing a user with malicious
+intent to access the local machine.
+The first thing a computer does when switched on is run its first code
+instructions. Commonly referred to as the BIOS.
+It would therefore be a requirement to ensure that the BIOS cannot be
+tampered with via any other method apart from physically located at
+the machine. Once you have a base computer code that cannot be
+tampered with, you can trust it.
+>From that point on, you can use digital signatures to build the chain of trust.
+Normally digital signatures would examine the binary, ensure the
+signature matches, and then run the code contained in it.
+It is vital that the private key used to sign binaries cannot be found
+on the local machine, otherwise an malicious user could use it to sign
+malicious code, and therefore break the trust.
+The binary files therefore must be signed on a separate computer, that
+is trusted and protected from malicious users.
+There is one known use case where the normal digital signature checks
+will not work and this is the Hibernate file.
+The files were digitally checked when loaded into a previously running machine.
+The state of the machine was then saved to a file.
+The problem is how to check the hibernate file has not been tampered
+with in the interim.
+As explained above, we cannot store a private key on the local
+machine, so some other method for checking that the hibernate file has
+not been tampered with is required.
+I would suggest the fix for this problem is working out a way to check
+the signature of binary files, while in RAM, or even on a running
+machine. This is the format that the hibernate file is, it is
+basically a RAM image.
+When starting a hibernate image, the file would have to be scanned and
+digital signature checked that all the executable code in the
+hibernate image was sourced from correctly digitally signed binaries.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+In fact, this last point, if done correctly, could replace virus
+scanners. We would then have a system that rather than scan for
+viruses, it instead scans for "tampering".
 
-to receive a couple of bug fixes. I keep the fingers crossed that we now
-got transparent huge pages ready for prime time.
+Remaining problems:
+1) deciding who you trust, and from that, which digital
+signatures/certificates you trust.
+2) Handling compromised or expired signatures/certificates.
 
-Cornelia Huck (1):
-      s390: Move css limits from drivers/s390/cio/ to include/asm/.
+For 2, if the signatures are attached in each binary file, in order to
+distribute a new set of signatures, you would have to re-distribute
+all the binary files. Not a good idea due to download size. I would
+therefore suggest that the signatures are distributed separately from
+the binary files, so that you can change the signatures without having
+to redistribute all the binary files.
 
-Gerald Schaefer (2):
-      s390/mm: use pmd_large() instead of pmd_huge()
-      s390/thp: respect page protection in pmd_none() and pmd_present()
+Summary:
+1) The BIOS code and the certificate it uses to check subsequently
+loaded binaries should only be changeable by a user local to the
+machine or not changeable at all without changing hardware.
 
-Heiko Carstens (1):
-      s390/sclp: fix addressing mode clobber
+For example, on some ARM based mobile phones, the BIOS and certificate
+it uses are in a ROM, so not changeable at all. It then uses a multi
+stage boot loader, with each stage providing for a different
+certificate to be used to the next stage. This then permits the
+certificates that are used to sign the Linux kernel to be changed
+without having to change the certificate in the ROM. For Secure boot
+for Linux, the BIOS and certificate should probably be controlled by
+the user who controls the physical access to his machine. Then multi
+stage boot loaders can be used to introduce a chain to trust to trust
+other certificates, such as the debian or redhat or Microsoft ones, if
+the user chooses to trust them.
+With the user using their own BIOS certificate, it is very unlikely
+for the remote malicious user to obtain the private key and thus
+compromise the security of the system.
 
-Sebastian Ott (2):
-      s390/cio: suppress 2nd path verification during resume
-      s390/cio: fix length calculation in idset.c
+2) When "tamper" is detected, the system should revert to a stable
+safe state. This probably means, prevent the system booting, and
+present the local user with the evidence of tampering. Letting the
+user choose the next step.
 
- arch/s390/include/asm/cio.h     |    2 ++
- arch/s390/include/asm/pgtable.h |   35 ++++++++++++++++++++++-------------
- arch/s390/kernel/sclp.S         |    8 +++++++-
- arch/s390/lib/uaccess_pt.c      |    2 +-
- arch/s390/mm/gup.c              |    2 +-
- drivers/s390/cio/css.h          |    3 ---
- drivers/s390/cio/device.c       |    8 +-------
- drivers/s390/cio/idset.c        |    3 +--
- 8 files changed, 35 insertions(+), 28 deletions(-)
-
-diff --git a/arch/s390/include/asm/cio.h b/arch/s390/include/asm/cio.h
-index 55bde60..ad2b924 100644
---- a/arch/s390/include/asm/cio.h
-+++ b/arch/s390/include/asm/cio.h
-@@ -9,6 +9,8 @@
- 
- #define LPM_ANYPATH 0xff
- #define __MAX_CSSID 0
-+#define __MAX_SUBCHANNEL 65535
-+#define __MAX_SSID 3
- 
- #include <asm/scsw.h>
- 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index dd647c9..2d3b7cb 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -506,12 +506,15 @@ static inline int pud_bad(pud_t pud)
- 
- static inline int pmd_present(pmd_t pmd)
- {
--	return (pmd_val(pmd) & _SEGMENT_ENTRY_ORIGIN) != 0UL;
-+	unsigned long mask = _SEGMENT_ENTRY_INV | _SEGMENT_ENTRY_RO;
-+	return (pmd_val(pmd) & mask) == _HPAGE_TYPE_NONE ||
-+	       !(pmd_val(pmd) & _SEGMENT_ENTRY_INV);
- }
- 
- static inline int pmd_none(pmd_t pmd)
- {
--	return (pmd_val(pmd) & _SEGMENT_ENTRY_INV) != 0UL;
-+	return (pmd_val(pmd) & _SEGMENT_ENTRY_INV) &&
-+	       !(pmd_val(pmd) & _SEGMENT_ENTRY_RO);
- }
- 
- static inline int pmd_large(pmd_t pmd)
-@@ -1223,6 +1226,11 @@ static inline void __pmd_idte(unsigned long address, pmd_t *pmdp)
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+
-+#define SEGMENT_NONE	__pgprot(_HPAGE_TYPE_NONE)
-+#define SEGMENT_RO	__pgprot(_HPAGE_TYPE_RO)
-+#define SEGMENT_RW	__pgprot(_HPAGE_TYPE_RW)
-+
- #define __HAVE_ARCH_PGTABLE_DEPOSIT
- extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pgtable_t pgtable);
- 
-@@ -1242,16 +1250,15 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 
- static inline unsigned long massage_pgprot_pmd(pgprot_t pgprot)
- {
--	unsigned long pgprot_pmd = 0;
--
--	if (pgprot_val(pgprot) & _PAGE_INVALID) {
--		if (pgprot_val(pgprot) & _PAGE_SWT)
--			pgprot_pmd |= _HPAGE_TYPE_NONE;
--		pgprot_pmd |= _SEGMENT_ENTRY_INV;
--	}
--	if (pgprot_val(pgprot) & _PAGE_RO)
--		pgprot_pmd |= _SEGMENT_ENTRY_RO;
--	return pgprot_pmd;
-+	/*
-+	 * pgprot is PAGE_NONE, PAGE_RO, or PAGE_RW (see __Pxxx / __Sxxx)
-+	 * Convert to segment table entry format.
-+	 */
-+	if (pgprot_val(pgprot) == pgprot_val(PAGE_NONE))
-+		return pgprot_val(SEGMENT_NONE);
-+	if (pgprot_val(pgprot) == pgprot_val(PAGE_RO))
-+		return pgprot_val(SEGMENT_RO);
-+	return pgprot_val(SEGMENT_RW);
- }
- 
- static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
-@@ -1269,7 +1276,9 @@ static inline pmd_t pmd_mkhuge(pmd_t pmd)
- 
- static inline pmd_t pmd_mkwrite(pmd_t pmd)
- {
--	pmd_val(pmd) &= ~_SEGMENT_ENTRY_RO;
-+	/* Do not clobber _HPAGE_TYPE_NONE pages! */
-+	if (!(pmd_val(pmd) & _SEGMENT_ENTRY_INV))
-+		pmd_val(pmd) &= ~_SEGMENT_ENTRY_RO;
- 	return pmd;
- }
- 
-diff --git a/arch/s390/kernel/sclp.S b/arch/s390/kernel/sclp.S
-index bf05389..b6506ee 100644
---- a/arch/s390/kernel/sclp.S
-+++ b/arch/s390/kernel/sclp.S
-@@ -44,6 +44,12 @@ _sclp_wait_int:
- #endif
- 	mvc	.LoldpswS1-.LbaseS1(16,%r13),0(%r8)
- 	mvc	0(16,%r8),0(%r9)
-+#ifdef CONFIG_64BIT
-+	epsw	%r6,%r7				# set current addressing mode
-+	nill	%r6,0x1				# in new psw (31 or 64 bit mode)
-+	nilh	%r7,0x8000
-+	stm	%r6,%r7,0(%r8)
-+#endif
- 	lhi	%r6,0x0200			# cr mask for ext int (cr0.54)
- 	ltr	%r2,%r2
- 	jz	.LsetctS1
-@@ -87,7 +93,7 @@ _sclp_wait_int:
- 	.long	0x00080000, 0x80000000+.LwaitS1	# PSW to handle ext int
- #ifdef CONFIG_64BIT
- .LextpswS1_64:
--	.quad	0x0000000180000000, .LwaitS1	# PSW to handle ext int, 64 bit
-+	.quad	0, .LwaitS1			# PSW to handle ext int, 64 bit
- #endif
- .LwaitpswS1:
- 	.long	0x010a0000, 0x00000000+.LloopS1	# PSW to wait for ext int
-diff --git a/arch/s390/lib/uaccess_pt.c b/arch/s390/lib/uaccess_pt.c
-index 2d37bb8..9017a63 100644
---- a/arch/s390/lib/uaccess_pt.c
-+++ b/arch/s390/lib/uaccess_pt.c
-@@ -39,7 +39,7 @@ static __always_inline unsigned long follow_table(struct mm_struct *mm,
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return -0x10UL;
--	if (pmd_huge(*pmd)) {
-+	if (pmd_large(*pmd)) {
- 		if (write && (pmd_val(*pmd) & _SEGMENT_ENTRY_RO))
- 			return -0x04UL;
- 		return (pmd_val(*pmd) & HPAGE_MASK) + (addr & ~HPAGE_MASK);
-diff --git a/arch/s390/mm/gup.c b/arch/s390/mm/gup.c
-index 60acb93..8b82853 100644
---- a/arch/s390/mm/gup.c
-+++ b/arch/s390/mm/gup.c
-@@ -126,7 +126,7 @@ static inline int gup_pmd_range(pud_t *pudp, pud_t pud, unsigned long addr,
- 		 */
- 		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
- 			return 0;
--		if (unlikely(pmd_huge(pmd))) {
-+		if (unlikely(pmd_large(pmd))) {
- 			if (!gup_huge_pmd(pmdp, pmd, addr, next,
- 					  write, pages, nr))
- 				return 0;
-diff --git a/drivers/s390/cio/css.h b/drivers/s390/cio/css.h
-index 33bb4d8..4af3dfe 100644
---- a/drivers/s390/cio/css.h
-+++ b/drivers/s390/cio/css.h
-@@ -112,9 +112,6 @@ extern int for_each_subchannel(int(*fn)(struct subchannel_id, void *), void *);
- extern void css_reiterate_subchannels(void);
- void css_update_ssd_info(struct subchannel *sch);
- 
--#define __MAX_SUBCHANNEL 65535
--#define __MAX_SSID 3
--
- struct channel_subsystem {
- 	u8 cssid;
- 	int valid;
-diff --git a/drivers/s390/cio/device.c b/drivers/s390/cio/device.c
-index fc916f5..fd3143c 100644
---- a/drivers/s390/cio/device.c
-+++ b/drivers/s390/cio/device.c
-@@ -1424,7 +1424,7 @@ static enum io_sch_action sch_get_action(struct subchannel *sch)
- 	}
- 	if (device_is_disconnected(cdev))
- 		return IO_SCH_REPROBE;
--	if (cdev->online)
-+	if (cdev->online && !cdev->private->flags.resuming)
- 		return IO_SCH_VERIFY;
- 	if (cdev->private->state == DEV_STATE_NOT_OPER)
- 		return IO_SCH_UNREG_ATTACH;
-@@ -1469,12 +1469,6 @@ static int io_subchannel_sch_event(struct subchannel *sch, int process)
- 		rc = 0;
- 		goto out_unlock;
- 	case IO_SCH_VERIFY:
--		if (cdev->private->flags.resuming == 1) {
--			if (cio_enable_subchannel(sch, (u32)(addr_t)sch)) {
--				ccw_device_set_notoper(cdev);
--				break;
--			}
--		}
- 		/* Trigger path verification. */
- 		io_subchannel_verify(sch);
- 		rc = 0;
-diff --git a/drivers/s390/cio/idset.c b/drivers/s390/cio/idset.c
-index 199bc67..65d13e3 100644
---- a/drivers/s390/cio/idset.c
-+++ b/drivers/s390/cio/idset.c
-@@ -125,8 +125,7 @@ int idset_is_empty(struct idset *set)
- 
- void idset_add_set(struct idset *to, struct idset *from)
- {
--	int len = min(__BITOPS_WORDS(to->num_ssid * to->num_id),
--		      __BITOPS_WORDS(from->num_ssid * from->num_id));
-+	int len = min(to->num_ssid * to->num_id, from->num_ssid * from->num_id);
- 
- 	bitmap_or(to->bitmap, to->bitmap, from->bitmap, len);
- }
-
+On 7 November 2012 14:55, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Nov 07, 2012 at 09:19:35AM +0100, Olivier Galibert wrote:
+>> On Tue, Nov 6, 2012 at 11:47 PM, Matthew Garrett <mjg59@srcf.ucam.org>wrote:
+>>
+>> > Sure, and scripts run as root can wipe your files too. That's really not
+>> > what this is all about.
+>>
+>> What it is about then? What is secure boot supposed to do for the owner of
+>> the computer in a linux context?  I've not been able to understand it
+>> through this discussion.
+>
+> It provides a chain of trust that allows you to ensure that a platform
+> boots a trusted kernel. That's a pre-requisite for implementing any kind
+> of fully trusted platform, but it's not sufficient in itself. One of
+> those additional requirements is ensuring that the kernel *stays*
+> trusted - in the past an attacker could just replace the kernel on disk
+> and so there was little incentive to engage in more subtle attacks, but
+> now that's impossible we need to care about them.
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
