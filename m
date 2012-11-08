@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab2KHMV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:21:26 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:26785 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461Ab2KHMVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:21:25 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-af-509ba3c35fe0
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] DMA: remove unused support for MEMSET operations
-Date: Thu, 08 Nov 2012 13:20:19 +0100
-User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-References: <201211081058.17897.b.zolnierkie@samsung.com>
- <201211081222.05612.b.zolnierkie@samsung.com>
- <20121108113148.36bebd50@pyramind.ukuu.org.uk>
-In-reply-to: <20121108113148.36bebd50@pyramind.ukuu.org.uk>
-MIME-version: 1.0
-Message-id: <201211081320.20215.b.zolnierkie@samsung.com>
-Content-type: Text/Plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t9jAd3Di2cHGKydrGhxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyvq3RLDjNXnHv9neWBsbfrF2MnBwSAiYS229PYIOwxSQu3FsP
-	ZHNxCAksYpTYsegGM4SzlEli+outLCBVbAJWEhPbVzGC2CIC6hJTV0wH6xYWcJW4+/YrmM0i
-	oCrRumMvE4gtKuAg0Tl1AthUZoENjBJ35s1lhZg6i1Hi57ZpYHdwClhLnF3awwxi8woISvyY
-	fI8FwraU+PPyIFicWUBLovnNJkYIW15i85q3zBMYgaYgtMxCUjYLSdkCRuZVjKKpBckFxUnp
-	uYZ6xYm5xaV56XrJ+bmbGMFB+ExqB+PKBotDjAIcjEo8vBqSswOEWBPLiitzDzFKcDArifBy
-	TAAK8aYkVlalFuXHF5XmpBYfYpTmYFES5232SAkQEkhPLEnNTk0tSC2CyTJxcEo1MGa9u9h5
-	JPDoo6IM376FVzmk9c2ksueG3FQ43ZFY69/ye2HhvxKX0Kufpddv6FZddPW1dbDBebHify9X
-	bxCPtbbYeoeJ1UZO6c+jzvoWhVnHNk9VVV5xdaqm09c1Ty+uWJ/hnWUlXuZvfNz7y6fVl472
-	3audvLvz2Gf/o0aWD8V92RJqGr4qpymxFGckGmoxFxUnAgAGZwdLPgIAAA==
+	id S1755451Ab2KHMX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:23:58 -0500
+Received: from ozlabs.org ([203.10.76.45]:51594 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755402Ab2KHMX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 07:23:56 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: virtualization@lists.linux-foundation.org, Pawel Moll <pawel.moll@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-mmio: Fix irq parsing in command line parameter
+In-Reply-To: <CAF2Aj3gLLTw5ng0iZ6ecEkjGnJ-XGi3_RBrjCroW-=v=pfcFAw@mail.gmail.com>
+References: <1352120454.10947.5.camel@hornet> <1352120572-16256-1-git-send-email-pawel.moll@arm.com> <20121105134413.GC5220@gmail.com> <87bof93vf2.fsf@rustcorp.com.au> <CAF2Aj3gLLTw5ng0iZ6ecEkjGnJ-XGi3_RBrjCroW-=v=pfcFAw@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 08 Nov 2012 22:53:40 +1030
+Message-ID: <87hap02shf.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 November 2012 12:31:48 Alan Cox wrote:
-> On Thu, 08 Nov 2012 12:22:05 +0100
-> Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> 
-> > On Thursday 08 November 2012 12:12:31 Alan Cox wrote:
-> > > On Thu, 08 Nov 2012 10:58:17 +0100
-> > > Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> > > 
-> > > > From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > > Subject: [PATCH] DMA: remove unused support for MEMSET operations
-> > > > 
-> > > > There have never been any real users of MEMSET operations
-> > > 
-> > > In tree users.
-> > 
-> > Please show me them. 
-> 
-> Sorry ? There are potentially lots of out of tree users in both the ARM
-> and x86 communities.
+Lee Jones <lee.jones@linaro.org> writes:
 
-They had almost six years to submit their code to upstream and there is
-potentially no problem for these _out_of_tree_ users to maintain also
-memset code out of tree.  
+>> > Resorted to poaching now have we Pawel?
+>
+>> I hope you were joking!
+>
+> Yes, of course. I thought that was clearly indicated by the jovial winking
+> smiley. :)
+>
+> I realise it wasn't obvious soley by this exchange, but Pawel and I are
+> actually ol' friends.
+>
+>> Doing your work for you isn't poaching.
+>
+> This isn't related to my work, as I have no professional interest in
+> virtio. In this particular instance I was trying to help out by fixing bugs
+> uncovered by the use of randconfig, which I'm doing in my own time, as a
+> hobby. I guess the use my work address clouds this fact, so I apologise for
+> that.
+>
+> Sorry for any confusion or offence caused though Rusty. :)
+>
+> Kind regards,
+> Lee
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung Poland R&D Center
+No offence for me.  I just don't want bystanders to believe that there
+is some etiquette other than "best patch wins".
+
+Thanks for the clarification!
+Rusty.
