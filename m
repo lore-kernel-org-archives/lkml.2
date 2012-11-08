@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab2KHNUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:20:43 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52047 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab2KHNUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:20:42 -0500
-Date: Thu, 8 Nov 2012 14:20:58 +0100
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: Alex Dubov <oakad@yahoo.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v7 0/3] Add modules to support realtek PCIE card reader
-Message-ID: <20121108132058.GB1385@kroah.com>
-References: <cover.1351481260.git.wei_wang@realsil.com.cn>
- <508F4A88.8010207@realsil.com.cn>
- <87r4o56w1f.fsf@octavius.laptop.org>
- <509B1FEA.1040505@realsil.com.cn>
- <1352347282.60054.YahooMailNeo@web121002.mail.ne1.yahoo.com>
- <509B4363.7080905@realsil.com.cn>
+	id S1755697Ab2KHNXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:23:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54129 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755541Ab2KHNXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 08:23:09 -0500
+Date: Thu, 8 Nov 2012 14:23:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH 8/9] cgroup_freezer: add ->post_create() and
+ ->pre_destroy() and track online state
+Message-ID: <20121108132306.GH31821@dhcp22.suse.cz>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-9-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <509B4363.7080905@realsil.com.cn>
+In-Reply-To: <1351931915-1701-9-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 08, 2012 at 01:30:11PM +0800, wwang wrote:
-> 于 2012年11月08日 12:01, Alex Dubov 写道:
-> >Hi,
-> >>Do you have any comment on the MEMSTICK part in this v7 patchset? Can
-> >>you help to merge the patch to the kernel tree?
-> >
-> >I'm afraid that presently I don't have much time to look at the memstick related stuff any further. Hopefully, somebody else can step in and take a look at your submission.
-> >
-> >Sorry for that.
-> >
-> Hi Greg & Arnd:
+On Sat 03-11-12 01:38:34, Tejun Heo wrote:
+> A cgroup is online and visible to iteration between ->post_create()
+> and ->pre_destroy().  This patch introduces CGROUP_FREEZER_ONLINE and
+> toggles it from the newly added freezer_post_create() and
+> freezer_pre_destroy() while holding freezer->lock such that a
+> cgroup_freezer can be reilably distinguished to be online.  This will
+> be used by full hierarchy support.
+
+I am thinking whether freezer_pre_destroy is really needed. Once we
+reach pre_destroy then there are no tasks nor any children in the group
+so there is nobody to wake up if the group was frozen and the destroy
+callback is called after synchronize_rcu so the traversing should be
+safe.
+
+> ONLINE test is added to freezer_apply_state() but it currently doesn't
+> make any difference as freezer_write() can only be called for an
+> online cgroup.
 > 
-> Can you help to review the MEMSTICK part in my patch and merge it to
-> the kernel tree? Alex is a little busy now and I can't find any
-> other maintainer who can take care of MEMSTICK subsystem.
+> Adjusting system_freezing_cnt on destruction is moved from
+> freezer_destroy() to the new freezer_pre_destroy() for consistency.
+> 
+> This patch doesn't introduce any noticeable behavior change.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-I don't have the patches around anymore, sorry, care to resend them?
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-greg k-h
+> ---
+>  kernel/cgroup_freezer.c | 42 ++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 40 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index b8ad93c..4f12d31 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/seq_file.h>
+>  
+>  enum freezer_state_flags {
+> +	CGROUP_FREEZER_ONLINE	= (1 << 0), /* freezer is fully online */
+>  	CGROUP_FREEZING_SELF	= (1 << 1), /* this freezer is freezing */
+>  	CGROUP_FREEZING_PARENT	= (1 << 2), /* the parent freezer is freezing */
+>  	CGROUP_FROZEN		= (1 << 3), /* this and its descendants frozen */
+> @@ -98,13 +99,45 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup *cgroup)
+>  	return &freezer->css;
+>  }
+>  
+> -static void freezer_destroy(struct cgroup *cgroup)
+> +/**
+> + * freezer_post_create - commit creation of a freezer cgroup
+> + * @cgroup: cgroup being created
+> + *
+> + * We're committing to creation of @cgroup.  Mark it online.
+> + */
+> +static void freezer_post_create(struct cgroup *cgroup)
+>  {
+>  	struct freezer *freezer = cgroup_freezer(cgroup);
+>  
+> +	spin_lock_irq(&freezer->lock);
+> +	freezer->state |= CGROUP_FREEZER_ONLINE;
+> +	spin_unlock_irq(&freezer->lock);
+> +}
+> +
+> +/**
+> + * freezer_pre_destroy - initiate destruction of @cgroup
+> + * @cgroup: cgroup being destroyed
+> + *
+> + * @cgroup is going away.  Mark it dead and decrement system_freezing_count
+> + * if it was holding one.
+> + */
+> +static void freezer_pre_destroy(struct cgroup *cgroup)
+> +{
+> +	struct freezer *freezer = cgroup_freezer(cgroup);
+> +
+> +	spin_lock_irq(&freezer->lock);
+> +
+>  	if (freezer->state & CGROUP_FREEZING)
+>  		atomic_dec(&system_freezing_cnt);
+> -	kfree(freezer);
+> +
+> +	freezer->state = 0;
+> +
+> +	spin_unlock_irq(&freezer->lock);
+> +}
+> +
+> +static void freezer_destroy(struct cgroup *cgroup)
+> +{
+> +	kfree(cgroup_freezer(cgroup));
+>  }
+>  
+>  /*
+> @@ -260,6 +293,9 @@ static void freezer_apply_state(struct freezer *freezer, bool freeze,
+>  	/* also synchronizes against task migration, see freezer_attach() */
+>  	lockdep_assert_held(&freezer->lock);
+>  
+> +	if (!(freezer->state & CGROUP_FREEZER_ONLINE))
+> +		return;
+> +
+>  	if (freeze) {
+>  		if (!(freezer->state & CGROUP_FREEZING))
+>  			atomic_inc(&system_freezing_cnt);
+> @@ -347,6 +383,8 @@ static struct cftype files[] = {
+>  struct cgroup_subsys freezer_subsys = {
+>  	.name		= "freezer",
+>  	.create		= freezer_create,
+> +	.post_create	= freezer_post_create,
+> +	.pre_destroy	= freezer_pre_destroy,
+>  	.destroy	= freezer_destroy,
+>  	.subsys_id	= freezer_subsys_id,
+>  	.attach		= freezer_attach,
+> -- 
+> 1.7.11.7
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
