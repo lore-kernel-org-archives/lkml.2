@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab2KHUfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 15:35:53 -0500
-Received: from mga14.intel.com ([143.182.124.37]:31674 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756624Ab2KHUfw convert rfc822-to-8bit (ORCPT
+	id S1756928Ab2KHUgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 15:36:39 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51550 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624Ab2KHUgi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 15:35:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,739,1344236400"; 
-   d="scan'208";a="215202499"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6Yg
-Date: Thu, 8 Nov 2012 20:35:48 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
-References: <509B5038.8090304@oracle.com>
-In-Reply-To: <509B5038.8090304@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Nov 2012 15:36:38 -0500
 MIME-Version: 1.0
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230750D9863@in01wembx1.internal.synopsys.com>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	<1352281674-2186-9-git-send-email-vgupta@synopsys.com>
+	<CACM3HyHYiuhGb6tcY0kS43y+kquWF11Du+g45pzoJukSpE0ANw@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA230750D9863@in01wembx1.internal.synopsys.com>
+Date: Thu, 8 Nov 2012 21:36:34 +0100
+Message-ID: <CACM3HyHAKgJ2aTGjidZr5T9WFL3m+FTbUz_1QtO2gAgSFQm8fA@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 08/31] ARC: Fundamental ARCH data-types/defines
+From: Jonas Bonn <jonas.bonn@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
->On Behalf Of Joe Jin
->Sent: Wednesday, November 07, 2012 10:25 PM
->To: e1000-devel@lists.sf.net
->Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Mary Mcgrath
->Subject: 82571EB: Detected Hardware Unit Hang
+On 8 November 2012 19:52, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> On 7 November 2012 10:47, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> I'd recommend not exporting the pt_regs structure to userspace.  This
+>> struct is used heavily within the kernel and it's nice to have the
+>> leeway to be able to modify it as things evolve.  GDB doesn't need to
+>> know about this struct anymore as it should be using regset's for any
+>> recent architectures anyway, so it's the regset layout that should be
+>> ABI stable instead of pt_regs.
+>>
+>> You can check the openrisc architecture as an example of how to do this.
 >
->Hi list,
+> Hi Jonas,
 >
->IHAC reported "82571EB Detected Hardware Unit Hang" on HP ProLiant DL360
->G6, and have to reboot the server to recover:
+> thanks for your review comment. I completely agree that pt_regs should not be exported and very recently a change in pt_regs forced a gdbserver change too (ABI incompatibility) which goes along what you are recommending. Infact the ptrace patch for kernel (which will follow in series #2) provides a stable regset ABI - extracting information from pt_regs.
 >
->e1000e 0000:06:00.1: eth3: Detected Hardware Unit Hang:
->  TDH                  <1a>
->  TDT                  <1a>
->  next_to_use          <1a>
->  next_to_clean        <18>
->buffer_info[next_to_clean]:
->  time_stamp           <10047a74e>
->  next_to_watch        <18>
->  jiffies              <10047a88c>
->  next_to_watch.status <1>
->MAC Status             <80383>
->PHY Status             <792d>
->PHY 1000BASE-T Status  <3800>
->PHY Extended Status    <3000>
->PCI Status             <10>
->
->With newer kernel 2.0.0.1 the issue still reproducible.
->
->Device info:
->06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet
->Controller (Copper) (rev 06)
->06:00.1 0200: 8086:10bc (rev 06)
->
->I compared lspci output before and after the issue, different as below:
-> 06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet
->Controller (Copper) (rev 06)
-> 	Subsystem: Hewlett-Packard Company NC364T PCI Express Quad Port
->Gigabit Server Adapter
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+
->Stepping- SERR- FastB2B- DisINTx-
->-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-><TAbort- <MAbort- >SERR- <PERR- INTx-
->+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
->+<TAbort- <MAbort- >SERR- <PERR- INTx+
+> However our current gdb/gdbserver is 6.8 based and making it switch to regset interface might not be possible for this release of tools. Since customers are already using our stuff, we can not have a broken ABI. We do have ABI versioning, so in next release we can fix gdb and remove this.
 
-Are you sure this is not similar issue as before that you reported.
-i.e. 
-On Mon, 2012-07-09 at 16:51 +0800, Joe Jin wrote:
-> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when 
-> doing scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, 
-> just copy a big file (>500M) from another server will hit it at once.
+For generic syscalls it was generally decided that the upstream kernel
+would drop support for legacy syscalls, _even though_ userspace bits
+like uClibc required them.  For _new_ architectures, userspace would
+need to adapt to the _mainline_ kernel; and as a stop-gap for existing
+software, external patches could be carried in an external git
+repository where _non-mainline_ kernel patches could be carried to
+provide a working kernel until userspace could catch up.
 
-All devices in path from root complex to 82571, should have *same* max payload size otherwise it can cause hang. 
-Can you double check this?
+I'd say the same applies here: GDB 6.8 may continue work with a
+mainline kernel plus a patch that restores the export of pt_regs, but
+GDB 7.2 (or whatever version you move on to) would be the one that
+fully supports an unpatched mainline.
 
--Tushar
+>
+> Please note that an additional reason for exporting pt_regs is due to the fact that it is part of sigcontext. Keeping it exactly same as pt_regs helps us do batch save/restore of user context in signal handling (please look at my signal handling patch) but the flip side is that userspace SA_SIGINFO needs to be able to have access to sigcontext and hence we explicitly need pt_regs. We could arguably opencode pt_regs there - but that won't be clean IMHO.
+
+It's not really pt_regs you need here, but the userspace equivalent
+thereof.  On OpenRISC, for example, we have user_regs_struct which is
+an ABI stable version of pt_regs.  These may even be identical to
+begin with, but at least the distinction can be made now between the
+kernel-internal struct and the ABI stable one.
+
+/Jonas
