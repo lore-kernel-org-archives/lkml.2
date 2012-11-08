@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2KHS3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 13:29:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48336 "EHLO
+	id S1756643Ab2KHSaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 13:30:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60773 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625Ab2KHS3n (ORCPT
+	with ESMTP id S1756611Ab2KHS3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 13:29:43 -0500
+	Thu, 8 Nov 2012 13:29:41 -0500
 From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
 To: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com
 Cc: rjw@sisk.pl, wency@cn.fujitsu.com, lenb@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-mm@kvack.org,
         Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Subject: [RFC PATCH 3/3] acpi_memhotplug: Add prepare_remove operation
-Date: Thu,  8 Nov 2012 19:29:31 +0100
-Message-Id: <1352399371-8015-4-git-send-email-vasilis.liaskovitis@profitbricks.com>
+Subject: [RFC PATCH 2/3] acpi: Make acpi_bus_trim handle device removal preparation
+Date: Thu,  8 Nov 2012 19:29:30 +0100
+Message-Id: <1352399371-8015-3-git-send-email-vasilis.liaskovitis@profitbricks.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
 References: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
@@ -23,72 +23,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Offlining and removal of memory is now done in the prepare_remove callback,
-not in the remove callback.
+A new argument is added to acpi_bus_trim, which indicates if we are preparing
+for removal or performing the actual ACPI removal. This is needed for safe
+removal of memory devices.
+
+The argument change would not be needed if the existing argument rmdevice of
+acpi_bus_trim could be used instead. What is the role of rmdevice argument? As
+far as I can tell the rmdevice argument is never used at the moment
+(acpi_bus_trim is called with rmdevice=1 from all its call sites. It is never
+called with rmdevice=0)
 
 Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
 ---
- drivers/acpi/acpi_memhotplug.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/acpi/acpi_memhotplug.c     |    2 +-
+ drivers/acpi/dock.c                |    2 +-
+ drivers/acpi/scan.c                |   32 +++++++++++++++++++++++++++++---
+ drivers/pci/hotplug/acpiphp_glue.c |    4 ++--
+ drivers/pci/hotplug/sgi_hotplug.c  |    2 +-
+ include/acpi/acpi_bus.h            |    2 +-
+ 6 files changed, 35 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 7fcc844..9b734a5 100644
+index 92c973a..7fcc844 100644
 --- a/drivers/acpi/acpi_memhotplug.c
 +++ b/drivers/acpi/acpi_memhotplug.c
-@@ -54,6 +54,7 @@ MODULE_LICENSE("GPL");
+@@ -427,7 +427,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 		/*
+ 		 * Invoke acpi_bus_trim() to remove memory device
+ 		 */
+-		acpi_bus_trim(device, 1);
++		acpi_bus_trim(device, 1, 0);
  
- static int acpi_memory_device_add(struct acpi_device *device);
- static int acpi_memory_device_remove(struct acpi_device *device, int type);
-+static int acpi_memory_device_prepare_remove(struct acpi_device *device);
+ 		/* _EJ0 succeeded; _OST is not necessary */
+ 		return;
+diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+index ae4ebf2..9e37b49 100644
+--- a/drivers/acpi/dock.c
++++ b/drivers/acpi/dock.c
+@@ -345,7 +345,7 @@ static void dock_remove_acpi_device(acpi_handle handle)
+ 	int ret;
  
- static const struct acpi_device_id memory_device_ids[] = {
- 	{ACPI_MEMORY_DEVICE_HID, 0},
-@@ -68,6 +69,7 @@ static struct acpi_driver acpi_memory_device_driver = {
- 	.ops = {
- 		.add = acpi_memory_device_add,
- 		.remove = acpi_memory_device_remove,
-+		.prepare_remove = acpi_memory_device_prepare_remove,
- 		},
- };
+ 	if (!acpi_bus_get_device(handle, &device)) {
+-		ret = acpi_bus_trim(device, 1);
++		ret = acpi_bus_trim(device, 1, 0);
+ 		if (ret)
+ 			pr_debug("error removing bus, %x\n", -ret);
+ 	}
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 95ff1e8..b1001a4 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -121,7 +121,12 @@ void acpi_bus_hot_remove_device(void *context)
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 		"Hot-removing device %s...\n", dev_name(&device->dev)));
  
-@@ -499,6 +501,20 @@ static int acpi_memory_device_add(struct acpi_device *device)
- static int acpi_memory_device_remove(struct acpi_device *device, int type)
- {
- 	struct acpi_memory_device *mem_device = NULL;
+-	if (acpi_bus_trim(device, 1)) {
++	if (acpi_bus_trim(device, 1, 1)) {
++		pr_err("Preparing to removing device failed\n");
++		goto err_out;
++	}
 +
-+	if (!device || !acpi_driver_data(device))
-+		return -EINVAL;
-+
-+	mem_device = acpi_driver_data(device);
-+
-+	kfree(mem_device);
-+
-+	return 0;
-+}
-+
-+static int acpi_memory_device_prepare_remove(struct acpi_device *device)
-+{
-+	struct acpi_memory_device *mem_device = NULL;
- 	int result;
- 
- 	if (!device || !acpi_driver_data(device))
-@@ -506,12 +522,14 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
- 
- 	mem_device = acpi_driver_data(device);
- 
-+	/*
-+	 * offline and remove memory only when the memory device is
-+	 * ejected.
-+	 */
- 	result = acpi_memory_remove_memory(mem_device);
- 	if (result)
- 		return result;
- 
--	kfree(mem_device);
--
- 	return 0;
++	if (acpi_bus_trim(device, 1, 0)) {
+ 		printk(KERN_ERR PREFIX
+ 				"Removing device failed\n");
+ 		goto err_out;
+@@ -1347,6 +1352,19 @@ static int acpi_device_set_context(struct acpi_device *device)
+ 	return -ENODEV;
  }
  
++static int acpi_bus_prepare_remove(struct acpi_device *dev)
++{
++	int ret = 0;
++
++	if (!dev)
++		return -EINVAL;
++
++	if (dev->driver && dev->driver->ops.prepare_remove)
++		ret = dev->driver->ops.prepare_remove(dev);
++
++	return ret;
++}
++
+ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+ {
+ 	if (!dev)
+@@ -1640,7 +1658,11 @@ int acpi_bus_start(struct acpi_device *device)
+ }
+ EXPORT_SYMBOL(acpi_bus_start);
+ 
+-int acpi_bus_trim(struct acpi_device *start, int rmdevice)
++/* acpi_bus_trim: Remove or prepare to remove a device and its children.
++ * @device: the device to remove or prepare to remove from.
++ * @prepare: If 1, prepare for removal. If 0, perform actual removal.
++ */
++int acpi_bus_trim(struct acpi_device *start, int rmdevice, int prepare)
+ {
+ 	acpi_status status;
+ 	struct acpi_device *parent, *child;
+@@ -1667,7 +1689,11 @@ int acpi_bus_trim(struct acpi_device *start, int rmdevice)
+ 			child = parent;
+ 			parent = parent->parent;
+ 
+-			if (level == 0)
++			if (prepare) {
++				err = acpi_bus_prepare_remove(child);
++				if (err)
++					return err;
++			} else if (level == 0)
+ 				err = acpi_bus_remove(child, rmdevice);
+ 			else
+ 				err = acpi_bus_remove(child, 1);
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 3d6d4fd..bc10b61 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -748,7 +748,7 @@ static int acpiphp_bus_add(struct acpiphp_func *func)
+ 		/* this shouldn't be in here, so remove
+ 		 * the bus then re-add it...
+ 		 */
+-		ret_val = acpi_bus_trim(device, 1);
++		ret_val = acpi_bus_trim(device, 1, 0);
+ 		dbg("acpi_bus_trim return %x\n", ret_val);
+ 	}
+ 
+@@ -781,7 +781,7 @@ static int acpiphp_bus_trim(acpi_handle handle)
+ 		return retval;
+ 	}
+ 
+-	retval = acpi_bus_trim(device, 1);
++	retval = acpi_bus_trim(device, 1, 0);
+ 	if (retval)
+ 		err("cannot remove from acpi list\n");
+ 
+diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
+index f64ca92..3655de3 100644
+--- a/drivers/pci/hotplug/sgi_hotplug.c
++++ b/drivers/pci/hotplug/sgi_hotplug.c
+@@ -539,7 +539,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 				ret = acpi_bus_get_device(chandle,
+ 							  &device);
+ 				if (ACPI_SUCCESS(ret))
+-					acpi_bus_trim(device, 1);
++					acpi_bus_trim(device, 1, 0);
+ 			}
+ 		}
+ 
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 6ef1692..063c470 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -359,7 +359,7 @@ void acpi_bus_unregister_driver(struct acpi_driver *driver);
+ int acpi_bus_add(struct acpi_device **child, struct acpi_device *parent,
+ 		 acpi_handle handle, int type);
+ void acpi_bus_hot_remove_device(void *context);
+-int acpi_bus_trim(struct acpi_device *start, int rmdevice);
++int acpi_bus_trim(struct acpi_device *start, int rmdevice, int prepare);
+ int acpi_bus_start(struct acpi_device *device);
+ acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
+ int acpi_match_device_ids(struct acpi_device *device,
 -- 
 1.7.9
 
