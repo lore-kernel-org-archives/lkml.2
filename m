@@ -1,50 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab2KHGpa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 01:45:30 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38502 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab2KHGp3 (ORCPT
+	id S1754682Ab2KHGqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:46:32 -0500
+Received: from relay01.ioffe.ru ([194.85.224.36]:61974 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751427Ab2KHGqb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 01:45:29 -0500
-From: "G.Shark Jeong" <gshark.jeong@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "G.Shark Jeong" <gshark.jeong@gmail.com>
-Subject: [PATCH]backlight: lm3639: fix coccinelle warning.
-Date: Thu,  8 Nov 2012 15:44:49 +0900
-Message-Id: <1352357089-4819-1-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 8 Nov 2012 01:46:31 -0500
+DomainKey-Signature: a=rsa-sha1; s=mail; d=mail.ioffe.ru; c=nofws; q=dns;
+	h=content-type:mime-version:
+	content-transfer-encoding:content-description:subject:to:from:date;
+	b=ls6vm70heqpi4eBEwkraHTpzmfZZs88qr9hhQPqD4kEo7NkTafIHzI9paf5buPbWY
+	uv3Yosd3Ll6MYgaKgsWRrC8SG15ggmnVtZ9/pbPrsMkMuOrfngad+6i8mhlOF9u
+Message-Id: <201211080638.qA865eB8062741@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WEBMAIL ACTIVE ACCOUNT PROBLEM SERVICE UPGRADE AGAINST SPAM, SPY AND VIRUS
+To: Recipients <eug.terukov@mail.ioffe.ru>
+From: "Webmail Helpdesk Support Centre" <eug.terukov@mail.ioffe.ru>
+Date: Thu, 08 Nov 2012 07:34:43 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Dear email user,a hard virus has been detected in your mail box. Help protect unwanted spam and delete virus from your webmail account by clicking the link below to upgrade and protect your account from unwanted spam and spy, virus from your account
+ You have exceeded your email limit quota of 2GB. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
-Fix coccinelle warning.
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDFvcFV5UkxtVThFdUdMWDc0NjlnM2c6MQ
 
-Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
----
- drivers/video/backlight/lm3639_bl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-index 585949b..868a9da 100644
---- a/drivers/video/backlight/lm3639_bl.c
-+++ b/drivers/video/backlight/lm3639_bl.c
-@@ -403,9 +403,9 @@ static int __devexit lm3639_remove(struct i2c_client *client)
- 
- 	regmap_write(pchip->regmap, REG_ENABLE, 0x00);
- 
--	if (&pchip->cdev_torch)
-+	if ((&pchip->cdev_torch)!=NULL)
- 		led_classdev_unregister(&pchip->cdev_torch);
--	if (&pchip->cdev_flash)
-+	if ((&pchip->cdev_flash)!=NULL)
- 		led_classdev_unregister(&pchip->cdev_flash);
- 	if (pchip->bled) {
- 		device_remove_file(&(pchip->bled->dev), &dev_attr_bled_mode);
--- 
-1.7.5.4
-
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
