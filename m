@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab2KHIQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 03:16:08 -0500
-Received: from antcom.de ([188.40.178.216]:34598 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2KHIQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 03:16:04 -0500
-Message-ID: <509B6A11.7070408@antcom.de>
-Date: Thu, 08 Nov 2012 09:15:13 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
-MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>
-CC: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] leds: leds-gpio: Defer probing in case of deferred
- gpio probing
-References: <1352293609-22659-1-git-send-email-stigge@antcom.de> <CAK5ve-J4prh2GSOsM6iadOgOey9K05PuqH9Y5Yfj8+GwLqKxnQ@mail.gmail.com>
-In-Reply-To: <CAK5ve-J4prh2GSOsM6iadOgOey9K05PuqH9Y5Yfj8+GwLqKxnQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755036Ab2KHIRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 03:17:37 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42156 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab2KHIRf convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Thu, 8 Nov 2012 03:17:35 -0500
+Message-Id: <509B78AC02000078000A723C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 08 Nov 2012 08:17:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matthew Fioravante" <matthew.fioravante@jhuapl.edu>
+Cc: "jeremy@goop.org" <jeremy@goop.org>, "Kent Yoder" <key@linux.vnet.ibm.com>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] add tpm_xenu.ko: Xen Virtual TPM
+ frontend driver
+References: <1352128197-1539-1-git-send-email-matthew.fioravante@jhuapl.edu>
+ <20121107144625.GA14628@ennui.austin.ibm.com>
+ <509AA501.1090701@jhuapl.edu>
+In-Reply-To: <509AA501.1090701@jhuapl.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+>>> On 07.11.12 at 19:14, Matthew Fioravante <matthew.fioravante@jhuapl.edu> wrote:
+> On 11/07/2012 09:46 AM, Kent Yoder wrote:
+>>> --- a/drivers/char/tpm/tpm.h
+>>> +++ b/drivers/char/tpm/tpm.h
+>>> @@ -130,6 +130,9 @@ struct tpm_chip {
+>>>
+>>>   	struct list_head list;
+>>>   	void (*release) (struct device *);
+>>> +#if CONFIG_XEN
+>>> +	void *priv;
+>>> +#endif
+>>   Can you use the chip->vendor.data pointer here instead? tpm_ibmvtpm is
+>> already using that as a priv pointer. I should probably change that name
+>> to make it more obvious what that's used for.
+> That makes more sense. I'm guessing your data pointer didn't exist 
+> during the 2.6.18 kernel which is why they added their own priv pointer.
 
-On 08/11/12 01:28, Bryan Wu wrote:
-> On Wed, Nov 7, 2012 at 5:06 AM, Roland Stigge <stigge@antcom.de> wrote:
->> This patch makes leds-gpio's probe() return -EPROBE_DEFER if any of the gpios
->> to register are deferred themselves. This makes a change of
->> gpio_leds_create_of()'s return value necessary: Instead of returning NULL on
->> error, we now use ERR_PTR() error coding.
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
-> Sorry about this, actually I've already merged it into my for-next
-> branch and forgot to reply this email.
-> It's here: http://git.kernel.org/?p=linux/kernel/git/cooloney/linux-leds.git;a=commitdiff;h=424f58e4cebd76458b44e69ed31f7297808770cd
-> So is the same one as here?
+It got introduced with 3.7-rc.
 
-Thanks, still the same patch.
+>>> @@ -310,6 +313,18 @@ struct tpm_cmd_t {
+>>>
+>>>   ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
+>>>
+>>> +#ifdef CONFIG_XEN
+>>> +static inline void *chip_get_private(const struct tpm_chip *chip)
+>>> +{
+>>> +	return chip->priv;
+>>> +}
+>>> +
+>>> +static inline void chip_set_private(struct tpm_chip *chip, void *priv)
+>>> +{
+>>> +	chip->priv = priv;
+>>> +}
+>>> +#endif
+>>   Can you put these in tpm_vtpm.c please?  One less #define. :-)
+> Agreed, I'd rather not have to modify your shared tpm.h interface at all.
 
-Could have seen this in your tree. ;-)
+Either such accessors should be defined here, for everyone to
+use (and tpm_ibmvtpm.c get changed accordingly), or the Xen
+code should access the field without wrappers too (for consistency).
 
-Roland
+Jan
+
