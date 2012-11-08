@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab2KHPEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:04:14 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58954 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab2KHPEM (ORCPT
+	id S1756010Ab2KHPGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:06:21 -0500
+Received: from icebox.esperi.org.uk ([81.187.191.129]:47969 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2KHPGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:04:12 -0500
+	Thu, 8 Nov 2012 10:06:17 -0500
+From: Nix <nix@esperi.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.7-rc4
+References: <CA+55aFxGm+2-OiVL1JRYH12BZiMBjiaST+9jrQCtHeU-iVvmyA@mail.gmail.com>
+Emacs: The Awakening
+Date: Thu, 08 Nov 2012 15:06:14 +0000
+In-Reply-To: <CA+55aFxGm+2-OiVL1JRYH12BZiMBjiaST+9jrQCtHeU-iVvmyA@mail.gmail.com>
+	(Linus Torvalds's message of "Sun, 4 Nov 2012 11:43:33 -0800")
+Message-ID: <87625gqgm1.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAMR49Lp07mn3dOhaN9LpckCHVY7vMBc2SRvp4JqX3cYTtcG=nQ@mail.gmail.com>
-References: <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
-	<50998834.5030407@schaufler-ca.com>
-	<CAMR49Lp07mn3dOhaN9LpckCHVY7vMBc2SRvp4JqX3cYTtcG=nQ@mail.gmail.com>
-Date: Thu, 8 Nov 2012 10:04:11 -0500
-Message-ID: <CACLa4pv-dutho5OokuoRUYxJ1noNOZV04wvcyQe3wmS9Ux2HPg@mail.gmail.com>
-Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
-From: Eric Paris <eparis@parisplace.org>
-To: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=2 Fuz1=2 Fuz2=2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Then it only works by accident that magic.h is included by some random
-path in smackfs.c.  You really should be including it in smack.h (or
-each .c file individually, up to casey)
+On 4 Nov 2012, Linus Torvalds stated:
 
-On Thu, Nov 8, 2012 at 5:43 AM, Jarkko Sakkinen <jarkko.sakkinen@iki.fi> wrote:
-> On Tue, Nov 6, 2012 at 11:59 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>
->> On 11/6/2012 12:17 AM, Jarkko Sakkinen wrote:
->> > SMACK_MAGIC moved to a proper place for easy user space access
->> > (i.e. libsmack).
->> >
->> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
->> > ---
->> >  include/uapi/linux/magic.h |    1 +
->> >  security/smack/smack.h     |    5 -----
->> >  2 files changed, 1 insertion(+), 5 deletions(-)
->>
->> Will security/smack/smack_lsm.c and security/smack/smackfs.c
->> compile after this change?
->
-> Sorry I haven't replied earlier. Anyway, I made a sanity check.
->
-> I retried build from clean. Works. I also checked that vmlinux contains
-> SMACK symbols. It does.
->
->>
->> >
->> > diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
->> > index e15192c..12735ad 100644
->> > --- a/include/uapi/linux/magic.h
->> > +++ b/include/uapi/linux/magic.h
->> > @@ -11,6 +11,7 @@
->> >  #define DEBUGFS_MAGIC          0x64626720
->> >  #define SECURITYFS_MAGIC     0x73636673
->> >  #define SELINUX_MAGIC                0xf97cff8c
->> > +#define SMACK_MAGIC          0x43415d53      /* "SMAC" */
->> >  #define RAMFS_MAGIC          0x858458f6      /* some random number */
->> >  #define TMPFS_MAGIC          0x01021994
->> >  #define HUGETLBFS_MAGIC      0x958458f6      /* some random number */
->> > diff --git a/security/smack/smack.h b/security/smack/smack.h
->> > index 99b3612..8ad3095 100644
->> > --- a/security/smack/smack.h
->> > +++ b/security/smack/smack.h
->> > @@ -149,11 +149,6 @@ struct smack_known {
->> >  #define SMACK_CIPSO_SOCKET   1
->> >
->> >  /*
->> > - * smackfs magic number
->> > - */
->> > -#define SMACK_MAGIC  0x43415d53 /* "SMAC" */
->> > -
->> > -/*
->> >   * CIPSO defaults.
->> >   */
->> >  #define SMACK_CIPSO_DOI_DEFAULT              3       /* Historical */
->>
->
-> /Jarkko
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Perhaps notable just because of the noise it caused in certain
+> circles, there's the ext4 bitmap journaling fix for the issue that
+> caused such a ruckus. It's a tiny patch and despite all the noise
+> about it you couldn't actually trigger the problem unless you were
+> doing crazy things with special mount options.
+
+It also helps if you reboot during umount. Which is also crazy (says the
+man who's still doing it). But the *real* problem is the way
+journal_async_commit uses a journal checksum failure as an indication
+that the commit was interrupted as long as there is no following commit
+block, which as the comment in
+fs/jbd2/recovery.c:do_one_pass():JBD2_COMMIT_BLOCK says, is going to
+lead to an incorrect conclusion of interrupted commit and a successful
+remount whenever commit N is corrupt and commit N+1 is interrupted (e.g.
+by some loony rebooting or powerfailing during umount).
+
+This problem seems to be intrinsic to journal_async_commit to me, since
+it repurposes journal checksums to do a second job of missing-commit-
+block detection, which pretty much means that *actual* checksum
+failures, i.e. kernel bugs or corruption at writeout time, go
+undetected, just as they do when journal checksumming is off -- but they
+*also* mean that errors computing the checksum can go undetected. And
+since journal checksumming is rarely used, such bugs can persist for a
+relatively long time.
+
+All of this means that journal_async_commit is *more* likely to cause a
+no-warnings remount of a corrupted filesystem that really needs fscking
+than is a filesystem using a normal non-checksummed journal. And that,
+to me, is the really dangerous part. If you know the fs is corrupt, you
+can fsck it and all is well, after a bit of flak: you won't overlook it.
+If you don't know the fs is corrupt, you run a substantial risk of
+making things much much worse before the problem escalates from ext4
+errors in a log you never read into -EIO. (I happened to be reading that
+log because I was trying to reproduce the nsm lockd bug. But normally?
+Yeah, I spend all my time reading the kernel log, doesn't everyone?)
+
+
+I'd apologise for causing all the fuss, but it wasn't me who decided to
+submit it to Phoronix (actually I suspect Michael Larabel just read the
+list and everything snowballed from there).
+
+-- 
+NULL && (void)
