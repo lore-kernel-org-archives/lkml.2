@@ -1,35 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2KHGMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 01:12:10 -0500
-Received: from relay01.ioffe.ru ([194.85.224.36]:25894 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750926Ab2KHGMI convert rfc822-to-8bit (ORCPT
+	id S1753788Ab2KHGMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:12:50 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9043 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab2KHGMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 01:12:08 -0500
-DomainKey-Signature: a=rsa-sha1; s=mail; d=mail.ioffe.ru; c=nofws; q=dns;
-	h=content-type:mime-version:
-	content-transfer-encoding:content-description:subject:to:from:date:reply-to;
-	b=diMoDyIeEN/5OY64KpBz3ToxJPS3K1TpaVItlDf3A2pX5OqMB1h9SoUAP39fTuKQq
-	i9izuEM3YLSZ9a9pLGFGAdqQokWk/OJCbLHWzuhD85c/J0CXYyMBAOdwfFZ3qlH
-Message-Id: <201211080307.qA835slQ063040@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	Thu, 8 Nov 2012 01:12:49 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Nov 2012 21:59:26 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: How about a gpio_get(device *, char *) function?
+Date: Thu, 8 Nov 2012 15:14:34 +0900
+Message-ID: <1908355.tpLPJU8MKg@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.2 (Linux/3.6.4-1-ARCH; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
+References: <38620644.IyR5R8rjKP@percival> <1801189.6J3flQFRCq@percival> <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WEBMAIL ACTIVE ACCOUNT PROBLEM SERVICE UPGRADE AGAINST SPAM, SPY AND VIRUS
-To: Recipients <eug.terukov@mail.ioffe.ru>
-From: "Publisher's Clearing House" <eug.terukov@mail.ioffe.ru>
-Date: Thu, 08 Nov 2012 04:06:24 +0100
-Reply-To: pchoffice@fubon-hk.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear email user,a hard virus has been detected in your mail box. Help protect unwanted spam and delete virus from your webmail account by clicking the link below to upgrade and protect your account from unwanted spam and spy, virus from your account
- You have exceeded your email limit quota of 2GB. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
+On Thursday 08 November 2012 05:24:19 Linus Walleij wrote:
+> I would prefer to create, e.g. in <linux/gpio/consumer.h>
+> something like:
+> 
+> struct gpio;
+> 
+> struct gpio *gpio_get(struct device *dev, const char *name);
+> 
+> int gpio_get_value(struct gpio *g);
+> 
+> Nothing more! I.e. struct gpio is an opaque cookie, nothing to be known
+> about it.
+> 
+> And then have the drivers using this *ONLY* include <linux/gpio/consumer.h>
+> and not <linux/gpio.h>. So drivers have no clue what struct gpio is and
+> will only operate on it using functions.
+> 
+> This follows the pattern set by Thomas Gleixner for e.g. IRQ descriptors,
+> and the style was also used in the redesign of the struct clk *.
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDFvcFV5UkxtVThFdUdMWDc0NjlnM2c6MQ
+Also pretty similar to the regulator framework, which might itself have been 
+inspired by IRQs and clocks.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+> Of course the cross-referencing implementation can in e.g.
+> drivers/gpio/gpiodev.c internally define that like this:
+> 
+> #include <linux/gpio.h>
+> 
+> /**
+>   * @gpio: pointer to global GPIO number
+>   */
+> struct gpio {
+>     int gpio;
+> };
+> 
+> struct gpio *gpio_get(struct device *dev, const char *name)
+> {
+>    /* Lookup in cross-ref table etc */
+> }
+> 
+> int gpioh_get_value(struct gpio *g)
+> {
+>    return gpio_get_value(g->gpio);
+> }
+> 
+> (...)
+> 
+> Then we can work from there. I think it adds the proper
+> opaqueness factor.
+
+Looks nice, simple and to the point! Let's see if I can find the time to cook 
+something based on this.
+
+Thanks!
+Alex.
+
