@@ -1,222 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab2KHRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 12:23:27 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:49643 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756236Ab2KHRX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 12:23:26 -0500
-Date: Thu, 8 Nov 2012 11:10:08 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, key@linux.vnet.ibm.com,
-        tpmdd-devel@lists.sourceforge.net
-Subject: [PATCH] tpm: add documentation for sysfs interfaces
-Message-ID: <20121108171006.GA30286@ennui.austin.ibm.com>
+	id S1754878Ab2KHR3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 12:29:03 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42465 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab2KHR3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 12:29:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110817-5112-0000-0000-00000E5965FF
+Date: Thu, 8 Nov 2012 18:28:59 +0100
+Message-ID: <CAMgPeKUTpA+qn3TA+4xpRa4z_Y1E+6mk+_Xdom+ugdqCttL3aQ@mail.gmail.com>
+Subject: [PATCH] USB: mos7840: remove unused variable
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Johan Hovold <jhovold@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Fix warning about unused variable introduced by commit e681b66f2e19fa
+("USB: mos7840: remove invalid disconnect handling") upstream.
+
+A subsequent fix which removed the disconnect function got rid of the
+warning but that one was only backported to v3.6.
+
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- Documentation/ABI/stable/sysfs-class-tpm | 182 +++++++++++++++++++++++++++++++
- 1 file changed, 182 insertions(+)
- create mode 100644 Documentation/ABI/stable/sysfs-class-tpm
 
-diff --git a/Documentation/ABI/stable/sysfs-class-tpm b/Documentation/ABI/stable/sysfs-class-tpm
-new file mode 100644
-index 0000000..9f5d73e
---- /dev/null
-+++ b/Documentation/ABI/stable/sysfs-class-tpm
-@@ -0,0 +1,182 @@
-+What:		/sys/class/misc/tpmX/device/
-+Date:		April 2005
-+KernelVersion:	2.6.12
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The device/ directory under a specific TPM instance exposes
-+		the properties of that TPM chip
-+
-+
-+What:		/sys/class/misc/tpmX/device/active
-+Date:		April 2006
-+KernelVersion:	2.6.17
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "active" property prints a '1' if the TPM chip is accepting
-+		commands. An inactive TPM chip still contains all the state of
-+		an active chip (Storage Root Key, NVRAM, etc), and can be
-+		visible to the OS, but will not accept commands.
-+
-+What:		/sys/class/misc/tpmX/device/cancel
-+Date:		June 2005
-+KernelVersion:	2.6.13
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "cancel" property allows you to cancel the currently
-+		pending TPM command. Echoing any value to cancel will call the
-+		TPM vendor specific cancel operation.
-+
-+What:		/sys/class/misc/tpmX/device/caps
-+Date:		April 2005
-+KernelVersion:	2.6.12
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "caps" property contains TPM manufacturer and version info.
-+
-+		Example output:
-+
-+		Manufacturer: 0x53544d20
-+		TCG version: 1.2
-+		Firmware version: 8.16
-+
-+		Manufacturer is a hex dump of the 4 byte manufacturer info
-+		space in a TPM. TCG version shows the TCG TPM spec level that
-+		the chip supports. Firmware version is that of the chip and
-+		is manufacturer specific.
-+
-+What:		/sys/class/misc/tpmX/device/durations
-+Date:		March 2011
-+KernelVersion:	3.1
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "durations" property shows the 3 vendor-specific values
-+		used to wait for a short, medium and long TPM command. All
-+		TPM commands are categorized as short, medium or long in
-+		execution time, so that the driver doesn't have to wait
-+		any longer than necessary before starting to poll for a
-+		result.
-+
-+		Example output:
-+
-+		3015000 4508000 180995000 [original]
-+
-+		Here the short, medium and long durations are displayed in
-+		usecs. "[original]" indicates that the values are displayed
-+		unmodified from when they were queried from the chip.
-+		Durations can be modified in the case where a buggy chip
-+		reports them in msec instead of usec and they need to be
-+		scaled to be displayed in usecs. In this case "[adjusted]"
-+		will be displayed in place of "[original]".
-+
-+What:		/sys/class/misc/tpmX/device/enabled
-+Date:		April 2006
-+KernelVersion:	2.6.17
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "enabled" property prints a '1' if the TPM chip is enabled,
-+		meaning that it should be visible to the OS. This property
-+		may be visible but produce a '0' after some operation that
-+		disables the TPM.
-+
-+What:		/sys/class/misc/tpmX/device/owned
-+Date:		April 2006
-+KernelVersion:	2.6.17
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "owned" property produces a '1' if the TPM_TakeOwnership
-+		ordinal has been executed successfully in the chip. A '0'
-+		indicates that ownership hasn't been taken.
-+
-+What:		/sys/class/misc/tpmX/device/pcrs
-+Date:		April 2005
-+KernelVersion:	2.6.12
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "pcrs" property will dump the current value of all Platform
-+		Configuration Registers in the TPM. Note that since these
-+		values may be constantly changing, the output is only valid
-+		for a snapshot in time.
-+
-+		Example output:
-+
-+		PCR-00: 3A 3F 78 0F 11 A4 B4 99 69 FC AA 80 CD 6E 39 57 C3 3B 22 75
-+		PCR-01: 3A 3F 78 0F 11 A4 B4 99 69 FC AA 80 CD 6E 39 57 C3 3B 22 75
-+		PCR-02: 3A 3F 78 0F 11 A4 B4 99 69 FC AA 80 CD 6E 39 57 C3 3B 22 75
-+		PCR-03: 3A 3F 78 0F 11 A4 B4 99 69 FC AA 80 CD 6E 39 57 C3 3B 22 75
-+		PCR-04: 3A 3F 78 0F 11 A4 B4 99 69 FC AA 80 CD 6E 39 57 C3 3B 22 75
-+		...
-+
-+		The number of PCRs and hex bytes needed to represent a PCR
-+		value will vary depending on TPM chip version. For TPM 1.1 and
-+		1.2 chips, PCRs represent SHA-1 hashes, which are 20 bytes
-+		long. Use the "caps" property to determine TPM version.
-+
-+What:		/sys/class/misc/tpmX/device/pubek
-+Date:		April 2005
-+KernelVersion:	2.6.12
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "pubek" property will return the TPM's public endorsement
-+		key if possible. If the TPM has had ownership established and
-+		is version 1.2, the pubek will not be available without the
-+		owner's authorization. Since the TPM driver doesn't store any
-+		secrets, it can't authorize its own request for the pubek,
-+		making it unaccessible. The public endorsement key is gener-
-+		ated at TPM menufacture time and exists for the life of the
-+		chip.
-+
-+		Example output:
-+
-+		Algorithm: 00 00 00 01
-+		Encscheme: 00 03
-+		Sigscheme: 00 01
-+		Parameters: 00 00 08 00 00 00 00 02 00 00 00 00
-+		Modulus length: 256
-+		Modulus:
-+		B4 76 41 82 C9 20 2C 10 18 40 BC 8B E5 44 4C 6C
-+		3A B2 92 0C A4 9B 2A 83 EB 5C 12 85 04 48 A0 B6
-+		1E E4 81 84 CE B2 F2 45 1C F0 85 99 61 02 4D EB
-+		86 C4 F7 F3 29 60 52 93 6B B2 E5 AB 8B A9 09 E3
-+		D7 0E 7D CA 41 BF 43 07 65 86 3C 8C 13 7A D0 8B
-+		82 5E 96 0B F8 1F 5F 34 06 DA A2 52 C1 A9 D5 26
-+		0F F4 04 4B D9 3F 2D F2 AC 2F 74 64 1F 8B CD 3E
-+		1E 30 38 6C 70 63 69 AB E2 50 DF 49 05 2E E1 8D
-+		6F 78 44 DA 57 43 69 EE 76 6C 38 8A E9 8E A3 F0
-+		A7 1F 3C A8 D0 12 15 3E CA 0E BD FA 24 CD 33 C6
-+		47 AE A4 18 83 8E 22 39 75 93 86 E6 FD 66 48 B6
-+		10 AD 94 14 65 F9 6A 17 78 BD 16 53 84 30 BF 70
-+		E0 DC 65 FD 3C C6 B0 1E BF B9 C1 B5 6C EF B1 3A
-+		F8 28 05 83 62 26 11 DC B4 6B 5A 97 FF 32 26 B6
-+		F7 02 71 CF 15 AE 16 DD D1 C1 8E A8 CF 9B 50 7B
-+		C3 91 FF 44 1E CF 7C 39 FE 17 77 21 20 BD CE 9B
-+
-+		Possible values:
-+
-+		Algorithm:	TPM_ALG_RSA			(1)
-+		Encscheme:	TPM_ES_RSAESPKCSv15		(2)
-+				TPM_ES_RSAESOAEP_SHA1_MGF1	(3)
-+		Sigscheme:	TPM_SS_NONE			(1)
-+		Parameters, a byte string of 3 u32 values:
-+			Key Length (bits):	00 00 08 00	(2048)
-+			Num primes:		00 00 00 02	(2)
-+			Exponent Size:		00 00 00 00	(0 means the
-+								 default exp)
-+		Modulus Length: 256 (bytes)
-+		Modulus:	The 256 byte Endorsement Key modulus
-+
-+What:		/sys/class/misc/tpmX/device/temp_deactivated
-+Date:		April 2006
-+KernelVersion:	2.6.17
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "temp_deactivated" property returns a '1' if the chip has
-+		been temporarily dectivated, usually until the next power
-+		cycle. Whether a warm boot (reboot) will clear a TPM chip
-+		from a temp_deactivated state is platform specific.
-+
-+What:		/sys/class/misc/tpmX/device/timeouts
-+Date:		March 2011
-+KernelVersion:	3.1
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "timeouts" property shows the 4 vendor-specific values
-+		for the TPM's interface spec timeouts. The use of these
-+		timeouts is defined by the TPM interface spec that the chip
-+		conforms to.
-+
-+		Example output:
-+
-+		750000 750000 750000 750000 [original]
-+
-+		The four timeout values are shown in usecs, with a trailing
-+		"[original]" or "[adjusted]" depending on whether the values
-+		were scaled by the driver to be reported in usec from msecs.
+This patch against v3.4 also applies to v3.0 (and v3.2).
+
+Thanks,
+Johan
+
+ drivers/usb/serial/mos7840.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 0179d34..c854235 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2581,7 +2581,6 @@ error:
+ static void mos7840_disconnect(struct usb_serial *serial)
+ {
+ 	int i;
+-	unsigned long flags;
+ 	struct moschip_port *mos7840_port;
+ 	dbg("%s", " disconnect :entering..........");
+
 -- 
-1.7.11.7
-
+1.7.12
