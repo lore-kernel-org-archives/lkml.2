@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab2KHXxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 18:53:31 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35351 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab2KHXxa (ORCPT
+	id S1757316Ab2KHXyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 18:54:00 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:16270
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751425Ab2KHXx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 18:53:30 -0500
-Date: Fri, 9 Nov 2012 10:53:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Merav Sicron <meravs@broadcom.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
-        Eilon Greenstein <eilong@broadcom.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20121109105318.e24e2fa2b899af6e4d444b30@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR"
+	Thu, 8 Nov 2012 18:53:59 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Nov 2012 18:53:59 EST
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zz4015Izz1de0h1202h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh906i1155h)
+Date: Thu, 8 Nov 2012 15:38:45 -0800
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>
+CC: Michal Simek <michal.simek@xilinx.com>, John Linn <john.linn@xilinx.com>,
+        <arm@kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH v2 0/5] zynq clk support
+References: <cover.1352400580.git.josh.cartwright@ni.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <cover.1352400580.git.josh.cartwright@ni.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <d3a47d59-f146-464d-8a65-dc50a8f4d8c9@CO9EHSMHS028.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Josh,
 
-Hi all,
+did you also have a look at what is available in the Xilinx git repository?
+There are also quite some patches to support common clock and port drivers over
+to using it.
+It would be great if we could combine our efforts instead of ending up with
+competing solutions.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
-477864ddd365 ("bnx2x: Disable FCoE for 57840 since not yet supported by
-FW") from Linus' tree and commit 55c11941e382 ("bnx2x: Support loading
-cnic resources at run-time") from the net-next tree.
+Thanks,
+Soren
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index bd1fd3d,0546cf4..0000000
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@@ -11899,22 -12065,10 +12066,20 @@@ static int __devinit bnx2x_init_one(s=
-tr
-  	/* calc qm_cid_count */
-  	bp->qm_cid_count =3D bnx2x_set_qm_cid_count(bp);
- =20
-- #ifdef BCM_CNIC
-- 	/* disable FCOE L2 queue for E1x */
-+ 	/* disable FCOE L2 queue for E1x*/
-  	if (CHIP_IS_E1x(bp))
-  		bp->flags |=3D NO_FCOE_FLAG;
-+=20
- +	/* disable FCOE for 57840 device, until FW supports it */
- +	switch (ent->driver_data) {
- +	case BCM57840_O:
- +	case BCM57840_4_10:
- +	case BCM57840_2_20:
- +	case BCM57840_MFO:
- +	case BCM57840_MF:
- +		bp->flags |=3D NO_FCOE_FLAG;
- +	}
-- #endif
--=20
- +
-  	/* Set bp->num_queues for MSI-X mode*/
-  	bnx2x_set_num_queues(bp);
- =20
-
---Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQnEXuAAoJEECxmPOUX5FEP00QAIrY1EAHh1MVpVIFwcijQ6Hj
-NZ+U01SQfLOXikbm98uLcHgHeAOrUZu+I4potFHCqwIAJZRegeTf7siPptvv0q+0
-Y2hW6F4qbvr6Pl8dbx71BIzl3zgh0jgfMx+9U2VgB18+6aOZeDcvut1w0bZBkl4z
-TMC0ONivXxPYgQUY7Y7IJw2ds95jdoe97eCUxtlwQzwk/CZw35FjbJenCMPv3vt8
-cRmD5JPBumztpPqRNYCbwLx3ZdRvLun0wO3Fvnx9XomK/kFa+LdYxKNsxEpk0rjK
-4j5FqBKYMNN7v+N59QrzWfkNqE1akZnGEzlH6JCagGx9L6z0wAM/VTfUiwc2DDBY
-a0m1cm8VdndaemQ8TcXQXHxcCa98KU38FCRQY5LJo0t5in/9rU0Fy5koBRqit0rA
-J6x+z74f8m+EwfarbqmKdbCfS8w66JE7XkdiTT9k257QB7FcWtbGXMS1N+JcMdVu
-sUFsbGx/JEbonsjDB9o/QGc/ElI0gGAjDCUyty2jg+N/l1xNlU3Qh/oRAWvk8pex
-R5od2rAS4eOWjBbYQ1wKU2RefEQkrgUW8QwoFDKoiGeUM4uCi4XrkIsJSroo8AwS
-EZfgALjxEPPdK6Dsr04naNH0wNxMp6SqEjF9gzSDm9RtHuRKWM+44KwTyQxp415D
-pzC//v6QxU3EW7pTgPCs
-=Fub3
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Nov_2012_10_53_18_+1100_1.mq6L.2UhwDPvZR--
