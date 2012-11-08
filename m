@@ -1,230 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2KHPIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:08:18 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38977 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab2KHPIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:08:15 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] usb: spear-ehci/ohci: Use devm_*() routines
-Date: Thu,  8 Nov 2012 20:37:59 +0530
-Message-Id: <39b46bbf101f787c970efe6e282c17bfc8e4ec0e.1352387166.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <19a629d4f79bb0a5904588ee7f546c461e8be6c4.1352387166.git.viresh.kumar@linaro.org>
-References: <19a629d4f79bb0a5904588ee7f546c461e8be6c4.1352387166.git.viresh.kumar@linaro.org>
-In-Reply-To: <19a629d4f79bb0a5904588ee7f546c461e8be6c4.1352387166.git.viresh.kumar@linaro.org>
-References: <19a629d4f79bb0a5904588ee7f546c461e8be6c4.1352387166.git.viresh.kumar@linaro.org>
+	id S1756083Ab2KHPIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:08:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab2KHPIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 10:08:05 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <509251CA.8050008@synopsys.com>
+References: <509251CA.8050008@synopsys.com> <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: dhowells@redhat.com, James Hogan <james@albanarts.com>, torvalds@osdl.org,
+        arnd@arndb.de, hpa@zytor.com, alan@lxorguk.ukuu.org.uk,
+        fengguang.wu@intel.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: UAPI for new arches (was Re: [GIT PULL] User API Disintegrate: Preparatory patches)
+Date: Thu, 08 Nov 2012 15:07:41 +0000
+Message-ID: <8419.1352387261@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch frees SPEAr ehci/ohci drivers from tension of freeing resources :)
-devm_* derivatives of multiple routines are used while allocating resources,
-which would be freed automatically by kernel.
+Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/usb/host/ehci-spear.c | 37 +++++++++++++------------------------
- drivers/usb/host/ohci-spear.c | 33 ++++++++++++---------------------
- 2 files changed, 25 insertions(+), 45 deletions(-)
+> I'm planning to submit ARC Linux kernel port (from Synopsys) for review
+> on lkml and arch mailing lists. I already have a a 3.7-rc3 based kernel
+> (modulo the arch UAPI split). What would be the best way to get the UAPI
+> split done.
+> 
+> Can you point me to the latest scripts and the best way to use them (so
+> we have consistent automated split of headers). Otherwise if you like,
+> you could take a stab at it yourself via my tree at
+> 
+> git://github.com/organizations/foss-for-synopsys-dwc-arc-processors/linux.git
+> arc-3.7-rc3-newport
 
-diff --git a/drivers/usb/host/ehci-spear.c b/drivers/usb/host/ehci-spear.c
-index d08506a..3fadff8 100644
---- a/drivers/usb/host/ehci-spear.c
-+++ b/drivers/usb/host/ehci-spear.c
-@@ -116,7 +116,7 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		retval = irq;
--		goto fail_irq_get;
-+		goto fail;
- 	}
- 
- 	/*
-@@ -127,38 +127,38 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
- 	if (!pdev->dev.dma_mask)
- 		pdev->dev.dma_mask = &spear_ehci_dma_mask;
- 
--	usbh_clk = clk_get(&pdev->dev, NULL);
-+	usbh_clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(usbh_clk)) {
- 		dev_err(&pdev->dev, "Error getting interface clock\n");
- 		retval = PTR_ERR(usbh_clk);
--		goto fail_get_usbh_clk;
-+		goto fail;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
- 	if (!hcd) {
- 		retval = -ENOMEM;
--		goto fail_create_hcd;
-+		goto fail;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		retval = -ENODEV;
--		goto fail_request_resource;
-+		goto err_put_hcd;
- 	}
- 
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
-+	if (!devm_request_mem_region(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len,
- 				driver->description)) {
- 		retval = -EBUSY;
--		goto fail_request_resource;
-+		goto err_put_hcd;
- 	}
- 
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_ioremap(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len);
- 	if (hcd->regs == NULL) {
- 		dev_dbg(&pdev->dev, "error mapping memory\n");
- 		retval = -ENOMEM;
--		goto fail_ioremap;
-+		goto err_put_hcd;
- 	}
- 
- 	ehci = (struct spear_ehci *)hcd_to_ehci(hcd);
-@@ -167,21 +167,15 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
- 	spear_start_ehci(ehci);
- 	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (retval)
--		goto fail_add_hcd;
-+		goto err_stop_ehci;
- 
- 	return retval;
- 
--fail_add_hcd:
-+err_stop_ehci:
- 	spear_stop_ehci(ehci);
--	iounmap(hcd->regs);
--fail_ioremap:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--fail_request_resource:
-+err_put_hcd:
- 	usb_put_hcd(hcd);
--fail_create_hcd:
--	clk_put(usbh_clk);
--fail_get_usbh_clk:
--fail_irq_get:
-+fail:
- 	dev_err(&pdev->dev, "init fail, %d\n", retval);
- 
- 	return retval ;
-@@ -200,13 +194,8 @@ static int spear_ehci_hcd_drv_remove(struct platform_device *pdev)
- 
- 	if (ehci_p->clk)
- 		spear_stop_ehci(ehci_p);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 
--	if (ehci_p->clk)
--		clk_put(ehci_p->clk);
--
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/ohci-spear.c b/drivers/usb/host/ohci-spear.c
-index 9747708..c69725d 100644
---- a/drivers/usb/host/ohci-spear.c
-+++ b/drivers/usb/host/ohci-spear.c
-@@ -105,7 +105,7 @@ static int spear_ohci_hcd_drv_probe(struct platform_device *pdev)
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		retval = irq;
--		goto fail_irq_get;
-+		goto fail;
- 	}
- 
- 	/*
-@@ -116,38 +116,39 @@ static int spear_ohci_hcd_drv_probe(struct platform_device *pdev)
- 	if (!pdev->dev.dma_mask)
- 		pdev->dev.dma_mask = &spear_ohci_dma_mask;
- 
--	usbh_clk = clk_get(&pdev->dev, NULL);
-+	usbh_clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(usbh_clk)) {
- 		dev_err(&pdev->dev, "Error getting interface clock\n");
- 		retval = PTR_ERR(usbh_clk);
--		goto fail_get_usbh_clk;
-+		goto fail;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
- 	if (!hcd) {
- 		retval = -ENOMEM;
--		goto fail_create_hcd;
-+		goto fail;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		retval = -ENODEV;
--		goto fail_request_resource;
-+		goto err_put_hcd;
- 	}
- 
- 	hcd->rsrc_start = pdev->resource[0].start;
- 	hcd->rsrc_len = resource_size(res);
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-+	if (!devm_request_mem_region(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len,
-+				hcd_name)) {
- 		dev_dbg(&pdev->dev, "request_mem_region failed\n");
- 		retval = -EBUSY;
--		goto fail_request_resource;
-+		goto err_put_hcd;
- 	}
- 
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_ioremap(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len);
- 	if (!hcd->regs) {
- 		dev_dbg(&pdev->dev, "ioremap failed\n");
- 		retval = -ENOMEM;
--		goto fail_ioremap;
-+		goto err_put_hcd;
- 	}
- 
- 	ohci_p = (struct spear_ohci *)hcd_to_ohci(hcd);
-@@ -160,15 +161,9 @@ static int spear_ohci_hcd_drv_probe(struct platform_device *pdev)
- 		return retval;
- 
- 	spear_stop_ohci(ohci_p);
--	iounmap(hcd->regs);
--fail_ioremap:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--fail_request_resource:
-+err_put_hcd:
- 	usb_put_hcd(hcd);
--fail_create_hcd:
--	clk_put(usbh_clk);
--fail_get_usbh_clk:
--fail_irq_get:
-+fail:
- 	dev_err(&pdev->dev, "init fail, %d\n", retval);
- 
- 	return retval;
-@@ -183,12 +178,8 @@ static int spear_ohci_hcd_drv_remove(struct platform_device *pdev)
- 	if (ohci_p->clk)
- 		spear_stop_ohci(ohci_p);
- 
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 
--	if (ohci_p->clk)
--		clk_put(ohci_p->clk);
- 	platform_set_drvdata(pdev, NULL);
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
+If you look at:
 
+	http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/tags/disintegrate-arc-20121108
+
+You'll find a branch with a patch that does the UAPI disintegration for you as
+one piece.  I've merged your branch onto Linus's latest before doing the
+disintegration.  If you'd prefer it directly on your branch, that should be
+possible too.
+
+David
