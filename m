@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab2KHMnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:43:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14996 "EHLO mx1.redhat.com"
+	id S1755445Ab2KHMoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:44:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52457 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab2KHMns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:43:48 -0500
-Date: Thu, 8 Nov 2012 13:44:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pedro Alves <palves@redhat.com>
-Cc: Amnon Shiloh <u3557@miso.sublimeip.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Chris Evans <scarybeasts@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>, u3557@dialix.com.au,
-        security@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: PT_EXITKILL (Was: pdeath_signal)
-Message-ID: <20121108124424.GB20917@redhat.com>
-References: <20121106152050.GA18218@sergelap> <20121106201428.9D72959201A@miso.sublimeip.com> <20121107150934.GA27606@redhat.com> <509BA2B0.2080204@redhat.com>
+	id S1751916Ab2KHMo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 07:44:28 -0500
+Date: Thu, 8 Nov 2012 13:44:26 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] memcg, oom: provide more precise dump info while
+ memcg oom happening
+Message-ID: <20121108124426.GF31821@dhcp22.suse.cz>
+References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com>
+ <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+ <alpine.DEB.2.00.1211070956540.27451@chino.kir.corp.google.com>
+ <509BA799.505@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <509BA2B0.2080204@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <509BA799.505@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Pedro Alves wrote:
->
-> On 11/07/2012 03:09 PM, Oleg Nesterov wrote:
->
-> > OK. Please see the untested/uncompiled (but trivial) patch below
+On Thu 08-11-12 20:37:45, Sha Zhengju wrote:
+> On 11/08/2012 02:02 AM, David Rientjes wrote:
+> >On Wed, 7 Nov 2012, Sha Zhengju wrote:
+[..]
+> >>+	else
+> >>+		show_mem(SHOW_MEM_FILTER_NODES);
+> >Well that's disappointing if memcg == root_mem_cgroup, we'd probably like
+> >to know the global memory state to determine what the problem is.
 > >
-> > 	- it adds PTRACE_O_EXITKILL. A better name?
-> >
-> > 	- A better numeric value? Note that the new option is not equal to
-> > 	  the last-ptrace-option << 1. Because currently all options have
-> > 	  the event, and the new one starts the eventless group. 1 << 16
-> > 	  means we have the room for 8 more events.
-> >
-> > 	- it needs the convincing changelog for akpm
->
->
-> If this isn't inherited by the ptrace child's children, a fork child can
-> end up detached if the tracer dies before it had a chance of setting
-> the PTRACE_O_EXITKILL on the new auto-attached child.
+> 
+> I really wondering if there is any case that can pass
+> root_mem_cgroup down here.
 
-It is copied like the other options.
+No it cannot because the root cgroup doesn't have any limit so we cannot
+trigger memcg oom killer.
 
-> Which sounds like another argument for PTRACE_O_INHERIT, as in:
-> http://sourceware.org/ml/archer/2011-q1/msg00026.html
-
-	The point of PTRACE_O_INHERIT would be to attach newly-created threads and
-	children without causing an event stop and the attendant overhead.
-
-this is another thing, I guess.
-
-> (it sounds like you need to use PTRACE_SEIZE+options too to plug
-> the race between PTRACE_ME/PTRACE_ATTACH and
-> setting PTRACE_SETOPTIONS).
-
-Agreed, PTRACE_SEIZE+options is better.
-
-> (For completeness, Windows' age old equivalent,
-> DebugSetProcessKillOnExit, it a tracer option, not tracee option, though
-> that's not as flexible.)
-
-Thanks ;)
-
-Oleg.
-
+-- 
+Michal Hocko
+SUSE Labs
