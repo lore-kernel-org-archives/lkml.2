@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab2KHW7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 17:59:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52999 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756707Ab2KHW7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 17:59:18 -0500
-Message-ID: <509C394F.7020108@ti.com>
-Date: Thu, 8 Nov 2012 16:59:27 -0600
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1757251Ab2KHXG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 18:06:26 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38241 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742Ab2KHXGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 18:06:24 -0500
+Message-ID: <509C3AE7.7030703@gmail.com>
+Date: Fri, 09 Nov 2012 10:06:15 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: <sarah.a.sharp@linux.intel.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <brian.quach@ti.com>, <jorge.llamas@ti.com>
-Subject: [PATCH] usb: host: xhci: Stricter conditional for Z1 system models
- for Compliance Mode Patch
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 04/11] ARM: set arch_gettimeoffset directly
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org> <1352408516-21988-6-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1352408516-21988-6-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This minor patch creates a more stricter conditional for the Z1 sytems for applying
-the Compliance Mode Patch, this to avoid the quirk to be applied to models that
-contain a "Z1" in their dmi product string but are different from Z1 systems.
+On 09/11/12 08:01, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> remove ARM's struct sys_timer .offset function pointer, and instead
+> directly set the arch_gettimeoffset function pointer when the timer
+> driver is initialized. This requires multiplying all function results
+> by 1000, since the removed arm_gettimeoffset() did this. Also,
+> s/unsigned long/u32/ just to make the function prototypes exactly
+> match that of arch_gettimeoffset.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Andrew Victor <linux@maxim.org.za>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> Cc: Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/include/asm/mach/time.h  |    3 ---
+>  arch/arm/kernel/time.c            |   14 --------------
+>  arch/arm/mach-at91/at91x40_time.c |    8 +++++---
+>  arch/arm/mach-ebsa110/core.c      |    7 ++++---
+>  arch/arm/mach-ep93xx/core.c       |   23 ++++++++++++-----------
+>  arch/arm/mach-h720x/common.c      |    6 +++---
+>  arch/arm/mach-h720x/common.h      |    2 +-
+>  arch/arm/mach-h720x/cpu-h7201.c   |    3 ++-
+>  arch/arm/mach-h720x/cpu-h7202.c   |    3 ++-
+>  arch/arm/mach-rpc/time.c          |    6 +++---
+>  arch/arm/plat-samsung/time.c      |    7 ++++---
+>  11 files changed, 36 insertions(+), 46 deletions(-)
 
-Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
----
- drivers/usb/host/xhci.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+<snip>
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index c9e419f..af8b552 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -480,7 +480,7 @@ static bool compliance_mode_recovery_timer_quirk_check(void)
- 	if (strstr(dmi_product_name, "Z420") ||
- 			strstr(dmi_product_name, "Z620") ||
- 			strstr(dmi_product_name, "Z820") ||
--			strstr(dmi_product_name, "Z1"))
-+			strstr(dmi_product_name, "Z1 Workstation"))
- 		return true;
- 
- 	return false;
--- 
-1.7.1
+> +static u32 ep93xx_gettimeoffset(void)
+> +{
+> +	int offset;
+> +
+> +	offset = __raw_readl(EP93XX_TIMER4_VALUE_LOW) - last_jiffy_time;
+> +
+> +	/* Calculate (1000000 / 983040) * offset.  */
+
+This comment is now incorrect, it should say:
+
+	/* Calculate (1000000000 / 983040) * offset */
+
+or perhaps to better explain what is being done:
+
+	/*
+	 * Timer 4 is based on a 983.04 kHz reference clock,
+	 * so dividing by 983040 gives a milli-second value.
+	 * Refactor the calculation to avoid overflow.
+	 */
+
+> +	return (offset + (53 * offset / 3072)) * 1000;
+> +}
+
+~Ryan
+
+
