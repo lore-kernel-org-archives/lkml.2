@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2KHTQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:16:42 -0500
-Received: from ritt-181-92.ranksitt.net ([202.40.181.92]:47041 "EHLO
-	mail.era.com.bd" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab2KHTQl (ORCPT
+	id S1756683Ab2KHTUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:20:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57678 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662Ab2KHTUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:16:41 -0500
-X-Greylist: delayed 9431 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Nov 2012 14:16:41 EST
-Message-ID: <54923.116.211.0.106.1352390016.squirrel@202.40.181.92>
-Date: Thu, 8 Nov 2012 23:53:36 +0800 (HKT)
-Subject: HELLO !!!
-From: "William Lee Cheng" <noman@era.com.bd>
-Reply-To: w_cheng01@yahoo.com.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.13
+	Thu, 8 Nov 2012 14:20:06 -0500
+Date: Thu, 8 Nov 2012 11:20:01 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [patch] acpi, pm: fix build breakage
+In-Reply-To: <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1211081119350.8749@chino.kir.corp.google.com>
+References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <1456107.KxymqUQLId@vostro.rjw.lan> <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-ERA-InfoTech-MailScanner-Information: Please contact the ISP for more information
-X-ERA-InfoTech-MailScanner-ID: 32A79402C3.AA35D
-X-ERA-InfoTech-MailScanner: Found to be clean
-X-ERA-InfoTech-MailScanner-From: noman@era.com.bd
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
+states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
+it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
+error:
 
+drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
+drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
+drivers/built-in.o: In function `acpi_dev_suspend_late':
+drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
+drivers/built-in.o: In function `acpi_pm_device_sleep_state':
+drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
 
+Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
+for other configs.
 
-Dear Friend,
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/acpi/acpi_bus.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Greetings to you, I have a business proposal for you that will be
-beneficial to the both of us.This proposal has to do with funds transfer.
-
-In confirmation of your acceptance,I would need you to provide me with
-your full names, current house and mailing address,date of birth telephone
-and fax numbers so as to be very confident that I am dealing with the
-right person.(This is very important).
-
-Once I have received confirmation from you with the required information,
-I shall then send you further details about this transaction and how it
-will be executed. I look forward to hearing from you soonest and hope that
-this marks the beginning of a successful and long lasting business
-relationship with you. My profound greetings to you and your family.
-
-Best regards,
-
-William Lee Cheng.
-
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
+-u32 acpi_target_system_state(void);
+ int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
+ int acpi_pm_device_sleep_wake(struct device *, bool);
+ #else
+-static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
+ static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
+ 					   u32 target_state, bool enable)
+ {
+@@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
+ }
+ #endif
+ 
++#ifdef CONFIG_ACPI_SLEEP
++u32 acpi_target_system_state(void);
++#else
++static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
++#endif
++
+ static inline bool acpi_device_power_manageable(struct acpi_device *adev)
+ {
+ 	return adev->flags.power_manageable;
