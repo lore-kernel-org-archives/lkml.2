@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2KIQfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:35:36 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39889 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab2KIQfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:35:34 -0500
-Message-ID: <509D3088.2060507@linux.vnet.ibm.com>
-Date: Fri, 09 Nov 2012 22:04:16 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1754549Ab2KIQfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:35:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483Ab2KIQfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:35:38 -0500
+Date: Fri, 9 Nov 2012 17:35:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+	block the readers unnecessarily
+Message-ID: <20121109163538.GB26134@redhat.com>
+References: <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121108210843.GF2519@linux.vnet.ibm.com> <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com> <20121109004136.GH2519@linux.vnet.ibm.com> <20121109032310.GA2438@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Mel Gorman <mgorman@suse.de>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, arjan@linux.intel.com,
-        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
- support Memory Power Management
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com> <509D2B9B.4090305@linux.vnet.ibm.com>
-In-Reply-To: <509D2B9B.4090305@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-x-cbid: 12110916-9574-0000-0000-0000053FE58B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121109032310.GA2438@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 09:43 PM, Dave Hansen wrote:
-> On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
->> FWIW, kernbench is actually (and surprisingly) showing a slight performance
->> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
->> my other email to Dave.
->>
->> https://lkml.org/lkml/2012/11/7/428
->>
->> I don't think I can dismiss it as an experimental error, because I am seeing
->> those results consistently.. I'm trying to find out what's behind that.
-> 
-> The only numbers in that link are in the date. :)  Let's see the
-> numbers, please.
-> 
+On 11/08, Paul E. McKenney wrote:
+>
+> On Thu, Nov 08, 2012 at 04:41:36PM -0800, Paul E. McKenney wrote:
+> > On Thu, Nov 08, 2012 at 06:41:10PM -0500, Mikulas Patocka wrote:
+> > >
+> > > On Thu, 8 Nov 2012, Paul E. McKenney wrote:
+> > >
+> > > > On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
+> > > > > On Thu, 8 Nov 2012 14:48:49 +0100
+> > > > > Oleg Nesterov <oleg@redhat.com> wrote:
+> > > > >
+> > > >
+> > > > The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
+> > > > synchronize_rcu() in place of preempt_disable()/preempt_enable() and
+> > > > synchronize_sched().  The real-time guys would prefer the change
+> > > > to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
+> > > > you mention it.
+> > > >
+> > > > Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
+> > > > and synchronize_rcu()?
+> > >
+> > > preempt_disable/preempt_enable is faster than
+> > > rcu_read_lock/rcu_read_unlock for preemptive kernels.
 
-Sure :) The reason I didn't post the numbers very eagerly was that I didn't
-want it to look ridiculous if it later turned out to be really an error in the
-experiment ;) But since I have seen it happening consistently I think I can
-post the numbers here with some non-zero confidence.
+Yes, I chose preempt_disable() because it is the fastest/simplest
+primitive and the critical section is really tiny.
 
-> If you really have performance improvement to the memory allocator (or
-> something else) here, then surely it can be pared out of your patches
-> and merged quickly by itself.  Those kinds of optimizations are hard to
-> come by!
-> 
+But:
 
-:-)
+> > Significantly faster in this case?  Can you measure the difference
+> > from a user-mode test?
 
-Anyway, here it goes:
+I do not think rcu_read_lock() or rcu_read_lock_sched() can actually
+make a measurable difference.
 
-Test setup:
-----------
-x86 2-socket quad-core machine. (CONFIG_NUMA=n because I figured that my
-patchset might not handle NUMA properly). Mem region size = 512 MB.
+> Actually, the fact that __this_cpu_add() will malfunction on some
+> architectures is preemption is not disabled seems a more compelling
+> reason to keep preempt_enable() than any performance improvement.  ;-)
 
-Kernbench log for Vanilla 3.7-rc3
-=================================
+Yes, but this_cpu_add() should work.
 
-Kernel: 3.7.0-rc3-vanilla-default
-Average Optimal load -j 32 Run (std deviation):
-Elapsed Time 650.742 (2.49774)
-User Time 8213.08 (17.6347)
-System Time 1273.91 (6.00643)
-Percent CPU 1457.4 (3.64692)
-Context Switches 2250203 (3846.61)
-Sleeps 1.8781e+06 (5310.33)
+> > Careful.  The real-time guys might take the same every-little-bit approach
+> > to latency that you seem to be taking for CPU cycles.  ;-)
 
-Kernbench log for this sorted-buddy patchset
-============================================
+Understand...
 
-Kernel: 3.7.0-rc3-sorted-buddy-default
-Average Optimal load -j 32 Run (std deviation):
-Elapsed Time 591.696 (0.660969)
-User Time 7511.97 (1.08313)
-System Time 1062.99 (1.1109)
-Percent CPU 1448.6 (1.94936)
-Context Switches 2.1496e+06 (3507.12)
-Sleeps 1.84305e+06 (3092.67)
 
-Regards,
-Srivatsa S. Bhat
+So I simply do not know. Please tell me if you think it would be
+better to use rcu_read_lock/synchronize_rcu or rcu_read_lock_sched,
+and I'll send the patch.
+
+Oleg.
 
