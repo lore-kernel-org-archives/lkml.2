@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab2KIHlc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 02:41:32 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:51241 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab2KIHla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 02:41:30 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-37-509cb3a9d862
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] mm: mmap: remove unused variable
-Date: Fri, 09 Nov 2012 16:41:28 +0900
-Message-id: <000101cdbe4d$a1335eb0$e39a1c10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2+TaEY9JWsllmMRpS3ttcqSd3Uzg==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t8zQ92Vm+cEGPy7ymdxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyLp2axVywlq1i5detbA2MS1i7GDk5JARMJE6fuMMOYYtJXLi3
-	nq2LkYtDSGAZo8SyJceYuhg5wIo+/06AiE9nlLh8bg4zhDObSWLf0o9gk9gE1CS+fDkMNklE
-	wFfi++INTCA2s4CVxL4PG8BqhAUMJVZuO8wKMpRFQFXi3JZMkDCvgK3EtZUf2CFsQYkfk++x
-	QLRqSazfeRxqjLzE5jVvmSHuUZd49FcXxBQR0JN4uN0EokJEYt+Ld4wgNouAgMS3yYdYIKpl
-	JTYdADtYQqCdXeLusUNsEO9KShxccYNlAqPYLCSLZyFZPAvJ4llIVixgZFnFKJpakFxQnJSe
-	a6hXnJhbXJqXrpecn7uJERIlUjsYVzZYHGIU4GBU4uFNfDA7QIg1say4MvcQowQHs5II79zM
-	OQFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M4LySeENjYxMzE1MTc0tTc1McwkrivM0e
-	KQFCAumJJanZqakFqUUw45g4OKUaGNWltohu05LJknX8fvLLz8iaL85rpZ/de77J4Z7XZgPd
-	9ozsbdvKHTrEGAxPfPji6PJ/68/en719r+78PfyTcwl7szyzwcI6nf3nb+x6z7jrf9cRSW+F
-	2fknu14f/KH4xJ6Z8UhNB9uJh3IMbyIzJLRNwrt6fx288Mh90u5jrzyurMrnn8nSnqXEUpyR
-	aKjFXFScCABSSHWnvwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd2Vm+cEGOxu5ba4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGZdOzWIuWMtWsfLrVrYG
-	xiWsXYwcHBICJhKffyd0MXICmWISF+6tZ+ti5OIQEpjOKHH53BxmCGc2k8S+pR9ZQarYBNQk
-	vnw5zA5iiwj4SnxfvIEJxGYWsJLY92EDWI2wgKHEym2HwRawCKhKnNuSCRLmFbCVuLbyAzuE
-	LSjxY/I9FohWLYn1O49DjZGX2LzmLTPEbeoSj/7qgpgiAnoSD7ebQFSISOx78Y5xAqPALCSD
-	ZiEZNAvJoFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7BZ1I7GFc2WBxiFOBg
-	VOLhTXwwO0CINbGsuDL3EKMEB7OSCO/czDkBQrwpiZVVqUX58UWlOanFhxh9gN6cyCwlmpwP
-	TA95JfGGxiZmRpZGZhZGJubmOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBKNTA6HTq9b07y
-	zxki2hGGz+u3Cca4fm9a8+LnWbmXb85tXnG3wuZx7vyNDiFWXrvDHt1b6TqPN/CwoveyLP3X
-	W0vXdT7zOb0yp9r3vfDOPz+kphhLfoxIdN/ns3TOzXzFbp6rGwMWLroxPzb8iRjbSlflqMfM
-	1Xn5tyIY815qPvtUumLrtEMTph1ZpMRSnJFoqMVcVJwIADDzGbLuAgAA
-X-CFilter-Loop: Reflected
+	id S1752509Ab2KIHtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 02:49:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53836 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab2KIHs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 02:48:57 -0500
+X-IronPort-AV: E=Sophos;i="4.80,743,1344182400"; 
+   d="scan'208";a="6167116"
+Message-ID: <509CAC3F.9050607@cn.fujitsu.com>
+Date: Fri, 09 Nov 2012 15:09:51 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org
+Subject: Re: [PATCH] virtio-scsi: Fix incorrect lock release order in virtscsi_kick_cmd
+References: <1352442592-2162-1-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1352442592-2162-1-git-send-email-nab@linux-iscsi.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/09 15:09:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/09 15:09:52,
+	Serialize complete at 2012/11/09 15:09:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed build warning as below:
+On 11/09/2012 02:29 PM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch fixes a regression bug in virtscsi_kick_cmd() that relinquishes
+> the acquired spinlocks in the incorrect order using the wrong spin_unlock
+> macros, namely releasing vq->vq_lock before tgt->tgt_lock while invoking
+> the calls to virtio_ring.c:virtqueue_add_buf() and friends.
+> 
+> This bug was originally introduced in v3.5-rc7 code with:
+> 
+> commit 2bd37f0fde99cbf8b78fb55f1128e8c3a63cf1da
+> Author: Paolo Bonzini <pbonzini@redhat.com>
+> Date:   Wed Jun 13 16:56:34 2012 +0200
+> 
+>     [SCSI] virtio-scsi: split scatterlist per target
+> 
+> Go ahead and make sure that vq->vq_lock is relinquished w/ spin_unlock
+> first, then release tgt->tgt_lock w/ spin_unlock_irqrestore.
 
-arch/arm/mm/mmap.c: In function 'arch_get_unmapped_area':
-arch/arm/mm/mmap.c:60:16: warning: unused variable 'start_addr' [-Wunused-variable]
+Did you hit any error? I don't think this order is wrong.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-This patch is based on linux-next-20121109 code tree.
+Thanks,
+Wanlong Gao
 
- arch/arm/mm/mmap.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
-index f4fec6d..10062ce 100644
---- a/arch/arm/mm/mmap.c
-+++ b/arch/arm/mm/mmap.c
-@@ -57,7 +57,6 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
--	unsigned long start_addr;
- 	int do_align = 0;
- 	int aliasing = cache_is_vipt_aliasing();
- 	struct vm_unmapped_area_info info;
--- 
-1.7.1
-
+> 
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: James Bottomley <JBottomley@Parallels.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/scsi/virtio_scsi.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 595af1a..b2abb8a 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -417,11 +417,11 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+>  
+>  	spin_lock(&vq->vq_lock);
+>  	ret = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+> -	spin_unlock(&tgt->tgt_lock);
+> +	spin_unlock(&vq->vq_lock);
+>  	if (ret >= 0)
+>  		ret = virtqueue_kick_prepare(vq->vq);
+>  
+> -	spin_unlock_irqrestore(&vq->vq_lock, flags);
+> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+>  
+>  	if (ret > 0)
+>  		virtqueue_notify(vq->vq);
+> 
 
