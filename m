@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab2KIJRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:17:08 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:7561 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750881Ab2KIJRE (ORCPT
+	id S1751828Ab2KIJ0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:26:31 -0500
+Received: from smarthost03.mail.zen.net.uk ([212.23.1.3]:34513 "EHLO
+	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751228Ab2KIJ02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:17:04 -0500
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Nov 2012 04:17:04 EST
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1de0h1202h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH] mtd: de-select the chip when it is not used
-Date: Fri, 9 Nov 2012 16:23:45 +0800
-Message-ID: <1352449425-16496-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Fri, 9 Nov 2012 04:26:28 -0500
+Message-ID: <1352453183.3236.5.camel@linaro1.home>
+Subject: Re: [PATCH] ARM: kprobes: use BUG_ON where possible
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Jon Medhurst <tixy@yxit.co.uk>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 09 Nov 2012 09:26:23 +0000
+In-Reply-To: <1352406191-14303-4-git-send-email-sasha.levin@oracle.com>
+References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
+	 <1352406191-14303-4-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost03-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we scan several nand chips with nand_scan(), such as
-     .......................
-      nand_scan(*, 2);
-     .......................
+On Thu, 2012-11-08 at 15:23 -0500, Sasha Levin wrote:
+> Just use BUG_ON() instead of constructions such as:
+> 
+> 	if (...)
+> 		BUG()
+> 
+> A simplified version of the semantic patch that makes this transformation
+> is as follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e;
+> @@
+> - if (e) BUG();
+> + BUG_ON(e);
+> // </smpl>
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-In nand_scan_ident(), the maxchips will become 2, so the current code
-will select chip 1 to read the device ID. But the chip 0 is still
-selected in this case.
+I'm not sure that trivial changes like this are worth it, but equally,
+they're not worth having a discussion about, so...
 
-To make the logic clear, we'd better de-select the chip when it is not used.
+Acked-by: Jon Medhurst <tixy@linaro.org>
 
-This patch de-select the nand chip if it is not used any more.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/nand/nand_base.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index ec6841d..fd5fa3b 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3325,6 +3325,8 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
- 		return PTR_ERR(type);
- 	}
- 
-+	chip->select_chip(mtd, -1);
-+
- 	/* Check for a chip array */
- 	for (i = 1; i < maxchips; i++) {
- 		chip->select_chip(mtd, i);
-@@ -3334,8 +3336,11 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
- 		chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
- 		/* Read manufacturer and device IDs */
- 		if (nand_maf_id != chip->read_byte(mtd) ||
--		    nand_dev_id != chip->read_byte(mtd))
-+		    nand_dev_id != chip->read_byte(mtd)) {
-+			chip->select_chip(mtd, -1);
- 			break;
-+		}
-+		chip->select_chip(mtd, -1);
- 	}
- 	if (i > 1)
- 		pr_info("%d NAND chips detected\n", i);
-@@ -3594,9 +3599,6 @@ int nand_scan_tail(struct mtd_info *mtd)
- 	/* Initialize state */
- 	chip->state = FL_READY;
- 
--	/* De-select the device */
--	chip->select_chip(mtd, -1);
--
- 	/* Invalidate the pagebuffer reference */
- 	chip->pagebuf = -1;
- 
--- 
-1.7.0.4
+> ---
+>  arch/arm/kernel/kprobes-test.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
+> index 1862d8f..0fb370d 100644
+> --- a/arch/arm/kernel/kprobes-test.c
+> +++ b/arch/arm/kernel/kprobes-test.c
+> @@ -1212,8 +1212,7 @@ static int register_test_probe(struct test_probe *probe)
+>  {
+>  	int ret;
+>  
+> -	if (probe->registered)
+> -		BUG();
+> +	BUG_ON(probe->registered);
+>  
+>  	ret = register_kprobe(&probe->kprobe);
+>  	if (ret >= 0) {
 
 
