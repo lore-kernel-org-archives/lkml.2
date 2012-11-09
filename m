@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab2KIJKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:10:05 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:35338 "EHLO
+	id S1752099Ab2KIJKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:10:34 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35483 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2KIJJz (ORCPT
+	with ESMTP id S1751948Ab2KIJKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:09:55 -0500
-Message-ID: <509CC855.4070203@huawei.com>
-Date: Fri, 9 Nov 2012 17:09:41 +0800
+	Fri, 9 Nov 2012 04:10:02 -0500
+Message-ID: <509CC85F.8030607@huawei.com>
+Date: Fri, 9 Nov 2012 17:09:51 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
@@ -59,5 +59,5 @@ On 2012/11/9 3:07, Tejun Heo wrote:
 > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > Cc: Glauber Costa <glommer@parallels.com>
 
-Li Zefan <lizefan@huawei.com
+Acked-by: Li Zefan <lizefan@huawei.com>
 
