@@ -1,177 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab2KIBK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 20:10:57 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56025 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab2KIBKk (ORCPT
+	id S1757442Ab2KIBMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 20:12:06 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57690 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757382Ab2KIBME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 20:10:40 -0500
-X-AuditID: 9c93016f-b7bccae000000e33-74-509c580d012c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/3] perf annotate: Merge same lines in summary view
-Date: Fri,  9 Nov 2012 10:10:11 +0900
-Message-Id: <1352423412-4895-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352423412-4895-1-git-send-email-namhyung@kernel.org>
-References: <1352423412-4895-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 8 Nov 2012 20:12:04 -0500
+Date: Thu, 8 Nov 2012 17:11:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Cyberman Wu <cypher.w@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Is this a kernel bug?
+Message-ID: <20121109011158.GE9672@htj.dyndns.org>
+References: <CADCVGbSC-T=W08xcf9rDynS8Uf9yq=KKTNUn33g-O_FqyQkU_A@mail.gmail.com>
+ <20121107162840.GA2660@mtj.dyndns.org>
+ <CADCVGbR-39diiMA-C2cEn315r916HMprt6Lx4s8qN8jHC_e8FQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADCVGbR-39diiMA-C2cEn315r916HMprt6Lx4s8qN8jHC_e8FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello,
 
-The --print-line option of perf annotate command shows summary for
-each source line.  But it didn't merge same lines so that it can
-appear multiple times.
+On Fri, Nov 09, 2012 at 08:53:49AM +0800, Cyberman Wu wrote:
+> A lot of these message on many CPU:
 
-* before:
+What I'm really curious about is the *first* exception.
 
-Sorted summary for file /home/namhyung/bin/mcol
-----------------------------------------------
+Is the following the first one?  Some lines (why the stackdump is
+happening) are missing at the top.
 
-   24.40 /home/namhyung/tmp/mcol.c:26
-   21.58 /home/namhyung/tmp/mcol.c:25
-   10.14 /home/namhyung/tmp/mcol.c:24
-    8.59 /home/namhyung/tmp/mcol.c:25
-    8.57 /home/namhyung/tmp/mcol.c:25
-    8.42 /home/namhyung/tmp/mcol.c:26
-    8.31 /home/namhyung/tmp/mcol.c:26
-    8.30 /home/namhyung/tmp/mcol.c:25
-    0.80 /home/namhyung/tmp/mcol.c:26
+>  Pid: 906, comm:         kworker/16:1, CPU: 16
+...
+>  pc : 0xfffffff7002fc488 ex1: 1     faultnum: 17
+> 
+> Starting stack dump of tid 906, pid 906 (kworker/16:1) on cpu 16 at
+> cycle 416925425702833
+>   frame 0: 0xfffffff7002fc488 worker_enter_idle+0x1c8/0x2e8 (sp
+> 0xfffffe00f9fbfe78)
+>   frame 1: 0xfffffff7002750c8 worker_thread+0x4c8/0x898 (sp 0xfffffe00f9fbfea0)
+>   frame 2: 0xfffffff7000f0530 kthread+0xe0/0xe8 (sp 0xfffffe00f9fbff80)
+>   frame 3: 0xfffffff7000bab38 start_kernel_thread+0x18/0x20 (sp
 
-* after:
+Is it triggering one of BUG_ON() in worker_enter_idle()?  Can you map
+the pc to the source line number using addr2line?
 
-Sorted summary for file /home/namhyung/bin/mcol
-----------------------------------------------
+> The first exception is platform specific and should be a hardware error:
+> fffffff7002fc480:       180906cfc0128d82        { addi r2, sp, 40 ;
+> addi r31, sp, 32 }
+> fffffff7002fc488:       87b886ca04218d95        { addi r21, sp, 24 ;
+> addi r20, sp, 16 ; ld lr, r2 }
+> While 'ld lr, r2' executed, r2 should be sp+40, but it value is 2.
+> I've analysis the execute
+> snap shot and:
+> 1. r2 should be 2 before 'addi r2, sp, 40' executed.
+> 2. r0's value is sp+40 when exception ocurred, but it shouldn't be
+> that value following
+>     executing flow in that function.
+> So it seems while 'addi r2, sp 40' be executed, what it really
+> executed is 'addi r0, sp, 40',
+> maybe the instruction was load with a bit reverted for memory error,
+> or cache error or
+> problem of CPU? I'm not sure since it never occurred again.
 
-   41.93 /home/namhyung/tmp/mcol.c:26
-   10.14 /home/namhyung/tmp/mcol.c:24
-   47.04 /home/namhyung/tmp/mcol.c:25
+So, the first exception wasn't a software bug?
 
-To do that, introduce percent_sum field so that the normal
-line-by-line output doesn't get changed.
+> What I thought maybe a kernel bug is that second exception. I've
+> simulated it try to
+> generate a exception in kworker, and it occurred again. Then I checked
+> the code and
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/annotate.c | 53 ++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/annotate.h |  1 +
- 2 files changed, 52 insertions(+), 2 deletions(-)
+After a fatal exception in kernel space, nothing is guaranteed to
+work.  It's usually in the realm of "if it limps along, great;
+otherwise, too bad", so it isn't really a bug.  There are only so many
+things you can do after a program segfaults after all.  That said, it
+might be a good idea to clear PF_WQ_WORKER from do_exit() so that at
+least we can avoid oops from irq context after a work item messes up.
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 83b1078260e3..d604a90c60ef 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -887,6 +887,35 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 	struct source_line *iter;
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
-+	int ret;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		iter = rb_entry(parent, struct source_line, node);
-+
-+		ret = strcmp(iter->path, src_line->path);
-+		if (ret == 0) {
-+			iter->percent_sum += src_line->percent;
-+			return;
-+		}
-+
-+		if (ret < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	src_line->percent_sum = src_line->percent;
-+
-+	rb_link_node(&src_line->node, parent, p);
-+	rb_insert_color(&src_line->node, root);
-+}
-+
-+static void __resort_source_line(struct rb_root *root, struct source_line *src_line)
-+{
-+	struct source_line *iter;
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -902,6 +931,24 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 	rb_insert_color(&src_line->node, root);
- }
- 
-+static void resort_source_line(struct rb_root *dest_root, struct rb_root *src_root)
-+{
-+	struct source_line *src_line;
-+	struct rb_node *node;
-+
-+	node = rb_first(src_root);
-+	while (node) {
-+		struct rb_node *next;
-+
-+		src_line = rb_entry(node, struct source_line, node);
-+		next = rb_next(node);
-+		rb_erase(node, src_root);
-+
-+		__resort_source_line(dest_root, src_line);
-+		node = next;
-+	}
-+}
-+
- static void symbol__free_source_line(struct symbol *sym, int len)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -926,6 +973,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 	struct source_line *src_line;
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	struct rb_root tmp_root = RB_ROOT;
- 
- 	if (!h->sum)
- 		return 0;
-@@ -960,12 +1008,13 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		strcpy(src_line[i].path, path);
--		insert_source_line(root, &src_line[i]);
-+		insert_source_line(&tmp_root, &src_line[i]);
- 
- 	next:
- 		pclose(fp);
- 	}
- 
-+	resort_source_line(root, &tmp_root);
- 	return 0;
- }
- 
-@@ -989,7 +1038,7 @@ static void print_summary(struct rb_root *root, const char *filename)
- 		char *path;
- 
- 		src_line = rb_entry(node, struct source_line, node);
--		percent = src_line->percent;
-+		percent = src_line->percent_sum;
- 		color = get_percent_color(percent);
- 		path = src_line->path;
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index c6272011625a..8eec94358a4a 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -76,6 +76,7 @@ struct sym_hist {
- struct source_line {
- 	struct rb_node	node;
- 	double		percent;
-+	double		percent_sum;
- 	char		*path;
- };
- 
+Thanks.
+
 -- 
-1.7.11.7
-
+tejun
