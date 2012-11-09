@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2KIA2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 19:28:04 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:40958 "EHLO coraid.com"
+	id S1757343Ab2KIAaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 19:30:04 -0500
+Received: from dupo.coraid.com ([208.71.232.133]:34922 "EHLO coraid.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752864Ab2KIA2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 19:28:02 -0500
-Message-Id: <846b893d27939c10c4f49a8e4d22f0029bebbd20.1352410985.git.ecashin@coraid.com>
+	id S1753976Ab2KIAaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 19:30:02 -0500
+Message-Id: <5b120839e706b2791ec724f7b63afd0114425e4a.1352410985.git.ecashin@coraid.com>
 In-Reply-To: <cover.1352410985.git.ecashin@coraid.com>
 References: <cover.1352410985.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 6/8] aoe: use high-resolution RTTs with fallback to low-res
+Subject: [PATCH 7/8] aoe: commands in retransmit queue use new destination on failure
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
 From: Ed Cashin <ecashin@coraid.com>
 X-Mailer: nedmail
-Date: Thu, 8 Nov 2012 19:27:17 -0500
+Date: Thu, 8 Nov 2012 19:29:18 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
@@ -23,185 +23,245 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes improve the accuracy of the decision about whether
-it's time to retransmit an AoE command by using the
-microsecond-resolution gettimeofday instead of jiffies.
+When one remote MAC address isn't working as a destination for
+AoE commands, the frames used to track information associated
+with the AoE commands are moved to a new aoetgt (defined by the
+tuple of {AoE major, AoE minor, target MAC address}).
 
-Because the system time can jump suddenly, the decision reverts
-to using jiffies if the high-resolution time difference is
-relatively large.  Otherwise the AoE targets could be considered
-failed inappropriately.
+This patch makes sure that the frames on the queue for
+retransmits that need to be done are updated to use the new
+destination, so that retransmits will be sent through a working
+network path.
+
+Without this change, packets on the retransmit queue will be
+needlessly retransmitted to the unresponsive destination MAC,
+possibly causing premature target failure before there's time
+for the retransmit timer to run again, decide to retransmit
+again, and finally update the destination to a working MAC
+address on the AoE target.
 
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- drivers/block/aoe/aoe.h    |    9 ++++---
- drivers/block/aoe/aoecmd.c |   57 ++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 55 insertions(+), 11 deletions(-)
+ drivers/block/aoe/aoe.h    |    1 +
+ drivers/block/aoe/aoecmd.c |   75 +++++++++++++++++++++++++++++++-------------
+ drivers/block/aoe/aoedev.c |   32 ++++++++++++------
+ 3 files changed, 75 insertions(+), 33 deletions(-)
 
 diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index 9e884ac..9fb68fc 100644
+index 9fb68fc..c253cca 100644
 --- a/drivers/block/aoe/aoe.h
 +++ b/drivers/block/aoe/aoe.h
-@@ -88,8 +88,7 @@ enum {
- 	TIMERTICK = HZ / 10,
- 	RTTSCALE = 8,
- 	RTTDSCALE = 3,
--	MAXTIMER = HZ << 1,
--	RTTAVG_INIT = HZ / 4 << RTTSCALE,
-+	RTTAVG_INIT = USEC_PER_SEC / 4 << RTTSCALE,
- 	RTTDEV_INIT = RTTAVG_INIT / 4,
- };
- 
-@@ -106,6 +105,8 @@ struct buf {
- struct frame {
- 	struct list_head head;
- 	u32 tag;
-+	struct timeval sent;	/* high-res time packet was sent */
-+	u32 sent_jiffs;		/* low-res jiffies-based sent time */
+@@ -108,6 +108,7 @@ struct frame {
+ 	struct timeval sent;	/* high-res time packet was sent */
+ 	u32 sent_jiffs;		/* low-res jiffies-based sent time */
  	ulong waited;
++	ulong waited_total;
  	struct aoetgt *t;		/* parent target I belong to */
  	sector_t lba;
-@@ -143,11 +144,11 @@ struct aoedev {
- 	struct aoedev *next;
- 	ulong sysminor;
- 	ulong aoemajor;
-+	u32 rttavg;		/* scaled AoE round trip time average */
-+	u32 rttdev;		/* scaled round trip time mean deviation */
- 	u16 aoeminor;
- 	u16 flags;
- 	u16 nopen;		/* (bd_openers isn't available without sleeping) */
--	u16 rttavg;		/* scaled AoE round trip time average */
--	u16 rttdev;		/* scaled round trip time mean deviation */
- 	u16 fw_ver;		/* version of blade's firmware */
- 	u16 lasttag;		/* last tag sent */
- 	u16 useme;
+ 	struct sk_buff *skb;		/* command skb freed on module exit */
 diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 9aefbe3..a99220a 100644
+index a99220a..d9bc6ff 100644
 --- a/drivers/block/aoe/aoecmd.c
 +++ b/drivers/block/aoe/aoecmd.c
-@@ -387,6 +387,8 @@ aoecmd_ata_rw(struct aoedev *d)
- 	skb->dev = t->ifp->nd;
- 	skb = skb_clone(skb, GFP_ATOMIC);
- 	if (skb) {
-+		do_gettimeofday(&f->sent);
-+		f->sent_jiffs = (u32) jiffies;
- 		__skb_queue_head_init(&queue);
- 		__skb_queue_tail(&queue, skb);
- 		aoenet_xmit(&queue);
-@@ -475,12 +477,46 @@ resend(struct aoedev *d, struct frame *f)
- 	skb = skb_clone(skb, GFP_ATOMIC);
- 	if (skb == NULL)
- 		return;
-+	do_gettimeofday(&f->sent);
-+	f->sent_jiffs = (u32) jiffies;
- 	__skb_queue_head_init(&queue);
- 	__skb_queue_tail(&queue, skb);
- 	aoenet_xmit(&queue);
+@@ -352,6 +352,7 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	fhash(f);
+ 	t->nout++;
+ 	f->waited = 0;
++	f->waited_total = 0;
+ 	f->buf = buf;
+ 	f->bcnt = bcnt;
+ 	f->lba = buf->sector;
+@@ -556,46 +557,69 @@ ejectif(struct aoetgt *t, struct aoeif *ifp)
+ 	dev_put(nd);
  }
  
- static int
-+tsince_hr(struct frame *f)
++static struct frame *
++reassign_frame(struct list_head *pos)
 +{
-+	struct timeval now;
-+	int n;
++	struct frame *f;
++	struct frame *nf;
++	struct sk_buff *skb;
 +
-+	do_gettimeofday(&now);
-+	n = now.tv_usec - f->sent.tv_usec;
-+	n += (now.tv_sec - f->sent.tv_sec) * USEC_PER_SEC;
++	f = list_entry(pos, struct frame, head);
++	nf = newframe(f->t->d);
++	if (!nf)
++		return NULL;
 +
-+	if (n < 0)
-+		n = -n;
++	list_del(pos);
 +
-+	/* For relatively long periods, use jiffies to avoid
-+	 * discrepancies caused by updates to the system time.
-+	 *
-+	 * On system with HZ of 1000, 32-bits is over 49 days
-+	 * worth of jiffies, or over 71 minutes worth of usecs.
-+	 *
-+	 * Jiffies overflow is handled by subtraction of unsigned ints:
-+	 * (gdb) print (unsigned) 2 - (unsigned) 0xfffffffe
-+	 * $3 = 4
-+	 * (gdb)
-+	 */
-+	if (n > USEC_PER_SEC / 4) {
-+		n = ((u32) jiffies) - f->sent_jiffs;
-+		n *= USEC_PER_SEC / HZ;
-+	}
++	skb = nf->skb;
++	nf->skb = f->skb;
++	nf->buf = f->buf;
++	nf->bcnt = f->bcnt;
++	nf->lba = f->lba;
++	nf->bv = f->bv;
++	nf->bv_off = f->bv_off;
++	nf->waited = 0;
++	nf->waited_total = f->waited_total;
++	nf->sent = f->sent;
++	f->skb = skb;
++	aoe_freetframe(f);
++	f->t->nout--;
++	nf->t->nout++;
 +
-+	return n;
++	return nf;
 +}
 +
-+static int
- tsince(u32 tag)
+ static int
+ sthtith(struct aoedev *d)
  {
- 	int n;
-@@ -489,7 +525,7 @@ tsince(u32 tag)
- 	n -= tag & 0xffff;
- 	if (n < 0)
- 		n += 1<<16;
--	return n;
-+	return jiffies_to_usecs(n + 1);
- }
+ 	struct frame *f, *nf;
+ 	struct list_head *nx, *pos, *head;
+-	struct sk_buff *skb;
+ 	struct aoetgt *ht = d->htgt;
+ 	int i;
  
- static struct aoeif *
-@@ -552,6 +588,7 @@ sthtith(struct aoedev *d)
- 			nf->bv = f->bv;
- 			nf->bv_off = f->bv_off;
- 			nf->waited = 0;
-+			nf->sent_jiffs = f->sent_jiffs;
- 			f->skb = skb;
- 			aoe_freetframe(f);
- 			ht->nout--;
-@@ -621,7 +658,7 @@ rexmit_timer(ulong vp)
++	/* look through the active and pending retransmit frames */
+ 	for (i = 0; i < NFACTIVE; i++) {
  		head = &d->factive[i];
  		list_for_each_safe(pos, nx, head) {
  			f = list_entry(pos, struct frame, head);
--			if (tsince(f->tag) < timeout)
-+			if (tsince_hr(f) < timeout)
- 				break;	/* end of expired frames */
- 			/* move to flist for later processing */
- 			list_move_tail(pos, &flist);
-@@ -632,8 +669,8 @@ rexmit_timer(ulong vp)
+ 			if (f->t != ht)
+ 				continue;
+-
+-			nf = newframe(d);
++			nf = reassign_frame(pos);
+ 			if (!nf)
+ 				return 0;
+-
+-			/* remove frame from active list */
+-			list_del(pos);
+-
+-			/* reassign all pertinent bits to new outbound frame */
+-			skb = nf->skb;
+-			nf->skb = f->skb;
+-			nf->buf = f->buf;
+-			nf->bcnt = f->bcnt;
+-			nf->lba = f->lba;
+-			nf->bv = f->bv;
+-			nf->bv_off = f->bv_off;
+-			nf->waited = 0;
+-			nf->sent_jiffs = f->sent_jiffs;
+-			f->skb = skb;
+-			aoe_freetframe(f);
+-			ht->nout--;
+-			nf->t->nout++;
+ 			resend(d, nf);
+ 		}
+ 	}
++	head = &d->rexmitq;
++	list_for_each_safe(pos, nx, head) {
++		f = list_entry(pos, struct frame, head);
++		if (f->t != ht)
++			continue;
++		nf = reassign_frame(pos);
++		if (!nf)
++			return 0;
++		resend(d, nf);
++	}
+ 	/* We've cleaned up the outstanding so take away his
+ 	 * interfaces so he won't be used.  We should remove him from
+ 	 * the target array here, but cleaning up a target is
+@@ -612,6 +636,7 @@ rexmit_deferred(struct aoedev *d)
+ 	struct aoetgt *t;
+ 	struct frame *f;
+ 	struct list_head *pos, *nx, *head;
++	int since;
+ 
+ 	head = &d->rexmitq;
+ 	list_for_each_safe(pos, nx, head) {
+@@ -621,6 +646,9 @@ rexmit_deferred(struct aoedev *d)
+ 			continue;
+ 		list_del(pos);
+ 		t->nout++;
++		since = tsince_hr(f);
++		f->waited += since;
++		f->waited_total += since;
+ 		resend(d, f);
+ 	}
+ }
+@@ -637,6 +665,7 @@ rexmit_timer(ulong vp)
+ 	register long timeout;
+ 	ulong flags, n;
+ 	int i;
++	int since;
+ 
+ 	d = (struct aoedev *) vp;
+ 
+@@ -669,7 +698,8 @@ rexmit_timer(ulong vp)
  	while (!list_empty(&flist)) {
  		pos = flist.next;
  		f = list_entry(pos, struct frame, head);
--		n = f->waited += tsince(f->tag);
--		n /= HZ;
-+		n = f->waited += tsince_hr(f);
-+		n /= USEC_PER_SEC;
+-		n = f->waited += tsince_hr(f);
++		since = tsince_hr(f);
++		n = f->waited_total + since;
+ 		n /= USEC_PER_SEC;
  		if (n > aoe_deadsecs) {
  			/* Waited too long.  Device failure.
- 			 * Hang all frames on first hash bucket for downdev
-@@ -1193,12 +1230,12 @@ aoecmd_ata_rsp(struct sk_buff *skb)
- 	n = be32_to_cpu(get_unaligned(&h->tag));
- 	f = getframe(d, n);
- 	if (f) {
--		calc_rttavg(d, f->t, tsince(n));
-+		calc_rttavg(d, f->t, tsince_hr(f));
- 		f->t->nout--;
- 	} else {
- 		f = getframe_deferred(d, n);
- 		if (f) {
--			calc_rttavg(d, NULL, tsince(n));
-+			calc_rttavg(d, NULL, tsince_hr(f));
- 		} else {
- 			calc_rttavg(d, NULL, tsince(n));
- 			spin_unlock_irqrestore(&d->lock, flags);
-@@ -1276,7 +1313,13 @@ aoecmd_ata_id(struct aoedev *d)
- 	d->rttdev = RTTDEV_INIT;
- 	d->timer.function = rexmit_timer;
+@@ -1301,6 +1331,7 @@ aoecmd_ata_id(struct aoedev *d)
+ 	fhash(f);
+ 	t->nout++;
+ 	f->waited = 0;
++	f->waited_total = 0;
  
--	return skb_clone(skb, GFP_ATOMIC);
-+	skb = skb_clone(skb, GFP_ATOMIC);
-+	if (skb) {
-+		do_gettimeofday(&f->sent);
-+		f->sent_jiffs = (u32) jiffies;
-+	}
-+
-+	return skb;
+ 	/* set up ata header */
+ 	ah->scnt = 1;
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 3c3aef2..91f7c99 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -170,30 +170,40 @@ aoe_failip(struct aoedev *d)
+ 		aoe_end_request(d, rq, 0);
  }
  
- static struct aoetgt *
++static void
++downdev_frame(struct list_head *pos)
++{
++	struct frame *f;
++
++	f = list_entry(pos, struct frame, head);
++	list_del(pos);
++	if (f->buf) {
++		f->buf->nframesout--;
++		aoe_failbuf(f->t->d, f->buf);
++	}
++	aoe_freetframe(f);
++}
++
+ void
+ aoedev_downdev(struct aoedev *d)
+ {
+ 	struct aoetgt *t, **tt, **te;
+-	struct frame *f;
+ 	struct list_head *head, *pos, *nx;
+ 	struct request *rq;
+ 	int i;
+ 
+ 	d->flags &= ~DEVFL_UP;
+ 
+-	/* clean out active buffers */
++	/* clean out active and to-be-retransmitted buffers */
+ 	for (i = 0; i < NFACTIVE; i++) {
+ 		head = &d->factive[i];
+-		list_for_each_safe(pos, nx, head) {
+-			f = list_entry(pos, struct frame, head);
+-			list_del(pos);
+-			if (f->buf) {
+-				f->buf->nframesout--;
+-				aoe_failbuf(d, f->buf);
+-			}
+-			aoe_freetframe(f);
+-		}
++		list_for_each_safe(pos, nx, head)
++			downdev_frame(pos);
+ 	}
++	head = &d->rexmitq;
++	list_for_each_safe(pos, nx, head)
++		downdev_frame(pos);
++
+ 	/* reset window dressings */
+ 	tt = d->targets;
+ 	te = tt + NTARGETS;
 -- 
 1.7.1
 
