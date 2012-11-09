@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2KIRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:36:16 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57804 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2KIRgP (ORCPT
+	id S1754767Ab2KIRhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:37:42 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64681 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2KIRhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:36:15 -0500
-Message-ID: <509D3F0D.5040204@wwwdotorg.org>
-Date: Fri, 09 Nov 2012 10:36:13 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 9 Nov 2012 12:37:39 -0500
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra: harmony: Add ADT7641 temperature sensor
-References: <1352465815-26984-1-git-send-email-thierry.reding@avionic-design.de> <20121109132257.GA29183@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121109132257.GA29183@avionic-0098.mockup.avionic-design.de>
-X-Enigmail-Version: 1.4.4
+In-Reply-To: <CAErSpo7i+pZoPZWdJOLfJ4xJzs1NRVEmk1-N-NL+xK65coFZiA@mail.gmail.com>
+References: <000001cdbe47$48f5dbc0$dae19340$%han@samsung.com>
+	<CAErSpo7i+pZoPZWdJOLfJ4xJzs1NRVEmk1-N-NL+xK65coFZiA@mail.gmail.com>
+Date: Fri, 9 Nov 2012 12:37:38 -0500
+Message-ID: <CADnq5_NWNjsowbPRxiL0cA6XJ_5uZYKO-OfYMZu_NxYeg7s0yA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix bit definitions of PCI_EXP_LNKCAP2 register
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 06:22 AM, Thierry Reding wrote:
-> On Fri, Nov 09, 2012 at 01:56:55PM +0100, Thierry Reding wrote:
->> The Harmony board has an Analog Devices ADT7461 temperature
->> sensor connected to the DVC bus. It can be used to monitor the
->> ambient (local) and on-die (remote) temperatures.
-> 
-> Note that I haven't actually tested this, as I no longer have
-> access to Harmony hardware. Testing can easily be done either by
-> reading the files from sysfs directly or by running the sensors
-> utility from the lm-sensors package.
+On Fri, Nov 9, 2012 at 12:15 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Nov 8, 2012 at 11:56 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>> According to the PCIe 3.0 spec, PCI_EXP_LNKCAP2_SLS_2_5GB is
+>> 1st bit of PCI_EXP_LNKCAP2 register, not 0th bit. So, the bit
+>> definition of supported link speed vector should be fixed.
+>>
+>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>> ---
+>>  include/uapi/linux/pci_regs.h |    6 +++---
+>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+>> index 20ae747..14a3184 100644
+>> --- a/include/uapi/linux/pci_regs.h
+>> +++ b/include/uapi/linux/pci_regs.h
+>> @@ -544,9 +544,9 @@
+>>  #define  PCI_EXP_OBFF_WAKE_EN  0x6000  /* OBFF using WAKE# signaling */
+>>  #define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44      /* v2 endpoints end here */
+>>  #define PCI_EXP_LNKCAP2                44      /* Link Capability 2 */
+>> -#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x01        /* Current Link Speed 2.5GT/s */
+>> -#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x02        /* Current Link Speed 5.0GT/s */
+>> -#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x04        /* Current Link Speed 8.0GT/s */
+>> +#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x02        /* Current Link Speed 2.5GT/s */
+>> +#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x04        /* Current Link Speed 5.0GT/s */
+>> +#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x08        /* Current Link Speed 8.0GT/s */
+>>  #define  PCI_EXP_LNKCAP2_CROSSLINK 0x100 /* Crosslink supported */
+>>  #define PCI_EXP_LNKCTL2                48      /* Link Control 2 */
+>>  #define PCI_EXP_LNKSTA2                50      /* Link Status 2 */
+>
+> I think this patch is correct, per spec sec 7.8.18.  If I apply it, I
+> think the comments should also be changed to "Supported Link Speed"
+> instead of "Current."
 
-OK, I can test this. The same comment about the DT node name that I
-made for the other patch applies here too.
+Correct.
+
+>
+> The only in-tree user of these symbols is
+> drm_pcie_get_speed_cap_mask().  Dave, can you ack/nack this?  I don't
+> want to apply this if it's going to break something there.
+
+The patch is fine and shouldn't break anything.
+
+Alex
