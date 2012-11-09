@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab2KISX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:23:28 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56718 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab2KISXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:23:23 -0500
+	id S1755204Ab2KIS3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:29:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33493 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754622Ab2KIS3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:29:04 -0500
+Date: Fri, 9 Nov 2012 19:29:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch_check_bp_in_kernelspace: fix the range check
+Message-ID: <20121109182943.GA2789@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CADnq5_NWNjsowbPRxiL0cA6XJ_5uZYKO-OfYMZu_NxYeg7s0yA@mail.gmail.com>
-References: <000001cdbe47$48f5dbc0$dae19340$%han@samsung.com>
- <CAErSpo7i+pZoPZWdJOLfJ4xJzs1NRVEmk1-N-NL+xK65coFZiA@mail.gmail.com> <CADnq5_NWNjsowbPRxiL0cA6XJ_5uZYKO-OfYMZu_NxYeg7s0yA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Nov 2012 11:23:00 -0700
-Message-ID: <CAErSpo5qxTbz--0PKM5J_Quy_vZLrdP2q=kOVQh2+Gta5Xvg0Q@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix bit definitions of PCI_EXP_LNKCAP2 register
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 9, 2012 at 10:37 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Fri, Nov 9, 2012 at 12:15 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Nov 8, 2012 at 11:56 PM, Jingoo Han <jg1.han@samsung.com> wrote:
->>> According to the PCIe 3.0 spec, PCI_EXP_LNKCAP2_SLS_2_5GB is
->>> 1st bit of PCI_EXP_LNKCAP2 register, not 0th bit. So, the bit
->>> definition of supported link speed vector should be fixed.
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>> ---
->>>  include/uapi/linux/pci_regs.h |    6 +++---
->>>  1 files changed, 3 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
->>> index 20ae747..14a3184 100644
->>> --- a/include/uapi/linux/pci_regs.h
->>> +++ b/include/uapi/linux/pci_regs.h
->>> @@ -544,9 +544,9 @@
->>>  #define  PCI_EXP_OBFF_WAKE_EN  0x6000  /* OBFF using WAKE# signaling */
->>>  #define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44      /* v2 endpoints end here */
->>>  #define PCI_EXP_LNKCAP2                44      /* Link Capability 2 */
->>> -#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x01        /* Current Link Speed 2.5GT/s */
->>> -#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x02        /* Current Link Speed 5.0GT/s */
->>> -#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x04        /* Current Link Speed 8.0GT/s */
->>> +#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x02        /* Current Link Speed 2.5GT/s */
->>> +#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x04        /* Current Link Speed 5.0GT/s */
->>> +#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x08        /* Current Link Speed 8.0GT/s */
->>>  #define  PCI_EXP_LNKCAP2_CROSSLINK 0x100 /* Crosslink supported */
->>>  #define PCI_EXP_LNKCTL2                48      /* Link Control 2 */
->>>  #define PCI_EXP_LNKSTA2                50      /* Link Status 2 */
->>
->> I think this patch is correct, per spec sec 7.8.18.  If I apply it, I
->> think the comments should also be changed to "Supported Link Speed"
->> instead of "Current."
->
-> Correct.
->
->>
->> The only in-tree user of these symbols is
->> drm_pcie_get_speed_cap_mask().  Dave, can you ack/nack this?  I don't
->> want to apply this if it's going to break something there.
->
-> The patch is fine and shouldn't break anything.
+arch_check_bp_in_kernelspace() tries to avoid the overflow and does 2
+TASK_SIZE checks but it needs OR, not AND. Consider va = TASK_SIZE -1
+and len = 2 case.
 
-Thanks for checking this out, Alex.
+Note: TASK_SIZE doesn't look right at least on x86, I think it should
+be replaced by TASK_SIZE_MAX.
 
-I applied this to my pci/misc branch as v3.8 material.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Bjorn
+--- x/arch/arm64/kernel/hw_breakpoint.c
++++ x/arch/arm64/kernel/hw_breakpoint.c
+@@ -293,7 +293,7 @@ int arch_check_bp_in_kernelspace(struct 
+ 	va = info->address;
+ 	len = get_hbp_len(info->ctrl.len);
+ 
+-	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
++	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+ }
+ 
+ /*
+--- x/arch/arm/kernel/hw_breakpoint.c
++++ x/arch/arm/kernel/hw_breakpoint.c
+@@ -464,7 +464,7 @@ int arch_check_bp_in_kernelspace(struct 
+ 	va = info->address;
+ 	len = get_hbp_len(info->ctrl.len);
+ 
+-	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
++	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+ }
+ 
+ /*
+--- x/arch/sh/kernel/hw_breakpoint.c
++++ x/arch/sh/kernel/hw_breakpoint.c
+@@ -132,7 +132,7 @@ int arch_check_bp_in_kernelspace(struct 
+ 	va = info->address;
+ 	len = get_hbp_len(info->len);
+ 
+-	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
++	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+ }
+ 
+ int arch_bp_generic_fields(int sh_len, int sh_type,
+--- x/arch/x86/kernel/hw_breakpoint.c
++++ x/arch/x86/kernel/hw_breakpoint.c
+@@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct 
+ 	va = info->address;
+ 	len = get_hbp_len(info->len);
+ 
+-	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
++	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+ }
+ 
+ int arch_bp_generic_fields(int x86_len, int x86_type,
+
