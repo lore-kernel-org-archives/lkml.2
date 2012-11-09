@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2KIRF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:05:27 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:52263 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679Ab2KIRFW (ORCPT
+	id S1755015Ab2KIRJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:09:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50942 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754773Ab2KIRJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:05:22 -0500
+	Fri, 9 Nov 2012 12:09:21 -0500
+Date: Fri, 9 Nov 2012 17:09:19 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, philipspatches@gmail.com, patches@linaro.org
+Subject: Re: [PATCH] regulator: core: Update regulator_is_supported_voltage
+ for fixed voltages
+Message-ID: <20121109170918.GW23807@opensource.wolfsonmicro.com>
+References: <1352458309-18141-1-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20121109053311.GA12105@core.coreip.homeip.net>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-	<20121108163835.GA8877@core.coreip.homeip.net>
-	<CAKohpo=PdNoBzpZoHWcHSqh_az2OOGGGegNzCXPxjUDVOHostw@mail.gmail.com>
-	<20121109053311.GA12105@core.coreip.homeip.net>
-Date: Fri, 9 Nov 2012 22:35:22 +0530
-Message-ID: <CAKohponYyB18B92tTxb8_e1dzJhaAL=tqnCJfh_DpoUHavdGVw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] input: spear-keyboard: Use devm_*() routines
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="I33OQG5IFrqF2BWt"
+Content-Disposition: inline
+In-Reply-To: <1352458309-18141-1-git-send-email-tushar.behera@linaro.org>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 November 2012 11:03, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Fri, Nov 09, 2012 at 08:06:29AM +0530, Viresh Kumar wrote:
->> On 8 November 2012 22:08, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
->> > On Thu, Nov 08, 2012 at 07:10:47PM +0530, Viresh Kumar wrote:
->> > It also breaks the error unwinding/removal of the driver as it frees
->> > input device while IRQ handler is still active.
->>
->> I have heard of this argument before, probably from you. :)
->> Just need clarification again. How will we get an interrupt when the controller
->> is stopped, unless we have a shared irq.
->
-> My bad, I missed that spear-keyboard driver implements open() and
-> close() methods and shuts off the device properly. Still, thanks for
-> switching everything to devm_*, I think it is much cleaner this way as
-> opposed to mixing managed and unmanaged resources.
 
-Another fixup:
+--I33OQG5IFrqF2BWt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-commit ebdec75f51050cf4a5ac41d3a1e880e14bf96a95
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Fri Nov 9 22:28:48 2012 +0530
+On Fri, Nov 09, 2012 at 04:21:49PM +0530, Tushar Behera wrote:
 
-    fixup! input: spear-keyboard: Use devm_*() routines
----
- drivers/input/keyboard/spear-keyboard.c | 1 -
- 1 file changed, 1 deletion(-)
+> In case of fixed regulators for which voltage cannot be changed,
+> regulator_is_supported_voltage should return success only if the
+> min_uV and max_uV parameters are same and it is equal to the current
+> voltage of the regulator.
 
-diff --git a/drivers/input/keyboard/spear-keyboard.c
-b/drivers/input/keyboard/spear-keyboard.c
-index 25e0a3b..65f5950 100644
---- a/drivers/input/keyboard/spear-keyboard.c
-+++ b/drivers/input/keyboard/spear-keyboard.c
-@@ -292,7 +292,6 @@ static int __devexit spear_kbd_remove(struct
-platform_device *pdev)
- {
-        struct spear_kbd *kbd = platform_get_drvdata(pdev);
+This makes no sense to me at all.  The caller is asking if it's possible
+to set the voltage between the minimum and maximum values, any voltage
+in that range should be OK.  Your patch makes the function massively
+less useful.
 
--       input_unregister_device(kbd->input);
-        clk_unprepare(kbd->clk);
+> Currently this patch breaks MMC support for boards on which vmmc is a
+> fixed regulator and the voltage is not equal to either of 3.3v, 3.0v
+> or 1.8v. Earlier it used to work if the voltage was less than 3.3v.
 
-        device_init_wakeup(&pdev->dev, 0);
+This sounds like a problem in the MMC framework.  If it's happy with
+non-standard voltages it should be happy with non-standard voltages,
+or perhaps it should be ignoring voltages if it can't find any sane
+voltages at all.  The regulator framework is accurately answering the
+question it was asked.
+
+It also seems like the MMC framework will be broken by a regulator which
+can change voltage but not over the full range the MMC framework is
+interested in, this is essentially just a special case of that situation.
+
+--I33OQG5IFrqF2BWt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQnTi4AAoJELSic+t+oim9b5QP/Rd+FlVMMKEgiw5SoAPVIAbj
+BbGvodqVDkPUtr1TbW5aNZWPJLL5U/sKb6RPKcq0jkUdZKlkCXE6CfCdo4Kyc6fw
+gcTQNdboG8JZfy8ClZodhaAYWv1unnMNkJeFnHZVDkRQxFFtlWv6SiD1GuDCuyqE
+4UiB9oDdYbuNPWb7D2M0JcUPLPq/bhN2WKmhcILzuyXlShIVv0JjYxtJG06UUcsa
+QvxDigbpKMfx57jiLLbEI82OmpK00f0aN2iwVuPJdxckZNhQcY/zQc+WcmNpUJO8
+Y/fHVuqgVNZ2Z0aPsXcPgia1XtldgAL0bCSMaAOOXICpCYh71bolEsprrgDiEHV0
+cj2Fd3dh0+tUgRqtQQB9kOSD6/qBLLqR6TZBzpJeMVF4YWM3BJK2QdtDqenof/oE
+w3XyQvNqEPYGCb6Z/RPfrK9KWb3IlscE6JrmI/giOMWWnRoJW03+U4e2zYjT3vqE
+d1UY33+x1SmbWygtoH34RroJr1Znn0OecRUznzPOtctIZ3zFw5/yroa2ucuzzdP8
+LbS3pLDgTbn6ZcJyaRnIbXk5ibqTd83XBeeE2gk4z+OQmXNQvbPMDxHxyS6TYa6M
+6/XS6AHxs/Wxgc0qgSscAm8SgUuDqFx3ABEQ5bxW/Qh83Oefxvj87q7G6D38/1Bh
+ny1A5CFeRsEO/h43kJJW
+=EqyD
+-----END PGP SIGNATURE-----
+
+--I33OQG5IFrqF2BWt--
