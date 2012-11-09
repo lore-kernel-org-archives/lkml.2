@@ -1,112 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab2KIMsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 07:48:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7956 "EHLO mx1.redhat.com"
+	id S1753082Ab2KIMs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 07:48:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28808 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2KIMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 07:48:18 -0500
-From: Tomas Hozza <thozza@redhat.com>
-To: olaf@aepfle.de, kys@microsoft.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
-        Tomas Hozza <thozza@redhat.com>
-Subject: [PATCH] Tools: hv: Fix for long file names from readdir
-Date: Fri,  9 Nov 2012 13:47:21 +0100
-Message-Id: <1352465241-31001-1-git-send-email-thozza@redhat.com>
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E0242D@CH1PRD0310MB381.namprd03.prod.outlook.com>
-References: <426367E2313C2449837CD2DE46E7EAF930E0242D@CH1PRD0310MB381.namprd03.prod.outlook.com>
+	id S1750825Ab2KIMsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 07:48:21 -0500
+Date: Fri, 9 Nov 2012 07:47:15 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+ block the readers unnecessarily
+In-Reply-To: <20121108120700.42d438f2.akpm@linux-foundation.org>
+Message-ID: <Pine.LNX.4.64.1211090743210.10254@file.rdu.redhat.com>
+References: <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com>
+ <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
-sized buffers which could be too small to store really long names.
 
-Buffer sizes have been changed to PATH_MAX, include "limits.h" where
-PATH_MAX is defined was added and length checks ware added via snprintf.
 
-Signed-off-by: Tomas Hozza <thozza@redhat.com>
----
- tools/hv/hv_kvp_daemon.c | 26 +++++++++-----------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
+On Thu, 8 Nov 2012, Andrew Morton wrote:
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 13c2a14..54ecb95 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -44,6 +44,7 @@
- #include <fcntl.h>
- #include <dirent.h>
- #include <net/if.h>
-+#include <limits.h>
- 
- /*
-  * KVP protocol: The user mode component first registers with the
-@@ -592,26 +593,22 @@ static char *kvp_get_if_name(char *guid)
- 	DIR *dir;
- 	struct dirent *entry;
- 	FILE    *file;
--	char    *p, *q, *x;
-+	char    *p, *x;
- 	char    *if_name = NULL;
- 	char    buf[256];
- 	char *kvp_net_dir = "/sys/class/net/";
--	char dev_id[256];
-+	char dev_id[PATH_MAX];
- 
- 	dir = opendir(kvp_net_dir);
- 	if (dir == NULL)
- 		return NULL;
- 
--	snprintf(dev_id, sizeof(dev_id), "%s", kvp_net_dir);
--	q = dev_id + strlen(kvp_net_dir);
--
- 	while ((entry = readdir(dir)) != NULL) {
- 		/*
- 		 * Set the state for the next pass.
- 		 */
--		*q = '\0';
--		strcat(dev_id, entry->d_name);
--		strcat(dev_id, "/device/device_id");
-+		snprintf(dev_id, sizeof(dev_id), "%s%s/device/device_id", kvp_net_dir,
-+				entry->d_name);
- 
- 		file = fopen(dev_id, "r");
- 		if (file == NULL)
-@@ -684,28 +681,23 @@ static char *kvp_mac_to_if_name(char *mac)
- 	DIR *dir;
- 	struct dirent *entry;
- 	FILE    *file;
--	char    *p, *q, *x;
-+	char    *p, *x;
- 	char    *if_name = NULL;
- 	char    buf[256];
- 	char *kvp_net_dir = "/sys/class/net/";
--	char dev_id[256];
-+	char dev_id[PATH_MAX];
- 	int i;
- 
- 	dir = opendir(kvp_net_dir);
- 	if (dir == NULL)
- 		return NULL;
- 
--	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
--	q = dev_id + strlen(kvp_net_dir);
--
- 	while ((entry = readdir(dir)) != NULL) {
- 		/*
- 		 * Set the state for the next pass.
- 		 */
--		*q = '\0';
--
--		strcat(dev_id, entry->d_name);
--		strcat(dev_id, "/address");
-+		snprintf(dev_id, sizeof(dev_id), "%s%s/address", kvp_net_dir,
-+                entry->d_name);
- 
- 		file = fopen(dev_id, "r");
- 		if (file == NULL)
--- 
-1.7.11.7
+> On Thu, 8 Nov 2012 14:48:49 +0100
+> Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > Currently the writer does msleep() plus synchronize_sched() 3 times
+> > to acquire/release the semaphore, and during this time the readers
+> > are blocked completely. Even if the "write" section was not actually
+> > started or if it was already finished.
+> > 
+> > With this patch down_write/up_write does synchronize_sched() twice
+> > and down_read/up_read are still possible during this time, just they
+> > use the slow path.
+> > 
+> > percpu_down_write() first forces the readers to use rw_semaphore and
+> > increment the "slow" counter to take the lock for reading, then it
+> > takes that rw_semaphore for writing and blocks the readers.
+> > 
+> > Also. With this patch the code relies on the documented behaviour of
+> > synchronize_sched(), it doesn't try to pair synchronize_sched() with
+> > barrier.
+> > 
+> > ...
+> >
+> >  include/linux/percpu-rwsem.h |   83 +++++------------------------
+> >  lib/Makefile                 |    2 +-
+> >  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
+> 
+> The patch also uninlines everything.
+> 
+> And it didn't export the resulting symbols to modules, so it isn't an
+> equivalent.  We can export thing later if needed I guess.
+> 
+> It adds percpu-rwsem.o to lib-y, so the CONFIG_BLOCK=n kernel will
+> avoid including the code altogether, methinks?
 
+If you want to use percpu-rwsem only for block devices then you can remove 
+Oleg's patch at all. Oleg's optimizations are useless for block device use 
+case (the contention between readers and writers is very rare and it 
+doesn't matter if readers are blocked in case of contention). I suppose 
+that Oleg made the optimizations because he wants to use percpu-rwsem for 
+something else - if not, you can drop the patch and revert to the previois 
+version that is simpler.
+
+Mikulas
