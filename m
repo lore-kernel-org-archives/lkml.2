@@ -1,116 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2KINob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 08:44:31 -0500
-Received: from void.printf.net ([89.145.121.20]:55191 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab2KINo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 08:44:26 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] MMC fixes for 3.7-rc5
-Date: Fri, 09 Nov 2012 08:44:19 -0500
-Message-ID: <87fw4ic2mk.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1753475Ab2KINoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 08:44:25 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61459 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab2KINoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 08:44:24 -0500
+Message-ID: <509D08B5.2080303@gmail.com>
+Date: Fri, 09 Nov 2012 08:44:21 -0500
+From: Xi Wang <xi.wang@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Xiangliang Yu <yuxiangl@marvell.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] [SCSI] mvsas: fix shift in mvs_94xx_free_reg_set()
+References: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>  <1352145183-29355-3-git-send-email-xi.wang@gmail.com> <1352203618.2529.22.camel@dabdike> <50997955.10000@gmail.com> <F766E4F80769BD478052FB6533FA745D25EA5FB180@SC-VEXCH4.marvell.com>
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D25EA5FB180@SC-VEXCH4.marvell.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 11/9/12 2:30 AM, Xiangliang Yu wrote:
+> Agree with James, and just need to do NOT operation one time
 
-Please pull from:
+Thanks for reviewing the patches.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7-rc5
+Okay I'll remove patch 2 in v2 then.
 
-to receive MMC fixes for 3.7-rc5.  There are no merge conflicts, and the
-patches have been tested in linux-next.  Thanks.
+> About patch 3, I check the ffz code and found it will check ~0 conditions.
 
+Can you point me to the ~0 check in ffz code?  I also feel like using
+__ffs64 makes the code simpler.
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+Does patch 1 look good to you?  Thanks.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7-rc5
-
-for you to fetch changes up to 0aa55c2367f082876f92660312214cd20c6a024b:
-
-  mmc: sdhci-s3c: fix the card detection in runtime-pm (2012-11-07 15:40:52 -0500)
-
-----------------------------------------------------------------
-MMC fixes for 3.7-rc5:
- - sdhci: fix a NULL dereference at resume-time, seen on OLPC XO-4
- - sdhci: fix against 3.7-rc1 for UHS modes without a vqmmc regulator
- - sdhci-of-esdhc: disable CMD23 on boards where it's broken
- - sdhci-s3c: fix against 3.7-rc1 for card detection with runtime PM
- - dw_mmc, omap_hsmmc: fix potential NULL derefs, compiler warnings
-
-----------------------------------------------------------------
-Adrian Hunter (1):
-      mmc: sdhci-pci: fix 'Invalid iomem size' error message condition
-
-Arnd Bergmann (2):
-      mmc: dw_mmc: fix modular build for exynos back-end
-      mmc: dw_mmc: constify dw_mci_idmac_ops in exynos back-end
-
-Balaji T K (2):
-      mmc: omap_hsmmc: fix host reference after mmc_free_host
-      mmc: omap_hsmmc: fix NULL pointer dereference for dt boot
-
-Chris Ball (1):
-      mmc: sdhci: fix NULL dereference in sdhci_request() tuning
-
-Fabio Estevam (1):
-      mmc: mxcmmc: Fix MODULE_ALIAS
-
-Guennadi Liakhovetski (1):
-      mmc: sh_mmcif: fix use after free
-
-James Hogan (1):
-      mmc: dw_mmc: fix multiple drv_data NULL dereferences
-
-Jerry Huang (1):
-      mmc: sdhci-of-esdhc: disable CMD23 for some Freescale SoCs
-
-Kevin Liu (1):
-      mmc: sdhci: fix IS_ERR() checking of regulator_get()
-
-Russell King - ARM Linux (1):
-      mmc: fix sdhci-dove probe/removal
-
-Seungwon Jeon (3):
-      mmc: dw_mmc: convert the variable type of irq
-      mmc: dw_mmc: remove _dev_info compile warning
-      mmc: sdhci-s3c: fix the card detection in runtime-pm
-
-Thomas Abraham (1):
-      mmc: sdhci-s3c: use clk_prepare_enable and clk_disable_unprepare
-
-Yuvaraj CD (1):
-      mmc: dw_mmc: enable controller interrupt before calling mmc_start_host
-
- drivers/mmc/host/dw_mmc-exynos.c  |  8 ++---
- drivers/mmc/host/dw_mmc-pltfm.c   |  6 ++--
- drivers/mmc/host/dw_mmc-pltfm.h   |  2 +-
- drivers/mmc/host/dw_mmc.c         | 62 +++++++++++++++++++++------------------
- drivers/mmc/host/mxcmmc.c         |  2 +-
- drivers/mmc/host/omap_hsmmc.c     | 19 +++++++-----
- drivers/mmc/host/sdhci-dove.c     | 38 ++++++++++++------------
- drivers/mmc/host/sdhci-of-esdhc.c | 11 +++++++
- drivers/mmc/host/sdhci-pci.c      |  2 +-
- drivers/mmc/host/sdhci-pltfm.c    |  7 +++++
- drivers/mmc/host/sdhci-s3c.c      | 30 ++++++++++---------
- drivers/mmc/host/sdhci.c          | 44 +++++++++++++++++----------
- drivers/mmc/host/sdhci.h          |  1 +
- drivers/mmc/host/sh_mmcif.c       |  2 +-
- include/linux/mmc/dw_mmc.h        |  6 ++--
- include/linux/mmc/sdhci.h         |  1 +
- 16 files changed, 144 insertions(+), 97 deletions(-)
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+- xi
