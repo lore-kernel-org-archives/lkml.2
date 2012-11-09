@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab2KIJlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:41:00 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:42011 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab2KIJk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:40:56 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL REQUEST] UniCore32 update for v3.7-rc4
-Cc: linux-kernel@vger.kernel.org
-Message-Id: <20121109093508.BD26A1460351@linuxdev-32>
-Date: Fri,  9 Nov 2012 17:35:08 +0800 (CST)
-From: guanxuetao@mprc.pku.edu.cn (guanxuetao)
+	id S1751967Ab2KIJmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:42:16 -0500
+Received: from smtp-out-195.synserver.de ([212.40.185.195]:1220 "EHLO
+	smtp-out-195.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2KIJmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 04:42:13 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 24208
+Message-ID: <509CCFF3.60706@metafoo.de>
+Date: Fri, 09 Nov 2012 10:42:11 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] drivres/power/jz4740-battery.c: Use devm_request_and_ioremap
+References: <1352243472-14951-1-git-send-email-marcos.souza.org@gmail.com> <1352243472-14951-3-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1352243472-14951-3-git-send-email-marcos.souza.org@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 11/07/2012 12:11 AM, Marcos Paulo de Souza wrote:
+> No functional changes. Just a cleanup.
+> 
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 
-The following changes since commit 0e4a43ed08e2f44aa7b96aa95d0a540d675483e1:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../steve/gfs2-3.0-fixes
+Looks good to me:
 
-are available in the git repository at:
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-  git://github.com/gxt/linux.git ..BRANCH.NOT.VERIFIED..
+One minor comment though:
 
-Al Viro (2):
-      unicore32: switch to generic kernel_thread()/kernel_execve()
-      unicore32: switch to generic sys_execve()
+> ---
+>  drivers/power/jz4740-battery.c |   33 +++++++--------------------------
+>  1 file changed, 7 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+> index 59900c6..e4ec7eb 100644
+> --- a/drivers/power/jz4740-battery.c
+> +++ b/drivers/power/jz4740-battery.c
+>[...]
+> -	jz_battery->base = ioremap_nocache(jz_battery->mem->start,
+> -				resource_size(jz_battery->mem));
+> +	jz_battery->base = devm_request_and_ioremap(&pdev->dev, mem);
+>  	if (!jz_battery->base) {
+> -		ret = -EBUSY;
+> -		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+> -		goto err_release_mem_region;
+> +		dev_err(&pdev->dev, "Failed to request/ioremap mmio memory\n");
 
-David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/unicore32/include/asm
+devm_request_and_ioremap will print its own error messages if it fails, so
+strictly speaking this is not necessary, but I don't think it is worth doing
+resend just for this.
 
-Guan Xuetao (4):
-      UniCore32 bugfix: add missed CONFIG_ZONE_DMA
-      UniCore32-bugfix: fix mismatch return value of __xchg_bad_pointer
-      UniCore32-bugfix: Remove definitions in asm/bug.h to solve difference between native and cross compiler
-      unicore32: Use Kbuild infrastructure for kvm_para.h
+Anton, maybe you can just remove the line when applying the patch.
 
-Kautuk Consul (1):
-      unicore32/mm/fault.c: Port OOM changes to do_pf
+Thanks,
+- Lars
 
-Kees Cook (1):
-      arch/unicore32: remove CONFIG_EXPERIMENTAL
+> +		return -EBUSY;
+>  	}
+>  
+[...]
 
- arch/unicore32/Kconfig                             |    7 ++-
- arch/unicore32/include/asm/Kbuild                  |    1 -
- arch/unicore32/include/asm/bug.h                   |    5 -
- arch/unicore32/include/asm/cmpxchg.h               |    2 +-
- arch/unicore32/include/asm/kvm_para.h              |    1 -
- arch/unicore32/include/asm/processor.h             |    5 -
- arch/unicore32/include/asm/ptrace.h                |   76 +----------------
- arch/unicore32/include/uapi/asm/Kbuild             |    7 ++
- arch/unicore32/include/{ => uapi}/asm/byteorder.h  |    0
- arch/unicore32/include/uapi/asm/ptrace.h           |   90 ++++++++++++++++++++
- arch/unicore32/include/{ => uapi}/asm/sigcontext.h |    0
- arch/unicore32/include/{ => uapi}/asm/unistd.h     |    1 +
- arch/unicore32/kernel/entry.S                      |   20 ++---
- arch/unicore32/kernel/process.c                    |   58 +++----------
- arch/unicore32/kernel/setup.h                      |    6 ++
- arch/unicore32/kernel/sys.c                        |   63 --------------
- arch/unicore32/mm/fault.c                          |   37 ++++++--
- 17 files changed, 160 insertions(+), 219 deletions(-)
- delete mode 100644 arch/unicore32/include/asm/kvm_para.h
- rename arch/unicore32/include/{ => uapi}/asm/byteorder.h (100%)
- create mode 100644 arch/unicore32/include/uapi/asm/ptrace.h
- rename arch/unicore32/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/unicore32/include/{ => uapi}/asm/unistd.h (92%)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQnM5BAAoJENFylnOm3dTb9aoP/in4QBnMN/+lO2JaiMw4aIAI
-CkWKfNCg47NHo1D53ZlOH9kCulIrM4bH3uOXwnnGtHDfvlOaX/BdxOKkqEpovv0r
-DJXRzQVuGsbTW2A94AQZYDqOUlgHraO4WvAqQeItoEwZqQUptsHHz36ICgLpUGur
-CUAtTWeZ14b3xndY4QEUTThUno+cvIu+J6cDOTTXGcOGqfTSkI7EuKSdAVsAPf9K
-RaxLGw+k0OekZmcaLNCLH1B+T2GRskNF5UhTLnb8Sa2gcxGwc2sNoPmm0B+Tj6bC
-lS2BneX1LWkWEkisl94rZK7T0OirCzr5bXsgSAChVpykf5biN6SBXjQUtV660yGy
-yP/vdWDu4ISrqv625v/CKj8Ar476SEkCljKZZ0m2mUWoPBrFAt3N7+KnLUAZXYtd
-tsFx/vvWb15Z6PZktLDfcR47ypEd7nf3/FY8h8OvvZg4GJOW+NxIEOHA/ZOXUV+7
-yQObEv7+40kB+ZLOBkPy2gDhUIwAsXvaAnj6HB8zFsC9Z3W5tl94vn9RkGiW+6P6
-rd3qNgqmHsXBFLsARq2Ct9dP2O6GE3D90EMMq78iP0mE5Ow37KjAmKxWwJSd9KCB
-WnDt1rSzsKcmayIMFgVFWJy8dG9rUANaZvIdl/vrqA0tsYcs/3f0lEcwn1/7/maS
-qsHCm+R2kL757t/qF2G/
-=b4YB
------END PGP SIGNATURE-----
