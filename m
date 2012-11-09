@@ -1,133 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2KIDsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 22:48:39 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:37549 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab2KIDs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 22:48:27 -0500
-Message-ID: <509C7D08.8030801@gmail.com>
-Date: Thu, 08 Nov 2012 21:48:24 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Azat Khuzhin <dohardgopro@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: Re: macbook pro 9.2 stat/ata bus error
-References: <CAAW1UO_X9eaBoiHMdj-ntCjGgBKpA6A_EDA2zifDf7f7dbs4Xw@mail.gmail.com> <CAAW1UO_9ZRZEX8rU83niZuZxihcoHaj-dau-o+ym5ATJXyNvpg@mail.gmail.com>
-In-Reply-To: <CAAW1UO_9ZRZEX8rU83niZuZxihcoHaj-dau-o+ym5ATJXyNvpg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752193Ab2KIDvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 22:51:15 -0500
+Received: from mga03.intel.com ([143.182.124.21]:28076 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967Ab2KIDvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 22:51:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,741,1344236400"; 
+   d="scan'208";a="166224814"
+Message-ID: <1352433060.2166.3.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
+Date: Fri, 09 Nov 2012 11:51:00 +0800
+In-Reply-To: <CAK44p22REJpaJiahX7sTofShNB-+OHVsULqHeuxFNu5msLk6vA@mail.gmail.com>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+	 <1352354503.2190.7.camel@rzhang1-mobl4>
+	 <CAK44p22REJpaJiahX7sTofShNB-+OHVsULqHeuxFNu5msLk6vA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 09:41 PM, Azat Khuzhin wrote:
->   Anybody?
->
-> On Mon, Nov 5, 2012 at 7:28 PM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
->> After installing linux on macbook 9.2 (mid 2012), I have next errors
->> in dmesg log:
->>
->> [  389.623828] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=600
->> [  410.038465] NMI watchdog: enabled on all CPUs, permanently consumes
->> one hw-PMU counter.
->> [  410.075042] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->> [  410.483526] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=0
->> [ 1401.834509] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=1800
->> [ 1406.467268] NMI watchdog: enabled on all CPUs, permanently consumes
->> one hw-PMU counter.
->> [ 1406.506769] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->> [ 1406.590122] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=0
->> [ 1407.492260] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
->> action 0xe frozen
->> [ 1407.494441] ata2.00: irq_stat 0x00400000, PHY RDY changed
->> [ 1407.495238] ata2: SError: { PHYRdyChg CommWake }
->> [ 1407.496035] sr 1:0:0:0: CDB:
->> [ 1407.497333] Get event status notification: 4a 01 00 00 10 00 00 00 08 00
->> [ 1407.498285] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
->> pio 16392 in
->> [ 1407.498285]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
->> 0x10 (ATA bus error)
->> [ 1407.501987] ata2.00: status: { DRDY }
->> [ 1407.502882] ata2: hard resetting link
->> [ 1408.230302] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> [ 1408.233279] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->> filtered out
->> [ 1408.237467] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->> filtered out
->> [ 1408.239084] ata2.00: configured for UDMA/100
->> [ 1408.262238] ata2: EH complete
+On Thu, 2012-11-08 at 11:56 +0530, Amit Kachhap wrote:
+> On 8 November 2012 11:31, Zhang Rui <rui.zhang@intel.com> wrote:
+> > On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+> >> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
+> >> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
+> >> jump to the upper or lower cooling level instead of incremental increase
+> >> or decrease.
+> >
+> > IMO, what we need is a new more aggressive cooling governor which always
+> > uses upper limit when the temperature is raising and lower limit when
+> > the temperature is dropping.
+> Yes I agree that a new aggressive governor is the best approach but
+> then i thought adding a new trend type is a simple solution to achieve
+> this and since most of the governor logic might be same as the
+> step-wise governor. I have no objection in doing it through governor.
+> >
+hmmm,
+I think a more proper way is to set the cooling state to upper limit
+when it overheats and reduce the cooling state step by step when the
+temperature drops.
+what do you think?
 
-Is this after a resume? It could be that for some reason the SATA link 
-is a little bit unstable right after the machine powers up again. There 
-may not be much the kernel can do about this..
+thanks,
+rui
 
->> [ 3565.785609] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=1800
->> [ 3576.921499] NMI watchdog: enabled on all CPUs, permanently consumes
->> one hw-PMU counter.
->> [ 3576.958624] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->> [ 3577.114612] EXT4-fs (sda4): re-mounted. Opts:
->> errors=remount-ro,data=ordered,commit=0
->> [ 3577.923688] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
->> action 0xe frozen
->> [ 3577.925852] ata2.00: irq_stat 0x00400000, PHY RDY changed
->> [ 3577.926746] ata2: SError: { PHYRdyChg CommWake }
->> [ 3577.927544] sr 1:0:0:0: CDB:
->> [ 3577.928345] Get event status notification: 4a 01 00 00 10 00 00 00 08 00
->> [ 3577.929642] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
->> pio 16392 in
->> [ 3577.929642]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
->> 0x10 (ATA bus error)
->> [ 3577.932954] ata2.00: status: { DRDY }
->> [ 3577.934264] ata2: hard resetting link
->> [ 3578.662228] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> [ 3578.665211] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->> filtered out
->> [ 3578.669355] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->> filtered out
->> [ 3578.670969] ata2.00: configured for UDMA/100
->> [ 3578.694145] ata2: EH complete
->>
->> Is it linux driver, or maybe
->>
->> $ lspci # sata information only
->> 00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family
->> 6-port SATA Controller [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
->>          Subsystem: Intel Corporation Device 7270
->>          Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 20
->>          I/O ports at 2098 [size=8]
->>          I/O ports at 20bc [size=4]
->>          I/O ports at 2090 [size=8]
->>          I/O ports at 20b8 [size=4]
->>          I/O ports at 2060 [size=32]
->>          Memory at a0816000 (32-bit, non-prefetchable) [size=2K]
->>          Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
->>          Capabilities: [70] Power Management version 3
->>          Capabilities: [a8] SATA HBA v1.0
->>          Capabilities: [b0] PCI Advanced Features
->>          Kernel driver in use: ahci
->>
->> $ uname -a
->> Linux macbook-pro 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
->> 12:39:03 UTC 2012 x86_64 GNU/Linux
->> $ cat /etc/debian_version
->> wheezy/sid
->>
->> In OSX there is no errors with hard drive.
->>
->> What else can I do investigate this situation next?
->>
->> --
->> Azat Khuzhin
->
->
->
+> > I can write such a governor if you do not have time to.
+> ok. thanks
+> >
+> > thanks,
+> > rui
+> >>  This is needed for temperature sensors which support rising/falling
+> >> threshold interrupts and polling can be totally avoided.
+> >>
+> >
+> >
+> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> >> ---
+> >>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+> >>  include/linux/thermal.h     |    2 ++
+> >>  2 files changed, 17 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> >> index 1242cff..0d2d8d6 100644
+> >> --- a/drivers/thermal/step_wise.c
+> >> +++ b/drivers/thermal/step_wise.c
+> >> @@ -35,6 +35,10 @@
+> >>   *       state for this trip point
+> >>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+> >>   *       state for this trip point
+> >> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+> >> + *       state for this trip point
+> >> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+> >> + *       state for this trip point
+> >>   */
+> >>  static unsigned long get_target_state(struct thermal_instance *instance,
+> >>                                       enum thermal_trend trend)
+> >> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+> >>       } else if (trend == THERMAL_TREND_DROPPING) {
+> >>               cur_state = cur_state > instance->lower ?
+> >>                           (cur_state - 1) : instance->lower;
+> >> -     }
+> >> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
+> >> +             cur_state = instance->upper;
+> >> +     else if (trend == THERMAL_TREND_DROP_FULL)
+> >> +             cur_state = instance->lower;
+> >>
+> >>       return cur_state;
+> >>  }
+> >> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
+> >>  }
+> >>
+> >>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> >> -                             int trip, enum thermal_trip_type trip_type)
+> >> +                             int trip, enum thermal_trip_type trip_type,
+> >> +                             enum thermal_trend trend)
+> >>  {
+> >>       struct thermal_instance *instance;
+> >>       struct thermal_cooling_device *cdev;
+> >> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> >>               cdev = instance->cdev;
+> >>               cdev->ops->get_cur_state(cdev, &cur_state);
+> >>
+> >> -             instance->target = cur_state > instance->lower ?
+> >> +             if (trend == THERMAL_TREND_DROP_FULL)
+> >> +                     instance->target = instance->lower;
+> >> +             else
+> >> +                     instance->target = cur_state > instance->lower ?
+> >>                           (cur_state - 1) : THERMAL_NO_TARGET;
+> >>
+> >>               /* Deactivate a passive thermal instance */
+> >> @@ -133,7 +144,7 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
+> >>       if (tz->temperature >= trip_temp)
+> >>               update_instance_for_throttle(tz, trip, trip_type, trend);
+> >>       else
+> >> -             update_instance_for_dethrottle(tz, trip, trip_type);
+> >> +             update_instance_for_dethrottle(tz, trip, trip_type, trend);
+> >>
+> >>       mutex_unlock(&tz->lock);
+> >>  }
+> >> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> >> index 807f214..8bce3ec 100644
+> >> --- a/include/linux/thermal.h
+> >> +++ b/include/linux/thermal.h
+> >> @@ -68,6 +68,8 @@ enum thermal_trend {
+> >>       THERMAL_TREND_STABLE, /* temperature is stable */
+> >>       THERMAL_TREND_RAISING, /* temperature is raising */
+> >>       THERMAL_TREND_DROPPING, /* temperature is dropping */
+> >> +     THERMAL_TREND_RAISE_FULL, /* Apply highest cooling action*/
+> >> +     THERMAL_TREND_DROP_FULL, /* Apply lowest cooling action*/
+> >>  };
+> >>
+> >>  /* Events supported by Thermal Netlink */
+> >
+> >
+
 
