@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab2KIOLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 09:11:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24289 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2KIOLg (ORCPT
+	id S1753640Ab2KION4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 09:13:56 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63890 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab2KIONz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 09:11:36 -0500
-Date: Fri, 9 Nov 2012 09:11:27 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.7-rc5-tag
-Message-ID: <20121109141127.GA16019@phenom.dumpdata.com>
+	Fri, 9 Nov 2012 09:13:55 -0500
+Message-ID: <509D0F86.30607@gmail.com>
+Date: Fri, 09 Nov 2012 09:13:26 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Michel Lespinasse <walken@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 03/16] mm: check rb_subtree_gap correctness
+References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-4-git-send-email-walken@google.com>
+In-Reply-To: <1352155633-8648-4-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/05/2012 05:47 PM, Michel Lespinasse wrote:
+> When CONFIG_DEBUG_VM_RB is enabled, check that rb_subtree_gap is
+> correctly set for every vma and that mm->highest_vm_end is also correct.
+> 
+> Also add an explicit 'bug' variable to track if browse_rb() detected any
+> invalid condition.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
+> ---
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi all,
 
-Hey Linus,
-
-Please git pull the following tag:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.7-rc5-tag
-
-which has bug-fixes. There are three ARM compile fixes (we forgot to export
-certain functions and if the drivers are built as an module - we go belly-up).
-There is also an mismatch of irq_enter() / exit_idle() calls sequence - which were
-fixed some time ago in other piece of codes, but failed to appear in the Xen code.
-Lastly a fix for to help in the field with troubleshooting in case we cannot get
-the appropriate parameter and also fallback code when working with very old hypervisors.
-
-Please pull!
-
- arch/arm/xen/enlighten.c             |   11 +++++
- arch/x86/include/asm/xen/hypercall.h |   21 +++------
- drivers/xen/Makefile                 |    1 +
- drivers/xen/events.c                 |    2 +-
- drivers/xen/fallback.c               |   80 ++++++++++++++++++++++++++++++++++
- include/xen/hvm.h                    |   34 +++++++++++++-
- 6 files changed, 132 insertions(+), 17 deletions(-)
-
-Jan Beulich (1):
-      xen/hypercall: fix hypercall fallback code for very old hypervisors
-
-Konrad Rzeszutek Wilk (3):
-      xen/hvm: If we fail to fetch an HVM parameter print out which flag it is.
-      xen/generic: Disable fallback build on ARM.
-      xen/arm: Fix compile errors when drivers are compiled as modules.
-
-Mojiong Qiu (1):
-      xen/events: fix RCU warning, or Call idle notifier after irq_enter()
-
-Stefano Stabellini (1):
-      xen/arm: Fix compile errors when drivers are compiled as modules (export more).
+While fuzzing with trinity inside a KVM tools (lkvm) guest, using today's -next
+kernel, I'm getting these:
 
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature
+[  117.007714] free gap 7fba0dd1c000, correct 7fba0dcfb000
+[  117.019773] map_count 750 rb -1
+[  117.028362] ------------[ cut here ]------------
+[  117.029813] kernel BUG at mm/mmap.c:439!
+[  117.031024] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  117.032933] Dumping ftrace buffer:
+[  117.033972]    (ftrace buffer empty)
+[  117.035085] CPU 4
+[  117.035676] Pid: 6859, comm: trinity-child46 Tainted: G        W    3.7.0-rc4-next-20121109-sasha-00013-g9407f3c #124
+[  117.038217] RIP: 0010:[<ffffffff81236687>]  [<ffffffff81236687>] validate_mm+0x297/0x2c0
+[  117.041056] RSP: 0018:ffff880016a4fdf8  EFLAGS: 00010296
+[  117.041056] RAX: 0000000000000013 RBX: 00000000ffffffff RCX: 0000000000000006
+[  117.041056] RDX: 0000000000005270 RSI: ffff880024120910 RDI: 0000000000000286
+[  117.052131] RBP: ffff880016a4fe48 R08: 0000000000000000 R09: 0000000000000000
+[  117.052131] R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000002ee
+[  117.052131] R13: 00007fffea1fc000 R14: ffff88002412c000 R15: 0000000000000000
+[  117.052131] FS:  00007fba129db700(0000) GS:ffff880063600000(0000) knlGS:0000000000000000
+[  117.052131] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  117.052131] CR2: 0000000003323288 CR3: 00000000169b2000 CR4: 00000000000406e0
+[  117.052131] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  117.052131] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  117.052131] Process trinity-child46 (pid: 6859, threadinfo ffff880016a4e000, task ffff880024120000)
+[  117.052131] Stack:
+[  117.052131]  ffffffff8489e201 ffffffff81235aa0 ffff88000885cac8 0000000100000000
+[  117.052131]  ffffffff812361b9 ffff88002412c000 ffff88000885cac8 ffff88000885cdc8
+[  117.052131]  ffff88000885cdd0 ffff88002412c000 ffff880016a4fe98 ffffffff812367b4
+[  117.052131] Call Trace:
+[  117.052131]  [<ffffffff81235aa0>] ? vma_compute_subtree_gap+0x40/0x40
+[  117.052131]  [<ffffffff812361b9>] ? vma_gap_update+0x19/0x30
+[  117.052131]  [<ffffffff812367b4>] vma_link+0x94/0xe0
+[  117.052131]  [<ffffffff812386c4>] do_brk+0x2c4/0x380
+[  117.052131]  [<ffffffff812387bf>] ? sys_brk+0x3f/0x190
+[  117.052131]  [<ffffffff812388ce>] sys_brk+0x14e/0x190
+[  117.052131]  [<ffffffff83be2618>] tracesys+0xe1/0xe6
+[  117.052131] Code: d8 41 8b 76 60 39 de 74 1b 89 da 48 c7 c7 c6 d9 89 84 31 c0 e8 01 76 94 02 eb 10 66 0f 1f 84 00 00 00 00 00
+8b 45 c8 85 c0 74 18 <0f> 0b 4c 8d 48 e0 48 8b 70 e0 31 db c7 45 cc 00 00 00 00 e9 f4
+[  117.052131] RIP  [<ffffffff81236687>] validate_mm+0x297/0x2c0
+[  117.052131]  RSP <ffff880016a4fdf8>
+[  117.136092] ---[ end trace 5ce250e0bf6d040c ]---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Note that they are very easy to reproduce.
 
-iQEcBAEBAgAGBQJQnQ8LAAoJEFjIrFwIi8fJz3oH/1Ij7c2u0KlRYRvgipf6Gmv4
-emorzbz+I1CRQHEE9idaHCEI1tH/7Eb46L0Cq/P8sXZOaS2MhLbh1LRbnprExw7q
-6ur2Cms0acmxtnIvrz+l3ntAgfxO+D/a6lhd0rlNVGfa05BvP41xWdntrUdLgCI9
-4aDB0ZtSU70bbgSyRnLRENtqisD9tulg+q+XseSEYnbOnik3z9jJaFWtOibRwFZN
-udeFqbvji65KkpvvrjhvSx5MlMXx7oZRNdRmt9HP3wtTfSEhAxuXY/9nVv8NR6Xd
-J5lWACZC14pLFiL0HILbQmy3HHRaQQnjeOoRdvvuJubQSk2p9R0IUdKm5rXBkdA=
-=EBAd
------END PGP SIGNATURE-----
+Also, I see that lots of the code there has a local variable named 'bug' thats tracking
+whether we should BUG() later on. Why does it work that way and the BUG() isn't immediate?
 
---X1bOJ3K7DJ5YkBrT--
+
+Thanks,
+Sasha
