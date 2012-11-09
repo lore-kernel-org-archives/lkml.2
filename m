@@ -1,82 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2KIP3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:29:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35485 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab2KIP3A (ORCPT
+	id S1753559Ab2KIPcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:32:12 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42781 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab2KIPcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:29:00 -0500
-Date: Fri, 9 Nov 2012 09:28:54 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: pid/status: show all supplementary groups
-Message-ID: <20121109152854.GA6778@sergelap>
-References: <1352467863-1371-1-git-send-email-dedekind1@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352467863-1371-1-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Nov 2012 10:32:05 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: sameo@linux.intel.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] mfd: stmpe: Use devm_*() routines
+Date: Fri,  9 Nov 2012 21:01:54 +0530
+Message-Id: <07672d0597e23fbc580843193415b89e81dba326.1352475033.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Artem Bityutskiy (dedekind1@gmail.com):
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> We display a list of supplementary group for each process in the
-> /proc/<pid>/status. However, we show only the first 32 groups, not all of them.
-> 
-> Although this is rare, but sometimes processes do have more than 32
-> supplementary groups, and this kernel limitation breaks user-space apps
-> that rely on the group list in /proc/<pid>/status.
-> 
-> Number 32 comes from the internal NGROUPS_SMALL macro which defines the
-> length for the internal kernel "small" groups buffer. There is no apparent
-> reason to limit to this value.
-> 
-> This patch removes the 32 groups printing limit.
-> 
-> The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
-> which is currently set to 65536. And this is the maximum count of groups we
-> may possibly print.
-> 
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+This patch frees stmpe driver from tension of freeing resources :)
+devm_* derivatives of multiple routines are used while allocating resources,
+which would be freed automatically by kernel.
 
-The 'min' is older than git history, but at that dawn of time the code
-was just sprintf()ing into a large buffer.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/mfd/stmpe.c | 46 +++++++++++++++-------------------------------
+ 1 file changed, 15 insertions(+), 31 deletions(-)
 
-I don't *really* see a problem with this, though if someone did have 1000
-groups /proc/$$/status would be sort of annoying to read.  So on the one 
-hand adding a '...' in /proc/self/status after 32, and adding a /proc/$$/creds
-file seems more pleasant, but then you get into the whole adding files to
-/proc kerfuffle, so...
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index c94f521..761348c 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -1002,7 +1002,7 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 	if (!pdata)
+ 		return -EINVAL;
+ 
+-	stmpe = kzalloc(sizeof(struct stmpe), GFP_KERNEL);
++	stmpe = devm_kzalloc(ci->dev, sizeof(struct stmpe), GFP_KERNEL);
+ 	if (!stmpe)
+ 		return -ENOMEM;
+ 
+@@ -1024,11 +1024,12 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 		ci->init(stmpe);
+ 
+ 	if (pdata->irq_over_gpio) {
+-		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
++		ret = devm_gpio_request_one(ci->dev, pdata->irq_gpio,
++				GPIOF_DIR_IN, "stmpe");
+ 		if (ret) {
+ 			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
+ 					ret);
+-			goto out_free;
++			return ret;
+ 		}
+ 
+ 		stmpe->irq = gpio_to_irq(pdata->irq_gpio);
+@@ -1045,23 +1046,22 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 			dev_err(stmpe->dev,
+ 				"%s does not support no-irq mode!\n",
+ 				stmpe->variant->name);
+-			ret = -ENODEV;
+-			goto free_gpio;
++			return -ENODEV;
+ 		}
+ 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
+ 	}
+ 
+ 	ret = stmpe_chip_init(stmpe);
+ 	if (ret)
+-		goto free_gpio;
++		return ret;
+ 
+ 	if (stmpe->irq >= 0) {
+ 		ret = stmpe_irq_init(stmpe);
+ 		if (ret)
+-			goto free_gpio;
++			return ret;
+ 
+-		ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+-				pdata->irq_trigger | IRQF_ONESHOT,
++		ret = devm_request_threaded_irq(ci->dev, stmpe->irq, NULL,
++				stmpe_irq, pdata->irq_trigger | IRQF_ONESHOT,
+ 				"stmpe", stmpe);
+ 		if (ret) {
+ 			dev_err(stmpe->dev, "failed to request IRQ: %d\n",
+@@ -1071,25 +1071,16 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 	}
+ 
+ 	ret = stmpe_devices_init(stmpe);
+-	if (ret) {
+-		dev_err(stmpe->dev, "failed to add children\n");
+-		goto out_removedevs;
+-	}
+-
+-	return 0;
++	if (!ret)
++		return 0;
+ 
+-out_removedevs:
++	dev_err(stmpe->dev, "failed to add children\n");
+ 	mfd_remove_devices(stmpe->dev);
+-	if (stmpe->irq >= 0)
+-		free_irq(stmpe->irq, stmpe);
++
+ out_removeirq:
+ 	if (stmpe->irq >= 0)
+ 		stmpe_irq_remove(stmpe);
+-free_gpio:
+-	if (pdata->irq_over_gpio)
+-		gpio_free(pdata->irq_gpio);
+-out_free:
+-	kfree(stmpe);
++
+ 	return ret;
+ }
+ 
+@@ -1097,15 +1088,8 @@ int stmpe_remove(struct stmpe *stmpe)
+ {
+ 	mfd_remove_devices(stmpe->dev);
+ 
+-	if (stmpe->irq >= 0) {
+-		free_irq(stmpe->irq, stmpe);
++	if (stmpe->irq >= 0)
+ 		stmpe_irq_remove(stmpe);
+-	}
+-
+-	if (stmpe->pdata->irq_over_gpio)
+-		gpio_free(stmpe->pdata->irq_gpio);
+-
+-	kfree(stmpe);
+ 
+ 	return 0;
+ }
+-- 
+1.7.12.rc2.18.g61b472e
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-
-> Cc: stable@vger.kernel.org
-> ---
->  fs/proc/array.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> NOTE: I consider this to be a bug which breaks user-space, so I add -stable.
-> 
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index c1c207c..bd31e02 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -212,7 +212,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->  	group_info = cred->group_info;
->  	task_unlock(p);
->  
-> -	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
-> +	for (g = 0; g < group_info->ngroups; g++)
->  		seq_printf(m, "%d ",
->  			   from_kgid_munged(user_ns, GROUP_AT(group_info, g)));
->  	put_cred(cred);
-> -- 
-> 1.7.7.6
-> 
