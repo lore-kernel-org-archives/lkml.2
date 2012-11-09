@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab2KIRP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:15:28 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38699 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156Ab2KIRPX (ORCPT
+	id S1755245Ab2KIRP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:15:58 -0500
+Received: from mga14.intel.com ([143.182.124.37]:14742 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755085Ab2KIRP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:15:23 -0500
+	Fri, 9 Nov 2012 12:15:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
+   d="scan'208";a="166441144"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: Jason Gao <pkill.2012@gmail.com>, "Li, Sibai" <sibai.li@intel.com>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Subject: RE: SR-IOV problem with Intel 82599EB (not enough MMIO resources
+ for SR-IOV)
+Thread-Topic: SR-IOV problem with Intel 82599EB (not enough MMIO resources
+ for SR-IOV)
+Thread-Index: AQHNvaKW6TnehZ0GK0+VI29ItRc6WJfgUcUA///VtdCAAUCoAIAAVvAw
+Date: Fri, 9 Nov 2012 17:15:50 +0000
+Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A072D5683CF@ORSMSX106.amr.corp.intel.com>
+References: <201211081915083774239@gmail.com>	<509B962C.6070002@gmail.com>
+	<C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
+ <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
+In-Reply-To: <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <000001cdbe47$48f5dbc0$dae19340$%han@samsung.com>
-References: <000001cdbe47$48f5dbc0$dae19340$%han@samsung.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Nov 2012 10:15:01 -0700
-Message-ID: <CAErSpo7i+pZoPZWdJOLfJ4xJzs1NRVEmk1-N-NL+xK65coFZiA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix bit definitions of PCI_EXP_LNKCAP2 register
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 11:56 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> According to the PCIe 3.0 spec, PCI_EXP_LNKCAP2_SLS_2_5GB is
-> 1st bit of PCI_EXP_LNKCAP2 register, not 0th bit. So, the bit
-> definition of supported link speed vector should be fixed.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  include/uapi/linux/pci_regs.h |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-> index 20ae747..14a3184 100644
-> --- a/include/uapi/linux/pci_regs.h
-> +++ b/include/uapi/linux/pci_regs.h
-> @@ -544,9 +544,9 @@
->  #define  PCI_EXP_OBFF_WAKE_EN  0x6000  /* OBFF using WAKE# signaling */
->  #define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44      /* v2 endpoints end here */
->  #define PCI_EXP_LNKCAP2                44      /* Link Capability 2 */
-> -#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x01        /* Current Link Speed 2.5GT/s */
-> -#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x02        /* Current Link Speed 5.0GT/s */
-> -#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x04        /* Current Link Speed 8.0GT/s */
-> +#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x02        /* Current Link Speed 2.5GT/s */
-> +#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x04        /* Current Link Speed 5.0GT/s */
-> +#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x08        /* Current Link Speed 8.0GT/s */
->  #define  PCI_EXP_LNKCAP2_CROSSLINK 0x100 /* Crosslink supported */
->  #define PCI_EXP_LNKCTL2                48      /* Link Control 2 */
->  #define PCI_EXP_LNKSTA2                50      /* Link Status 2 */
+> -----Original Message-----
+> From: Jason Gao [mailto:pkill.2012@gmail.com]
+> Sent: Thursday, November 08, 2012 8:00 PM
+> To: Rose, Gregory V
+> Cc: Kirsher, Jeffrey T; linux-kernel; netdev; kvm; e1000-
+> devel@lists.sourceforge.net
+> Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources
+> for SR-IOV)
+> 
+> > The BIOS in your machine doesn't support SR-IOV.  You'll need to ask the
+> manufacturer for a BIOS upgrade, if in fact one is available.  Sometimes
+> they're not.
+> 
+> very thanks Greg,my server Dell R710 with latest BIOS version and option
+> for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused that Does
+> R710 provide full support for SR-IOV, kernel or  ixgbe driver's bug? but
+> I'm not sure where the problem lies,anyone has any
+> experience about this?   .
 
-I think this patch is correct, per spec sec 7.8.18.  If I apply it, I
-think the comments should also be changed to "Supported Link Speed"
-instead of "Current."
+I use a Dell R710 for all my SR-IOV testing and it works fine but I had to acquire a special BIOS from Dell to get it to work.  As I said, you'll want to contact them and make sure you've got the correct BIOS.
 
-The only in-tree user of these symbols is
-drm_pcie_get_speed_cap_mask().  Dave, can you ack/nack this?  I don't
-want to apply this if it's going to break something there.
+The error you're seeing, "not enough MMIO resources" has been an issue with the BIOS 100% of the times that we've run into it.  In any case, it is NOT a driver bug.  The driver has nothing to do with allocation of MMIO space reservation for VF devices.  The message you're seeing pops up when the driver calls pci_enable_sriov().  There is nothing the driver can do to force that call to be successful.
 
-Bjorn
+I've added Sibai Li to this response.  She should be able to get the BIOS version string off of one of our working Dell R710s.
+
+Sibai,
+
+Could you please reply to this message with that information?
+
+Thanks,
+
+- Greg
