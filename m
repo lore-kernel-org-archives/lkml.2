@@ -1,287 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab2KIDXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 22:23:23 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40102 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066Ab2KIDXV (ORCPT
+	id S1757538Ab2KIDXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 22:23:40 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36794 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756625Ab2KIDXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 22:23:21 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/vme: Use dev_ or pr_ printks in devices/vme_user.c
-Date: Fri,  9 Nov 2012 12:23:14 +0900
-Message-Id: <1352431394-2594-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 8 Nov 2012 22:23:38 -0500
+Date: Thu, 8 Nov 2012 19:23:10 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+ block the readers unnecessarily
+Message-ID: <20121109032310.GA2438@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121108134805.GA23870@redhat.com>
+ <20121108134849.GB23870@redhat.com>
+ <20121108120700.42d438f2.akpm@linux-foundation.org>
+ <20121108210843.GF2519@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com>
+ <20121109004136.GH2519@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121109004136.GH2519@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110903-2876-0000-0000-000001DB05BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_dbg(netdev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+On Thu, Nov 08, 2012 at 04:41:36PM -0800, Paul E. McKenney wrote:
+> On Thu, Nov 08, 2012 at 06:41:10PM -0500, Mikulas Patocka wrote:
+> > 
+> > 
+> > On Thu, 8 Nov 2012, Paul E. McKenney wrote:
+> > 
+> > > On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
+> > > > On Thu, 8 Nov 2012 14:48:49 +0100
+> > > > Oleg Nesterov <oleg@redhat.com> wrote:
+> > > > 
+> > > > > Currently the writer does msleep() plus synchronize_sched() 3 times
+> > > > > to acquire/release the semaphore, and during this time the readers
+> > > > > are blocked completely. Even if the "write" section was not actually
+> > > > > started or if it was already finished.
+> > > > > 
+> > > > > With this patch down_write/up_write does synchronize_sched() twice
+> > > > > and down_read/up_read are still possible during this time, just they
+> > > > > use the slow path.
+> > > > > 
+> > > > > percpu_down_write() first forces the readers to use rw_semaphore and
+> > > > > increment the "slow" counter to take the lock for reading, then it
+> > > > > takes that rw_semaphore for writing and blocks the readers.
+> > > > > 
+> > > > > Also. With this patch the code relies on the documented behaviour of
+> > > > > synchronize_sched(), it doesn't try to pair synchronize_sched() with
+> > > > > barrier.
+> > > > > 
+> > > > > ...
+> > > > >
+> > > > >  include/linux/percpu-rwsem.h |   83 +++++------------------------
+> > > > >  lib/Makefile                 |    2 +-
+> > > > >  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
+> > > > 
+> > > > The patch also uninlines everything.
+> > > > 
+> > > > And it didn't export the resulting symbols to modules, so it isn't an
+> > > > equivalent.  We can export thing later if needed I guess.
+> > > > 
+> > > > It adds percpu-rwsem.o to lib-y, so the CONFIG_BLOCK=n kernel will
+> > > > avoid including the code altogether, methinks?
+> > > > 
+> > > > >
+> > > > > ...
+> > > > >
+> > > > > --- /dev/null
+> > > > > +++ b/lib/percpu-rwsem.c
+> > > > > @@ -0,0 +1,123 @@
+> > > > 
+> > > > That was nice and terse ;)
+> > > > 
+> > > > > +#include <linux/percpu-rwsem.h>
+> > > > > +#include <linux/rcupdate.h>
+> > > > > +#include <linux/sched.h>
+> > > > 
+> > > > This list is nowhere near sufficient to support this file's
+> > > > requirements.  atomic.h, percpu.h, rwsem.h, wait.h, errno.h and plenty
+> > > > more.  IOW, if it compiles, it was sheer luck.
+> > > > 
+> > > > > +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	brw->fast_read_ctr = alloc_percpu(int);
+> > > > > +	if (unlikely(!brw->fast_read_ctr))
+> > > > > +		return -ENOMEM;
+> > > > > +
+> > > > > +	mutex_init(&brw->writer_mutex);
+> > > > > +	init_rwsem(&brw->rw_sem);
+> > > > > +	atomic_set(&brw->slow_read_ctr, 0);
+> > > > > +	init_waitqueue_head(&brw->write_waitq);
+> > > > > +	return 0;
+> > > > > +}
+> > > > > +
+> > > > > +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	free_percpu(brw->fast_read_ctr);
+> > > > > +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
+> > > > > +}
+> > > > > +
+> > > > > +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
+> > > > > +{
+> > > > > +	bool success = false;
+> > > > > +
+> > > > > +	preempt_disable();
+> > > > > +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+> > > > > +		__this_cpu_add(*brw->fast_read_ctr, val);
+> > > > > +		success = true;
+> > > > > +	}
+> > > > > +	preempt_enable();
+> > > > > +
+> > > > > +	return success;
+> > > > > +}
+> > > > > +
+> > > > > +/*
+> > > > > + * Like the normal down_read() this is not recursive, the writer can
+> > > > > + * come after the first percpu_down_read() and create the deadlock.
+> > > > > + */
+> > > > > +void percpu_down_read(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	if (likely(update_fast_ctr(brw, +1)))
+> > > > > +		return;
+> > > > > +
+> > > > > +	down_read(&brw->rw_sem);
+> > > > > +	atomic_inc(&brw->slow_read_ctr);
+> > > > > +	up_read(&brw->rw_sem);
+> > > > > +}
+> > > > > +
+> > > > > +void percpu_up_read(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	if (likely(update_fast_ctr(brw, -1)))
+> > > > > +		return;
+> > > > > +
+> > > > > +	/* false-positive is possible but harmless */
+> > > > > +	if (atomic_dec_and_test(&brw->slow_read_ctr))
+> > > > > +		wake_up_all(&brw->write_waitq);
+> > > > > +}
+> > > > > +
+> > > > > +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	unsigned int sum = 0;
+> > > > > +	int cpu;
+> > > > > +
+> > > > > +	for_each_possible_cpu(cpu) {
+> > > > > +		sum += per_cpu(*brw->fast_read_ctr, cpu);
+> > > > > +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+> > > > > +	}
+> > > > > +
+> > > > > +	return sum;
+> > > > > +}
+> > > > > +
+> > > > > +/*
+> > > > > + * A writer takes ->writer_mutex to exclude other writers and to force the
+> > > > > + * readers to switch to the slow mode, note the mutex_is_locked() check in
+> > > > > + * update_fast_ctr().
+> > > > > + *
+> > > > > + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
+> > > > > + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
+> > > > > + * counter it represents the number of active readers.
+> > > > > + *
+> > > > > + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
+> > > > > + * then waits until the slow counter becomes zero.
+> > > > > + */
+> > > > 
+> > > > Some overview of how fast/slow_read_ctr are supposed to work would be
+> > > > useful.  This comment seems to assume that the reader already knew
+> > > > that.
+> > > > 
+> > > > > +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> > > > > +{
+> > > > > +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> > > > > +	mutex_lock(&brw->writer_mutex);
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> > > > > +	 *    so that update_fast_ctr() can't succeed.
+> > > > > +	 *
+> > > > > +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> > > > > +	 *    update_fast_ctr().
+> > > > > +	 *
+> > > > > +	 * 3. Ensures that if any reader has exited its critical section via
+> > > > > +	 *    fast-path, it executes a full memory barrier before we return.
+> > > > > +	 */
+> > > > > +	synchronize_sched();
+> > > > 
+> > > > Here's where I get horridly confused.  Your patch completely deRCUifies
+> > > > this code, yes?  Yet here we're using an RCU primitive.  And we seem to
+> > > > be using it not as an RCU primitive but as a handy thing which happens
+> > > > to have desirable side-effects.  But the implementation of
+> > > > synchronize_sched() differs considerably according to which rcu
+> > > > flavor-of-the-minute you're using.
+> > > 
+> > > The trick is that the preempt_disable() call in update_fast_ctr()
+> > > acts as an RCU read-side critical section WRT synchronize_sched().
+> > > 
+> > > The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
+> > > synchronize_rcu() in place of preempt_disable()/preempt_enable() and
+> > > synchronize_sched().  The real-time guys would prefer the change
+> > > to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
+> > > you mention it.
+> > > 
+> > > Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
+> > > and synchronize_rcu()?
+> > 
+> > preempt_disable/preempt_enable is faster than 
+> > rcu_read_lock/rcu_read_unlock for preemptive kernels.
+> 
+> Significantly faster in this case?  Can you measure the difference
+> from a user-mode test?
+> 
+> Hmmm.  I have been avoiding moving the preemptible-RCU state from
+> task_struct to thread_info, but if the difference really matters,
+> perhaps that needs to be done.
 
-and add pr_fmt.
+Actually, the fact that __this_cpu_add() will malfunction on some
+architectures is preemption is not disabled seems a more compelling
+reason to keep preempt_enable() than any performance improvement.  ;-)
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/vme/devices/vme_user.c |   73 +++++++++++++++-----------------
- 1 file changed, 34 insertions(+), 39 deletions(-)
+							Thanx, Paul
 
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index c3f94f3..e3731eb 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -15,6 +15,8 @@
-  * option) any later version.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/cdev.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-@@ -170,7 +172,7 @@ static int vme_user_open(struct inode *inode, struct file *file)
- 	mutex_lock(&image[minor].mutex);
- 	/* Allow device to be opened if a resource is needed and allocated. */
- 	if (minor < CONTROL_MINOR && image[minor].resource == NULL) {
--		printk(KERN_ERR "No resources allocated for device\n");
-+		pr_err("No resources allocated for device\n");
- 		err = -EINVAL;
- 		goto err_res;
- 	}
-@@ -225,13 +227,13 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
- 			(unsigned long)copied);
- 		if (retval != 0) {
- 			copied = (copied - retval);
--			printk(KERN_INFO "User copy failed\n");
-+			pr_info("User copy failed\n");
- 			return -EINVAL;
- 		}
- 
- 	} else {
- 		/* XXX Need to write this */
--		printk(KERN_INFO "Currently don't support large transfers\n");
-+		pr_info("Currently don't support large transfers\n");
- 		/* Map in pages from userspace */
- 
- 		/* Call vme_master_read to do the transfer */
-@@ -265,7 +267,7 @@ static ssize_t resource_from_user(unsigned int minor, const char __user *buf,
- 			image[minor].kern_buf, copied, *ppos);
- 	} else {
- 		/* XXX Need to write this */
--		printk(KERN_INFO "Currently don't support large transfers\n");
-+		pr_info("Currently don't support large transfers\n");
- 		/* Map in pages from userspace */
- 
- 		/* Call vme_master_write to do the transfer */
-@@ -286,7 +288,7 @@ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
- 	retval = __copy_to_user(buf, image_ptr, (unsigned long)count);
- 	if (retval != 0) {
- 		retval = (count - retval);
--		printk(KERN_WARNING "Partial copy to userspace\n");
-+		pr_warn("Partial copy to userspace\n");
- 	} else
- 		retval = count;
- 
-@@ -305,7 +307,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char __user *buf,
- 	retval = __copy_from_user(image_ptr, buf, (unsigned long)count);
- 	if (retval != 0) {
- 		retval = (count - retval);
--		printk(KERN_WARNING "Partial copy to userspace\n");
-+		pr_warn("Partial copy to userspace\n");
- 	} else
- 		retval = count;
- 
-@@ -476,7 +478,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_from_user(&irq_req, argp,
- 						sizeof(struct vme_irq_id));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -503,8 +505,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_to_user(argp, &master,
- 				sizeof(struct vme_master));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy to "
--					"userspace\n");
-+				pr_warn("Partial copy to userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -515,8 +516,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 
- 			copied = copy_from_user(&master, argp, sizeof(master));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from "
--					"userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -546,8 +546,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_to_user(argp, &slave,
- 				sizeof(struct vme_slave));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy to "
--					"userspace\n");
-+				pr_warn("Partial copy to userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -558,8 +557,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 
- 			copied = copy_from_user(&slave, argp, sizeof(slave));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from "
--					"userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -599,8 +597,8 @@ static void buf_unalloc(int num)
- {
- 	if (image[num].kern_buf) {
- #ifdef VME_DEBUG
--		printk(KERN_DEBUG "UniverseII:Releasing buffer at %p\n",
--			image[num].pci_buf);
-+		pr_debug("UniverseII:Releasing buffer at %p\n",
-+			 image[num].pci_buf);
- #endif
- 
- 		vme_free_consistent(image[num].resource, image[num].size_buf,
-@@ -612,7 +610,7 @@ static void buf_unalloc(int num)
- 
- #ifdef VME_DEBUG
- 	} else {
--		printk(KERN_DEBUG "UniverseII: Buffer not allocated\n");
-+		pr_debug("UniverseII: Buffer not allocated\n");
- #endif
- 	}
- }
-@@ -629,11 +627,10 @@ static int __init vme_user_init(void)
- {
- 	int retval = 0;
- 
--	printk(KERN_INFO "VME User Space Access Driver\n");
-+	pr_info("VME User Space Access Driver\n");
- 
- 	if (bus_num == 0) {
--		printk(KERN_ERR "%s: No cards, skipping registration\n",
--			driver_name);
-+		pr_err("No cards, skipping registration\n");
- 		retval = -ENODEV;
- 		goto err_nocard;
- 	}
-@@ -642,8 +639,8 @@ static int __init vme_user_init(void)
- 	 * in future revisions if that ever becomes necessary.
- 	 */
- 	if (bus_num > VME_USER_BUS_MAX) {
--		printk(KERN_ERR "%s: Driver only able to handle %d buses\n",
--			driver_name, VME_USER_BUS_MAX);
-+		pr_err("Driver only able to handle %d buses\n",
-+		       VME_USER_BUS_MAX);
- 		bus_num = VME_USER_BUS_MAX;
- 	}
- 
-@@ -683,8 +680,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 
- 	/* Save pointer to the bridge device */
- 	if (vme_user_bridge != NULL) {
--		printk(KERN_ERR "%s: Driver can only be loaded for 1 device\n",
--			driver_name);
-+		dev_err(&vdev->dev, "Driver can only be loaded for 1 device\n");
- 		err = -EINVAL;
- 		goto err_dev;
- 	}
-@@ -707,8 +703,8 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	err = register_chrdev_region(MKDEV(VME_MAJOR, 0), VME_DEVS,
- 		driver_name);
- 	if (err) {
--		printk(KERN_WARNING "%s: Error getting Major Number %d for "
--		"driver.\n", driver_name, VME_MAJOR);
-+		dev_warn(&vdev->dev, "Error getting Major Number %d for driver.\n",
-+			 VME_MAJOR);
- 		goto err_region;
- 	}
- 
-@@ -718,7 +714,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	vme_user_cdev->owner = THIS_MODULE;
- 	err = cdev_add(vme_user_cdev, MKDEV(VME_MAJOR, 0), VME_DEVS);
- 	if (err) {
--		printk(KERN_WARNING "%s: cdev_all failed\n", driver_name);
-+		dev_warn(&vdev->dev, "cdev_all failed\n");
- 		goto err_char;
- 	}
- 
-@@ -732,16 +728,16 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].resource = vme_slave_request(vme_user_bridge,
- 			VME_A24, VME_SCT);
- 		if (image[i].resource == NULL) {
--			printk(KERN_WARNING "Unable to allocate slave "
--				"resource\n");
-+			dev_warn(&vdev->dev,
-+				 "Unable to allocate slave resource\n");
- 			goto err_slave;
- 		}
- 		image[i].size_buf = PCI_BUF_SIZE;
- 		image[i].kern_buf = vme_alloc_consistent(image[i].resource,
- 			image[i].size_buf, &image[i].pci_buf);
- 		if (image[i].kern_buf == NULL) {
--			printk(KERN_WARNING "Unable to allocate memory for "
--				"buffer\n");
-+			dev_warn(&vdev->dev,
-+				 "Unable to allocate memory for buffer\n");
- 			image[i].pci_buf = 0;
- 			vme_slave_free(image[i].resource);
- 			err = -ENOMEM;
-@@ -758,15 +754,15 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].resource = vme_master_request(vme_user_bridge,
- 			VME_A32, VME_SCT, VME_D32);
- 		if (image[i].resource == NULL) {
--			printk(KERN_WARNING "Unable to allocate master "
--				"resource\n");
-+			dev_warn(&vdev->dev,
-+				 "Unable to allocate master resource\n");
- 			goto err_master;
- 		}
- 		image[i].size_buf = PCI_BUF_SIZE;
- 		image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
- 		if (image[i].kern_buf == NULL) {
--			printk(KERN_WARNING "Unable to allocate memory for "
--				"master window buffers\n");
-+			dev_warn(&vdev->dev,
-+				 "Unable to allocate memory for master window buffers\n");
- 			err = -ENOMEM;
- 			goto err_master_buf;
- 		}
-@@ -775,7 +771,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	/* Create sysfs entries - on udev systems this creates the dev files */
- 	vme_user_sysfs_class = class_create(THIS_MODULE, driver_name);
- 	if (IS_ERR(vme_user_sysfs_class)) {
--		printk(KERN_ERR "Error creating vme_user class.\n");
-+		dev_err(&vdev->dev, "Error creating vme_user class.\n");
- 		err = PTR_ERR(vme_user_sysfs_class);
- 		goto err_class;
- 	}
-@@ -803,8 +799,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].device = device_create(vme_user_sysfs_class, NULL,
- 					MKDEV(VME_MAJOR, i), NULL, name, num);
- 		if (IS_ERR(image[i].device)) {
--			printk(KERN_INFO "%s: Error creating sysfs device\n",
--				driver_name);
-+			dev_info(&vdev->dev, "Error creating sysfs device\n");
- 			err = PTR_ERR(image[i].device);
- 			goto err_sysfs;
- 		}
--- 
-1.7.9.5
+> > Regarding real-time response - the region blocked with 
+> > preempt_disable/preempt_enable contains a few instructions (one test for 
+> > mutex_is_locked and one increment of percpu variable), so it isn't any 
+> > threat to real time response. There are plenty of longer regions in the 
+> > kernel that are executed with interrupts or preemption disabled.
+> 
+> Careful.  The real-time guys might take the same every-little-bit approach
+> to latency that you seem to be taking for CPU cycles.  ;-)
+> 
+> 							Thanx, Paul
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
