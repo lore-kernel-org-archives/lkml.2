@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2KIQlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:41:55 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55370 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753896Ab2KIQlx (ORCPT
+	id S1754582Ab2KIQms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:42:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51789 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753877Ab2KIQmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:41:53 -0500
-Date: Fri, 9 Nov 2012 11:41:51 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1352428604.7176.103.camel@yhuang-dev>
-Message-ID: <Pine.LNX.4.44L0.1211091131190.1702-100000@iolanthe.rowland.org>
+	Fri, 9 Nov 2012 11:42:47 -0500
+Date: Fri, 9 Nov 2012 16:42:45 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, swarren@nvidia.com,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH] spi: make sure all transfer has bits_per_word set
+Message-ID: <20121109164245.GR23807@opensource.wolfsonmicro.com>
+References: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7UIJfHqpdi+oBJdT"
+Content-Disposition: inline
+In-Reply-To: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Nov 2012, Huang Ying wrote:
 
-> On Thu, 2012-11-08 at 12:07 -0500, Alan Stern wrote:
-> > On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
-> > 
-> > > > > > is it a good idea to allow to set device state to SUSPENDED if the device
-> > > > > > is disabled?
-> > > > > 
-> > > > > No, it is not.  The status should always be ACTIVE as long as usage_count > 0.
-> > 
-> > That isn't strictly true, because pm_runtime_get_noresume violates this
-> > rule.  What the PM core actually does is prevent a transition from the
-> > ACTIVE state to the SUSPENDING/SUSPENDED state if usage_count > 0,
-> > _provided_ runtime PM is enabled.  There's no such restriction when it
-> > is disabled.
-> 
-> Usage count may be not a issue for the end user.  But "on" in "control"
-> sysfs file + SUSPENDED can be confusing for the end user.  Maybe we need
-> to check dev->power.runtime_auto in pm_runtime_set_suspended().
+--7UIJfHqpdi+oBJdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are confusing the issue by raising two separate (though related)
-questions.
+On Fri, Nov 09, 2012 at 02:36:45PM +0530, Laxman Dewangan wrote:
+> When spi client does the spi transfer and does not sets
+> the bits_per_word for each transfer then set it as default
+> of spi device in spi core before calling low level transfer.
+>=20
+> Removing the similar code from spi-tegra20-slink driver as
+> it is not required.
 
-The first question: How should the PCI subsystem prevent the parents of 
-driverless VGA devices from being runtime suspended while userspace is 
-accessing them?
+Applied, thanks.
 
-The second question: Should the PM core allow devices that are disabled
-for runtime PM to be in the SUSPENDED state when
-dev->power.runtime_auto is clear?
+--7UIJfHqpdi+oBJdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Assuming we don't want to allow this, there's a third question: Should
-pm_runtime_allow call pm_runtime_set_suspended if the device is
-disabled?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Alan Stern
+iQIcBAEBAgAGBQJQnTJ3AAoJELSic+t+oim9IwwP/3usqsl6LKvu5vDSQeCgZwcu
+dPZ0/u5geVA+yypNAXGS6v0RPVX40JvxSx18DseRYfFCgH3JRN6rm1PMG8Z7VCfv
+m180ZdzkYO1iXiFbEQILn4OhwWvEQAMWw51EF2qpD2qPjvo/Sq0S5U6bF7JLWIft
+OOyA3cd7zJM4CDDKCuhrIUAYvOWpgrpVy3L7OCpD51cBWm9SPalTOE77kro2fp4/
+lVK+wcAmCoXGfalpRUBY95tPzQ0FtaRo6N6XKV3apBmNL/24HzmO9FwgX1vcTMyp
+wO4fqW/qV913cTbJ/c2Xwi1gJPxNbkR4HTiikNhYkcO1A0UYE6oB75+1389RGoKN
+2Cin+LvNReNv/ec0rraA/1l415P697iM0yj788EI9EORYf/MItzXFjQBKQ2Z5D3/
+2JYFGBh9lnoDiu1JnXiD9FHbc/V4zA6nlArkl67z8W0iskrxYWEds3YrSG22NyY/
+9j5m4/0tsGhW1D3Anyfoeye8FcyzdIB5oRht2m5vxe1WnyY3dadPfmaa24vouMle
+LDfaxhk2v8D5IhC5/WeNcraBSPKEGkNu3SUdlDy5N95OnL9OZBo5IdEQJip3B9AI
+DElmAGApjg/Tuz4u9gzCu84n1JX/j8zfAhsR/onyztu3xrzsjKB1QqHPHpA/a1D5
+5IhijB7wZfcgQWGtJMv9
+=rBYB
+-----END PGP SIGNATURE-----
 
+--7UIJfHqpdi+oBJdT--
