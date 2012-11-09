@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2KIP0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:26:39 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52532 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2KIP0h (ORCPT
+	id S1754221Ab2KIP1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:27:24 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38299 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2KIP1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:26:37 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: vinod.koul@intel.com
-Cc: djbw@fb.com, linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Deepak Sikri <deepak.sikri@st.com>
-Subject: [PATCH] dmaengine/dmatest: terminate transfers only in case of errors
-Date: Fri,  9 Nov 2012 20:56:29 +0530
-Message-Id: <1f83c56ebbe66c00acc7901613da1dc6fdba4a6b.1352474736.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Fri, 9 Nov 2012 10:27:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
+References: <201211081915083774239@gmail.com> <509B962C.6070002@gmail.com>
+ <C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com> <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 9 Nov 2012 08:26:59 -0700
+Message-ID: <CAErSpo4xn9t=4yXGLdPQMtUJF=n38tYrMutAoj7NCsLUzQEbcg@mail.gmail.com>
+Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources for SR-IOV)
+To: Jason Gao <pkill.2012@gmail.com>
+Cc: "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shiraz Hashim <shiraz.hashim@st.com>
+[+ linux-pci, Yinghai]
 
-dmatest erroneously terminated transfers in normal cases also leading to
-test failures for multiple threads over a channel. Fix this and
-terminate transfers only in case of errors.
+On Thu, Nov 8, 2012 at 8:59 PM, Jason Gao <pkill.2012@gmail.com> wrote:
+>> The BIOS in your machine doesn't support SR-IOV.  You'll need to ask the manufacturer for a BIOS upgrade, if in fact one is available.  Sometimes they're not.
+>
+> very thanks Greg,my server Dell R710 with latest BIOS version and
+> option for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused
+> that Does R710 provide full support for SR-IOV, kernel or  ixgbe
+> driver's bug? but I'm not sure where the problem lies,anyone has any
+> experience about this?   .
 
-Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
-Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
----
- drivers/dma/dmatest.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Linux normally uses the resource assignments done by the BIOS, but it
+is possible for the kernel to reassign those.  We don't have good
+automatic support for that yet, but on a recent upstream kernel, you
+can try "pci=realloc".  I doubt this option is in CentOS 6.3, though.
 
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index 8f130d4e..ce58b8e 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -509,7 +509,9 @@ err_srcs:
- 			thread_name, total_tests, failed_tests, ret);
- 
- 	/* terminate all transfers on specified channels */
--	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+	if (ret)
-+		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+
- 	if (iterations > 0)
- 		while (!kthread_should_stop()) {
- 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
--- 
-1.7.12.rc2.18.g61b472e
-
+If an upstream kernel with "pci=realloc" still doesn't work, please
+post the entire dmesg log.
