@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab2KIQPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:15:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34748 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754355Ab2KIQPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:15:30 -0500
-Date: Fri, 9 Nov 2012 16:15:28 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        broonie@opensource.wolfsonmicro.com
-Subject: [PATCH v2] mfd: Only unregister platform devices allocated by the
-	mfd core
-Message-ID: <20121109161528.GA674@opensource.wolfsonmicro.com>
+	id S1754402Ab2KIQUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:20:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752420Ab2KIQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:20:42 -0500
+Date: Fri, 9 Nov 2012 17:20:12 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v4 -tip 3/3] AHCI: Support multiple MSIs
+Message-ID: <20121109162012.GB31918@dhcp-26-207.brq.redhat.com>
+References: <cover.1349517905.git.agordeev@redhat.com>
+ <b9a66434759a77b2fa870565ab9708fc286d7368.1349517905.git.agordeev@redhat.com>
+ <20121025090957.GA7424@gmail.com>
+ <20121025092555.GF16350@dhcp-26-207.brq.redhat.com>
+ <20121025093626.GG16350@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20121025093626.GG16350@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mfd_remove_devices would iterate over all devices sharing a parent with
-an mfd device regardless of whether they were allocated by the mfd core
-or not. This especially caused problems when the device structure was
-not contained within a platform_device, because to_platform_device is
-used on each device pointer.
+On Thu, Oct 25, 2012 at 11:36:26AM +0200, Alexander Gordeev wrote:
+> On Thu, Oct 25, 2012 at 11:25:55AM +0200, Alexander Gordeev wrote:
+> > On Thu, Oct 25, 2012 at 11:09:57AM +0200, Ingo Molnar wrote:
+> > > Has Jeff acked this patch?
+> > 
+> > Yep,
+> > http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/00795.html
+> 
+> Ah.. sorry - Jeff acked v3, not the recent one.
+> Jeff, would you keep your ack for this patch?
 
-This patch defines a device_type for mfd devices and checks this is
-present from mfd_remove_devices_fn before processing the device.
+Hi Jeff,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/mfd-core.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+Could you please review this patch?
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index f8b7771..7604f4e 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -21,6 +21,10 @@
- #include <linux/irqdomain.h>
- #include <linux/of.h>
- 
-+static struct device_type mfd_dev_type = {
-+	.name	= "mfd_device",
-+};
-+
- int mfd_cell_enable(struct platform_device *pdev)
- {
- 	const struct mfd_cell *cell = mfd_get_cell(pdev);
-@@ -91,6 +95,7 @@ static int mfd_add_device(struct device *parent, int id,
- 		goto fail_device;
- 
- 	pdev->dev.parent = parent;
-+	pdev->dev.type = &mfd_dev_type;
- 
- 	if (parent->of_node && cell->of_compatible) {
- 		for_each_child_of_node(parent->of_node, np) {
-@@ -204,10 +209,16 @@ EXPORT_SYMBOL(mfd_add_devices);
- 
- static int mfd_remove_devices_fn(struct device *dev, void *c)
- {
--	struct platform_device *pdev = to_platform_device(dev);
--	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct platform_device *pdev;
-+	const struct mfd_cell *cell;
- 	atomic_t **usage_count = c;
- 
-+	if (dev->type != &mfd_dev_type)
-+		return 0;
-+
-+	pdev = to_platform_device(dev);
-+	cell = mfd_get_cell(pdev);
-+
- 	/* find the base address of usage_count pointers (for freeing) */
- 	if (!*usage_count || (cell->usage_count < *usage_count))
- 		*usage_count = cell->usage_count;
 -- 
-1.7.2.5
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
