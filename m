@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2KIMmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 07:42:32 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:48874 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab2KIMma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 07:42:30 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] drbd-8.4.2 for the linux-3.8 merge window
-Date: Fri, 09 Nov 2012 13:42:26 +0100
-Message-ID: <4229483.8Hqs9YQUgX@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-32-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <509CEB9F.8080705@kernel.dk>
-References: <3042269.jrNem7z1LI@fat-tyre> <509CEB9F.8080705@kernel.dk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752464Ab2KIMsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 07:48:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750825Ab2KIMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 07:48:18 -0500
+From: Tomas Hozza <thozza@redhat.com>
+To: olaf@aepfle.de, kys@microsoft.com
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
+        Tomas Hozza <thozza@redhat.com>
+Subject: [PATCH] Tools: hv: Fix for long file names from readdir
+Date: Fri,  9 Nov 2012 13:47:21 +0100
+Message-Id: <1352465241-31001-1-git-send-email-thozza@redhat.com>
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E0242D@CH1PRD0310MB381.namprd03.prod.outlook.com>
+References: <426367E2313C2449837CD2DE46E7EAF930E0242D@CH1PRD0310MB381.namprd03.prod.outlook.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> > It has the sysfs bits in again. The reason for that is that we want to
-> > expose more information by that, and remove the /proc/drbd with the
-> > next evolutionary step. -- In case this is a show stopper, let me
-> > remove the sysfs bits.
-> 
-> The exact same sysfs bits I complained about last time? If yes, then I
-> don't understand why you haven't changed yet. Or why you are trying to
-> push the same bits again that got rejected last time.
-> 
+kvp_get_if_name and kvp_mac_to_if_name copy strings into statically
+sized buffers which could be too small to store really long names.
 
-I had the impression it was rejected because I submitted the pull request
-too late to you. In the sense of, it might go in, if it gets submitted
-for inclusion before the merge window opens...
-Apparently my impression was wrong. You will get an updated pull-request 
-with the sysfs bits removed
+Buffer sizes have been changed to PATH_MAX, include "limits.h" where
+PATH_MAX is defined was added and length checks ware added via snprintf.
 
-> > Here is the git-pull-request test:
-> > (The patch subjects removed to make the mail more digestible)
-> 
-> Please don't do that, it basically makes the pull request useless! A few
-> hundred extra lines is not an issue.
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c | 26 +++++++++-----------------
+ 1 file changed, 9 insertions(+), 17 deletions(-)
 
-Ok.
-
-I intend to send the updated pull-request later today.
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 13c2a14..54ecb95 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -44,6 +44,7 @@
+ #include <fcntl.h>
+ #include <dirent.h>
+ #include <net/if.h>
++#include <limits.h>
+ 
+ /*
+  * KVP protocol: The user mode component first registers with the
+@@ -592,26 +593,22 @@ static char *kvp_get_if_name(char *guid)
+ 	DIR *dir;
+ 	struct dirent *entry;
+ 	FILE    *file;
+-	char    *p, *q, *x;
++	char    *p, *x;
+ 	char    *if_name = NULL;
+ 	char    buf[256];
+ 	char *kvp_net_dir = "/sys/class/net/";
+-	char dev_id[256];
++	char dev_id[PATH_MAX];
+ 
+ 	dir = opendir(kvp_net_dir);
+ 	if (dir == NULL)
+ 		return NULL;
+ 
+-	snprintf(dev_id, sizeof(dev_id), "%s", kvp_net_dir);
+-	q = dev_id + strlen(kvp_net_dir);
+-
+ 	while ((entry = readdir(dir)) != NULL) {
+ 		/*
+ 		 * Set the state for the next pass.
+ 		 */
+-		*q = '\0';
+-		strcat(dev_id, entry->d_name);
+-		strcat(dev_id, "/device/device_id");
++		snprintf(dev_id, sizeof(dev_id), "%s%s/device/device_id", kvp_net_dir,
++				entry->d_name);
+ 
+ 		file = fopen(dev_id, "r");
+ 		if (file == NULL)
+@@ -684,28 +681,23 @@ static char *kvp_mac_to_if_name(char *mac)
+ 	DIR *dir;
+ 	struct dirent *entry;
+ 	FILE    *file;
+-	char    *p, *q, *x;
++	char    *p, *x;
+ 	char    *if_name = NULL;
+ 	char    buf[256];
+ 	char *kvp_net_dir = "/sys/class/net/";
+-	char dev_id[256];
++	char dev_id[PATH_MAX];
+ 	int i;
+ 
+ 	dir = opendir(kvp_net_dir);
+ 	if (dir == NULL)
+ 		return NULL;
+ 
+-	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
+-	q = dev_id + strlen(kvp_net_dir);
+-
+ 	while ((entry = readdir(dir)) != NULL) {
+ 		/*
+ 		 * Set the state for the next pass.
+ 		 */
+-		*q = '\0';
+-
+-		strcat(dev_id, entry->d_name);
+-		strcat(dev_id, "/address");
++		snprintf(dev_id, sizeof(dev_id), "%s%s/address", kvp_net_dir,
++                entry->d_name);
+ 
+ 		file = fopen(dev_id, "r");
+ 		if (file == NULL)
+-- 
+1.7.11.7
 
