@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2KIQxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:53:52 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52730 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab2KIQxs (ORCPT
+	id S1754711Ab2KIQyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:54:03 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:38859 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab2KIQx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:53:48 -0500
+	Fri, 9 Nov 2012 11:53:57 -0500
+Message-ID: <509D34DA.5090303@linux.vnet.ibm.com>
+Date: Fri, 09 Nov 2012 22:22:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vgYKv92x8qk5dbdA8UJNJPVxT_1p5Mn58NfBfVF3x+iQ@mail.gmail.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <3455360.Z6cZSC3BtR@vostro.rjw.lan> <CAErSpo5xEO4M_Fb0dJ6w7Qxck-0RcKKwQjKj1QZgFxhof7X5Rw@mail.gmail.com>
- <1523215.Pon1eKPQDb@vostro.rjw.lan> <20121107095608.GX24532@intel.com>
- <CAErSpo5My6+ypp9zsxR8vh8k1px0otOWfAcacWaLNs2xjsc7UA@mail.gmail.com>
- <20121108200445.GC16012@intel.com> <CAErSpo7WT21rZ10vx9A4d8VtVaJB7FLeJqVAxKmZrZDy01FPZQ@mail.gmail.com>
- <CACxGe6v6zHcq=99JVvhNBe8DuWhyaZ_ojFai9=J2Yuu2TZw1MQ@mail.gmail.com>
- <CAErSpo4V-0Tnaf__fKUHM_69tBvfLySWzaoCWha9gimx0va1-w@mail.gmail.com> <CACxGe6vgYKv92x8qk5dbdA8UJNJPVxT_1p5Mn58NfBfVF3x+iQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Nov 2012 09:53:26 -0700
-Message-ID: <CAErSpo6z26RFZKaO4PuT9L+c3pz9By0UjundbKR7R+0X3dQ5MQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
+ support Memory Power Management
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com> <509D2B9B.4090305@linux.vnet.ibm.com> <509D3088.2060507@linux.vnet.ibm.com> <509D32C2.2090104@linux.vnet.ibm.com>
+In-Reply-To: <509D32C2.2090104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+x-cbid: 12110916-8256-0000-0000-000004F2EBB8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 9, 2012 at 9:43 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, Nov 9, 2012 at 4:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Fri, Nov 9, 2012 at 8:45 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> On Fri, Nov 9, 2012 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> [+cc Greg, Peter, Tony since they acked the original patch [1]]
+On 11/09/2012 10:13 PM, Srivatsa S. Bhat wrote:
+> On 11/09/2012 10:04 PM, Srivatsa S. Bhat wrote:
+>> On 11/09/2012 09:43 PM, Dave Hansen wrote:
+>>> On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
+>>>> FWIW, kernbench is actually (and surprisingly) showing a slight performance
+>>>> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
+>>>> my other email to Dave.
 >>>>
->>>> On Thu, Nov 8, 2012 at 1:04 PM, Mika Westerberg
->>>> <mika.westerberg@linux.intel.com> wrote:
->>>>> On Thu, Nov 08, 2012 at 12:32:25PM -0700, Bjorn Helgaas wrote:
->>>>>> Struct device_driver is a generic structure, so it seems strange to
->>>>>> have to include non-generic things like of_device_id and now
->>>>>> acpi_match_table there.
->>>>>
->>>>> Yes, but in a sense the DT and ACPI are "generic". So that they are used to
->>>>> describe the configuration of a machine.
+>>>> https://lkml.org/lkml/2012/11/7/428
 >>>>
->>>> What I meant by "generic" was "useful across all architectures."  The
->>>> new acpi_match_table and acpi_handle fields [1] are not generic in
->>>> that sense because they're present on all architectures but used only
->>>> on x86 and ia64.  The existing of_match_table and of_node are
->>>> similarly unused on many architectures.  This doesn't seem like a
->>>> scalable strategy to me.  Are we going to add a pnpbios_node for x86
->>>> PNPBIOS machines without ACPI, a pdc_hpa for parisc machines with PDC,
->>>> etc.?
->>>>
->>>> [1] https://patchwork.kernel.org/patch/1677221/
+>>>> I don't think I can dismiss it as an experimental error, because I am seeing
+>>>> those results consistently.. I'm trying to find out what's behind that.
 >>>
->>> Ultimately yes, I think that is what we want to do,
+>>> The only numbers in that link are in the date. :)  Let's see the
+>>> numbers, please.
+>>>
 >>
->> Just to be clear, you think we *should* add things like pnpbios_node,
->> pdc_hpa, etc., to struct device, one field for every scheme of telling
->> the OS about non-enumerable devices, where only one of the N fields is
->> used on any given machine?  That seems surprising to me, but maybe I
->> just need to be educated :)
->
-> Ah, I see what you're asking.
->
-> In the short term, yes but only because we don't have any other
-> alternative. What I'd really rather have is a safe way to attach datum
-> (ie. acpi_device or device_node) to a struct device and get it back
-> later in a type safe way.
+>> Sure :) The reason I didn't post the numbers very eagerly was that I didn't
+>> want it to look ridiculous if it later turned out to be really an error in the
+>> experiment ;) But since I have seen it happening consistently I think I can
+>> post the numbers here with some non-zero confidence.
+>>
+>>> If you really have performance improvement to the memory allocator (or
+>>> something else) here, then surely it can be pared out of your patches
+>>> and merged quickly by itself.  Those kinds of optimizations are hard to
+>>> come by!
+>>>
+>>
+>> :-)
+>>
+>> Anyway, here it goes:
+>>
+>> Test setup:
+>> ----------
+>> x86 2-socket quad-core machine. (CONFIG_NUMA=n because I figured that my
+>> patchset might not handle NUMA properly). Mem region size = 512 MB.
+>>
+> 
+> For CONFIG_NUMA=y on the same machine, the difference between the 2 kernels
+> was much lesser, but nevertheless, this patchset performed better. I wouldn't
+> vouch that my patchset handles NUMA correctly, but here are the numbers from
+> that run anyway (at least to show that I really found the results to be
+> repeatable):
+> 
+> Kernbench log for Vanilla 3.7-rc3
+> =================================
+> Kernel: 3.7.0-rc3-vanilla-numa-default
+> Average Optimal load -j 32 Run (std deviation):
+> Elapsed Time 589.058 (0.596171)
+> User Time 7461.26 (1.69702)
+> System Time 1072.03 (1.54704)
+> Percent CPU 1448.2 (1.30384)
+> Context Switches 2.14322e+06 (4042.97)
+> Sleeps 1847230 (2614.96)
+> 
+> Kernbench log for Vanilla 3.7-rc3
+> =================================
 
-Yep, *that* makes perfect sense to me.  Something along these lines, maybe:
+Oops, that title must have been "for sorted-buddy patchset" of course..
 
-    #define dev_is_acpi(d)    ((d)->bus == &acpi_bus_type)
-    #define dev_acpi_handle(d)    (dev_is_acpi(d) ? (acpi_handle)
-d->datum : NULL)
+> Kernel: 3.7.0-rc3-sorted-buddy-numa-default
+> Average Optimal load -j 32 Run (std deviation):
+> Elapsed Time 577.182 (0.713772)
+> User Time 7315.43 (3.87226)
+> System Time 1043 (1.12855)
+> Percent CPU 1447.6 (2.19089)
+> Context Switches 2117022 (3810.15)
+> Sleeps 1.82966e+06 (4149.82)
+> 
+> 
+
+Regards,
+Srivatsa S. Bhat
+
