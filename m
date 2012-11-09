@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab2KIBWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 20:22:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38379 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757400Ab2KIBWl (ORCPT
+	id S1161005Ab2KIBiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 20:38:25 -0500
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:55508 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753898Ab2KIBiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 20:22:41 -0500
-Message-ID: <509C5ACD.4040706@oracle.com>
-Date: Fri, 09 Nov 2012 09:22:21 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: "Dave, Tushar N" <tushar.n.dave@intel.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 8 Nov 2012 20:38:24 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH V2 3/5] checkpatch: Remove reference to feature-removal-schedule.txt.
+Date: Fri,  9 Nov 2012 09:38:12 +0800
+Message-Id: <1352425092-2568-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20121108174702.GL3066@dm>
+References: <20121108174702.GL3066@dm>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 42.120.72.201 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/12 04:35, Dave, Tushar N wrote:
-> Are you sure this is not similar issue as before that you reported.
-> i.e. 
+From: Tao Ma <boyu.mt@taobao.com>
 
-Tushar,
+In 9c0ece069, Linus removes feature-removal-schedule.txt from Documentation,
+but there is still some reference to this file. So remove them.
 
-Thanks for your quick response, I'll check with customer if they can modify the Max
-payload size from BIOS, this time issue hit on HP's server.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ scripts/checkpatch.pl |   37 -------------------------------------
+ 1 files changed, 0 insertions(+), 37 deletions(-)
 
-Thanks again,
-Joe
-
-> On Mon, 2012-07-09 at 16:51 +0800, Joe Jin wrote:
->> > I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when 
->> > doing scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, 
->> > just copy a big file (>500M) from another server will hit it at once.
-> All devices in path from root complex to 82571, should have *same* max payload size otherwise it can cause hang. 
-> Can you double check this?
-> 
-
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 21a9f5d..b56c5e0 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -352,27 +352,6 @@ sub deparenthesize {
+ 
+ $chk_signoff = 0 if ($file);
+ 
+-my @dep_includes = ();
+-my @dep_functions = ();
+-my $removal = "Documentation/feature-removal-schedule.txt";
+-if ($tree && -f "$root/$removal") {
+-	open(my $REMOVE, '<', "$root/$removal") ||
+-				die "$P: $removal: open failed - $!\n";
+-	while (<$REMOVE>) {
+-		if (/^Check:\s+(.*\S)/) {
+-			for my $entry (split(/[, ]+/, $1)) {
+-				if ($entry =~ m@include/(.*)@) {
+-					push(@dep_includes, $1);
+-
+-				} elsif ($entry !~ m@/@) {
+-					push(@dep_functions, $entry);
+-				}
+-			}
+-		}
+-	}
+-	close($REMOVE);
+-}
+-
+ my @rawlines = ();
+ my @lines = ();
+ my $vname;
+@@ -3181,22 +3160,6 @@ sub process {
+ 			}
+ 		}
+ 
+-# don't include deprecated include files (uses RAW line)
+-		for my $inc (@dep_includes) {
+-			if ($rawline =~ m@^.\s*\#\s*include\s*\<$inc>@) {
+-				ERROR("DEPRECATED_INCLUDE",
+-				      "Don't use <$inc>: see Documentation/feature-removal-schedule.txt\n" . $herecurr);
+-			}
+-		}
+-
+-# don't use deprecated functions
+-		for my $func (@dep_functions) {
+-			if ($line =~ /\b$func\b/) {
+-				ERROR("DEPRECATED_FUNCTION",
+-				      "Don't use $func(): see Documentation/feature-removal-schedule.txt\n" . $herecurr);
+-			}
+-		}
+-
+ # no volatiles please
+ 		my $asm_volatile = qr{\b(__asm__|asm)\s+(__volatile__|volatile)\b};
+ 		if ($line =~ /\bvolatile\b/ && $line !~ /$asm_volatile/) {
 -- 
-Oracle <http://www.oracle.com>
-Joe Jin | Software Development Senior Manager | +8610.6106.5624
-ORACLE | Linux and Virtualization
-No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+1.7.0.4
+
