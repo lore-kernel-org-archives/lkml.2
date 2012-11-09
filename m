@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab2KICUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 21:20:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48793 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab2KICUg (ORCPT
+	id S1757507Ab2KICUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 21:20:54 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48745 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757066Ab2KICUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 21:20:36 -0500
-Message-ID: <509C686F.20400@gmail.com>
-Date: Fri, 09 Nov 2012 10:20:31 +0800
+	Thu, 8 Nov 2012 21:20:52 -0500
+Message-ID: <509C687E.1080106@gmail.com>
+Date: Fri, 09 Nov 2012 10:20:46 +0800
 From: Shan Wei <shanwei88@gmail.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, timo.teras@iki.fi,
-        steffen.klassert@secunet.com, NetDev <netdev@vger.kernel.org>,
+To: venkat.x.venkatsubra@oracle.com, David Miller <davem@davemloft.net>,
+        rds-devel@oss.oracle.com, NetDev <netdev@vger.kernel.org>,
         Kernel-Maillist <linux-kernel@vger.kernel.org>,
         cl@linux-foundation.org, Shan Wei <shanwei88@gmail.com>
-Subject: [PATCH v3 1/9] net: core: use this_cpu_ptr per-cpu helper
+Subject: [PATCH v3 2/9] net: rds: use this_cpu_ptr per-cpu helper
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,30 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Shan Wei <davidshan@tencent.com>
 
-flush_tasklet is a struct, not a pointer in percpu var.
-so use this_cpu_ptr to get the member pointer.
-
 Signed-off-by: Shan Wei <davidshan@tencent.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
 ---
- net/core/flow.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+no changes vs v2.
+---
+ net/rds/ib_recv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/core/flow.c b/net/core/flow.c
-index e318c7e..b0901ee 100644
---- a/net/core/flow.c
-+++ b/net/core/flow.c
-@@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
- static void flow_cache_flush_per_cpu(void *data)
- {
- 	struct flow_flush_info *info = data;
--	int cpu;
- 	struct tasklet_struct *tasklet;
+diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
+index 8d19491..a4a5064 100644
+--- a/net/rds/ib_recv.c
++++ b/net/rds/ib_recv.c
+@@ -423,7 +423,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
  
--	cpu = smp_processor_id();
--	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
-+	tasklet = this_cpu_ptr(&info->cache->percpu->flush_tasklet);
- 	tasklet->data = (unsigned long)info;
- 	tasklet_schedule(tasklet);
- }
+ 	local_irq_save(flags);
+ 
+-	chp = per_cpu_ptr(cache->percpu, smp_processor_id());
++	chp = this_cpu_ptr(cache->percpu);
+ 	if (!chp->first)
+ 		INIT_LIST_HEAD(new_item);
+ 	else /* put on front */
 -- 
 1.7.1
