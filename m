@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab2KIMs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 07:48:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2KIMsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 07:48:21 -0500
-Date: Fri, 9 Nov 2012 07:47:15 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
- block the readers unnecessarily
-In-Reply-To: <20121108120700.42d438f2.akpm@linux-foundation.org>
-Message-ID: <Pine.LNX.4.64.1211090743210.10254@file.rdu.redhat.com>
-References: <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com>
- <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com>
- <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
- <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com>
- <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org>
+	id S1752573Ab2KIM44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 07:56:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60031 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2KIM4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 07:56:55 -0500
+Message-ID: <509CFD70.5020807@kernel.dk>
+Date: Fri, 09 Nov 2012 13:56:16 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] drbd-8.4.2 for the linux-3.8 merge window
+References: <3042269.jrNem7z1LI@fat-tyre> <509CEB9F.8080705@kernel.dk> <4229483.8Hqs9YQUgX@fat-tyre>
+In-Reply-To: <4229483.8Hqs9YQUgX@fat-tyre>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 8 Nov 2012, Andrew Morton wrote:
-
-> On Thu, 8 Nov 2012 14:48:49 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
+On 2012-11-09 13:42, Philipp Reisner wrote:
+> [...]
+>>> It has the sysfs bits in again. The reason for that is that we want to
+>>> expose more information by that, and remove the /proc/drbd with the
+>>> next evolutionary step. -- In case this is a show stopper, let me
+>>> remove the sysfs bits.
+>>
+>> The exact same sysfs bits I complained about last time? If yes, then I
+>> don't understand why you haven't changed yet. Or why you are trying to
+>> push the same bits again that got rejected last time.
+>>
 > 
-> > Currently the writer does msleep() plus synchronize_sched() 3 times
-> > to acquire/release the semaphore, and during this time the readers
-> > are blocked completely. Even if the "write" section was not actually
-> > started or if it was already finished.
-> > 
-> > With this patch down_write/up_write does synchronize_sched() twice
-> > and down_read/up_read are still possible during this time, just they
-> > use the slow path.
-> > 
-> > percpu_down_write() first forces the readers to use rw_semaphore and
-> > increment the "slow" counter to take the lock for reading, then it
-> > takes that rw_semaphore for writing and blocks the readers.
-> > 
-> > Also. With this patch the code relies on the documented behaviour of
-> > synchronize_sched(), it doesn't try to pair synchronize_sched() with
-> > barrier.
-> > 
-> > ...
-> >
-> >  include/linux/percpu-rwsem.h |   83 +++++------------------------
-> >  lib/Makefile                 |    2 +-
-> >  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
-> 
-> The patch also uninlines everything.
-> 
-> And it didn't export the resulting symbols to modules, so it isn't an
-> equivalent.  We can export thing later if needed I guess.
-> 
-> It adds percpu-rwsem.o to lib-y, so the CONFIG_BLOCK=n kernel will
-> avoid including the code altogether, methinks?
+> I had the impression it was rejected because I submitted the pull request
+> too late to you. In the sense of, it might go in, if it gets submitted
+> for inclusion before the merge window opens...
+> Apparently my impression was wrong. You will get an updated pull-request 
+> with the sysfs bits removed
 
-If you want to use percpu-rwsem only for block devices then you can remove 
-Oleg's patch at all. Oleg's optimizations are useless for block device use 
-case (the contention between readers and writers is very rare and it 
-doesn't matter if readers are blocked in case of contention). I suppose 
-that Oleg made the optimizations because he wants to use percpu-rwsem for 
-something else - if not, you can drop the patch and revert to the previois 
-version that is simpler.
+It was late, but that was a different issue. I just re-read the Oct 3rd
+emails on this, and I definitely did recommend that you looked at
+debugfs or similar for this. We're not putting another top-queue level
+directory in for a block device that is specific to drbd.
 
-Mikulas
+-- 
+Jens Axboe
+
