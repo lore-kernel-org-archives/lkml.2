@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2KIP0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:26:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527Ab2KIP0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:26:16 -0500
-Date: Fri, 9 Nov 2012 12:58:29 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 7/7] mm: add vm event counters for balloon pages
- compaction
-Message-ID: <20121109145829.GC4308@optiplex.redhat.com>
-References: <cover.1352256081.git.aquini@redhat.com>
- <8dde7996f3e36a5efbe569afe1aadfc84355e79e.1352256088.git.aquini@redhat.com>
- <20121109122033.GR3886@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109122033.GR3886@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754203Ab2KIP0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:26:39 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52532 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2KIP0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 10:26:37 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: djbw@fb.com, linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Deepak Sikri <deepak.sikri@st.com>
+Subject: [PATCH] dmaengine/dmatest: terminate transfers only in case of errors
+Date: Fri,  9 Nov 2012 20:56:29 +0530
+Message-Id: <1f83c56ebbe66c00acc7901613da1dc6fdba4a6b.1352474736.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 12:20:33PM +0000, Mel Gorman wrote:
-> On Wed, Nov 07, 2012 at 01:05:54AM -0200, Rafael Aquini wrote:
-> > This patch introduces a new set of vm event counters to keep track of
-> > ballooned pages compaction activity.
-> > 
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> 
-> Other than confirming the thing actually works can any meaningful
-> conclusions be drawn from this counters?
-> 
-> I know I have been inconsistent on this myself in the past but recently
-> I've been taking the attitude that the counters can be used to fit into
-> some other metric. I'm looking to change the compaction counters to be
-> able to build a basic cost model for example. The same idea could be
-> used for balloons of course but it's a less critical path than
-> compaction for THP for example.
-> 
-> Assuming it builds and all the defines are correct when the feature is
-> not configured (I didn't check) then there is nothing wrong with the
-> patch. However, if it was dropped would it make life very hard or would
-> you notice?
-> 
+From: Shiraz Hashim <shiraz.hashim@st.com>
 
-Originally, I proposed this patch as droppable (and it's still droppable)
-because its major purpose was solely to show the thing working consistently
+dmatest erroneously terminated transfers in normal cases also leading to
+test failures for multiple threads over a channel. Fix this and
+terminate transfers only in case of errors.
 
-OTOH, it might make the life easier to spot breakages if it remains with the
-merged bits, and per a reviewer request I removed its 'DROP BEFORE MERGE'
-disclaimer.
+Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
+Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+---
+ drivers/dma/dmatest.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-   https://lkml.org/lkml/2012/8/8/616
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 8f130d4e..ce58b8e 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -509,7 +509,9 @@ err_srcs:
+ 			thread_name, total_tests, failed_tests, ret);
+ 
+ 	/* terminate all transfers on specified channels */
+-	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++	if (ret)
++		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++
+ 	if (iterations > 0)
+ 		while (!kthread_should_stop()) {
+ 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
+-- 
+1.7.12.rc2.18.g61b472e
 
--- Rafael
