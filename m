@@ -1,124 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2KIPrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:47:21 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40547 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab2KIPrT (ORCPT
+	id S1754140Ab2KIPxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:53:36 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.31]:24229
+	"EHLO na01-by2-obe.mail.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753522Ab2KIPxe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:47:19 -0500
+	Fri, 9 Nov 2012 10:53:34 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.244.37;KIP:(null);UIP:(null);(null);H:CH1PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0l1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Tomas Hozza <thozza@redhat.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH 3/3] tools/hv: Fix permissions of created directory and
+ files
+Thread-Topic: [PATCH 3/3] tools/hv: Fix permissions of created directory and
+ files
+Thread-Index: AQHNvoMQyMnEVewl5EiCUA9D+G/hnpfhp1Kw
+Date: Fri, 9 Nov 2012 15:52:40 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E22351@CH1PRD0310MB381.namprd03.prod.outlook.com>
+References: <1352469681-4432-1-git-send-email-thozza@redhat.com>
+ <1352469681-4432-3-git-send-email-thozza@redhat.com>
+In-Reply-To: <1352469681-4432-3-git-send-email-thozza@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [70.192.70.131]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <509D1BC5.7020208@linux.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-2-git-send-email-mika.westerberg@linux.intel.com>
- <CACxGe6tVcqoSg03JtcTdLP5GakyKM-24D8uK2mQj+1iiSE8Yog@mail.gmail.com>
- <20121108193808.GB16012@intel.com> <509D0F1F.70001@linux.intel.com>
- <CACxGe6sgNEqEhiXC_EoBuAg+QaaRis_4eRb7s5k0MKtfZF-3dA@mail.gmail.com> <509D1BC5.7020208@linux.intel.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 9 Nov 2012 15:46:58 +0000
-X-Google-Sender-Auth: KcK9fBIMYzS9E-kR4-_KvJNw1U8
-Message-ID: <CACxGe6uBqSZfHTDPAr3xTXTjOYrrn-AAM5kRkZ=nfVPGCT6z=Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-OrganizationHeadersPreserved: CH1PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464001)(377454001)(51704002)(54316001)(51856001)(76482001)(50466001)(47776002)(74662001)(16676001)(53806001)(50986001)(74502001)(47446002)(31966008)(54356001)(6806001)(47736001)(23726001)(47976001)(4396001)(44976002)(46102001)(49866001)(5343635001)(46406002)(33656001)(55846005);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 06607E485E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 9, 2012 at 3:05 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-> On 11/09/2012 04:18 PM, Grant Likely wrote:
->>
->> On Fri, Nov 9, 2012 at 2:11 PM, Mathias Nyman
->> <mathias.nyman@linux.intel.com>  wrote:
->>>
->>> On 11/08/2012 09:38 PM, Mika Westerberg wrote:
->>> ...
->>>
->>>>>> +#include<linux/errno.h>
->>>>>> +#include<linux/gpio.h>
->>>>>> +#include<linux/module.h>
->>>>>> +#include<linux/acpi_gpio.h>
->>>>>> +#include<linux/acpi.h>
->>>>>> +
->>>>>> +static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
->>>>>> +{
->>>>>> +       acpi_handle handle = data;
->>>>>> +       acpi_handle gc_handle;
->>>>>> +
->>>>>> +       if (!gc->dev)
->>>>>> +               return false;
->>>>>> +
->>>>>> +       gc_handle = gc->dev->acpi_handle;
->>>>>> +       if (!gc_handle)
->>>>>> +               return false;
->>>>>
->>>>>
->>>>>
->>>>> This test is redundant with the next one... unless 'handle' is also
->>>>> NULL
->>>>> :-)
->>>>>
->>>>> Is it at all possible for multiple gpiochips to be used for a single
->>>>> ACPI gpio controller node? Such as if the gpio controller has multiple
->>>>> banks that should be controlled separately? If so then this won't be
->>>>> sufficient. I've got the same issue with DT support where the find
->>>>> function needs to also check if the pin is provided by that specific
->>>>> gpiochip.
->>>>
->>>>
->>>>
->>>> AFAIK no but I'll let Mathias to answer that as he knows this better.
->>>
->>>
->>>
->>> I'm interpreting it the same way as Mika, max one actual controller per
->>> ACPI
->>> device node
->>>
->>> The path (called ResourceSource in ACPI5 specs) in GpioIO/GpioInt
->>> resources
->>> is a "string which uniquely identifies the GPIO controller referred to by
->>> this descriptor."  The pin number is zero based controller relative.
->>>
->>> The  ACPI device controller node includes all other resources needed by
->>> the
->>> controller driver (ioport/mem base, range, interrupt, and Hardware ID
->>> used
->>> to pair with a driver)
->>>
->>> Checked a board with two identical gpio controllers on it and it had two
->>> separate ACPI device node entries. (with only different io address base
->>> and
->>> interrupt resources)
->>
->>
->> That's not really the situation that I'm thinking about. What I mean
->> is for a gpio controller that is more convenient for Linux to support
->> using multiple gpiochips (Linux internal detail), even though there it
->> is described with a single ACPI node.
->>
->
-> Ok, now I get it.
->
-> Yes, in case a driver uses several gpiochips internally for different banks
-> of a controller then all would have the same acpi_handle.
-> acpi_get_gpio() would use the gpiobase of the first gpiochip that matches
-> the handle, even if it's the wrong one.
->
-> I guess It's possible to write a driver like that.
-> The only acpi enumerated driver with the acpi_handle set (soon coming to
-> upstream) is not done like that.
->
-> Do you think this is a case that should be solved now?  or just expect acpi
-> gpio device driver to not use several gpiochips in one driver?
 
-Look at what the DT code does. It is actually pretty easy to solve. I
-would do it now, but I won't block the changes if you do not.
 
-g.
+> -----Original Message-----
+> From: Tomas Hozza [mailto:thozza@redhat.com]
+> Sent: Friday, November 09, 2012 9:01 AM
+> To: olaf@aepfle.de; KY Srinivasan; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; apw@canonical.com;
+> jasowang@redhat.com; ben@decadent.org.uk
+> Cc: Tomas Hozza
+> Subject: [PATCH 3/3] tools/hv: Fix permissions of created directory and files
+> 
+> From: Ben Hutchings <ben@decadent.org.uk>
+> 
+> It's silly to create directories without execute permission, or to
+> give permissions to 'other' but not the group-owner.
+> 
+> Write the permissions in octal and 'ls -l' format since these are much
+> easier to read than the named macros.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Signed-off-by: Tomas Hozza <thozza@redhat.com>
+
+Acked-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  tools/hv/hv_kvp_daemon.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> index 573b9aa..9609858 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -236,7 +236,7 @@ static int kvp_file_init(void)
+>  	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
+> 
+>  	if (access("/var/lib/hyperv", F_OK)) {
+> -		if (mkdir("/var/lib/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
+> +		if (mkdir("/var/lib/hyperv", 0755 /* rwxr-xr-x */)) {
+>  			syslog(LOG_ERR, " Failed to create /var/lib/hyperv");
+>  			exit(EXIT_FAILURE);
+>  		}
+> @@ -247,7 +247,7 @@ static int kvp_file_init(void)
+>  		records_read = 0;
+>  		num_blocks = 1;
+>  		sprintf(fname, "/var/lib/hyperv/.kvp_pool_%d", i);
+> -		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR |
+> S_IROTH);
+> +		fd = open(fname, O_RDWR | O_CREAT, 0644 /* rw-r--r-- */);
+> 
+>  		if (fd == -1)
+>  			return 1;
+> --
+> 1.7.11.7
+> 
+> 
+
+
