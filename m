@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab2KIPIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:08:15 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:40636 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2KIPIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:08:13 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qA9F7IH2007622, This message is released by code: ctaloc0852
-Message-ID: <509D1C25.9040909@realsil.com.cn>
-Date: Fri, 9 Nov 2012 23:07:17 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH v7 0/3] Add modules to support realtek PCIE card reader
-References: <cover.1351481260.git.wei_wang@realsil.com.cn> <508F4A88.8010207@realsil.com.cn> <87r4o56w1f.fsf@octavius.laptop.org>
-In-Reply-To: <87r4o56w1f.fsf@octavius.laptop.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754033Ab2KIPKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:10:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1230 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2KIPKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 10:10:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
+   d="asc'?scan'208";a="239538057"
+Message-ID: <1352473841.1814.35.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: gpmi: remove unneccessary header
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <b32955@freescale.com>
+Cc: Huang Shijie <shijie8@gmail.com>, linux-mtd@lists.infradead.org,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 09 Nov 2012 17:10:41 +0200
+In-Reply-To: <508B4586.4090600@freescale.com>
+References: <1350147809-19616-1-git-send-email-shijie8@gmail.com>
+	 <1351258892.1823.20.camel@sauron.fi.intel.com>
+	 <508B4586.4090600@freescale.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-WYpBHUCrzl7YdTg67Y8r"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 11/08/2012 03:41 AM, Chris Ball 写道:
-> Hi,
->
-> On Mon, Oct 29 2012, wwang wrote:
-> I'm happy with the MMC portion.  I think we're mainly waiting for the
-> MFD patch -- Samuel, do you have any remaining review comments that need
-> to be fixed?
->
-> Thanks,
->
-> - Chris.
 
-Hi Chris:
+--=-WYpBHUCrzl7YdTg67Y8r
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I have noticed that the file rtsx_pci_sdmmc.c in your mmc-next branch is 
-still v6 patch.  In v7 patch, this MMC part has also been modified to 
-comply with my MFD portion.  So please update to this version.
+On Sat, 2012-10-27 at 10:23 +0800, Huang Shijie wrote:
+> =E4=BA=8E 2012=E5=B9=B410=E6=9C=8826=E6=97=A5 21:41, Artem Bityutskiy =E5=
+=86=99=E9=81=93:=20
+> > On Sat, 2012-10-13 at 13:03 -0400, Huang Shijie wrote:
+> > > The whole gpmi-nand driver has turned to pure devicetree supported.
+> > > So the linux/mtd/gpmi-nand.h is not neccessary now. Just remove it,
+> > > and move some macros to the gpmi-nand driver itself.
+> > >=20
+> > > Signed-off-by: Huang Shijie <shijie8@gmail.com>
+> > I cannot compile-test it because the MXS configuration file I always
+> I tested this patch in mxs and mx6q with the linux-next-20121026.
+> I do not meet such compiler errors.
+>=20
+> I think the l2-mtd tree is lack of some patches in other people's
+> tree.
+> In the current l2-mtd tree, even i DISABLE the gpmi driver, the kernel
+> still
+> meets the compiler errors.
 
-And one more question. Samuel have merged all of my patch set in his 
-for-next branch, including the MMC part.  I don't know whether this will 
-conflict with your tree in the next merge.
+It is based on v3.7-rc4. Once the patches you refer are in Linus's tree,
+let me know. Thanks!
 
-Hi Samuel:
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Since the whole patch set has been merged in your for-next branch, does 
-it mean that you will help to merge all of the three parts to linus's tree?
+--=-WYpBHUCrzl7YdTg67Y8r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Thank you!
-Wei WANG
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAABAgAGBQJQnRzxAAoJECmIfjd9wqK0Bm0P/RbBnqyO69W/ZXKXxyyCuwLM
+fw/HiNUXM3QrgE2SYaZ0IBoXKbkdZ0ZtJl5r6ZRVKRfHA/NSQgmXEIcMdbTz0Zbq
++YjPjQ4bw4bRb/pdGcd0EcELvxA+/xgbvt3bjTWYbHknDlPQchcpaY8GCIhtDT0o
+hvyMuuekERZi9f/fCkEZeQ/iHdr7SXfQnOe8R6+CZUSWvPBJz+Gf1T6HJkijKQeR
+Yiufix/hpaMwaxEgxhLgTpDmg31FzlB29S6QQ2FbCtDYkSDpEj2ZARdaMGMh98v4
+b0gxhKb+fIiuvYqBmSMnJij1nXdmQqtesq/AyFdF79P6cDvjxpzIUXG7TiuKNkFZ
+Tz4V0IHbdj8RhM5D3N5wUkkb4yhoPJ8umJmIHCWnYGZ8tR/kHe0ZIdPRmb12RNs8
+KexM6sVREe+okJawE4zqjfD5Qk/RlhJQ2RykZq14jUMSf7rYFpnXDsUu4psas4kY
++JoRX/cMMgnLl/FQihiVo/MJBvlSFkRPVroNmKnIIhoLijY/O5jISGJ6ve+YnNEC
+hKKOlGpmkh7unuEZXjms6V6SXA1Z9hqayeo7wXg0nCbUtKtOEFIKoz08KM9AQUDz
+GLZLlMTpI8ABnmR0jyBb3h1xFMPSVV2ds9QAYsV3sJPovlXK9LtxGQRYjUv3sm7S
+p4hef9YHEexlmqZlOa26
+=OJI7
+-----END PGP SIGNATURE-----
 
-
-
+--=-WYpBHUCrzl7YdTg67Y8r--
 
