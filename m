@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab2KIJtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:49:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36207 "EHLO mx2.suse.de"
+	id S1751754Ab2KIJvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:51:14 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:54483 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab2KIJt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:49:28 -0500
-Date: Fri, 9 Nov 2012 10:49:21 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
-        JJ Ding <jj_ding@emc.com.tw>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c-hid: introduce HID over i2c specification
- implementation
-In-Reply-To: <CAN+gG=E3QhwKeZfJtOhFrOqOnPW=hdbij-U7euvVEQ_MuNaXaQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1211091048590.27271@pobox.suse.cz>
-References: <1350333533-13366-1-git-send-email-benjamin.tissoires@gmail.com> <507D182E.9010902@suse.cz> <CAN+gG=E3QhwKeZfJtOhFrOqOnPW=hdbij-U7euvVEQ_MuNaXaQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751013Ab2KIJvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 04:51:09 -0500
+Message-ID: <509CD1D1.3050105@imgtec.com>
+Date: Fri, 9 Nov 2012 09:50:09 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>
+Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-15-git-send-email-vgupta@synopsys.com> <201211071421.39523.arnd@arndb.de>
+In-Reply-To: <201211071421.39523.arnd@arndb.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_11_09_09_51_07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012, Benjamin Tissoires wrote:
-
-> >> --- /dev/null
-> >> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> > ...
-> >> +static int i2c_hid_alloc_buffers(struct i2c_hid *ihid)
-> >> +{
-> >> +     /* the worst case is computed from the set_report command with a
-> >> +      * reportID > 15 and the maximum report length */
-> >> +     int args_len = sizeof(__u8) + /* optional ReportID byte */
-> >> +                    sizeof(__u16) + /* data register */
-> >> +                    sizeof(__u16) + /* size of the report */
-> >> +                    ihid->bufsize; /* report */
-> >> +
-> >> +     ihid->inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
-> >> +
-> >> +     if (!ihid->inbuf)
-> >> +             return -ENOMEM;
-> >> +
-> >> +     ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
-> >> +
-> >> +     if (!ihid->argsbuf) {
-> >> +             kfree(ihid->inbuf);
-> >> +             return -ENOMEM;
-> >> +     }
-> >> +
-> >> +     ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
-> >> +
-> >> +     if (!ihid->cmdbuf) {
-> >> +             kfree(ihid->inbuf);
-> >> +             kfree(ihid->argsbuf);
-> >> +             return -ENOMEM;
-> >> +     }
-> >> +
-> >> +     return 0;
-> >
-> > If this is called from hid_start and some of the latter allocation fails
-> > here, you free the buffers appropriately. However if another start
-> > occurs (e.g. by loading another module for that particular device), it
-> > will crash, as the buffers will remain unallocated because at this point
-> > ihid->bufsize == old_bufsize. You should set ihid->bufsize back to
-> > old_bufsize if i2c_hid_alloc_buffers fails and also set the pointers to
-> > NULL here.
+On 07/11/12 14:21, Arnd Bergmann wrote:
+> On Wednesday 07 November 2012, Vineet Gupta wrote:
+>> + * Being uClibc based we need some of the deprecated syscalls:
+>> + * -Not emulated by uClibc at all
+>> + *     unlink, mkdir,... (needed by Busybox, LTP etc)
+>> + *     times (needed by LTP pan test harness)
+>> + * -Not emulated efficiently
+>> + *     select: emulated using pselect (but extra code to chk usec > 1sec)
+>> + *
+>> + * some (send/recv) correctly emulated using (recfrom/sendto) and
+>> + * some arch specific ones (fork/vfork)can easily be emulated using clone but
+>> + * thats the price of using common-denominator....
+>> + */
+>> +#define __ARCH_WANT_SYSCALL_NO_AT
+>> +#define __ARCH_WANT_SYSCALL_NO_FLAGS
+>> +#define __ARCH_WANT_SYSCALL_OFF_T
+>> +#define __ARCH_WANT_SYSCALL_DEPRECATED
 > 
-> well spotted, thanks.
-> I'll change it in v3 then.
+> I'm pretty sure that this has been solved before, best get in contact with
+> the maintainers of the openrisc/c6x/hexagon platforms, that probably all
+> use uClibc without needing these.
+> 
+> You have to remove the legacy calls here.
 
-Benjamin,
+Hi Vineet,
 
-just a quick check -- are you planning on submitting v3 eventually?
+FYI, we'll soon be making some uClibc patches available so that it can
+work without these deprecated syscalls and with the newer IPC interface
+(the work was needed for metag too). It's based roughly on the OpenRisc
+patches from last year, but with a fair few changes.
 
-Thanks,
+Thanks
+James
 
--- 
-Jiri Kosina
-SUSE Labs
