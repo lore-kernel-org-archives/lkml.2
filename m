@@ -1,46 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2KIMHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 07:07:55 -0500
-Received: from redaccionline.com ([207.218.180.67]:51269 "EHLO
-	correo.fcctpdom.usmp.edu.pe" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753051Ab2KIMHy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 07:07:54 -0500
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753250Ab2KIMJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 07:09:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50105 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab2KIMJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 07:09:26 -0500
+Message-ID: <509CF279.1080602@gmail.com>
+Date: Fri, 09 Nov 2012 20:09:29 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Payment Sent!!!
-To: Recipients <info@westernunion.com>
-From: "Western Union Transfer" <info@westernunion.com>
-Date: Fri, 09 Nov 2012 20:05:37 +0800
-Reply-To: westernuniont12@yahoo.cn
-Message-Id: <20121109114604.C1A29229441@correo.fcctpdom.usmp.edu.pe>
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        rientjes@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] memcg, oom: provide more precise dump info while memcg
+ oom happening
+References: <1352389967-23270-1-git-send-email-handai.szj@taobao.com> <20121108162539.GP31821@dhcp22.suse.cz> <509CD98B.7080503@gmail.com> <20121109105040.GA5006@dhcp22.suse.cz>
+In-Reply-To: <20121109105040.GA5006@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We write to inform you that we have transferred $400,000 dollars.  deposited for transfer to you by one MR Bernard Harry from BLACKBERRY MOBILE COMPANY for transfer as a winning prize from the promotion lottery held by the communication company to encourage usage and appreciate already users of their product.
- 
- The money is available for pick up by receiver(you) to be cashed on daily installment of $10,000 for 40days. We tried calling to give you the information over the phone but we could not reach you so we decided to email you the information to pick up the first $10,000  already transferred to you. for you to be able to pick the first payment,
-You will have to pay $250 to get it re-activated in your name for you to start picking up your money because we de-activate the transaction for security reason, by making the status to display pick up.
- 
- 
-Use this link to track the below information 
-https://wumt.westernunion.com/asp/orderStatus.asp?country=global
- 
- Sender's Fist name: Ronald
- Sender's Last Name: Mundy
- MTCN: 6605740058
- Question: Who Is Great
- Answer: God
- Amount: $10,000.00USD
- 
- Thanks
- Best Regards
- Mr.Mcferrin Phoenix .
- +60169162934
- western union Office,
- MALAYSIA OFFICE.
- Western Union® Money Transfer
+On 11/09/2012 06:50 PM, Michal Hocko wrote:
+> On Fri 09-11-12 18:23:07, Sha Zhengju wrote:
+>> On 11/09/2012 12:25 AM, Michal Hocko wrote:
+>>> On Thu 08-11-12 23:52:47, Sha Zhengju wrote:
+> [...]
+>>>> +	for (i = 0; i<   MEM_CGROUP_STAT_NSTATS; i++) {
+>>>> +		long long val = 0;
+>>>> +		if (i == MEM_CGROUP_STAT_SWAP&&   !do_swap_account)
+>>>> +			continue;
+>>>> +		for_each_mem_cgroup_tree(mi, memcg)
+>>>> +			val += mem_cgroup_read_stat(mi, i);
+>>>> +		printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
+>>>> +	}
+>>>> +
+>>>> +	for (i = 0; i<   NR_LRU_LISTS; i++) {
+>>>> +		unsigned long long val = 0;
+>>>> +
+>>>> +		for_each_mem_cgroup_tree(mi, memcg)
+>>>> +			val += mem_cgroup_nr_lru_pages(mi, BIT(i));
+>>>> +		printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
+>>>> +	}
+>>>> +	printk(KERN_CONT "\n");
+>>> This is nice and simple I am just thinking whether it is enough. Say
+>>> that you have a deeper hierarchy and the there is a safety limit in the
+>>> its root
+>>>          A (limit)
+>>>         /|\
+>>>        B C D
+>>>            |\
+>>> 	  E F
+>>>
+>>> and we trigger an OOM on the A's limit. Now we know that something blew
+>>> up but what it was we do not know. Wouldn't it be better to swap the for
+>>> and for_each_mem_cgroup_tree loops? Then we would see the whole
+>>> hierarchy and can potentially point at the group which doesn't behave.
+>>> Memory cgroup stats for A/: ...
+>>> Memory cgroup stats for A/B/: ...
+>>> Memory cgroup stats for A/C/: ...
+>>> Memory cgroup stats for A/D/: ...
+>>> Memory cgroup stats for A/D/E/: ...
+>>> Memory cgroup stats for A/D/F/: ...
+>>>
+>>> Would it still fit in with your use case?
+>>> [...]
+>> We haven't used those complicate hierarchy yet, but it sounds a good
+>> suggestion. :)
+>> Hierarchy is a little complex to use from our experience, and the
+>> three cgroups involved in memcg oom can be different: memcg of
+>> invoker, killed task, memcg of going over limit.Suppose a process in
+>> B triggers oom and a victim in root A is selected to be killed, we
+>> may as well want to know memcg stats just local in A cgroup(excludes
+>> BCD). So besides hierarchy info, does it acceptable to also print
+>> the local root node stats which as I did in the V1
+>> version(https://lkml.org/lkml/2012/7/30/179).
+> Ohh, I probably wasn't clear enough. I didn't suggest cumulative
+> numbers. Only per group. So it would be something like:
+>
+> 	for_each_mem_cgroup_tree(mi, memcg) {
+> 		printk("Memory cgroup stats for %s", memcg_name);
+> 		for (i = 0; i<   MEM_CGROUP_STAT_NSTATS; i++) {
+> 			if (i == MEM_CGROUP_STAT_SWAP&&   !do_swap_account)
+> 				continue;
+> 			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i],
+> 				K(mem_cgroup_read_stat(mi, i)));
+> 		}
+> 		for (i = 0; i<   NR_LRU_LISTS; i++)
+> 			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i],
+> 				K(mem_cgroup_nr_lru_pages(mi, BIT(i))));
+>
+> 		printk(KERN_CONT"\n");
+> 	}
+>
+
+Now I catch your point and understand the above... It's smarter than I 
+thought before.
+Thanks for explaining!
+
+>> Another one I'm hesitating is numa stats, it seems the output is
+>> beginning to get more and more....
+> NUMA stats are basically per node - per zone LRU data and that the
+> for(NR_LRU_LISTS) can be easily extended to cover that.
+
+Yes, the numa_stat cgroup file has done works here. I'll add the numa
+stats if you don't feel improper.
+
+
