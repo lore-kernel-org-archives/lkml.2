@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab2KIUG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 15:06:29 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44488 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab2KIUGX (ORCPT
+	id S1755789Ab2KIUIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 15:08:47 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:43617 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751454Ab2KIUIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 15:06:23 -0500
-Date: Fri, 9 Nov 2012 12:06:18 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 03/16] mm: check rb_subtree_gap correctness
-In-Reply-To: <509D0F86.30607@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211091156120.3856@eggly.anvils>
-References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-4-git-send-email-walken@google.com> <509D0F86.30607@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 9 Nov 2012 15:08:44 -0500
+Date: Fri, 9 Nov 2012 20:08:42 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: David Miller <davem@davemloft.net>, timo.teras@iki.fi,
+        steffen.klassert@secunet.com, NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/9] net: core: use this_cpu_ptr per-cpu helper
+In-Reply-To: <509C686F.20400@gmail.com>
+Message-ID: <0000013ae6c9e81a-eabe295b-72a5-4ebd-85c5-231bec1a70c5-000000@email.amazonses.com>
+References: <509C686F.20400@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Nov 2012, Sasha Levin wrote:
-> On 11/05/2012 05:47 PM, Michel Lespinasse wrote:
-> > When CONFIG_DEBUG_VM_RB is enabled, check that rb_subtree_gap is
-> > correctly set for every vma and that mm->highest_vm_end is also correct.
-> > 
-> > Also add an explicit 'bug' variable to track if browse_rb() detected any
-> > invalid condition.
-> > 
-> > Signed-off-by: Michel Lespinasse <walken@google.com>
-> > Reviewed-by: Rik van Riel <riel@redhat.com>
-> > 
-> > ---
-> 
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools (lkvm) guest, using today's -next
-> kernel, I'm getting these:
-> 
-> 
-> [  117.007714] free gap 7fba0dd1c000, correct 7fba0dcfb000
-> [  117.019773] map_count 750 rb -1
-> [  117.028362] ------------[ cut here ]------------
-> [  117.029813] kernel BUG at mm/mmap.c:439!
-> [  117.031024] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  117.032933] Dumping ftrace buffer:
-> [  117.033972]    (ftrace buffer empty)
-> [  117.035085] CPU 4
-> [  117.035676] Pid: 6859, comm: trinity-child46 Tainted: G        W    3.7.0-rc4-next-20121109-sasha-00013-g9407f3c #124
-> [  117.038217] RIP: 0010:[<ffffffff81236687>]  [<ffffffff81236687>] validate_mm+0x297/0x2c0
-> [  117.041056] RSP: 0018:ffff880016a4fdf8  EFLAGS: 00010296
-> [  117.041056] RAX: 0000000000000013 RBX: 00000000ffffffff RCX: 0000000000000006
-> [  117.041056] RDX: 0000000000005270 RSI: ffff880024120910 RDI: 0000000000000286
-> [  117.052131] RBP: ffff880016a4fe48 R08: 0000000000000000 R09: 0000000000000000
-> [  117.052131] R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000002ee
-> [  117.052131] R13: 00007fffea1fc000 R14: ffff88002412c000 R15: 0000000000000000
-> [  117.052131] FS:  00007fba129db700(0000) GS:ffff880063600000(0000) knlGS:0000000000000000
-> [  117.052131] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  117.052131] CR2: 0000000003323288 CR3: 00000000169b2000 CR4: 00000000000406e0
-> [  117.052131] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  117.052131] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  117.052131] Process trinity-child46 (pid: 6859, threadinfo ffff880016a4e000, task ffff880024120000)
-> [  117.052131] Stack:
-> [  117.052131]  ffffffff8489e201 ffffffff81235aa0 ffff88000885cac8 0000000100000000
-> [  117.052131]  ffffffff812361b9 ffff88002412c000 ffff88000885cac8 ffff88000885cdc8
-> [  117.052131]  ffff88000885cdd0 ffff88002412c000 ffff880016a4fe98 ffffffff812367b4
-> [  117.052131] Call Trace:
-> [  117.052131]  [<ffffffff81235aa0>] ? vma_compute_subtree_gap+0x40/0x40
-> [  117.052131]  [<ffffffff812361b9>] ? vma_gap_update+0x19/0x30
-> [  117.052131]  [<ffffffff812367b4>] vma_link+0x94/0xe0
-> [  117.052131]  [<ffffffff812386c4>] do_brk+0x2c4/0x380
-> [  117.052131]  [<ffffffff812387bf>] ? sys_brk+0x3f/0x190
-> [  117.052131]  [<ffffffff812388ce>] sys_brk+0x14e/0x190
-> [  117.052131]  [<ffffffff83be2618>] tracesys+0xe1/0xe6
-> [  117.052131] Code: d8 41 8b 76 60 39 de 74 1b 89 da 48 c7 c7 c6 d9 89 84 31 c0 e8 01 76 94 02 eb 10 66 0f 1f 84 00 00 00 00 00
-> 8b 45 c8 85 c0 74 18 <0f> 0b 4c 8d 48 e0 48 8b 70 e0 31 db c7 45 cc 00 00 00 00 e9 f4
-> [  117.052131] RIP  [<ffffffff81236687>] validate_mm+0x297/0x2c0
-> [  117.052131]  RSP <ffff880016a4fdf8>
-> [  117.136092] ---[ end trace 5ce250e0bf6d040c ]---
-> 
-> Note that they are very easy to reproduce.
-> 
-> Also, I see that lots of the code there has a local variable named 'bug' thats tracking
-> whether we should BUG() later on. Why does it work that way and the BUG() isn't immediate?
+On Fri, 9 Nov 2012, Shan Wei wrote:
 
-3.7.0-rc4-mm1 BUGged on mm/mmap.c:439 as soon as I tried to rebuild
-that kernel with Alan's tty/vt/fb patch included, no fuzzing required.
+> diff --git a/net/core/flow.c b/net/core/flow.c
+> index e318c7e..b0901ee 100644
+> --- a/net/core/flow.c
+> +++ b/net/core/flow.c
+> @@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
+>  static void flow_cache_flush_per_cpu(void *data)
+>  {
+>  	struct flow_flush_info *info = data;
+> -	int cpu;
+>  	struct tasklet_struct *tasklet;
+>
+> -	cpu = smp_processor_id();
+> -	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
+> +	tasklet = this_cpu_ptr(&info->cache->percpu->flush_tasklet);
+>  	tasklet->data = (unsigned long)info;
 
-free_gap 55551d077000, correct 55551ccd2000 in my case.
+this_cpu_write(info->cache->percpu->flush_tasklet->data, (unsigned
+	long)info);
 
-It should only be affecting the minority with CONFIG_DEBUG_VM_RB=y.
-I've put #if 0 around the rb_subtree_gap checking block in browse_rb(),
-and running okay so far with that - but not yet done much with it.
+should also do the trick in less instructions and get rid of all temporary
+variables as well.
 
-Hugh
+
