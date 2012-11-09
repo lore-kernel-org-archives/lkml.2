@@ -1,114 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab2KIPC5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 10:02:57 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33619 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2KIPCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 10:02:54 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org, isdn@linux-pingi.de,
-        netdev@vger.kernel.org
-Cc: davem@davemloft.net, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] isdn: Fix typo in drivers/isdn
-Date: Sat, 10 Nov 2012 00:02:49 +0900
-Message-Id: <1352473369-13613-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+	id S1754110Ab2KIPDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:03:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32034 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2KIPDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 10:03:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
+   d="scan'208";a="217307669"
+Message-ID: <509D1BC5.7020208@linux.intel.com>
+Date: Fri, 09 Nov 2012 17:05:41 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <1351928793-14375-2-git-send-email-mika.westerberg@linux.intel.com> <CACxGe6tVcqoSg03JtcTdLP5GakyKM-24D8uK2mQj+1iiSE8Yog@mail.gmail.com> <20121108193808.GB16012@intel.com> <509D0F1F.70001@linux.intel.com> <CACxGe6sgNEqEhiXC_EoBuAg+QaaRis_4eRb7s5k0MKtfZF-3dA@mail.gmail.com>
+In-Reply-To: <CACxGe6sgNEqEhiXC_EoBuAg+QaaRis_4eRb7s5k0MKtfZF-3dA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in printk within drivers/isdn
+On 11/09/2012 04:18 PM, Grant Likely wrote:
+> On Fri, Nov 9, 2012 at 2:11 PM, Mathias Nyman
+> <mathias.nyman@linux.intel.com>  wrote:
+>> On 11/08/2012 09:38 PM, Mika Westerberg wrote:
+>> ...
+>>
+>>>>> +#include<linux/errno.h>
+>>>>> +#include<linux/gpio.h>
+>>>>> +#include<linux/module.h>
+>>>>> +#include<linux/acpi_gpio.h>
+>>>>> +#include<linux/acpi.h>
+>>>>> +
+>>>>> +static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+>>>>> +{
+>>>>> +       acpi_handle handle = data;
+>>>>> +       acpi_handle gc_handle;
+>>>>> +
+>>>>> +       if (!gc->dev)
+>>>>> +               return false;
+>>>>> +
+>>>>> +       gc_handle = gc->dev->acpi_handle;
+>>>>> +       if (!gc_handle)
+>>>>> +               return false;
+>>>>
+>>>>
+>>>> This test is redundant with the next one... unless 'handle' is also NULL
+>>>> :-)
+>>>>
+>>>> Is it at all possible for multiple gpiochips to be used for a single
+>>>> ACPI gpio controller node? Such as if the gpio controller has multiple
+>>>> banks that should be controlled separately? If so then this won't be
+>>>> sufficient. I've got the same issue with DT support where the find
+>>>> function needs to also check if the pin is provided by that specific
+>>>> gpiochip.
+>>>
+>>>
+>>> AFAIK no but I'll let Mathias to answer that as he knows this better.
+>>
+>>
+>> I'm interpreting it the same way as Mika, max one actual controller per ACPI
+>> device node
+>>
+>> The path (called ResourceSource in ACPI5 specs) in GpioIO/GpioInt resources
+>> is a "string which uniquely identifies the GPIO controller referred to by
+>> this descriptor."  The pin number is zero based controller relative.
+>>
+>> The  ACPI device controller node includes all other resources needed by the
+>> controller driver (ioport/mem base, range, interrupt, and Hardware ID used
+>> to pair with a driver)
+>>
+>> Checked a board with two identical gpio controllers on it and it had two
+>> separate ACPI device node entries. (with only different io address base and
+>> interrupt resources)
+>
+> That's not really the situation that I'm thinking about. What I mean
+> is for a gpio controller that is more convenient for Linux to support
+> using multiple gpiochips (Linux internal detail), even though there it
+> is described with a single ACPI node.
+>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/isdn/hardware/mISDN/hfcpci.c    | 2 +-
- drivers/isdn/hardware/mISDN/mISDNisar.c | 2 +-
- drivers/isdn/hisax/callc.c              | 2 +-
- drivers/isdn/hisax/hfc_pci.c            | 2 +-
- drivers/isdn/hisax/hfc_sx.c             | 2 +-
- drivers/isdn/pcbit/layer2.c             | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+Ok, now I get it.
 
-diff --git a/drivers/isdn/hardware/mISDN/hfcpci.c b/drivers/isdn/hardware/mISDN/hfcpci.c
-index 81363ff..6e99d73 100644
---- a/drivers/isdn/hardware/mISDN/hfcpci.c
-+++ b/drivers/isdn/hardware/mISDN/hfcpci.c
-@@ -490,7 +490,7 @@ receive_dmsg(struct hfc_pci *hc)
- 		    (df->data[le16_to_cpu(zp->z1)])) {
- 			if (dch->debug & DEBUG_HW)
- 				printk(KERN_DEBUG
--				       "empty_fifo hfcpci paket inv. len "
-+				       "empty_fifo hfcpci packet inv. len "
- 				       "%d or crc %d\n",
- 				       rcnt,
- 				       df->data[le16_to_cpu(zp->z1)]);
-diff --git a/drivers/isdn/hardware/mISDN/mISDNisar.c b/drivers/isdn/hardware/mISDN/mISDNisar.c
-index 182ecf0..feafa91 100644
---- a/drivers/isdn/hardware/mISDN/mISDNisar.c
-+++ b/drivers/isdn/hardware/mISDN/mISDNisar.c
-@@ -1302,7 +1302,7 @@ modeisar(struct isar_ch *ch, u32 bprotocol)
- 						   &ch->is->Flags))
- 				ch->dpath = 1;
- 			else {
--				pr_info("modeisar both pathes in use\n");
-+				pr_info("modeisar both paths in use\n");
- 				return -EBUSY;
- 			}
- 			if (bprotocol == ISDN_P_B_HDLC)
-diff --git a/drivers/isdn/hisax/callc.c b/drivers/isdn/hisax/callc.c
-index a47637b..ddec47a 100644
---- a/drivers/isdn/hisax/callc.c
-+++ b/drivers/isdn/hisax/callc.c
-@@ -35,7 +35,7 @@ static int chancount;
- /* experimental REJECT after ALERTING for CALLBACK to beat the 4s delay */
- #define ALERT_REJECT 0
- 
--/* Value to delay the sending of the first B-channel paket after CONNECT
-+/* Value to delay the sending of the first B-channel packet after CONNECT
-  * here is no value given by ITU, but experience shows that 300 ms will
-  * work on many networks, if you or your other side is behind local exchanges
-  * a greater value may be recommented. If the delay is to short the first paket
-diff --git a/drivers/isdn/hisax/hfc_pci.c b/drivers/isdn/hisax/hfc_pci.c
-index 334fa90..f60d4be 100644
---- a/drivers/isdn/hisax/hfc_pci.c
-+++ b/drivers/isdn/hisax/hfc_pci.c
-@@ -354,7 +354,7 @@ receive_dmsg(struct IsdnCardState *cs)
- 		if ((rcnt > MAX_DFRAME_LEN + 3) || (rcnt < 4) ||
- 		    (df->data[zp->z1])) {
- 			if (cs->debug & L1_DEB_WARN)
--				debugl1(cs, "empty_fifo hfcpci paket inv. len %d or crc %d", rcnt, df->data[zp->z1]);
-+				debugl1(cs, "empty_fifo hfcpci packet inv. len %d or crc %d", rcnt, df->data[zp->z1]);
- #ifdef ERROR_STATISTIC
- 			cs->err_rx++;
- #endif
-diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
-index 4db846b..4ec279c 100644
---- a/drivers/isdn/hisax/hfc_sx.c
-+++ b/drivers/isdn/hisax/hfc_sx.c
-@@ -270,7 +270,7 @@ read_fifo(struct IsdnCardState *cs, u_char fifo, int trans_max)
- 
- 		if ((count > fifo_size) || (count < 4)) {
- 			if (cs->debug & L1_DEB_WARN)
--				debugl1(cs, "hfcsx_read_fifo %d paket inv. len %d ", fifo , count);
-+				debugl1(cs, "hfcsx_read_fifo %d packet inv. len %d ", fifo , count);
- 			while (count) {
- 				count--; /* empty fifo */
- 				Read_hfc(cs, HFCSX_FIF_DRD);
-diff --git a/drivers/isdn/pcbit/layer2.c b/drivers/isdn/pcbit/layer2.c
-index a18e639..42ecfef 100644
---- a/drivers/isdn/pcbit/layer2.c
-+++ b/drivers/isdn/pcbit/layer2.c
-@@ -508,7 +508,7 @@ pcbit_irq_handler(int interrupt, void *devptr)
- 		return IRQ_NONE;
- 	}
- 	if (dev->interrupt) {
--		printk(KERN_DEBUG "pcbit: reentering interrupt hander\n");
-+		printk(KERN_DEBUG "pcbit: reentering interrupt handler\n");
- 		return IRQ_HANDLED;
- 	}
- 	dev->interrupt = 1;
--- 
-1.8.0.rc3.16.g8ead1bf
+Yes, in case a driver uses several gpiochips internally for different 
+banks of a controller then all would have the same acpi_handle.
+acpi_get_gpio() would use the gpiobase of the first gpiochip that 
+matches the handle, even if it's the wrong one.
 
+I guess It's possible to write a driver like that.
+The only acpi enumerated driver with the acpi_handle set (soon coming to 
+upstream) is not done like that.
+
+Do you think this is a case that should be solved now?  or just expect 
+acpi gpio device driver to not use several gpiochips in one driver?
+
+-Mathias
