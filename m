@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab2KIQPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:15:14 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56638 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab2KIQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:15:11 -0500
-Message-ID: <509D2B9B.4090305@linux.vnet.ibm.com>
-Date: Fri, 09 Nov 2012 08:13:15 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1754439Ab2KIQPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:15:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34748 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754355Ab2KIQPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:15:30 -0500
+Date: Fri, 9 Nov 2012 16:15:28 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: [PATCH v2] mfd: Only unregister platform devices allocated by the
+	mfd core
+Message-ID: <20121109161528.GA674@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Mel Gorman <mgorman@suse.de>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, arjan@linux.intel.com,
-        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
- support Memory Power Management
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com>
-In-Reply-To: <509D200F.2000908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110916-7182-0000-0000-00000324B05B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
-> FWIW, kernbench is actually (and surprisingly) showing a slight performance
-> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
-> my other email to Dave.
-> 
-> https://lkml.org/lkml/2012/11/7/428
-> 
-> I don't think I can dismiss it as an experimental error, because I am seeing
-> those results consistently.. I'm trying to find out what's behind that.
+mfd_remove_devices would iterate over all devices sharing a parent with
+an mfd device regardless of whether they were allocated by the mfd core
+or not. This especially caused problems when the device structure was
+not contained within a platform_device, because to_platform_device is
+used on each device pointer.
 
-The only numbers in that link are in the date. :)  Let's see the
-numbers, please.
+This patch defines a device_type for mfd devices and checks this is
+present from mfd_remove_devices_fn before processing the device.
 
-If you really have performance improvement to the memory allocator (or
-something else) here, then surely it can be pared out of your patches
-and merged quickly by itself.  Those kinds of optimizations are hard to
-come by!
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/mfd-core.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index f8b7771..7604f4e 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -21,6 +21,10 @@
+ #include <linux/irqdomain.h>
+ #include <linux/of.h>
+ 
++static struct device_type mfd_dev_type = {
++	.name	= "mfd_device",
++};
++
+ int mfd_cell_enable(struct platform_device *pdev)
+ {
+ 	const struct mfd_cell *cell = mfd_get_cell(pdev);
+@@ -91,6 +95,7 @@ static int mfd_add_device(struct device *parent, int id,
+ 		goto fail_device;
+ 
+ 	pdev->dev.parent = parent;
++	pdev->dev.type = &mfd_dev_type;
+ 
+ 	if (parent->of_node && cell->of_compatible) {
+ 		for_each_child_of_node(parent->of_node, np) {
+@@ -204,10 +209,16 @@ EXPORT_SYMBOL(mfd_add_devices);
+ 
+ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct platform_device *pdev;
++	const struct mfd_cell *cell;
+ 	atomic_t **usage_count = c;
+ 
++	if (dev->type != &mfd_dev_type)
++		return 0;
++
++	pdev = to_platform_device(dev);
++	cell = mfd_get_cell(pdev);
++
+ 	/* find the base address of usage_count pointers (for freeing) */
+ 	if (!*usage_count || (cell->usage_count < *usage_count))
+ 		*usage_count = cell->usage_count;
+-- 
+1.7.2.5
 
