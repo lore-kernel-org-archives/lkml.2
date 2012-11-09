@@ -1,124 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab2KIEaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 23:30:55 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:65144 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2KIEav (ORCPT
+	id S1754451Ab2KIEbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 23:31:03 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56562 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2KIEa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 23:30:51 -0500
-Date: Thu, 8 Nov 2012 20:30:47 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
-Subject: Re: linux-next: build warning after merge of the final tree (akpm
- tree related)
-Message-ID: <20121109043047.GA17999@google.com>
-References: <20121109151903.19728e9a7a8fe9e509bb523e@canb.auug.org.au>
+	Thu, 8 Nov 2012 23:30:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109151903.19728e9a7a8fe9e509bb523e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAF_D9g6yVTjicJ+8hmumNkd1ko2eek9+OaskDeyjrKFwqzN_A@mail.gmail.com>
+References: <CAAF_D9g6yVTjicJ+8hmumNkd1ko2eek9+OaskDeyjrKFwqzN_A@mail.gmail.com>
+Date: Thu, 8 Nov 2012 23:30:57 -0500
+Message-ID: <CAKPrQY8mgiihYSfH3qDmchny5EfjfBxXDtC0=fBRiQ3VAhdewA@mail.gmail.com>
+Subject: Re: [PATCH] bcm_wimax.ko - Modified supported device list [Correction]
+From: Kevin McKinney <klmckinney1@gmail.com>
+To: Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rinat Camalov <richman1000000d@gmail.com>, devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 03:19:03PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (arm defconfig)
-> produced this warning:
-> 
-> arch/arm/mm/mmap.c: In function 'arch_get_unmapped_area':
-> arch/arm/mm/mmap.c:60:16: warning: unused variable 'start_addr' [-Wunused-variable]
-> 
-> Introduced by commit "mm: use vm_unmapped_area() on arm architecture".
+On Thu, Nov 8, 2012 at 10:27 AM, Muhammad Minhazul Haque
+<mdminhazulhaque@gmail.com> wrote:
+> Mr. Kevin and everyone,
+>
+> There was a serious mistake in the previous message. I forgot to
+> attach the patch. Please ignore it. I am posting it again.
+>
+> I was never reported for that product id 0x0132. Yet you can continue
+> support for it if it is rare. In the meantime, we can add more devices
+> to the header and add those names to "usb_device_id" table in
+> "InterfaceInit.c". I added a new product string
+> "BCM_USB_PRODUCT_ID_ZTE_326" and also modified the device id table.
+>
+> Again, I removed product if 0xbccd because Beceem, ZTE, Sprint use
+> this id for the block device containing device driver. Again, this is
+> always switched to base product id via udev. Here is my dmesg output
+> when udev is turned off.
+> =====
+> root@inspiron:~# dmesg -c
+> [24449.439134] cdrom: issuing MRW background format suspend
+> [24459.102669] usb 2-1.2: new high-speed USB device number 11 using ehci_hcd
+> [24459.336258] scsi11 : usb-storage 2-1.2:1.0
+> [24460.334906] scsi 11:0:0:0: CD-ROM            BCM-CD V 01.02 01.01
+> 1.13      PQ: 0 ANSI: 2
+> [24460.336721] sr0: scsi3-mmc drive: 0x/0x xa/form2 tray
+> [24460.336971] sr 11:0:0:0: Attached scsi CD-ROM sr0
+> [24460.337167] sr 11:0:0:0: Attached scsi generic sg1 type 5
+>
+> root@inspiron:~# mount /dev/sr1 /media/tmp
+> mount: block device /dev/sr1 is write-protected, mounting read-only
+> =====
+>
+> I did build after these changes and probed the module. It works
+> perfectly. I also tested 0x0172 and 0x0173. No error is reported. So I
+> assure that these products are valid. Not sure about 0x0132. Here is
+> the modinfo output.
+> =====
+> license:        GPL
+> version:        5.2.45
+> description:    Beceem Communications Inc. WiMAX driver
+> srcversion:     6968AC3635745331FE6470D
+> alias:          usb:v19D2p0132d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v19D2p0007d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v19D2p0173d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v19D2p0172d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v0489pE017d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v198Fp015Ed*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v198Fp0300d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v198Fp0220d*dc*dsc*dp*ic*isc*ip*
+> alias:          usb:v198Fp0210d*dc*dsc*dp*ic*isc*ip*
+> depends:
+> vermagic:       3.2.0-32-generic-pae SMP mod_unload modversions 686
+> parm:           debug:Debug level (0=none,...,16=all) (uint)
+> =====
+>
+> This patch is currently against a linux 3.7-rc4 kernel, for the x86
+> architecture.
+>
+> The first patch is
+> =====
+> diff --git a/bcm.orig/InterfaceInit.c b/bcm/InterfaceInit.c
+> index b05f5f7..7da666e 100644
+> --- a/bcm.orig/InterfaceInit.c
+> +++ b/bcm/InterfaceInit.c
+> @@ -4,11 +4,12 @@ static struct usb_device_id InterfaceUsbtable[] = {
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3) },
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3B) },
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3L) },
+> -       { USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SM250) },
+> -       { USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
+> +       { USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SYM) },
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_FOXCONN, BCM_USB_PRODUCT_ID_1901) },
+> +       { USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_TU25) },
+>         { USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_226) },
+> +       { USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_326) },
+>         { }
+>  };
+>  MODULE_DEVICE_TABLE(usb, InterfaceUsbtable);
+> =====
+>
+> And the second patch is
+> =====
+> diff --git a/bcm.orig/InterfaceInit.h b/bcm/InterfaceInit.h
+> index 866924e..1486608 100644
+> --- a/bcm.orig/InterfaceInit.h
+> +++ b/bcm/InterfaceInit.h
+> @@ -8,11 +8,11 @@
+>  #define BCM_USB_PRODUCT_ID_T3  0x0300
+>  #define BCM_USB_PRODUCT_ID_T3B 0x0210
+>  #define BCM_USB_PRODUCT_ID_T3L 0x0220
+> -#define BCM_USB_PRODUCT_ID_SM250       0xbccd
+>  #define BCM_USB_PRODUCT_ID_SYM 0x15E
+> -#define BCM_USB_PRODUCT_ID_1901        0xe017
+> +#define BCM_USB_PRODUCT_ID_1901        0xe017 /* Sprint U1901 */
+>  #define BCM_USB_PRODUCT_ID_226 0x0132 /* not sure if this is valid */
+>  #define BCM_USB_PRODUCT_ID_ZTE_226 0x172
+> +#define BCM_USB_PRODUCT_ID_ZTE_326 0x173 /* ZTE AX326 */
+>  #define BCM_USB_PRODUCT_ID_ZTE_TU25    0x0007
+>
+>  #define BCM_USB_MINOR_BASE     192
+> =====
+>
+> diffstat for this patch is:
+> =====
+>  {bcm => bcm.orig}/InterfaceInit.c |    5 ++---
+>  {bcm => bcm.orig}/InterfaceInit.h |    4 ++--
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> =====
 
-Sorry for the mistakes. The following changes should fix what's been reported so far.
+Thanks for these patches. I see the changes you have made a they look
+good, however I am not able to apply these patches. Can you resubmit
+them in the correct format?
 
-commit 1c98949798ce7a1d4a910775623e1830cf88a92c
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Nov 8 20:26:34 2012 -0800
+> To use the patch, remove module if it is probed. Build, and then probe.
+>
+> About the TODO: I currently have a solution to make the device work.
+> It is not from Intel's wimax stack. I used Beceem's API. Can we
+> discuss on this?
 
-    fix mm: use vm_unmapped_area() on sparc32 architecture
+Sure, lets work together to get this device working.  It should be
+working correctly on 32 bit machines, however there is still an
+outstanding bug that I am trying to track down on 64 bit machines.
+Have you noticed this also?
 
-diff --git a/arch/sparc/kernel/sys_sparc_32.c b/arch/sparc/kernel/sys_sparc_32.c
-index a59bc637f9af..a20b5ab4c701 100644
---- a/arch/sparc/kernel/sys_sparc_32.c
-+++ b/arch/sparc/kernel/sys_sparc_32.c
-@@ -38,7 +38,6 @@ asmlinkage unsigned long sys_getpagesize(void)
- 
- unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr, unsigned long len, unsigned long pgoff, unsigned long flags)
- {
--	struct vm_area_struct * vmm;
- 	struct vm_unmapped_area_info info;
- 
- 	if (flags & MAP_FIXED) {
-
-commit aa96ebbc9ec664ddafc841f7631c4a092b10c0d8
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Nov 8 20:25:48 2012 -0800
-
-    fix mm: use vm_unmapped_area() in hugetlbfs on sparc64 architecture
-
-diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
-index 42e5dba6cb26..d2b59441ebdd 100644
---- a/arch/sparc/mm/hugetlbpage.c
-+++ b/arch/sparc/mm/hugetlbpage.c
-@@ -60,7 +60,6 @@ hugetlb_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 				  const unsigned long pgoff,
- 				  const unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	unsigned long addr = addr0;
- 	struct vm_unmapped_area_info info;
-
-commit ff4dd9742ce0a5f7c703013e70eeb84b845c8fa2
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Nov 8 20:24:53 2012 -0800
-
-    mm-use-vm_unmapped_area-on-sparc64-architecture-fix2
-
-diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
-index 2a5d61587ca2..a836ee967ecb 100644
---- a/arch/sparc/kernel/sys_sparc_64.c
-+++ b/arch/sparc/kernel/sys_sparc_64.c
-@@ -89,7 +89,6 @@ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr, unsi
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct * vma;
- 	unsigned long task_size = TASK_SIZE;
--	unsigned long start_addr;
- 	int do_color_align;
- 	struct vm_unmapped_area_info info;
- 
-@@ -191,7 +190,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	info.length = len;
- 	info.low_limit = PAGE_SIZE;
- 	info.high_limit = mm->mmap_base;
--	info.align_mask = do_colour_align ? (PAGE_MASK & shm_align_mask) : 0;
-+	info.align_mask = do_color_align ? (PAGE_MASK & (SHMLBA - 1)) : 0;
- 	info.align_offset = pgoff << PAGE_SHIFT;
- 	addr = vm_unmapped_area(&info);
- 
-
-commit ed558f3723a4ac2fb71d6c8fc70116994af6e61d
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Nov 8 20:22:36 2012 -0800
-
-    mm-use-vm_unmapped_area-on-arm-architecture-fix2
-
-diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
-index f4fec6d43d50..10062ceadd1c 100644
---- a/arch/arm/mm/mmap.c
-+++ b/arch/arm/mm/mmap.c
-@@ -57,7 +57,6 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
--	unsigned long start_addr;
- 	int do_align = 0;
- 	int aliasing = cache_is_vipt_aliasing();
- 	struct vm_unmapped_area_info info;
+Thanks,
+Kevin
