@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2KITTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 14:19:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51540 "EHLO mx1.redhat.com"
+	id S1755958Ab2KITTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 14:19:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39315 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755421Ab2KITSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 14:18:35 -0500
+	id S1755392Ab2KITSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 14:18:33 -0500
 From: Jeff Moyer <jmoyer@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: Bart Van Assche <bvanassche@acm.org>, James Smart <james.smart@emulex.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [patch,v3 09/10] lpfc: use scsi_host_alloc_node
-Date: Fri,  9 Nov 2012 14:18:06 -0500
-Message-Id: <1352488687-19935-10-git-send-email-jmoyer@redhat.com>
+Cc: Bart Van Assche <bvanassche@acm.org>, Mike Miller <mike.miller@hp.com>,
+        iss_storagedev@hp.com
+Subject: [patch,v3 10/10] cciss: use blk_init_queue_node
+Date: Fri,  9 Nov 2012 14:18:07 -0500
+Message-Id: <1352488687-19935-11-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
 References: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-By: James Smart  <james.smart@emulex.com>
+
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- drivers/scsi/lpfc/lpfc_init.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/block/cciss.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 7dc4218..65956d3 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -3051,11 +3051,13 @@ lpfc_create_port(struct lpfc_hba *phba, int instance, struct device *dev)
- 	int error = 0;
- 
- 	if (dev != &phba->pcidev->dev)
--		shost = scsi_host_alloc(&lpfc_vport_template,
--					sizeof(struct lpfc_vport));
-+		shost = scsi_host_alloc_node(&lpfc_vport_template,
-+					     sizeof(struct lpfc_vport),
-+					     dev_to_node(&phba->pcidev->dev));
- 	else
--		shost = scsi_host_alloc(&lpfc_template,
--					sizeof(struct lpfc_vport));
-+		shost = scsi_host_alloc_node(&lpfc_template,
-+					     sizeof(struct lpfc_vport),
-+					     dev_to_node(&phba->pcidev->dev));
- 	if (!shost)
- 		goto out;
- 
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index b0f553b..5fe5546 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1930,7 +1930,8 @@ static void cciss_get_serial_no(ctlr_info_t *h, int logvol,
+ static int cciss_add_disk(ctlr_info_t *h, struct gendisk *disk,
+ 				int drv_index)
+ {
+-	disk->queue = blk_init_queue(do_cciss_request, &h->lock);
++	disk->queue = blk_init_queue_node(do_cciss_request, &h->lock,
++					  dev_to_node(&h->dev));
+ 	if (!disk->queue)
+ 		goto init_queue_failure;
+ 	sprintf(disk->disk_name, "cciss/c%dd%d", h->ctlr, drv_index);
 -- 
 1.7.1
 
