@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab2KIUIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 15:08:47 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:43617 "EHLO
+	id S1755702Ab2KIUJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 15:09:48 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:44370 "EHLO
 	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751454Ab2KIUIo (ORCPT
+	by vger.kernel.org with ESMTP id S1753315Ab2KIUJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 15:08:44 -0500
-Date: Fri, 9 Nov 2012 20:08:42 +0000
+	Fri, 9 Nov 2012 15:09:47 -0500
+Date: Fri, 9 Nov 2012 20:09:45 +0000
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@gentwo.org
 To: Shan Wei <shanwei88@gmail.com>
-cc: David Miller <davem@davemloft.net>, timo.teras@iki.fi,
-        steffen.klassert@secunet.com, NetDev <netdev@vger.kernel.org>,
+cc: venkat.x.venkatsubra@oracle.com, David Miller <davem@davemloft.net>,
+        rds-devel@oss.oracle.com, NetDev <netdev@vger.kernel.org>,
         Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/9] net: core: use this_cpu_ptr per-cpu helper
-In-Reply-To: <509C686F.20400@gmail.com>
-Message-ID: <0000013ae6c9e81a-eabe295b-72a5-4ebd-85c5-231bec1a70c5-000000@email.amazonses.com>
-References: <509C686F.20400@gmail.com>
+Subject: Re: [PATCH v3 2/9] net: rds: use this_cpu_ptr per-cpu helper
+In-Reply-To: <509C687E.1080106@gmail.com>
+Message-ID: <0000013ae6cadebe-0e44d6a0-5e8c-4ded-a337-d2f41f2ab0e4-000000@email.amazonses.com>
+References: <509C687E.1080106@gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,26 +28,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 9 Nov 2012, Shan Wei wrote:
 
-> diff --git a/net/core/flow.c b/net/core/flow.c
-> index e318c7e..b0901ee 100644
-> --- a/net/core/flow.c
-> +++ b/net/core/flow.c
-> @@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
->  static void flow_cache_flush_per_cpu(void *data)
->  {
->  	struct flow_flush_info *info = data;
-> -	int cpu;
->  	struct tasklet_struct *tasklet;
+>  net/rds/ib_recv.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> -	cpu = smp_processor_id();
-> -	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
-> +	tasklet = this_cpu_ptr(&info->cache->percpu->flush_tasklet);
->  	tasklet->data = (unsigned long)info;
+> diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
+> index 8d19491..a4a5064 100644
+> --- a/net/rds/ib_recv.c
+> +++ b/net/rds/ib_recv.c
+> @@ -423,7 +423,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+>
+>  	local_irq_save(flags);
+>
+> -	chp = per_cpu_ptr(cache->percpu, smp_processor_id());
+> +	chp = this_cpu_ptr(cache->percpu);
+>  	if (!chp->first)
 
-this_cpu_write(info->cache->percpu->flush_tasklet->data, (unsigned
-	long)info);
+if (!__this_cpu_read(cache-0>percpu->first))
 
-should also do the trick in less instructions and get rid of all temporary
-variables as well.
-
+?
 
