@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2KIL1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:27:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab2KIL1a convert rfc822-to-8bit (ORCPT
+	id S1752699Ab2KIL3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:29:47 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38982 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab2KIL3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:27:30 -0500
-Date: Fri, 9 Nov 2012 06:00:17 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Chris J Arges <chris.j.arges@canonical.com>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH cifs-next] fs: cifs: make smb_echo_interval tunable
-Message-ID: <20121109060017.63811198@tlielax.poochiereds.net>
-In-Reply-To: <1352407828-23339-1-git-send-email-chris.j.arges@canonical.com>
-References: <1352407828-23339-1-git-send-email-chris.j.arges@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Nov 2012 06:29:44 -0500
+From: "hongbo.zhang" <hongbo.zhang@linaro.org>
+To: linux-acpi@vger.kernel.org, rui.zhang@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Subject: [PATCH V5 0/2] Upstream ST-Ericsson thermal driver
+Date: Fri,  9 Nov 2012 19:29:06 +0800
+Message-Id: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Nov 2012 14:50:28 -0600
-Chris J Arges <chris.j.arges@canonical.com> wrote:
+From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-> Change SMB_ECHO_INTERVAL to make it a module parameter.
-> 
-> BugLink: http://bugs.launchpad.net/bugs/1017622
-> BugLink: https://bugzilla.samba.org/show_bug.cgi?id=9006
-> 
+V4->V5 Changes:
 
-It's customary to write up the reason for a change in the bug
-description. A pointer to a bug tracker is nice as a reference, but
-it's not reasonable to expect someone to chase down a bunch of bug
-tracker links when reading the git logs. It's also possible that
-these bug reports could go away or be unavailable when someone needs
-to track down the reason for a change.
+In patch "Thermal: Add ST-Ericsson DB8500 thermal driver":
+ - use flush_work instead of flush_work_sync since the later is deprecated now.
+ - parameter trip_points of db8500_thermal_match_cdev is renamed to trip_point;
+ - re-order oprerations in function db8500_thermal_update_config;
 
-> Reported-by: Oliver Dumschat-Hoette <dumschat-hoette@trisinus.de>
-> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-> ---
->  fs/cifs/cifsfs.c   |    5 +++++
->  fs/cifs/cifsglob.h |    5 +++--
->  2 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-> index 5e62f44..25748b3 100644
-> --- a/fs/cifs/cifsfs.c
-> +++ b/fs/cifs/cifsfs.c
-> @@ -82,6 +82,11 @@ MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
->  module_param(enable_oplocks, bool, 0644);
->  MODULE_PARM_DESC(enable_oplocks, "Enable or disable oplocks. Default: y/Y/1");
->  
-> +unsigned short smb_echo_timeout = 60;
-> +module_param(smb_echo_timeout, ushort, 0644);
-> +MODULE_PARM_DESC(smb_echo_timeout, "Timeout between two echo requests. "
-> +				   "Default: 60. Timeout in seconds ");
-> +
->  extern mempool_t *cifs_sm_req_poolp;
->  extern mempool_t *cifs_req_poolp;
->  extern mempool_t *cifs_mid_poolp;
-> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-> index f5af252..d64dcd3 100644
-> --- a/fs/cifs/cifsglob.h
-> +++ b/fs/cifs/cifsglob.h
-> @@ -78,8 +78,9 @@
->  /*           (max path length + 1 for null) * 2 for unicode    */
->  #define MAX_NAME 514
->  
-> -/* SMB echo "timeout" -- FIXME: tunable? */
-> -#define SMB_ECHO_INTERVAL (60 * HZ)
-> +/* SMB echo "timeout" */
-> +extern unsigned short smb_echo_timeout;
-> +#define SMB_ECHO_INTERVAL (smb_echo_timeout * HZ)
->  
->  #include "cifspdu.h"
->  
+hongbo.zhang (2):
+  Thermal: Add ST-Ericsson DB8500 thermal driver.
+  Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
 
-I'm not so sure I like making this tunable...
-
-What would really be better is fixing the code to only echo when there
-are outstanding calls to the server.
-
-This also seems like a bit of a kludgy workaround for the real problem.
->From looking over the bug reports, it sounds like the real issue is
-that the server is timing out the connection while the client is
-suspended. It then has to wait until the next echo comes around to
-figure that out. Is that the case?
-
-If so, then I think what you really want here is a way to tell if the
-connection is still valid after resume. Perhaps there's some way to
-force an immediate SMB echo on these connections after resume? With
-that, there'd be little delay at all in contacting the server after a
-resume. The server would presumably send back a RST immediately in such
-a case and we could get on with the business of reconnecting.
-
-The cifs_demultiplex_thread does make some calls to try_to_freeze().
-Perhaps checking the return value on those and kicking off an immediate
-echo if it returns true would be a better solution?
+ .../devicetree/bindings/thermal/db8500-thermal.txt |  44 ++
+ arch/arm/boot/dts/dbx5x0.dtsi                      |  14 +
+ arch/arm/boot/dts/snowball.dts                     |  31 ++
+ arch/arm/configs/u8500_defconfig                   |   2 +
+ arch/arm/mach-ux500/board-mop500.c                 |  64 +++
+ drivers/thermal/Kconfig                            |  20 +
+ drivers/thermal/Makefile                           |   2 +
+ drivers/thermal/db8500_cpufreq_cooling.c           | 108 +++++
+ drivers/thermal/db8500_thermal.c                   | 531 +++++++++++++++++++++
+ include/linux/platform_data/db8500_thermal.h       |  38 ++
+ 10 files changed, 854 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+ create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
+ create mode 100644 drivers/thermal/db8500_thermal.c
+ create mode 100644 include/linux/platform_data/db8500_thermal.h
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.11.3
+
