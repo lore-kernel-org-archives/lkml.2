@@ -1,126 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab2KITSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 14:18:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1404 "EHLO mx1.redhat.com"
+	id S1755860Ab2KITS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 14:18:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755375Ab2KITS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 14:18:29 -0500
+	id S1755378Ab2KITSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 14:18:30 -0500
 From: Jeff Moyer <jmoyer@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
 Cc: Bart Van Assche <bvanassche@acm.org>,
         "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [patch,v3 01/10] scsi: add scsi_host_alloc_node
-Date: Fri,  9 Nov 2012 14:17:58 -0500
-Message-Id: <1352488687-19935-2-git-send-email-jmoyer@redhat.com>
+Subject: [patch,v3 03/10] scsi: make scsi_alloc_sdev numa-aware
+Date: Fri,  9 Nov 2012 14:18:00 -0500
+Message-Id: <1352488687-19935-4-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
 References: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow an LLD to specify on which numa node to allocate scsi data
-structures.  Thanks to Bart Van Assche for the suggestion.
+Use the numa node id set in the Scsi_Host to allocate the sdev structure
+on the device-local numa node.
 
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- drivers/scsi/hosts.c     |   13 +++++++++++--
- include/scsi/scsi_host.h |   28 ++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_scan.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 593085a..06ce602 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -336,16 +336,25 @@ static struct device_type scsi_host_type = {
-  **/
- struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- {
-+	return scsi_host_alloc_node(sht, privsize, NUMA_NO_NODE);
-+}
-+EXPORT_SYMBOL(scsi_host_alloc);
-+
-+struct Scsi_Host *scsi_host_alloc_node(struct scsi_host_template *sht,
-+				       int privsize, int node)
-+{
- 	struct Scsi_Host *shost;
- 	gfp_t gfp_mask = GFP_KERNEL;
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 3e58b22..d91749d 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -232,8 +232,8 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
+ 	extern void scsi_evt_thread(struct work_struct *work);
+ 	extern void scsi_requeue_run_queue(struct work_struct *work);
  
- 	if (sht->unchecked_isa_dma && privsize)
- 		gfp_mask |= __GFP_DMA;
+-	sdev = kzalloc(sizeof(*sdev) + shost->transportt->device_size,
+-		       GFP_ATOMIC);
++	sdev = kzalloc_node(sizeof(*sdev) + shost->transportt->device_size,
++			    GFP_ATOMIC, scsi_host_get_numa_node(shost));
+ 	if (!sdev)
+ 		goto out;
  
--	shost = kzalloc(sizeof(struct Scsi_Host) + privsize, gfp_mask);
-+	shost = kzalloc_node(sizeof(struct Scsi_Host) + privsize,
-+			     gfp_mask, node);
- 	if (!shost)
- 		return NULL;
- 
-+	scsi_host_set_numa_node(shost, node);
- 	shost->host_lock = &shost->default_lock;
- 	spin_lock_init(shost->host_lock);
- 	shost->shost_state = SHOST_CREATED;
-@@ -443,7 +452,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- 	kfree(shost);
- 	return NULL;
- }
--EXPORT_SYMBOL(scsi_host_alloc);
-+EXPORT_SYMBOL(scsi_host_alloc_node);
- 
- struct Scsi_Host *scsi_register(struct scsi_host_template *sht, int privsize)
- {
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 4908480..438856d 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -732,6 +732,14 @@ struct Scsi_Host {
- 	 */
- 	struct device *dma_dev;
- 
-+#ifdef CONFIG_NUMA
-+	/*
-+	 * Numa node this device is closest to, used for allocating
-+	 * data structures locally.
-+	 */
-+	int numa_node;
-+#endif
-+
- 	/*
- 	 * We should ensure that this is aligned, both for better performance
- 	 * and also because some compilers (m68k) don't automatically force
-@@ -776,6 +784,8 @@ extern int scsi_queue_work(struct Scsi_Host *, struct work_struct *);
- extern void scsi_flush_work(struct Scsi_Host *);
- 
- extern struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *, int);
-+extern struct Scsi_Host *scsi_host_alloc_node(struct scsi_host_template *,
-+					      int, int);
- extern int __must_check scsi_add_host_with_dma(struct Scsi_Host *,
- 					       struct device *,
- 					       struct device *);
-@@ -919,6 +929,24 @@ static inline unsigned char scsi_host_get_guard(struct Scsi_Host *shost)
- 	return shost->prot_guard_type;
- }
- 
-+#ifdef CONFIG_NUMA
-+static inline int scsi_host_get_numa_node(struct Scsi_Host *shost)
-+{
-+	return shost->numa_node;
-+}
-+
-+static inline void scsi_host_set_numa_node(struct Scsi_Host *shost, int node)
-+{
-+	shost->numa_node = node;
-+}
-+#else /* CONFIG_NUMA */
-+static inline int scsi_host_get_numa_node(struct Scsi_Host *shost)
-+{
-+	return NUMA_NO_NODE;
-+}
-+static inline void scsi_host_set_numa_node(struct Scsi_Host *shost, int node) {}
-+#endif
-+
- /* legacy interfaces */
- extern struct Scsi_Host *scsi_register(struct scsi_host_template *, int);
- extern void scsi_unregister(struct Scsi_Host *);
 -- 
 1.7.1
 
