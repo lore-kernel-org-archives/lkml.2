@@ -1,134 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2KIKUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 05:20:07 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:18715 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2KIKUA (ORCPT
+	id S1752247Ab2KIKXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 05:23:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60921 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab2KIKXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 05:20:00 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-bb-509cd8ced15b
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, jassisinghbrar@gmail.com,
-        vinod.koul@intel.com, rob.herring@calxeda.com, dinguyen@altera.com,
-        pawel.moll@arm.com, t.figa@samsung.com, kyungmin.park@samsung.com
-References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
- <201210300956.23102.b.zolnierkie@samsung.com>
- <0cea01cdbd6c$7ace7200$706b5600$%kim@samsung.com>
- <201211081054.41649.b.zolnierkie@samsung.com>
-In-reply-to: <201211081054.41649.b.zolnierkie@samsung.com>
-Subject: RE: [PATCH 2/4] ARM: EXYNOS: PL330 MDMA1 fix for revision 0 of
- Exynos4210 SOC
-Date: Fri, 09 Nov 2012 19:19:58 +0900
-Message-id: <0e8801cdbe63$c52b6e50$4f824af0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac29lzuGktWzIActS0W0cetE2PhDIAAzECxQ
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zI91zN+YEGFzYpmRxedccNosZ5/cx
-	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJVx9sYhloImsYpnFyazNTAuF+pi5OSQEDCRONvWwAhh
-	i0lcuLeerYuRi0NIYBmjxLwXM5lgitoud7FCJKYzSnz4cg7K+csocaWrixmkik1AQ+Lw+2fs
-	ILaIgJXE4xln2UGKmAUmMEmsWH2eBaLjDqNEX88iVpAqTqCq90962UBsYYEIiYcXvoHFWQRU
-	Jb5dmwc2lVfAVmLjziYoW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveAtVwAN2qLvHory7EEUYS
-	t+9NYYYoEZHY9+IdI8R4AYlvkw+xQJTLSmw6wAxymoTAKnaJW5c+skO8LClxcMUNlgmMErOQ
-	bJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZIpEnvYFzVYHGIUYCD
-	UYmHN/HB7AAh1sSy4srcQ4wSHMxKIrxGZ+cECPGmJFZWpRblxxeV5qQWH2L0Abp8IrOUaHI+
-	MAnklcQbGhubmJmYmphbmpqb4hBWEudt9kgJEBJITyxJzU5NLUgtghnHxMEp1cA4bUvNi9Jr
-	pRWrDl2fKHpplvpriaaXHpsT2h57W/uYzOu5X3awNybNz9hK2nR7+sIZPzZ/X5qz6FlPTVvT
-	jofnH9WGC7zldv7+wOmNwMeky91vXVeemJTx68G0cEXnd1aycy1mBcd7MQpmTn+bEh1e6rRg
-	yq+yorkC/qlbFpZ+rK0P2adS0LRHiaU4I9FQi7moOBEA/EbXVeECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jQd1zN+YEGPycJW9xedccNosZ5/cx
-	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcfbGIZaCJrGK
-	ZxcmszUwLhfqYuTkkBAwkWi73MUKYYtJXLi3nq2LkYtDSGA6o8SHL+dYIZy/jBJXurqYQarY
-	BDQkDr9/xg5iiwhYSTyecZYdpIhZYAKTxIrV51kgOu4wSvT1LAKbywlU9f5JLxuILSwQIfHw
-	wjewOIuAqsS3a/PApvIK2Eps3NkEZQtK/Jh8jwXEZhbQkli/8zgThC0vsXnNW6AaDqBb1SUe
-	/dWFOMJI4va9KcwQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoT
-	c4tL89L1kvNzNzGC4/iZ9A7GVQ0WhxgFOBiVeHgTH8wOEGJNLCuuzD3EKMHBrCTCa3R2ToAQ
-	b0piZVVqUX58UWlOavEhRh+gRycyS4km5wNTTF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAh
-	gfTEktTs1NSC1CKYcUwcnFINjAs5LQIEz8uppc2QyT74ccZsGdPfnOWP1mcb6n+oqnc9dtnT
-	+EN1evoZL+tfotPZWo0OL9i3ZpPczrNZjpkss+5N3HT2y5eSKYks2uYfj3cHf1TJcmVUXWJ9
-	wNXB0DdIyXvumojd81Q7djNXO7vdEUsTNeNX1jo9mU9HKSS/Zt6S3ZlbrOMLlViKMxINtZiL
-	ihMBgivw1xADAAA=
-X-CFilter-Loop: Reflected
+	Fri, 9 Nov 2012 05:23:03 -0500
+Message-ID: <509CD98B.7080503@gmail.com>
+Date: Fri, 09 Nov 2012 18:23:07 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] memcg, oom: provide more precise dump info while memcg
+ oom happening
+References: <1352389967-23270-1-git-send-email-handai.szj@taobao.com> <20121108162539.GP31821@dhcp22.suse.cz>
+In-Reply-To: <20121108162539.GP31821@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bartlomiej Zolnierkiewicz wrote:
-> 
-> Ah, okay.  Here is full simplified patch.
-> 
-> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Subject: [PATCH v2] ARM: EXYNOS: PL330 MDMA1 fix for revision 0 of
-> Exynos4210 SOC
-> 
-> Commit 8214513 ("ARM: EXYNOS: fix address for EXYNOS4 MDMA1")
-> changed EXYNOS specific setup of PL330 DMA engine to use 'non-secure'
-> mdma1 address instead of 'secure' one (from 0x12840000 to 0x12850000)
-> to fix issue with some Exynos4212 SOCs.  Unfortunately it brakes
-> PL330 setup for revision 0 of Exynos4210 SOC (mdma1 device cannot
-> be found at 'non-secure' address):
-> 
-> [    0.566245] dma-pl330 dma-pl330.2: PERIPH_ID 0x0, PCELL_ID 0x0 !
-> [    0.566278] dma-pl330: probe of dma-pl330.2 failed with error -22
-> 
-> Fix it by using 'secure' mdma1 address on Exynos4210 revision 0 SOC.
-> 
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/mach-exynos/dma.c              |    3 +++
->  arch/arm/mach-exynos/include/mach/map.h |    1 +
->  2 files changed, 4 insertions(+)
-> 
-> Index: b/arch/arm/mach-exynos/dma.c
-> ===================================================================
-> --- a/arch/arm/mach-exynos/dma.c	2012-11-07 18:20:36.561743865 +0100
-> +++ b/arch/arm/mach-exynos/dma.c	2012-11-08 10:48:23.445067606 +0100
-> @@ -275,6 +275,9 @@ static int __init exynos_dma_init(void)
->  		exynos_pdma1_pdata.nr_valid_peri =
->  			ARRAY_SIZE(exynos4210_pdma1_peri);
->  		exynos_pdma1_pdata.peri_id = exynos4210_pdma1_peri;
-> +
-> +		if (samsung_rev() == EXYNOS4210_REV_0)
-> +			exynos_mdma1_device.res.start = EXYNOS4_PA_S_MDMA1;
->  	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
->  		exynos_pdma0_pdata.nr_valid_peri =
->  			ARRAY_SIZE(exynos4212_pdma0_peri);
-> Index: b/arch/arm/mach-exynos/include/mach/map.h
-> ===================================================================
-> --- a/arch/arm/mach-exynos/include/mach/map.h	2012-11-07
-> 18:20:44.801743862 +0100
-> +++ b/arch/arm/mach-exynos/include/mach/map.h	2012-11-08
-> 10:48:40.597067605 +0100
-> @@ -92,6 +92,7 @@
-> 
->  #define EXYNOS4_PA_MDMA0		0x10810000
->  #define EXYNOS4_PA_MDMA1		0x12850000
-> +#define EXYNOS4_PA_S_MDMA1		0x12840000
->  #define EXYNOS4_PA_PDMA0		0x12680000
->  #define EXYNOS4_PA_PDMA1		0x12690000
->  #define EXYNOS5_PA_MDMA0		0x10800000
+On 11/09/2012 12:25 AM, Michal Hocko wrote:
+> On Thu 08-11-12 23:52:47, Sha Zhengju wrote:
+> [...]
+>> (2) After change
+>> [  269.225628] mal invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
+>> [  269.225633] mal cpuset=/ mems_allowed=0-1
+>> [  269.225636] Pid: 4616, comm: mal Not tainted 3.6.0+ #25
+>> [  269.225637] Call Trace:
+>> [  269.225647]  [<ffffffff8111b9c4>] dump_header+0x84/0xd0
+>> [  269.225650]  [<ffffffff8111c691>] oom_kill_process+0x331/0x350
+>> [  269.225710]  .......(call trace)
+>> [  269.225713]  [<ffffffff81517325>] page_fault+0x25/0x30
+>> [  269.225716] Task in /1/2 killed as a result of limit of /1
+>> [  269.225718] memory: usage 511732kB, limit 512000kB, failcnt 5071
+>> [  269.225720] memory+swap: usage 563200kB, limit 563200kB, failcnt 57
+>> [  269.225721] kmem: usage 0kB, limit 9007199254740991kB, failcnt 0
+>> [  269.225722] Memory cgroup stats:cache:8KB rss:511724KB mapped_file:4KB swap:51468KB inactive_anon:265864KB active_anon:245832KB inactive_file:0KB active_file:0KB unevictable:0KB
+>> [  269.225741] [ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name
+>> [  269.225757] [ 4554]     0  4554    16626      473      17       25             0 bash
+>> [  269.225759] [ 4611]     0  4611   103328    90231     208    12260             0 mal
+>> [  269.225762] [ 4616]     0  4616   103328    32799      88     7562             0 mal
+>> [  269.225764] Memory cgroup out of memory: Kill process 4611 (mal) score 699 or sacrifice child
+>> [  269.225766] Killed process 4611 (mal) total-vm:413312kB, anon-rss:360632kB, file-rss:292kB
+>>
+>> This version provides more pointed info for memcg in "Memory cgroup stats" section.
+> Looks much better!
+>
+>> Change log:
+>> v3<--- v2
+>> 	1. fix towards hierarchy
+>> 	2. undo rework dump_tasks
+>> v2<--- v1
+>> 	1. some modification towards hierarchy
+>> 	2. rework dump_tasks
+>> 	3. rebased on Michal's mm tree since-3.6
+>>
+>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
+>> ---
+>>   mm/memcontrol.c |   41 +++++++++++++++++++++++++++++++----------
+>>   mm/oom_kill.c   |    6 ++++--
+>>   2 files changed, 35 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 0eab7d5..17317fa 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+> [...]
+>> @@ -1501,8 +1509,8 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+>>   	spin_unlock_irqrestore(&memcg->move_lock, *flags);
+>>   }
+>>
+>> +#define K(x) ((x)<<  (PAGE_SHIFT-10))
+>>   /**
+>> - * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
+> No need to remove this just fix it:
+>   * mem_cgroup_print_oom_info: Print OOM information relevant to memory controller.
+>
+>>    * @memcg: The memory cgroup that went over limit
+>>    * @p: Task that is going to be killed
+>>    *
+>> @@ -1520,8 +1528,10 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>>   	 */
+>>   	static char memcg_name[PATH_MAX];
+>>   	int ret;
+>> +	struct mem_cgroup *mi;
+>> +	unsigned int i;
+>>
+>> -	if (!memcg || !p)
+>> +	if (!p)
+>>   		return;
+>>
+>>   	rcu_read_lock();
+>> @@ -1569,6 +1579,25 @@ done:
+>>   		res_counter_read_u64(&memcg->kmem, RES_USAGE)>>  10,
+>>   		res_counter_read_u64(&memcg->kmem, RES_LIMIT)>>  10,
+>>   		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+>> +
+>> +	printk(KERN_INFO "Memory cgroup stats:");
+> "Memory cgroup hierarchy stats" is probably a better fit with the
+> current implementation.
+>
+>> +	for (i = 0; i<  MEM_CGROUP_STAT_NSTATS; i++) {
+>> +		long long val = 0;
+>> +		if (i == MEM_CGROUP_STAT_SWAP&&  !do_swap_account)
+>> +			continue;
+>> +		for_each_mem_cgroup_tree(mi, memcg)
+>> +			val += mem_cgroup_read_stat(mi, i);
+>> +		printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
+>> +	}
+>> +
+>> +	for (i = 0; i<  NR_LRU_LISTS; i++) {
+>> +		unsigned long long val = 0;
+>> +
+>> +		for_each_mem_cgroup_tree(mi, memcg)
+>> +			val += mem_cgroup_nr_lru_pages(mi, BIT(i));
+>> +		printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
+>> +	}
+>> +	printk(KERN_CONT "\n");
+> This is nice and simple I am just thinking whether it is enough. Say
+> that you have a deeper hierarchy and the there is a safety limit in the
+> its root
+>          A (limit)
+>         /|\
+>        B C D
+>            |\
+> 	  E F
+>
+> and we trigger an OOM on the A's limit. Now we know that something blew
+> up but what it was we do not know. Wouldn't it be better to swap the for
+> and for_each_mem_cgroup_tree loops? Then we would see the whole
+> hierarchy and can potentially point at the group which doesn't behave.
+> Memory cgroup stats for A/: ...
+> Memory cgroup stats for A/B/: ...
+> Memory cgroup stats for A/C/: ...
+> Memory cgroup stats for A/D/: ...
+> Memory cgroup stats for A/D/E/: ...
+> Memory cgroup stats for A/D/F/: ...
+>
+> Would it still fit in with your use case?
+> [...]
 
-Looks good to me, and I think, this can be handled separate from this
-series.
+We haven't used those complicate hierarchy yet, but it sounds a good 
+suggestion. :)
+Hierarchy is a little complex to use from our experience, and the three 
+cgroups involved in memcg oom can be different: memcg of invoker, killed 
+task, memcg of going over limit.Suppose a process in B triggers oom and 
+a victim in root A is selected to be killed, we may as well want to know 
+memcg stats just local in A cgroup(excludes BCD). So besides hierarchy 
+info, does it acceptable to also print the local root node stats which 
+as I did in the V1 version(https://lkml.org/lkml/2012/7/30/179).
 
-Vinod, if you're ok, let me pick this up into Samsung tree.
+Another one I'm hesitating is numa stats, it seems the output is 
+beginning to get more and more....
 
-Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Thanks,
+Sha
 
