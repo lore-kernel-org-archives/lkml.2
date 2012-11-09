@@ -1,188 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2KIBvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 20:51:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37155 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757066Ab2KIBvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 20:51:37 -0500
-Date: Thu, 8 Nov 2012 19:51:13 -0600
-From: Clark Williams <williams@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH v2] sched: add a tuning knob to allow changing RR tmeslice
-Message-ID: <20121108195113.2dd51d43@redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/pO7WSUl+BFUNZ_qvNRWh/6y"; protocol="application/pgp-signature"
+	id S1757340Ab2KICGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 21:06:07 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56194 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab2KICGE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 21:06:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352408516-21988-8-git-send-email-swarren@wwwdotorg.org>
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org> <1352408516-21988-8-git-send-email-swarren@wwwdotorg.org>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 9 Nov 2012 10:05:41 +0800
+Message-ID: <CAMPhdO_B2LxbbUGFH2Z7z0NrC153Bn1NhopqAQNhKBxhWL-=LQ@mail.gmail.com>
+Subject: Re: [PATCH 06/11] ARM: pxa: convert timer suspend/resume to clock_event_device
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/pO7WSUl+BFUNZ_qvNRWh/6y
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 9, 2012 at 5:01 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> Move PXA's timer suspend/resume functions from struct sys_timer
+> pxa_timer into struct clock_event_device ckevt_pxa_osmr0. This
+> will allow the sys_timer suspend/resume fields to be removed, and
+> eventually lead to a complete removal of struct sys_timer.
+>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
-This version stores the user-input value in a separate location from
-the jiffies values used by the scheduler, to prevent a race condition.
-
-Subject: [PATCH v2] sched: add a tuning knob to allow changing RR
-timeslice
-
-User wanted a facility simliar to the ability on Solaris to adjust
-the SCHED_RR timeslice value. Add a /proc/sys/kernel scheduler knob
-named sched_rr_timeslice_ms which allows global changing of the SCHED_RR
-timeslice value. User visable value is in milliseconds but is stored as
-jiffies.  Setting to 0 (zero) resets to the default (currently 100ms).
-
-Patch against tip/master, currently 3.7-rc3.
-
-Signed-off-by: Clark Williams <williams@redhat.com>
----
- include/linux/sched.h |  7 ++++++-
- kernel/sched/core.c   | 30 ++++++++++++++++++++++++++++++
- kernel/sched/rt.c     |  4 ++--
- kernel/sysctl.c       |  7 +++++++
- 4 files changed, 45 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 03be150..1e2f38a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2071,11 +2071,16 @@ static inline unsigned int
-get_sysctl_timer_migration(void) #endif /* CONFIG_SCHED_DEBUG */
- extern unsigned int sysctl_sched_rt_period;
- extern int sysctl_sched_rt_runtime;
--
-+extern int sysctl_sched_rr_timeslice_ms;
-+extern int sched_rr_timeslice;
- int sched_rt_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
-=20
-+int sched_rr_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
-+
- #ifdef CONFIG_SCHED_AUTOGROUP
- extern unsigned int sysctl_sched_autogroup_enabled;
-=20
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c2e077c..318f617 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -288,6 +288,17 @@ __read_mostly int scheduler_running;
- int sysctl_sched_rt_runtime =3D 950000;
-=20
-=20
-+/*
-+ * SCHED_RR timeslice in jiffies
-+ *
-+ */
-+int sched_rr_timeslice =3D RR_TIMESLICE;
-+int sysctl_sched_rr_timeslice_ms;
-+
-+static inline void init_rr_timeslice()
-+{
-+	sysctl_sched_rr_timeslice_ms =3D msecs_to_jiffies(RR_TIMESLICE);
-+}
-=20
- /*
-  * __task_rq_lock - lock the rq @p resides on.
-@@ -6863,6 +6874,8 @@ void __init sched_init(void)
- 	init_rt_bandwidth(&def_rt_bandwidth,
- 			global_rt_period(), global_rt_runtime());
-=20
-+	init_rr_timeslice();
-+
- #ifdef CONFIG_RT_GROUP_SCHED
- 	init_rt_bandwidth(&root_task_group.rt_bandwidth,
- 			global_rt_period(), global_rt_runtime());
-@@ -7543,6 +7556,23 @@ int sched_rt_handler(struct ctl_table *table,
-int write, return ret;
- }
-=20
-+int sched_rr_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos)
-+{
-+	int ret;
-+	static DEFINE_MUTEX(mutex);
-+
-+	mutex_lock(&mutex);
-+	ret =3D proc_dointvec(table, write, buffer, lenp, ppos);
-+	/* make sure we maintain jiffies internally */
-+	if (!ret && write)
-+		sched_rr_timeslice =3D (sysctl_sched_rr_timeslice_ms <=3D
-0) ?
-+			RR_TIMESLICE :
-msecs_to_jiffies(sysctl_sched_rr_timeslice_ms);
-+	mutex_unlock(&mutex);
-+	return ret;
-+}
-+
- #ifdef CONFIG_CGROUP_SCHED
-=20
- /* return corresponding task_group object of a cgroup */
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..71aa6d0 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -2010,7 +2010,7 @@ static void task_tick_rt(struct rq *rq, struct
-task_struct *p, int queued) if (--p->rt.time_slice)
- 		return;
-=20
--	p->rt.time_slice =3D RR_TIMESLICE;
-+	p->rt.time_slice =3D sched_rr_timeslice;
-=20
- 	/*
- 	 * Requeue to the end of queue if we (and all of our
-ancestors) are the @@ -2041,7 +2041,7 @@ static unsigned int
-get_rr_interval_rt(struct rq *rq, struct task_struct *task)
- 	 * Time slice is 0 for SCHED_FIFO tasks
- 	 */
- 	if (task->policy =3D=3D SCHED_RR)
--		return RR_TIMESLICE;
-+		return sched_rr_timeslice;
- 	else
- 		return 0;
- }
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b769d25..9fa0885 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -403,6 +403,13 @@ static struct ctl_table kern_table[] =3D {
- 		.mode		=3D 0644,
- 		.proc_handler	=3D sched_rt_handler,
- 	},
-+	{
-+		.procname	=3D "sched_rr_timeslice_ms",
-+		.data		=3D &sysctl_sched_rr_timeslice_ms,
-+		.maxlen		=3D sizeof(int),
-+		.mode		=3D 0644,
-+		.proc_handler	=3D sched_rr_handler,
-+	},
- #ifdef CONFIG_SCHED_AUTOGROUP
- 	{
- 		.procname	=3D "sched_autogroup_enabled",
---=20
-1.7.11.7
-
-
---Sig_/pO7WSUl+BFUNZ_qvNRWh/6y
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAlCcYZEACgkQHyuj/+TTEp1MdgCgofISpWr2WOryOfc3bKxieO2s
-fHEAnjHLU72id97bZI4BCt9Xo/Nte8C8
-=h2cg
------END PGP SIGNATURE-----
-
---Sig_/pO7WSUl+BFUNZ_qvNRWh/6y--
+> ---
+>  arch/arm/mach-pxa/time.c |   76 +++++++++++++++++++++++-----------------------
+>  1 files changed, 38 insertions(+), 38 deletions(-)
+>
+> diff --git a/arch/arm/mach-pxa/time.c b/arch/arm/mach-pxa/time.c
+> index 4bc47d6..ce58bc9 100644
+> --- a/arch/arm/mach-pxa/time.c
+> +++ b/arch/arm/mach-pxa/time.c
+> @@ -89,12 +89,50 @@ pxa_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
+>         }
+>  }
+>
+> +#ifdef CONFIG_PM
+> +static unsigned long osmr[4], oier, oscr;
+> +
+> +static void pxa_timer_suspend(struct clock_event_device *cedev)
+> +{
+> +       osmr[0] = readl_relaxed(OSMR0);
+> +       osmr[1] = readl_relaxed(OSMR1);
+> +       osmr[2] = readl_relaxed(OSMR2);
+> +       osmr[3] = readl_relaxed(OSMR3);
+> +       oier = readl_relaxed(OIER);
+> +       oscr = readl_relaxed(OSCR);
+> +}
+> +
+> +static void pxa_timer_resume(struct clock_event_device *cedev)
+> +{
+> +       /*
+> +        * Ensure that we have at least MIN_OSCR_DELTA between match
+> +        * register 0 and the OSCR, to guarantee that we will receive
+> +        * the one-shot timer interrupt.  We adjust OSMR0 in preference
+> +        * to OSCR to guarantee that OSCR is monotonically incrementing.
+> +        */
+> +       if (osmr[0] - oscr < MIN_OSCR_DELTA)
+> +               osmr[0] += MIN_OSCR_DELTA;
+> +
+> +       writel_relaxed(osmr[0], OSMR0);
+> +       writel_relaxed(osmr[1], OSMR1);
+> +       writel_relaxed(osmr[2], OSMR2);
+> +       writel_relaxed(osmr[3], OSMR3);
+> +       writel_relaxed(oier, OIER);
+> +       writel_relaxed(oscr, OSCR);
+> +}
+> +#else
+> +#define pxa_timer_suspend NULL
+> +#define pxa_timer_resume NULL
+> +#endif
+> +
+>  static struct clock_event_device ckevt_pxa_osmr0 = {
+>         .name           = "osmr0",
+>         .features       = CLOCK_EVT_FEAT_ONESHOT,
+>         .rating         = 200,
+>         .set_next_event = pxa_osmr0_set_next_event,
+>         .set_mode       = pxa_osmr0_set_mode,
+> +       .suspend        = pxa_timer_suspend,
+> +       .resume         = pxa_timer_resume,
+>  };
+>
+>  static struct irqaction pxa_ost0_irq = {
+> @@ -127,44 +165,6 @@ static void __init pxa_timer_init(void)
+>         clockevents_register_device(&ckevt_pxa_osmr0);
+>  }
+>
+> -#ifdef CONFIG_PM
+> -static unsigned long osmr[4], oier, oscr;
+> -
+> -static void pxa_timer_suspend(void)
+> -{
+> -       osmr[0] = readl_relaxed(OSMR0);
+> -       osmr[1] = readl_relaxed(OSMR1);
+> -       osmr[2] = readl_relaxed(OSMR2);
+> -       osmr[3] = readl_relaxed(OSMR3);
+> -       oier = readl_relaxed(OIER);
+> -       oscr = readl_relaxed(OSCR);
+> -}
+> -
+> -static void pxa_timer_resume(void)
+> -{
+> -       /*
+> -        * Ensure that we have at least MIN_OSCR_DELTA between match
+> -        * register 0 and the OSCR, to guarantee that we will receive
+> -        * the one-shot timer interrupt.  We adjust OSMR0 in preference
+> -        * to OSCR to guarantee that OSCR is monotonically incrementing.
+> -        */
+> -       if (osmr[0] - oscr < MIN_OSCR_DELTA)
+> -               osmr[0] += MIN_OSCR_DELTA;
+> -
+> -       writel_relaxed(osmr[0], OSMR0);
+> -       writel_relaxed(osmr[1], OSMR1);
+> -       writel_relaxed(osmr[2], OSMR2);
+> -       writel_relaxed(osmr[3], OSMR3);
+> -       writel_relaxed(oier, OIER);
+> -       writel_relaxed(oscr, OSCR);
+> -}
+> -#else
+> -#define pxa_timer_suspend NULL
+> -#define pxa_timer_resume NULL
+> -#endif
+> -
+>  struct sys_timer pxa_timer = {
+>         .init           = pxa_timer_init,
+> -       .suspend        = pxa_timer_suspend,
+> -       .resume         = pxa_timer_resume,
+>  };
+> --
+> 1.7.0.4
+>
