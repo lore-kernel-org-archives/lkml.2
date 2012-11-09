@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2KISpC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:45:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36508 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622Ab2KISpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:45:00 -0500
-Date: Fri, 9 Nov 2012 16:44:54 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [ANNOUNCE] Extended stable support for Linux 3.5
- (linux-3.5.y-ext.z)
-Message-ID: <20121109184453.GA3011@herton-Z68MA-D2H-B3>
-References: <1352470505-6097-1-git-send-email-herton.krzesinski@canonical.com>
- <20121109152203.GA3861@elie.Belkin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109152203.GA3861@elie.Belkin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755331Ab2KITS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 14:18:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753526Ab2KITSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 14:18:24 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: Bart Van Assche <bvanassche@acm.org>
+Subject: [patch,v3 00/10] make I/O path allocations more numa-friendly
+Date: Fri,  9 Nov 2012 14:17:57 -0500
+Message-Id: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 07:22:03AM -0800, Jonathan Nieder wrote:
-> Hi Herton,
-> 
-> Herton Ronaldo Krzesinski wrote:
-> 
-> > I plan to do a similar workflow as to what is done today with current
-> > stable releases. I'll send email notifications to everyone involved in
-> > each patch when it's added to 3.5 queue, and post the patches for review
-> > for each release cycle. Just versioning will be slightly different,
-> > every version is planned to be tagged as v3.5.7-ext.<release number>,
-> > ext meaning extended, 3.5.7 was the last stable kernel in 3.5 kernel and
-> > should remain constant.
-> 
-> Thanks for your work.  Is there a reason not to work with Greg to
-> release these on kernel.org with increasing 3.5.8, 3.5.9, etc version
-> numbers?
+Hi,
 
-We tried that before with 3.2 but were denied, and decided this time to
-go with 3.5 in this way. Luckily Ben Hutchings stepped up and took 3.2,
-and is doing an awesome job btw. But if something changed I'm open for
-maintaining 3.5 along with other stable trees currently being maintained.
+This patch set makes memory allocations for data structures used in
+the I/O path more numa friendly by allocating them from the same numa
+node as the storage device.  I've only converted a handful of drivers
+at this point.  My testing showed that, for workloads where the I/O
+processes were not tied to the numa node housing the device, a speedup
+of around 6% was observed.  When the I/O processes were tied to the
+numa node of the device, there was no measurable difference in my test
+setup.  Given my relatively low-end setup[1], I wouldn't be surprised
+if others could show a more significant performance advantage.
 
-> 
-> Curious,
-> Jonathan
-> 
+Comments would be greatly appreciated.
 
--- 
-[]'s
-Herton
+Cheers,
+Jeff
+
+[1] LSI Megaraid SAS controller with 1GB battery-backed cache,
+fronting a RAID 6 10+2.  The workload I used was tuned to not
+have to hit disk.  Fio file attached.
+
+--
+changes from v2->v3:
+- Made the numa_node Scsi_Host structure member dependent on CONFIG_NUMA
+- Got rid of a GFP_ZERO I added accidentally
+changes from v1->v2:
+- got rid of the vfs patch, as Al pointed out some fundamental
+  problems with it
+- credited Bart van Assche properly
+
+
+Jeff Moyer (10):
+  scsi: add scsi_host_alloc_node
+  scsi: make __scsi_alloc_queue numa-aware
+  scsi: make scsi_alloc_sdev numa-aware
+  scsi: allocate scsi_cmnd-s from the device's local numa node
+  sd: use alloc_disk_node
+  ata: use scsi_host_alloc_node
+  megaraid_sas: use scsi_host_alloc_node
+  mpt2sas: use scsi_host_alloc_node
+  lpfc: use scsi_host_alloc_node
+  cciss: use blk_init_queue_node
+
+ drivers/ata/libata-scsi.c                 |    3 ++-
+ drivers/block/cciss.c                     |    3 ++-
+ drivers/scsi/hosts.c                      |   13 +++++++++++--
+ drivers/scsi/lpfc/lpfc_init.c             |   10 ++++++----
+ drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c      |    4 ++--
+ drivers/scsi/scsi.c                       |   16 ++++++++++------
+ drivers/scsi/scsi_lib.c                   |    3 ++-
+ drivers/scsi/scsi_scan.c                  |    4 ++--
+ drivers/scsi/sd.c                         |    2 +-
+ include/scsi/scsi_host.h                  |   28 ++++++++++++++++++++++++++++
+ 11 files changed, 69 insertions(+), 22 deletions(-)
+
