@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2KIGGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 01:06:42 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37520 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2KIGGl (ORCPT
+	id S1752623Ab2KIGGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 01:06:53 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10806 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2KIGGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 01:06:41 -0500
-Date: Fri, 9 Nov 2012 07:06:40 +0100
-From: Manuel Traut <manut@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stefan Staedtler <stefan.staedtler@siemens.com>
-Subject: [PATCH] uio_pdrv: set memory mapping name
-Message-ID: <20121109060640.GW15531@linutronix.de>
+	Fri, 9 Nov 2012 01:06:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 08 Nov 2012 21:53:26 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
+CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] gpio: tegra: read output value when gpio is set in direction_out
+Date: Fri, 9 Nov 2012 11:34:20 +0530
+Message-ID: <1352441060-31559-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If uio_pdrv[_genirq] is used, the uio maps have currently no name set.
-This patch sets the uio_mem name to the name of the memory resource.
- 
-Signed-off-by: Manuel Traut <manut@linutronix.de>
-Reported-by: Stefan Staedtler <stefan.staedtler@siemens.com>
-Tested-by: Stefan Staedtler <stefan.staedtler@siemens.com>
+Read the output value when gpio is set for the output mode for
+gpio_get_value(). Reading input value in direction out does not
+give correct value.
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 42202cd..ac988ce 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -172,6 +172,7 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 		uiomem->memtype = UIO_MEM_PHYS;
- 		uiomem->addr = r->start;
- 		uiomem->size = resource_size(r);
-+		uiomem->name = r->name;
- 		++uiomem;
- 	}
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- Keep the if part implementation same the else part to have implementation
+  same kind.
+
+ drivers/gpio/gpio-tegra.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index c7c175a..1163cf1 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -135,6 +135,11 @@ static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
  
-diff --git a/drivers/uio/uio_pdrv.c b/drivers/uio/uio_pdrv.c
-index 72d3646..39be9e0 100644
---- a/drivers/uio/uio_pdrv.c
-+++ b/drivers/uio/uio_pdrv.c
-@@ -60,6 +60,7 @@ static int uio_pdrv_probe(struct platform_device *pdev)
- 		uiomem->memtype = UIO_MEM_PHYS;
- 		uiomem->addr = r->start;
- 		uiomem->size = resource_size(r);
-+		uiomem->name = r->name;
- 		++uiomem;
- 	}
+ static int tegra_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
++	/* If gpio is in output mode then read from the out value */
++	if ((tegra_gpio_readl(GPIO_OE(offset)) >> GPIO_BIT(offset)) & 1)
++		return (tegra_gpio_readl(GPIO_OUT(offset)) >>
++				GPIO_BIT(offset)) & 0x1;
++
+ 	return (tegra_gpio_readl(GPIO_IN(offset)) >> GPIO_BIT(offset)) & 0x1;
+ }
  
+-- 
+1.7.1.1
+
