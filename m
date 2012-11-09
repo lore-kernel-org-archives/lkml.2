@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2KIOzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 09:55:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24520 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab2KIOzn (ORCPT
+	id S1754035Ab2KIPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 10:02:57 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33619 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2KIPCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 09:55:43 -0500
-Date: Fri, 9 Nov 2012 09:55:29 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-jens-3.8
-Message-ID: <20121109145529.GB23023@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 9 Nov 2012 10:02:54 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org, isdn@linux-pingi.de,
+        netdev@vger.kernel.org
+Cc: davem@davemloft.net, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] isdn: Fix typo in drivers/isdn
+Date: Sat, 10 Nov 2012 00:02:49 +0900
+Message-Id: <1352473369-13613-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jens,
+Correct spelling typo in printk within drivers/isdn
 
-Please git pull the following branch:
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/isdn/hardware/mISDN/hfcpci.c    | 2 +-
+ drivers/isdn/hardware/mISDN/mISDNisar.c | 2 +-
+ drivers/isdn/hisax/callc.c              | 2 +-
+ drivers/isdn/hisax/hfc_pci.c            | 2 +-
+ drivers/isdn/hisax/hfc_sx.c             | 2 +-
+ drivers/isdn/pcbit/layer2.c             | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.8
-
-which has a new feature of the blk[back|front] driver - it is called 'feature-persistent'.
-Roger and Oliver patch says:
-"  This patch implements persistent grants for the xen-blk{front,back}
-    mechanism. The effect of this change is to reduce the number of unmap
-    operations performed, since they cause a (costly) TLB shootdown. This
-    allows the I/O performance to scale better when a large number of VMs
-    are performing I/O.
-    
-    Previously, the blkfront driver was supplied a bvec[] from the request
-    queue. This was granted to dom0; dom0 performed the I/O and wrote
-    directly into the grant-mapped memory and unmapped it; blkfront then
-    removed foreign access for that grant. The cost of unmapping scales
-    badly with the number of CPUs in Dom0. An experiment showed that when
-    Dom0 has 24 VCPUs, and guests are performing parallel I/O to a
-    ramdisk, the IPIs from performing unmap's is a bottleneck at 5 guests
-    (at which point 650,000 IOPS are being performed in total). If more
-    than 5 guests are used, the performance declines. By 10 guests, only
-    400,000 IOPS are being performed.
-    
-    This patch improves performance by only unmapping when the connection
-    between blkfront and back is broken.
-"
-
-Note: You might get a conflict in the common.h file. It should
-be fairly easy to fix it - it should end up looking as this:
-
-160         /* Cached size parameter. */
-161         sector_t                size;
-162         unsigned int            flush_support:1;
-163         unsigned int            discard_secure:1;
-164         unsigned int            feature_gnt_persistent:1;
-165         unsigned int            overflow_max_grants:1;
-166 };
-
-Thanks!
-
- drivers/block/xen-blkback/blkback.c |  295 ++++++++++++++++++++++++++++++++---
- drivers/block/xen-blkback/common.h  |   17 ++
- drivers/block/xen-blkback/xenbus.c  |   23 +++-
- drivers/block/xen-blkfront.c        |  198 ++++++++++++++++++++----
- 4 files changed, 478 insertions(+), 55 deletions(-)
-
-Roger Pau Monne (2):
-      xen/blkback: Persistent grant maps for xen blk drivers
-      xen/blkback: persistent-grants fixes
+diff --git a/drivers/isdn/hardware/mISDN/hfcpci.c b/drivers/isdn/hardware/mISDN/hfcpci.c
+index 81363ff..6e99d73 100644
+--- a/drivers/isdn/hardware/mISDN/hfcpci.c
++++ b/drivers/isdn/hardware/mISDN/hfcpci.c
+@@ -490,7 +490,7 @@ receive_dmsg(struct hfc_pci *hc)
+ 		    (df->data[le16_to_cpu(zp->z1)])) {
+ 			if (dch->debug & DEBUG_HW)
+ 				printk(KERN_DEBUG
+-				       "empty_fifo hfcpci paket inv. len "
++				       "empty_fifo hfcpci packet inv. len "
+ 				       "%d or crc %d\n",
+ 				       rcnt,
+ 				       df->data[le16_to_cpu(zp->z1)]);
+diff --git a/drivers/isdn/hardware/mISDN/mISDNisar.c b/drivers/isdn/hardware/mISDN/mISDNisar.c
+index 182ecf0..feafa91 100644
+--- a/drivers/isdn/hardware/mISDN/mISDNisar.c
++++ b/drivers/isdn/hardware/mISDN/mISDNisar.c
+@@ -1302,7 +1302,7 @@ modeisar(struct isar_ch *ch, u32 bprotocol)
+ 						   &ch->is->Flags))
+ 				ch->dpath = 1;
+ 			else {
+-				pr_info("modeisar both pathes in use\n");
++				pr_info("modeisar both paths in use\n");
+ 				return -EBUSY;
+ 			}
+ 			if (bprotocol == ISDN_P_B_HDLC)
+diff --git a/drivers/isdn/hisax/callc.c b/drivers/isdn/hisax/callc.c
+index a47637b..ddec47a 100644
+--- a/drivers/isdn/hisax/callc.c
++++ b/drivers/isdn/hisax/callc.c
+@@ -35,7 +35,7 @@ static int chancount;
+ /* experimental REJECT after ALERTING for CALLBACK to beat the 4s delay */
+ #define ALERT_REJECT 0
+ 
+-/* Value to delay the sending of the first B-channel paket after CONNECT
++/* Value to delay the sending of the first B-channel packet after CONNECT
+  * here is no value given by ITU, but experience shows that 300 ms will
+  * work on many networks, if you or your other side is behind local exchanges
+  * a greater value may be recommented. If the delay is to short the first paket
+diff --git a/drivers/isdn/hisax/hfc_pci.c b/drivers/isdn/hisax/hfc_pci.c
+index 334fa90..f60d4be 100644
+--- a/drivers/isdn/hisax/hfc_pci.c
++++ b/drivers/isdn/hisax/hfc_pci.c
+@@ -354,7 +354,7 @@ receive_dmsg(struct IsdnCardState *cs)
+ 		if ((rcnt > MAX_DFRAME_LEN + 3) || (rcnt < 4) ||
+ 		    (df->data[zp->z1])) {
+ 			if (cs->debug & L1_DEB_WARN)
+-				debugl1(cs, "empty_fifo hfcpci paket inv. len %d or crc %d", rcnt, df->data[zp->z1]);
++				debugl1(cs, "empty_fifo hfcpci packet inv. len %d or crc %d", rcnt, df->data[zp->z1]);
+ #ifdef ERROR_STATISTIC
+ 			cs->err_rx++;
+ #endif
+diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
+index 4db846b..4ec279c 100644
+--- a/drivers/isdn/hisax/hfc_sx.c
++++ b/drivers/isdn/hisax/hfc_sx.c
+@@ -270,7 +270,7 @@ read_fifo(struct IsdnCardState *cs, u_char fifo, int trans_max)
+ 
+ 		if ((count > fifo_size) || (count < 4)) {
+ 			if (cs->debug & L1_DEB_WARN)
+-				debugl1(cs, "hfcsx_read_fifo %d paket inv. len %d ", fifo , count);
++				debugl1(cs, "hfcsx_read_fifo %d packet inv. len %d ", fifo , count);
+ 			while (count) {
+ 				count--; /* empty fifo */
+ 				Read_hfc(cs, HFCSX_FIF_DRD);
+diff --git a/drivers/isdn/pcbit/layer2.c b/drivers/isdn/pcbit/layer2.c
+index a18e639..42ecfef 100644
+--- a/drivers/isdn/pcbit/layer2.c
++++ b/drivers/isdn/pcbit/layer2.c
+@@ -508,7 +508,7 @@ pcbit_irq_handler(int interrupt, void *devptr)
+ 		return IRQ_NONE;
+ 	}
+ 	if (dev->interrupt) {
+-		printk(KERN_DEBUG "pcbit: reentering interrupt hander\n");
++		printk(KERN_DEBUG "pcbit: reentering interrupt handler\n");
+ 		return IRQ_HANDLED;
+ 	}
+ 	dev->interrupt = 1;
+-- 
+1.8.0.rc3.16.g8ead1bf
 
