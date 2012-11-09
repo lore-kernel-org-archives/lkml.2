@@ -1,146 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab2KIIn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 03:43:27 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56765 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2KIInX (ORCPT
+	id S1751634Ab2KIIpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 03:45:35 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2KIIpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 03:43:23 -0500
-Date: Fri, 9 Nov 2012 14:08:37 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V2 RESEND RFC 2/3] kvm: Handle yield_to failure return
- code for potential undercommit case
-Message-ID: <20121109083837.GA1398@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <20121029140621.15448.92083.sendpatchset@codeblue>
- <20121029140702.15448.56932.sendpatchset@codeblue>
- <50911BC3.6080305@redhat.com>
- <50911C7D.5080307@linux.vnet.ibm.com>
- <50912463.3040201@linux.vnet.ibm.com>
- <50912A72.6050307@redhat.com>
- <50915A91.1040001@linux.vnet.ibm.com>
- <20121107102545.GA18644@linux.vnet.ibm.com>
+	Fri, 9 Nov 2012 03:45:33 -0500
+Date: Fri, 9 Nov 2012 00:45:27 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 12/13] HID: introduce Scan Time
+Message-ID: <20121109084527.GA15371@core.coreip.homeip.net>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-13-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121107102545.GA18644@linux.vnet.ibm.com>
+In-Reply-To: <1352306256-12180-13-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110908-4834-0000-0000-00000044B72F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle yield_to failure return code for potential undercommit case
+Hi Benjamin,
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+On Wed, Nov 07, 2012 at 05:37:35PM +0100, Benjamin Tissoires wrote:
+> Win 8 digitizer devices provides the actual scan time computed by the
+> hardware itself. The value is global to the frame and is not specific
+> to the multitouch protocol (though only touch, not pen, should use it
+> according to the specification).
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  Documentation/input/event-codes.txt | 9 +++++++++
+>  drivers/hid/hid-input.c             | 4 ++++
+>  include/linux/hid.h                 | 1 +
+>  include/linux/input.h               | 1 +
+>  4 files changed, 15 insertions(+)
+> 
+> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
+> index 53305bd..80c06e5 100644
+> --- a/Documentation/input/event-codes.txt
+> +++ b/Documentation/input/event-codes.txt
+> @@ -174,6 +174,15 @@ A few EV_ABS codes have special meanings:
+>      the input device may be used freely in three dimensions, consider ABS_Z
+>      instead.
+>  
+> +* ABS_SCAN_TIME:
+> +  - Used to report the number of microseconds since the last reset. This event
+> +    should be coded as an uint32 value, which is allowed to wrap around with
+> +    no special consequence. It is assumed that the time difference between two
+> +    consecutive events is reliable on a reasonable time scale (hours).
+> +    A reset to zero can happen, in which case the time since the last event is
+> +    unknown.  If the device does not provide this information, the driver must
+> +    not provide it to the user space.
+> +
 
-yield_to returns -ESRCH when When source and target of yield_to
-run queue length is one. When we see two successive failures of
-yield_to we assume we are in potential undercommit case and abort
-from PLE handler.
-The assumption is backed by low probability of wrong decision
-for even worst case scenarios such as average runqueue length
-between 1 and 2.
+This should not be an absolute event but rather EV_MSC/MSC_TIMESTAMP.
 
-note that we do not update last boosted vcpu in failure cases.
-Thank Avi for raising question on aborting after first fail from yield_to.
+Thanks.
 
-Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-
- virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
-
-
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index be70035..9f390e7 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
- {
- 	struct pid *pid;
- 	struct task_struct *task = NULL;
-+	bool ret = false;
- 
- 	rcu_read_lock();
- 	pid = rcu_dereference(target->pid);
-@@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
- 		task = get_pid_task(target->pid, PIDTYPE_PID);
- 	rcu_read_unlock();
- 	if (!task)
--		return false;
-+		return ret;
- 	if (task->flags & PF_VCPU) {
- 		put_task_struct(task);
--		return false;
--	}
--	if (yield_to(task, 1)) {
--		put_task_struct(task);
--		return true;
-+		return ret;
- 	}
-+	ret = yield_to(task, 1);
- 	put_task_struct(task);
--	return false;
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
- 
-@@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
- 	return eligible;
- }
- #endif
-+
- void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
- 	struct kvm_vcpu *vcpu;
- 	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
- 	int yielded = 0;
-+	int try = 2;
- 	int pass;
- 	int i;
- 
-@@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 	 * VCPU is holding the lock that we need and will release it.
- 	 * We approximate round-robin by starting at the last boosted VCPU.
- 	 */
--	for (pass = 0; pass < 2 && !yielded; pass++) {
-+	for (pass = 0; pass < 2 && !yielded && try; pass++) {
- 		kvm_for_each_vcpu(i, vcpu, kvm) {
- 			if (!pass && i <= last_boosted_vcpu) {
- 				i = last_boosted_vcpu;
-@@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 				continue;
- 			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
- 				continue;
--			if (kvm_vcpu_yield_to(vcpu)) {
-+
-+			yielded = kvm_vcpu_yield_to(vcpu);
-+			if (yielded > 0) {
- 				kvm->last_boosted_vcpu = i;
--				yielded = 1;
- 				break;
-+			} else if (yielded < 0) {
-+				try--;
-+				if (!try)
-+					break;
- 			}
- 		}
- 	}
-
+-- 
+Dmitry
