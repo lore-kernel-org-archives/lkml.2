@@ -1,177 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2KIQqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:46:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51870 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab2KIQp5 convert rfc822-to-8bit (ORCPT
+	id S1754890Ab2KIQqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:46:23 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52955 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab2KIQqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:45:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
-   d="scan'208";a="217378307"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Tang, Feng" <feng.tang@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Azat Khuzhin <dohardgopro@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Zheng, Lv" <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>
-Subject: RE: ACPI errors with 3.7-rc3
-Thread-Topic: ACPI errors with 3.7-rc3
-Thread-Index: AQHNvTFNRCA1n9eT1Uy9D+kai3STXJfhxPuA///OEeCAAKllgP//e/TA
-Date: Fri, 9 Nov 2012 16:45:33 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346BBFDCC@ORSMSX101.amr.corp.intel.com>
-References: <20121031014527.GA2984@kroah.com>
- <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
- <20121106124826.GA21806@kroah.com> <41011456.LYWJPCi9Xt@vostro.rjw.lan>
- <20121109092851.GA9179@feng-snb>
- <94F2FBAB4432B54E8AACC7DFDE6C92E346BBFC97@ORSMSX101.amr.corp.intel.com>
- <20121109163625.GA10171@feng-snb>
-In-Reply-To: <20121109163625.GA10171@feng-snb>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Nov 2012 11:46:18 -0500
+Date: Fri, 9 Nov 2012 16:46:31 +0000
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "pjt@google.com" <pjt@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 3/6] sched: pack small tasks
+Message-ID: <20121109164631.GA16082@e103034-lin>
+References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org>
+ <1349595838-31274-4-git-send-email-vincent.guittot@linaro.org>
+ <50880750.4060809@ti.com>
+ <CAKfTPtC29LA15zkgi3gDcet2F841pnqza2_UBwEs6nYUpyKuOQ@mail.gmail.com>
+ <5093A63B.2070700@ti.com>
 MIME-Version: 1.0
+In-Reply-To: <5093A63B.2070700@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 09 Nov 2012 16:46:14.0966 (UTC) FILETIME=[BB8FF560:01CDBE99]
+X-MC-Unique: 112110916461505201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And per my check, most of ACPI FW don't implement this lock, say after
-> driver probe, the ec->global_lock will be 0
-
-Take a look at the FACS table, it contains the address of the global lock.
-
-I believe that the ACPI specification requires that the global lock be present.
-
-
-
-> -----Original Message-----
-> From: Tang, Feng
-> Sent: Friday, November 09, 2012 8:36 AM
-> To: Moore, Robert
-> Cc: Rafael J. Wysocki; Greg KH; Azat Khuzhin; linux-acpi@vger.kernel.org;
-> Linux Kernel Mailing List; Zheng, Lv; Len Brown
-> Subject: Re: ACPI errors with 3.7-rc3
-> 
-> On Fri, Nov 09, 2012 at 10:30:43PM +0800, Moore, Robert wrote:
-> > The ACPI Global Lock is in fact intended to provide exclusion between
-> the BIOS and the OS.
-> > Bob
-> 
-> Thanks for the info.
-> 
-> And per my check, most of ACPI FW don't implement this lock, say after
-> driver probe, the ec->global_lock will be 0.
-> 
-> - Feng
-> 
+On Fri, Nov 02, 2012 at 10:53:47AM +0000, Santosh Shilimkar wrote:
+> On Monday 29 October 2012 06:42 PM, Vincent Guittot wrote:
+> > On 24 October 2012 17:20, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> >> Vincent,
+> >>
+> >> Few comments/questions.
+> >>
+> >>
+> >> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
+> >>>
+> >>> During sched_domain creation, we define a pack buddy CPU if available.
+> >>>
+> >>> On a system that share the powerline at all level, the buddy is set to -1
+> >>>
+> >>> On a dual clusters / dual cores system which can powergate each core and
+> >>> cluster independantly, the buddy configuration will be :
+> >>>         | CPU0 | CPU1 | CPU2 | CPU3 |
+> >>> -----------------------------------
+> >>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+> >>
+> >>                          ^
+> >> Is that a typo ? Should it be CPU2 instead of
+> >> CPU0 ?
 > >
+> > No it's not a typo.
+> > The system packs at each scheduling level. It starts to pack in
+> > cluster because each core can power gate independently so CPU1 tries
+> > to pack its tasks in CPU0 and CPU3 in CPU2. Then, it packs at CPU
+> > level so CPU2 tries to pack in the cluster of CPU0 and CPU0 packs in
+> > itself
 > >
-> > > -----Original Message-----
-> > > From: Tang, Feng
-> > > Sent: Friday, November 09, 2012 1:29 AM
-> > > To: Rafael J. Wysocki
-> > > Cc: Greg KH; Azat Khuzhin; linux-acpi@vger.kernel.org; Linux Kernel
-> > > Mailing List; Zheng, Lv; Len Brown; Moore, Robert
-> > > Subject: Re: ACPI errors with 3.7-rc3
-> > >
-> > > On Thu, Nov 08, 2012 at 05:49:40AM +0800, Rafael J. Wysocki wrote:
-> > > > On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
-> > > > > On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
-> > > > > > I'v also have such errors on my macbook pro.
-> > > > > >
-> > > > > > $ dmesg | tail
-> > > > > > [17056.008564] ACPI Error: Method parse/execution failed
-> > > > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10),
-> > > > > > AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.011194] ACPI Error: Method parse/execution failed
-> > > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.013793] ACPI Error: Method parse/execution failed
-> > > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST
-> > > > > > (20120711/battery-464) [17056.511373] ACPI: EC: input buffer
-> > > > > > is not empty, aborting transaction [17056.512672] ACPI
-> Exception:
-> > > > > > AE_TIME, Returned by Handler for [EmbeddedControl]
-> > > > > > (20120711/evregion-501) [17056.515256] ACPI Error: Method
-> > > > > > parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node
-> > > > > > ffff88026547ea10), AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.517886] ACPI Error: Method parse/execution failed
-> > > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.520479] ACPI Error: Method parse/execution failed
-> > > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> > > > > > (20120711/psparse-536)
-> > > > > > [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST
-> > > > > > (20120711/battery-464)
-> > > > >
-> > > > > I'm seeing this again right now.  I'm wondering if it's because
-> > > > > I'm running on battery power at the moment:
-> > > > >
-> > > > > [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for
-> > > > > [EmbeddedControl] (20120913/evregion-501) [41694.309282] ACPI
-> Error:
-> > > > > Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW]
-> > > > > (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
-> > > > > [41694.309300] ACPI Error: Method parse/execution failed
-> > > > > [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME
-> > > > > (20120913/psparse-536) [41694.309310] ACPI Error: Method
-> > > > > parse/execution failed [\_SB_.BAT0._BST] (Node
-> > > > > ffff88045cc648c0), AE_TIME (20120913/psparse-536) [41694.309324]
-> > > > > ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
-> > > > > [41694.809093] ACPI: EC: input buffer is not empty, aborting
-> > > > > transaction
-> > > > >
-> > > > > ec_storm_threshold is still set to 8 in
-> > > > > /sys/module/acpi/parameters/ so that's not the issue here.
-> > > > >
-> > > > > > And also loadavg is too high ~ 10 While there is no process
-> > > > > > that load CPU up to 100% or like that.
-> > > > > > I think that this because of processes that is done in kernel
-> space.
-> > > > > > (basically that one who write such errors)
-> > > > > >
-> > > > > > $ uname -a
-> > > > > > Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun
-> > > > > > Nov 4
-> > > > > > 12:39:03 UTC 2012 x86_64 GNU/Linux
-> > > > >
-> > > > > Ah, ok, that means it's not something new in 3.7-rc, so maybe
-> > > > > it's just never worked properly for this hardware :)
-> > > > >
-> > > > > So it's not a regression, just an ACPI issue, any ACPI developer
-> > > > > have an idea about this?
-> > > >
-> > > > Can you please send the output of acpidump from the affected
-> machine(s)?
-> > >
-> > > I doubt this problem is sometimes inevitable for some machines,
-> > > because AFAIK most modern machines have the race problem for EC HW
-> > > controller, as both OS side and the BIOS may access the EC HW at the
-> > > same time without any race control.
-> > >
-> > > For this case, usually the battery and thermal modules (which may be
-> > > controlled through EC) are always monitored by BIOS, when OS also
-> > > frequently visit them too, the EC's own state machine may be broken
-> > > and not responsive due to the race, then cause the timeout error.
-> > > And how severe the problem will be depends on the EC HW, the quality
-> > > of BIOS code and OS/driver code.
-> > >
-> > > Myself have seen the similar "ACPI: EC: input buffer is not empty,
-> > > aborting transaction" error message on one laptop when its EC is
-> > > busy visited by OS.
-> > >
-> > > btw, in EC driver I see a "ec->global_lock", don't know if it was
-> > > designed to control the race between OS and BIOS.
-> > >
-> > > Thanks,
-> > > Feng
+> I get it. Though in above example a task may migrate from say
+> CPU3->CPU2->CPU0 as part of packing. I was just thinking whether
+> moving such task from say CPU3 to CPU0 might be best instead.
+
+To me it seems suboptimal to pack the task twice, but the alternative is
+not good either. If you try to move the task directly to CPU0 you may
+miss packing opportunities if CPU0 is already busy, while CPU2 might
+have enough capacity to take it. It would probably be better to check
+the business of CPU0 and then back off and try CPU2 if CP0 is busy. This
+would require a buddy list for each CPU rather just a single buddy and
+thus might become expensive.
+
+> 
+> >>
+> >>> Small tasks tend to slip out of the periodic load balance.
+> >>> The best place to choose to migrate them is at their wake up.
+> >>>
+> >> I have tried this series since I was looking at some of these packing
+> >> bits. On Mobile workloads like OSIdle with Screen ON, MP3, gallary,
+> >> I did see some additional filtering of threads with this series
+> >> but its not making much difference in power. More on this below.
+> >
+> > Can I ask you which configuration you have used ? how many cores and
+> > cluster ?  Can they be power gated independently ?
+> >
+> I have been trying with couple of setups. Dual Core ARM machine and
+> Quad core X86 box with single package thought most of the mobile
+> workload analysis I was doing on ARM machine. On both setups
+> CPUs can be gated independently.
+> 
+> >>
+> >>
+> >>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> >>> ---
+> >>>    kernel/sched/core.c  |    1 +
+> >>>    kernel/sched/fair.c  |  109
+> >>> ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>>    kernel/sched/sched.h |    1 +
+> >>>    3 files changed, 111 insertions(+)
+> >>>
+> >>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> >>> index dab7908..70cadbe 100644
+> >>> --- a/kernel/sched/core.c
+> >>> +++ b/kernel/sched/core.c
+> >>> @@ -6131,6 +6131,7 @@ cpu_attach_domain(struct sched_domain *sd, struct
+> >>> root_domain *rd, int cpu)
+> >>>          rcu_assign_pointer(rq->sd, sd);
+> >>>          destroy_sched_domains(tmp, cpu);
+> >>>
+> >>> +       update_packing_domain(cpu);
+> >>>          update_top_cache_domain(cpu);
+> >>>    }
+> >>>
+> >>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> >>> index 4f4a4f6..8c9d3ed 100644
+> >>> --- a/kernel/sched/fair.c
+> >>> +++ b/kernel/sched/fair.c
+> >>> @@ -157,6 +157,63 @@ void sched_init_granularity(void)
+> >>>          update_sysctl();
+> >>>    }
+> >>>
+> >>> +
+> >>> +/*
+> >>> + * Save the id of the optimal CPU that should be used to pack small tasks
+> >>> + * The value -1 is used when no buddy has been found
+> >>> + */
+> >>> +DEFINE_PER_CPU(int, sd_pack_buddy);
+> >>> +
+> >>> +/* Look for the best buddy CPU that can be used to pack small tasks
+> >>> + * We make the assumption that it doesn't wort to pack on CPU that share
+> >>> the
+> >>
+> >> s/wort/worth
+> >
+> > yes
+> >
+> >>
+> >>> + * same powerline. We looks for the 1st sched_domain without the
+> >>> + * SD_SHARE_POWERLINE flag. Then We look for the sched_group witht the
+> >>> lowest
+> >>> + * power per core based on the assumption that their power efficiency is
+> >>> + * better */
+> >>
+> >> Commenting style..
+> >> /*
+> >>   *
+> >>   */
+> >>
+> >
+> > yes
+> >
+> >> Can you please expand the why the assumption is right ?
+> >> "it doesn't wort to pack on CPU that share the same powerline"
+> >
+> > By "share the same power-line", I mean that the CPUs can't power off
+> > independently. So if some CPUs can't power off independently, it's
+> > worth to try to use most of them to race to idle.
+> >
+> In that case I suggest we use different word here. Power line can be
+> treated as voltage line, power domain.
+> May be SD_SHARE_CPU_POWERDOMAIN ?
+> 
+
+How about just SD_SHARE_POWERDOMAIN ?
+
+> >>
+> >> Think about a scenario where you have quad core, ducal cluster system
+> >>
+> >>          |Cluster1|                      |cluster 2|
+> >> | CPU0 | CPU1 | CPU2 | CPU3 |   | CPU0 | CPU1 | CPU2 | CPU3 |
+> >>
+> >>
+> >> Both clusters run from same voltage rail and have same PLL
+> >> clocking them. But the cluster have their own power domain
+> >> and all CPU's can power gate them-self to low power states.
+> >> Clusters also have their own level2 caches.
+> >>
+> >> In this case, you will still save power if you try to pack
+> >> load on one cluster. No ?
+> >
+> > yes, I need to update the description of SD_SHARE_POWERLINE because
+> > I'm afraid I was not clear enough. SD_SHARE_POWERLINE includes the
+> > power gating capacity of each core. For your example above, the
+> > SD_SHARE_POWERLINE shoud be cleared at both MC and CPU level.
+> >
+> Thanks for clarification.
+> 
+> >>
+> >>
+> >>> +void update_packing_domain(int cpu)
+> >>> +{
+> >>> +       struct sched_domain *sd;
+> >>> +       int id = -1;
+> >>> +
+> >>> +       sd = highest_flag_domain(cpu, SD_SHARE_POWERLINE);
+> >>> +       if (!sd)
+> >>> +               sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+> >>> +       else
+> >>> +               sd = sd->parent;
+> >>> +
+> >>> +       while (sd) {
+> >>> +               struct sched_group *sg = sd->groups;
+> >>> +               struct sched_group *pack = sg;
+> >>> +               struct sched_group *tmp = sg->next;
+> >>> +
+> >>> +               /* 1st CPU of the sched domain is a good candidate */
+> >>> +               if (id == -1)
+> >>> +                       id = cpumask_first(sched_domain_span(sd));
+> >>> +
+> >>> +               /* loop the sched groups to find the best one */
+> >>> +               while (tmp != sg) {
+> >>> +                       if (tmp->sgp->power * sg->group_weight <
+> >>> +                                       sg->sgp->power *
+> >>> tmp->group_weight)
+> >>> +                               pack = tmp;
+> >>> +                       tmp = tmp->next;
+> >>> +               }
+> >>> +
+> >>> +               /* we have found a better group */
+> >>> +               if (pack != sg)
+> >>> +                       id = cpumask_first(sched_group_cpus(pack));
+> >>> +
+> >>> +               /* Look for another CPU than itself */
+> >>> +               if ((id != cpu)
+> >>> +                || ((sd->parent) && !(sd->parent->flags &&
+> >>> SD_LOAD_BALANCE)))
+> >>
+> >> Is the condition "!(sd->parent->flags && SD_LOAD_BALANCE)" for
+> >> big.LITTLE kind of system where SD_LOAD_BALANCE may not be used ?
+> >
+> > No, packing small tasks is part of the load balance so if the
+> > LOAD_BALANCE flag is cleared, we will not try to pack which is a kind
+> > of load balance. There is no link with big.LITTLE
+> >
+> Now it make sense to me.
+> 
+> >>
+> >>
+> >>> +                       break;
+> >>> +
+> >>> +               sd = sd->parent;
+> >>> +       }
+> >>> +
+> >>> +       pr_info(KERN_INFO "CPU%d packing on CPU%d\n", cpu, id);
+> >>> +       per_cpu(sd_pack_buddy, cpu) = id;
+> >>> +}
+> >>> +
+> >>>    #if BITS_PER_LONG == 32
+> >>>    # define WMULT_CONST  (~0UL)
+> >>>    #else
+> >>> @@ -3073,6 +3130,55 @@ static int select_idle_sibling(struct task_struct
+> >>> *p, int target)
+> >>>          return target;
+> >>>    }
+> >>>
+> >>> +static inline bool is_buddy_busy(int cpu)
+> >>> +{
+> >>> +       struct rq *rq = cpu_rq(cpu);
+> >>> +
+> >>> +       /*
+> >>> +        * A busy buddy is a CPU with a high load or a small load with a
+> >>> lot of
+> >>> +        * running tasks.
+> >>> +        */
+> >>> +       return ((rq->avg.usage_avg_sum << rq->nr_running) >
+> >>> +                       rq->avg.runnable_avg_period);
+> >>
+> >> I agree busy CPU is the one with high load, but many small threads may
+> >> not make CPU fully busy, right ? Should we just stick to the load
+> >> parameter alone here ?
+> >
+> > IMO, the busy state of a CPU isn't only the load but also how many
+> > threads are waiting for running on it. This formula tries to take into
+> > account both inputs. If you have dozen of small tasks on a CPU, the
+> > latency can be large even if the tasks are small.
+> >
+> Sure. Your point is to avoid throttling and probably use race for
+> idle.
+> 
+> >>
+> >>
+> >>> +}
+> >>> +
+> >>> +static inline bool is_light_task(struct task_struct *p)
+> >>> +{
+> >>> +       /* A light task runs less than 25% in average */
+> >>> +       return ((p->se.avg.usage_avg_sum << 2) <
+> >>> p->se.avg.runnable_avg_period);
+> >>> +}
+> >>
+> >> Since the whole packing logic relies on the light threads only, the
+> >> overall effectiveness is not significant. Infact with multiple tries on
+> >> Dual core system, I didn't see any major improvement in power. I think
+> >> we need to be more aggressive here. From the cover letter, I noticed
+> >> that, you were concerned about any performance drop due to packing and
+> >> may be that is the reason you chose the conservative threshold. But the
+> >> fact is, if we want to save meaningful power, there will be slight
+> >> performance drop which is expected.
+> >
+> > I think that everybody agrees that packing small tasks will save power
+> > whereas it seems to be not so obvious for heavy task. But I may have
+> > set the threshold a bit too low
+> >
+> I agree on packing saves power part for sure.
+> 
+
+I'm not fully convinced that packing always saves power. For systems
+with multiple cpu clusters where each cluster is a power domain and the
+cpus have no individual power saving states it would probably be more
+power efficient to spread the tasks and hope for more opportunities for
+hitting cluster shutdown. If all tasks are packed on one cpu it will
+keep the whole cluster up, while the remaining cpus are idling without
+possibility for entering efficient power states.
+
+Regards,
+Morten
+
+> > Up to which load, you would like to pack on 1 core of your dual core system ?
+> > Can you provide more details of your load ? Have you got a trace that
+> > you can share ?
+> >
+> More than how much load to pack, I was more looking from the power
+> savings delta we can achieve by doing it. Some of the usecases like
+> osidle, mp3, gallary are already very low power and that might be
+> the reason I didn't notice major mA delta. Though the perf
+> traces did show some filtering even at 25 % load. i tried upto
+> 50 % threshold to see the effectiveness and there was more
+> improvement and hence the suggestion about aggressiveness.
+> 
+> May be you can try some of these use-cases on your setup instead of
+> synthetic workload and see the results.
+> 
+> Regards
+> Santosh
+> 
+> 
+> 
+> 
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
+> 
+
