@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab2KIRP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:15:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14742 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755085Ab2KIRP4 convert rfc822-to-8bit (ORCPT
+	id S1755272Ab2KIRQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:16:11 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46645 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085Ab2KIRQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:15:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
-   d="scan'208";a="166441144"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: Jason Gao <pkill.2012@gmail.com>, "Li, Sibai" <sibai.li@intel.com>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: RE: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Topic: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Index: AQHNvaKW6TnehZ0GK0+VI29ItRc6WJfgUcUA///VtdCAAUCoAIAAVvAw
-Date: Fri, 9 Nov 2012 17:15:50 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A072D5683CF@ORSMSX106.amr.corp.intel.com>
-References: <201211081915083774239@gmail.com>	<509B962C.6070002@gmail.com>
-	<C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
- <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
-In-Reply-To: <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Nov 2012 12:16:06 -0500
+Message-ID: <509D3A53.6080007@wwwdotorg.org>
+Date: Fri, 09 Nov 2012 10:16:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH v2] pinctrl/nomadik: make independent of prcmu driver
+References: <1352456915-28738-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1352456915-28738-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jason Gao [mailto:pkill.2012@gmail.com]
-> Sent: Thursday, November 08, 2012 8:00 PM
-> To: Rose, Gregory V
-> Cc: Kirsher, Jeffrey T; linux-kernel; netdev; kvm; e1000-
-> devel@lists.sourceforge.net
-> Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources
-> for SR-IOV)
+On 11/09/2012 03:28 AM, Linus Walleij wrote:
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
 > 
-> > The BIOS in your machine doesn't support SR-IOV.  You'll need to ask the
-> manufacturer for a BIOS upgrade, if in fact one is available.  Sometimes
-> they're not.
+> Currently there are some unnecessary criss-cross
+> dependencies between the PRCMU driver in MFD and a lot of
+> other drivers, mainly because other drivers need to poke
+> around in the PRCM register range.
 > 
-> very thanks Greg,my server Dell R710 with latest BIOS version and option
-> for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused that Does
-> R710 provide full support for SR-IOV, kernel or  ixgbe driver's bug? but
-> I'm not sure where the problem lies,anyone has any
-> experience about this?   .
+> In cases like this there are actually just a few select
+> registers that the pinctrl driver need to read/modify/write,
+> and it turns out that no other driver is actually using
+> these registers, so there are no concurrency issues
+> whatsoever.
+> 
+> So: don't let the location of the register range complicate
+> things, just poke into these registers directly and skip
+> a layer of indirection.
+> 
+> Take this opportunity to add kerneldoc to the pinctrl
+> state container.
 
-I use a Dell R710 for all my SR-IOV testing and it works fine but I had to acquire a special BIOS from Dell to get it to work.  As I said, you'll want to contact them and make sure you've got the correct BIOS.
+> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
 
-The error you're seeing, "not enough MMIO resources" has been an issue with the BIOS 100% of the times that we've run into it.  In any case, it is NOT a driver bug.  The driver has nothing to do with allocation of MMIO space reservation for VF devices.  The message you're seeing pops up when the driver calls pci_enable_sriov().  There is nothing the driver can do to force that call to be successful.
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (res) {
+> +		npct->prcm_base = devm_ioremap(&pdev->dev, res->start,
+> +					       resource_size(res));
+> +		if (!npct->prcm_base) {
+> +			dev_err(&pdev->dev,
+> +				"failed to ioremap PRCM registers\n");
+> +			return -ENOMEM;
+> +		}
+> +	} else {
+> +		dev_info(&pdev->dev,
+> +			 "No PRCM base, assume no ALT-Cx control is available\n");
+> +	}
 
-I've added Sibai Li to this response.  She should be able to get the BIOS version string off of one of our working Dell R710s.
+Where is "assume no ALT-Cx control is available" implemented; I don't
+see anything that uses npct->prcm_base to conditionally enable/block any
+features. Is it just assumed that the DT won't contain any entries that
+trigger writes to the PRCM registers? That seems fragile; it could cause
+a "user"-triggered kernel crash.
 
-Sibai,
-
-Could you please reply to this message with that information?
-
-Thanks,
-
-- Greg
+Aside from that, this seems fine. Much smaller than V1:-)
