@@ -1,169 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2KIWSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 17:18:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56291 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab2KIWSX (ORCPT
+	id S1756695Ab2KIW16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 17:27:58 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59101 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab2KIW14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 17:18:23 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: compaction: Fix compiler warning
-Date: Fri,  9 Nov 2012 23:18:17 +0100
-Message-Id: <1352499497-32266-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.0
-X-Provags-ID: V02:K0:iDQCl1J34+4tAqYcORujelllBkYpdYRODESd3z592YH
- x/pKZIFrJKUC518tS0Dlas+/bf7wKGidFQ2b2mS+yHD5zsdFbL
- 0M4AtKp97InmzGmV84BPvl2uKPf2rdasuw+fvkU42D1vomgeB7
- EVsq+Z6TdIlxbM6/voaOpVddmNQZL+pJ1itMXIq79BGlMQcU3u
- qBs9AjHEIqnQmlGqD+ut0wIg9PG4we6Qi68CF570x3ByPE27jj
- KorHQNIOLT3U9aRDbe4YkuKDQGIQobJ9Tg1bwgxslSltM4OqSk
- Svbw/GGOMWCA4VRc//I5DPfoP7LdZItPzs+sskftJNOaf256nK
- wwBrSmqnGSj5+092o8Ggeb6cBUN1cMwRIc4SWw6lr6Fc6ffSJk
- IcllS1rwxvGXKQ/cR8dObGjEAU6v+pD4q1Z7C2LgrVQlf/L0rR
- cxVMW
+	Fri, 9 Nov 2012 17:27:56 -0500
+Message-ID: <509D8369.5000101@wwwdotorg.org>
+Date: Fri, 09 Nov 2012 15:27:53 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
+References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de> <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compact_capture_page() function is only used if compaction is
-enabled so it should be moved into the corresponding #ifdef.
+On 11/09/2012 06:59 AM, Thierry Reding wrote:
+> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+> support for host1x and the two display controllers found on the Tegra20
+> SoC. Each display controller can drive a separate RGB/LVDS output.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- mm/compaction.c | 108 ++++++++++++++++++++++++++++----------------------------
- 1 file changed, 54 insertions(+), 54 deletions(-)
+> diff --git a/Documentation/devicetree/bindings/gpu/drm/nvidia,tegra20-host1x.txt b/Documentation/devicetree/bindings/gpu/drm/nvidia,tegra20-host1x.txt
+> new file mode 100644
+> index 0000000..b4fa934
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpu/drm/nvidia,tegra20-host1x.txt
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index f268bd8..d33e6d0 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -215,60 +215,6 @@ static bool suitable_migration_target(struct page *page)
- 	return false;
- }
- 
--static void compact_capture_page(struct compact_control *cc)
--{
--	unsigned long flags;
--	int mtype, mtype_low, mtype_high;
--
--	if (!cc->page || *cc->page)
--		return;
--
--	/*
--	 * For MIGRATE_MOVABLE allocations we capture a suitable page ASAP
--	 * regardless of the migratetype of the freelist is is captured from.
--	 * This is fine because the order for a high-order MIGRATE_MOVABLE
--	 * allocation is typically at least a pageblock size and overall
--	 * fragmentation is not impaired. Other allocation types must
--	 * capture pages from their own migratelist because otherwise they
--	 * could pollute other pageblocks like MIGRATE_MOVABLE with
--	 * difficult to move pages and making fragmentation worse overall.
--	 */
--	if (cc->migratetype == MIGRATE_MOVABLE) {
--		mtype_low = 0;
--		mtype_high = MIGRATE_PCPTYPES;
--	} else {
--		mtype_low = cc->migratetype;
--		mtype_high = cc->migratetype + 1;
--	}
--
--	/* Speculatively examine the free lists without zone lock */
--	for (mtype = mtype_low; mtype < mtype_high; mtype++) {
--		int order;
--		for (order = cc->order; order < MAX_ORDER; order++) {
--			struct page *page;
--			struct free_area *area;
--			area = &(cc->zone->free_area[order]);
--			if (list_empty(&area->free_list[mtype]))
--				continue;
--
--			/* Take the lock and attempt capture of the page */
--			if (!compact_trylock_irqsave(&cc->zone->lock, &flags, cc))
--				return;
--			if (!list_empty(&area->free_list[mtype])) {
--				page = list_entry(area->free_list[mtype].next,
--							struct page, lru);
--				if (capture_free_page(page, cc->order, mtype)) {
--					spin_unlock_irqrestore(&cc->zone->lock,
--									flags);
--					*cc->page = page;
--					return;
--				}
--			}
--			spin_unlock_irqrestore(&cc->zone->lock, flags);
--		}
--	}
--}
--
- /*
-  * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-  * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-@@ -945,6 +891,60 @@ unsigned long compaction_suitable(struct zone *zone, int order)
- 	return COMPACT_CONTINUE;
- }
- 
-+static void compact_capture_page(struct compact_control *cc)
-+{
-+	unsigned long flags;
-+	int mtype, mtype_low, mtype_high;
-+
-+	if (!cc->page || *cc->page)
-+		return;
-+
-+	/*
-+	 * For MIGRATE_MOVABLE allocations we capture a suitable page ASAP
-+	 * regardless of the migratetype of the freelist is is captured from.
-+	 * This is fine because the order for a high-order MIGRATE_MOVABLE
-+	 * allocation is typically at least a pageblock size and overall
-+	 * fragmentation is not impaired. Other allocation types must
-+	 * capture pages from their own migratelist because otherwise they
-+	 * could pollute other pageblocks like MIGRATE_MOVABLE with
-+	 * difficult to move pages and making fragmentation worse overall.
-+	 */
-+	if (cc->migratetype == MIGRATE_MOVABLE) {
-+		mtype_low = 0;
-+		mtype_high = MIGRATE_PCPTYPES;
-+	} else {
-+		mtype_low = cc->migratetype;
-+		mtype_high = cc->migratetype + 1;
-+	}
-+
-+	/* Speculatively examine the free lists without zone lock */
-+	for (mtype = mtype_low; mtype < mtype_high; mtype++) {
-+		int order;
-+		for (order = cc->order; order < MAX_ORDER; order++) {
-+			struct page *page;
-+			struct free_area *area;
-+			area = &(cc->zone->free_area[order]);
-+			if (list_empty(&area->free_list[mtype]))
-+				continue;
-+
-+			/* Take the lock and attempt capture of the page */
-+			if (!compact_trylock_irqsave(&cc->zone->lock, &flags, cc))
-+				return;
-+			if (!list_empty(&area->free_list[mtype])) {
-+				page = list_entry(area->free_list[mtype].next,
-+							struct page, lru);
-+				if (capture_free_page(page, cc->order, mtype)) {
-+					spin_unlock_irqrestore(&cc->zone->lock,
-+									flags);
-+					*cc->page = page;
-+					return;
-+				}
-+			}
-+			spin_unlock_irqrestore(&cc->zone->lock, flags);
-+		}
-+	}
-+}
-+
- static int compact_zone(struct zone *zone, struct compact_control *cc)
- {
- 	int ret;
--- 
-1.8.0
+"drm" is a Linux-specific term, so shouldn't really be used as the
+directory name for a binding. bindings/gpu/nvidia,tegra20-host1x.txt
+would probably be just fine.
 
+Aside from that, the bindings,
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
+I don't really know anything about DRM or our display HW, so I haven't
+reviewed the code at all. I certainly ack the concept of adding the
+driver though! I have asked various other people at NVIDIA to give a
+quick review of the code.
