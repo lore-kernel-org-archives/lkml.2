@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2KIEG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 23:06:29 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:59637 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2KIEG1 (ORCPT
+	id S1752614Ab2KIEKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 23:10:10 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56033 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2KIEKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 23:06:27 -0500
-Message-ID: <509C813F.1080905@gmail.com>
-Date: Thu, 08 Nov 2012 22:06:23 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: David Solda <dso@cypress.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Troy Abercrombia <ta@cypress.com>, Kamal Mostafa <kamal@canonical.com>,
-        =?ISO-8859-9?Q?Ozan_=C7a=F0layan?= <ozancag@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        customercare <customercare@cypress.com>,
-        "mario_limonciello@dell.com" <mario_limonciello@dell.com>
-Subject: Re: Why Cypress does not upstream its trackpad driver?
-References: <CAFub=KTf2dWxM9=saG2JaNJpEioJM8rM3UBG9BkyxRN-+j0psQ@mail.gmail.com> <C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net> <EE629F2C-DD83-403C-AD73-E9ED966EEA91@cypress.com> <2208882.BvOrfBvj6F@dtor-d630.eng.vmware.com> <C6B11F3154DB7242B32DD96C876EA7847BAFFAFA95@VMBX113.ihostexchange.net>
-In-Reply-To: <C6B11F3154DB7242B32DD96C876EA7847BAFFAFA95@VMBX113.ihostexchange.net>
-Content-Type: text/plain; charset=ISO-8859-9; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 8 Nov 2012 23:10:07 -0500
+Date: Fri, 9 Nov 2012 15:09:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 06:26 PM, David Solda wrote:
-> Dmitry, all,
->
-> To clarify my comment.  Our protocol utilizes 8 bytes which are needed in our driver.  In order for the Linux system to accept 8 bytes of data, the Linux psmouse system driver is required to be modified.  Without this modification, the driver that you are referring to will not work correctly.  The psmouse system driver change that would be required is the item that would be rejected.
->
-> I appreciate your comments and of course, if the driver could be upstreamed, it would (we already have I2C drivers updstreamed for Chrome systems), but there is a difference here.
->
-> I will again look into the possibility of what you are requesting, however, the changes are extremely low if not zero that it will be accepted.
+--Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why? If drivers were kept out of the kernel because the hardware they 
-are designed to run requires strange things or was badly designed, there 
-would be a lot fewer drivers in the kernel than there are today. 
-Firmware and hardware frequently does bizarre or nonsensical things and 
-we just have to deal with it.
+Hi all,
 
->
-> Dave
->
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Wednesday, November 07, 2012 4:16 PM
-> To: David Solda
-> Cc: Troy Abercrombia; Kamal Mostafa; Ozan Çaðlayan; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; customercare; mario_limonciello@dell.com
-> Subject: Re: Why Cypress does not upstream its trackpad driver?
->
-> Hi David,
->
-> On Wednesday, November 07, 2012 06:30:11 PM David Solda wrote:
->> Kamal,
->>
->> My name is Dave Solda and I would be happy to answer any other
->> questions that you have. Troy's response is correct however as in
->> order to support the default Linux mouse class, our firmware would
->> also have to be modified to do so, which cannot be done in system. Our
->> packet protocol maxes out at an 8 byte packet, which requires a change
->> to the Linux standard in this case.
->
-> I am unable to parse this... I do not believe anyone asks you to change your firmware and if your protocol needs 8 bytes to transmit device state - that's fine.
->
->> Our goal in working with canonical was to provide something on Linux
->> that would support multi-touch and not only have default single finger
->> movement supported.
->
->> If I am mistaken and he Linux kernel would accept this, then we can
->> proceed to upstream, however all indications we have is that this
->> patch would be rejected.  If you (or others on from the locus alias)
->> have any inputs, I would be happy to receive them.
->
-> This really depends on whether the changes to the psmouse framework make sense or not. Please start submitting patches for review/discussion and we can go from there.
->
-> Thanks.
->
-> --
-> Dmitry
->
-> This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
+arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area':
+arch/sparc/kernel/sys_sparc_64.c:92:16: error: unused variable 'start_addr'=
+ [-Werror=3Dunused-variable]
+arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area_topdo=
+wn':
+arch/sparc/kernel/sys_sparc_64.c:194:20: error: 'do_colour_align' undeclare=
+d (first use in this function)
+arch/sparc/kernel/sys_sparc_64.c:194:20: note: each undeclared identifier i=
+s reported only once for each function it appears in
+arch/sparc/kernel/sys_sparc_64.c:194:51: error: 'shm_align_mask' undeclared=
+ (first use in this function)
+
+Caused by commit "mm: use vm_unmapped_area() on sparc64 architecture".  I
+have reverted that commit for today (and the following fix patch).
+
+arch/sparc/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown=
+':
+arch/sparc/mm/hugetlbpage.c:63:25: error: unused variable 'vma' [-Werror=3D=
+unused-variable]
+
+Caused by commit "mm: use vm_unmapped_area() in hugetlbfs on sparc64
+architecture".  I have reverted that commit for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQnIIVAAoJEECxmPOUX5FEet0P/RtgpcMmr/u/2ZytHZvpmhcm
+UD7JCqv/4vOeEr8CkC4HqKj05DGcWhz2k2Vpd2lu3PjFf5TmdEzKoLfRhDrrhmwu
+NLAuUOxngW+VsFic1scKwzC+jBf7zBkFZIQBeq6xwvT9+0L5jvhXRJtI3ufQx6WH
+f63UNCsgV4pErTaDpN2LyipIirmnuIvpGEJaMuJ8AJc6S8rGyf6/uzccEYGBhmSD
+s/jaqBf8+O8xNEhG+NKaV2dQIyU4v4DbDNhq0Hgravk8qTfbj8fexKM7kheTxC55
+FPNRjDNtdMvoWJXrdDgSS5kY9XzvSDq6FHikcpfZud3yVU9W1EJjJeotFInKsjlA
+ndhipSMJOCJpQD/F6hqFe94Lw+ePhphmfP8a1kMQDx4nAOTuV5k8fAUb+Nktfb8n
+fiT0JTM+JhTW7uBRo3wtGl2X/w/PKjpaZgY0ao3xvYbmgIaX4acTc/2pvJdM/fc7
+A7Gj7Z65YMWh9/gNOmFBqxkbomPGfrfMPpEcYxtmkmfaYiKaleAceuJ7HQzkwegK
+xyujb5rpN3xelxAMzMRDyNYqlLzXumVv1f9O+Cxp/HazA/zmNAnOtcO6q7FnsSui
+14oRdg3+BuhDgj4A+J/goqECo6if4YToI1fK/8N6drTE7qx9c7aa2tb2BBjyhCMw
+JMwOhA6BWJNJZZMhHLSp
+=sixC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y--
