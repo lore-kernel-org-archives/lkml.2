@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab2KIRBE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:01:04 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:50427 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab2KIRBA (ORCPT
+	id S1754912Ab2KIRBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:01:15 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33380 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab2KIRBK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:01:00 -0500
-Date: Fri, 9 Nov 2012 08:59:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
- block the readers unnecessarily
-Message-ID: <20121109165958.GA2419@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
- <20121102180606.GA13255@redhat.com>
- <20121108134805.GA23870@redhat.com>
- <20121108134849.GB23870@redhat.com>
- <20121108120700.42d438f2.akpm@linux-foundation.org>
- <20121108210843.GF2519@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com>
- <20121109004136.GH2519@linux.vnet.ibm.com>
- <20121109032310.GA2438@linux.vnet.ibm.com>
- <20121109163538.GB26134@redhat.com>
+	Fri, 9 Nov 2012 12:01:10 -0500
+Date: Fri, 9 Nov 2012 16:56:00 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 fixes for 3.7
+Message-ID: <20121109165559.GG5998@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 09 Nov 2012 16:56:00.0615 (UTC) FILETIME=[18A2E770:01CDBE9B]
+X-MC-Unique: 112110916560203201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20121109163538.GB26134@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110917-5518-0000-0000-000009280AB3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 05:35:38PM +0100, Oleg Nesterov wrote:
-> On 11/08, Paul E. McKenney wrote:
-> >
-> > On Thu, Nov 08, 2012 at 04:41:36PM -0800, Paul E. McKenney wrote:
-> > > On Thu, Nov 08, 2012 at 06:41:10PM -0500, Mikulas Patocka wrote:
-> > > >
-> > > > On Thu, 8 Nov 2012, Paul E. McKenney wrote:
-> > > >
-> > > > > On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
-> > > > > > On Thu, 8 Nov 2012 14:48:49 +0100
-> > > > > > Oleg Nesterov <oleg@redhat.com> wrote:
-> > > > > >
-> > > > >
-> > > > > The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
-> > > > > synchronize_rcu() in place of preempt_disable()/preempt_enable() and
-> > > > > synchronize_sched().  The real-time guys would prefer the change
-> > > > > to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
-> > > > > you mention it.
-> > > > >
-> > > > > Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
-> > > > > and synchronize_rcu()?
-> > > >
-> > > > preempt_disable/preempt_enable is faster than
-> > > > rcu_read_lock/rcu_read_unlock for preemptive kernels.
-> 
-> Yes, I chose preempt_disable() because it is the fastest/simplest
-> primitive and the critical section is really tiny.
-> 
-> But:
-> 
-> > > Significantly faster in this case?  Can you measure the difference
-> > > from a user-mode test?
-> 
-> I do not think rcu_read_lock() or rcu_read_lock_sched() can actually
-> make a measurable difference.
-> 
-> > Actually, the fact that __this_cpu_add() will malfunction on some
-> > architectures is preemption is not disabled seems a more compelling
-> > reason to keep preempt_enable() than any performance improvement.  ;-)
-> 
-> Yes, but this_cpu_add() should work.
+Hi Linus,
 
-Indeed!  But this_cpu_add() just does the preempt_enable() under the
-covers, so not much difference from a latency viewpoint.
+Please pull the arm64 fixes below. The following changes since commit
+3d70f8c617a436c7146ecb81df2265b4626dfe89:
 
-> > > Careful.  The real-time guys might take the same every-little-bit approach
-> > > to latency that you seem to be taking for CPU cycles.  ;-)
-> 
-> Understand...
-> 
-> So I simply do not know. Please tell me if you think it would be
-> better to use rcu_read_lock/synchronize_rcu or rcu_read_lock_sched,
-> and I'll send the patch.
+  Linux 3.7-rc4 (2012-11-04 11:07:39 -0800)
 
-I doubt if it makes a measurable difference for either throughput or
-latency.  One could argue that rcu_read_lock() would be better for
-readability, but making sure that the preempt_disable() is clearly
-commented as starting an RCU-sched read-side critical section would
-be just as good.
+are available in the git repository at:
 
-So I am OK with the current preempt_disable() approach.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
 
-							Thanx, Paul
+for you to fetch changes up to f483a853b0b932a1d75eb27a1dcbd732862260db:
+
+  arm64: mm: fix booting on systems with no memory below 4GB (2012-11-08 16:06:21 +0000)
+
+Thanks.
+
+----------------------------------------------------------------
+AArch64 kernel fixes:
+- correct argument type (pgprot_t) when calling __ioremap()
+- PCI_IOBASE virtual address change
+- use architected event for CPU cycle counter
+- fix ELF core dumping
+- select CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+- missing completion for secondary CPU boot
+- booting on systems with all memory beyond 4GB
+
+----------------------------------------------------------------
+Catalin Marinas (3):
+      arm64: Use pgprot_t as the last argument when invoking __ioremap()
+      arm64: Move PCI_IOBASE closer to MODULES_VADDR
+      Merge tag 'v3.7-rc4' into upstream-master
+
+Will Deacon (5):
+      arm64: perf: use architected event for CPU cycle counter
+      arm64: elf: fix core dumping definitions for GP and FP registers
+      arm64: compat: select CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+      arm64: smp: add missing completion for secondary boot
+      arm64: mm: fix booting on systems with no memory below 4GB
+
+ Documentation/arm64/memory.txt     | 12 ++++++------
+ arch/arm64/Kconfig                 |  1 +
+ arch/arm64/include/asm/elf.h       |  5 +----
+ arch/arm64/include/asm/fpsimd.h    |  5 ++---
+ arch/arm64/include/asm/io.h        |  8 ++++----
+ arch/arm64/include/asm/processor.h |  2 ++
+ arch/arm64/include/asm/unistd.h    |  1 -
+ arch/arm64/kernel/perf_event.c     | 10 ++--------
+ arch/arm64/kernel/process.c        | 18 ------------------
+ arch/arm64/kernel/smp.c            |  3 +--
+ arch/arm64/mm/init.c               |  2 +-
+ 11 files changed, 20 insertions(+), 47 deletions(-)
 
