@@ -1,168 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab2KIQ3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:29:24 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65078 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2KIQ3W (ORCPT
+	id S1754389Ab2KIQfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:35:36 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39889 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab2KIQfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:29:22 -0500
+	Fri, 9 Nov 2012 11:35:34 -0500
+Message-ID: <509D3088.2060507@linux.vnet.ibm.com>
+Date: Fri, 09 Nov 2012 22:04:16 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <50999145.2070306@wwwdotorg.org>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <50999145.2070306@wwwdotorg.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 9 Nov 2012 16:28:59 +0000
-X-Google-Sender-Auth: 4bMtYnSVKt4XkTkopj5wkyydH1Y
-Message-ID: <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com>
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
+ support Memory Power Management
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com> <509D2B9B.4090305@linux.vnet.ibm.com>
+In-Reply-To: <509D2B9B.4090305@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+x-cbid: 12110916-9574-0000-0000-0000053FE58B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/05/2012 01:40 PM, Grant Likely wrote:
->> Hey folks,
+On 11/09/2012 09:43 PM, Dave Hansen wrote:
+> On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
+>> FWIW, kernbench is actually (and surprisingly) showing a slight performance
+>> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
+>> my other email to Dave.
 >>
->> As promised, here is my early draft to try and capture what device
->> tree overlays need to do and how to get there. Comments and
->> suggestions greatly appreciated.
->
-> Interesting. This just came up internally at NVIDIA within the last
-> couple weeks, and was discussed on the U-Boot mailing list very recently
-> too:
->
-> http://lists.denx.de/pipermail/u-boot/2012-October/thread.html#138227
-> (it spills into the November archive too)
->
->> For these cases it is proposed to implement an overlay feature for the
->> so that the initial device tree data can be modified by userspace at
->
-> I don't know if you're maintaining this as a document and taking patches
-> to it, but if so:
+>> https://lkml.org/lkml/2012/11/7/428
+>>
+>> I don't think I can dismiss it as an experimental error, because I am seeing
+>> those results consistently.. I'm trying to find out what's behind that.
+> 
+> The only numbers in that link are in the date. :)  Let's see the
+> numbers, please.
+> 
 
-Sure, why not...
+Sure :) The reason I didn't post the numbers very eagerly was that I didn't
+want it to look ridiculous if it later turned out to be really an error in the
+experiment ;) But since I have seen it happening consistently I think I can
+post the numbers here with some non-zero confidence.
 
-http://git.secretlab.ca/?p=devicetree-overlays.git;a=summary
+> If you really have performance improvement to the memory allocator (or
+> something else) here, then surely it can be pared out of your patches
+> and merged quickly by itself.  Those kinds of optimizations are hard to
+> come by!
+> 
 
->
-> "for the so" split across those two lines.
+:-)
 
-fixed
+Anyway, here it goes:
 
->>   - SHOULD reliably handle changes between different underlying overlays
->>     (ie. what happens to existing .dtb overly files if the structure of
->>     the dtb it is layered over changes. If not possible, then SHALL
->>     detect when the base tree doesn't match and refuse to apply the
->>     overlay.
->
-> Perhaps use (versioned) DT bindings to represent the interface between
-> the two .dts files? See the links to the U-Boot mailing list discussions
-> below?
+Test setup:
+----------
+x86 2-socket quad-core machine. (CONFIG_NUMA=n because I figured that my
+patchset might not handle NUMA properly). Mem region size = 512 MB.
 
-Implementing versioning is conceptually a lot more complex than plain
-overlays since it means either the kernel or u-boot needs to start
-filtering the data that it's given. This can get really complex in a
-hurry. Mitch makes a valid point later in this thread that when it
-comes to manipulating the data depending on the board then the data
-overlay model alone doesn't handle it well.
+Kernbench log for Vanilla 3.7-rc3
+=================================
 
-I'm not actually opposed to it, but it needs to be done in an elegant
-way. The DT data model already imposes more of a conceptual learning
-curve than I wish it did and I don't want to make that worse with a
-versioning model that is difficult to get ones head around.
+Kernel: 3.7.0-rc3-vanilla-default
+Average Optimal load -j 32 Run (std deviation):
+Elapsed Time 650.742 (2.49774)
+User Time 8213.08 (17.6347)
+System Time 1273.91 (6.00643)
+Percent CPU 1457.4 (3.64692)
+Context Switches 2250203 (3846.61)
+Sleeps 1.8781e+06 (5310.33)
 
-Suggestions and proposals are definitely welcome here.
+Kernbench log for this sorted-buddy patchset
+============================================
 
->
->> - What is the model for overlays?
->>   - Can an overlay modify existing properties?
->>   - Can an overlay add new properties to existing nodes?
->>   - Can an overlay delete existing nodes/properties?
->
-> This proposal is very oriented at an overlay-based approach. I'm not
-> totally convinced that a pure overlay approach (as in how dtc does
-> overlayed DT nodes) will be flexible enough, but would love to be
-> persuaded. Again see below.
+Kernel: 3.7.0-rc3-sorted-buddy-default
+Average Optimal load -j 32 Run (std deviation):
+Elapsed Time 591.696 (0.660969)
+User Time 7511.97 (1.08313)
+System Time 1062.99 (1.1109)
+Percent CPU 1448.6 (1.94936)
+Context Switches 2.1496e+06 (3507.12)
+Sleeps 1.84305e+06 (3092.67)
 
-The way I'm currently thinking about the overlay approach is as a
-discrete set of changes that all can be applied at once.* That
-certainly doesn't preclude the change being generated with a script or
-other tool in either firmware or userspace. For most changes it works
-really well. Of the scenarios that don't work well, I can think of
-two. The first is it moving or renaming existing nodes, and the second
-is if the structure of the base tree changes (say due to a firmware
-update). Although the second limitation is specifically with binary
-.dtb overlays. Recompiling the dts overlay against the new tree would
-work fine.**
+Regards,
+Srivatsa S. Bhat
 
-*with the caveat that not all types of changes are a good idea and we
-may disallow. For example, is changing properties in existing nodes a
-good idea?
-** all this is based on my current ideas about the .dtb overlay format
-which would be trivial to implement, but I'm not committed to that
-approach just yet. The above problems could be solved.
-
->> It may be sufficient to solve it by making the phandle values less
->> volatile. Right now dtc generates phandles linearly. Generated phandles
->> could be overridden with explicit phandle properties, but it isn't a
->> fantastic solution. Perhaps generating the phandle from a hash of the
->> node name would be sufficient.
->
-> Node names don't have to be unique though right; perhaps hash the
-> path-name instead of the node-name? But then, why not just reference by
-> path name; similar to <{&/path/to/node}> rather than <&label>?
-
-I was thinking about using the full_name for generating phandles. On
-the odd chance there is a collision, one of the nodes will get
-something like the hash value +1. Or in that condition we can require
-one of the nodes to have the phandle value explicitly set in the
-source file.
-
-Note; this doesn't actually affect anything outside of dtc. Right now
-dtc starts at 1 and assigns phandles incrementally. I'm suggesting
-using a hash of the full_name to assign the phandle for a node so that
-it will not change unless the full_path changes.
-
->> This handles many of the use cases, but it assumes that an overlay is
->> board specific. If it ever is required to support multiple base boards
->> with a single overlay file then there is a problem. The .dtb overlays
->> generated in this manor cannot handle different phandles or nodes that
->> are in a different place. On the other hand, the overlay source files
->> should have no problem being compiled for multiple targets.
->
-> s/manor/manner/
-
-Fixed
-
->
-> I do rather suspect this use-case is quite common. NVIDIA certainly has
-> a bunch of development boards with pluggable
-> PMIC/audio/WiFi/display/..., and I believe there's some ability to
-> re-use the pluggable components with a variety of base-boards.
->
-> Given people within NVIDIA started talking about this recently, I asked
-> them to enumerate all the boards we have that support pluggable
-> components, and how common it is that some boards support being plugged
-> into different main boards. I don't know when that enumeration will
-> complete (or even start) but hopefully I can provide some feedback on
-> how common the use-case is for us once it's done.
-
->From your perspective, is it important to use the exact same .dtb
-overlays for those add-on boards, or is it okay to have a separate
-build of the overlay for each base tree?
-
-g.
