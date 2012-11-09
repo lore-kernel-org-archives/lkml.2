@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2KIEQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 23:16:46 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38394 "EHLO
+	id S1752885Ab2KIETI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 23:19:08 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39985 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2KIEQp (ORCPT
+	with ESMTP id S1751439Ab2KIETF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 23:16:45 -0500
-Date: Fri, 9 Nov 2012 15:16:42 +1100
+	Thu, 8 Nov 2012 23:19:05 -0500
+Date: Fri, 9 Nov 2012 15:19:03 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
+Subject: linux-next: build warning after merge of the final tree (akpm tree
  related)
-Message-Id: <20121109151642.893f699e4df8063e41dec666@canb.auug.org.au>
+Message-Id: <20121109151903.19728e9a7a8fe9e509bb523e@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz"
+ boundary="Signature=_Fri__9_Nov_2012_15_19_03_+1100_Lu5a4.Ib7=xRhmj="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz
+--Signature=_Fri__9_Nov_2012_15_19_03_+1100_Lu5a4.Ib7=xRhmj=
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+After merging the final tree, today's linux-next build (arm defconfig)
+produced this warning:
 
-arch/sparc/kernel/sys_sparc_32.c: In function 'arch_get_unmapped_area':
-arch/sparc/kernel/sys_sparc_32.c:41:26: error: unused variable 'vmm' [-Werr=
-or=3Dunused-variable]
+arch/arm/mm/mmap.c: In function 'arch_get_unmapped_area':
+arch/arm/mm/mmap.c:60:16: warning: unused variable 'start_addr' [-Wunused-v=
+ariable]
 
-Caused by commit "mm: use vm_unmapped_area() on sparc32 architecture".
-
-I have reverted that commit for today.
+Introduced by commit "mm: use vm_unmapped_area() on arm architecture".
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz
+--Signature=_Fri__9_Nov_2012_15_19_03_+1100_Lu5a4.Ib7=xRhmj=
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQnIOqAAoJEECxmPOUX5FEZZoP/2sLJglXpXJ5hIMWY+5OaG0k
-js3zH4MzIeXAt4s6NO5Gr1xE7ninUrD69te6OrprJjIQSRs2f7MhH0TlyhvsO65R
-rbgaBhnCvc60eGbtEzm4lve/Ul8ITnKN5dgiPSyBWsr53IUAKrV3RZDgTGc98o4A
-2Effm6d5wrOEA63GjA9YL3UBJhNJKTXaL7Rb9tCgYqDn2/DQfrmaNYISn5sS6hwh
-FODKiKwMqVAkMKyHPzYep0IHCo3R6vBUEytuixv4HWMcIrS3wxt0J9BxmjnoXyzG
-dUDPZw2KPEqs+LbaAM42fg5UK1xoAbEU7LykyzKShff2FDsodbOm5+cLQko4+lyr
-0TVTzEQz1MT7ISfmypN+xrIii3w2Nz4BrlljCFXCsNQp1ThdFGlnJTjEneJdwAxf
-9Dst5tbA9tP4kwrd/wNZUQe4G7/8Zlf5/bylJjHKzBVwJSSoVLJUyBRtLua2En5F
-KOqOKeU/MMAdeFYX4Rlw89n+bUgc5iUpidWkTy1GgdQpZzltuFhBigOm7jtIOPhc
-TJugJq9u3kSMeo7qayMpa+pbyu0o5W/9qTjWudLd5R3COdrZ1auvQiRBbdojte6P
-RoVz5gwrQdEHAoDl2NdG4louv4aro6ulNAeBxNj8rCis34Q5k7VetRphJqIIN/mq
-KR18HVGrzQ54ijOOTcRp
-=3CdG
+iQIcBAEBCAAGBQJQnIQ3AAoJEECxmPOUX5FEOOIP/16I0DWBS/t8NFnN6C/TPT3l
+CiDlfNej45s87xXA1jh5xx1EhQtCufoL6n1Yrsxea9HsHfa+PaswDsEExBazfA01
+rRXGEjl/FixLvfreyUjhdhB9jYJxwaU/yKPXqmH3SBnf132csWEu5blJAhT2Fmac
+3evEahgYQUiQtJ8DML8uwnznd3I2MtsB9Ibl/80fsx9vVnR8sIcntCRCuhHva1BS
+BSNK0mRcusdLX5WTvhd+mpPXno43qRyi3PlhK8uO2nrS10dFGzrBZiGP6cCs/sYS
+DrM74XgrMHl2RY/1MtgqDhSUo2YcavZOqsC2yhshU4DW+srGBZkkVTPHgKcrkjvp
+bfw/xGbE+kCuTi39RBrbQ7dFtpRrL9FjIvmu6x5Q7WJynsSeG6FRc8Px5hUaw31X
+oXygGgHSGhqo0k7t/JCy1z3eJiXWpO5da1lynL4wnKbNp6jj794pCyRrfPGB2lu/
+6gEmS6PSl+ednImvWUhSbndqAlVS0++GSgsi/Yd6os5/NO1TjRn1xB93V4DQaLWP
+vbY0plxhVuzPZs1aVI143lTbnOtwhxKcvRjsdNw0uKxX/mNocO4d3KvLOJEImThO
+XEdk1SdKYfqvxPNLO3NRHy5ovIfjqU8XDgnPfflQTjGrZ8Z6OXumgw4RSwq35Qtx
+NE9iXncOhXH6mQkX/Cly
+=0aGI
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz--
+--Signature=_Fri__9_Nov_2012_15_19_03_+1100_Lu5a4.Ib7=xRhmj=--
