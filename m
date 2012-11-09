@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2KIMGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 07:06:25 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56893 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2KIMGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 07:06:23 -0500
+	id S1753241Ab2KIMHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 07:07:55 -0500
+Received: from redaccionline.com ([207.218.180.67]:51269 "EHLO
+	correo.fcctpdom.usmp.edu.pe" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753051Ab2KIMHy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 07:07:54 -0500
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-In-Reply-To: <20121105232218.GA8284@atomide.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <6AE080B68D46FC4BA2D2769E68D765B708174B7D@039-SN2MPN1-023.039d.mgd.msft.net> <20121105232218.GA8284@atomide.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 9 Nov 2012 12:06:02 +0000
-X-Google-Sender-Auth: GZPmfxJpL-KOmsrjsO_1uZo6_Sk
-Message-ID: <CACxGe6s1ksem-6=fxVMeCoGw=vLN8n_j1CmfNJMdPS0e3fUxWw@mail.gmail.com>
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-To: Tony Lindgren <tony@atomide.com>
-Cc: Tabi Timur-B04825 <B04825@freescale.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Payment Sent!!!
+To: Recipients <info@westernunion.com>
+From: "Western Union Transfer" <info@westernunion.com>
+Date: Fri, 09 Nov 2012 20:05:37 +0800
+Reply-To: westernuniont12@yahoo.cn
+Message-Id: <20121109114604.C1A29229441@correo.fcctpdom.usmp.edu.pe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 11:22 PM, Tony Lindgren <tony@atomide.com> wrote:
-> Hi,
->
-> * Tabi Timur-B04825 <B04825@freescale.com> [121105 13:42]:
->> On Mon, Nov 5, 2012 at 2:40 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> > Jane is building custom BeagleBone expansion boards called 'capes'. She
->> > can boot the system with a stock BeagleBoard device tree, but additional
->> > data is needed before a cape can be used. She could replace the FDT file
->> > used by U-Boot with one that contains the extra data, but she uses the
->> > same Linux system image regardless of the cape, and it is inconvenient
->> > to have to select a different device tree at boot time depending on the
->> > cape.
->>
->> What's wrong with having the boot loader detect the presence of the
->> Cape and update the device tree accordingly?  We do this all the time
->> in U-Boot.  Doing stuff like reading EEPROMs and testing for the
->> presence of hardware is easier in U-Boot than in Linux.
->>
->> For configurations that can be determined by the boot loader, I'm not
->> sure overlays are practical.
->
-> I guess the beaglebone capes could be stackable and hotpluggable if
-> handled carefully enough.
-
-And even if it can't on the beaglebone, it will happen somewhere else.
-I don't want to exclude that use-case just because nobody thought
-about it.
-
-g.
+We write to inform you that we have transferred $400,000 dollars.  deposited for transfer to you by one MR Bernard Harry from BLACKBERRY MOBILE COMPANY for transfer as a winning prize from the promotion lottery held by the communication company to encourage usage and appreciate already users of their product.
+ 
+ The money is available for pick up by receiver(you) to be cashed on daily installment of $10,000 for 40days. We tried calling to give you the information over the phone but we could not reach you so we decided to email you the information to pick up the first $10,000  already transferred to you. for you to be able to pick the first payment,
+You will have to pay $250 to get it re-activated in your name for you to start picking up your money because we de-activate the transaction for security reason, by making the status to display pick up.
+ 
+ 
+Use this link to track the below information 
+https://wumt.westernunion.com/asp/orderStatus.asp?country=global
+ 
+ Sender's Fist name: Ronald
+ Sender's Last Name: Mundy
+ MTCN: 6605740058
+ Question: Who Is Great
+ Answer: God
+ Amount: $10,000.00USD
+ 
+ Thanks
+ Best Regards
+ Mr.Mcferrin Phoenix .
+ +60169162934
+ western union Office,
+ MALAYSIA OFFICE.
+ Western Union® Money Transfer
