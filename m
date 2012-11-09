@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab2KIVdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 16:33:25 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54849 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab2KIVdL (ORCPT
+	id S1756083Ab2KIVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 16:33:57 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38891 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab2KIVdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 16:33:11 -0500
-Date: Fri, 9 Nov 2012 13:33:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: aquini@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        konrad.wilk@oracle.com, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>, mst@redhat.com,
-        Rik van Riel <riel@redhat.com>, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org
-Subject: [patch] mm: introduce a common interface for balloon pages mobility
- fix
-In-Reply-To: <20121107200113.65C4B100047@wpzn3.hot.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1211091330330.2974@chino.kir.corp.google.com>
-References: <20121107200113.65C4B100047@wpzn3.hot.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 9 Nov 2012 16:33:54 -0500
+Message-ID: <509D76BF.6030808@wwwdotorg.org>
+Date: Fri, 09 Nov 2012 14:33:51 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: harmony: Add ADT7641 temperature sensor
+References: <1352465815-26984-1-git-send-email-thierry.reding@avionic-design.de> <20121109132257.GA29183@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121109132257.GA29183@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes build failure from "mm: introduce a common interface for balloon 
-pages mobility":
+On 11/09/2012 06:22 AM, Thierry Reding wrote:
+> On Fri, Nov 09, 2012 at 01:56:55PM +0100, Thierry Reding wrote:
+>> The Harmony board has an Analog Devices ADT7461 temperature
+>> sensor connected to the DVC bus. It can be used to monitor the
+>> ambient (local) and on-die (remote) temperatures.
+> 
+> Note that I haven't actually tested this, as I no longer have
+> access to Harmony hardware. Testing can easily be done either by
+> reading the files from sysfs directly or by running the sensors
+> utility from the lm-sensors package.
 
-mm/balloon_compaction.c: In function 'balloon_page_putback':
-mm/balloon_compaction.c:243: error: implicit declaration of function '__WARN'
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
-Generic code calls WARN_ON(), not __WARN() directly.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/balloon_compaction.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-index 32927eb..ddb0951 100644
---- a/mm/balloon_compaction.c
-+++ b/mm/balloon_compaction.c
-@@ -240,7 +240,7 @@ void balloon_page_putback(struct page *page)
- 		put_page(page);
- 		balloon_event_count(COMPACTBALLOONRETURNED);
- 	} else {
--		__WARN();
-+		WARN_ON(1);
- 		dump_page(page);
- 	}
- 	unlock_page(page);
+Ventana also has the same sensor and due to git am applying your patch
+to the wrong file (I've renamed all my .dts files), I ended up testing
+that too, so you may as well send a second patch for Ventana. Ventana
+has an nct1008 though.
