@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2KIQfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:35:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab2KIQfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:35:38 -0500
-Date: Fri, 9 Nov 2012 17:35:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
-	block the readers unnecessarily
-Message-ID: <20121109163538.GB26134@redhat.com>
-References: <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121108210843.GF2519@linux.vnet.ibm.com> <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com> <20121109004136.GH2519@linux.vnet.ibm.com> <20121109032310.GA2438@linux.vnet.ibm.com>
+	id S1754596Ab2KIQgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:36:13 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36633 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab2KIQgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:36:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109032310.GA2438@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACxGe6v6zHcq=99JVvhNBe8DuWhyaZ_ojFai9=J2Yuu2TZw1MQ@mail.gmail.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <3455360.Z6cZSC3BtR@vostro.rjw.lan> <CAErSpo5xEO4M_Fb0dJ6w7Qxck-0RcKKwQjKj1QZgFxhof7X5Rw@mail.gmail.com>
+ <1523215.Pon1eKPQDb@vostro.rjw.lan> <20121107095608.GX24532@intel.com>
+ <CAErSpo5My6+ypp9zsxR8vh8k1px0otOWfAcacWaLNs2xjsc7UA@mail.gmail.com>
+ <20121108200445.GC16012@intel.com> <CAErSpo7WT21rZ10vx9A4d8VtVaJB7FLeJqVAxKmZrZDy01FPZQ@mail.gmail.com>
+ <CACxGe6v6zHcq=99JVvhNBe8DuWhyaZ_ojFai9=J2Yuu2TZw1MQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 9 Nov 2012 09:35:46 -0700
+Message-ID: <CAErSpo4V-0Tnaf__fKUHM_69tBvfLySWzaoCWha9gimx0va1-w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
+        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Paul E. McKenney wrote:
+On Fri, Nov 9, 2012 at 8:45 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Fri, Nov 9, 2012 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> [+cc Greg, Peter, Tony since they acked the original patch [1]]
+>>
+>> On Thu, Nov 8, 2012 at 1:04 PM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>>> On Thu, Nov 08, 2012 at 12:32:25PM -0700, Bjorn Helgaas wrote:
+>>>> Struct device_driver is a generic structure, so it seems strange to
+>>>> have to include non-generic things like of_device_id and now
+>>>> acpi_match_table there.
+>>>
+>>> Yes, but in a sense the DT and ACPI are "generic". So that they are used to
+>>> describe the configuration of a machine.
+>>
+>> What I meant by "generic" was "useful across all architectures."  The
+>> new acpi_match_table and acpi_handle fields [1] are not generic in
+>> that sense because they're present on all architectures but used only
+>> on x86 and ia64.  The existing of_match_table and of_node are
+>> similarly unused on many architectures.  This doesn't seem like a
+>> scalable strategy to me.  Are we going to add a pnpbios_node for x86
+>> PNPBIOS machines without ACPI, a pdc_hpa for parisc machines with PDC,
+>> etc.?
+>>
+>> [1] https://patchwork.kernel.org/patch/1677221/
 >
-> On Thu, Nov 08, 2012 at 04:41:36PM -0800, Paul E. McKenney wrote:
-> > On Thu, Nov 08, 2012 at 06:41:10PM -0500, Mikulas Patocka wrote:
-> > >
-> > > On Thu, 8 Nov 2012, Paul E. McKenney wrote:
-> > >
-> > > > On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
-> > > > > On Thu, 8 Nov 2012 14:48:49 +0100
-> > > > > Oleg Nesterov <oleg@redhat.com> wrote:
-> > > > >
-> > > >
-> > > > The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
-> > > > synchronize_rcu() in place of preempt_disable()/preempt_enable() and
-> > > > synchronize_sched().  The real-time guys would prefer the change
-> > > > to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
-> > > > you mention it.
-> > > >
-> > > > Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
-> > > > and synchronize_rcu()?
-> > >
-> > > preempt_disable/preempt_enable is faster than
-> > > rcu_read_lock/rcu_read_unlock for preemptive kernels.
+> Ultimately yes, I think that is what we want to do,
 
-Yes, I chose preempt_disable() because it is the fastest/simplest
-primitive and the critical section is really tiny.
+Just to be clear, you think we *should* add things like pnpbios_node,
+pdc_hpa, etc., to struct device, one field for every scheme of telling
+the OS about non-enumerable devices, where only one of the N fields is
+used on any given machine?  That seems surprising to me, but maybe I
+just need to be educated :)
 
-But:
+> but there is first
+> the non-trivial problem to solve of figuring out how ACPI/DT/whatever
+> data maps into what the driver expects. For example, say a device uses
+> two GPIOs (A & B) and we have a generic get_gpio(int index) function
+> that works for both ACPI and DT. But what if the ACPI binding has the
+> gpios in the order A,B and DT orders them B,A? I do want to coordinate
+> between the DT and ACPI camps to avoid those situations as much as
+> possible, but they will happen. When they do the driver will still
+> need firmware specific data. It doesn't make any sense to put that
+> stuff outside the driver because only that specific driver needs the
+> extra information.
 
-> > Significantly faster in this case?  Can you measure the difference
-> > from a user-mode test?
+Sure.  This seems like just a special case of "drivers need a way to
+access the underlying ACPI/DT/whatever-specific functionality," e.g.,
 
-I do not think rcu_read_lock() or rcu_read_lock_sched() can actually
-make a measurable difference.
-
-> Actually, the fact that __this_cpu_add() will malfunction on some
-> architectures is preemption is not disabled seems a more compelling
-> reason to keep preempt_enable() than any performance improvement.  ;-)
-
-Yes, but this_cpu_add() should work.
-
-> > Careful.  The real-time guys might take the same every-little-bit approach
-> > to latency that you seem to be taking for CPU cycles.  ;-)
-
-Understand...
-
-
-So I simply do not know. Please tell me if you think it would be
-better to use rcu_read_lock/synchronize_rcu or rcu_read_lock_sched,
-and I'll send the patch.
-
-Oleg.
-
+    gpio = get_gpio(dev, dev_is_acpi(dev) ? 1 : 0);
