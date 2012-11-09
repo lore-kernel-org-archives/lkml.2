@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab2KIKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 05:50:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38190 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab2KIKu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 05:50:56 -0500
-Date: Fri, 9 Nov 2012 11:50:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] memcg, oom: provide more precise dump info while
- memcg oom happening
-Message-ID: <20121109105040.GA5006@dhcp22.suse.cz>
-References: <1352389967-23270-1-git-send-email-handai.szj@taobao.com>
- <20121108162539.GP31821@dhcp22.suse.cz>
- <509CD98B.7080503@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <509CD98B.7080503@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752505Ab2KIK5b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 05:57:31 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39273 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2KIK5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 05:57:30 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@opensource.wolfsonmicro.com, philipspatches@gmail.com,
+        patches@linaro.org
+Subject: [PATCH] regulator: core: Update regulator_is_supported_voltage for fixed voltages
+Date: Fri,  9 Nov 2012 16:21:49 +0530
+Message-Id: <1352458309-18141-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 09-11-12 18:23:07, Sha Zhengju wrote:
-> On 11/09/2012 12:25 AM, Michal Hocko wrote:
-> >On Thu 08-11-12 23:52:47, Sha Zhengju wrote:
-[...]
-> >>+	for (i = 0; i<  MEM_CGROUP_STAT_NSTATS; i++) {
-> >>+		long long val = 0;
-> >>+		if (i == MEM_CGROUP_STAT_SWAP&&  !do_swap_account)
-> >>+			continue;
-> >>+		for_each_mem_cgroup_tree(mi, memcg)
-> >>+			val += mem_cgroup_read_stat(mi, i);
-> >>+		printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
-> >>+	}
-> >>+
-> >>+	for (i = 0; i<  NR_LRU_LISTS; i++) {
-> >>+		unsigned long long val = 0;
-> >>+
-> >>+		for_each_mem_cgroup_tree(mi, memcg)
-> >>+			val += mem_cgroup_nr_lru_pages(mi, BIT(i));
-> >>+		printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
-> >>+	}
-> >>+	printk(KERN_CONT "\n");
-> >This is nice and simple I am just thinking whether it is enough. Say
-> >that you have a deeper hierarchy and the there is a safety limit in the
-> >its root
-> >         A (limit)
-> >        /|\
-> >       B C D
-> >           |\
-> >	  E F
-> >
-> >and we trigger an OOM on the A's limit. Now we know that something blew
-> >up but what it was we do not know. Wouldn't it be better to swap the for
-> >and for_each_mem_cgroup_tree loops? Then we would see the whole
-> >hierarchy and can potentially point at the group which doesn't behave.
-> >Memory cgroup stats for A/: ...
-> >Memory cgroup stats for A/B/: ...
-> >Memory cgroup stats for A/C/: ...
-> >Memory cgroup stats for A/D/: ...
-> >Memory cgroup stats for A/D/E/: ...
-> >Memory cgroup stats for A/D/F/: ...
-> >
-> >Would it still fit in with your use case?
-> >[...]
-> 
-> We haven't used those complicate hierarchy yet, but it sounds a good
-> suggestion. :)
-> Hierarchy is a little complex to use from our experience, and the
-> three cgroups involved in memcg oom can be different: memcg of
-> invoker, killed task, memcg of going over limit.Suppose a process in
-> B triggers oom and a victim in root A is selected to be killed, we
-> may as well want to know memcg stats just local in A cgroup(excludes
-> BCD). So besides hierarchy info, does it acceptable to also print
-> the local root node stats which as I did in the V1
-> version(https://lkml.org/lkml/2012/7/30/179).
+Commit c5f3939b8fe0 ("regulator: core: Support fixed voltages in
+regulator_is_supported_voltage()") adds support for fixed regulators
+in regulator_is_supported_voltage.
 
-Ohh, I probably wasn't clear enough. I didn't suggest cumulative
-numbers. Only per group. So it would be something like:
+In case of fixed regulators for which voltage cannot be changed,
+regulator_is_supported_voltage should return success only if the
+min_uV and max_uV parameters are same and it is equal to the current
+voltage of the regulator.
 
-	for_each_mem_cgroup_tree(mi, memcg) {
-		printk("Memory cgroup stats for %s", memcg_name);
-		for (i = 0; i<  MEM_CGROUP_STAT_NSTATS; i++) {
-			if (i == MEM_CGROUP_STAT_SWAP&&  !do_swap_account)
-				continue;
-			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i],
-				K(mem_cgroup_read_stat(mi, i)));
-		}
-		for (i = 0; i<  NR_LRU_LISTS; i++)
-			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i],
-				K(mem_cgroup_nr_lru_pages(mi, BIT(i))));
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
 
-		printk(KERN_CONT"\n");
-	}
+Currently this patch breaks MMC support for boards on which vmmc is a
+fixed regulator and the voltage is not equal to either of 3.3v, 3.0v
+or 1.8v. Earlier it used to work if the voltage was less than 3.3v.
 
-> Another one I'm hesitating is numa stats, it seems the output is
-> beginning to get more and more....
+ drivers/regulator/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-NUMA stats are basically per node - per zone LRU data and that the
-for(NR_LRU_LISTS) can be easily extended to cover that.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 1a35251..4a377a7 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1974,7 +1974,7 @@ int regulator_is_supported_voltage(struct regulator *regulator,
+ 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)) {
+ 		ret = regulator_get_voltage(regulator);
+ 		if (ret >= 0)
+-			return (min_uV >= ret && ret <= max_uV);
++			return (ret == min_uV && ret == max_uV);
+ 		else
+ 			return ret;
+ 	}
 -- 
-Michal Hocko
-SUSE Labs
+1.7.4.1
+
