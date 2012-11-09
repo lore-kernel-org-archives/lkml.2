@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab2KIRaU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:30:20 -0500
+	id S932093Ab2KIRar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:30:47 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49098 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab2KIR3H (ORCPT
+	with ESMTP id S1755282Ab2KIR3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:29:07 -0500
+	Fri, 9 Nov 2012 12:29:00 -0500
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/13] perf annotate: Support event group view for --print-line
-Date: Sat, 10 Nov 2012 02:27:20 +0900
-Message-Id: <1352482044-3443-10-git-send-email-namhyung@kernel.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 07/13] perf annotate: Basic support for event group view
+Date: Sat, 10 Nov 2012 02:27:18 +0900
+Message-Id: <1352482044-3443-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352482044-3443-1-git-send-email-namhyung@kernel.org>
 References: <1352482044-3443-1-git-send-email-namhyung@kernel.org>
@@ -23,256 +24,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically allocate source_line_percent according to a number of
-group members and save nr_pcnt to the struct source_line.  This
-way we can handle multiple events in a general manner.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-However since the size of struct source_line is not fixed anymore,
-iterating whole source_line should care about its size.
+Add support for event group view when symbol_conf.event_group enabled.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/annotate.c |  123 +++++++++++++++++++++++++++++++++-----------
- tools/perf/util/annotate.h |    1 +
- 2 files changed, 95 insertions(+), 29 deletions(-)
+ tools/perf/util/annotate.c |   86 +++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 69 insertions(+), 17 deletions(-)
 
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 42f8a9d8a9cf..28ac33e83bf3 100644
+index f985866304ff..5b44c3b1a166 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -650,11 +650,19 @@ static void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
- 	memset(percent, 0, sizeof(percent) * nr_percent);
+@@ -637,15 +637,17 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
  
- 	if (src_line) {
-+		size_t sizeof_src_line = sizeof(*src_line) +
-+				sizeof(src_line->p) * (src_line->nr_pcnt - 1);
-+
- 		while (offset < to) {
--			if (*path == NULL)
--				*path = src_line[offset].path;
-+			src_line = (void *)notes->src->lines +
-+					(sizeof_src_line * offset);
-+
-+			if (path && *path == NULL)
-+				*path = src_line->path;
-+
-+			for (i = 0; i < nr_percent; i++)
-+				percent[i] += src_line->p[i].percent;
- 
--			*percent += src_line[offset].p[0].percent;
- 			++offset;
- 		}
- 	} else {
-@@ -951,7 +959,7 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 	struct source_line *iter;
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
--	int ret;
-+	int i, ret;
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -959,7 +967,8 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 
- 		ret = strcmp(iter->path, src_line->path);
- 		if (ret == 0) {
--			iter->p[0].percent_sum += src_line->p[0].percent;
-+			for (i = 0; i < src_line->nr_pcnt; i++)
-+				iter->p[i].percent_sum += src_line->p[i].percent;
- 			return;
- 		}
- 
-@@ -969,12 +978,26 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 			p = &(*p)->rb_right;
- 	}
- 
--	src_line->p[0].percent_sum = src_line->p[0].percent;
-+	for (i = 0; i < src_line->nr_pcnt; i++)
-+		src_line->p[i].percent_sum = src_line->p[i].percent;
- 
- 	rb_link_node(&src_line->node, parent, p);
- 	rb_insert_color(&src_line->node, root);
- }
- 
-+static int cmp_source_line(struct source_line *a, struct source_line *b)
-+{
-+	int i;
-+
-+	for (i = 0; i < a->nr_pcnt; i++) {
-+		if (a->p[i].percent_sum == b->p[i].percent_sum)
-+			continue;
-+		return a->p[i].percent_sum > b->p[i].percent_sum;
-+	}
-+
-+	return 0;
-+}
-+
- static void __resort_source_line(struct rb_root *root, struct source_line *src_line)
- {
- 	struct source_line *iter;
-@@ -985,7 +1008,7 @@ static void __resort_source_line(struct rb_root *root, struct source_line *src_l
- 		parent = *p;
- 		iter = rb_entry(parent, struct source_line, node);
- 
--		if (src_line->p[0].percent_sum > iter->p[0].percent_sum)
-+		if (cmp_source_line(src_line, iter))
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -1017,12 +1040,18 @@ static void symbol__free_source_line(struct symbol *sym, int len)
+ static void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
+ 				 s64 from, s64 to, const char **path,
+-				 double *percent)
++				 double *percent, int nr_percent)
  {
  	struct annotation *notes = symbol__annotation(sym);
  	struct source_line *src_line = notes->src->lines;
-+	size_t sizeof_src_line;
- 	int i;
+ 	struct sym_hist *h;
+-	unsigned int hits = 0;
++	unsigned int hits;
+ 	s64 offset = from;
++	int evidx = evsel->idx;
++	int i;
  
--	for (i = 0; i < len; i++)
--		free(src_line[i].path);
-+	sizeof_src_line = sizeof(*src_line) +
-+			  (sizeof(src_line->p) * (src_line->nr_pcnt - 1));
+-	*percent = 0.0;
++	memset(percent, 0, sizeof(percent) * nr_percent);
  
--	free(src_line);
-+	for (i = 0; i < len; i++) {
-+		free(src_line->path);
-+		src_line = (void *)src_line + sizeof_src_line;
-+	}
+ 	if (src_line) {
+ 		while (offset < to) {
+@@ -656,14 +658,19 @@ static void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
+ 			++offset;
+ 		}
+ 	} else {
+-		h = annotation__histogram(notes, evsel->idx);
++		for (i = 0; i < nr_percent; i++) {
++			hits = 0;
++			offset = from;
++			h = annotation__histogram(notes, evidx + i);
 +
-+	free(notes->src->lines);
- 	notes->src->lines = NULL;
++			while (offset < to) {
++				hits += h->addr[offset];
++				offset++;
++			}
+ 
+-		while (offset < to) {
+-			hits += h->addr[offset];
++			if (h->sum)
++				percent[i] = 100.0 * hits / h->sum;
+ 		}
+-
+-		if (h->sum)
+-			*percent = 100.0 * hits / h->sum;
+ 	}
  }
  
-@@ -1033,17 +1062,32 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 				   const char *filename)
- {
- 	u64 start;
--	int i;
-+	int i, k;
-+	int evidx = evsel->idx;
- 	char cmd[PATH_MAX * 2];
- 	struct source_line *src_line;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct sym_hist *h = annotation__histogram(notes, evsel->idx);
-+	struct sym_hist *h = annotation__histogram(notes, evidx);
- 	struct rb_root tmp_root = RB_ROOT;
-+	int nr_pcnt = 1;
-+	u64 h_sum = h->sum;
-+	size_t sizeof_src_line = sizeof(struct source_line);
- 
--	if (!h->sum)
-+	if (symbol_conf.event_group) {
-+		if (perf_evsel__is_group_leader(evsel)) {
-+			for (i = 0; i < evsel->nr_members; i++) {
-+				h = annotation__histogram(notes, evidx + i);
-+				h_sum += h->sum;
-+			}
-+			nr_pcnt += evsel->nr_members;
-+			sizeof_src_line += (nr_pcnt - 1) * sizeof(src_line->p);
-+		}
-+	}
-+
-+	if (!h_sum)
- 		return 0;
- 
--	src_line = notes->src->lines = calloc(len, sizeof(struct source_line));
-+	src_line = notes->src->lines = calloc(len, sizeof_src_line);
- 	if (!notes->src->lines)
- 		return -1;
- 
-@@ -1054,29 +1098,41 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 		size_t line_len;
- 		u64 offset;
- 		FILE *fp;
+@@ -677,19 +684,39 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 	if (dl->offset != -1) {
+ 		const char *path = NULL;
+ 		double percent = 0.0;
 +		double percent_max = 0.0;
++		double *ppercents = &percent;
++		int i, nr_percents = 1;
+ 		const char *color;
+ 		struct annotation *notes = symbol__annotation(sym);
+ 		s64 offset = dl->offset;
+ 		const u64 addr = start + offset;
+ 		struct disasm_line *next;
  
--		src_line[i].p[0].percent = 100.0 * h->addr[i] / h->sum;
--		if (src_line[i].p[0].percent <= 0.5)
--			continue;
-+		src_line->nr_pcnt = nr_pcnt;
-+
-+		for (k = 0; k < nr_pcnt; k++) {
-+			h = annotation__histogram(notes, evidx + k);
-+			src_line->p[k].percent = 100.0 * h->addr[i] / h->sum;
-+
-+			if (src_line->p[k].percent > percent_max)
-+				percent_max = src_line->p[k].percent;
++		if (symbol_conf.event_group) {
++			if (perf_evsel__is_group_leader(evsel) &&
++			    evsel->nr_members > 0) {
++				nr_percents = evsel->nr_members + 1;
++				ppercents = calloc(nr_percents, sizeof(double));
++				if (ppercents == NULL)
++					return -1;
++			}
 +		}
 +
-+		if (percent_max <= 0.5)
-+			goto next;
+ 		next = disasm__get_next_ip_line(&notes->src->source, dl);
  
- 		offset = start + i;
- 		sprintf(cmd, "addr2line -e %s %016" PRIx64, filename, offset);
- 		fp = popen(cmd, "r");
- 		if (!fp)
--			continue;
-+			goto next;
- 
- 		if (getline(&path, &line_len, fp) < 0 || !line_len)
--			goto next;
-+			goto next_close;
- 
--		src_line[i].path = malloc(sizeof(char) * line_len + 1);
--		if (!src_line[i].path)
--			goto next;
-+		src_line->path = malloc(sizeof(char) * line_len + 1);
-+		if (!src_line->path)
-+			goto next_close;
- 
--		strcpy(src_line[i].path, path);
--		insert_source_line(&tmp_root, &src_line[i]);
-+		strcpy(src_line->path, path);
-+		insert_source_line(&tmp_root, src_line);
- 
--	next:
-+	next_close:
- 		pclose(fp);
-+	next:
-+		src_line = (void *)src_line + sizeof_src_line;
- 	}
- 
- 	resort_source_line(root, &tmp_root);
-@@ -1098,16 +1154,25 @@ static void print_summary(struct rb_root *root, const char *filename)
- 
- 	node = rb_first(root);
- 	while (node) {
--		double percent;
-+		double percent, percent_max = 0.0;
- 		const char *color;
- 		char *path;
-+		int i;
- 
- 		src_line = rb_entry(node, struct source_line, node);
--		percent = src_line->p[0].percent_sum;
--		color = get_percent_color(percent);
-+		for (i = 0; i < src_line->nr_pcnt; i++) {
-+			percent = src_line->p[i].percent_sum;
-+			color = get_percent_color(percent);
-+			color_fprintf(stdout, color, " %7.2f", percent);
+ 		disasm__calc_percent(sym, evsel, offset,
+ 				     next ? next->offset : (s64) len,
+-				     &path, &percent);
++				     &path, ppercents, nr_percents);
++
++		for (i = 0; i < nr_percents; i++) {
++			percent = ppercents[i];
 +
 +			if (percent > percent_max)
 +				percent_max = percent;
 +		}
-+
- 		path = src_line->path;
+ 
+-		if (percent < min_pcnt)
++		if (percent_max < min_pcnt)
+ 			return -1;
+ 
+ 		if (max_lines && printed >= max_lines)
+@@ -704,7 +731,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 			}
+ 		}
+ 
+-		color = get_percent_color(percent);
 +		color = get_percent_color(percent_max);
-+		color_fprintf(stdout, color, " %s", path);
  
--		color_fprintf(stdout, color, " %7.2f %s", percent, path);
- 		node = rb_next(node);
+ 		/*
+ 		 * Also color the filename and line if needed, with
+@@ -720,20 +747,35 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 			}
+ 		}
+ 
+-		color_fprintf(stdout, color, " %7.2f", percent);
++		for (i = 0; i < nr_percents; i++) {
++			percent = ppercents[i];
++			color = get_percent_color(percent);
++			color_fprintf(stdout, color, " %7.2f", percent);
++		}
++
+ 		printf(" :	");
+ 		color_fprintf(stdout, PERF_COLOR_MAGENTA, "  %" PRIx64 ":", addr);
+ 		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", dl->line);
++
++		if (ppercents != &percent)
++			free(ppercents);
+ 	} else if (max_lines && printed >= max_lines)
+ 		return 1;
+ 	else {
++		int width = 8;
++
+ 		if (queue)
+ 			return -1;
+ 
++		if (symbol_conf.event_group) {
++			if (perf_evsel__is_group_leader(evsel))
++				width *= evsel->nr_members + 1;
++		}
++
+ 		if (!*dl->line)
+-			printf("         :\n");
++			printf(" %*s:\n", width, " ");
+ 		else
+-			printf("         :	%s\n", dl->line);
++			printf(" %*s:	%s\n", width, " ", dl->line);
  	}
- }
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index ca2badc07653..fa74c09f0c70 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -81,6 +81,7 @@ struct source_line_percent {
- struct source_line {
- 	struct rb_node	node;
- 	char		*path;
-+	int		nr_pcnt;
- 	struct source_line_percent p[1];
- };
  
+ 	return 0;
+@@ -1096,6 +1138,8 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
+ 	int printed = 2, queue_len = 0;
+ 	int more = 0;
+ 	u64 len;
++	int width = 8;
++	int namelen;
+ 
+ 	filename = strdup(dso->long_name);
+ 	if (!filename)
+@@ -1108,8 +1152,16 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
+ 
+ 	len = symbol__size(sym);
+ 
+-	printf(" Percent |	Source code & Disassembly of %s\n", d_filename);
+-	printf("------------------------------------------------\n");
++	if (symbol_conf.event_group) {
++		if (perf_evsel__is_group_leader(evsel))
++			width *= evsel->nr_members + 1;
++	}
++	namelen = strlen(d_filename);
++
++	printf(" %-*.*s|	Source code & Disassembly of %s\n",
++	       width, width, "Percent", d_filename);
++	printf("-%-*.*s-------------------------------------\n",
++	       width + namelen, width + namelen, graph_dotted_line);
+ 
+ 	if (verbose)
+ 		symbol__annotate_hits(sym, evsel);
 -- 
 1.7.9.2
 
