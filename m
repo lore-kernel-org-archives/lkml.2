@@ -1,45 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab2KIQEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:04:14 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59312 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab2KIQEK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:04:10 -0500
+	id S1754261Ab2KIQMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:12:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50795 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565Ab2KIQMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:12:42 -0500
+Date: Fri, 9 Nov 2012 16:12:37 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/19] Foundation for automatic NUMA balancing
+Message-ID: <20121109161236.GK8218@suse.de>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <20121109144257.GA26870@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <509D28B6.3060207@vodafone.de>
-References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de>
-	<1352469579-3337-3-git-send-email-thierry.reding@avionic-design.de>
-	<CACna6rycZ=TGHP7KpVa_r0JSpc6c=PB89pijR9E_4A=bQ=74Bw@mail.gmail.com>
-	<509D28B6.3060207@vodafone.de>
-Date: Fri, 9 Nov 2012 17:04:09 +0100
-Message-ID: <CACna6rxOBENLVC8mgJdsSdAZdWranMiivSgq_8DzeTo0hzzWqg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] drm: tegra: Add HDMI support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-tegra@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121109144257.GA26870@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/9 Christian König <deathsimple@vodafone.de>:
-> On 09.11.2012 16:45, Rafał Miłecki wrote:
->> I was told it won't work on different endian devices. See
->> [RFC][PATCH] drm/radeon/hdmi: define struct for AVI infoframe
->> http://lists.freedesktop.org/archives/dri-devel/2012-May/022544.html
->
->
-> Yeah, that's indeed true. And honestly adding just another implementation of
-> the HDMI info frames sounds like somebody should finally sit down and
-> implement it in a common drm_hdmi.c
+On Fri, Nov 09, 2012 at 03:42:57PM +0100, Andrea Arcangeli wrote:
+> Hi Mel,
+> 
+> On Tue, Nov 06, 2012 at 09:14:36AM +0000, Mel Gorman wrote:
+> > This series addresses part of the integration and sharing problem by
+> > implementing a foundation that either the policy for schednuma or autonuma
+> > can be rebased on. The actual policy it implements is a very stupid
+> > greedy policy called "Migrate On Reference Of pte_numa Node (MORON)".
+> > While stupid, it can be faster than the vanilla kernel and the expectation
+> > is that any clever policy should be able to beat MORON. The advantage is
+> > that it still defines how the policy needs to hook into the core code --
+> > scheduler and mempolicy mostly so many optimisations (s uch as native THP
+> > migration) can be shared between different policy implementations.
+> 
+> I haven't had much time to look into it yet, because I've been
+> attending KVM Forum the last few days,
 
-Agree.
+That's fine. I knew you were travelling and that there would be delay.
+
+> but this foundation looks ok
+> with me as a starting base and I ack it for merging it upstream. I'll
+> try to rebase on top of this and send you some patches.
+> 
+
+Thanks, that's great news! It's not quite ready for merging yet. I found
+a few bugs in the foundation that I ironed out since and I would like to
+have better figures for specjbb.
+
+With that in mind I'm still in the process of implementing something like
+cpu-follow-memory on top. I'll post it early next week even if the figures
+are crap for the purposes of illustration and to get the existing fixes
+out there. Even you think the version of the cpu-follow implementation is
+complete crap you'll at least see what I thought the integration points
+would look like and we'll come up with an alternative.
+
+My hope is that we layer the smallest amount on top each iteration with
+benchmark validation at each step until we get something approaching
+autonuma or schednumas in terms of performance. Which one we use as the
+performance target will depend on whether schednuma or autonuma was better
+on that particular test. I'll be using mmtests on a 4-node machine each
+step but obviously other testers would be very welcome.
+
+As things stand right now I just finished a script to show where threads
+and running and what their per-node memory usage is and it's showing that
+specjbb threads are not converging at all. I'm not losing sleep over it
+just yet as I would be incredibly surprised if I got this right first time
+even with having schednuma and autonuma to look at :) .
+
+> > Patch 14 adds a MPOL_MF_LAZY mempolicy that an interested application can use.
+> > 	On the next reference the memory should be migrated to the node that
+> > 	references the memory.
+> 
+> This approach of starting with a stripped down foundation won't allow
+> for easy backportability anyway, so merging the userland API at the
+> first step shouldn't provide any benefit for the work that is ahead of
+> us. I would leave this for later and not part of the foundation.
+> 
+
+This needs a bit more consensus. I'm happy to drop the userspace API
+until all this settles down but will initially try and keep the internal
+mempolicy aspects.  Initially I preserved the userspace API because
+I understood Peter's logic that we should help application developers
+as much as possible before depending entirely on the automatic approach
+offered by both autonuma and schednuma.
+
+Peter?
+
+> All we need is a failsafe runtime and boot time turn off knob, just in
+> case.
+
+Yes, fully agreed. It's on the TODO list and I consider it a requirement
+before it's merged. THP experience has told us that being able to turn
+it off at runtime was very handy for debugging.
+
+Thanks Andrea.
 
 -- 
-Rafał
+Mel Gorman
+SUSE Labs
