@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2KIJJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:09:56 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5210 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2KIJJs (ORCPT
+	id S1751993Ab2KIJKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:10:05 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35338 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2KIJJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:09:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 09 Nov 2012 00:56:08 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>
-CC: <swarren@nvidia.com>, <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH] spi: make sure all transfer has bits_per_word set
-Date: Fri, 9 Nov 2012 14:36:45 +0530
-Message-ID: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 9 Nov 2012 04:09:55 -0500
+Message-ID: <509CC855.4070203@huawei.com>
+Date: Fri, 9 Nov 2012 17:09:41 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <tj@kernel.org>
+CC: <mhocko@suse.cz>, <rjw@sisk.pl>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <fweisbec@gmail.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 1/9 v3] cgroup: add cgroup_subsys->post_create()
+References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-2-git-send-email-tj@kernel.org> <20121108190715.GD9672@htj.dyndns.org>
+In-Reply-To: <20121108190715.GD9672@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When spi client does the spi transfer and does not sets
-the bits_per_word for each transfer then set it as default
-of spi device in spi core before calling low level transfer.
+On 2012/11/9 3:07, Tejun Heo wrote:
+> Subject: cgroup: add cgroup_subsys->post_create()
+> 
+> Currently, there's no way for a controller to find out whether a new
+> cgroup finished all ->create() allocatinos successfully and is
+> considered "live" by cgroup.
+> 
+> This becomes a problem later when we add generic descendants walking
+> to cgroup which can be used by controllers as controllers don't have a
+> synchronization point where it can synchronize against new cgroups
+> appearing in such walks.
+> 
+> This patch adds ->post_create().  It's called after all ->create()
+> succeeded and the cgroup is linked into the generic cgroup hierarchy.
+> This plays the counterpart of ->pre_destroy().
+> 
+> When used in combination with the to-be-added generic descendant
+> iterators, ->post_create() can be used to implement reliable state
+> inheritance.  It will be explained with the descendant iterators.
+> 
+> v2: Added a paragraph about its future use w/ descendant iterators per
+>     Michal.
+> 
+> v3: Forgot to add ->post_create() invocation to cgroup_load_subsys().
+>     Fixed.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Glauber Costa <glommer@parallels.com>
 
-Removing the similar code from spi-tegra20-slink driver as
-it is not required.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
----
-When reviewing the change
-	[PATCH] spi: tegra: add spi driver for SLINK controller
-it was suggested by Mark and Stephen that we should move the
-bits_per_word setting to the core as it almost exist in all driver.
-Creating this patch for doing this.
-
-Creating teh patch 
- drivers/spi/spi-tegra20-slink.c |    3 +--
- drivers/spi/spi.c               |   11 ++++++++++-
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/spi/spi-tegra20-slink.c b/drivers/spi/spi-tegra20-slink.c
-index b8985be..07dc735 100644
---- a/drivers/spi/spi-tegra20-slink.c
-+++ b/drivers/spi/spi-tegra20-slink.c
-@@ -727,8 +727,7 @@ static int tegra_slink_start_transfer_one(struct spi_device *spi,
- 	unsigned long command;
- 	unsigned long command2;
- 
--	bits_per_word = t->bits_per_word ? t->bits_per_word :
--					spi->bits_per_word;
-+	bits_per_word = t->bits_per_word;
- 	speed = t->speed_hz ? t->speed_hz : spi->max_speed_hz;
- 	if (!speed)
- 		speed = tspi->spi_max_frequency;
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index fc0da39..6891a03 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1193,6 +1193,7 @@ EXPORT_SYMBOL_GPL(spi_setup);
- static int __spi_async(struct spi_device *spi, struct spi_message *message)
- {
- 	struct spi_master *master = spi->master;
-+	struct spi_transfer *xfer;
- 
- 	/* Half-duplex links include original MicroWire, and ones with
- 	 * only one data pin like SPI_3WIRE (switches direction) or where
-@@ -1201,7 +1202,6 @@ static int __spi_async(struct spi_device *spi, struct spi_message *message)
- 	 */
- 	if ((master->flags & SPI_MASTER_HALF_DUPLEX)
- 			|| (spi->mode & SPI_3WIRE)) {
--		struct spi_transfer *xfer;
- 		unsigned flags = master->flags;
- 
- 		list_for_each_entry(xfer, &message->transfers, transfer_list) {
-@@ -1214,6 +1214,15 @@ static int __spi_async(struct spi_device *spi, struct spi_message *message)
- 		}
- 	}
- 
-+	/**
-+	 * Set transfer bits_per_word as spi device default if it is not
-+	 * set for this transfer.
-+	 */
-+	list_for_each_entry(xfer, &message->transfers, transfer_list) {
-+		if (!xfer->bits_per_word)
-+			xfer->bits_per_word = spi->bits_per_word;
-+	}
-+
- 	message->spi = spi;
- 	message->status = -EINPROGRESS;
- 	return master->transfer(spi, message);
--- 
-1.7.1.1
+Li Zefan <lizefan@huawei.com
 
