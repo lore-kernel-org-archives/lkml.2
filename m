@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2KIJKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:10:48 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:52849 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab2KIJKj (ORCPT
+	id S1752053Ab2KIJK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:10:29 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1233 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab2KIJKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:10:39 -0500
-Message-ID: <509CC885.9030400@huawei.com>
-Date: Fri, 9 Nov 2012 17:10:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 9 Nov 2012 04:10:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 09 Nov 2012 01:09:58 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>
+CC: <swarren@nvidia.com>, <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] spi: tegra: sequence compatible strings as per preference
+Date: Fri, 9 Nov 2012 14:37:32 +0530
+Message-ID: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <mhocko@suse.cz>, <rjw@sisk.pl>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <fweisbec@gmail.com>
-Subject: Re: [PATCH 2/9] cgroup: Use rculist ops for cgroup->children
-References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-3-git-send-email-tj@kernel.org>
-In-Reply-To: <1351931915-1701-3-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/3 16:38, Tejun Heo wrote:
-> Use RCU safe list operations for cgroup->children.  This will be used
-> to implement cgroup children / descendant walking which can be used by
-> controllers.
-> 
-> Note that cgroup_create() now puts a new cgroup at the end of the
-> ->children list instead of head.  This isn't strictly necessary but is
-> done so that the iteration order is more conventional.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Sequence compatible list for tegra20-slink driver to first
+look for Tegra30 and then Tegra20. Tegra30 have additional
+feature in HW which need to be utilize if it is provided from DT.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/spi/spi-tegra20-slink.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/spi/spi-tegra20-slink.c b/drivers/spi/spi-tegra20-slink.c
+index 07dc735..7882b50 100644
+--- a/drivers/spi/spi-tegra20-slink.c
++++ b/drivers/spi/spi-tegra20-slink.c
+@@ -1109,8 +1109,8 @@ const struct tegra_slink_chip_data tegra20_spi_cdata = {
+ };
+ 
+ static struct of_device_id tegra_slink_of_match[] __devinitconst = {
+-	{ .compatible = "nvidia,tegra20-slink", .data = &tegra20_spi_cdata, },
+ 	{ .compatible = "nvidia,tegra30-slink", .data = &tegra30_spi_cdata, },
++	{ .compatible = "nvidia,tegra20-slink", .data = &tegra20_spi_cdata, },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, tegra_slink_of_match);
+-- 
+1.7.1.1
 
