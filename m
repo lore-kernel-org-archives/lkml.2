@@ -1,134 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab2KIAky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 19:40:54 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41684 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264Ab2KIAkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 19:40:52 -0500
-Message-ID: <509C5110.5090809@pobox.com>
-Date: Thu, 08 Nov 2012 19:40:48 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1757372Ab2KIAlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 19:41:44 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55621 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757345Ab2KIAln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 19:41:43 -0500
+Date: Thu, 8 Nov 2012 16:41:36 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+ block the readers unnecessarily
+Message-ID: <20121109004136.GH2519@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121030184800.GA16129@redhat.com>
+ <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121108134805.GA23870@redhat.com>
+ <20121108134849.GB23870@redhat.com>
+ <20121108120700.42d438f2.akpm@linux-foundation.org>
+ <20121108210843.GF2519@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Ed Cashin <ecashin@coraid.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] aoe: provide ATA identify device content to user
- on request
-References: <d63a612e77d92e4f7c13fc2bb545a762a664522d.1352316179.git.ecashin@coraid.com> <9a089f76a8e21e64c89556d155833bcb286e48be.1352316179.git.ecashin@coraid.com>
-In-Reply-To: <9a089f76a8e21e64c89556d155833bcb286e48be.1352316179.git.ecashin@coraid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211081836180.7134@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110900-7182-0000-0000-00000323C88D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2012 11:32 AM, Ed Cashin wrote:
-> This patch makes the aoe driver follow expected behavior when
-> the user uses ioctl to get the ATA device identify information.
->
-> Signed-off-by: Ed Cashin <ecashin@coraid.com>
-> ---
->   drivers/block/aoe/aoe.h    |    1 +
->   drivers/block/aoe/aoeblk.c |   30 ++++++++++++++++++++++++++++++
->   drivers/block/aoe/aoecmd.c |   16 ++++++++++++++++
->   3 files changed, 47 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-> index 536942b..f6e0c03 100644
-> --- a/drivers/block/aoe/aoe.h
-> +++ b/drivers/block/aoe/aoe.h
-> @@ -169,6 +169,7 @@ struct aoedev {
->   	struct aoetgt *htgt;	/* target needing rexmit assistance */
->   	ulong ntargets;
->   	ulong kicked;
-> +	char ident[512];
->   };
->
->   /* kthread tracking */
-> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
-> index 56736cd..7ba0fcf 100644
-> --- a/drivers/block/aoe/aoeblk.c
-> +++ b/drivers/block/aoe/aoeblk.c
-> @@ -17,6 +17,7 @@
->   #include <linux/mutex.h>
->   #include <linux/export.h>
->   #include <linux/moduleparam.h>
-> +#include <scsi/sg.h>
->   #include "aoe.h"
->
->   static DEFINE_MUTEX(aoeblk_mutex);
-> @@ -212,9 +213,38 @@ aoeblk_getgeo(struct block_device *bdev, struct hd_geometry *geo)
->   	return 0;
->   }
->
-> +static int
-> +aoeblk_ioctl(struct block_device *bdev, fmode_t mode, uint cmd, ulong arg)
-> +{
-> +	struct aoedev *d;
-> +
-> +	if (!arg)
-> +		return -EINVAL;
-> +
-> +	d = bdev->bd_disk->private_data;
-> +	if ((d->flags & DEVFL_UP) == 0) {
-> +		pr_err("aoe: disk not up\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (cmd == HDIO_GET_IDENTITY) {
-> +		if (!copy_to_user((void __user *) arg, &d->ident,
-> +			sizeof(d->ident)))
-> +			return 0;
-> +		return -EFAULT;
-> +	}
-> +
-> +	/* udev calls scsi_id, which uses SG_IO, resulting in noise */
-> +	if (cmd != SG_IO)
-> +		pr_info("aoe: unknown ioctl 0x%x\n", cmd);
-> +
-> +	return -ENOTTY;
-> +}
-> +
->   static const struct block_device_operations aoe_bdops = {
->   	.open = aoeblk_open,
->   	.release = aoeblk_release,
-> +	.ioctl = aoeblk_ioctl,
->   	.getgeo = aoeblk_getgeo,
->   	.owner = THIS_MODULE,
->   };
-> diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-> index 3ce01f6..c4ff70b 100644
-> --- a/drivers/block/aoe/aoecmd.c
-> +++ b/drivers/block/aoe/aoecmd.c
-> @@ -799,6 +799,17 @@ aoecmd_sleepwork(struct work_struct *work)
->   }
->
->   static void
-> +ata_ident_fixstring(u16 *id, int ns)
-> +{
-> +	u16 s;
-> +
-> +	while (ns-- > 0) {
-> +		s = *id;
-> +		*id++ = s >> 8 | s << 8;
-> +	}
-> +}
-> +
-> +static void
->   ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
->   {
->   	u64 ssize;
-> @@ -833,6 +844,11 @@ ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
->   		d->geo.sectors = get_unaligned_le16(&id[56 << 1]);
->   	}
->
-> +	ata_ident_fixstring((u16 *) &id[10<<1], 10);	/* serial */
-> +	ata_ident_fixstring((u16 *) &id[23<<1], 4);	/* firmware */
-> +	ata_ident_fixstring((u16 *) &id[27<<1], 20);	/* model */
+On Thu, Nov 08, 2012 at 06:41:10PM -0500, Mikulas Patocka wrote:
+> 
+> 
+> On Thu, 8 Nov 2012, Paul E. McKenney wrote:
+> 
+> > On Thu, Nov 08, 2012 at 12:07:00PM -0800, Andrew Morton wrote:
+> > > On Thu, 8 Nov 2012 14:48:49 +0100
+> > > Oleg Nesterov <oleg@redhat.com> wrote:
+> > > 
+> > > > Currently the writer does msleep() plus synchronize_sched() 3 times
+> > > > to acquire/release the semaphore, and during this time the readers
+> > > > are blocked completely. Even if the "write" section was not actually
+> > > > started or if it was already finished.
+> > > > 
+> > > > With this patch down_write/up_write does synchronize_sched() twice
+> > > > and down_read/up_read are still possible during this time, just they
+> > > > use the slow path.
+> > > > 
+> > > > percpu_down_write() first forces the readers to use rw_semaphore and
+> > > > increment the "slow" counter to take the lock for reading, then it
+> > > > takes that rw_semaphore for writing and blocks the readers.
+> > > > 
+> > > > Also. With this patch the code relies on the documented behaviour of
+> > > > synchronize_sched(), it doesn't try to pair synchronize_sched() with
+> > > > barrier.
+> > > > 
+> > > > ...
+> > > >
+> > > >  include/linux/percpu-rwsem.h |   83 +++++------------------------
+> > > >  lib/Makefile                 |    2 +-
+> > > >  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
+> > > 
+> > > The patch also uninlines everything.
+> > > 
+> > > And it didn't export the resulting symbols to modules, so it isn't an
+> > > equivalent.  We can export thing later if needed I guess.
+> > > 
+> > > It adds percpu-rwsem.o to lib-y, so the CONFIG_BLOCK=n kernel will
+> > > avoid including the code altogether, methinks?
+> > > 
+> > > >
+> > > > ...
+> > > >
+> > > > --- /dev/null
+> > > > +++ b/lib/percpu-rwsem.c
+> > > > @@ -0,0 +1,123 @@
+> > > 
+> > > That was nice and terse ;)
+> > > 
+> > > > +#include <linux/percpu-rwsem.h>
+> > > > +#include <linux/rcupdate.h>
+> > > > +#include <linux/sched.h>
+> > > 
+> > > This list is nowhere near sufficient to support this file's
+> > > requirements.  atomic.h, percpu.h, rwsem.h, wait.h, errno.h and plenty
+> > > more.  IOW, if it compiles, it was sheer luck.
+> > > 
+> > > > +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	brw->fast_read_ctr = alloc_percpu(int);
+> > > > +	if (unlikely(!brw->fast_read_ctr))
+> > > > +		return -ENOMEM;
+> > > > +
+> > > > +	mutex_init(&brw->writer_mutex);
+> > > > +	init_rwsem(&brw->rw_sem);
+> > > > +	atomic_set(&brw->slow_read_ctr, 0);
+> > > > +	init_waitqueue_head(&brw->write_waitq);
+> > > > +	return 0;
+> > > > +}
+> > > > +
+> > > > +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	free_percpu(brw->fast_read_ctr);
+> > > > +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
+> > > > +}
+> > > > +
+> > > > +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
+> > > > +{
+> > > > +	bool success = false;
+> > > > +
+> > > > +	preempt_disable();
+> > > > +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+> > > > +		__this_cpu_add(*brw->fast_read_ctr, val);
+> > > > +		success = true;
+> > > > +	}
+> > > > +	preempt_enable();
+> > > > +
+> > > > +	return success;
+> > > > +}
+> > > > +
+> > > > +/*
+> > > > + * Like the normal down_read() this is not recursive, the writer can
+> > > > + * come after the first percpu_down_read() and create the deadlock.
+> > > > + */
+> > > > +void percpu_down_read(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	if (likely(update_fast_ctr(brw, +1)))
+> > > > +		return;
+> > > > +
+> > > > +	down_read(&brw->rw_sem);
+> > > > +	atomic_inc(&brw->slow_read_ctr);
+> > > > +	up_read(&brw->rw_sem);
+> > > > +}
+> > > > +
+> > > > +void percpu_up_read(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	if (likely(update_fast_ctr(brw, -1)))
+> > > > +		return;
+> > > > +
+> > > > +	/* false-positive is possible but harmless */
+> > > > +	if (atomic_dec_and_test(&brw->slow_read_ctr))
+> > > > +		wake_up_all(&brw->write_waitq);
+> > > > +}
+> > > > +
+> > > > +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	unsigned int sum = 0;
+> > > > +	int cpu;
+> > > > +
+> > > > +	for_each_possible_cpu(cpu) {
+> > > > +		sum += per_cpu(*brw->fast_read_ctr, cpu);
+> > > > +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+> > > > +	}
+> > > > +
+> > > > +	return sum;
+> > > > +}
+> > > > +
+> > > > +/*
+> > > > + * A writer takes ->writer_mutex to exclude other writers and to force the
+> > > > + * readers to switch to the slow mode, note the mutex_is_locked() check in
+> > > > + * update_fast_ctr().
+> > > > + *
+> > > > + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
+> > > > + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
+> > > > + * counter it represents the number of active readers.
+> > > > + *
+> > > > + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
+> > > > + * then waits until the slow counter becomes zero.
+> > > > + */
+> > > 
+> > > Some overview of how fast/slow_read_ctr are supposed to work would be
+> > > useful.  This comment seems to assume that the reader already knew
+> > > that.
+> > > 
+> > > > +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> > > > +{
+> > > > +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> > > > +	mutex_lock(&brw->writer_mutex);
+> > > > +
+> > > > +	/*
+> > > > +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> > > > +	 *    so that update_fast_ctr() can't succeed.
+> > > > +	 *
+> > > > +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> > > > +	 *    update_fast_ctr().
+> > > > +	 *
+> > > > +	 * 3. Ensures that if any reader has exited its critical section via
+> > > > +	 *    fast-path, it executes a full memory barrier before we return.
+> > > > +	 */
+> > > > +	synchronize_sched();
+> > > 
+> > > Here's where I get horridly confused.  Your patch completely deRCUifies
+> > > this code, yes?  Yet here we're using an RCU primitive.  And we seem to
+> > > be using it not as an RCU primitive but as a handy thing which happens
+> > > to have desirable side-effects.  But the implementation of
+> > > synchronize_sched() differs considerably according to which rcu
+> > > flavor-of-the-minute you're using.
+> > 
+> > The trick is that the preempt_disable() call in update_fast_ctr()
+> > acts as an RCU read-side critical section WRT synchronize_sched().
+> > 
+> > The algorithm would work given rcu_read_lock()/rcu_read_unlock() and
+> > synchronize_rcu() in place of preempt_disable()/preempt_enable() and
+> > synchronize_sched().  The real-time guys would prefer the change
+> > to rcu_read_lock()/rcu_read_unlock() and synchronize_rcu(), now that
+> > you mention it.
+> > 
+> > Oleg, Mikulas, any reason not to move to rcu_read_lock()/rcu_read_unlock()
+> > and synchronize_rcu()?
+> 
+> preempt_disable/preempt_enable is faster than 
+> rcu_read_lock/rcu_read_unlock for preemptive kernels.
 
-This duplicates ata_id_string() and/or ata_id_c_string(), does it not?
+Significantly faster in this case?  Can you measure the difference
+from a user-mode test?
 
+Hmmm.  I have been avoiding moving the preemptible-RCU state from
+task_struct to thread_info, but if the difference really matters,
+perhaps that needs to be done.
 
+> Regarding real-time response - the region blocked with 
+> preempt_disable/preempt_enable contains a few instructions (one test for 
+> mutex_is_locked and one increment of percpu variable), so it isn't any 
+> threat to real time response. There are plenty of longer regions in the 
+> kernel that are executed with interrupts or preemption disabled.
+
+Careful.  The real-time guys might take the same every-little-bit approach
+to latency that you seem to be taking for CPU cycles.  ;-)
+
+							Thanx, Paul
 
