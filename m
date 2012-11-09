@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2KIEKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 23:10:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56033 "EHLO
+	id S1752710Ab2KIEQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 23:16:46 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38394 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2KIEKH (ORCPT
+	with ESMTP id S1751439Ab2KIEQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 23:10:07 -0500
-Date: Fri, 9 Nov 2012 15:09:57 +1100
+	Thu, 8 Nov 2012 23:16:45 -0500
+Date: Fri, 9 Nov 2012 15:16:42 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
 Subject: linux-next: build failure after merge of the final tree (akpm tree
  related)
-Message-Id: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
+Message-Id: <20121109151642.893f699e4df8063e41dec666@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y"
+ boundary="Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y
+--Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
+After merging the final tree, today's linux-next build (sparc32 defconfig)
 failed like this:
 
-arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area':
-arch/sparc/kernel/sys_sparc_64.c:92:16: error: unused variable 'start_addr'=
- [-Werror=3Dunused-variable]
-arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area_topdo=
-wn':
-arch/sparc/kernel/sys_sparc_64.c:194:20: error: 'do_colour_align' undeclare=
-d (first use in this function)
-arch/sparc/kernel/sys_sparc_64.c:194:20: note: each undeclared identifier i=
-s reported only once for each function it appears in
-arch/sparc/kernel/sys_sparc_64.c:194:51: error: 'shm_align_mask' undeclared=
- (first use in this function)
+arch/sparc/kernel/sys_sparc_32.c: In function 'arch_get_unmapped_area':
+arch/sparc/kernel/sys_sparc_32.c:41:26: error: unused variable 'vmm' [-Werr=
+or=3Dunused-variable]
 
-Caused by commit "mm: use vm_unmapped_area() on sparc64 architecture".  I
-have reverted that commit for today (and the following fix patch).
+Caused by commit "mm: use vm_unmapped_area() on sparc32 architecture".
 
-arch/sparc/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown=
-':
-arch/sparc/mm/hugetlbpage.c:63:25: error: unused variable 'vma' [-Werror=3D=
-unused-variable]
-
-Caused by commit "mm: use vm_unmapped_area() in hugetlbfs on sparc64
-architecture".  I have reverted that commit for today.
-
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y
+--Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQnIIVAAoJEECxmPOUX5FEet0P/RtgpcMmr/u/2ZytHZvpmhcm
-UD7JCqv/4vOeEr8CkC4HqKj05DGcWhz2k2Vpd2lu3PjFf5TmdEzKoLfRhDrrhmwu
-NLAuUOxngW+VsFic1scKwzC+jBf7zBkFZIQBeq6xwvT9+0L5jvhXRJtI3ufQx6WH
-f63UNCsgV4pErTaDpN2LyipIirmnuIvpGEJaMuJ8AJc6S8rGyf6/uzccEYGBhmSD
-s/jaqBf8+O8xNEhG+NKaV2dQIyU4v4DbDNhq0Hgravk8qTfbj8fexKM7kheTxC55
-FPNRjDNtdMvoWJXrdDgSS5kY9XzvSDq6FHikcpfZud3yVU9W1EJjJeotFInKsjlA
-ndhipSMJOCJpQD/F6hqFe94Lw+ePhphmfP8a1kMQDx4nAOTuV5k8fAUb+Nktfb8n
-fiT0JTM+JhTW7uBRo3wtGl2X/w/PKjpaZgY0ao3xvYbmgIaX4acTc/2pvJdM/fc7
-A7Gj7Z65YMWh9/gNOmFBqxkbomPGfrfMPpEcYxtmkmfaYiKaleAceuJ7HQzkwegK
-xyujb5rpN3xelxAMzMRDyNYqlLzXumVv1f9O+Cxp/HazA/zmNAnOtcO6q7FnsSui
-14oRdg3+BuhDgj4A+J/goqECo6if4YToI1fK/8N6drTE7qx9c7aa2tb2BBjyhCMw
-JMwOhA6BWJNJZZMhHLSp
-=sixC
+iQIcBAEBCAAGBQJQnIOqAAoJEECxmPOUX5FEZZoP/2sLJglXpXJ5hIMWY+5OaG0k
+js3zH4MzIeXAt4s6NO5Gr1xE7ninUrD69te6OrprJjIQSRs2f7MhH0TlyhvsO65R
+rbgaBhnCvc60eGbtEzm4lve/Ul8ITnKN5dgiPSyBWsr53IUAKrV3RZDgTGc98o4A
+2Effm6d5wrOEA63GjA9YL3UBJhNJKTXaL7Rb9tCgYqDn2/DQfrmaNYISn5sS6hwh
+FODKiKwMqVAkMKyHPzYep0IHCo3R6vBUEytuixv4HWMcIrS3wxt0J9BxmjnoXyzG
+dUDPZw2KPEqs+LbaAM42fg5UK1xoAbEU7LykyzKShff2FDsodbOm5+cLQko4+lyr
+0TVTzEQz1MT7ISfmypN+xrIii3w2Nz4BrlljCFXCsNQp1ThdFGlnJTjEneJdwAxf
+9Dst5tbA9tP4kwrd/wNZUQe4G7/8Zlf5/bylJjHKzBVwJSSoVLJUyBRtLua2En5F
+KOqOKeU/MMAdeFYX4Rlw89n+bUgc5iUpidWkTy1GgdQpZzltuFhBigOm7jtIOPhc
+TJugJq9u3kSMeo7qayMpa+pbyu0o5W/9qTjWudLd5R3COdrZ1auvQiRBbdojte6P
+RoVz5gwrQdEHAoDl2NdG4louv4aro6ulNAeBxNj8rCis34Q5k7VetRphJqIIN/mq
+KR18HVGrzQ54ijOOTcRp
+=3CdG
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__9_Nov_2012_15_09_57_+1100_5Da1.+6uGnVCVm0y--
+--Signature=_Fri__9_Nov_2012_15_16_42_+1100_NXnVM_zrwFlIWiOz--
