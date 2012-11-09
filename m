@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab2KILqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:46:14 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63389 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2KILqI (ORCPT
+	id S1753169Ab2KILrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:47:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50224 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab2KILqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:46:08 -0500
+	Fri, 9 Nov 2012 06:46:05 -0500
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
 Cc: cjb@laptop.org, patches@linaro.org
-Subject: [PATCH 5/8] mmc: sdhci: fix coding style in sdhci_do_set_ios
-Date: Fri,  9 Nov 2012 17:09:55 +0530
-Message-Id: <1352461198-21941-6-git-send-email-tushar.behera@linaro.org>
+Subject: [PATCH 4/8] mmc: sdhci: fix coding style in sdhci_set_clock
+Date: Fri,  9 Nov 2012 17:09:54 +0530
+Message-Id: <1352461198-21941-5-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
 References: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
@@ -22,48 +22,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- drivers/mmc/host/sdhci.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 28da461..b947155 100644
+index 73bb41f..28da461 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -1386,9 +1386,9 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 	 * or if it requires special setup code, you should implement that in
- 	 * platform_8bit_width().
- 	 */
--	if (host->ops->platform_8bit_width)
-+	if (host->ops->platform_8bit_width) {
- 		host->ops->platform_8bit_width(host, ios->bus_width);
--	else {
-+	} else {
- 		ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
- 		if (ios->bus_width == MMC_BUS_WIDTH_8) {
- 			ctrl &= ~SDHCI_CTRL_4BITBUS;
-@@ -1467,9 +1467,9 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 		clk &= ~SDHCI_CLOCK_CARD_EN;
- 		sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
- 
--		if (host->ops->set_uhs_signaling)
-+		if (host->ops->set_uhs_signaling) {
- 			host->ops->set_uhs_signaling(host, ios->timing);
--		else {
-+		} else {
- 			ctrl_2 = sdhci_readw(host, SDHCI_HOST_CONTROL2);
- 			/* Select Bus Speed Mode for host */
- 			ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
-@@ -1492,8 +1492,9 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 		clock = host->clock;
- 		host->clock = 0;
- 		sdhci_set_clock(host, clock);
--	} else
-+	} else {
- 		sdhci_writeb(host, ctrl, SDHCI_HOST_CONTROL);
-+	}
- 
- 	/*
- 	 * Some (ENE) controllers go apeshit on some ios operation,
+@@ -1138,9 +1138,9 @@ static void sdhci_set_clock(struct sdhci_host *host, unsigned int clock)
+ 			}
+ 		} else {
+ 			/* Version 3.00 divisors must be a multiple of 2. */
+-			if (host->max_clk <= clock)
++			if (host->max_clk <= clock) {
+ 				div = 1;
+-			else {
++			} else {
+ 				for (div = 2; div < SDHCI_MAX_DIV_SPEC_300;
+ 				     div += 2) {
+ 					if ((host->max_clk / div) <= clock)
 -- 
 1.7.4.1
 
