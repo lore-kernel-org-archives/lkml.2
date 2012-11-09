@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab2KICbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 21:31:23 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44156 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756712Ab2KICbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 21:31:21 -0500
-Date: Fri, 9 Nov 2012 13:31:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the pinctrl tree
-Message-Id: <20121109133111.1070c1062889461152713978@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Nov_2012_13_31_11_+1100_Y5tZ2doQtlq6sfWf"
+	id S1757470Ab2KICcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 21:32:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:10407 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756523Ab2KICcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 21:32:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,741,1344236400"; 
+   d="scan'208";a="166206264"
+Date: Fri, 9 Nov 2012 10:32:21 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
+Message-ID: <20121109023221.GO18293@yliu-dev.sh.intel.com>
+References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <20121029135935.bb8b0b2a.akpm@linux-foundation.org>
+ <20121031055916.GC29509@yliu-dev.sh.intel.com>
+ <1351665033.23165.6.camel@wall-e>
+ <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
+ <20121108122409.GN18293@yliu-dev.sh.intel.com>
+ <1352378235.15351.9.camel@wall-e>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352378235.15351.9.camel@wall-e>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Nov_2012_13_31_11_+1100_Y5tZ2doQtlq6sfWf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 08, 2012 at 01:37:15PM +0100, Stefani Seibold wrote:
+> Am Donnerstag, den 08.11.2012, 20:24 +0800 schrieb Yuanhan Liu:
+> > On Tue, Oct 30, 2012 at 11:52:10PM -0700, Andrew Morton wrote:
+> > > On Wed, 31 Oct 2012 07:30:33 +0100 Stefani Seibold <stefani@seibold.net> wrote:
+> > > 
+> > > > > Yes, and I guess the same to give them a 64-element one.
+> > > > > 
+> > > > > > 
+> > > > > > If there's absolutely no prospect that the kfifo code will ever support
+> > > > > > 100-byte fifos then I guess we should rework the API so that the caller
+> > > > > > has to pass in log2 of the size, not the size itself.  That way there
+> > > > > > will be no surprises and no mistakes.
+> > > > > > 
+> > > > > > That being said, the power-of-2 limitation isn't at all intrinsic to a
+> > > > > > fifo, so we shouldn't do this.  Ideally, we'd change the kfifo
+> > > > > > implementation so it does what the caller asked it to do!
+> > > > > 
+> > > > > I'm fine with removing the power-of-2 limitation. Stefani, what's your
+> > > > > comment on that?
+> > > > > 
+> > > > 
+> > > > You can't remove the power-of-2-limitation, since this would result in a
+> > > > performance decrease (bit wise and vs. modulo operation).
+> > > 
+> > > Probably an insignificant change in performance.
+> > > 
+> > > It could be made much smaller by just never doing the modulus operation
+> > > - instead do
+> > > 
+> > > 	if (++index == max)
+> > > 		index = 0;
+> > > 
+> > > this does introduce one problem: it's no longer possible to distinguish
+> > > the "full" and "empty" states by comparing the head and tail indices. 
+> > > But that is soluble.
+> > 
+> > Hi Andrew,
+> > 
+> > Yes, it is soluble. How about the following solution?
+> > 
+> > Add 2 more fields(in_off and out_off) in __kfifo structure, so that in
+> > and out will keep increasing each time, while in_off and out_off will be
+> > wrapped to head if goes to the end of fifo buffer.
+> > 
+> > So, we can use in and out for counting unused space, and distinguish the
+> > "full" and "empty" state, and also, of course no need for locking.
+> > 
+> > Stefani, sorry for quite late reply. I checked all the code used kfifo_alloc
+> > and kfifo_init. Firstly, there are a lot of users ;-)
+> > 
+> > And secondly, I did find some examples used kfifo as it supports
+> > none-power-of-2 kfifo. Say, the one at drivers/hid/hid-logitech-dj.c:
+> >        if (kfifo_alloc(&djrcv_dev->notif_fifo,
+> >                        DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report),
+> >                        GFP_KERNEL)) {
+> > 
+> > which means it wants to allocate a kfifo buffer which can store
+> > DJ_MAX_NUMBER_NOTIFICATIONS(8 here) dj_report(each 15 bytes) at once.
+> > 
+> > And DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report) = 8 * 15.
+> > Then current code would allocate a size of rounddown_power_of_2(120) =
+> > 64 bytes, which can hold 4 dj_report only once, which is a half of expected.
+> > 
+> 
+> This will go away with a log API.
+> 
+> > There are few more examples like this.
+> > 
+> > And, kfifo_init used a pre-allocated buffer, it would be a little strange
+> > to ask user to pre-allocate a power of 2 size aligned buffer.
+> > 
+> > So, I guess it's would be good to support none-power-of-2 kfifo?
+> > 
+> > I know you care the performance a lot. Well, as Andrew said, it may
+> > introduce a little insignificant drop(no modulus, few more add/dec).
+> > Thus, do you have some benchmarks for that? I can have a test to check
+> > if it is a insignificant change on performance or not :)
+> > 
+> 
+> Dirty, Ugly, Hacky and this will produce a lot of overhead, especially
+> for kfifo_put and kfifo_get which are inlined code.
 
-Hi all,
+Yes, it is. I will try log API then.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/pinctrl/pinctrl-nomadik.c between commit 241e51ebd3b2
-("pinctrl/nomadik: make independent of prcmu driver") from the pinctrl
-tree and commit 44e47ccf8ab6 ("Merge branch 'next/multiplatform' into
-for-next") from the arm-soc tree.
+Stefani, I found an issue while rework to current API. Say the current
+code of __kfifo_init:
+    int __kfifo_init(struct __kfifo *fifo, void *buffer,
+                    unsigned int size, size_t esize)
+    {
+        size /= esize;
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+        if (!is_power_of_2(size))
+                size = rounddown_pow_of_two(size);
+        ....
+    }
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Even thought I changed the API to something like:
+    int __kfifo_init(struct __kfifo *fifo, void *buffer,
+                    int size_order, size_t esize)
+    {
+	unsigned int size = 1 << size_order;
 
-diff --cc drivers/pinctrl/pinctrl-nomadik.c
-index 33c614e,3ad23fb..0000000
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@@ -30,10 -30,23 +30,9 @@@
-  #include <linux/pinctrl/pinconf.h>
-  /* Since we request GPIOs from ourself */
-  #include <linux/pinctrl/consumer.h>
- -/*
- - * For the U8500 archs, use the PRCMU register interface, for the older
- - * Nomadik, provide some stubs. The functions using these will only be
- - * called on the U8500 series.
- - */
- -#ifdef CONFIG_ARCH_U8500
- -#include <linux/mfd/dbx500-prcmu.h>
- -#else
- -static inline u32 prcmu_read(unsigned int reg) {
- -	return 0;
- -}
- -static inline void prcmu_write(unsigned int reg, u32 value) {}
- -static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 val=
-ue) {}
- -#endif
-  #include <linux/platform_data/pinctrl-nomadik.h>
--=20
-  #include <asm/mach/irq.h>
--=20
-+ #include <mach/irqs.h>
-  #include "pinctrl-nomadik.h"
- =20
-  /*
+	size /= esize;
+	...
+    }
 
---Signature=_Fri__9_Nov_2012_13_31_11_+1100_Y5tZ2doQtlq6sfWf
-Content-Type: application/pgp-signature
+See? There is still a divide and we can't make it sure that it will be
+power of 2 after that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+So, I came up 2 proposal to fix this.
 
-iQIcBAEBCAAGBQJQnGrvAAoJEECxmPOUX5FEvPAP/26bG2Cfnu9U1KB0AJnXbRT9
-jOGA1JcSUO7UKPFKOJDT3Y5A2WQmj3miwkYP3/jrHuz2sIg1jIDtzsmkh6SVsIIo
-fM9TqD4VeR53Z2vVllkXvX/GdtiS32Rn5YZP+DHL6JcJnCzf9lacUNBAqsxCVWwz
-V9nsw/M890SpJh1vbz9e/SNlQPJiG8a/1sa//3x2cSXCOznTkgAwsQu7WhRunK71
-lroxLTFbTGdITcPCefpkryMP26FwFdQHm9gxZy5wrlLhc/fLK2zV+QyXO948kU36
-96fqnQFmDIO3jJuleNWsm6toxarvbL7I0F8hQsEHsogWNvZeX2/kE1BJptxd/oKy
-37zxgWOVlurtWUHXYrpRoQ+cCkLcotE58p1YmdesplC87QvuI6N4baogaXP6DERA
-BFLrebY8kHrTySlbr1m6/zBtX1wM62uKb2nV8c2yIuhnYXRWM2zgLCPCABboHv8A
-1Imq35IWq1LxNt+kmkY/b/5iuh+ZZOHvYW/hxBKm7RKvJg6J9pVjgo9TWQFkzzKu
-l064Y3EtX3wSEoxN/AbT1cDFp7SXH17ncFZSZsR3sTBc6dkRvw+PyQzaLZ4yU+FA
-1ixG+lJZPHansgc4+zmTOx+jVSBlyaKQY4hf1tmkCSOKa011Ol37x+VeXU6wj7k8
-0xCXw+8SlmmaCvv3iAgU
-=tzOI
------END PGP SIGNATURE-----
+1. refactor the meaning of 'size' argument first.
 
---Signature=_Fri__9_Nov_2012_13_31_11_+1100_Y5tZ2doQtlq6sfWf--
+   'size' means the size of pre-allocated buffer. We can refactor it to
+   meaning of 'the number of fifo elements' just like __kfifo_alloc, so
+   that we don't need do the size /= esize stuff.
+
+2. remove kfifo_init
+
+   As we can't make sure that kfifo will do exactly what users asked(in
+   the way of fifo size). It would be safe and good to maintain buffer
+   and buffer size inside kfifo. So, I propose to remove it and use
+   kfifo_alloc instead.
+
+   git grep 'kfifo_init\>' shows that we currently have 2 users only.
+
+
+The first way is hacky, and it doesn't make much sense to me. Since
+buffer is pre-allocated by user but not kfifo. User has to calculate
+element size and the number of elements, which is not friendly.
+
+The second way does make more sense to me.
+
+So, Stefani, what's your comments on that?
+
+Thanks!
+
+	--yliu
+ 
+> In the kernel world it was always a regular use case to use power-of-2
+> restricted API's, f.e. the slab cache.
+> 
+> I see no benefit for a none-power-of-2 kfifo, only drawbacks.
+> 
