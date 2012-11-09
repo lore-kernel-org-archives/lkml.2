@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab2KIIpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 03:45:35 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55438 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2KIIpd (ORCPT
+	id S1751522Ab2KIIsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 03:48:10 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43842 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2KIIsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 03:45:33 -0500
-Date: Fri, 9 Nov 2012 00:45:27 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 12/13] HID: introduce Scan Time
-Message-ID: <20121109084527.GA15371@core.coreip.homeip.net>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-13-git-send-email-benjamin.tissoires@gmail.com>
+	Fri, 9 Nov 2012 03:48:08 -0500
+Message-ID: <509CC342.80700@redhat.com>
+Date: Fri, 09 Nov 2012 09:48:02 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352306256-12180-13-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Northup <digitaleric@google.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio_scsi: fix memory leak on full queue condition.
+References: <1352368550-6694-1-git-send-email-digitaleric@google.com>
+In-Reply-To: <1352368550-6694-1-git-send-email-digitaleric@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-On Wed, Nov 07, 2012 at 05:37:35PM +0100, Benjamin Tissoires wrote:
-> Win 8 digitizer devices provides the actual scan time computed by the
-> hardware itself. The value is global to the frame and is not specific
-> to the multitouch protocol (though only touch, not pen, should use it
-> according to the specification).
+Il 08/11/2012 10:55, Eric Northup ha scritto:
+> virtscsi_queuecommand was leaking memory when the virtio queue was full.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> Tested: Guest operates correctly even with very small queue sizes, validated
+> we're not leaking kmalloc-192 sized allocations anymore.
+> 
+> Signed-off-by: Eric Northup <digitaleric@google.com>
 > ---
->  Documentation/input/event-codes.txt | 9 +++++++++
->  drivers/hid/hid-input.c             | 4 ++++
->  include/linux/hid.h                 | 1 +
->  include/linux/input.h               | 1 +
->  4 files changed, 15 insertions(+)
+>  drivers/scsi/virtio_scsi.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
-> index 53305bd..80c06e5 100644
-> --- a/Documentation/input/event-codes.txt
-> +++ b/Documentation/input/event-codes.txt
-> @@ -174,6 +174,15 @@ A few EV_ABS codes have special meanings:
->      the input device may be used freely in three dimensions, consider ABS_Z
->      instead.
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 595af1a..dd8dc27 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -469,6 +469,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>  			      GFP_ATOMIC) >= 0)
+>  		ret = 0;
+> +	else
+> +		mempool_free(cmd, virtscsi_cmd_pool);
 >  
-> +* ABS_SCAN_TIME:
-> +  - Used to report the number of microseconds since the last reset. This event
-> +    should be coded as an uint32 value, which is allowed to wrap around with
-> +    no special consequence. It is assumed that the time difference between two
-> +    consecutive events is reliable on a reasonable time scale (hours).
-> +    A reset to zero can happen, in which case the time since the last event is
-> +    unknown.  If the device does not provide this information, the driver must
-> +    not provide it to the user space.
-> +
+>  out:
+>  	return ret;
+> 
 
-This should not be an absolute event but rather EV_MSC/MSC_TIMESTAMP.
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Thanks.
-
--- 
-Dmitry
+Paolo
