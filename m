@@ -1,86 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab2KIFpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 00:45:17 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:63263 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2KIFpL (ORCPT
+	id S1752015Ab2KIFrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 00:47:52 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61982 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2KIFru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 00:45:11 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-c3-509c9865b54e
-Message-id: <509C985B.8060206@samsung.com>
-Date: Fri, 09 Nov 2012 14:44:59 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
- Thunderbird/16.0.1
-MIME-version: 1.0
-To: Chris Ball <cjb@laptop.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        Will Newton <will.newton@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dw_mmc: fix more const pointer warnings
-References: <1350376988-27477-1-git-send-email-james.hogan@imgtec.com>
- <508E4DB6.20504@imgtec.com> <87a9v5xuqj.fsf@octavius.laptop.org>
- <201211081426.12208.arnd@arndb.de> <87zk2s5fj6.fsf@octavius.laptop.org>
-In-reply-to: <87zk2s5fj6.fsf@octavius.laptop.org>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t8zTd3UGXMCDFqfMVtc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDK2/HrCXLCTtWLD7ouMDYzLWLoYOTkkBEwkDnS/grLF
-	JC7cW88GYgsJLGOUeNqkCVPzZ/px1i5GLqD4dEaJezNvM0I4LxklDq2aC9bNK6Al8efPNnYQ
-	m0VAVeJ+53ywSWwCOhLbvx1n6mLk4BAVCJPYuTkdolxQ4sfke2CtIgLyEvf7voGVMwssZ5J4
-	uaQQxBYWsJHY2/qcHWLXZUaJXQcesYDM4RQwlNjV7AhiMgvoSdy/qAXRKi+xec1bZogLBCS+
-	TT4EVi0hICux6QAzyBQJgW52ic4/Hxgh/pKUOLjiBssERrFZSC6ahTB1FpKpCxiZVzGKphYk
-	FxQnpeca6hUn5haX5qXrJefnbmKExIXUDsaVDRaHGAU4GJV4eBMfzA4QYk0sK67MPcQowcGs
-	JMI7N3NOgBBvSmJlVWpRfnxRaU5q8SFGH6BjJzJLiSbnA2M2ryTe0NjA2NDQ0tDM1NLUAIew
-	kjhvs0dKgJBAemJJanZqakFqEcw4Jg5OqQbGmPyFXk7F/6ee3HIicJayxI7JLDwWz+dPYpkt
-	k8T9qVJsT8kJ1Qu9R2POTHYusfjbObOeW0fm89U5U7JfpWq907coXdh3TnZCguSs9bPl/q+q
-	5/ovlSbM9DDyppSpXfPB3a5umtzeBeXLJ+QpbLM1YGVYal2z1X/fjieqWVyNzzc/bOvcsLBH
-	iaU4I9FQi7moOBEABt3SXLgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jQd2UGXMCDC7vtLS4vGsOm8WR//2M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmbPn1hLlgJ2vF
-	ht0XGRsYl7F0MXJySAiYSPyZfpwVwhaTuHBvPVsXIxeHkMB0Rol7M28zQjgvGSUOrZoL1sEr
-	oCXx5882dhCbRUBV4n7nfDYQm01AR2L7t+NMXYwcHKICYRI7N6dDlAtK/Jh8D6xVREBe4n7f
-	N7ByZoHlTBIvlxSC2MICNhJ7W5+zQ+y6zCix68AjFpA5nAKGEruaHUFMZgE9ifsXtSBa5SU2
-	r3nLPIFRYBaSDbMQqmYhqVrAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzjunkntYFzZ
-	YHGIUYCDUYmHN/HB7AAh1sSy4srcQ4wSHMxKIrxzM+cECPGmJFZWpRblxxeV5qQWH2L0AXp/
-	IrOUaHI+MCXklcQbGpuYGVkamRmbmBsb4xBWEudt9kgJEBJITyxJzU5NLUgtghnHxMEp1cCY
-	8enQkicMuxgFTcwuJ9WGv3JhrYxn04sXnNice2b2hT39TVxrXJ/2yea3M0c+F3mr2+zBvC+6
-	z+iw81EFj8dVnhUPm9eKle6p+LXPLltEcLFwmmJg/HFGB1PFJb9PCrl+P7W9Wui3icb1ZutJ
-	eVLenQJb1t/4ZRGwT/myRsHfdoEeuc3S+5RYijMSDbWYi4oTAZhClEDoAgAA
-X-CFilter-Loop: Reflected
+	Fri, 9 Nov 2012 00:47:50 -0500
+X-AuditID: 9c930197-b7b45ae000000e9e-7c-509c9904ca89
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v2 2/3] perf annotate: Merge same lines in summary view
+Date: Fri,  9 Nov 2012 14:47:34 +0900
+Message-Id: <1352440054-19429-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352423412-4895-2-git-send-email-namhyung@kernel.org>
+References: <1352423412-4895-2-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great..Thanks Arnd and Chris.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Best Regards,
-Jaehoon Chung
-On 11/08/2012 11:35 PM, Chris Ball wrote:
-> Hi Arnd,
-> 
-> On Thu, Nov 08 2012, Arnd Bergmann wrote:
->> The patch "dw_mmc: fix multiple drv_data NULL dereferences" has
->> unfortunately clashed with my "mmc: dw_mmc: constify
->> dw_mci_idmac_ops in exynos back-end" patch, causing new warnings
->> to appear.
->>
->> This should hopefully fix the issue for good.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> Thanks, pushed to mmc-next for 3.7.
-> 
-> (Jaehoon also sent a patch to fix these last night, but yours applies to
-> current mmc-next and his doesn't, so I'll take this one instead.)
-> 
-> - Chris.
-> 
+The --print-line option of perf annotate command shows summary for
+each source line.  But it didn't merge same lines so that it can
+appear multiple times.
+
+* before:
+
+Sorted summary for file /home/namhyung/bin/mcol
+----------------------------------------------
+
+   24.40 /home/namhyung/tmp/mcol.c:26
+   21.58 /home/namhyung/tmp/mcol.c:25
+   10.14 /home/namhyung/tmp/mcol.c:24
+    8.59 /home/namhyung/tmp/mcol.c:25
+    8.57 /home/namhyung/tmp/mcol.c:25
+    8.42 /home/namhyung/tmp/mcol.c:26
+    8.31 /home/namhyung/tmp/mcol.c:26
+    8.30 /home/namhyung/tmp/mcol.c:25
+    0.80 /home/namhyung/tmp/mcol.c:26
+
+* after:
+
+Sorted summary for file /home/namhyung/bin/mcol
+----------------------------------------------
+
+   41.93 /home/namhyung/tmp/mcol.c:26
+   10.14 /home/namhyung/tmp/mcol.c:24
+   47.04 /home/namhyung/tmp/mcol.c:25
+
+To do that, introduce percent_sum field so that the normal
+line-by-line output doesn't get changed.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+* v2: ->percent_sum should be used when resorting.
+
+ tools/perf/util/annotate.c | 55 +++++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/annotate.h |  1 +
+ 2 files changed, 53 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 83b1078260e3..180113b891a3 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -887,12 +887,41 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
+ 	struct source_line *iter;
+ 	struct rb_node **p = &root->rb_node;
+ 	struct rb_node *parent = NULL;
++	int ret;
+ 
+ 	while (*p != NULL) {
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct source_line, node);
+ 
+-		if (src_line->percent > iter->percent)
++		ret = strcmp(iter->path, src_line->path);
++		if (ret == 0) {
++			iter->percent_sum += src_line->percent;
++			return;
++		}
++
++		if (ret < 0)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++
++	src_line->percent_sum = src_line->percent;
++
++	rb_link_node(&src_line->node, parent, p);
++	rb_insert_color(&src_line->node, root);
++}
++
++static void __resort_source_line(struct rb_root *root, struct source_line *src_line)
++{
++	struct source_line *iter;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++
++	while (*p != NULL) {
++		parent = *p;
++		iter = rb_entry(parent, struct source_line, node);
++
++		if (src_line->percent_sum > iter->percent_sum)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
+@@ -902,6 +931,24 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
+ 	rb_insert_color(&src_line->node, root);
+ }
+ 
++static void resort_source_line(struct rb_root *dest_root, struct rb_root *src_root)
++{
++	struct source_line *src_line;
++	struct rb_node *node;
++
++	node = rb_first(src_root);
++	while (node) {
++		struct rb_node *next;
++
++		src_line = rb_entry(node, struct source_line, node);
++		next = rb_next(node);
++		rb_erase(node, src_root);
++
++		__resort_source_line(dest_root, src_line);
++		node = next;
++	}
++}
++
+ static void symbol__free_source_line(struct symbol *sym, int len)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+@@ -926,6 +973,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 	struct source_line *src_line;
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	struct sym_hist *h = annotation__histogram(notes, evidx);
++	struct rb_root tmp_root = RB_ROOT;
+ 
+ 	if (!h->sum)
+ 		return 0;
+@@ -960,12 +1008,13 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 			goto next;
+ 
+ 		strcpy(src_line[i].path, path);
+-		insert_source_line(root, &src_line[i]);
++		insert_source_line(&tmp_root, &src_line[i]);
+ 
+ 	next:
+ 		pclose(fp);
+ 	}
+ 
++	resort_source_line(root, &tmp_root);
+ 	return 0;
+ }
+ 
+@@ -989,7 +1038,7 @@ static void print_summary(struct rb_root *root, const char *filename)
+ 		char *path;
+ 
+ 		src_line = rb_entry(node, struct source_line, node);
+-		percent = src_line->percent;
++		percent = src_line->percent_sum;
+ 		color = get_percent_color(percent);
+ 		path = src_line->path;
+ 
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index c6272011625a..8eec94358a4a 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -76,6 +76,7 @@ struct sym_hist {
+ struct source_line {
+ 	struct rb_node	node;
+ 	double		percent;
++	double		percent_sum;
+ 	char		*path;
+ };
+ 
+-- 
+1.7.11.7
 
