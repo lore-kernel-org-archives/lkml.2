@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab2KIQXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:23:39 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:33095 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab2KIQXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:23:38 -0500
-Date: Fri, 9 Nov 2012 16:23:27 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 3/7] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20121109162327.GT3886@csn.ul.ie>
-References: <cover.1352256081.git.aquini@redhat.com>
- <4ea10ef1eb1544e12524c8ca7df20cf621395463.1352256087.git.aquini@redhat.com>
- <20121109121133.GP3886@csn.ul.ie>
- <20121109145321.GB4308@optiplex.redhat.com>
+	id S1754524Ab2KIQXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:23:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49769 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467Ab2KIQXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:23:52 -0500
+Message-ID: <509D2DF8.4030602@oracle.com>
+Date: Fri, 09 Nov 2012 11:23:20 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121109145321.GB4308@optiplex.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] alpha: use BUG_ON where possible
+References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-2-git-send-email-sasha.levin@oracle.com> <alpine.LNX.2.00.1211082242130.27271@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1211082242130.27271@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 12:53:22PM -0200, Rafael Aquini wrote:
-> > <SNIP>
-> > If you get the barrier issue sorted out then feel free to add
-> > 
-> > Acked-by: Mel Gorman <mel@csn.ul.ie>
-> > 
+Hi Jiri,
+
+On 11/08/2012 04:42 PM, Jiri Kosina wrote:
+> On Thu, 8 Nov 2012, Sasha Levin wrote:
 > 
-> I believe we can drop the barriers stuff, as the locking scheme is now provinding
-> enough protection against collisions between isolation page scanning and
-> balloon_leak() page release (the major concern that has lead to the barriers
-> originally)
+>> Just use BUG_ON() instead of constructions such as:
+>>
+>> 	if (...)
+>> 		BUG()
+>>
+>> A simplified version of the semantic patch that makes this transformation
+>> is as follows: (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> expression e;
+>> @@
+>> - if (e) BUG();
+>> + BUG_ON(e);
 > 
-> I'll refactor this patch with no barriers and ensure a better commentary on the
-> aforementioned locking scheme and resubmit, if it's OK to everyone
+> Ok, I guess I am just going to apply this one. Thanks,
 > 
 
-Sounds good to me. When they are dropped again feel free to stick my ack
-on for the compaction and migration parts. The virtio aspects are up to
-someone else :)
+So I have about 80 more of these. I've sent out the first 10 to make sure
+that they look fine and the only complaints I got about them are that they are
+trivial :)
 
--- 
-Mel Gorman
-SUSE Labs
+Can I send the rest directly to you to go through the trivial tree?
+
+
+Thanks,
+Sasha
