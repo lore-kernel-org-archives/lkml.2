@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab2KIIhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 03:37:40 -0500
-Received: from nbd.name ([46.4.11.11]:37630 "EHLO nbd.name"
+	id S1751492Ab2KIIkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 03:40:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab2KIIhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 03:37:35 -0500
-Message-ID: <509CC092.8090609@phrozen.org>
-Date: Fri, 09 Nov 2012 09:36:34 +0100
-From: John Crispin <john@phrozen.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	id S1750711Ab2KIIkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 03:40:52 -0500
+Date: Fri, 9 Nov 2012 08:40:48 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
+        Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: kswapd0: excessive CPU usage
+Message-ID: <20121109084048.GE8218@suse.de>
+References: <119175.1349979570@turing-police.cc.vt.edu>
+ <5077434D.7080008@suse.cz>
+ <50780F26.7070007@suse.cz>
+ <20121012135726.GY29125@suse.de>
+ <507BDD45.1070705@suse.cz>
+ <20121015110937.GE29125@suse.de>
+ <5093A3F4.8090108@redhat.com>
+ <5093A631.5020209@suse.cz>
+ <509422C3.1000803@suse.cz>
+ <509C84ED.8090605@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Huacai Chen <chenhc@lemote.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org, alsa-devel@alsa-project.org,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hua Yan <yanh@lemote.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, linux-kernel@vger.kernel.org,
-        Hongliang Tao <taohl@lemote.com>, Jie Chen <chenj@lemote.com>
-Subject: Re: [alsa-devel] [PATCH V6 12/15] ALSA: HDA: Make hda sound card
- usable        for Loongson
-References: <1345193015-3024-1-git-send-email-chenhc@lemote.com>        <1345193015-3024-13-git-send-email-chenhc@lemote.com> <s5hy5ldvq9e.wl%tiwai@suse.de>
-In-Reply-To: <s5hy5ldvq9e.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <509C84ED.8090605@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/08/12 11:09, Takashi Iwai wrote:
-> At Fri, 17 Aug 2012 16:43:32 +0800,
-> Huacai Chen wrote:
->> >
->> >  Lemote A1004(Laptop) and A1205(All-In-One) use Conexant's hda codec,
->> >  this patch modify patch_conexant.c to add Lemote specific code.
->> >
->> >  Both A1004 and A1205 use the same pin configurations, but A1004 need
->> >  to increase the default boost of internal mic.
->> >
->> >  Signed-off-by: Jie Chen<chenj@lemote.com>
->> >  Signed-off-by: Huacai Chen<chenhc@lemote.com>
->> >  Signed-off-by: Hongliang Tao<taohl@lemote.com>
->> >  Signed-off-by: Hua Yan<yanh@lemote.com>
->> >  Cc:alsa-devel@alsa-project.org
-> Looks good.
-> 	Reviewed-by: Takashi Iwai<tiwai@suse.de>
->
-> Should I apply it to sound git tree or all patches will go through
-> mips tree?
->
->
-> thanks,
->
-> Takashi
->
+On Thu, Nov 08, 2012 at 10:22:05PM -0600, Seth Jennings wrote:
+> On 11/02/2012 02:45 PM, Jiri Slaby wrote:
+> > On 11/02/2012 11:53 AM, Jiri Slaby wrote:
+> >> On 11/02/2012 11:44 AM, Zdenek Kabelac wrote:
+> >>>>> Yes, applying this instead of the revert fixes the issue as well.
+> >>>
+> >>> I've applied this patch on 3.7.0-rc3 kernel - and I still see excessive
+> >>> CPU usage - mainly  after  suspend/resume
+> >>>
+> >>> Here is just simple  kswapd backtrace from running kernel:
+> >>
+> >> Yup, this is what we were seeing with the former patch only too. Try to
+> >> apply the other one too:
+> >> https://patchwork.kernel.org/patch/1673231/
+> >>
+> >> For me I would say, it is fixed by the two patches now. I won't be able
+> >> to report later, since I'm leaving to a conference tomorrow.
+> > 
+> > Damn it. It recurred right now, with both patches applied. After I
+> > started a java program which consumed some more memory. Though there are
+> > still 2 gigs free, kswap is spinning:
+> > [<ffffffff810b00da>] __cond_resched+0x2a/0x40
+> > [<ffffffff811318a0>] shrink_slab+0x1c0/0x2d0
+> > [<ffffffff8113478d>] kswapd+0x66d/0xb60
+> > [<ffffffff810a25d0>] kthread+0xc0/0xd0
+> > [<ffffffff816aa29c>] ret_from_fork+0x7c/0xb0
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> I'm also hitting this issue in v3.7-rc4.  It appears that the last
+> release not effected by this issue was v3.3.  Bisecting the changes
+> included for v3.4-rc1 showed that this commit introduced the issue:
+> 
+> fe2c2a106663130a5ab45cb0e3414b52df2fff0c is the first bad commit
+> commit fe2c2a106663130a5ab45cb0e3414b52df2fff0c
+> Author: Rik van Riel <riel@redhat.com>
+> Date:   Wed Mar 21 16:33:51 2012 -0700
+> 
+>     vmscan: reclaim at order 0 when compaction is enabled
+> ...
+> 
+> This is plausible since the issue seems to be in the kswapd + compaction
+> realm.  I've yet to figure out exactly what about this commit results in
+> kswapd spinning.
+> 
+> I would be interested if someone can confirm this finding.
+> 
 
+I cannot confirm the actual finding as I don't see the same sort of
+problems. However, this does make sense and was more or less expected.
+Reclaiming at order-0 would have forced compaction to be used more instead
+of lumpy reclaim (less CPU usage but greater system distruption that is
+harder to measure). Shortly after, lumpy reclaim was removed entirely so
+now larger amounts of CPU time is spent compacting memory that previously
+would have been reclaimed.
 
-Hi Takashi,
-
-did you take this patch ? I will queue several of the other patches from 
-the series for 3.8 and let them go upstream via the mips tree. We have 
-this patch open in the linux-mips patchwork. I would set it to "Other 
-Subsystem" if you took it already.
-
-Thanks,
-	John
+-- 
+Mel Gorman
+SUSE Labs
