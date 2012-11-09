@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab2KIHeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 02:34:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52926 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2KIHeK (ORCPT
+	id S1752899Ab2KIHlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 02:41:32 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:51241 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab2KIHla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 02:34:10 -0500
-Message-ID: <509CB1EB.4080408@kernel.dk>
-Date: Fri, 09 Nov 2012 08:34:03 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Lukas Czerner <lczerner@redhat.com>, dchinner@redhat.com,
-        jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
-References: <1350379305-13858-1-git-send-email-lczerner@redhat.com> <20121108111418.bcaad11d.akpm@linux-foundation.org>
-In-Reply-To: <20121108111418.bcaad11d.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 02:41:30 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-37-509cb3a9d862
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] mm: mmap: remove unused variable
+Date: Fri, 09 Nov 2012 16:41:28 +0900
+Message-id: <000101cdbe4d$a1335eb0$e39a1c10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2+TaEY9JWsllmMRpS3ttcqSd3Uzg==
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t8zQ92Vm+cEGPy7ymdxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyLp2axVywlq1i5detbA2MS1i7GDk5JARMJE6fuMMOYYtJXLi3
+	nq2LkYtDSGAZo8SyJceYuhg5wIo+/06AiE9nlLh8bg4zhDObSWLf0o9gk9gE1CS+fDkMNklE
+	wFfi++INTCA2s4CVxL4PG8BqhAUMJVZuO8wKMpRFQFXi3JZMkDCvgK3EtZUf2CFsQYkfk++x
+	QLRqSazfeRxqjLzE5jVvmSHuUZd49FcXxBQR0JN4uN0EokJEYt+Ld4wgNouAgMS3yYdYIKpl
+	JTYdADtYQqCdXeLusUNsEO9KShxccYNlAqPYLCSLZyFZPAvJ4llIVixgZFnFKJpakFxQnJSe
+	a6hXnJhbXJqXrpecn7uJERIlUjsYVzZYHGIU4GBU4uFNfDA7QIg1say4MvcQowQHs5II79zM
+	OQFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M4LySeENjYxMzE1MTc0tTc1McwkrivM0e
+	KQFCAumJJanZqakFqUUw45g4OKUaGNWltohu05LJknX8fvLLz8iaL85rpZ/de77J4Z7XZgPd
+	9ozsbdvKHTrEGAxPfPji6PJ/68/en719r+78PfyTcwl7szyzwcI6nf3nb+x6z7jrf9cRSW+F
+	2fknu14f/KH4xJ6Z8UhNB9uJh3IMbyIzJLRNwrt6fx288Mh90u5jrzyurMrnn8nSnqXEUpyR
+	aKjFXFScCABSSHWnvwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd2Vm+cEGOxu5ba4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGZdOzWIuWMtWsfLrVrYG
+	xiWsXYwcHBICJhKffyd0MXICmWISF+6tZ+ti5OIQEpjOKHH53BxmCGc2k8S+pR9ZQarYBNQk
+	vnw5zA5iiwj4SnxfvIEJxGYWsJLY92EDWI2wgKHEym2HwRawCKhKnNuSCRLmFbCVuLbyAzuE
+	LSjxY/I9FohWLYn1O49DjZGX2LzmLTPEbeoSj/7qgpgiAnoSD7ebQFSISOx78Y5xAqPALCSD
+	ZiEZNAvJoFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7BZ1I7GFc2WBxiFOBg
+	VOLhTXwwO0CINbGsuDL3EKMEB7OSCO/czDkBQrwpiZVVqUX58UWlOanFhxh9gN6cyCwlmpwP
+	TA95JfGGxiZmRpZGZhZGJubmOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBKNTA6HTq9b07y
+	zxki2hGGz+u3Cca4fm9a8+LnWbmXb85tXnG3wuZx7vyNDiFWXrvDHt1b6TqPN/CwoveyLP3X
+	W0vXdT7zOb0yp9r3vfDOPz+kphhLfoxIdN/ns3TOzXzFbp6rGwMWLroxPzb8iRjbSlflqMfM
+	1Xn5tyIY815qPvtUumLrtEMTph1ZpMRSnJFoqMVcVJwIADDzGbLuAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-08 20:14, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 11:21:45 +0200
-> Lukas Czerner <lczerner@redhat.com> wrote:
-> 
->> Currently there is not limitation of number of requests in the loop bio
->> list. This can lead into some nasty situations when the caller spawns
->> tons of bio requests taking huge amount of memory. This is even more
->> obvious with discard where blkdev_issue_discard() will submit all bios
->> for the range and wait for them to finish afterwards. On really big loop
->> devices and slow backing file system this can lead to OOM situation as
->> reported by Dave Chinner.
->>
->> With this patch we will wait in loop_make_request() if the number of
->> bios in the loop bio list would exceed 'nr_requests' number of requests.
->> We'll wake up the process as we process the bios form the list. Some
->> threshold hysteresis is in place to avoid high frequency oscillation.
->>
-> 
-> What's happening with this?
+Fixed build warning as below:
 
-Sorry I didn't reply to this yet. My initial thought is that we had
-something like this for loop back in the 2.4 days, and it was deadlock
-prone. Can't seem to remember all the details on that yet.
+arch/arm/mm/mmap.c: In function 'arch_get_unmapped_area':
+arch/arm/mm/mmap.c:60:16: warning: unused variable 'start_addr' [-Wunused-variable]
 
-v2 is a nice improvement, though. With 1:1 bio and wakeups, you would
-get tons of context switches. The batched approach is much better.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+This patch is based on linux-next-20121109 code tree.
 
-Lukas, have you beaten on this with a file backed loop and heavy traffic
-on a file system on top?
+ arch/arm/mm/mmap.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index f4fec6d..10062ce 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -57,7 +57,6 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long start_addr;
+ 	int do_align = 0;
+ 	int aliasing = cache_is_vipt_aliasing();
+ 	struct vm_unmapped_area_info info;
 -- 
-Jens Axboe
+1.7.1
+
 
