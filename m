@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab2KIBMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 20:12:06 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57690 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757382Ab2KIBME (ORCPT
+	id S1757430Ab2KIBWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 20:22:43 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38379 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757400Ab2KIBWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 20:12:04 -0500
-Date: Thu, 8 Nov 2012 17:11:58 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Cyberman Wu <cypher.w@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Is this a kernel bug?
-Message-ID: <20121109011158.GE9672@htj.dyndns.org>
-References: <CADCVGbSC-T=W08xcf9rDynS8Uf9yq=KKTNUn33g-O_FqyQkU_A@mail.gmail.com>
- <20121107162840.GA2660@mtj.dyndns.org>
- <CADCVGbR-39diiMA-C2cEn315r916HMprt6Lx4s8qN8jHC_e8FQ@mail.gmail.com>
+	Thu, 8 Nov 2012 20:22:41 -0500
+Message-ID: <509C5ACD.4040706@oracle.com>
+Date: Fri, 09 Nov 2012 09:22:21 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADCVGbR-39diiMA-C2cEn315r916HMprt6Lx4s8qN8jHC_e8FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Dave, Tushar N" <tushar.n.dave@intel.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+References: <509B5038.8090304@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/09/12 04:35, Dave, Tushar N wrote:
+> Are you sure this is not similar issue as before that you reported.
+> i.e. 
 
-On Fri, Nov 09, 2012 at 08:53:49AM +0800, Cyberman Wu wrote:
-> A lot of these message on many CPU:
+Tushar,
 
-What I'm really curious about is the *first* exception.
+Thanks for your quick response, I'll check with customer if they can modify the Max
+payload size from BIOS, this time issue hit on HP's server.
 
-Is the following the first one?  Some lines (why the stackdump is
-happening) are missing at the top.
+Thanks again,
+Joe
 
->  Pid: 906, comm:         kworker/16:1, CPU: 16
-...
->  pc : 0xfffffff7002fc488 ex1: 1     faultnum: 17
+> On Mon, 2012-07-09 at 16:51 +0800, Joe Jin wrote:
+>> > I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when 
+>> > doing scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, 
+>> > just copy a big file (>500M) from another server will hit it at once.
+> All devices in path from root complex to 82571, should have *same* max payload size otherwise it can cause hang. 
+> Can you double check this?
 > 
-> Starting stack dump of tid 906, pid 906 (kworker/16:1) on cpu 16 at
-> cycle 416925425702833
->   frame 0: 0xfffffff7002fc488 worker_enter_idle+0x1c8/0x2e8 (sp
-> 0xfffffe00f9fbfe78)
->   frame 1: 0xfffffff7002750c8 worker_thread+0x4c8/0x898 (sp 0xfffffe00f9fbfea0)
->   frame 2: 0xfffffff7000f0530 kthread+0xe0/0xe8 (sp 0xfffffe00f9fbff80)
->   frame 3: 0xfffffff7000bab38 start_kernel_thread+0x18/0x20 (sp
 
-Is it triggering one of BUG_ON() in worker_enter_idle()?  Can you map
-the pc to the source line number using addr2line?
-
-> The first exception is platform specific and should be a hardware error:
-> fffffff7002fc480:       180906cfc0128d82        { addi r2, sp, 40 ;
-> addi r31, sp, 32 }
-> fffffff7002fc488:       87b886ca04218d95        { addi r21, sp, 24 ;
-> addi r20, sp, 16 ; ld lr, r2 }
-> While 'ld lr, r2' executed, r2 should be sp+40, but it value is 2.
-> I've analysis the execute
-> snap shot and:
-> 1. r2 should be 2 before 'addi r2, sp, 40' executed.
-> 2. r0's value is sp+40 when exception ocurred, but it shouldn't be
-> that value following
->     executing flow in that function.
-> So it seems while 'addi r2, sp 40' be executed, what it really
-> executed is 'addi r0, sp, 40',
-> maybe the instruction was load with a bit reverted for memory error,
-> or cache error or
-> problem of CPU? I'm not sure since it never occurred again.
-
-So, the first exception wasn't a software bug?
-
-> What I thought maybe a kernel bug is that second exception. I've
-> simulated it try to
-> generate a exception in kworker, and it occurred again. Then I checked
-> the code and
-
-After a fatal exception in kernel space, nothing is guaranteed to
-work.  It's usually in the realm of "if it limps along, great;
-otherwise, too bad", so it isn't really a bug.  There are only so many
-things you can do after a program segfaults after all.  That said, it
-might be a good idea to clear PF_WQ_WORKER from do_exit() so that at
-least we can avoid oops from irq context after a work item messes up.
-
-Thanks.
 
 -- 
-tejun
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
