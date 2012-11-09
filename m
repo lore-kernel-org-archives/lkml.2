@@ -1,174 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab2KIA7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 19:59:55 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54878 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab2KIA7y (ORCPT
+	id S1422634Ab2KIBAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 20:00:24 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42026 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757393Ab2KIBAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 19:59:54 -0500
-From: Vinson Lee <vlee@twitter.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Thu, 8 Nov 2012 20:00:21 -0500
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Chris J Arges <chris.j.arges@canonical.com>
+cc: Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Zheng Liu <gnehzuil.liu@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, stable@vger.kernel.org,
-        Vinson Lee <vlee@twitter.com>
-Subject: [PATCH RESEND] perf test: fix a build error on builtin-test
-Date: Thu,  8 Nov 2012 16:58:46 -0800
-Message-Id: <1352422726-31114-1-git-send-email-vlee@twitter.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v4 net-next] bonding: extend bond_arp_send_all to bridge devices
+In-reply-to: <1352210205-24558-1-git-send-email-chris.j.arges@canonical.com>
+References: <1352210205-24558-1-git-send-email-chris.j.arges@canonical.com>
+Comments: In-reply-to Chris J Arges <chris.j.arges@canonical.com>
+   message dated "Tue, 06 Nov 2012 07:56:45 -0600."
+X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
+Date: Thu, 08 Nov 2012 16:58:56 -0800
+Message-ID: <9296.1352422736@death.nxdomain>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110900-2398-0000-0000-00000D8005AB
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00189664; UDB=6.00042945; UTC=2012-11-09
+ 01:00:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zheng Liu <gnehzuil.liu@gmail.com>
+Chris J Arges <chris.j.arges@canonical.com> wrote:
 
-Recently I build perf and get a build error on builtin-test.c. The error is as
-following:
+>ARP monitoring does not work when we have a network in the
+>following configuration:
+>
+>eth0----+ +----bond0.100----br0-100---{+virtual machines
+>          | |
+>          +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
+>          | |
+>eth1----+ +----bond0.200----br0-200---{+virtual machines
+>
+>This patch extends bond_arp_send_all to check if a device
+>is also in a bridge.
 
-$ make
-    CC perf.o
-    CC builtin-test.o
-cc1: warnings being treated as errors
-builtin-test.c: In function ‘sched__get_first_possible_cpu’:
-builtin-test.c:977: warning: implicit declaration of function ‘CPU_ALLOC’
-builtin-test.c:977: warning: nested extern declaration of ‘CPU_ALLOC’
-builtin-test.c:977: warning: assignment makes pointer from integer without a cast
-builtin-test.c:978: warning: implicit declaration of function ‘CPU_ALLOC_SIZE’
-builtin-test.c:978: warning: nested extern declaration of ‘CPU_ALLOC_SIZE’
-builtin-test.c:979: warning: implicit declaration of function ‘CPU_ZERO_S’
-builtin-test.c:979: warning: nested extern declaration of ‘CPU_ZERO_S’
-builtin-test.c:982: warning: implicit declaration of function ‘CPU_FREE’
-builtin-test.c:982: warning: nested extern declaration of ‘CPU_FREE’
-builtin-test.c:992: warning: implicit declaration of function ‘CPU_ISSET_S’
-builtin-test.c:992: warning: nested extern declaration of ‘CPU_ISSET_S’
-builtin-test.c:998: warning: implicit declaration of function ‘CPU_CLR_S’
-builtin-test.c:998: warning: nested extern declaration of ‘CPU_CLR_S’
-make: *** [builtin-test.o] Error 1
+	I did some testing with this.  The required network
+configuration to show the problem is much simpler than this.  I tested
+with something of the form:
 
-This problem is introduced in 3e7c439a. CPU_ALLOC and related macros are
-missing in sched__get_first_possible_cpu function. In 54489c18, commiter
-mentioned that CPU_ALLOC has been removed. So CPU_ALLOC calls in this
-function are removed to let perf to be built.
+eth0 -> bond0 -> {bond0.123, br0} br0 is 10.0.9.1/16, arp_ip_target is
+10.0.1.1
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Vinson Lee <vlee@twitter.com>
+	br0 has the only assigned IP address, and the arp_ip_target is
+something on that same subnet.  In this case, merely having 8021q loaded
+would induce the problem, as that would add a VLAN (VID 0) to the bond
+even without explicitly adding a VLAN to the bond.
+
+	The patch does resolve the immediate problem that with the VLAN,
+the bond would not send the ARP queries out via eth0.
+
+	However, it misses one corner case, because the new test does
+not validate that the bond is actually a port of the bridge that's found
+via the route.  In this case, a configuration like:
+
+eth0 -> bond0 -> bond0.123 IP address 10.99.0.1/16, arp_ip_target 10.0.1.1
+eth1 -> br0 IP address 10.0.9.1/16
+
+	would cause the bond to issue the ARP probe request for 10.0.1.1
+on eth0, even though it really shouldn't (and currently wouldn't).  If,
+say, eth0 and eth1 are parallel subnets, it's possible that the host
+with 10.0.1.1 (multihomed to both subnets) may answer on the "wrong"
+subnet even if regular traffic routed via the correct subnet can't get
+through for some reason.
+
+	I don't see an easy way to find out if device X is a port of
+bridge Y, either, although we can easily check if the bond is a bridge
+port (priv_flags & IFF_BRIDGE_PORT) before doing the new check.  That
+doesn't completely fix the problem, but does require that the bond be a
+port of a different bridge to cause a misbehavior.
+
+	-J
+
+>This is related to the following issues:
+>http://launchpad.net/bugs/736226
+>http://bugzilla.kernel.org/show_bug.cgi?id=31822
+>
+>Thanks to help from Andy Gospodarek <andy@greyhouse.net>.
+>
+>Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+>---
+> drivers/net/bonding/bond_main.c |    8 ++++++++
+> 1 file changed, 8 insertions(+)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index b2530b0..62931b0 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -2708,6 +2708,14 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
+> 			continue;
+> 		}
+>
+>+		/* Check if the target is part of a bridge.
+>+		 */
+>+		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
+>+			addr = bond_confirm_addr(rt->dst.dev, targets[i], 0);
+>+			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], addr, 0);
+>+			continue;
+>+		}
+>+
+> 		if (net_ratelimit()) {
+> 			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
+> 				   bond->dev->name, &targets[i],
+>-- 
+>1.7.9.5
+>
+
 ---
- tools/perf/builtin-test.c |   38 ++++++++++++--------------------------
- 1 file changed, 12 insertions(+), 26 deletions(-)
-
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 484f26c..29af87f 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -604,19 +604,13 @@ out_free_threads:
- #undef nsyscalls
- }
- 
--static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
--					 size_t *sizep)
-+static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
- {
--	cpu_set_t *mask;
--	size_t size;
- 	int i, cpu = -1, nrcpus = 1024;
- realloc:
--	mask = CPU_ALLOC(nrcpus);
--	size = CPU_ALLOC_SIZE(nrcpus);
--	CPU_ZERO_S(size, mask);
-+	CPU_ZERO(maskp);
- 
--	if (sched_getaffinity(pid, size, mask) == -1) {
--		CPU_FREE(mask);
-+	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
- 		if (errno == EINVAL && nrcpus < (1024 << 8)) {
- 			nrcpus = nrcpus << 2;
- 			goto realloc;
-@@ -626,19 +620,14 @@ realloc:
- 	}
- 
- 	for (i = 0; i < nrcpus; i++) {
--		if (CPU_ISSET_S(i, size, mask)) {
--			if (cpu == -1) {
-+		if (CPU_ISSET(i, maskp)) {
-+			if (cpu == -1)
- 				cpu = i;
--				*maskp = mask;
--				*sizep = size;
--			} else
--				CPU_CLR_S(i, size, mask);
-+			else
-+				CPU_CLR(i, maskp);
- 		}
- 	}
- 
--	if (cpu == -1)
--		CPU_FREE(mask);
--
- 	return cpu;
- }
- 
-@@ -653,8 +642,8 @@ static int test__PERF_RECORD(void)
- 		.freq	    = 10,
- 		.mmap_pages = 256,
- 	};
--	cpu_set_t *cpu_mask = NULL;
--	size_t cpu_mask_size = 0;
-+	cpu_set_t cpu_mask;
-+	size_t cpu_mask_size = sizeof(cpu_mask);
- 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
- 	struct perf_evsel *evsel;
- 	struct perf_sample sample;
-@@ -718,8 +707,7 @@ static int test__PERF_RECORD(void)
- 	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
- 	perf_evlist__config_attrs(evlist, &opts);
- 
--	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask,
--					    &cpu_mask_size);
-+	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
- 	if (err < 0) {
- 		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
- 		goto out_delete_evlist;
-@@ -730,9 +718,9 @@ static int test__PERF_RECORD(void)
- 	/*
- 	 * So that we can check perf_sample.cpu on all the samples.
- 	 */
--	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, cpu_mask) < 0) {
-+	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
- 		pr_debug("sched_setaffinity: %s\n", strerror(errno));
--		goto out_free_cpu_mask;
-+		goto out_delete_evlist;
- 	}
- 
- 	/*
-@@ -916,8 +904,6 @@ found_exit:
- 	}
- out_err:
- 	perf_evlist__munmap(evlist);
--out_free_cpu_mask:
--	CPU_FREE(cpu_mask);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
--- 
-1.7.9.5
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
 
