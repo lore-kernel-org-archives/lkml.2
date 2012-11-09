@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab2KISoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:44:20 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63670 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab2KISoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:44:17 -0500
-Date: Fri, 9 Nov 2012 19:44:09 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        Mark Zhang <markz@nvidia.com>
-Subject: Re: [PATCH 0/2] Device tree updates for host1x support
-Message-ID: <20121109184409.GB7663@avionic-0098.mockup.avionic-design.de>
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
- <509D3EB1.8040703@wwwdotorg.org>
+	id S1755407Ab2KISoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:44:32 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:44543 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755329Ab2KISoZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:44:25 -0500
+From: Dan Williams <djbw@fb.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Deepak Sikri <deepak.sikri@st.com>,
+        "jon.mason@intel.com" <jon.mason@intel.com>,
+        "dave.jiang@intel.com" <dave.jiang@intel.com>
+Subject: Re: [PATCH] dmaengine/dmatest: terminate transfers only in case of
+ errors
+Thread-Topic: [PATCH] dmaengine/dmatest: terminate transfers only in case of
+ errors
+Thread-Index: AQHNvo6gBAqWD3RE9Um/NJlzPp+4RpfhxoyA
+Date: Fri, 9 Nov 2012 18:44:18 +0000
+Message-ID: <84A937D219C2B44EB8EA44831ACA1E49166B9A82@SC-MBX01-3.TheFacebook.com>
+In-Reply-To: <1f83c56ebbe66c00acc7901613da1dc6fdba4a6b.1352474736.git.viresh.kumar@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.18.254]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <BC1EB3DF4974534BBB60C1058DB66593@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
-Content-Disposition: inline
-In-Reply-To: <509D3EB1.8040703@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:ThIMYorBFOlKEucV2SHpGeL9o1JzkzoqbBkA9+cIl2D
- AMLgIt/pdvcenUU0o63cCvJlaGbztj6Y3pEAmMVisiHZMY8D2/
- MDmUOKJvquom5xvauDW5zM9TKMFM4IkZ/gkCkxtNOcpOsrB8u6
- 6tKy8WxTSZkLbu8WKwyWAnVKJHUvIoT5ZxauZr03k8F411/QHn
- ACsyH28qAoJjox73m8HZ8lqk5zo4y25o+ldLLDSVUfni2vkPwr
- 5ctZI6UCUriqQF1YgMFXS19wmROtsByKL56HpcKXVImSGa/ieO
- FAkyClg+zA3wlBmrHnGd8e8ZRExRpalhbRFOiOT3cPNp699emE
- oUSwXRFMKgxYI5sbW7sGaDtJVGd7SPEqi/vn0dGz4dKAiraZCL
- lErILoDu0aIlWnyzT9wenNmiSG5SJsP0zlYc3wRFBoPpmVRpy2
- fuq92
+X-Proofpoint-Spam-Reason: safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-11-09_03:2012-11-09,2012-11-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---WYTEVAkct0FjGQmd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Nov 09, 2012 at 10:34:41AM -0700, Stephen Warren wrote:
-> On 11/09/2012 06:20 AM, Thierry Reding wrote:
-> > This set of patches are in preparation for the Tegra DRM driver. They
-> > add the necessary nodes to the DTSI files and setup the clocks necessary
-> > for host1x and the display controllers to work properly. The AUXDATA
-> > table is updated with the entries for the newly added nodes and the PLL
-> > frequency tables are extended with some frequencies required to make a
-> > few of the more common LVDS panel and HDMI display modes work.
-> >=20
-> > By default, all output resources (RGB, HDMI, DSI and TVO) are disabled,
-> > and individual boards need to enable those that they require.
-> >=20
-> > Note that there has been talk to replace the frequency tables by an
-> > algorithmic computation of the dividers in order to avoid endless
-> > additions to these tables. No code has surfaced yet, but eventually this
-> > should replace the static tables.
->=20
-> This basically looks reasonable.
->=20
-> I assume the DT bindings are documented in the tegradrm driver series? I
-> haven't looked at that yet.
->=20
-> I'd like to see explicit acks for the DT changes from e.g. Terje and
-> Mark Zhang, and anyone else involved in previous discussions about them.
->=20
-> Could you please split up the patches a little differently? I'd like to s=
-ee:
->=20
-> 1) Changes to the clock driver
-> 2) Changes to add AUXDATA
-> 3) Changes to .dts files
->=20
-> The reason being that these are logically separate changes. (1) and (2)
-> would be applied to the "soc" branch, and (3) to the "dt" branch.
+On 11/9/12 7:26 AM, "Viresh Kumar" <viresh.kumar@linaro.org> wrote:
 
-I'll split the patches up some more then.
+>From: Shiraz Hashim <shiraz.hashim@st.com>
+>
+>dmatest erroneously terminated transfers in normal cases also leading to
+>test failures for multiple threads over a channel. Fix this and
+>terminate transfers only in case of errors.
+>
+>Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
+>Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+>---
+> drivers/dma/dmatest.c | 4 +++-
+> 1 file changed, 3 insertions(+), 1 deletion(-)
+>
+>diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+>index 8f130d4e..ce58b8e 100644
+>--- a/drivers/dma/dmatest.c
+>+++ b/drivers/dma/dmatest.c
+>@@ -509,7 +509,9 @@ err_srcs:
+> 			thread_name, total_tests, failed_tests, ret);
+> 
+> 	/* terminate all transfers on specified channels */
+>-	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
+>+	if (ret)
+>+		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
+>+
 
-> Finally, I'd prefer not to rename the match parameters in the clock
-> drivers any more; just set up the AUXDATA to match whatever driver names
-> the clock driver is expecting. That will reduce churn to the clock
-> driver.
+This and commit 9704efa "dmaengine/dmatest: Terminate transfers on all
+channels in case of error or exit" are broken for channels that don't
+implement the optional ->device_control.  Care to fix that up?
 
-I updated the table mainly because the devices were named very
-inconsistently. For instance, the output resources and host1x didn't
-have the tegra- prefix, but the display controllers did. I still think
-there's enough value in having a consistent set of device names, but
-this is your tree, so I'll drop those changes and update the AUXDATA
-table if that's what you want.
 
-> I really hope soon that Tegra will support DT bindings for
-> clocks so we can get rid of the AUXDATA, but unfortunately I haven't
-> seen any movement towards this:-(
+--
+Dan
 
-Oh yes, please. We wouldn't have any of the above problem if we had
-proper DT bindings for this. Who needs to be prodded to speed this up?
-
-Thierry
-
---WYTEVAkct0FjGQmd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQnU75AAoJEN0jrNd/PrOhikcP/imTeun/w4o79HgeleR5LFRR
-zshbGliiPKxzChMBKdd19bcik/VSHXqB/J3QFVVg8cRRuP+MH8aYQHFl3hrUZqOi
-3vJgxDq8qy/ZsyCb5AjIB25qXCr5Y84cVNeWoOmW49z/mqFXHT4wnsBQcWWUlitj
-nyuNdSCUJGcWdj8D50KSgXvjuSHgNGjdqcDYWl/KKMyYZnZLVDvD6S5WF0FwPsG8
-HYnNff2qhl49JxPCwfGytJxexewUfP3dIa1GvPm5BqDa+/+sAtWFJlTLmt6eDkl/
-ySQOkd7sGk2rzuPNOeq2gV9O2PJpSEUejBSvbKhcVChkYr6SKZNPE5auokxjnLLC
-Gjf+KJbeSvT022m4Xh+jM7IMpVvyHsw9DrNkQ+xj94iZBz8QwRSXT055dEKccS74
-TmE9l5GKvURtxNd9XAr1cN9h3QWoJMX320lM/rCxjUU+n2XbHWEaiTTqE2HEhL0C
-3q4SzFRZtTubYOqw9CNmMUaIKEVZIXwPNMo9SY3r9wecCBl687pNipanb/W0fO4D
-d03nIhNB0vhKVg4LpeFkt1l4BB1zaj2Si56UhoC6xzclwa0Yl6j6SQg10EVlIKT8
-sD31uCDHcWxfsY0M1voQKKPAhFkNAFFIaZ83CqGIOwgiznjM+Ijo4qolxM1AvaW0
-3elT3DpFLRTe1YljA3LS
-=Q1Wt
------END PGP SIGNATURE-----
-
---WYTEVAkct0FjGQmd--
