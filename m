@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2KILTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:19:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52604 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab2KILTe (ORCPT
+	id S1752632Ab2KIL1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:27:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228Ab2KIL1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:19:34 -0500
-Date: Fri, 9 Nov 2012 12:19:28 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: "paul@pwsan.com" <paul@pwsan.com>, "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 04/10] pwm: pwm-tiecap: Add device-tree binding
- support for APWM driver
-Message-ID: <20121109111928.GA2391@avionic-0098.mockup.avionic-design.de>
-References: <1352361197-27442-1-git-send-email-avinashphilip@ti.com>
- <1352361197-27442-5-git-send-email-avinashphilip@ti.com>
- <20121109075219.GA22224@avionic-0098.mockup.avionic-design.de>
- <518397C60809E147AF5323E0420B992E3E9E44FC@DBDE01.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-In-Reply-To: <518397C60809E147AF5323E0420B992E3E9E44FC@DBDE01.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:sm21svA4newxIfpfh+4Sy4/lrx1xdZGEUMvOwe74dTG
- o/NQZqz/OK9WwXrJuLTQgxHVNXCf4UbuKg4xR7TkF//qynp6+I
- /ciQjSNHT9pSkrDUETldJ0tfCTgSm2h8pT6HKvZuBfrCvsSahG
- jkD0jnLufY+X4DG9O3VZglbSTbtpi5Xgtt05K8ch0D1e3SNQ04
- GFlG0+rZUIVAGw4BlTTX1USLij0kw3b3HDn20P5Ib3KyYhZH4I
- 7KOZGKjTpK5hXdK/uLBz1dO/acm01+GUeWcWuqyx83Hzzm30Kt
- MEaSoNPp5fy7crJHu5BDz2ATudqMsdI8LmF9yL9YyGgY/E2ISE
- hGRLWcX1JLtGdqIw9Us6RGGCKVbNjfGedJ4TBobLe7THQ0L8wd
- fSRxh8wmtcT8rA6+wMlfR9zE6gQsD2VmqhXoYVaTgFyaYT7zbE
- gGgzD
+	Fri, 9 Nov 2012 06:27:30 -0500
+Date: Fri, 9 Nov 2012 06:00:17 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Chris J Arges <chris.j.arges@canonical.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH cifs-next] fs: cifs: make smb_echo_interval tunable
+Message-ID: <20121109060017.63811198@tlielax.poochiereds.net>
+In-Reply-To: <1352407828-23339-1-git-send-email-chris.j.arges@canonical.com>
+References: <1352407828-23339-1-git-send-email-chris.j.arges@canonical.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  8 Nov 2012 14:50:28 -0600
+Chris J Arges <chris.j.arges@canonical.com> wrote:
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Change SMB_ECHO_INTERVAL to make it a module parameter.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/1017622
+> BugLink: https://bugzilla.samba.org/show_bug.cgi?id=9006
+> 
 
-On Fri, Nov 09, 2012 at 10:59:30AM +0000, Philip, Avinash wrote:
-> On Fri, Nov 09, 2012 at 13:22:19, Thierry Reding wrote:
-> > On Thu, Nov 08, 2012 at 01:23:11PM +0530, Philip, Avinash wrote:
-> > > +#define ECAPCLK_EN			BIT(0)
-> > > +#define ECAPCLK_STOP_REQ	BIT(1)
-> >=20
-> > This one doesn't seem to align with the rest. Also, why is bit 0 called
-> > _EN and bit 1 _STOP_REQ? Couldn't they be made more consistent, i.e.
-> > _START and _STOP? Or _ENABLE and _DISABLE?
->=20
-> Ok I will change to PWMSS_ECAPCLK_EN & PWMSS_ECAPCLK_STPO_REQ
+It's customary to write up the reason for a change in the bug
+description. A pointer to a bug tracker is nice as a reference, but
+it's not reasonable to expect someone to chase down a bunch of bug
+tracker links when reading the git logs. It's also possible that
+these bug reports could go away or be unavailable when someone needs
+to track down the reason for a change.
 
-While at it, maybe move these defines to the pwm-tipwmss.h header file?
-After all that's the module that accesses the register that contains
-these bits.
+> Reported-by: Oliver Dumschat-Hoette <dumschat-hoette@trisinus.de>
+> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+> ---
+>  fs/cifs/cifsfs.c   |    5 +++++
+>  fs/cifs/cifsglob.h |    5 +++--
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+> index 5e62f44..25748b3 100644
+> --- a/fs/cifs/cifsfs.c
+> +++ b/fs/cifs/cifsfs.c
+> @@ -82,6 +82,11 @@ MODULE_PARM_DESC(cifs_max_pending, "Simultaneous requests to server. "
+>  module_param(enable_oplocks, bool, 0644);
+>  MODULE_PARM_DESC(enable_oplocks, "Enable or disable oplocks. Default: y/Y/1");
+>  
+> +unsigned short smb_echo_timeout = 60;
+> +module_param(smb_echo_timeout, ushort, 0644);
+> +MODULE_PARM_DESC(smb_echo_timeout, "Timeout between two echo requests. "
+> +				   "Default: 60. Timeout in seconds ");
+> +
+>  extern mempool_t *cifs_sm_req_poolp;
+>  extern mempool_t *cifs_req_poolp;
+>  extern mempool_t *cifs_mid_poolp;
+> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+> index f5af252..d64dcd3 100644
+> --- a/fs/cifs/cifsglob.h
+> +++ b/fs/cifs/cifsglob.h
+> @@ -78,8 +78,9 @@
+>  /*           (max path length + 1 for null) * 2 for unicode    */
+>  #define MAX_NAME 514
+>  
+> -/* SMB echo "timeout" -- FIXME: tunable? */
+> -#define SMB_ECHO_INTERVAL (60 * HZ)
+> +/* SMB echo "timeout" */
+> +extern unsigned short smb_echo_timeout;
+> +#define SMB_ECHO_INTERVAL (smb_echo_timeout * HZ)
+>  
+>  #include "cifspdu.h"
+>  
 
+I'm not so sure I like making this tunable...
 
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature
+What would really be better is fixing the code to only echo when there
+are outstanding calls to the server.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+This also seems like a bit of a kludgy workaround for the real problem.
+>From looking over the bug reports, it sounds like the real issue is
+that the server is timing out the connection while the client is
+suspended. It then has to wait until the next echo comes around to
+figure that out. Is that the case?
 
-iQIcBAEBAgAGBQJQnObAAAoJEN0jrNd/PrOh12oQALgj+/7wakFIGEHh3SWHMok5
-S91TEkAovcubKqekRnN/38Bh+XcXHObKRCkhnmiJYTR0eZNSIA+rR/L5KAAgHpdQ
-Lg5VHaGmm6fk5JCCNjUvqnsyquoMLVJQts/uvjSmwh0Rz+/hiZLwMBPWZAKvVoEu
-PXQfjAm4m4NB3SlHbW/AtKF/QDe2RrrQYpggNiiGwjNmAkxyxQOXmgPBs13IcBG/
-GIco9kEwALeJ+TVxvneWw6qxgTDylaKGD7hJFq3ItcZoTxgTLcaB+huejOtQQFJr
-/4/Q6/ZpcDhjtSGK4CySjYcU4eD6aGzmRKONxKIG8qBTg3Yqyv/Ap6t3C4l9WzfT
-AcIwKy9Knp46W9uf+oUHDYPQOJdQkDjdraZuhZI/cPUGXStMdd+SjU0lyKsKsc0E
-eao43XmGx0GFlCiMULuV7dGfhBNLRgt1u39FgowT/DEmcgSjyHUHgZUtRTRHQGwS
-QMUmX6hfDUVp7iyqJnTI9lU26/BxZw1YaFgTfqDWbhAzsetW4ARSg4YTyhqoJiSs
-yKMdjjGXmGlhtqYGxr4j3+vSppPeMu4mKwtpEqwE0igUM7802DIwpJR5qHSPlpir
-qUNtDAYQTup8siYt5cKSsmASmyfZguwm7fB1vhCm/Qx8WXSZEjLb29Iq5EC1Nj5T
-a6eGVYJSyuswdwIWJiwl
-=WQOh
------END PGP SIGNATURE-----
+If so, then I think what you really want here is a way to tell if the
+connection is still valid after resume. Perhaps there's some way to
+force an immediate SMB echo on these connections after resume? With
+that, there'd be little delay at all in contacting the server after a
+resume. The server would presumably send back a RST immediately in such
+a case and we could get on with the business of reconnecting.
 
---envbJBWh7q8WU6mo--
+The cifs_demultiplex_thread does make some calls to try_to_freeze().
+Perhaps checking the return value on those and kicking off an immediate
+echo if it returns true would be a better solution?
+
+-- 
+Jeff Layton <jlayton@redhat.com>
