@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab2KIGW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 01:22:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45998 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2KIGWw (ORCPT
+	id S1752237Ab2KIGg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 01:36:26 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36516 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2KIGgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 01:22:52 -0500
-Date: Thu, 8 Nov 2012 22:22:49 -0800
-From: Michel Lespinasse <walken@google.com>
-To: kbuild test robot <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [next:akpm 157/313] arch/tile/mm/hugetlbpage.c:256:20: error:
- 'mm' undeclared
-Message-ID: <20121109062249.GB7022@google.com>
-References: <509c99fa.8Yp/oQzMiknhbdrT%fengguang.wu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <509c99fa.8Yp/oQzMiknhbdrT%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Nov 2012 01:36:24 -0500
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org
+Subject: [PATCH] virtio-scsi: Fix incorrect lock release order in virtscsi_kick_cmd
+Date: Fri,  9 Nov 2012 06:29:52 +0000
+Message-Id: <1352442592-2162-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 01:51:54PM +0800, kbuild test robot wrote:
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> head:   6703d59701f7592c897b975de3952ba6bbb98b83
-> commit: 921a29df6a2bab7c1bfbb11eb5648b92bdc250e8 [157/313] mm: use vm_unmapped_area() in hugetlbfs on tile architecture
-> config: make ARCH=tile tilegx_defconfig
-> 
-> All error/warnings:
-> 
-> arch/tile/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown':
-> arch/tile/mm/hugetlbpage.c:256:20: error: 'mm' undeclared (first use in this function)
-> arch/tile/mm/hugetlbpage.c:256:20: note: each undeclared identifier is reported only once for each function it appears in
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 86234092170b43771c3f6257cb320ff6e2c10c52
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Nov 8 22:13:58 2012 -0800
+This patch fixes a regression bug in virtscsi_kick_cmd() that relinquishes
+the acquired spinlocks in the incorrect order using the wrong spin_unlock
+macros, namely releasing vq->vq_lock before tgt->tgt_lock while invoking
+the calls to virtio_ring.c:virtqueue_add_buf() and friends.
 
-    fix mm: use vm_unmapped_area() in hugetlbfs on tile architecture
+This bug was originally introduced in v3.5-rc7 code with:
 
-diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
-index 6f74cce053e1..650ccff8378c 100644
---- a/arch/tile/mm/hugetlbpage.c
-+++ b/arch/tile/mm/hugetlbpage.c
-@@ -253,7 +253,7 @@ static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
- 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
- 	info.length = len;
- 	info.low_limit = PAGE_SIZE;
--	info.high_limit = mm->mmap_base;
-+	info.high_limit = current->mm->mmap_base;
- 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
- 	info.align_offset = 0;
- 	addr = vm_unmapped_area(&info);
+commit 2bd37f0fde99cbf8b78fb55f1128e8c3a63cf1da
+Author: Paolo Bonzini <pbonzini@redhat.com>
+Date:   Wed Jun 13 16:56:34 2012 +0200
+
+    [SCSI] virtio-scsi: split scatterlist per target
+
+Go ahead and make sure that vq->vq_lock is relinquished w/ spin_unlock
+first, then release tgt->tgt_lock w/ spin_unlock_irqrestore.
+
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: stable@vger.kernel.org
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/virtio_scsi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 595af1a..b2abb8a 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -417,11 +417,11 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+ 
+ 	spin_lock(&vq->vq_lock);
+ 	ret = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+-	spin_unlock(&tgt->tgt_lock);
++	spin_unlock(&vq->vq_lock);
+ 	if (ret >= 0)
+ 		ret = virtqueue_kick_prepare(vq->vq);
+ 
+-	spin_unlock_irqrestore(&vq->vq_lock, flags);
++	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+ 
+ 	if (ret > 0)
+ 		virtqueue_notify(vq->vq);
+-- 
+1.7.2.5
+
