@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab2KIQMn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:12:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50795 "EHLO mx2.suse.de"
+	id S1754307Ab2KIQPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:15:14 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56638 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab2KIQMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:12:42 -0500
-Date: Fri, 9 Nov 2012 16:12:37 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/19] Foundation for automatic NUMA balancing
-Message-ID: <20121109161236.GK8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <20121109144257.GA26870@redhat.com>
+	id S1751565Ab2KIQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:15:11 -0500
+Message-ID: <509D2B9B.4090305@linux.vnet.ibm.com>
+Date: Fri, 09 Nov 2012 08:13:15 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121109144257.GA26870@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
+ support Memory Power Management
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com>
+In-Reply-To: <509D200F.2000908@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110916-7182-0000-0000-00000324B05B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 03:42:57PM +0100, Andrea Arcangeli wrote:
-> Hi Mel,
+On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
+> FWIW, kernbench is actually (and surprisingly) showing a slight performance
+> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
+> my other email to Dave.
 > 
-> On Tue, Nov 06, 2012 at 09:14:36AM +0000, Mel Gorman wrote:
-> > This series addresses part of the integration and sharing problem by
-> > implementing a foundation that either the policy for schednuma or autonuma
-> > can be rebased on. The actual policy it implements is a very stupid
-> > greedy policy called "Migrate On Reference Of pte_numa Node (MORON)".
-> > While stupid, it can be faster than the vanilla kernel and the expectation
-> > is that any clever policy should be able to beat MORON. The advantage is
-> > that it still defines how the policy needs to hook into the core code --
-> > scheduler and mempolicy mostly so many optimisations (s uch as native THP
-> > migration) can be shared between different policy implementations.
+> https://lkml.org/lkml/2012/11/7/428
 > 
-> I haven't had much time to look into it yet, because I've been
-> attending KVM Forum the last few days,
+> I don't think I can dismiss it as an experimental error, because I am seeing
+> those results consistently.. I'm trying to find out what's behind that.
 
-That's fine. I knew you were travelling and that there would be delay.
+The only numbers in that link are in the date. :)  Let's see the
+numbers, please.
 
-> but this foundation looks ok
-> with me as a starting base and I ack it for merging it upstream. I'll
-> try to rebase on top of this and send you some patches.
-> 
+If you really have performance improvement to the memory allocator (or
+something else) here, then surely it can be pared out of your patches
+and merged quickly by itself.  Those kinds of optimizations are hard to
+come by!
 
-Thanks, that's great news! It's not quite ready for merging yet. I found
-a few bugs in the foundation that I ironed out since and I would like to
-have better figures for specjbb.
-
-With that in mind I'm still in the process of implementing something like
-cpu-follow-memory on top. I'll post it early next week even if the figures
-are crap for the purposes of illustration and to get the existing fixes
-out there. Even you think the version of the cpu-follow implementation is
-complete crap you'll at least see what I thought the integration points
-would look like and we'll come up with an alternative.
-
-My hope is that we layer the smallest amount on top each iteration with
-benchmark validation at each step until we get something approaching
-autonuma or schednumas in terms of performance. Which one we use as the
-performance target will depend on whether schednuma or autonuma was better
-on that particular test. I'll be using mmtests on a 4-node machine each
-step but obviously other testers would be very welcome.
-
-As things stand right now I just finished a script to show where threads
-and running and what their per-node memory usage is and it's showing that
-specjbb threads are not converging at all. I'm not losing sleep over it
-just yet as I would be incredibly surprised if I got this right first time
-even with having schednuma and autonuma to look at :) .
-
-> > Patch 14 adds a MPOL_MF_LAZY mempolicy that an interested application can use.
-> > 	On the next reference the memory should be migrated to the node that
-> > 	references the memory.
-> 
-> This approach of starting with a stripped down foundation won't allow
-> for easy backportability anyway, so merging the userland API at the
-> first step shouldn't provide any benefit for the work that is ahead of
-> us. I would leave this for later and not part of the foundation.
-> 
-
-This needs a bit more consensus. I'm happy to drop the userspace API
-until all this settles down but will initially try and keep the internal
-mempolicy aspects.  Initially I preserved the userspace API because
-I understood Peter's logic that we should help application developers
-as much as possible before depending entirely on the automatic approach
-offered by both autonuma and schednuma.
-
-Peter?
-
-> All we need is a failsafe runtime and boot time turn off knob, just in
-> case.
-
-Yes, fully agreed. It's on the TODO list and I consider it a requirement
-before it's merged. THP experience has told us that being able to turn
-it off at runtime was very handy for debugging.
-
-Thanks Andrea.
-
--- 
-Mel Gorman
-SUSE Labs
