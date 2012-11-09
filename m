@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab2KIRC3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:02:29 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37368 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab2KIRCZ (ORCPT
+	id S1754841Ab2KIRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:03:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61441 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab2KIRDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:02:25 -0500
+	Fri, 9 Nov 2012 12:03:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <5099B150.7070808@firmworks.com>
+In-Reply-To: <B1277EA3-9284-4856-A7E8-1B1CA9D30327@antoniou-consulting.com>
 References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <50999145.2070306@wwwdotorg.org> <5099B150.7070808@firmworks.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
+ <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com>
+ <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com> <B1277EA3-9284-4856-A7E8-1B1CA9D30327@antoniou-consulting.com>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 9 Nov 2012 17:02:05 +0000
-X-Google-Sender-Auth: 94hEFzZ2g0kBxkeuZbN_2ZjuPwQ
-Message-ID: <CACxGe6vTJHvZwZ383DE5-k+ksv1nGeuLynADuQC+D2eySj7gWQ@mail.gmail.com>
+Date: Fri, 9 Nov 2012 17:03:02 +0000
+X-Google-Sender-Auth: Bo4NG3bFNc0z3f_coYrgBV3IFB4
+Message-ID: <CACxGe6vRm-8D5L2aD2QRB6qD0XkU302xThRd4G4ad-fLJxh-OA@mail.gmail.com>
 Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
  omap_devices to mach-omap2)
-To: Mitch Bradley <wmb@firmworks.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Kevin Hilman <khilman@ti.com>,
-        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <robherring2@gmail.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 12:54 AM, Mitch Bradley <wmb@firmworks.com> wrote:
-> On 11/6/2012 12:37 PM, Stephen Warren wrote:
->> This proposal is very oriented at an overlay-based approach. I'm not
->> totally convinced that a pure overlay approach (as in how dtc does
->> overlayed DT nodes) will be flexible enough, but would love to be
->> persuaded. Again see below.
+On Wed, Nov 7, 2012 at 8:06 AM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> Hi Grant,
 >
+> On Nov 6, 2012, at 9:45 PM, Grant Likely wrote:
+>> Yes, the locking does need to be sorted out.
+>>
 >
-> An overlay approach will not be powerful enough to solve the sorts of
-> problems that occur when a product goes into full production, becomes a
-> family, and starts to evolve.  Issues like second-source parts that
-> aren't quite compatible and need to be detected and reported,
-> board-stuff options for different customer profiles, speed grades of
-> parts that aren't properly probeable but instead need to be identified
-> by some subterfuge, the list of tedious issues goes on and on.
->
-> It's nice to pretend that the world fits into a few coherent simple
-> use cases, but 30 years of experience shipping computer product families
-> proves otherwise.  You need a programming language to solve the full
-> set of problems - which I why the device tree is designed so it can
-> be generated and modified by a program.
+> Perhaps come up with a dt-stress test tool/boot time validator?
 
-I'm not going to argue with that. There is nothing saying that the
-overlay wouldn't be generated or applied by a script. However, I do
-strongly think that the data model needs to be independent of any tool
-or execution environment used to manipulate it. I certainly am not
-interested in encoding scripts or bytecode into the tree - the
-opposite of the approach used by ACPI which must execute AML to even
-retrieve the device tree. I like the overlay approach because it is
-conceptually straightforward and provides a working model of how
-changes could be made from userspace while still being usable by
-firmware.
-
-An alternate approach from userspace would be to use a live virtual
-filesystem to manipulate the device tree, though that approach only
-applies to Linux userspace. Firmware would still need its own
-approach.
+I would like that. I've started adding DT test cases to the kernel source tree.
 
 g.
