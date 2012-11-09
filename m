@@ -1,143 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2KIDs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 22:48:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23434 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365Ab2KIDsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 22:48:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,741,1344236400"; 
-   d="scan'208";a="246247681"
-Date: Fri, 9 Nov 2012 05:51:34 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121109035134.GG16012@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-4-git-send-email-mika.westerberg@linux.intel.com>
- <CACxGe6vgKrqu9UwDc3gytMWpODhV4Q6yezQRwQmg730BpBxXrA@mail.gmail.com>
+	id S1752642Ab2KIDsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 22:48:39 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37549 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2KIDs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 22:48:27 -0500
+Message-ID: <509C7D08.8030801@gmail.com>
+Date: Thu, 08 Nov 2012 21:48:24 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6vgKrqu9UwDc3gytMWpODhV4Q6yezQRwQmg730BpBxXrA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Azat Khuzhin <dohardgopro@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: macbook pro 9.2 stat/ata bus error
+References: <CAAW1UO_X9eaBoiHMdj-ntCjGgBKpA6A_EDA2zifDf7f7dbs4Xw@mail.gmail.com> <CAAW1UO_9ZRZEX8rU83niZuZxihcoHaj-dau-o+ym5ATJXyNvpg@mail.gmail.com>
+In-Reply-To: <CAAW1UO_9ZRZEX8rU83niZuZxihcoHaj-dau-o+ym5ATJXyNvpg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 08, 2012 at 06:58:47PM +0000, Grant Likely wrote:
-> On Sat, Nov 3, 2012 at 7:46 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-> > and configure the I2C slave devices behind the I2C controller. This patch
-> > adds helper functions to support I2C slave enumeration.
-> >
-> > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-> > in order to get its slave devices enumerated, created and bound to the
-> > corresponding ACPI handle.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/Kconfig     |    6 ++
-> >  drivers/acpi/Makefile    |    1 +
-> >  drivers/acpi/acpi_i2c.c  |  234 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/i2c/i2c-core.c   |    9 ++
-> >  include/linux/acpi_i2c.h |   29 ++++++
-> >  5 files changed, 279 insertions(+)
-> >  create mode 100644 drivers/acpi/acpi_i2c.c
-> >  create mode 100644 include/linux/acpi_i2c.h
-> >
-> > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> > index 119d58d..0300bf6 100644
-> > --- a/drivers/acpi/Kconfig
-> > +++ b/drivers/acpi/Kconfig
-> > @@ -181,6 +181,12 @@ config ACPI_DOCK
-> >           This driver supports ACPI-controlled docking stations and removable
-> >           drive bays such as the IBM Ultrabay and the Dell Module Bay.
-> >
-> > +config ACPI_I2C
-> > +       def_tristate I2C
-> > +       depends on I2C
-> > +       help
-> > +         ACPI I2C enumeration support.
-> > +
-> >  config ACPI_PROCESSOR
-> >         tristate "Processor"
-> >         select THERMAL
-> > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> > index a7badb5..8573346 100644
-> > --- a/drivers/acpi/Makefile
-> > +++ b/drivers/acpi/Makefile
-> > @@ -69,6 +69,7 @@ obj-$(CONFIG_ACPI_HED)                += hed.o
-> >  obj-$(CONFIG_ACPI_EC_DEBUGFS)  += ec_sys.o
-> >  obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
-> >  obj-$(CONFIG_ACPI_BGRT)                += bgrt.o
-> > +obj-$(CONFIG_ACPI_I2C)         += acpi_i2c.o
-> >
-> >  # processor has its own "processor." module_param namespace
-> >  processor-y                    := processor_driver.o processor_throttling.o
-> > diff --git a/drivers/acpi/acpi_i2c.c b/drivers/acpi/acpi_i2c.c
-> > new file mode 100644
-> > index 0000000..dc6997e
-> > --- /dev/null
-> > +++ b/drivers/acpi/acpi_i2c.c
-> > @@ -0,0 +1,234 @@
-> > +/*
-> > + * ACPI I2C enumeration support
-> > + *
-> > + * Copyright (C) 2012, Intel Corporation
-> > + * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#include <linux/acpi.h>
-> > +#include <linux/i2c.h>
-> > +#include <linux/module.h>
-> > +
-> > +struct acpi_i2c {
-> > +       acpi_status (*callback)(struct acpi_device *, void *);
-> > +       void *data;
-> > +};
-> > +
-> > +static acpi_status acpi_i2c_enumerate_device(acpi_handle handle, u32 level,
-> > +                                            void *data, void **return_value)
-> > +{
-> > +       struct acpi_i2c *acpi_i2c = data;
-> > +       struct acpi_device *adev;
-> > +
-> > +       if (acpi_bus_get_device(handle, &adev))
-> > +               return AE_OK;
-> > +       if (acpi_bus_get_status(adev) || !adev->status.present)
-> > +               return AE_OK;
-> > +
-> > +       return acpi_i2c->callback(adev, acpi_i2c->data);
-> > +}
-> > +
-> > +static acpi_status acpi_i2c_enumerate(acpi_handle handle,
-> > +       acpi_status (*callback)(struct acpi_device *, void *), void *data)
-> > +{
-> > +       struct acpi_i2c acpi_i2c;
-> > +
-> > +       acpi_i2c.callback = callback;
-> > +       acpi_i2c.data = data;
-> > +
-> > +       return acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-> > +                                  acpi_i2c_enumerate_device, NULL,
-> > +                                  &acpi_i2c, NULL);
-> > +}
-> 
-> Same comment here as for the SPI patch. The two levels of indirection
-> is more convoluted than it needs to be. Can acpi_i2c_find_client and
-> acpi_i2c_add_device be passed directly to acpi_walk_namespace?
+On 11/06/2012 09:41 PM, Azat Khuzhin wrote:
+>   Anybody?
+>
+> On Mon, Nov 5, 2012 at 7:28 PM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
+>> After installing linux on macbook 9.2 (mid 2012), I have next errors
+>> in dmesg log:
+>>
+>> [  389.623828] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=600
+>> [  410.038465] NMI watchdog: enabled on all CPUs, permanently consumes
+>> one hw-PMU counter.
+>> [  410.075042] ehci_hcd 0000:00:1a.0: setting latency timer to 64
+>> [  410.483526] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=0
+>> [ 1401.834509] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=1800
+>> [ 1406.467268] NMI watchdog: enabled on all CPUs, permanently consumes
+>> one hw-PMU counter.
+>> [ 1406.506769] ehci_hcd 0000:00:1a.0: setting latency timer to 64
+>> [ 1406.590122] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=0
+>> [ 1407.492260] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
+>> action 0xe frozen
+>> [ 1407.494441] ata2.00: irq_stat 0x00400000, PHY RDY changed
+>> [ 1407.495238] ata2: SError: { PHYRdyChg CommWake }
+>> [ 1407.496035] sr 1:0:0:0: CDB:
+>> [ 1407.497333] Get event status notification: 4a 01 00 00 10 00 00 00 08 00
+>> [ 1407.498285] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
+>> pio 16392 in
+>> [ 1407.498285]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
+>> 0x10 (ATA bus error)
+>> [ 1407.501987] ata2.00: status: { DRDY }
+>> [ 1407.502882] ata2: hard resetting link
+>> [ 1408.230302] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+>> [ 1408.233279] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>> filtered out
+>> [ 1408.237467] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>> filtered out
+>> [ 1408.239084] ata2.00: configured for UDMA/100
+>> [ 1408.262238] ata2: EH complete
 
-Yes they can, I'll do that in the next version. Thanks.
+Is this after a resume? It could be that for some reason the SATA link 
+is a little bit unstable right after the machine powers up again. There 
+may not be much the kernel can do about this..
+
+>> [ 3565.785609] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=1800
+>> [ 3576.921499] NMI watchdog: enabled on all CPUs, permanently consumes
+>> one hw-PMU counter.
+>> [ 3576.958624] ehci_hcd 0000:00:1a.0: setting latency timer to 64
+>> [ 3577.114612] EXT4-fs (sda4): re-mounted. Opts:
+>> errors=remount-ro,data=ordered,commit=0
+>> [ 3577.923688] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
+>> action 0xe frozen
+>> [ 3577.925852] ata2.00: irq_stat 0x00400000, PHY RDY changed
+>> [ 3577.926746] ata2: SError: { PHYRdyChg CommWake }
+>> [ 3577.927544] sr 1:0:0:0: CDB:
+>> [ 3577.928345] Get event status notification: 4a 01 00 00 10 00 00 00 08 00
+>> [ 3577.929642] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
+>> pio 16392 in
+>> [ 3577.929642]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
+>> 0x10 (ATA bus error)
+>> [ 3577.932954] ata2.00: status: { DRDY }
+>> [ 3577.934264] ata2: hard resetting link
+>> [ 3578.662228] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+>> [ 3578.665211] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>> filtered out
+>> [ 3578.669355] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
+>> filtered out
+>> [ 3578.670969] ata2.00: configured for UDMA/100
+>> [ 3578.694145] ata2: EH complete
+>>
+>> Is it linux driver, or maybe
+>>
+>> $ lspci # sata information only
+>> 00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family
+>> 6-port SATA Controller [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
+>>          Subsystem: Intel Corporation Device 7270
+>>          Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 20
+>>          I/O ports at 2098 [size=8]
+>>          I/O ports at 20bc [size=4]
+>>          I/O ports at 2090 [size=8]
+>>          I/O ports at 20b8 [size=4]
+>>          I/O ports at 2060 [size=32]
+>>          Memory at a0816000 (32-bit, non-prefetchable) [size=2K]
+>>          Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+>>          Capabilities: [70] Power Management version 3
+>>          Capabilities: [a8] SATA HBA v1.0
+>>          Capabilities: [b0] PCI Advanced Features
+>>          Kernel driver in use: ahci
+>>
+>> $ uname -a
+>> Linux macbook-pro 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
+>> 12:39:03 UTC 2012 x86_64 GNU/Linux
+>> $ cat /etc/debian_version
+>> wheezy/sid
+>>
+>> In OSX there is no errors with hard drive.
+>>
+>> What else can I do investigate this situation next?
+>>
+>> --
+>> Azat Khuzhin
+>
+>
+>
+
