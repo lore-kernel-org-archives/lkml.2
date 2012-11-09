@@ -1,93 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab2KIInE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 03:43:04 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62065 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab2KIInB (ORCPT
+	id S1751720Ab2KIIn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 03:43:27 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56765 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2KIInX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 03:43:01 -0500
-Message-ID: <509CC210.8090908@redhat.com>
-Date: Fri, 09 Nov 2012 09:42:56 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Fri, 9 Nov 2012 03:43:23 -0500
+Date: Fri, 9 Nov 2012 14:08:37 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V2 RESEND RFC 2/3] kvm: Handle yield_to failure return
+ code for potential undercommit case
+Message-ID: <20121109083837.GA1398@linux.vnet.ibm.com>
+Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+References: <20121029140621.15448.92083.sendpatchset@codeblue>
+ <20121029140702.15448.56932.sendpatchset@codeblue>
+ <50911BC3.6080305@redhat.com>
+ <50911C7D.5080307@linux.vnet.ibm.com>
+ <50912463.3040201@linux.vnet.ibm.com>
+ <50912A72.6050307@redhat.com>
+ <50915A91.1040001@linux.vnet.ibm.com>
+ <20121107102545.GA18644@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org
-Subject: Re: [PATCH] virtio-scsi: Fix incorrect lock release order in virtscsi_kick_cmd
-References: <1352442592-2162-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1352442592-2162-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121107102545.GA18644@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110908-4834-0000-0000-00000044B72F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 09/11/2012 07:29, Nicholas A. Bellinger ha scritto:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch fixes a regression bug in virtscsi_kick_cmd() that relinquishes
-> the acquired spinlocks in the incorrect order using the wrong spin_unlock
-> macros, namely releasing vq->vq_lock before tgt->tgt_lock while invoking
-> the calls to virtio_ring.c:virtqueue_add_buf() and friends.
-> 
-> This bug was originally introduced in v3.5-rc7 code with:
-> 
-> commit 2bd37f0fde99cbf8b78fb55f1128e8c3a63cf1da
-> Author: Paolo Bonzini <pbonzini@redhat.com>
-> Date:   Wed Jun 13 16:56:34 2012 +0200
-> 
->     [SCSI] virtio-scsi: split scatterlist per target
-> 
-> Go ahead and make sure that vq->vq_lock is relinquished w/ spin_unlock
-> first, then release tgt->tgt_lock w/ spin_unlock_irqrestore.
+Handle yield_to failure return code for potential undercommit case
 
-That's done on purpose.  After you do virtqueue_add_buf, you don't need
-the sg list anymore, nor the lock that protects it.  The cover letter is
-at https://lkml.org/lkml/2012/6/13/295 and had this text:
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-  This series reorganizes the locking in virtio-scsi, introducing
-  separate scatterlists for each target and "pipelining" the locks so
-  that one command can be queued while the other is prepared.  This
-  improves performance when there are multiple in-flight operations.
+yield_to returns -ESRCH when When source and target of yield_to
+run queue length is one. When we see two successive failures of
+yield_to we assume we are in potential undercommit case and abort
+from PLE handler.
+The assumption is backed by low probability of wrong decision
+for even worst case scenarios such as average runqueue length
+between 1 and 2.
 
-In fact, the patch _introduces_ wrong locking because
-virtqueue_kick_prepare needs the vq_lock.
+note that we do not update last boosted vcpu in failure cases.
+Thank Avi for raising question on aborting after first fail from yield_to.
 
-Perhaps what you want is separate local_irq_save/local_irq_restore?
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
 
-Paolo
+ virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: James Bottomley <JBottomley@Parallels.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/scsi/virtio_scsi.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 595af1a..b2abb8a 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -417,11 +417,11 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
->  
->  	spin_lock(&vq->vq_lock);
->  	ret = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
-> -	spin_unlock(&tgt->tgt_lock);
-> +	spin_unlock(&vq->vq_lock);
->  	if (ret >= 0)
->  		ret = virtqueue_kick_prepare(vq->vq);
->  
-> -	spin_unlock_irqrestore(&vq->vq_lock, flags);
-> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
->  
->  	if (ret > 0)
->  		virtqueue_notify(vq->vq);
-> 
+
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index be70035..9f390e7 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+ {
+ 	struct pid *pid;
+ 	struct task_struct *task = NULL;
++	bool ret = false;
+ 
+ 	rcu_read_lock();
+ 	pid = rcu_dereference(target->pid);
+@@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+ 		task = get_pid_task(target->pid, PIDTYPE_PID);
+ 	rcu_read_unlock();
+ 	if (!task)
+-		return false;
++		return ret;
+ 	if (task->flags & PF_VCPU) {
+ 		put_task_struct(task);
+-		return false;
+-	}
+-	if (yield_to(task, 1)) {
+-		put_task_struct(task);
+-		return true;
++		return ret;
+ 	}
++	ret = yield_to(task, 1);
+ 	put_task_struct(task);
+-	return false;
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+ 
+@@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
+ 	return eligible;
+ }
+ #endif
++
+ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ {
+ 	struct kvm *kvm = me->kvm;
+ 	struct kvm_vcpu *vcpu;
+ 	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+ 	int yielded = 0;
++	int try = 2;
+ 	int pass;
+ 	int i;
+ 
+@@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 	 * VCPU is holding the lock that we need and will release it.
+ 	 * We approximate round-robin by starting at the last boosted VCPU.
+ 	 */
+-	for (pass = 0; pass < 2 && !yielded; pass++) {
++	for (pass = 0; pass < 2 && !yielded && try; pass++) {
+ 		kvm_for_each_vcpu(i, vcpu, kvm) {
+ 			if (!pass && i <= last_boosted_vcpu) {
+ 				i = last_boosted_vcpu;
+@@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 				continue;
+ 			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+ 				continue;
+-			if (kvm_vcpu_yield_to(vcpu)) {
++
++			yielded = kvm_vcpu_yield_to(vcpu);
++			if (yielded > 0) {
+ 				kvm->last_boosted_vcpu = i;
+-				yielded = 1;
+ 				break;
++			} else if (yielded < 0) {
++				try--;
++				if (!try)
++					break;
+ 			}
+ 		}
+ 	}
 
