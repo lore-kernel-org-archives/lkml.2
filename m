@@ -1,361 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab2KICK7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 21:10:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12134 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757256Ab2KICKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 21:10:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,741,1344236400"; 
-   d="scan'208";a="217073493"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH 1/3] net: Add support for hardware-offloaded encapsulation
-Date: Thu,  8 Nov 2012 18:18:01 -0800
-Message-Id: <1352427483-4380-2-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352427483-4380-1-git-send-email-joseph.gasparakis@intel.com>
-References: <1352427483-4380-1-git-send-email-joseph.gasparakis@intel.com>
+	id S1757477Ab2KICK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 21:10:58 -0500
+Received: from server505k.appriver.com ([98.129.35.43]:56231 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756372Ab2KICKz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 21:10:55 -0500
+X-Note-AR-ScanTimeLocal: 11/8/2012 8:10:50 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: smtp.exg5.exghost.com
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 8 Nov 2012 20:10:49 -0600
+Subject: Re: [PATCH 2/8] aoe: provide ATA identify device content to user on
+ request
+Thread-Topic: [PATCH 2/8] aoe: provide ATA identify device content to user
+ on request
+Thread-Index: Ac2+H3A64irUqf3ZSV6iHOmksL5ftQ==
+Message-ID: <6B79CBB8-3486-490A-87D1-03D917EE8491@coraid.com>
+References: <d63a612e77d92e4f7c13fc2bb545a762a664522d.1352316179.git.ecashin@coraid.com>
+ <9a089f76a8e21e64c89556d155833bcb286e48be.1352316179.git.ecashin@coraid.com>
+ <509C5110.5090809@pobox.com>
+In-Reply-To: <509C5110.5090809@pobox.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support in the kernel for offloading in the NIC Tx and Rx checksumming for encapsulated packets (such as VXLAN and IP GRE)
+On Nov 8, 2012, at 7:40 PM, Jeff Garzik wrote:
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
----
- Documentation/networking/netdev-features.txt |  10 +++
- include/linux/if_ether.h                     |   5 ++
- include/linux/ip.h                           |   5 ++
- include/linux/netdev_features.h              |   3 +
- include/linux/skbuff.h                       | 114 +++++++++++++++++++++++++++
- include/linux/udp.h                          |   5 ++
- net/core/ethtool.c                           |   2 +
- net/core/skbuff.c                            |  17 ++++
- 8 files changed, 161 insertions(+)
+> On 11/08/2012 11:32 AM, Ed Cashin wrote:
+>> This patch makes the aoe driver follow expected behavior when
+>> the user uses ioctl to get the ATA device identify information.
+>> 
+>> Signed-off-by: Ed Cashin <ecashin@coraid.com>
+>> ---
+>>  drivers/block/aoe/aoe.h    |    1 +
+>>  drivers/block/aoe/aoeblk.c |   30 ++++++++++++++++++++++++++++++
+>>  drivers/block/aoe/aoecmd.c |   16 ++++++++++++++++
+>>  3 files changed, 47 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+>> index 536942b..f6e0c03 100644
+>> --- a/drivers/block/aoe/aoe.h
+>> +++ b/drivers/block/aoe/aoe.h
+>> @@ -169,6 +169,7 @@ struct aoedev {
+>>  	struct aoetgt *htgt;	/* target needing rexmit assistance */
+>>  	ulong ntargets;
+>>  	ulong kicked;
+>> +	char ident[512];
+>>  };
+>> 
+>>  /* kthread tracking */
+>> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+>> index 56736cd..7ba0fcf 100644
+>> --- a/drivers/block/aoe/aoeblk.c
+>> +++ b/drivers/block/aoe/aoeblk.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/mutex.h>
+>>  #include <linux/export.h>
+>>  #include <linux/moduleparam.h>
+>> +#include <scsi/sg.h>
+>>  #include "aoe.h"
+>> 
+>>  static DEFINE_MUTEX(aoeblk_mutex);
+>> @@ -212,9 +213,38 @@ aoeblk_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+>>  	return 0;
+>>  }
+>> 
+>> +static int
+>> +aoeblk_ioctl(struct block_device *bdev, fmode_t mode, uint cmd, ulong arg)
+>> +{
+>> +	struct aoedev *d;
+>> +
+>> +	if (!arg)
+>> +		return -EINVAL;
+>> +
+>> +	d = bdev->bd_disk->private_data;
+>> +	if ((d->flags & DEVFL_UP) == 0) {
+>> +		pr_err("aoe: disk not up\n");
+>> +		return -ENODEV;
+>> +	}
+>> +
+>> +	if (cmd == HDIO_GET_IDENTITY) {
+>> +		if (!copy_to_user((void __user *) arg, &d->ident,
+>> +			sizeof(d->ident)))
+>> +			return 0;
+>> +		return -EFAULT;
+>> +	}
+>> +
+>> +	/* udev calls scsi_id, which uses SG_IO, resulting in noise */
+>> +	if (cmd != SG_IO)
+>> +		pr_info("aoe: unknown ioctl 0x%x\n", cmd);
+>> +
+>> +	return -ENOTTY;
+>> +}
+>> +
+>>  static const struct block_device_operations aoe_bdops = {
+>>  	.open = aoeblk_open,
+>>  	.release = aoeblk_release,
+>> +	.ioctl = aoeblk_ioctl,
+>>  	.getgeo = aoeblk_getgeo,
+>>  	.owner = THIS_MODULE,
+>>  };
+>> diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+>> index 3ce01f6..c4ff70b 100644
+>> --- a/drivers/block/aoe/aoecmd.c
+>> +++ b/drivers/block/aoe/aoecmd.c
+>> @@ -799,6 +799,17 @@ aoecmd_sleepwork(struct work_struct *work)
+>>  }
+>> 
+>>  static void
+>> +ata_ident_fixstring(u16 *id, int ns)
+>> +{
+>> +	u16 s;
+>> +
+>> +	while (ns-- > 0) {
+>> +		s = *id;
+>> +		*id++ = s >> 8 | s << 8;
+>> +	}
+>> +}
+>> +
+>> +static void
+>>  ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
+>>  {
+>>  	u64 ssize;
+>> @@ -833,6 +844,11 @@ ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
+>>  		d->geo.sectors = get_unaligned_le16(&id[56 << 1]);
+>>  	}
+>> 
+>> +	ata_ident_fixstring((u16 *) &id[10<<1], 10);	/* serial */
+>> +	ata_ident_fixstring((u16 *) &id[23<<1], 4);	/* firmware */
+>> +	ata_ident_fixstring((u16 *) &id[27<<1], 20);	/* model */
+> 
+> This duplicates ata_id_string() and/or ata_id_c_string(), does it not?
 
-diff --git a/Documentation/networking/netdev-features.txt b/Documentation/networking/netdev-features.txt
-index 4164f5c..82695c0 100644
---- a/Documentation/networking/netdev-features.txt
-+++ b/Documentation/networking/netdev-features.txt
-@@ -165,3 +165,13 @@ This requests that the NIC receive all possible frames, including errored
- frames (such as bad FCS, etc).  This can be helpful when sniffing a link with
- bad packets on it.  Some NICs may receive more packets if also put into normal
- PROMISC mdoe.
-+
-+*  tx-enc-checksum-offload
-+
-+This feature implies that the NIC will be able to calculate the Tx checksums
-+for both inner and outer packets in the case of vxlan and ipgre encapsulation.
-+
-+*  rx-enc-checksum-offload
-+
-+This feature implies that the NIC will be able to verify the Rx checksums
-+for both inner and outer packets in the case of vxlan and ipgre encapsulation.
-diff --git a/include/linux/if_ether.h b/include/linux/if_ether.h
-index 12b4d55..195376b 100644
---- a/include/linux/if_ether.h
-+++ b/include/linux/if_ether.h
-@@ -28,6 +28,11 @@ static inline struct ethhdr *eth_hdr(const struct sk_buff *skb)
- 	return (struct ethhdr *)skb_mac_header(skb);
- }
- 
-+static inline struct ethhdr *eth_inner_hdr(const struct sk_buff *skb)
-+{
-+	return (struct ethhdr *)skb_inner_mac_header(skb);
-+}
-+
- int eth_header_parse(const struct sk_buff *skb, unsigned char *haddr);
- 
- int mac_pton(const char *s, u8 *mac);
-diff --git a/include/linux/ip.h b/include/linux/ip.h
-index 58b82a2..e084de7 100644
---- a/include/linux/ip.h
-+++ b/include/linux/ip.h
-@@ -25,6 +25,11 @@ static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
- 	return (struct iphdr *)skb_network_header(skb);
- }
- 
-+static inline struct iphdr *ip_inner_hdr(const struct sk_buff *skb)
-+{
-+	return (struct iphdr *)skb_inner_network_header(skb);
-+}
-+
- static inline struct iphdr *ipip_hdr(const struct sk_buff *skb)
- {
- 	return (struct iphdr *)skb_transport_header(skb);
-diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
-index 5ac3212..6dd59a5 100644
---- a/include/linux/netdev_features.h
-+++ b/include/linux/netdev_features.h
-@@ -19,6 +19,7 @@ enum {
- 	NETIF_F_IP_CSUM_BIT,		/* Can checksum TCP/UDP over IPv4. */
- 	__UNUSED_NETIF_F_1,
- 	NETIF_F_HW_CSUM_BIT,		/* Can checksum all the packets. */
-+	NETIF_F_HW_CSUM_ENC_BIT,	/* Can checksum all inner headers */
- 	NETIF_F_IPV6_CSUM_BIT,		/* Can checksum TCP/UDP over IPV6 */
- 	NETIF_F_HIGHDMA_BIT,		/* Can DMA to high memory. */
- 	NETIF_F_FRAGLIST_BIT,		/* Scatter/gather IO. */
-@@ -52,6 +53,8 @@ enum {
- 	NETIF_F_NTUPLE_BIT,		/* N-tuple filters supported */
- 	NETIF_F_RXHASH_BIT,		/* Receive hashing offload */
- 	NETIF_F_RXCSUM_BIT,		/* Receive checksumming offload */
-+	NETIF_F_RXCSUM_ENC_BIT,		/* Receive checksuming offload */
-+					/* for encapsulation */
- 	NETIF_F_NOCACHE_COPY_BIT,	/* Use no-cache copyfromuser */
- 	NETIF_F_LOOPBACK_BIT,		/* Enable loopback */
- 	NETIF_F_RXFCS_BIT,		/* Append FCS to skb pkt data */
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index f2af494..4b9b50b 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -379,6 +379,9 @@ typedef unsigned char *sk_buff_data_t;
-  *	@transport_header: Transport layer header
-  *	@network_header: Network layer header
-  *	@mac_header: Link layer header
-+ *	@inner_transport_header: Inner transport layer header (encapsulation)
-+ *	@inner_network_header: Network layer header (encapsulation)
-+ *	@inner_mac_header: Link layer header (encapsulation)
-  *	@tail: Tail pointer
-  *	@end: End pointer
-  *	@head: Head of buffer
-@@ -489,6 +492,9 @@ struct sk_buff {
- 	sk_buff_data_t		transport_header;
- 	sk_buff_data_t		network_header;
- 	sk_buff_data_t		mac_header;
-+	sk_buff_data_t		inner_transport_header;
-+	sk_buff_data_t		inner_network_header;
-+	sk_buff_data_t		inner_mac_header;
- 	/* These elements must be at the end, see alloc_skb() for details.  */
- 	sk_buff_data_t		tail;
- 	sk_buff_data_t		end;
-@@ -1441,6 +1447,63 @@ static inline void skb_reset_mac_len(struct sk_buff *skb)
- }
- 
- #ifdef NET_SKBUFF_DATA_USES_OFFSET
-+static inline unsigned char *skb_inner_transport_header(const struct sk_buff
-+							*skb)
-+{
-+	return skb->head + skb->inner_transport_header;
-+}
-+
-+static inline void skb_reset_inner_transport_header(struct sk_buff *skb)
-+{
-+	skb->inner_transport_header = skb->data - skb->head;
-+}
-+
-+static inline void skb_set_inner_transport_header(struct sk_buff *skb,
-+						   const int offset)
-+{
-+	skb_reset_inner_transport_header(skb);
-+	skb->inner_transport_header += offset;
-+}
-+
-+static inline unsigned char *skb_inner_network_header(const struct sk_buff *skb)
-+{
-+	return skb->head + skb->inner_network_header;
-+}
-+
-+static inline void skb_reset_inner_network_header(struct sk_buff *skb)
-+{
-+	skb->inner_network_header = skb->data - skb->head;
-+}
-+
-+static inline void skb_set_inner_network_header(struct sk_buff *skb,
-+						const int offset)
-+{
-+	skb_reset_inner_network_header(skb);
-+	skb->inner_network_header += offset;
-+}
-+
-+static inline unsigned char *skb_inner_mac_header(const struct sk_buff *skb)
-+{
-+	return skb->head + skb->inner_mac_header;
-+}
-+
-+static inline int skb_inner_mac_header_was_set(const struct sk_buff *skb)
-+{
-+	return skb->inner_mac_header != ~0U;
-+}
-+
-+static inline void skb_reset_inner_mac_header(struct sk_buff *skb)
-+{
-+	skb->inner_mac_header = skb->data - skb->head;
-+}
-+
-+static inline void skb_set_inner_mac_header(struct sk_buff *skb,
-+					    const int offset)
-+{
-+	skb_reset_inner_mac_header(skb);
-+	skb->inner_mac_header += offset;
-+}
-+
- static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
- {
- 	return skb->head + skb->transport_header;
-@@ -1496,7 +1559,58 @@ static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
- }
- 
- #else /* NET_SKBUFF_DATA_USES_OFFSET */
-+static inline unsigned char *skb_inner_transport_header(const struct sk_buff
-+							*skb)
-+{
-+	return skb->inner_transport_header;
-+}
-+
-+static inline void skb_reset_inner_transport_header(struct sk_buff *skb)
-+{
-+	skb->inner_transport_header = skb->data;
-+}
-+
-+static inline void skb_set_inner_transport_header(struct sk_buff *skb,
-+						   const int offset)
-+{
-+	skb->inner_transport_header = skb->data + offset;
-+}
-+
-+static inline unsigned char *skb_inner_network_header(const struct sk_buff *skb)
-+{
-+	return skb->inner_network_header;
-+}
-+
-+static inline void skb_reset_inner_network_header(struct sk_buff *skb)
-+{
-+	skb->inner_network_header = skb->data;
-+}
-+
-+static inline void skb_set_inner_network_header(struct sk_buff *skb,
-+						const int offset)
-+{
-+	skb->inner_network_header = skb->data + offset;
-+}
-+
-+static inline unsigned char *skb_inner_mac_header(const struct sk_buff *skb)
-+{
-+	return skb->inner_mac_header;
-+}
-+
-+static inline int skb_inner_mac_header_was_set(const struct sk_buff *skb)
-+{
-+	return skb->inner_mac_header != NULL;
-+}
- 
-+static inline void skb_reset_mac_header(struct sk_buff *skb)
-+{
-+	skb->inner_mac_header = skb->data;
-+}
-+
-+static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
-+{
-+	skb->inner_mac_header = skb->data + offset;
-+}
- static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
- {
- 	return skb->transport_header;
-diff --git a/include/linux/udp.h b/include/linux/udp.h
-index 0b67d77..bd49c56 100644
---- a/include/linux/udp.h
-+++ b/include/linux/udp.h
-@@ -27,6 +27,11 @@ static inline struct udphdr *udp_hdr(const struct sk_buff *skb)
- 	return (struct udphdr *)skb_transport_header(skb);
- }
- 
-+static inline struct udphdr *udp_inner_hdr(const struct sk_buff *skb)
-+{
-+	return (struct udphdr *)skb_inner_transport_header(skb);
-+}
-+
- #define UDP_HTABLE_SIZE_MIN		(CONFIG_BASE_SMALL ? 128 : 256)
- 
- static inline int udp_hashfn(struct net *net, unsigned num, unsigned mask)
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 4d64cc2..11f928d 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -58,6 +58,7 @@ static const char netdev_features_strings[NETDEV_FEATURE_COUNT][ETH_GSTRING_LEN]
- 	[NETIF_F_IP_CSUM_BIT] =          "tx-checksum-ipv4",
- 	[NETIF_F_HW_CSUM_BIT] =          "tx-checksum-ip-generic",
- 	[NETIF_F_IPV6_CSUM_BIT] =        "tx-checksum-ipv6",
-+	[NETIF_F_HW_CSUM_ENC_BIT] =	 "tx-checksum-enc-offload",
- 	[NETIF_F_HIGHDMA_BIT] =          "highdma",
- 	[NETIF_F_FRAGLIST_BIT] =         "tx-scatter-gather-fraglist",
- 	[NETIF_F_HW_VLAN_TX_BIT] =       "tx-vlan-hw-insert",
-@@ -84,6 +85,7 @@ static const char netdev_features_strings[NETDEV_FEATURE_COUNT][ETH_GSTRING_LEN]
- 	[NETIF_F_NTUPLE_BIT] =           "rx-ntuple-filter",
- 	[NETIF_F_RXHASH_BIT] =           "rx-hashing",
- 	[NETIF_F_RXCSUM_BIT] =           "rx-checksum",
-+	[NETIF_F_RXCSUM_ENC_BIT] =	 "rx-enc-checksum-offload",
- 	[NETIF_F_NOCACHE_COPY_BIT] =     "tx-nocache-copy",
- 	[NETIF_F_LOOPBACK_BIT] =         "loopback",
- 	[NETIF_F_RXFCS_BIT] =            "rx-fcs",
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index d9addea..4be312b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -259,6 +259,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	skb->end = skb->tail + size;
- #ifdef NET_SKBUFF_DATA_USES_OFFSET
- 	skb->mac_header = ~0U;
-+	skb->inner_mac_header = ~0U;
- #endif
- 
- 	/* make sure we initialize shinfo sequentially */
-@@ -327,6 +328,7 @@ struct sk_buff *build_skb(void *data, unsigned int frag_size)
- 	skb->end = skb->tail + size;
- #ifdef NET_SKBUFF_DATA_USES_OFFSET
- 	skb->mac_header = ~0U;
-+	skb->inner_mac_header = ~0U;
- #endif
- 
- 	/* make sure we initialize shinfo sequentially */
-@@ -682,6 +684,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	new->transport_header	= old->transport_header;
- 	new->network_header	= old->network_header;
- 	new->mac_header		= old->mac_header;
-+	new->inner_transport_header = old->inner_transport_header;
-+	new->inner_network_header = old->inner_transport_header;
-+	new->inner_mac_header = old->inner_mac_header;
- 	skb_dst_copy(new, old);
- 	new->rxhash		= old->rxhash;
- 	new->ooo_okay		= old->ooo_okay;
-@@ -892,6 +897,10 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	new->network_header   += offset;
- 	if (skb_mac_header_was_set(new))
- 		new->mac_header	      += offset;
-+	new->inner_transport_header += offset;
-+	new->inner_network_header   += offset;
-+	if (skb_inner_mac_header_was_set(new))
-+		new->inner_mac_header += offset;
- #endif
- 	skb_shinfo(new)->gso_size = skb_shinfo(old)->gso_size;
- 	skb_shinfo(new)->gso_segs = skb_shinfo(old)->gso_segs;
-@@ -1089,6 +1098,10 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 	skb->network_header   += off;
- 	if (skb_mac_header_was_set(skb))
- 		skb->mac_header += off;
-+	skb->inner_transport_header += off;
-+	skb->inner_network_header += off;
-+	if (skb_inner_mac_header_was_set(skb))
-+		skb->inner_mac_header += off;
- 	/* Only adjust this if it actually is csum_start rather than csum */
- 	if (skb->ip_summed == CHECKSUM_PARTIAL)
- 		skb->csum_start += nhead;
-@@ -1188,6 +1201,10 @@ struct sk_buff *skb_copy_expand(const struct sk_buff *skb,
- 	n->network_header   += off;
- 	if (skb_mac_header_was_set(skb))
- 		n->mac_header += off;
-+	n->inner_transport_header += off;
-+	n->inner_network_header	   += off;
-+	if (skb_inner_mac_header_was_set(skb))
-+		n->inner_mac_header += off;
- #endif
- 
- 	return n;
+
+They're similar, yes, but aoecmd.c:ata_ident_fixstring performs the byte swapping 
+in place, avoiding the need for any on-stack or other memory allocation.  The code
+is pretty readable now as a simple in-place byte swap, and I'm concerned that the
+extra mechanics of buffer allocation, any allocation failure handling, and memmov-ing 
+the results back into the id array wouldn't simplify the code if aoecmd.c tried to use 
+ata_id_string as it is.
+
 -- 
-1.7.11.7
+  Ed Cashin
+  ecashin@coraid.com
+
 
