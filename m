@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab2KIXkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 18:40:13 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47948 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab2KIXkL (ORCPT
+	id S1756038Ab2KIXkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 18:40:31 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35484 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab2KIXk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 18:40:11 -0500
-From: Jeff Cook <jeff@deserettechnology.com>
-To: linux-bluetooth@vger.kernel.org, marcel@holtmann.org, gustavo@padovan.org,
-        johan.hedberg@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jeff Cook <jeff@deserettechnology.com>
-Subject: [PATCHv2] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
-Date: Fri,  9 Nov 2012 16:39:48 -0700
-Message-Id: <1352504388-28965-1-git-send-email-jeff@deserettechnology.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <5087B517.9090703@deserettechnology.com>
-References: <5087B517.9090703@deserettechnology.com>
+	Fri, 9 Nov 2012 18:40:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <509D9089.7020407@wwwdotorg.org>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com>
+ <509D9089.7020407@wwwdotorg.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 9 Nov 2012 23:40:06 +0000
+X-Google-Sender-Auth: TSgPNavGhWyQisyEwX7kOg056g8
+Message-ID: <CACxGe6vBYOoK9JdMV-ppUMuugmXcSfXYnh=-jCZP99BTkqKswg@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vendor-specific ID for BCM20702A0.
-Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
-Deluxe.
+On Fri, Nov 9, 2012 at 11:23 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/09/2012 09:28 AM, Grant Likely wrote:
+>> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> ...
+>>> I do rather suspect this use-case is quite common. NVIDIA certainly has
+>>> a bunch of development boards with pluggable
+>>> PMIC/audio/WiFi/display/..., and I believe there's some ability to
+>>> re-use the pluggable components with a variety of base-boards.
+>>>
+>>> Given people within NVIDIA started talking about this recently, I asked
+>>> them to enumerate all the boards we have that support pluggable
+>>> components, and how common it is that some boards support being plugged
+>>> into different main boards. I don't know when that enumeration will
+>>> complete (or even start) but hopefully I can provide some feedback on
+>>> how common the use-case is for us once it's done.
+>>
+>> From your perspective, is it important to use the exact same .dtb
+>> overlays for those add-on boards, or is it okay to have a separate
+>> build of the overlay for each base tree?
+>
+> I certainly think it'd be extremely beneficial to use the exact same
+> child board .dtb with arbitrary base boards.
+>
+> Consider something like the Arduino shield connector format, which I
+> /believe/ has been re-used across a wide variety of Arduino boards and
+> other compatible or imitation boards. Now consider a vendor of an
+> Arduino shield. The shield vendor probably wants to publish a single
+> .dtb file that works for users irrespective of which board they're using
+> it with.
+>
+> (Well, I'm not sure that Arduino can run Linux; perhaps that's why you
+> picked BeagleBone capes for your document!)
 
-T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0b05 ProdID=17b5 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=94DBC98AC113
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+Correct, the Arduino is only an AVR with a tiny amount of ram. No Linux there.
 
-Signed-off-by: Jeff Cook <jeff@deserettechnology.com>
----
- drivers/bluetooth/btusb.c | 1 +
- 1 file changed, 1 insertion(+)
+However, Arduino shields are a good example of a use case. I think
+there are even some Arduino shield compatible Linux boards out there.
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index ee82f2f..a1d4ede 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0c10, 0x0000) },
- 
- 	/* Broadcom BCM20702A0 */
-+	{ USB_DEVICE(0x0b05, 0x17b5) },
- 	{ USB_DEVICE(0x04ca, 0x2003) },
- 	{ USB_DEVICE(0x0489, 0xe042) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
+> I suppose it would be acceptable for the shield vendor to ship the .dts
+> file rather than the .dtb, and hence need to build the shield .dtb for a
+> specific base board.
+
+That would be better I think than relying on a binary. However, some
+though needs to go into how to handle base boards that /aren't/ mostly
+equivalent. Such as if they have a different GPIO controller. It may
+be that for gpios and irqs, the solution really is to use
+interrupt-map and create a gpio-map. i2c, spi and others still would
+need to become children of the correct bus.
+
+> However, I think the process for an end-user needs to be as simple as
+> "drop this .dts/.dtb file into some standard directory", and I imagine
+> it'll be much easier for distros/... to make that process work if
+> they're dealing with a .dtb that they can just blast into the kernel's
+> firmware loader interface, rather than having to also locate the
+> base-board .dts/.dtb file, and run dtc and/or other tools on both .dts
+> files together.
+
+The base-board .dts is unnecessary. dtc is fully capable of using
+/proc/device-tree as the source material.  :-)
+
+g.
+
 -- 
-
-Hi Gustavo,
-
-Here is the rebased patch. Sorry for the delay getting this out.
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
