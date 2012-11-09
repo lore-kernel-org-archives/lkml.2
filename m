@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2KION4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 09:13:56 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63890 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2KIONz (ORCPT
+	id S1753704Ab2KIOPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 09:15:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35023 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab2KIOPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 09:13:55 -0500
-Message-ID: <509D0F86.30607@gmail.com>
-Date: Fri, 09 Nov 2012 09:13:26 -0500
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 03/16] mm: check rb_subtree_gap correctness
-References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-4-git-send-email-walken@google.com>
-In-Reply-To: <1352155633-8648-4-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 09:15:10 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com
+Subject: [ANNOUNCE] Extended stable support for Linux 3.5 (linux-3.5.y-ext.z)
+Date: Fri,  9 Nov 2012 12:15:04 -0200
+Message-Id: <1352470505-6097-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 05:47 PM, Michel Lespinasse wrote:
-> When CONFIG_DEBUG_VM_RB is enabled, check that rb_subtree_gap is
-> correctly set for every vma and that mm->highest_vm_end is also correct.
-> 
-> Also add an explicit 'bug' variable to track if browse_rb() detected any
-> invalid condition.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> 
-> ---
+As everyone may be aware, linux 3.5.y isn't anymore a supported stable
+kernel tree. Also, it seems not many distributions picked 3.5 as a
+kernel version for their releases, looks like due to timing. Anyway, as
+Ubuntu is using it in its 12.10 release (codename "Quantal Quetzal"),
+we (as in Ubuntu kernel maintainers) are going forward and announcing
+that we will provide extended stable support for it. I'm the person
+going to maintain this effort at first. This is a 3rd party effort from
+us, it will be for now a fork of latest 3.5.7 stable release, maintained
+on our infra-structure.
 
-Hi all,
+The tree providing the extended stable updates is located at
+git://kernel.ubuntu.com/ubuntu/linux.git, which is where we will
+maintain the patches and releases of this extended support. The page at
+http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable describes the stucture
+and other details. Worth to note is that we plan to provide this
+extended support only until March 31st, 2014
 
-While fuzzing with trinity inside a KVM tools (lkvm) guest, using today's -next
-kernel, I'm getting these:
+I plan to do a similar workflow as to what is done today with current
+stable releases. I'll send email notifications to everyone involved in
+each patch when it's added to 3.5 queue, and post the patches for review
+for each release cycle. Just versioning will be slightly different,
+every version is planned to be tagged as v3.5.7-ext.<release number>,
+ext meaning extended, 3.5.7 was the last stable kernel in 3.5 kernel and
+should remain constant.
 
+We welcome any feedback and contribution to this effort, and help in
+reviewing or any request of patches to be added, keeping in mind that it
+must follow the official upstream stable kernel rules as usual. Next
+week I plan to post the first set of patches for review for a first
+release.
 
-[  117.007714] free gap 7fba0dd1c000, correct 7fba0dcfb000
-[  117.019773] map_count 750 rb -1
-[  117.028362] ------------[ cut here ]------------
-[  117.029813] kernel BUG at mm/mmap.c:439!
-[  117.031024] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  117.032933] Dumping ftrace buffer:
-[  117.033972]    (ftrace buffer empty)
-[  117.035085] CPU 4
-[  117.035676] Pid: 6859, comm: trinity-child46 Tainted: G        W    3.7.0-rc4-next-20121109-sasha-00013-g9407f3c #124
-[  117.038217] RIP: 0010:[<ffffffff81236687>]  [<ffffffff81236687>] validate_mm+0x297/0x2c0
-[  117.041056] RSP: 0018:ffff880016a4fdf8  EFLAGS: 00010296
-[  117.041056] RAX: 0000000000000013 RBX: 00000000ffffffff RCX: 0000000000000006
-[  117.041056] RDX: 0000000000005270 RSI: ffff880024120910 RDI: 0000000000000286
-[  117.052131] RBP: ffff880016a4fe48 R08: 0000000000000000 R09: 0000000000000000
-[  117.052131] R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000002ee
-[  117.052131] R13: 00007fffea1fc000 R14: ffff88002412c000 R15: 0000000000000000
-[  117.052131] FS:  00007fba129db700(0000) GS:ffff880063600000(0000) knlGS:0000000000000000
-[  117.052131] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  117.052131] CR2: 0000000003323288 CR3: 00000000169b2000 CR4: 00000000000406e0
-[  117.052131] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  117.052131] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  117.052131] Process trinity-child46 (pid: 6859, threadinfo ffff880016a4e000, task ffff880024120000)
-[  117.052131] Stack:
-[  117.052131]  ffffffff8489e201 ffffffff81235aa0 ffff88000885cac8 0000000100000000
-[  117.052131]  ffffffff812361b9 ffff88002412c000 ffff88000885cac8 ffff88000885cdc8
-[  117.052131]  ffff88000885cdd0 ffff88002412c000 ffff880016a4fe98 ffffffff812367b4
-[  117.052131] Call Trace:
-[  117.052131]  [<ffffffff81235aa0>] ? vma_compute_subtree_gap+0x40/0x40
-[  117.052131]  [<ffffffff812361b9>] ? vma_gap_update+0x19/0x30
-[  117.052131]  [<ffffffff812367b4>] vma_link+0x94/0xe0
-[  117.052131]  [<ffffffff812386c4>] do_brk+0x2c4/0x380
-[  117.052131]  [<ffffffff812387bf>] ? sys_brk+0x3f/0x190
-[  117.052131]  [<ffffffff812388ce>] sys_brk+0x14e/0x190
-[  117.052131]  [<ffffffff83be2618>] tracesys+0xe1/0xe6
-[  117.052131] Code: d8 41 8b 76 60 39 de 74 1b 89 da 48 c7 c7 c6 d9 89 84 31 c0 e8 01 76 94 02 eb 10 66 0f 1f 84 00 00 00 00 00
-8b 45 c8 85 c0 74 18 <0f> 0b 4c 8d 48 e0 48 8b 70 e0 31 db c7 45 cc 00 00 00 00 e9 f4
-[  117.052131] RIP  [<ffffffff81236687>] validate_mm+0x297/0x2c0
-[  117.052131]  RSP <ffff880016a4fdf8>
-[  117.136092] ---[ end trace 5ce250e0bf6d040c ]---
-
-Note that they are very easy to reproduce.
-
-Also, I see that lots of the code there has a local variable named 'bug' thats tracking
-whether we should BUG() later on. Why does it work that way and the BUG() isn't immediate?
-
-
-Thanks,
-Sasha
+thanks,
+- Herton
