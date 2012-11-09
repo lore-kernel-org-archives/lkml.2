@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2KIQUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:20:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37550 "EHLO mx1.redhat.com"
+	id S1754432Ab2KIQXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:23:39 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:33095 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab2KIQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:20:42 -0500
-Date: Fri, 9 Nov 2012 17:20:12 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v4 -tip 3/3] AHCI: Support multiple MSIs
-Message-ID: <20121109162012.GB31918@dhcp-26-207.brq.redhat.com>
-References: <cover.1349517905.git.agordeev@redhat.com>
- <b9a66434759a77b2fa870565ab9708fc286d7368.1349517905.git.agordeev@redhat.com>
- <20121025090957.GA7424@gmail.com>
- <20121025092555.GF16350@dhcp-26-207.brq.redhat.com>
- <20121025093626.GG16350@dhcp-26-207.brq.redhat.com>
+	id S1753398Ab2KIQXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:23:38 -0500
+Date: Fri, 9 Nov 2012 16:23:27 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 3/7] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20121109162327.GT3886@csn.ul.ie>
+References: <cover.1352256081.git.aquini@redhat.com>
+ <4ea10ef1eb1544e12524c8ca7df20cf621395463.1352256087.git.aquini@redhat.com>
+ <20121109121133.GP3886@csn.ul.ie>
+ <20121109145321.GB4308@optiplex.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121025093626.GG16350@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20121109145321.GB4308@optiplex.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 11:36:26AM +0200, Alexander Gordeev wrote:
-> On Thu, Oct 25, 2012 at 11:25:55AM +0200, Alexander Gordeev wrote:
-> > On Thu, Oct 25, 2012 at 11:09:57AM +0200, Ingo Molnar wrote:
-> > > Has Jeff acked this patch?
+On Fri, Nov 09, 2012 at 12:53:22PM -0200, Rafael Aquini wrote:
+> > <SNIP>
+> > If you get the barrier issue sorted out then feel free to add
 > > 
-> > Yep,
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/00795.html
+> > Acked-by: Mel Gorman <mel@csn.ul.ie>
+> > 
 > 
-> Ah.. sorry - Jeff acked v3, not the recent one.
-> Jeff, would you keep your ack for this patch?
+> I believe we can drop the barriers stuff, as the locking scheme is now provinding
+> enough protection against collisions between isolation page scanning and
+> balloon_leak() page release (the major concern that has lead to the barriers
+> originally)
+> 
+> I'll refactor this patch with no barriers and ensure a better commentary on the
+> aforementioned locking scheme and resubmit, if it's OK to everyone
+> 
 
-Hi Jeff,
-
-Could you please review this patch?
+Sounds good to me. When they are dropped again feel free to stick my ack
+on for the compaction and migration parts. The virtio aspects are up to
+someone else :)
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Mel Gorman
+SUSE Labs
