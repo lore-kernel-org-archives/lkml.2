@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2KILjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:39:05 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50416 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2KILjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:39:01 -0500
+	id S1752779Ab2KILj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:39:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42558 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab2KILjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 06:39:25 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1352460945.4387.7.camel@mattotaupa>
+References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com> <1352460945.4387.7.camel@mattotaupa>
 MIME-Version: 1.0
-In-Reply-To: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
-References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
-Date: Fri, 9 Nov 2012 19:39:00 +0800
-Message-ID: <CAJLyvQwVZ1SHnrY9M9C-JgEvoz=n5-3RaDvd-vPy1-gyfmxmUg@mail.gmail.com>
-Subject: Re: [PATCH V5 0/2] Upstream ST-Ericsson thermal driver
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: linux-acpi@vger.kernel.org, rui.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        amit.kachhap@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 09 Nov 2012 12:39:05 +0100
+To: Paul Menzel <pm.debian@googlemail.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>
+CC: Linux Raid <linux-raid@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
+Message-ID: <ead47490-afc3-48f1-871f-ba421eac3dd5@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui Zhang,
-Please have a look at this patch set.
-Since the previous 1/5, 2/5, 3/5 have been accepted, I'd like to send
-these last two updated patches with Reviewed-by added in this new
-thread.
+Sorry, we cannot share those at this time since the hardwarenis not yet released.
 
-Thanks.
+Paul Menzel <pm.debian@googlemail.com> wrote:
 
-On 9 November 2012 19:29, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>Dear Jim,
 >
-> V4->V5 Changes:
 >
-> In patch "Thermal: Add ST-Ericsson DB8500 thermal driver":
->  - use flush_work instead of flush_work_sync since the later is deprecated now.
->  - parameter trip_points of db8500_thermal_match_cdev is renamed to trip_point;
->  - re-order oprerations in function db8500_thermal_update_config;
+>Am Donnerstag, den 08.11.2012, 13:47 -0800 schrieb Jim Kukunas:
+>> Optimize RAID6 recovery functions to take advantage of
+>> the 256-bit YMM integer instructions introduced in AVX2.
 >
-> hongbo.zhang (2):
->   Thermal: Add ST-Ericsson DB8500 thermal driver.
->   Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
+>in my experiencing optimizations always have to be back up by
+>benchmarks. Could you add those to the commit message please.
 >
->  .../devicetree/bindings/thermal/db8500-thermal.txt |  44 ++
->  arch/arm/boot/dts/dbx5x0.dtsi                      |  14 +
->  arch/arm/boot/dts/snowball.dts                     |  31 ++
->  arch/arm/configs/u8500_defconfig                   |   2 +
->  arch/arm/mach-ux500/board-mop500.c                 |  64 +++
->  drivers/thermal/Kconfig                            |  20 +
->  drivers/thermal/Makefile                           |   2 +
->  drivers/thermal/db8500_cpufreq_cooling.c           | 108 +++++
->  drivers/thermal/db8500_thermal.c                   | 531 +++++++++++++++++++++
->  include/linux/platform_data/db8500_thermal.h       |  38 ++
->  10 files changed, 854 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
->  create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
->  create mode 100644 drivers/thermal/db8500_thermal.c
->  create mode 100644 include/linux/platform_data/db8500_thermal.h
+>> Signed-off-by: Jim Kukunas <james.t.kukunas@linux.intel.com>
 >
-> --
-> 1.7.11.3
+>[…]
 >
+>
+>Thanks,
+>
+>Paul
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
