@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2KIQgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 11:36:13 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36633 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab2KIQgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 11:36:09 -0500
+	id S1754559Ab2KIQh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 11:37:26 -0500
+Received: from mga03.intel.com ([143.182.124.21]:63517 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754215Ab2KIQhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 11:37:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
+   d="scan'208";a="166427851"
+Date: Sat, 10 Nov 2012 00:36:25 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
+        Azat Khuzhin <dohardgopro@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Zheng, Lv" <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: ACPI errors with 3.7-rc3
+Message-ID: <20121109163625.GA10171@feng-snb>
+References: <20121031014527.GA2984@kroah.com>
+ <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
+ <20121106124826.GA21806@kroah.com>
+ <41011456.LYWJPCi9Xt@vostro.rjw.lan>
+ <20121109092851.GA9179@feng-snb>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E346BBFC97@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6v6zHcq=99JVvhNBe8DuWhyaZ_ojFai9=J2Yuu2TZw1MQ@mail.gmail.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <3455360.Z6cZSC3BtR@vostro.rjw.lan> <CAErSpo5xEO4M_Fb0dJ6w7Qxck-0RcKKwQjKj1QZgFxhof7X5Rw@mail.gmail.com>
- <1523215.Pon1eKPQDb@vostro.rjw.lan> <20121107095608.GX24532@intel.com>
- <CAErSpo5My6+ypp9zsxR8vh8k1px0otOWfAcacWaLNs2xjsc7UA@mail.gmail.com>
- <20121108200445.GC16012@intel.com> <CAErSpo7WT21rZ10vx9A4d8VtVaJB7FLeJqVAxKmZrZDy01FPZQ@mail.gmail.com>
- <CACxGe6v6zHcq=99JVvhNBe8DuWhyaZ_ojFai9=J2Yuu2TZw1MQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Nov 2012 09:35:46 -0700
-Message-ID: <CAErSpo4V-0Tnaf__fKUHM_69tBvfLySWzaoCWha9gimx0va1-w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346BBFC97@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 9, 2012 at 8:45 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, Nov 9, 2012 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> [+cc Greg, Peter, Tony since they acked the original patch [1]]
->>
->> On Thu, Nov 8, 2012 at 1:04 PM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->>> On Thu, Nov 08, 2012 at 12:32:25PM -0700, Bjorn Helgaas wrote:
->>>> Struct device_driver is a generic structure, so it seems strange to
->>>> have to include non-generic things like of_device_id and now
->>>> acpi_match_table there.
->>>
->>> Yes, but in a sense the DT and ACPI are "generic". So that they are used to
->>> describe the configuration of a machine.
->>
->> What I meant by "generic" was "useful across all architectures."  The
->> new acpi_match_table and acpi_handle fields [1] are not generic in
->> that sense because they're present on all architectures but used only
->> on x86 and ia64.  The existing of_match_table and of_node are
->> similarly unused on many architectures.  This doesn't seem like a
->> scalable strategy to me.  Are we going to add a pnpbios_node for x86
->> PNPBIOS machines without ACPI, a pdc_hpa for parisc machines with PDC,
->> etc.?
->>
->> [1] https://patchwork.kernel.org/patch/1677221/
->
-> Ultimately yes, I think that is what we want to do,
+On Fri, Nov 09, 2012 at 10:30:43PM +0800, Moore, Robert wrote:
+> The ACPI Global Lock is in fact intended to provide exclusion between the BIOS and the OS.
+> Bob
 
-Just to be clear, you think we *should* add things like pnpbios_node,
-pdc_hpa, etc., to struct device, one field for every scheme of telling
-the OS about non-enumerable devices, where only one of the N fields is
-used on any given machine?  That seems surprising to me, but maybe I
-just need to be educated :)
+Thanks for the info.
 
-> but there is first
-> the non-trivial problem to solve of figuring out how ACPI/DT/whatever
-> data maps into what the driver expects. For example, say a device uses
-> two GPIOs (A & B) and we have a generic get_gpio(int index) function
-> that works for both ACPI and DT. But what if the ACPI binding has the
-> gpios in the order A,B and DT orders them B,A? I do want to coordinate
-> between the DT and ACPI camps to avoid those situations as much as
-> possible, but they will happen. When they do the driver will still
-> need firmware specific data. It doesn't make any sense to put that
-> stuff outside the driver because only that specific driver needs the
-> extra information.
+And per my check, most of ACPI FW don't implement this lock, say
+after driver probe, the ec->global_lock will be 0.
 
-Sure.  This seems like just a special case of "drivers need a way to
-access the underlying ACPI/DT/whatever-specific functionality," e.g.,
+- Feng
 
-    gpio = get_gpio(dev, dev_is_acpi(dev) ? 1 : 0);
+> 
+> 
+> > -----Original Message-----
+> > From: Tang, Feng
+> > Sent: Friday, November 09, 2012 1:29 AM
+> > To: Rafael J. Wysocki
+> > Cc: Greg KH; Azat Khuzhin; linux-acpi@vger.kernel.org; Linux Kernel
+> > Mailing List; Zheng, Lv; Len Brown; Moore, Robert
+> > Subject: Re: ACPI errors with 3.7-rc3
+> > 
+> > On Thu, Nov 08, 2012 at 05:49:40AM +0800, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
+> > > > On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
+> > > > > I'v also have such errors on my macbook pro.
+> > > > >
+> > > > > $ dmesg | tail
+> > > > > [17056.008564] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.011194] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.013793] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST
+> > > > > (20120711/battery-464) [17056.511373] ACPI: EC: input buffer is
+> > > > > not empty, aborting transaction [17056.512672] ACPI Exception:
+> > > > > AE_TIME, Returned by Handler for [EmbeddedControl]
+> > > > > (20120711/evregion-501) [17056.515256] ACPI Error: Method
+> > > > > parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node
+> > > > > ffff88026547ea10), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.517886] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.520479] ACPI Error: Method parse/execution failed
+> > > > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+> > > > > (20120711/psparse-536)
+> > > > > [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST
+> > > > > (20120711/battery-464)
+> > > >
+> > > > I'm seeing this again right now.  I'm wondering if it's because I'm
+> > > > running on battery power at the moment:
+> > > >
+> > > > [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for
+> > > > [EmbeddedControl] (20120913/evregion-501) [41694.309282] ACPI Error:
+> > > > Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node
+> > > > ffff88045cc64618), AE_TIME (20120913/psparse-536) [41694.309300]
+> > > > ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node
+> > > > ffff88045cc64988), AE_TIME (20120913/psparse-536) [41694.309310]
+> > > > ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node
+> > > > ffff88045cc648c0), AE_TIME (20120913/psparse-536) [41694.309324]
+> > > > ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
+> > > > [41694.809093] ACPI: EC: input buffer is not empty, aborting
+> > > > transaction
+> > > >
+> > > > ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/
+> > > > so that's not the issue here.
+> > > >
+> > > > > And also loadavg is too high ~ 10
+> > > > > While there is no process that load CPU up to 100% or like that.
+> > > > > I think that this because of processes that is done in kernel space.
+> > > > > (basically that one who write such errors)
+> > > > >
+> > > > > $ uname -a
+> > > > > Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
+> > > > > 12:39:03 UTC 2012 x86_64 GNU/Linux
+> > > >
+> > > > Ah, ok, that means it's not something new in 3.7-rc, so maybe it's
+> > > > just never worked properly for this hardware :)
+> > > >
+> > > > So it's not a regression, just an ACPI issue, any ACPI developer
+> > > > have an idea about this?
+> > >
+> > > Can you please send the output of acpidump from the affected machine(s)?
+> > 
+> > I doubt this problem is sometimes inevitable for some machines, because
+> > AFAIK most modern machines have the race problem for EC HW controller, as
+> > both OS side and the BIOS may access the EC HW at the same time
+> > without any race control.
+> > 
+> > For this case, usually the battery and thermal modules (which may be
+> > controlled through EC) are always monitored by BIOS, when OS also
+> > frequently visit them too, the EC's own state machine may be broken and
+> > not responsive due to the race, then cause the timeout error.
+> > And how severe the problem will be depends on the EC HW, the quality of
+> > BIOS code and OS/driver code.
+> > 
+> > Myself have seen the similar "ACPI: EC: input buffer is not empty,
+> > aborting transaction" error message on one laptop when its EC is busy
+> > visited by OS.
+> > 
+> > btw, in EC driver I see a "ec->global_lock", don't know if it was designed
+> > to control the race between OS and BIOS.
+> > 
+> > Thanks,
+> > Feng
