@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2KILC7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:02:59 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45600 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab2KILC5 (ORCPT
+	id S1752604Ab2KILDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:03:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54679 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752115Ab2KILDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:02:57 -0500
-Date: Fri, 9 Nov 2012 11:08:07 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: jongman.heo@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to debug system freeze  (not detected by kernel debug
- options)
-Message-ID: <20121109110807.3e09fcfc@pyramind.ukuu.org.uk>
-In-Reply-To: <574089.21861352427573311.JavaMail.weblogic@epml01>
-References: <574089.21861352427573311.JavaMail.weblogic@epml01>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 06:03:31 -0500
+Date: Fri, 9 Nov 2012 11:03:29 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: helight <helight@126.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com
+Subject: Re: [PATCH] fix build waring: =?utf-8?Q?dr?=
+ =?utf-8?B?aXZlcnMvcmVndWxhdG9yL2NvcmUuYzogd2FybmluZzog4oCYdmFs4oCZIG1h?=
+ =?utf-8?Q?y?= be used uninitialized in this function [-Wuninitialized]
+Message-ID: <20121109110329.GA23807@opensource.wolfsonmicro.com>
+References: <73729ce5.abaa.13ae480da6d.Coremail.helight@126.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
+Content-Disposition: inline
+In-Reply-To: <73729ce5.abaa.13ae480da6d.Coremail.helight@126.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Nov 2012 02:19:33 +0000 (GMT)
-Jongman Heo <jongman.heo@samsung.com> wrote:
 
-> 
-> Dear kernel hackers,
-> 
-> I have a problem in SMP environment, in x86 platform (Intel Atom based embedded system)
-> 
-> In UP, there is no issue, but in SMP, system freezed in tens of minutes (or shorter), if I perform IO test with flash memory and HDD simultaneously (using dd).
-> 
-> I enabled relevant kernel debug options, like LOCKDEP, DETECT_SOFTLOCKUP, DETECT_HUNG_TASK, along with "nmi_watchdog=1".
-> (Yeah, this is somewhat old kernel, 2.6.35.14).
-> 
-> But no debug message is shown. (I had checked that NMI interrupt count correctly increase.).
-> 
-> Do you have any thoughts what can cause system freeze without being detected by LOCKDEP, watchdog, and other options.
+--x+6KMIRAuhnl3hBn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hardware problems, firmware bugs, PATA controller hangs, some
-classes of PCI device hang, certain cases where for some reason the crash
-is so bad the kernel can't get the message out even though it has detected
-the failure.
+On Fri, Nov 09, 2012 at 05:29:40PM +0800, helight wrote:
 
-A good starting point is probably "can you make two identical systems do
-it". If you've got a pair of boards which fed the same software set and
-have the same flash and hdd crash in the same way its unlikely to be a
-faulty board.
+> -   unsigned int val;
+>     int ret;
+> +   unsigned int val = 0;
 
-You may find it useful to make the NMI timeout handler trigger a directly
-detectable event via an I/O port if your platform has a buzzer or LED
-directly I/O mapped somewhere.
+This sort of change is really not at all helpful, we should be making
+sure that whatever path should be initialising the value but isn't does
+so, just initialising at declaration means that if the compiler has
+spotted a genuine error we won't fix it.
 
-Failing that the fastest approach may be to use hardware debugging aids
-if you have access to them for that platform.
+--x+6KMIRAuhnl3hBn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Alan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQnOLkAAoJELSic+t+oim9Ar8QAIeyg1TPSUeZiLVub9q5xP5n
+QdmrIdqNjM+LbSfzh2NJxv6A05KA9pO7xjW4Mv8+JSDSweRFGB8TQHR7t3KL2fLj
+nLPjD4E13pPA4gVFV1oCN6pxJKGsMlupiLJXMiRcklak2L3CNCRFqOkvt8qwF5ov
+XuC7FuuVwq45fHF5iqnjTQ7YRvo91OoJ3Y5s9VyuRGmVo6Ef22bGKYNYIDvG3tQJ
+th5RKHkeAgI2PuPI96c+P9TvArFPYjh9SMHBMVlOeS4jaISY/RKebv0ckmyYeilB
+XKuqINrfcEieSxUQMYc1p13IvxVI08HbB1pywzOb4Wmnc6c8HKYnEhDoMKFJLTLV
+ph/lpwHbdXq9ei5EWnizjsRWXkgTVlenvHHQoWvl3B/EdbIrd7TkDPZm3IkXpkYf
+tBZV7CxfGxD1hWmlQOM3+O4WTJG1mupehCjw0oEzx8N7jYvR0fjtvDpKfALrM17Q
+kFxNO6YPn34+p+T/GVJABEyYfo3e5zOGZhQp+Gzvyfs/S3m5XfpFl8jqjaxS5Y1O
+ODvbMR7C68IMcN5tVv191I+0HqRbrnkOj+Jnup+iKeITLE2ugCw77kuiyDFjZBzD
+2IrAAY2K4awaUwluW/KVCuLCDDsFiARwqGTKRq6PF9EPakh50d5nF1VCt3efoNvz
+5ZVjjJoQ3fgZa/xnOLwQ
+=9YG3
+-----END PGP SIGNATURE-----
+
+--x+6KMIRAuhnl3hBn--
