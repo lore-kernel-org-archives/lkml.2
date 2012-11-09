@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab2KIS3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:29:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab2KIS3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:29:43 -0500
-Date: Fri, 9 Nov 2012 19:30:26 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Amnon Shiloh <u3557@miso.sublimeip.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch_check_bp_in_kernelspace: fix the range check
-Message-ID: <20121109183026.GA2719@redhat.com>
-References: <20121109182943.GA2789@redhat.com>
+	id S1755182Ab2KISa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:30:59 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:45680 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab2KISax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:30:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109182943.GA2789@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1352467863-1371-1-git-send-email-dedekind1@gmail.com>
+References: <1352467863-1371-1-git-send-email-dedekind1@gmail.com>
+Date: Fri, 9 Nov 2012 10:30:52 -0800
+X-Google-Sender-Auth: l6Sl5S7VX3TiLo-AiwXIXulH1sQ
+Message-ID: <CAGXu5j+ODDgH63xyWwYOQFLLe7xsoqYaf5MxnjjPPVKSn7mtFQ@mail.gmail.com>
+Subject: Re: [PATCH] proc: pid/status: show all supplementary groups
+From: Kees Cook <keescook@chromium.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09, Oleg Nesterov wrote:
+On Fri, Nov 9, 2012 at 5:31 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 >
-> Note: TASK_SIZE doesn't look right at least on x86, I think it should
-> be replaced by TASK_SIZE_MAX.
-> ...
-> --- x/arch/x86/kernel/hw_breakpoint.c
-> +++ x/arch/x86/kernel/hw_breakpoint.c
-> @@ -200,7 +200,7 @@ int arch_check_bp_in_kernelspace(struct
->  	va = info->address;
->  	len = get_hbp_len(info->len);
+> We display a list of supplementary group for each process in the
+> /proc/<pid>/status. However, we show only the first 32 groups, not all of them.
 >
-> -	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
-> +	return (va >= TASK_SIZE) || ((va + len - 1) >= TASK_SIZE);
+> Although this is rare, but sometimes processes do have more than 32
+> supplementary groups, and this kernel limitation breaks user-space apps
+> that rely on the group list in /proc/<pid>/status.
+>
+> Number 32 comes from the internal NGROUPS_SMALL macro which defines the
+> length for the internal kernel "small" groups buffer. There is no apparent
+> reason to limit to this value.
+>
+> This patch removes the 32 groups printing limit.
+>
+> The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
+> which is currently set to 65536. And this is the maximum count of groups we
+> may possibly print.
+>
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-But actully I'd like to ask another question.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Can't we add the additional !in_gate_area_no_mm() check to allow
-the hw breakpoints in vsyscall?
+> Cc: stable@vger.kernel.org
+> ---
+>  fs/proc/array.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> NOTE: I consider this to be a bug which breaks user-space, so I add -stable.
 
-Quoting Amnon:
+I'm not sure if this will fly since it's been broken for a very long
+time, but it's a tiny change.
 
-	My service needs to catch the system-calls of its traced son.
-	Almost all system-calls are caught with PTRACE_SYSCALL, but not those
-	using the vsyscall page - especially "gettimeofday()" and "time()".
+-Kees
 
-	...
-
-	However, the code in "arch/x86/kernel/ptrace.c" forbids catching kernel
-	addresses.
-
-I tend to agree with Amnon...
-
-What do you think?
-
-Oleg.
-
+-- 
+Kees Cook
+Chrome OS Security
