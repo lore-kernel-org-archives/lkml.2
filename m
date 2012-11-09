@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2KIUND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 15:13:03 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:46739 "EHLO
+	id S1755717Ab2KIUNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 15:13:39 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:47321 "EHLO
 	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755369Ab2KIUNA (ORCPT
+	by vger.kernel.org with ESMTP id S1752655Ab2KIUNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 15:13:00 -0500
-Date: Fri, 9 Nov 2012 20:12:59 +0000
+	Fri, 9 Nov 2012 15:13:37 -0500
+Date: Fri, 9 Nov 2012 20:13:36 +0000
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@gentwo.org
 To: Shan Wei <shanwei88@gmail.com>
-cc: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
+cc: steffen.klassert@secunet.com,
         Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v3 4/9] net: openvswitch: use this_cpu_ptr per-cpu
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH v3 5/9] kernel: padata : use __this_cpu_read per-cpu
  helper
-In-Reply-To: <509C6895.6020300@gmail.com>
-Message-ID: <0000013ae6cdd300-d1d2139d-de84-4c27-99f1-e54592e23aba-000000@email.amazonses.com>
-References: <509C6895.6020300@gmail.com>
+In-Reply-To: <509C68A0.1070004@gmail.com>
+Message-ID: <0000013ae6ce639f-3b5554d1-c002-40b3-80e8-06fa8f1b7a1e-000000@email.amazonses.com>
+References: <509C68A0.1070004@gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,6 +29,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 9 Nov 2012, Shan Wei wrote:
 
-> just use more faster this_cpu_ptr instead of per_cpu_ptr(p, smp_processor_id());
+> For bottom halves off, __this_cpu_read is better.
 
 Reviewed-by: Christoph Lameter <cl@linux.com>
