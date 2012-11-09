@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2KIXYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 18:24:00 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41278 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab2KIXX5 (ORCPT
+	id S1754583Ab2KIX1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 18:27:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36778 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab2KIX1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 18:23:57 -0500
-Message-ID: <509D9089.7020407@wwwdotorg.org>
-Date: Fri, 09 Nov 2012 16:23:53 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 9 Nov 2012 18:27:22 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
+In-Reply-To: <509D8A62.1080102@wwwdotorg.org>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <20121109022624.GI23553@truffula.fritz.box> <509D8A62.1080102@wwwdotorg.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 9 Nov 2012 23:27:01 +0000
+X-Google-Sender-Auth: ighzWRAABjuwXzQ_J3LVrjWLjfY
+Message-ID: <CACxGe6tBxN6yZbAfqq9KW4j2Mf2hv2XRX2tb3K=udkKt-cBOHQ@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>, Kevin Hilman <khilman@ti.com>,
+        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
         linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
- to mach-omap2)
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com>
-In-Reply-To: <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 09:28 AM, Grant Likely wrote:
-> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-...
->> I do rather suspect this use-case is quite common. NVIDIA certainly has
->> a bunch of development boards with pluggable
->> PMIC/audio/WiFi/display/..., and I believe there's some ability to
->> re-use the pluggable components with a variety of base-boards.
+On Fri, Nov 9, 2012 at 10:57 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/08/2012 07:26 PM, David Gibson wrote:
+> ...
+>> I also think graft will handle most of your use cases, although as I
+>> said I don't fully understand the implications of some of them, so I
+>> could be wrong.  So, the actual insertion of the subtree is pretty
+>> trivial to implement.  phandles are the obvious other matter to be
+>> dealt with.  I haven't found the right thread where what you've
+>> envisaged so far is discussed, so here are things I can see:
 >>
->> Given people within NVIDIA started talking about this recently, I asked
->> them to enumerate all the boards we have that support pluggable
->> components, and how common it is that some boards support being plugged
->> into different main boards. I don't know when that enumeration will
->> complete (or even start) but hopefully I can provide some feedback on
->> how common the use-case is for us once it's done.
-> 
-> From your perspective, is it important to use the exact same .dtb
-> overlays for those add-on boards, or is it okay to have a separate
-> build of the overlay for each base tree?
+>> 1) Avoiding phandle collisions between main tree and subtree (or
+>>    between subtrees).
+>>
+>> I'm hopeful that this can be resolved just by establishing some
+>> conventions about the ranges of phandles to be used for various
+>> components.  I'd certainly be happy to add a directive to dtc which
+>> enforces allocation of phandles within a specified range.
+>
+> One case I wonder about is:
+>
+> Base board A that's split into two .dts files e.g. due to there being
+> two versions of the base board which are 90% identical, yet there being
+> a few differences between them.
+>
+> Base board B that's just a single .dts file.
+>
+> We might allocate phandle range 0..999 for the base board.
+>
+> Child board X plugs into either, so the two base boards need to "export"
+> the same set of phandle IDs to the child board to allow it to reference
+> them.
 
-I certainly think it'd be extremely beneficial to use the exact same
-child board .dtb with arbitrary base boards.
+It's more than just that. The boards really need to be equivalent
+since the irq specifiers and gpio specifiers need to match the gpio
+and irq controllers provided by the board. So a simple overlay design
+won't cover the case of a single file that will work generically on
+any board.
 
-Consider something like the Arduino shield connector format, which I
-/believe/ has been re-used across a wide variety of Arduino boards and
-other compatible or imitation boards. Now consider a vendor of an
-Arduino shield. The shield vendor probably wants to publish a single
-.dtb file that works for users irrespective of which board they're using
-it with.
+> If base board A version 2 comes along after the phandle IDs that the
+> child board uses are defined, then how do we handle assigning a specific
+> phandle ID range to each of base board A's two version-specific
+> overlays, when the version-specific changes might affect arbitrary
+> phandle IDs within the range, and require some to be moved into the base
+> board version-specific overlays and some to stay in the common base
+> board .dts?
 
-(Well, I'm not sure that Arduino can run Linux; perhaps that's why you
-picked BeagleBone capes for your document!)
+With the design I'm currently considering, at the dts level the
+overlay could be compiled against any base boards if the specifiers
+are equivalent and the labels match up as indicated above. The
+compiled dtb could also be somewhat portable, but only if care is
+taken to make sure the phandles match too; possibly by explicitly
+specifying them instead of letting them be generated by a hash.
 
-I suppose it would be acceptable for the shield vendor to ship the .dts
-file rather than the .dtb, and hence need to build the shield .dtb for a
-specific base board.
-
-However, I think the process for an end-user needs to be as simple as
-"drop this .dts/.dtb file into some standard directory", and I imagine
-it'll be much easier for distros/... to make that process work if
-they're dealing with a .dtb that they can just blast into the kernel's
-firmware loader interface, rather than having to also locate the
-base-board .dts/.dtb file, and run dtc and/or other tools on both .dts
-files together.
+g.
