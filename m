@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750843Ab2KIFBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 00:01:47 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58159 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab2KIFBp (ORCPT
+	id S1751019Ab2KIFEK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 00:04:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37132 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab2KIFEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 00:01:45 -0500
-Message-ID: <509C8DF4.4070300@ahsoftware.de>
-Date: Fri, 09 Nov 2012 06:00:36 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] arm: memtest
-References: <509C1A92.9080407@ahsoftware.de> <CAE9FiQWeie62NYt2vyq2q+Um8NeA5xWQGy-nULmFidt4XxW=BA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWeie62NYt2vyq2q+Um8NeA5xWQGy-nULmFidt4XxW=BA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 00:04:08 -0500
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        durgadoss.r@intel.com, lenb@kernel.org, rui.zhang@intel.com,
+        linux-acpi@vger.kernel.org, amit.kachhap@linaro.org,
+        jonghwa3.lee@samsung.com
+Subject: [PATCH 4/4] thermal: exynos: Use the new thermal trend type for quick cooling action.
+Date: Fri,  9 Nov 2012 10:34:04 +0530
+Message-Id: <1352437444-13546-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.11.2012 23:39, schrieb Yinghai Lu:
-> On Thu, Nov 8, 2012 at 12:48 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->> Hello,
->>
->> I've recently discovered the lack of the command line parameter memtest for
->> ARM. So I've made a patch.
->>
->> But I have some questions:
->>
->> 1. arch/x86/mm/memtest.c looks platform independ.
->> The only thing why I don't use it for arm, is because it uses 64bit
->> pointers. Maybe it could be moved to mm/memtest.c. If so, the memtest32.c
->> I'm using (basically a copy of memtest.c) could be moved there too.
->>
->> 2. Because the below memtest32.c is basically a copy of
->> arch/x86/mm/memtest.c, I'm not sure if the mapping from physical to virtual
->> locations there does fit (always) for ARM too. I know almost as much about
->> the in-kernel memory organization on x86 as on ARM, which is not really that
->> much (some theory about TLBs, some source code explorations, ..., but I'm
->> working on it). ;)
->
-> We are using arch/x86/mm/memtest.c for x86 32bit and 64bit.
->
-> So it should be ok to use it with arm 32bit and 64bit directly.
+This patch uses the quick thermal cooling trend type macros. This is needed
+as exynos5 and other thermal sensors now supports only interrupt method for
+thresold temperature check.
 
-It does. But in order to enable it on every boot, I wanted it to be as 
-fast as possible.
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+---
+ drivers/thermal/exynos_thermal.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Regards,
-
-Alexander
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index bbaff56..097c218 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -287,7 +287,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
+ 		case MONITOR_ZONE:
+ 		case WARN_ZONE:
+ 			if (thermal_zone_bind_cooling_device(thermal, i, cdev,
+-								level, level)) {
++								level, 0)) {
+ 				pr_err("error binding cdev inst %d\n", i);
+ 				ret = -EINVAL;
+ 			}
+@@ -373,9 +373,9 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
+ 		return ret;
+ 
+ 	if (thermal->temperature >= trip_temp)
+-		*trend = THERMAL_TREND_RAISING;
++		*trend = THERMAL_TREND_RAISE_FULL;
+ 	else
+-		*trend = THERMAL_TREND_DROPPING;
++		*trend = THERMAL_TREND_DROP_FULL;
+ 
+ 	return ret;
+ }
+-- 
+1.7.1
 
