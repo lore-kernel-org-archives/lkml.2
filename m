@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2KILk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:40:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56922 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2KILk6 (ORCPT
+	id S1752724Ab2KILli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:41:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59226 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751228Ab2KILlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:40:58 -0500
-Message-ID: <509CEB9F.8080705@kernel.dk>
-Date: Fri, 09 Nov 2012 12:40:15 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 9 Nov 2012 06:41:37 -0500
+Date: Fri, 9 Nov 2012 11:41:33 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: lrg@ti.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] mfd: max8925: update dt regulator binding doc
+Message-ID: <20121109114133.GB23807@opensource.wolfsonmicro.com>
+References: <1352341892-27654-1-git-send-email-qingx@marvell.com>
 MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] drbd-8.4.2 for the linux-3.8 merge window
-References: <3042269.jrNem7z1LI@fat-tyre>
-In-Reply-To: <3042269.jrNem7z1LI@fat-tyre>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="neYutvxvOLaeuPCA"
+Content-Disposition: inline
+In-Reply-To: <1352341892-27654-1-git-send-email-qingx@marvell.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-09 12:36, Philipp Reisner wrote:
-> Hi Jens,
-> 
-> Please pull drbd-8.4.2 into your for-3.8/drivers branch.
-> 
-> The most noticeable change is the support for multiple replicated
-> volumes in a single DRBD connection.
-> 
-> This release requires new drbd userland tools >= 8.4.0 (available
-> since July 2011).
-> 8.4.x is network protocol compatible with all previous releaes.
-> This release brings a new meta-data format. Forward (8.3 -> 8.4)
-> conversion happens complete seamless. Backward conversion
-> is done by a single command (drbdadm apply-al res).
-> 
-> The "recent changes" chapter of our user's guide describes all
-> changes in detail:
-> http://www.drbd.org/users-guide/ap-recent-changes.html
-> 
-> Changelog
-> 
-> 8.4.2 (api:genl1/proto:86-100)
-> --------
->  * Go into inconsistent disk state with on-io-error=pass-on policy
->  * Timeouts for requests processing on the peer (previously that
->    worked only if the data socket was congested)
->  * Conflicting write detection is now based on an interval tree,
->    removed the hash-tables (necessary for the unlimited BIO sizes)
->  * Support for multiple volumes (minors, block devices) per connection;
->    up to 65536 volumes per connection supported
->  * Reduced IO latencies during some state changes (esp. start resync)
->  * New on disk format for the AL: double capacity; 4k aligned IO; same space
->  * Multiple AL changes in a single transaction (precondition for
->    unlimited BIO sizes)
->  * DRBD no longer imposes any limit on BIO sizes
->  * Removed DRBD's limits on the number of minor devices
->  * DRBD's minors can now be removed (not only unconfigured)
->  * Switched the user space interface form connector to generic netlink
->  * The wire-protocol is now a regular connection option, which can be
->    changed while the device is online
->  * IO freezing/thawing is done on connection (all volumes) level
->  * fencing is done on connection (all volumes) level
->  * Enforce application of activity log after primary crash in user space
->  * New default values (compared to drbd-8.3) for: minor-count, ko-count, al-extents,
->    c-plan-ahead, c-fill-target, c-min-rate, use-rle, on-io-error
->  * Optional load balancing for read requests: new keyword "read-balance"
->  * New option 'al-updates no' to disable writing transactions into the
->    activity log. It is use full if you prefer a full sync after a primary
->    crash, for improved performance of a spread out random write work load
->  * Expose the data generation identifies via sysfs
-> 
-> 
-> Jens, regarding the code:
-> 
-> It has the sysfs bits in again. The reason for that is that we want to
-> expose more information by that, and remove the /proc/drbd with the
-> next evolutionary step. -- In case this is a show stopper, let me
-> remove the sysfs bits.
 
-The exact same sysfs bits I complained about last time? If yes, then I
-don't understand why you haven't changed yet. Or why you are trying to
-push the same bits again that got rejected last time.
+--neYutvxvOLaeuPCA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Here is the git-pull-request test: 
-> (The patch subjects removed to make the mail more digestible)
+On Thu, Nov 08, 2012 at 10:31:32AM +0800, Qing Xu wrote:
 
-Please don't do that, it basically makes the pull request useless! A few
-hundred extra lines is not an issue.
+> remove linux specific references, enumerates all supported
+> regulators
 
+Applied.  As I said the other day please do use subject lines
+appropriate for the subsystem.
 
--- 
-Jens Axboe
+--neYutvxvOLaeuPCA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQnOveAAoJELSic+t+oim9WlQP/iio1WhroMDqIflLFAvwZgOr
+Lpb0MSYYPV56Fx6x+mO0cyxcx9R4bbdYJGcSHd4GXAU3cl/9FY04efXDvgUf6HNe
+ih/78J59r5378kC6bv3m0FFa6w0D6RqtcfpZbwGbS/aGvbFd4+JZJVtco50Zo7Sf
+PUsORC6y++g+oM8yFlbpErn8fPQTIJDt61szTAKoL0/68uMfFjIG5JrboUnW4RA+
+L7wFjELi1g26zUP+xpxpSKwbtNf9uoHN/ejz7foaxHHhlx1FKLSKmYfMu6snPe0J
+x73Q8JdNXQbqrCzGZDScwfz7XF1UEovQrn3dfd+uv+fmi8JD7cPQtlOX3eqqld1o
+pSD/ubpzN0x5VPFdVToJ80U/SsRow1vVSdu2li/xLO27Xj7ctLOD+9EhzgRSOGWA
+MJHmLj7xZliWqBbDxsBlllW4m362Pa352uyPuIJZBSblLQXfUoUcZWMUkU7klUoq
+tWCIlVoYw/u9iR9WTFkwlarorK/px479YijovOupN6FcO3Gdxfau2O5Izzs3HKo5
+q7qP4A96+arYU6Egn2St8ePm81+fIV1SqqqnVRTaq6wc0dFxMd4BeQ91/IWTkjGj
+CyCZBayikkXuFEY44Xi4Ri1itC/aVRFw64pD5GKK+VKxjAW0g+8+ldb6ZzblonsY
+mRnmXPF4npGguDJY0BZH
+=4Ehb
+-----END PGP SIGNATURE-----
+
+--neYutvxvOLaeuPCA--
