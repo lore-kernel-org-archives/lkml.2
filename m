@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab2KIUbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 15:31:15 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60828 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab2KIUbO (ORCPT
+	id S1755939Ab2KIUeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 15:34:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32939 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab2KIUeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 15:31:14 -0500
+	Fri, 9 Nov 2012 15:34:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU-k=V3qtH9z4+ou+NZFXfLp_7vqY+Axbj_4Xw1CyzHjw@mail.gmail.com>
-References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210101609170.2689@kaball.uk.xensource.com>
-	<CAE9FiQW952+jHBHxhKu2PX_fpwb8fXVQp2xX0i=HdzgKWuGFCA@mail.gmail.com>
-	<20121030134442.GB27463@phenom.dumpdata.com>
-	<CAE9FiQVXzOQG2XmA5Y_DX1JCGg_-LdM9tG3Chq7-7rNvUseRhg@mail.gmail.com>
-	<CAE9FiQW+B8_vBT4A10ab4iOAQD9b-Ef84dsSX7p3nVQSN2w0=Q@mail.gmail.com>
-	<a58d5329-a1db-418b-9caa-06b7a79051ec@email.android.com>
-	<CAE9FiQWUiNqv-fd_4Y79eq+-w6wU34nEwn76+QJ7TWw7uCLaaQ@mail.gmail.com>
-	<20121107161144.GA18353@phenom.dumpdata.com>
-	<20121108014043.GA22057@phenom.dumpdata.com>
-	<CAE9FiQU-k=V3qtH9z4+ou+NZFXfLp_7vqY+Axbj_4Xw1CyzHjw@mail.gmail.com>
-Date: Fri, 9 Nov 2012 12:31:13 -0800
-X-Google-Sender-Auth: E95GueqjS53EhELCZ2pcBT355lg
-Message-ID: <CAE9FiQVmwXfQHKHWfXuJOXcgCB+z9gLDXbG26eze5T0QBOpBGQ@mail.gmail.com>
-Subject: Re: [PATCH -v3 0/7] x86: Use BRK to pre mapping page table to make
- xen happy
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <A6697FB9-3614-4027-A71B-59C7556005BF@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
+ <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com>
+ <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+ <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com>
+ <509A3595.7050600@ti.com> <A6697FB9-3614-4027-A71B-59C7556005BF@antoniou-consulting.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 9 Nov 2012 20:33:47 +0000
+X-Google-Sender-Auth: XqNIaZnyNNT8FpcJxCv8HRQrHog
+Message-ID: <CACxGe6uXyTt_kr4=0ob+-ubgV9he+SfobLwux6X0m6y7yQU7EA@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 8:06 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Nov 7, 2012 at 5:40 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
+On Wed, Nov 7, 2012 at 11:02 AM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> On Nov 7, 2012, at 11:19 AM, Benoit Cousson wrote:
+>> Maybe some extra version match table can just be passed during the board machine_init
 >>
->> I ran in a problem with launching an 8GB guest. When launching a 4GB it worked
->> fine, but with 8GB I get:
->>
->> .000000] init_memory_mapping: [mem 0x1f4000000-0x1f47fffff]
->> [    0.000000]  [mem 0x1f4000000-0x1f47fffff] page 4k
->> [    0.000000] memblock_reserve: [0x000001f311c000-0x000001f311d000] alloc_low_pages+0x103/0x130
->> [    0.000000] memblock_reserve: [0x000001f311b000-0x000001f311c000] alloc_low_pages+0x103/0x130
->> [    0.000000] memblock_reserve: [0x000001f311a000-0x000001f311b000] alloc_low_pages+0x103/0x130
->> [    0.000000] memblock_reserve: [0x000001f3119000-0x000001f311a000] alloc_low_pages+0x103/0x130
->> [    0.000000] Kernel panic - not syncing: initrd too large to handle, disabling initrd (348401664 needed, 524288 available)
->> [    0.000000]
->> [    0.000000] Pid: 0, comm: swapper Not tainted 3.7.0-rc4upstream-00042-g1b66ccf #1
->> [    0.000000] Call Trace:
->> [    0.000000]  [<ffffffff81633a5c>] panic+0xbf/0x1df
->> [    0.000000]  [<ffffffff81ac00e1>] setup_arch+0x728/0xb29
->> [    0.000000]  [<ffffffff81633c48>] ? printk+0x48/0x4a
->> [    0.000000]  [<ffffffff81aba897>] start_kernel+0x90/0x39e
->> [    0.000000]  [<ffffffff81aba356>] x86_64_start_reservations+0x131/0x136
->> [    0.000000]  [<ffffffff81abca38>] xen_start_kernel+0x546/0x548
+>>       of_platform_populate(NULL, omap_dt_match_table, NULL, NULL, panda_version_match_table);
 >>
 >
-> xen memmap
->
-> [    0.000000] Xen: [mem 0x0000000000000000-0x000000000009ffff] usable
-> [    0.000000] Xen: [mem 0x00000000000a0000-0x00000000000fffff] reserved
-> [    0.000000] Xen: [mem 0x0000000000100000-0x00000001f47fffff] usable
->
-> there is no hole under 4G, trigger the bug about max_low_pfn_mapped updating in
-> add_pfn_range_mapped().
->
-> please check attached patch, that should fix the problem.
->
-> then I will fold it into corresponding commit that instroduce
-> add_pfn_range_mapped().
->
+> Would we need explicit of_platform_populate calls if we have node modification notifiers?
+> In that case the notifier would pick it up automatically, and can do the per
+> version matching internally.
 
-If you did not try the patch yet, please get for-x86-mm again.
-I folded that patch into that commit about add_pfn_range_mapped.
+There still needs to be something to register "everything below this
+node is interesting" which is exactly what of_platform_populate() does
+now. I see the notifiers being used by the of_platform_populate
+backend to know when nodes have been created (or destroyed).
+
+g.
