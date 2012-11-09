@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2KISIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:08:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37613 "EHLO mga11.intel.com"
+	id S1754987Ab2KISKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:10:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab2KISIH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:08:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,746,1344236400"; 
-   d="scan'208";a="246606125"
-From: "Li, Sibai" <sibai.li@intel.com>
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        Jason Gao <pkill.2012@gmail.com>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Subject: RE: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Topic: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Index: AQHNvaKW6TnehZ0GK0+VI29ItRc6WJfgUcUA///VtdCAAUCoAIAAVvAwgAALK8A=
-Date: Fri, 9 Nov 2012 18:08:00 +0000
-Message-ID: <A3A921390EAE4044940E99EBF13D97321AE2114C@FMSMSX104.amr.corp.intel.com>
-References: <201211081915083774239@gmail.com>	<509B962C.6070002@gmail.com>
-	<C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
- <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
- <C5551D9AAB213A418B7FD5E4A6F30A072D5683CF@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A072D5683CF@ORSMSX106.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751557Ab2KISKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:10:23 -0500
+Date: Fri, 9 Nov 2012 19:10:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+	block the readers unnecessarily
+Message-ID: <20121109181048.GA1184@redhat.com>
+References: <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121109154656.GA26134@redhat.com> <20121109170107.GB2419@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121109170107.GB2419@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason,
+On 11/09, Paul E. McKenney wrote:
+>
+> On Fri, Nov 09, 2012 at 04:46:56PM +0100, Oleg Nesterov wrote:
+> > Contrary, I am going to try to add some complications later, so that
+> > it can have more users. In particular, I think it can replace
+> > get_online_cpus/cpu_hotplug_begin, just we need
+> > percpu_down_write_but_dont_deadlock_with_recursive_readers().
+>
+> I must confess that I am a bit concerned about possible scalability
+> bottlenecks in the current get_online_cpus(), so +1 from me on this one.
 
-DellR710 with the latest BIOS should work fine for SR-IOV. My BIOS is v.6.3.0 and release date is 07/24/2012
-Please check if you configured intel_iommu=on in the grub.conf file. 
-If you did, check your kernel .config file under Device Drivers-> IOMMU Hardware support->enable Support for Intel IOMMU using DMA remapping Devices, enable Intel DMA Remapping Devices by Default, enable Support for Interrupt Remapping.
+OK, thanks...
 
-Thanks,
-Sibai
+And btw percpu_down_write_but_dont_deadlock_with_recursive_readers() is
+trivial, just it needs down_write(rw_sem) "inside" wait_event(), not
+before. But I'm afraid I will never manage to write the comments ;)
 
-> -----Original Message-----
-> From: Rose, Gregory V
-> Sent: Friday, November 09, 2012 9:16 AM
-> To: Jason Gao; Li, Sibai
-> Cc: Kirsher, Jeffrey T; linux-kernel; netdev; kvm
-> Subject: RE: SR-IOV problem with Intel 82599EB (not enough MMIO resources
-> for SR-IOV)
-> 
-> > -----Original Message-----
-> > From: Jason Gao [mailto:pkill.2012@gmail.com]
-> > Sent: Thursday, November 08, 2012 8:00 PM
-> > To: Rose, Gregory V
-> > Cc: Kirsher, Jeffrey T; linux-kernel; netdev; kvm; e1000-
-> > devel@lists.sourceforge.net
-> > Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO
-> > resources for SR-IOV)
-> >
-> > > The BIOS in your machine doesn't support SR-IOV.  You'll need to ask
-> > > the
-> > manufacturer for a BIOS upgrade, if in fact one is available.
-> > Sometimes they're not.
-> >
-> > very thanks Greg,my server Dell R710 with latest BIOS version and
-> > option for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused
-> > that Does
-> > R710 provide full support for SR-IOV, kernel or  ixgbe driver's bug?
-> > but I'm not sure where the problem lies,anyone has any
-> > experience about this?   .
-> 
-> I use a Dell R710 for all my SR-IOV testing and it works fine but I had to acquire a
-> special BIOS from Dell to get it to work.  As I said, you'll want to contact them
-> and make sure you've got the correct BIOS.
-> 
-> The error you're seeing, "not enough MMIO resources" has been an issue with
-> the BIOS 100% of the times that we've run into it.  In any case, it is NOT a driver
-> bug.  The driver has nothing to do with allocation of MMIO space reservation for
-> VF devices.  The message you're seeing pops up when the driver calls
-> pci_enable_sriov().  There is nothing the driver can do to force that call to be
-> successful.
-> 
-> I've added Sibai Li to this response.  She should be able to get the BIOS version
-> string off of one of our working Dell R710s.
-> 
-> Sibai,
-> 
-> Could you please reply to this message with that information?
-> 
-> Thanks,
-> 
-> - Greg
+	static bool xxx(brw)
+	{
+		down_write(&brw->rw_sem);
+		if (!atomic_read(&brw->slow_read_ctr))
+			return true;
+
+		up_write(&brw->rw_sem);
+		return false;
+	}
+
+	static void __percpu_down_write(struct percpu_rw_semaphore *brw, bool recursive_readers)
+	{
+		mutex_lock(&brw->writer_mutex);
+
+		synchronize_sched();
+
+		atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+
+		if (recursive_readers)  {
+			wait_event(brw->write_waitq, xxx(brw));
+		} else {
+			down_write(&brw->rw_sem);
+
+			wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+		}
+	}
+
+Of course, cpu.c still needs .active_writer to allow get_online_cpus()
+under cpu_hotplug_begin(), but this is simple.
+
+But first we should do other changes, I think. IMHO we should not do
+synchronize_sched() under mutex_lock() and this will add (a bit) more
+complications. We will see.
+
+Oleg.
+
