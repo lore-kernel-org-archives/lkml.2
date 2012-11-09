@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2KISoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:44:32 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:44543 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755329Ab2KISoZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:44:25 -0500
-From: Dan Williams <djbw@fb.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spear-devel@list.st.com" <spear-devel@list.st.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Deepak Sikri <deepak.sikri@st.com>,
-        "jon.mason@intel.com" <jon.mason@intel.com>,
-        "dave.jiang@intel.com" <dave.jiang@intel.com>
-Subject: Re: [PATCH] dmaengine/dmatest: terminate transfers only in case of
- errors
-Thread-Topic: [PATCH] dmaengine/dmatest: terminate transfers only in case of
- errors
-Thread-Index: AQHNvo6gBAqWD3RE9Um/NJlzPp+4RpfhxoyA
-Date: Fri, 9 Nov 2012 18:44:18 +0000
-Message-ID: <84A937D219C2B44EB8EA44831ACA1E49166B9A82@SC-MBX01-3.TheFacebook.com>
-In-Reply-To: <1f83c56ebbe66c00acc7901613da1dc6fdba4a6b.1352474736.git.viresh.kumar@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.18.254]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <BC1EB3DF4974534BBB60C1058DB66593@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1755464Ab2KISoq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:44:46 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63859 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2KISok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:44:40 -0500
+Date: Fri, 9 Nov 2012 19:44:36 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: harmony: Add ADT7641 temperature sensor
+Message-ID: <20121109184436.GC7663@avionic-0098.mockup.avionic-design.de>
+References: <1352465815-26984-1-git-send-email-thierry.reding@avionic-design.de>
+ <20121109132257.GA29183@avionic-0098.mockup.avionic-design.de>
+ <509D3F0D.5040204@wwwdotorg.org>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
- definitions=2012-11-09_03:2012-11-09,2012-11-09,1970-01-01 signatures=0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
+Content-Disposition: inline
+In-Reply-To: <509D3F0D.5040204@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:v6/V1YtX0qepPKf4lufkPplXHuMoA8Ngrv9NR8V3kaN
+ lI5Tnovy0lBHoJXttwUlBodOSix0/xN73nEV0UfH2DIcabFFaQ
+ EbRT+DtAZ9ZWVVaeC0Jw6pTvLblMM/7xM2Y4bSEyXiEHk3U7Qn
+ zY/R8tJliOiKGd4+V7D7FfauBrc2jzx4zSWjVjg7Evuw77Jzyd
+ igWYJHzA7fmkLBwCNSuEvgSG8L+xgoudFYTEdgjBfTrEFi9lGW
+ P8P9VTPGetpDQ+ulx3ibWjvWTu/kvt/L7IbceginEUVknb+TVG
+ mj0ziNlRgI7i/0a6T3sLL0nczb/QCnC6JJwOphVy4mNueqTmF2
+ 17/bKnzlFOKH04/utsxj6fWwzMUKvkoZ2mc1cCKP7TL/wsGTrS
+ WSJYyx/Niypi3Kq/NniVE4Sbei+ywWkgPTF0KnoAYKoyMuRccI
+ qG16Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--O3RTKUHj+75w1tg5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 11/9/12 7:26 AM, "Viresh Kumar" <viresh.kumar@linaro.org> wrote:
+On Fri, Nov 09, 2012 at 10:36:13AM -0700, Stephen Warren wrote:
+> On 11/09/2012 06:22 AM, Thierry Reding wrote:
+> > On Fri, Nov 09, 2012 at 01:56:55PM +0100, Thierry Reding wrote:
+> >> The Harmony board has an Analog Devices ADT7461 temperature
+> >> sensor connected to the DVC bus. It can be used to monitor the
+> >> ambient (local) and on-die (remote) temperatures.
+> >=20
+> > Note that I haven't actually tested this, as I no longer have
+> > access to Harmony hardware. Testing can easily be done either by
+> > reading the files from sysfs directly or by running the sensors
+> > utility from the lm-sensors package.
+>=20
+> OK, I can test this. The same comment about the DT node name that I
+> made for the other patch applies here too.
 
->From: Shiraz Hashim <shiraz.hashim@st.com>
->
->dmatest erroneously terminated transfers in normal cases also leading to
->test failures for multiple threads over a channel. Fix this and
->terminate transfers only in case of errors.
->
->Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
->Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
->---
-> drivers/dma/dmatest.c | 4 +++-
-> 1 file changed, 3 insertions(+), 1 deletion(-)
->
->diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
->index 8f130d4e..ce58b8e 100644
->--- a/drivers/dma/dmatest.c
->+++ b/drivers/dma/dmatest.c
->@@ -509,7 +509,9 @@ err_srcs:
-> 			thread_name, total_tests, failed_tests, ret);
-> 
-> 	/* terminate all transfers on specified channels */
->-	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
->+	if (ret)
->+		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
->+
+Alright, I'll rename the node.
 
-This and commit 9704efa "dmaengine/dmatest: Terminate transfers on all
-channels in case of error or exit" are broken for channels that don't
-implement the optional ->device_control.  Care to fix that up?
+Thierry
 
+--O3RTKUHj+75w1tg5
+Content-Type: application/pgp-signature
 
---
-Dan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQnU8UAAoJEN0jrNd/PrOhrooP/0ogmVmjGspVeerOHJZxaoIe
+/MK8RmbB5Yw/K4fB+s5Pp8qV4zYIrUBn7iWu6Rq+jTU/aVTyD6C/VugBVWUcXeFs
+n1byfG9EBwN6MTX368mXkEJaZGWLWlsL8lbP8ZjEgSi+So02CiW5SDjJX1eolRsI
+e6EMUVWoe5m7am+h7xoTSnIZtwKRJwwGTj/PJk3WSoTn5vutsTjzacNF1skw85Or
+qB4u7qH6p+cboRzOGz94qO8ao7GjwL26R4AyzzADJ/hP1LrOcNVWnG/FWBSCpLVO
+KW65WfJZpHdDWLPj4oGUcfanUAM4xx6bqn1Yxceg3+K9T0dx0mqWo86AkiooRyLl
+7pIwu3nEVVrNeTxxg35vLw7YtfgJm+Wdpab6ZlB6CvRzVdODrYw9FE8exHcBHPbk
+NI8zIoTB2KOZrvM005WPd7DNMLWBg8k8IRy0YOp5yqw3rDS2X9/B/1PfNbR7pzmh
+INZyAxNmPvcHfRLcc+g1DJ3t/cD12XgtrS2t7ZesNSzXYpCTEVWCBwhQf2/UN0VO
+tBWmAZw4qPbFZW+E1KOn9sfVhj3e2+2M+/jE/LapoF9ZX7/TEcKAD8X0j1Zv6BDA
+Rf2lJgwYSiOnpUpEQ8a7aOHHCZJ9apwBSi8ZJyqGs0I5+eBEB932VxGTt6qmP9vF
+qYksBdOMgFE7tziipQ5U
+=H/Eg
+-----END PGP SIGNATURE-----
+
+--O3RTKUHj+75w1tg5--
