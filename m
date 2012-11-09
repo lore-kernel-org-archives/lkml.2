@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2KID7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 22:59:47 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45661 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab2KID7o (ORCPT
+	id S1752366Ab2KIEB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 23:01:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43589 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab2KIEB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 22:59:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
-References: <201211081915083774239@gmail.com>
-	<509B962C.6070002@gmail.com>
-	<C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
-Date: Fri, 9 Nov 2012 11:59:42 +0800
-Message-ID: <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
-Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources for SR-IOV)
-From: Jason Gao <pkill.2012@gmail.com>
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Nov 2012 23:01:57 -0500
+Date: Thu, 8 Nov 2012 20:01:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+Message-Id: <20121108200154.03e507ed.akpm@linux-foundation.org>
+In-Reply-To: <20121109145832.dfdc4985b490290f5e4f185c@canb.auug.org.au>
+References: <20121109145832.dfdc4985b490290f5e4f185c@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The BIOS in your machine doesn't support SR-IOV.  You'll need to ask the manufacturer for a BIOS upgrade, if in fact one is available.  Sometimes they're not.
+On Fri, 9 Nov 2012 14:58:32 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-very thanks Greg,my server Dell R710 with latest BIOS version and
-option for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused
-that Does R710 provide full support for SR-IOV, kernel or  ixgbe
-driver's bug? but I'm not sure where the problem lies,anyone has any
-experience about this?   .
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
+> 
+> arch/x86/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown':
+> arch/x86/mm/hugetlbpage.c:299:20: error: 'mm' undeclared (first use in this function)
+> arch/x86/mm/hugetlbpage.c:299:20: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> Caused by commit "mm: use vm_unmapped_area() in hugetlbfs on i386
+> architecture".
+> 
+
+oop, I fixed that but forgot to commit the changes, sorry.
+
+	s/mm/current->mm/
