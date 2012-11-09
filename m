@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab2KIJvO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:51:14 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:54483 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab2KIJvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:51:09 -0500
-Message-ID: <509CD1D1.3050105@imgtec.com>
-Date: Fri, 9 Nov 2012 09:50:09 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751678Ab2KIJzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:55:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33907 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab2KIJzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 04:55:32 -0500
+Date: Fri, 9 Nov 2012 09:55:28 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [Acked] [PATCH V2 3/5] checkpatch: Remove reference to
+ feature-removal-schedule.txt.
+Message-ID: <20121109095528.GP3066@dm>
+References: <20121108174702.GL3066@dm>
+ <1352425092-2568-1-git-send-email-tm@tao.ma>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>
-Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-15-git-send-email-vgupta@synopsys.com> <201211071421.39523.arnd@arndb.de>
-In-Reply-To: <201211071421.39523.arnd@arndb.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_11_09_09_51_07
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352425092-2568-1-git-send-email-tm@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/12 14:21, Arnd Bergmann wrote:
-> On Wednesday 07 November 2012, Vineet Gupta wrote:
->> + * Being uClibc based we need some of the deprecated syscalls:
->> + * -Not emulated by uClibc at all
->> + *     unlink, mkdir,... (needed by Busybox, LTP etc)
->> + *     times (needed by LTP pan test harness)
->> + * -Not emulated efficiently
->> + *     select: emulated using pselect (but extra code to chk usec > 1sec)
->> + *
->> + * some (send/recv) correctly emulated using (recfrom/sendto) and
->> + * some arch specific ones (fork/vfork)can easily be emulated using clone but
->> + * thats the price of using common-denominator....
->> + */
->> +#define __ARCH_WANT_SYSCALL_NO_AT
->> +#define __ARCH_WANT_SYSCALL_NO_FLAGS
->> +#define __ARCH_WANT_SYSCALL_OFF_T
->> +#define __ARCH_WANT_SYSCALL_DEPRECATED
+On Fri, Nov 09, 2012 at 09:38:12AM +0800, Tao Ma wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
 > 
-> I'm pretty sure that this has been solved before, best get in contact with
-> the maintainers of the openrisc/c6x/hexagon platforms, that probably all
-> use uClibc without needing these.
+> In 9c0ece069, Linus removes feature-removal-schedule.txt from Documentation,
+> but there is still some reference to this file. So remove them.
 > 
-> You have to remove the legacy calls here.
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andy Whitcroft <apw@canonical.com>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> ---
+>  scripts/checkpatch.pl |   37 -------------------------------------
+>  1 files changed, 0 insertions(+), 37 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 21a9f5d..b56c5e0 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -352,27 +352,6 @@ sub deparenthesize {
+>  
+>  $chk_signoff = 0 if ($file);
+>  
+> -my @dep_includes = ();
+> -my @dep_functions = ();
+> -my $removal = "Documentation/feature-removal-schedule.txt";
+> -if ($tree && -f "$root/$removal") {
+> -	open(my $REMOVE, '<', "$root/$removal") ||
+> -				die "$P: $removal: open failed - $!\n";
+> -	while (<$REMOVE>) {
+> -		if (/^Check:\s+(.*\S)/) {
+> -			for my $entry (split(/[, ]+/, $1)) {
+> -				if ($entry =~ m@include/(.*)@) {
+> -					push(@dep_includes, $1);
+> -
+> -				} elsif ($entry !~ m@/@) {
+> -					push(@dep_functions, $entry);
+> -				}
+> -			}
+> -		}
+> -	}
+> -	close($REMOVE);
+> -}
+> -
+>  my @rawlines = ();
+>  my @lines = ();
+>  my $vname;
+> @@ -3181,22 +3160,6 @@ sub process {
+>  			}
+>  		}
+>  
+> -# don't include deprecated include files (uses RAW line)
+> -		for my $inc (@dep_includes) {
+> -			if ($rawline =~ m@^.\s*\#\s*include\s*\<$inc>@) {
+> -				ERROR("DEPRECATED_INCLUDE",
+> -				      "Don't use <$inc>: see Documentation/feature-removal-schedule.txt\n" . $herecurr);
+> -			}
+> -		}
+> -
+> -# don't use deprecated functions
+> -		for my $func (@dep_functions) {
+> -			if ($line =~ /\b$func\b/) {
+> -				ERROR("DEPRECATED_FUNCTION",
+> -				      "Don't use $func(): see Documentation/feature-removal-schedule.txt\n" . $herecurr);
+> -			}
+> -		}
+> -
+>  # no volatiles please
+>  		my $asm_volatile = qr{\b(__asm__|asm)\s+(__volatile__|volatile)\b};
+>  		if ($line =~ /\bvolatile\b/ && $line !~ /$asm_volatile/) {
+> -- 
+> 1.7.0.4
+> 
 
-Hi Vineet,
+Looks sane and cirtainly if the file is gone we are gaining nothing with
+this code.
 
-FYI, we'll soon be making some uClibc patches available so that it can
-work without these deprecated syscalls and with the newer IPC interface
-(the work was needed for metag too). It's based roughly on the OpenRisc
-patches from last year, but with a fair few changes.
+Acked-by: Andy Whitcroft <apw@canonical.com>
 
-Thanks
-James
-
+-apw
