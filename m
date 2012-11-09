@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab2KIJaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:30:16 -0500
-Received: from sting.hengli.com.au ([178.18.18.71]:47282 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750976Ab2KIJaN (ORCPT
+	id S1751955Ab2KIJcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:32:12 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56774 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab2KIJcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:30:13 -0500
-Date: Fri, 9 Nov 2012 17:30:05 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.7
-Message-ID: <20121109093005.GA25632@gondor.apana.org.au>
-References: <20100716022648.GA28219@gondor.apana.org.au>
- <20100722055043.GA25689@gondor.apana.org.au>
- <20100903060055.GA28915@gondor.apana.org.au>
- <20100903110722.GA31826@gondor.apana.org.au>
- <20101215115035.GA25248@gondor.apana.org.au>
- <20110216053911.GA10999@gondor.apana.org.au>
- <20110328071322.GA6569@gondor.apana.org.au>
- <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
+	Fri, 9 Nov 2012 04:32:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823083242.GA23102@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121108193034.GB2962@arwen.pp.htv.fi>
+References: <50929233.7030609@gmail.com> <50967BFD.6000308@gmail.com>
+ <20121106112751.GD11931@arwen.pp.htv.fi> <CAOUdcc_z=LbvNmapSKA0n7bny6wO+Ke67BQtF9J87TkV=ygSbw@mail.gmail.com>
+ <20121108140649.GD19533@arwen.pp.htv.fi> <CAOUdcc_9UTZpdu6k7wyQc9Hjmv-0YgAGiwsm+NysEmS9VUxu+w@mail.gmail.com>
+ <20121108193034.GB2962@arwen.pp.htv.fi>
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Date: Fri, 9 Nov 2012 10:31:47 +0100
+X-Google-Sender-Auth: huBtw6NUdSyU4DvjctTwClKGbY4
+Message-ID: <CAOUdcc839T6xrVxX6YcFCs_X=PkyH=3GyLHs1s+pzgWz0faQtw@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
+To: balbi@ti.com
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+Hi Felipe,
 
-This push fixes a potential panic in cryptd which may occur with
-crypto drivers such as aesni-intel.
+On Thu, Nov 8, 2012 at 8:30 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Thu, Nov 08, 2012 at 08:07:57PM +0100, Dmytro Milinevskyy wrote:
+>> > On Wed, Nov 07, 2012 at 02:14:00PM +0100, Dmytro Milinevskyy wrote:
+>> >> Unfortunately I have some issues with git send-email.
+>> >> I've attached the patch itself ..
+>> >
+>> > I'll apply it like that this time, but try to figure out how to send
+>> > patches properly. We have some very helpful hints on
+>> > Documentation/email-clients.txt which are hugely underused ;-)
+>> >
+>> well, I try to follow the rules as much as possible as long as tools
+>> work ... =)
+>
+> git send-email has thousands of users and it works fine for them
+> (including myself). Maybe you just misconfigured it ?!? ;-)
+>
+No, I was using it in the past w/o any issue.
+In fact initial versions of the patch were sent exactly with git-send-email.
 
-Please pull from
+However I lost my internet connection at home(some issues with ISP)
+and at work place network environment somehow blocks
+git-send-email(though thunderbird still can connect to the smtp server
+..).
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+thanks,
+-- dmytro
 
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Jussi Kivilinna (1):
-      crypto: cryptd - disable softirqs in cryptd_queue_worker to prevent data corruption
-
- crypto/cryptd.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> cheers
+>
+> --
+> balbi
