@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2KIRBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:01:15 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:33380 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab2KIRBK convert rfc822-to-8bit (ORCPT
+	id S1754790Ab2KIRC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:02:29 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37368 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2KIRCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:01:10 -0500
-Date: Fri, 9 Nov 2012 16:56:00 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes for 3.7
-Message-ID: <20121109165559.GG5998@arm.com>
+	Fri, 9 Nov 2012 12:02:25 -0500
 MIME-Version: 1.0
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 09 Nov 2012 16:56:00.0615 (UTC) FILETIME=[18A2E770:01CDBE9B]
-X-MC-Unique: 112110916560203201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+In-Reply-To: <5099B150.7070808@firmworks.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <50999145.2070306@wwwdotorg.org> <5099B150.7070808@firmworks.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 9 Nov 2012 17:02:05 +0000
+X-Google-Sender-Auth: 94hEFzZ2g0kBxkeuZbN_2ZjuPwQ
+Message-ID: <CACxGe6vTJHvZwZ383DE5-k+ksv1nGeuLynADuQC+D2eySj7gWQ@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Mitch Bradley <wmb@firmworks.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Kevin Hilman <khilman@ti.com>,
+        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Nov 7, 2012 at 12:54 AM, Mitch Bradley <wmb@firmworks.com> wrote:
+> On 11/6/2012 12:37 PM, Stephen Warren wrote:
+>> This proposal is very oriented at an overlay-based approach. I'm not
+>> totally convinced that a pure overlay approach (as in how dtc does
+>> overlayed DT nodes) will be flexible enough, but would love to be
+>> persuaded. Again see below.
+>
+>
+> An overlay approach will not be powerful enough to solve the sorts of
+> problems that occur when a product goes into full production, becomes a
+> family, and starts to evolve.  Issues like second-source parts that
+> aren't quite compatible and need to be detected and reported,
+> board-stuff options for different customer profiles, speed grades of
+> parts that aren't properly probeable but instead need to be identified
+> by some subterfuge, the list of tedious issues goes on and on.
+>
+> It's nice to pretend that the world fits into a few coherent simple
+> use cases, but 30 years of experience shipping computer product families
+> proves otherwise.  You need a programming language to solve the full
+> set of problems - which I why the device tree is designed so it can
+> be generated and modified by a program.
 
-Please pull the arm64 fixes below. The following changes since commit
-3d70f8c617a436c7146ecb81df2265b4626dfe89:
+I'm not going to argue with that. There is nothing saying that the
+overlay wouldn't be generated or applied by a script. However, I do
+strongly think that the data model needs to be independent of any tool
+or execution environment used to manipulate it. I certainly am not
+interested in encoding scripts or bytecode into the tree - the
+opposite of the approach used by ACPI which must execute AML to even
+retrieve the device tree. I like the overlay approach because it is
+conceptually straightforward and provides a working model of how
+changes could be made from userspace while still being usable by
+firmware.
 
-  Linux 3.7-rc4 (2012-11-04 11:07:39 -0800)
+An alternate approach from userspace would be to use a live virtual
+filesystem to manipulate the device tree, though that approach only
+applies to Linux userspace. Firmware would still need its own
+approach.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
-
-for you to fetch changes up to f483a853b0b932a1d75eb27a1dcbd732862260db:
-
-  arm64: mm: fix booting on systems with no memory below 4GB (2012-11-08 16:06:21 +0000)
-
-Thanks.
-
-----------------------------------------------------------------
-AArch64 kernel fixes:
-- correct argument type (pgprot_t) when calling __ioremap()
-- PCI_IOBASE virtual address change
-- use architected event for CPU cycle counter
-- fix ELF core dumping
-- select CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-- missing completion for secondary CPU boot
-- booting on systems with all memory beyond 4GB
-
-----------------------------------------------------------------
-Catalin Marinas (3):
-      arm64: Use pgprot_t as the last argument when invoking __ioremap()
-      arm64: Move PCI_IOBASE closer to MODULES_VADDR
-      Merge tag 'v3.7-rc4' into upstream-master
-
-Will Deacon (5):
-      arm64: perf: use architected event for CPU cycle counter
-      arm64: elf: fix core dumping definitions for GP and FP registers
-      arm64: compat: select CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-      arm64: smp: add missing completion for secondary boot
-      arm64: mm: fix booting on systems with no memory below 4GB
-
- Documentation/arm64/memory.txt     | 12 ++++++------
- arch/arm64/Kconfig                 |  1 +
- arch/arm64/include/asm/elf.h       |  5 +----
- arch/arm64/include/asm/fpsimd.h    |  5 ++---
- arch/arm64/include/asm/io.h        |  8 ++++----
- arch/arm64/include/asm/processor.h |  2 ++
- arch/arm64/include/asm/unistd.h    |  1 -
- arch/arm64/kernel/perf_event.c     | 10 ++--------
- arch/arm64/kernel/process.c        | 18 ------------------
- arch/arm64/kernel/smp.c            |  3 +--
- arch/arm64/mm/init.c               |  2 +-
- 11 files changed, 20 insertions(+), 47 deletions(-)
-
+g.
