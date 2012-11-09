@@ -1,170 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab2KILgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 06:36:44 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:46831 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2KILgm (ORCPT
+	id S1752497Ab2KILjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 06:39:05 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50416 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab2KILjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 06:36:42 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] drbd-8.4.2 for the linux-3.8 merge window
-Date: Fri, 09 Nov 2012 12:36:39 +0100
-Message-ID: <3042269.jrNem7z1LI@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-32-generic; KDE/4.8.5; x86_64; ; )
+	Fri, 9 Nov 2012 06:39:01 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+Date: Fri, 9 Nov 2012 19:39:00 +0800
+Message-ID: <CAJLyvQwVZ1SHnrY9M9C-JgEvoz=n5-3RaDvd-vPy1-gyfmxmUg@mail.gmail.com>
+Subject: Re: [PATCH V5 0/2] Upstream ST-Ericsson thermal driver
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: linux-acpi@vger.kernel.org, rui.zhang@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Hi Rui Zhang,
+Please have a look at this patch set.
+Since the previous 1/5, 2/5, 3/5 have been accepted, I'd like to send
+these last two updated patches with Reviewed-by added in this new
+thread.
 
-Please pull drbd-8.4.2 into your for-3.8/drivers branch.
+Thanks.
 
-The most noticeable change is the support for multiple replicated
-volumes in a single DRBD connection.
-
-This release requires new drbd userland tools >= 8.4.0 (available
-since July 2011).
-8.4.x is network protocol compatible with all previous releaes.
-This release brings a new meta-data format. Forward (8.3 -> 8.4)
-conversion happens complete seamless. Backward conversion
-is done by a single command (drbdadm apply-al res).
-
-The "recent changes" chapter of our user's guide describes all
-changes in detail:
-http://www.drbd.org/users-guide/ap-recent-changes.html
-
-Changelog
-
-8.4.2 (api:genl1/proto:86-100)
---------
- * Go into inconsistent disk state with on-io-error=pass-on policy
- * Timeouts for requests processing on the peer (previously that
-   worked only if the data socket was congested)
- * Conflicting write detection is now based on an interval tree,
-   removed the hash-tables (necessary for the unlimited BIO sizes)
- * Support for multiple volumes (minors, block devices) per connection;
-   up to 65536 volumes per connection supported
- * Reduced IO latencies during some state changes (esp. start resync)
- * New on disk format for the AL: double capacity; 4k aligned IO; same space
- * Multiple AL changes in a single transaction (precondition for
-   unlimited BIO sizes)
- * DRBD no longer imposes any limit on BIO sizes
- * Removed DRBD's limits on the number of minor devices
- * DRBD's minors can now be removed (not only unconfigured)
- * Switched the user space interface form connector to generic netlink
- * The wire-protocol is now a regular connection option, which can be
-   changed while the device is online
- * IO freezing/thawing is done on connection (all volumes) level
- * fencing is done on connection (all volumes) level
- * Enforce application of activity log after primary crash in user space
- * New default values (compared to drbd-8.3) for: minor-count, ko-count, al-extents,
-   c-plan-ahead, c-fill-target, c-min-rate, use-rle, on-io-error
- * Optional load balancing for read requests: new keyword "read-balance"
- * New option 'al-updates no' to disable writing transactions into the
-   activity log. It is use full if you prefer a full sync after a primary
-   crash, for improved performance of a spread out random write work load
- * Expose the data generation identifies via sysfs
-
-
-Jens, regarding the code:
-
-It has the sysfs bits in again. The reason for that is that we want to
-expose more information by that, and remove the /proc/drbd with the
-next evolutionary step. -- In case this is a show stopper, let me
-remove the sysfs bits.
-
-
-Here is the git-pull-request test: 
-(The patch subjects removed to make the mail more digestible)
-
-The following changes since commit ccae7868b0c5697508a541c531cf96b361d62c1c:
-
-  drbd: log request sector offset and size for IO errors (2012-10-30 08:39:18 +0100)
-
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens_drbd-8.4.2
-
-for you to fetch changes up to e877f7fdc0b1052b0e881e61f9290268eb21aa2f:
-
-  drbd: use copy_highpage (2012-11-09 12:06:44 +0100)
-
-----------------------------------------------------------------
-Akinobu Mita (1):
-      drbd: use copy_highpage
-
-Andreas Gruenbacher (210):
-      drbd: Get rid of req_validator_fn typedef
-	[...]
-
-David Howells (1):
-      DRBD: Fix comparison always false warning due to long/long long compare
-
-Jing Wang (1):
-      drbd: check return of kmalloc in receive_uuids
-
-Lars Ellenberg (138):
-      drbd: simplify condition in drbd_may_do_local_read()
-	[...]
-
-Philipp Marek (1):
-      drbd: pass some more information to userspace.
-
-Philipp Reisner (234):
-      idr: idr_for_each_entry() macro
-	[...]
-
- drivers/block/drbd/Makefile        |    2 +
- drivers/block/drbd/drbd_actlog.c   |  689 +++----
- drivers/block/drbd/drbd_bitmap.c   |  227 ++-
- drivers/block/drbd/drbd_int.h      | 1399 ++++++-------
- drivers/block/drbd/drbd_interval.c |  207 ++
- drivers/block/drbd/drbd_interval.h |   40 +
- drivers/block/drbd/drbd_main.c     | 3918 ++++++++++++++----------------------
- drivers/block/drbd/drbd_nl.c       | 3391 ++++++++++++++++++-------------
- drivers/block/drbd/drbd_nla.c      |   55 +
- drivers/block/drbd/drbd_nla.h      |    8 +
- drivers/block/drbd/drbd_proc.c     |   33 +-
- drivers/block/drbd/drbd_receiver.c | 3883 ++++++++++++++++++++---------------
- drivers/block/drbd/drbd_req.c      | 1569 +++++++--------
- drivers/block/drbd/drbd_req.h      |  187 +-
- drivers/block/drbd/drbd_state.c    | 1857 +++++++++++++++++
- drivers/block/drbd/drbd_state.h    |  161 ++
- drivers/block/drbd/drbd_strings.c  |    1 +
- drivers/block/drbd/drbd_sysfs.c    |   86 +
- drivers/block/drbd/drbd_worker.c   | 1168 ++++++-----
- drivers/block/drbd/drbd_wrappers.h |   11 +-
- include/linux/drbd.h               |   81 +-
- include/linux/drbd_genl.h          |  378 ++++
- include/linux/drbd_genl_api.h      |   55 +
- include/linux/drbd_limits.h        |   90 +-
- include/linux/drbd_nl.h            |  164 --
- include/linux/drbd_tag_magic.h     |   84 -
- include/linux/genl_magic_func.h    |  422 ++++
- include/linux/genl_magic_struct.h  |  277 +++
- include/linux/idr.h                |   11 +
- include/linux/lru_cache.h          |   67 +-
- lib/lru_cache.c                    |  359 ++--
- 31 files changed, 12238 insertions(+), 8642 deletions(-)
- create mode 100644 drivers/block/drbd/drbd_interval.c
- create mode 100644 drivers/block/drbd/drbd_interval.h
- create mode 100644 drivers/block/drbd/drbd_nla.c
- create mode 100644 drivers/block/drbd/drbd_nla.h
- create mode 100644 drivers/block/drbd/drbd_state.c
- create mode 100644 drivers/block/drbd/drbd_state.h
- create mode 100644 drivers/block/drbd/drbd_sysfs.c
- create mode 100644 include/linux/drbd_genl.h
- create mode 100644 include/linux/drbd_genl_api.h
- delete mode 100644 include/linux/drbd_nl.h
- delete mode 100644 include/linux/drbd_tag_magic.h
- create mode 100644 include/linux/genl_magic_func.h
- create mode 100644 include/linux/genl_magic_struct.h
-
-Best regards,
- Philipp
+On 9 November 2012 19:29, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>
+> V4->V5 Changes:
+>
+> In patch "Thermal: Add ST-Ericsson DB8500 thermal driver":
+>  - use flush_work instead of flush_work_sync since the later is deprecated now.
+>  - parameter trip_points of db8500_thermal_match_cdev is renamed to trip_point;
+>  - re-order oprerations in function db8500_thermal_update_config;
+>
+> hongbo.zhang (2):
+>   Thermal: Add ST-Ericsson DB8500 thermal driver.
+>   Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
+>
+>  .../devicetree/bindings/thermal/db8500-thermal.txt |  44 ++
+>  arch/arm/boot/dts/dbx5x0.dtsi                      |  14 +
+>  arch/arm/boot/dts/snowball.dts                     |  31 ++
+>  arch/arm/configs/u8500_defconfig                   |   2 +
+>  arch/arm/mach-ux500/board-mop500.c                 |  64 +++
+>  drivers/thermal/Kconfig                            |  20 +
+>  drivers/thermal/Makefile                           |   2 +
+>  drivers/thermal/db8500_cpufreq_cooling.c           | 108 +++++
+>  drivers/thermal/db8500_thermal.c                   | 531 +++++++++++++++++++++
+>  include/linux/platform_data/db8500_thermal.h       |  38 ++
+>  10 files changed, 854 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+>  create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
+>  create mode 100644 drivers/thermal/db8500_thermal.c
+>  create mode 100644 include/linux/platform_data/db8500_thermal.h
+>
+> --
+> 1.7.11.3
+>
