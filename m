@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2KIJNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 04:13:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34595 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab2KIJND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 04:13:03 -0500
-Date: Fri, 9 Nov 2012 09:12:58 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "mm: vmscan: scale number of pages reclaimed by
- reclaim/compaction based on failures"
-Message-ID: <20121109091258.GH8218@suse.de>
-References: <119175.1349979570@turing-police.cc.vt.edu>
- <5077434D.7080008@suse.cz>
- <50780F26.7070007@suse.cz>
- <20121012135726.GY29125@suse.de>
- <507BDD45.1070705@suse.cz>
- <20121015110937.GE29125@suse.de>
- <5093A3F4.8090108@redhat.com>
- <5093A631.5020209@suse.cz>
- <509422C3.1000803@suse.cz>
- <20121105142449.GI8218@suse.de>
+	id S1751913Ab2KIJNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 04:13:23 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16366 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab2KIJNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 04:13:07 -0500
+Message-ID: <509CC91D.4050207@huawei.com>
+Date: Fri, 9 Nov 2012 17:13:01 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121105142449.GI8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <mhocko@suse.cz>, <rjw@sisk.pl>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/9 v2] cgroup: implement generic child / descendant walk
+ macros
+References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-4-git-send-email-tj@kernel.org> <20121108175946.GA9672@htj.dyndns.org>
+In-Reply-To: <20121108175946.GA9672@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 02:24:49PM +0000, Mel Gorman wrote:
-> Jiri Slaby reported the following:
+On 2012/11/9 1:59, Tejun Heo wrote:
+> Currently, cgroup doesn't provide any generic helper for walking a
+> given cgroup's children or descendants.  This patch adds the following
+> three macros.
 > 
-> 	(It's an effective revert of "mm: vmscan: scale number of pages
-> 	reclaimed by reclaim/compaction based on failures".) Given kswapd
-> 	had hours of runtime in ps/top output yesterday in the morning
-> 	and after the revert it's now 2 minutes in sum for the last 24h,
-> 	I would say, it's gone.
+> * cgroup_for_each_child() - walk immediate children of a cgroup.
 > 
-> The intention of the patch in question was to compensate for the loss
-> of lumpy reclaim. Part of the reason lumpy reclaim worked is because
-> it aggressively reclaimed pages and this patch was meant to be a sane
-> compromise.
+> * cgroup_for_each_descendant_pre() - visit all descendants of a cgroup
+>   in pre-order tree traversal.
 > 
-> When compaction fails, it gets deferred and both compaction and
-> reclaim/compaction is deferred avoid excessive reclaim. However, since
-> commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
-> and continues reclaiming which was not taken into account when the patch
-> was developed.
+> * cgroup_for_each_descendant_post() - visit all descendants of a
+>   cgroup in post-order tree traversal.
 > 
-> Attempts to address the problem ended up just changing the shape of the
-> problem instead of fixing it. The release window gets closer and while a
-> THP allocation failing is not a major problem, kswapd chewing up a lot of
-> CPU is. This patch reverts "mm: vmscan: scale number of pages reclaimed
-> by reclaim/compaction based on failures" and will be revisited in the future.
+> All three only require the user to hold RCU read lock during
+> traversal.  Verifying that each iterated cgroup is online is the
+> responsibility of the user.  When used with proper synchronization,
+> cgroup_for_each_descendant_pre() can be used to propagate state
+> updates to descendants in reliable way.  See comments for details.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> v2: s/config/state/ in commit message and comments per Michal.  More
+>     documentation on synchronization rules.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujisu.com>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Andrew, can you pick up this patch please and drop
-mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-only-in-direct-reclaim.patch
-?
+I don't see anything wrong with the comment on cgroup_next_descendant_pre().
 
-There are mixed reports on how much it helps but it comes down to "this
-fixes a problem" versus "kswapd is still showing higher usage". I think
-the higher kswapd usage is explained by the removal of __GFP_NO_KSWAPD
-and so while higher usage is bad, it is not necessarily unjustified.
-Ideally it would have been proven that having kswapd doing the work
-reduced application stalls in direct reclaim but unfortunately I do not
-have concrete evidence of that at this time.
+Acked-by: Li Zefan <lizefan@huawei.com>
 
--- 
-Mel Gorman
-SUSE Labs
