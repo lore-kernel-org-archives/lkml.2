@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2KINIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 08:08:02 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55528 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab2KINH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 08:07:59 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: tegra: tamonten: Add temperature sensor support
-Date: Fri,  9 Nov 2012 14:07:54 +0100
-Message-Id: <1352466474-27581-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.0
-X-Provags-ID: V02:K0:6thwZknxu+y0HytCyiIybCaZTnq3whglXQLxGA/uDX1
- 1bfvr+7GWVEU67NaMRcsGxk1wmMQF5Pz+OdXupjoFSBMI3zIaV
- 5dYiNKCW/cBWAjodW6WIm549A4NxR3cx0/R0JBym4qdkxBAher
- j0ONGOOUHKS0pQgTBwhDRYL7tNXRs7QC1/xv/4rvdFjCCUsQuL
- 5q9zzmJLhp78abAPVtvImcaMowjYVKwL8uesJFradgT5EeyaES
- fmZzmhY5iA5tRd4h24VKV9uv5s/3vyzxHurc09LOGUGDO1KCSC
- nZ5WjKwJL5IhLqYG/ByBrOymDmdBOmqCpCcUvTU2roKyhNIyxG
- cKaM7VoO2p8MrVCHHVXigmFX7gcY/0gNZlPFYwRpcm1jQBBL8V
- mQoGu+gwsig4/i+bgny3eryByfaPUMF6dpWxvzx9EpsOJGS/YZ
- jTF/9
+	id S1753270Ab2KINMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 08:12:53 -0500
+Received: from hibox-130.abo.fi ([130.232.216.130]:55110 "EHLO centre.hibox.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472Ab2KINMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 08:12:52 -0500
+Message-ID: <509D014B.2080709@hibox.fi>
+Date: Fri, 09 Nov 2012 15:12:43 +0200
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+References: <508DB432.2030208@hibox.fi> <20121101190119.GA27294@quack.suse.cz> <50932DAC.7040702@hibox.fi> <20121107161730.GB23654@quack.suse.cz> <509C4339.2090506@hibox.fi>
+In-Reply-To: <509C4339.2090506@hibox.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tamonten SOM has an ON Semiconductor NCT1008 connected to the DVC
-bus which is used to measure the ambient (local) temperature as well as
-the on-die (remote) temperature.
+On 09.11.2012 01:41, Marcus Sundman wrote:
+> On 07.11.2012 18:17, Jan Kara wrote:
+>> On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
+>>> Also, and this might be important, according to iotop there is
+>>> almost no disk writing going on during the freeze. (Occasionally
+>>> there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
+>>> when an iotop running on nice -20 hasn't frozen completely, which it
+>>> does during the more severe freezes.
+>>    OK, it seems as if your machine has some problems with memory
+>> allocations. Can you capture /proc/vmstat before the freeze and after 
+>> the
+>> freeze and send them for comparison. Maybe it will show us what is the
+>> system doing.
+>
+> t=01:06 http://sundman.iki.fi/vmstat.pre-freeze.txt
+> t=01:08 http://sundman.iki.fi/vmstat.during-freeze.txt
+> t=01:12 http://sundman.iki.fi/vmstat.post-freeze.txt
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- arch/arm/boot/dts/tegra20-tamonten.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+Here are some more vmstats:
+http://sundman.iki.fi/vmstats.tar.gz
 
-diff --git a/arch/arm/boot/dts/tegra20-tamonten.dtsi b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-index c3540e0..4f63b76 100644
---- a/arch/arm/boot/dts/tegra20-tamonten.dtsi
-+++ b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-@@ -440,6 +440,11 @@
- 				};
- 			};
- 		};
-+
-+		nct1008@4c {
-+			compatible = "onnn,nct1008";
-+			reg = <0x4c>;
-+		};
- 	};
- 
- 	pmc {
--- 
-1.8.0
+They are from running this:
+while true; do cat /proc/vmstat > "vmstat.$(date +%FT%X).txt"; sleep 10; 
+done
+
+There were lots and lots of freezes for almost 20 mins from 14:37:45 
+onwards, pretty much constantly, but at 14:56:50 the freezes suddenly 
+stopped and everything went back to how it should be.
+
+
+Thanks,
+Marcus
 
