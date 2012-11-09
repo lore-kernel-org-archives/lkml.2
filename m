@@ -1,143 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2KITpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 14:45:21 -0500
-Received: from nm30-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.86]:24664
-	"EHLO nm30-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753311Ab2KITpU (ORCPT
+	id S1755418Ab2KITtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 14:49:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56881 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab2KITtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 14:45:20 -0500
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Nov 2012 14:45:19 EST
-X-Yahoo-Newman-Id: 159691.27623.bm@smtp110.sbc.mail.mud.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: pSYcKmcVM1k7F4qN7akitru3kPIce15cTmlm16h.YM84BAf
- DMQsGN02O.1mtGKWvqtrTtWFq3bPcwkxC02QzX5DnEmTw4wJA47UP6_bJXGw
- BnsBVpywlzO.Wtq1wm1YJ.RtnlRZYEp9jkn.jw5I4q4fH.05yTjJ5JTkJxSW
- DkhRDj9PmqdNFkE5Q81oYzp79ki7VSJEHIZ7sLqRAbYaLefYZWaYTQxDTaWs
- gPNKYAyy_t0CVXd1rCP.4898y__uSHR.uHoa4qLQLJ5DNgC_RoG.N3BkLAWR
- aQJWQektn7OdH0f7cW75lb0K9Hj30KZK0XZgxJeGCyqTEEFMZyDCzjAaR7gN
- 91_jSFqkaDBrGp5p6HICYANGwoQnJNWLqhw9rKt171YHgq6Z4kkg__rWSdRP
- q8_lq20Tmm_4j4BDdvkblSW9IahLH8b9s1fdw_4rORWaUTagXwNWwjW537SB
- COkyAqio92LXIVjyh1THF1NoScToeZApnyLG1eKcK4X7m2pTZtOTc8B4hbd.
- 1wKbzCO0XIdnevUgLUzEjA0vtNhRRXDmtoo3ZSWigxBsK3FMmv3Tmf1CHIOU
- NuXQOYVIv3rl0kIKjhTl744H_vr.2ON8dBwY-
-X-Yahoo-SMTP: x3UJDw2swBBmiVP7941KaiyaoilgwM.0jf7QxQtKIw--
-Message-ID: <509D5BCD.3010901@pacbell.net>
-Date: Fri, 09 Nov 2012 11:38:53 -0800
-From: Richard <richjunk@pacbell.net>
-Reply-To: richjunk@pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120919 Thunderbird/15.0.1
+	Fri, 9 Nov 2012 14:49:45 -0500
+Message-ID: <509D5E53.2090902@kernel.dk>
+Date: Fri, 09 Nov 2012 20:49:39 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kernel 3.6.5 and 3.6.6 GPF when use CONFIG_USB_SERIAL_KEYSPAN_USA49W
-X-Enigmail-Version: 1.4.4
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] drbd-8.4.2 for the linux-3.8 merge window
+References: <3042269.jrNem7z1LI@fat-tyre> <509D10A3.8040203@kernel.dk> <509D1830.8010103@kernel.dk> <15372058.EgEfohI4mf@fat-tyre>
+In-Reply-To: <15372058.EgEfohI4mf@fat-tyre>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my Gentoo system using kernel.org kernel sources, 3.6.5 and 3.6.6, I
-receive a "general protection fault" (GPF) when a program tries to
-access my Keyspan 4-port serial to usb adapter using the
-USB_SERIAL_KEYSPAN_USA49W driver moddule.  This GPF does not occur when
-using kernel versions less than 3.6.5.
+On 2012-11-09 16:19, Philipp Reisner wrote:
+> Am Freitag, 9. November 2012, 15:50:24 schrieb Jens Axboe:
+>> On 2012-11-09 15:18, Jens Axboe wrote:
+>>> On 2012-11-09 14:33, Philipp Reisner wrote:
+>>>> Jens, here it is without the sysfs stuff
+>>>
+>>> Thanks, pulled into for-3.8/drivers
+>>
+>> I didn't say anything, but I've been fuming a bit the last few series of
+>> merge windows. You need to stop these insanely massive pull requests.
+>> I've been large since this is "just a driver", but it can't continue. We
+>> should have reached stability a long time ago. Your pull requests
+>> contain a shit load of items, are you guys paying per commit? Look at
+>> these:
+>>
+>>       drbd: Request lookup code cleanup (1)
+>>       drbd: Request lookup code cleanup (2)
+>>       drbd: Request lookup code cleanup (3)
+>>       drbd: Request lookup code cleanup (4)
+>>
+> 
+> We are living there in the belief that we should break up big
+> changes in review able chunks....
 
-The GPF occurs when running C or Python based programs as well as
-running minicom.
+Don't be silly. Of course things should be broken up. But they should be
+broken up in logical steps needed to convert from state X to Y. What
+does reqeust code cleanup (1) mean? Nothing. Lets take a look at the
+commit message:
 
-Below is part of /var/log/messages that shows the GPF when I tried to
-run whozzcalling.py  -- a script I wrote that communicates with a serial
-device.  It has worked through years of kernel upgrades.
+    Move _ar_id_to_req() to drbd_receiver.c and mark it non-inline.  Remove
+    the leading underscores from _ar_id_to_req() and _ack_id_to_req().  Mark
+    ar_hash_slot() inline.
 
-If I can provide any more information, please ask.
+which is exactly the wrong way as well. A commit message should explain
+why a given change is done. The above describes how it's done. We can
+all read the code and see that.
 
-Please CC my e-mail address with any replies, I do not subscribe to the
-linux kernel list:   richjunk@pacbell.net
+In other words, you need to school people on what a commit is, and what
+a series of commits is.
 
-Richard
+>> or
+>>
+>>       drbd: conn_send_cmd2(): Return 0 upon success and an error code
+>> otherwise drbd: _conn_send_cmd(): Return 0 upon success and an error code
+>> otherwise drbd: _drbd_send_cmd(): Return 0 upon success and an error code
+>> otherwise drbd: conn_send_cmd(): Return 0 upon success and an error code
+>> otherwise
+>>
+> 
+> Function by function gets converted to the "return 0 upon success" call
+> semantics.
+> Do you prefer that all of that should be done in a single commit?
 
+For this case, yes indeed. Then it'd make more sense to describe why
+that change was made. For this particular one, it's fairly easy to guess
+why the change was needed.
 
+>> along with FIFTY or so more of these. WTF is this?
+>>
+>>       drbd: Converted helper functions for drbd_send() to tconn
+>>       drbd: Converted drbd_send() from mdev to tconn
+>>       drbd: Converted drbd_send_fp() from mdev to tconn
+>>
+> 
+> Should it instead be in a single commit?
+> 
+>>
+>> I don't think I need to go on. So from now on, to get items into the
+>> kernel, what you will do is:
+>>
+>> - Stop doing insane commits like the above. It just doesn't make sense.
+>>
+>> - Send pull requests in a timely fashion. No more of this "lets collect
+>>   ALL the things" then send it off. Collect small bug fixes, send those
+>>   off. Develop some feature or make some changes, send that off. Etc.
+> 
+> That works well for individual features, and we have been doing that
+> for the last two Years.
+> 
+> But at this time we changed the object model. In the old code we had
+> a single kind of DRBD-in-kernel-object: a resource
+> Now we have two kinds: resources and volumes.
+> 
+> 8.3: a resource had a single implicit volume
+> 
+> 8.4: a resource might contain multiple volumes, each volume belongs to
+>      a single resource.
+> 
+> In the next ~12 month you will get only small features/updates etc... for
+> the 8.4 code base.
 
-Nov  7 18:57:43 runner kernel: general protection fault: 0000 [#1] SMP
-Nov  7 18:57:43 runner kernel: Modules linked in: xt_recent xt_tcpudp
-xt_LOG xt_limit xt_state ipt_MASQUERADE iptable_nat iptable_filter
-nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp
-nf_conntrack ip_tables x_tables ipv6 snd_pcm_oss snd_mixer_oss
-hid_generic usbhid hid usblp keyspan usbserial snd_hda_codec_hdmi sr_mod
-cdrom sg uhci_hcd coretemp crc32c_intel ghash_clmulni_intel aesni_intel
-snd_hda_codec_realtek xhci_hcd ehci_hcd ablk_helper cryptd aes_x86_64
-usbcore sky2 usb_common aes_generic snd_hda_intel snd_hda_codec i2c_i801
-snd_pcm snd_timer snd soundcore snd_page_alloc pcspkr hwmon [last
-unloaded: asus_atk0110]
-Nov  7 18:57:43 runner kernel: CPU 2
-Nov  7 18:57:43 runner kernel: Pid: 4150, comm: whozzcalling-ge Not
-tainted 3.6.6-rr01 #1 System manufacturer System Product Name/P6X58D PREMIUM
-Nov  7 18:57:43 runner kernel: RIP: 0010:[<ffffffffa0176a4c>]
-[<ffffffffa0176a4c>] keyspan_open+0x11c/0x190 [keyspan]
-Nov  7 18:57:43 runner kernel: RSP: 0018:ffff880625619a68  EFLAGS: 00010246
-Nov  7 18:57:43 runner kernel: RAX: 0000000000000000 RBX:
-ffff8806256b9a00 RCX: 0000000000000000
-Nov  7 18:57:43 runner kernel: RDX: 0000000000000000 RSI:
-0000000022e95810 RDI: 0000000000002580
-Nov  7 18:57:43 runner kernel: RBP: ffff880625619ab8 R08:
-0000000000000000 R09: 0000000000000000
-Nov  7 18:57:43 runner kernel: R10: ffff880622fb49c0 R11:
-0000000000000000 R12: 0000000000000cbd
-Nov  7 18:57:45 runner kernel: R13: ffff880623d4b000 R14:
-0000000000002580 R15: ffff880620c06000
-Nov  7 18:57:45 runner kernel: FS:  00007f047f6c3700(0000)
-GS:ffff88063fc40000(0000) knlGS:0000000000000000
-Nov  7 18:57:45 runner kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
-0000000080050033
-Nov  7 18:57:45 runner kernel: CR2: 00007f047f6f5000 CR3:
-000000061fe58000 CR4: 00000000000007e0
-Nov  7 18:57:45 runner kernel: DR0: 0000000000000000 DR1:
-0000000000000000 DR2: 0000000000000000
-Nov  7 18:57:45 runner kernel: DR3: 0000000000000000 DR6:
-00000000ffff0ff0 DR7: 0000000000000400
-Nov  7 18:57:45 runner kernel: Process whozzcalling-ge (pid: 4150,
-threadinfo ffff880625618000, task ffff880625711990)
-Nov  7 18:57:45 runner kernel: Stack:
-Nov  7 18:57:45 runner kernel: ffff880625680a00 ffff880620c06000
-0000880620c064a8 ffff880622fb49c0
-Nov  7 18:57:45 runner kernel: ffff880625680a00 ffff8806218671e8
-ffff880623d4b008 ffff880620c06000
-Nov  7 18:57:45 runner kernel: ffff880621867180 ffff880623d4b000
-ffff880625619b08 ffffffffa0158645
-Nov  7 18:57:45 runner kernel: Call Trace:
-Nov  7 18:57:45 runner kernel: [<ffffffffa0158645>]
-serial_activate+0x75/0xa0 [usbserial]
-Nov  7 18:57:45 runner kernel: [<ffffffff8129b027>] tty_port_open+0x87/0xd0
-Nov  7 18:57:45 runner kernel: [<ffffffffa0158c2a>]
-serial_open+0x3a/0x70 [usbserial]
-Nov  7 18:57:45 runner kernel: [<ffffffff8129315c>] tty_open+0x29c/0x600
-Nov  7 18:57:45 runner kernel: [<ffffffff812d51a4>] ?
-kobj_lookup+0x104/0x160
-Nov  7 18:57:45 runner kernel: [<ffffffff810dfbd0>] chrdev_open+0xa0/0x180
-Nov  7 18:57:45 runner kernel: [<ffffffff810dfb30>] ? cdev_put+0x30/0x30
-Nov  7 18:57:45 runner kernel: [<ffffffff810da106>]
-do_dentry_open.clone.18+0x206/0x280
-Nov  7 18:57:45 runner kernel: [<ffffffff810da19d>] finish_open+0x1d/0x30
-Nov  7 18:57:45 runner kernel: [<ffffffff810ea44e>] do_last+0x76e/0xe30
-Nov  7 18:57:45 runner kernel: [<ffffffff810e723c>] ?
-link_path_walk+0x8c/0x9a0
-Nov  7 18:57:45 runner kernel: [<ffffffff810a5adf>] ?
-release_pages+0x1bf/0x210
-Nov  7 18:57:45 runner kernel: [<ffffffff810eabbe>] path_openat+0xae/0x4e0
-Nov  7 18:57:45 runner kernel: [<ffffffff810b750f>] ?
-tlb_flush_mmu+0x5f/0xa0
-Nov  7 18:57:45 runner kernel: [<ffffffff810eb344>] do_filp_open+0x44/0xa0
-Nov  7 18:57:45 runner kernel: [<ffffffff810f6ea7>] ? alloc_fd+0x47/0x130
-Nov  7 18:57:45 runner kernel: [<ffffffff810dafb5>] do_sys_open+0x105/0x1f0
-Nov  7 18:57:45 runner kernel: [<ffffffff810db0bc>] sys_open+0x1c/0x20
-Nov  7 18:57:45 runner kernel: [<ffffffff813ce562>]
-system_call_fastpath+0x16/0x1b
-Nov  7 18:57:45 runner kernel: Code: 08 e8 b9 16 12 e1 41 89 c6 85 c0 78
-2d 44 0f b6 4d c7 0f b6 45 c6 4c 8b 55 c8 41 29 c1 45 31 c0 31 c9 31 d2
-41 8b 72 68 44 89 f7 <41> ff 52 60 85 c0 75 07 44 89 b3 88 01 00 00 44
-89 e0 c1 e8 1f
-Nov  7 18:57:45 runner kernel: RIP  [<ffffffffa0176a4c>]
-keyspan_open+0x11c/0x190 [keyspan]
-Nov  7 18:57:45 runner kernel: RSP <ffff880625619a68>
-Nov  7 18:57:45 runner kernel: ---[ end trace e474011534926a5c ]---
+If you had just structured it a bit better, then 8.3 -> 8.4 transition
+would look a lot less painful. As it stands right now, it's just a huge
+mess of little changes.
+
+But I'm happy that you think that the next 12 months will have only
+gradual changes for bug fixes and features.
+
+>> The fact that your initial pull request had to MASK all these commits
+>> should have rung big bells in your head. It's a clear sign of a huge
+>> problem in your development model. If you can't clean this up, then
+>> it's not going in.
+> 
+> Fundamental changes in our object model require such huge change sets.
+> Jens, we will not stop where we are today. We plan to introduce a new
+> object: a connection. (The ability to mirror for one machine to *multiple*
+> receivers.)
+
+If you think I'm asking you to stop developing, then you are completely
+missing the message. I'm asking you to CHANGE how you develop, or at
+least present, these changes. Tons of little changes reak of "hey lets
+do this in this function. then lets also do this in that function". A
+bit more structure would go a long way. What I usually do is that I may
+develop from the first model, then refactor and structure everything to
+look a lot nicer. A big part of being able to review a patch series is
+understanding where it's going. Step 1 does this, step 2 does that, etc.
+If you have 500 changes of "change return code from void to err/0",
+well... It may be that you have nice structure underneath it and it's
+just hidden behind this mess. If so, it'll be easier for you to make it
+better.
+
+> Is it a better fit to introduce it then as a new driver? 
+> E.g. called it "drbd9". 
+> Should it use a new major number?
+
+No, I definitely don't want another "here's drbd9" submission. We've
+already done that for v8, and it's not been smooth sailing.
+Incrementally move things over, make it a more open and logical
+development model.
+
+-- 
+Jens Axboe
+
