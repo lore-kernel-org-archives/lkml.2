@@ -1,186 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab2KIRbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:31:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52364 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab2KIR2q (ORCPT
+	id S1755365Ab2KIRbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:31:40 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40848 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab2KIR2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:28:46 -0500
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 03/13] perf annotate: Merge same lines in summary view
-Date: Sat, 10 Nov 2012 02:27:14 +0900
-Message-Id: <1352482044-3443-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352482044-3443-1-git-send-email-namhyung@kernel.org>
-References: <1352482044-3443-1-git-send-email-namhyung@kernel.org>
+	Fri, 9 Nov 2012 12:28:41 -0500
+Message-ID: <509D3D46.7060102@wwwdotorg.org>
+Date: Fri, 09 Nov 2012 10:28:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] spi: tegra: sequence compatible strings as per preference
+References: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com> <509D37B8.8020606@wwwdotorg.org> <20121109171008.GX23807@opensource.wolfsonmicro.com>
+In-Reply-To: <20121109171008.GX23807@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 11/09/2012 10:10 AM, Mark Brown wrote:
+> On Fri, Nov 09, 2012 at 10:04:56AM -0700, Stephen Warren wrote:
+> 
+>> However just FYI, it should not be necessary for correctness; The
+>> DT matching order is supposed to be driven purely by the order of
+>> the compatible values in the DT now, and not affected by the
+>> order of values in the table. (This wasn't always the case, but
+>> was a bug that was fixed IIRC by Thierry Reding).
+> 
+> I guess the driver is being used backported in older kernels which
+> don't have that fix?
 
-The --print-line option of perf annotate command shows summary for
-each source line.  But it didn't merge same lines so that it can
-appear multiple times.
-
-* before:
-
-Sorted summary for file /home/namhyung/bin/mcol
-----------------------------------------------
-   21.71 /home/namhyung/tmp/mcol.c:26
-   20.66 /home/namhyung/tmp/mcol.c:25
-    9.53 /home/namhyung/tmp/mcol.c:24
-    7.68 /home/namhyung/tmp/mcol.c:25
-    7.67 /home/namhyung/tmp/mcol.c:25
-    7.66 /home/namhyung/tmp/mcol.c:26
-    7.49 /home/namhyung/tmp/mcol.c:26
-    6.92 /home/namhyung/tmp/mcol.c:25
-    6.81 /home/namhyung/tmp/mcol.c:25
-    1.07 /home/namhyung/tmp/mcol.c:26
-    0.52 /home/namhyung/tmp/mcol.c:25
-    0.51 /home/namhyung/tmp/mcol.c:25
-    0.51 /home/namhyung/tmp/mcol.c:24
-
-* after:
-
-Sorted summary for file /home/namhyung/bin/mcol
-----------------------------------------------
-   50.77 /home/namhyung/tmp/mcol.c:25
-   37.94 /home/namhyung/tmp/mcol.c:26
-   10.04 /home/namhyung/tmp/mcol.c:24
-
-To do that, introduce percent_sum field so that the normal
-line-by-line output doesn't get changed.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/annotate.c |   55 +++++++++++++++++++++++++++++++++++++++++---
- tools/perf/util/annotate.h |    1 +
- 2 files changed, 53 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 12287b121669..0ac9cc4c5e7d 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -890,12 +890,41 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 	struct source_line *iter;
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
-+	int ret;
- 
- 	while (*p != NULL) {
- 		parent = *p;
- 		iter = rb_entry(parent, struct source_line, node);
- 
--		if (src_line->percent > iter->percent)
-+		ret = strcmp(iter->path, src_line->path);
-+		if (ret == 0) {
-+			iter->percent_sum += src_line->percent;
-+			return;
-+		}
-+
-+		if (ret < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	src_line->percent_sum = src_line->percent;
-+
-+	rb_link_node(&src_line->node, parent, p);
-+	rb_insert_color(&src_line->node, root);
-+}
-+
-+static void __resort_source_line(struct rb_root *root, struct source_line *src_line)
-+{
-+	struct source_line *iter;
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		iter = rb_entry(parent, struct source_line, node);
-+
-+		if (src_line->percent_sum > iter->percent_sum)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -905,6 +934,24 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
- 	rb_insert_color(&src_line->node, root);
- }
- 
-+static void resort_source_line(struct rb_root *dest_root, struct rb_root *src_root)
-+{
-+	struct source_line *src_line;
-+	struct rb_node *node;
-+
-+	node = rb_first(src_root);
-+	while (node) {
-+		struct rb_node *next;
-+
-+		src_line = rb_entry(node, struct source_line, node);
-+		next = rb_next(node);
-+		rb_erase(node, src_root);
-+
-+		__resort_source_line(dest_root, src_line);
-+		node = next;
-+	}
-+}
-+
- static void symbol__free_source_line(struct symbol *sym, int len)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -929,6 +976,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 	struct source_line *src_line;
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	struct rb_root tmp_root = RB_ROOT;
- 
- 	if (!h->sum)
- 		return 0;
-@@ -963,12 +1011,13 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		strcpy(src_line[i].path, path);
--		insert_source_line(root, &src_line[i]);
-+		insert_source_line(&tmp_root, &src_line[i]);
- 
- 	next:
- 		pclose(fp);
- 	}
- 
-+	resort_source_line(root, &tmp_root);
- 	return 0;
- }
- 
-@@ -992,7 +1041,7 @@ static void print_summary(struct rb_root *root, const char *filename)
- 		char *path;
- 
- 		src_line = rb_entry(node, struct source_line, node);
--		percent = src_line->percent;
-+		percent = src_line->percent_sum;
- 		color = get_percent_color(percent);
- 		path = src_line->path;
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index c6272011625a..8eec94358a4a 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -76,6 +76,7 @@ struct sym_hist {
- struct source_line {
- 	struct rb_node	node;
- 	double		percent;
-+	double		percent_sum;
- 	char		*path;
- };
- 
--- 
-1.7.9.2
-
+That sounds likely. Laxman, it'd be a good idea to track down the fix
+to the DT matching code and backport it, so that hard-to debug issues
+aren't caused by the lack of that patch!
