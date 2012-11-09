@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab2KISTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 13:19:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab2KISTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 13:19:10 -0500
-Date: Fri, 9 Nov 2012 19:19:44 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
-	block the readers unnecessarily
-Message-ID: <20121109181944.GA2078@redhat.com>
-References: <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121109154656.GA26134@redhat.com> <20121109170107.GB2419@linux.vnet.ibm.com> <20121109181048.GA1184@redhat.com>
+	id S1755188Ab2KISX2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 13:23:28 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56718 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab2KISXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 13:23:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109181048.GA1184@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CADnq5_NWNjsowbPRxiL0cA6XJ_5uZYKO-OfYMZu_NxYeg7s0yA@mail.gmail.com>
+References: <000001cdbe47$48f5dbc0$dae19340$%han@samsung.com>
+ <CAErSpo7i+pZoPZWdJOLfJ4xJzs1NRVEmk1-N-NL+xK65coFZiA@mail.gmail.com> <CADnq5_NWNjsowbPRxiL0cA6XJ_5uZYKO-OfYMZu_NxYeg7s0yA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 9 Nov 2012 11:23:00 -0700
+Message-ID: <CAErSpo5qxTbz--0PKM5J_Quy_vZLrdP2q=kOVQh2+Gta5Xvg0Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix bit definitions of PCI_EXP_LNKCAP2 register
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09, Oleg Nesterov wrote:
+On Fri, Nov 9, 2012 at 10:37 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Fri, Nov 9, 2012 at 12:15 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Thu, Nov 8, 2012 at 11:56 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>> According to the PCIe 3.0 spec, PCI_EXP_LNKCAP2_SLS_2_5GB is
+>>> 1st bit of PCI_EXP_LNKCAP2 register, not 0th bit. So, the bit
+>>> definition of supported link speed vector should be fixed.
+>>>
+>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>>> ---
+>>>  include/uapi/linux/pci_regs.h |    6 +++---
+>>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+>>> index 20ae747..14a3184 100644
+>>> --- a/include/uapi/linux/pci_regs.h
+>>> +++ b/include/uapi/linux/pci_regs.h
+>>> @@ -544,9 +544,9 @@
+>>>  #define  PCI_EXP_OBFF_WAKE_EN  0x6000  /* OBFF using WAKE# signaling */
+>>>  #define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44      /* v2 endpoints end here */
+>>>  #define PCI_EXP_LNKCAP2                44      /* Link Capability 2 */
+>>> -#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x01        /* Current Link Speed 2.5GT/s */
+>>> -#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x02        /* Current Link Speed 5.0GT/s */
+>>> -#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x04        /* Current Link Speed 8.0GT/s */
+>>> +#define  PCI_EXP_LNKCAP2_SLS_2_5GB 0x02        /* Current Link Speed 2.5GT/s */
+>>> +#define  PCI_EXP_LNKCAP2_SLS_5_0GB 0x04        /* Current Link Speed 5.0GT/s */
+>>> +#define  PCI_EXP_LNKCAP2_SLS_8_0GB 0x08        /* Current Link Speed 8.0GT/s */
+>>>  #define  PCI_EXP_LNKCAP2_CROSSLINK 0x100 /* Crosslink supported */
+>>>  #define PCI_EXP_LNKCTL2                48      /* Link Control 2 */
+>>>  #define PCI_EXP_LNKSTA2                50      /* Link Status 2 */
+>>
+>> I think this patch is correct, per spec sec 7.8.18.  If I apply it, I
+>> think the comments should also be changed to "Supported Link Speed"
+>> instead of "Current."
 >
-> 	static bool xxx(brw)
-> 	{
-> 		down_write(&brw->rw_sem);
-> 		if (!atomic_read(&brw->slow_read_ctr))
->			return true;
+> Correct.
+>
+>>
+>> The only in-tree user of these symbols is
+>> drm_pcie_get_speed_cap_mask().  Dave, can you ack/nack this?  I don't
+>> want to apply this if it's going to break something there.
+>
+> The patch is fine and shouldn't break anything.
 
-I meant, try_to_down_write(). Otherwise this can obviously deadlock.
+Thanks for checking this out, Alex.
 
-Oleg.
+I applied this to my pci/misc branch as v3.8 material.
 
+Bjorn
