@@ -1,144 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab2KIK0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 05:26:30 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64079 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab2KIK02 (ORCPT
+	id S1752337Ab2KIK3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 05:29:07 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:47684 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751069Ab2KIK3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 05:26:28 -0500
+	Fri, 9 Nov 2012 05:29:03 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] pinctrl/nomadik: make independent of prcmu driver
+Date: Fri, 9 Nov 2012 11:28:35 +0100
+Message-ID: <1352456915-28738-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-In-Reply-To: <20121108011035.GA20670@us.ibm.com>
-References: <20121108011035.GA20670@us.ibm.com>
-Date: Fri, 9 Nov 2012 11:26:26 +0100
-Message-ID: <CABPqkBQrUVTY9rfeaO+pdaNwZcAgXF45SHnAYJfTvi4HAsPPeQ@mail.gmail.com>
-Subject: Re: perf: POWER-event translation questions
-From: Stephane Eranian <eranian@google.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Robert Richter <robert.richter@amd.com>, linuxppc-dev@ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 2:10 AM, Sukadev Bhattiprolu
-<sukadev@linux.vnet.ibm.com> wrote:
->
->
-> Looking for feedback on this prototype for making POWER-specific event
-> translations available in sysfs. It is based on the patchset:
->
->         https://lkml.org/lkml/2012/11/7/402
->
-> which makes the translations for _generic_ events in POWER available in sysfs:
->
-> Since this is in POWER7 specific code I am assigning the names given in the
-> POWER7 CPU spec for now.
->
-> I had earlier tried mapping these events to generic names outside sysfs:
->
->         Power7 name             Generic name
->
->         cmpl-stall-fxu          stalled-cycles-fixed-point
->         cmpl-stall-lsu          stalled-cycles-load-store
->         cmpl-stall-ifu          stalled-cycles-instruction-fetch
->         cmpl-stall-bru          stalled-cycles-branch-unit
->
-> But like Stephane Eranian pointed out mapping such events across architectures
-> can be confusing.
->
-> Another challenge I suspect we will have is the extremely long generic names
-> we could end up with as the events get more specific.
->
-> 1. Can we have more than one name for an event ? i.e two sysfs entries,
->    eg: 'cmpl-stall-fxu' and 'stalled-cycles-fixed-point' for an event ?
->
-Yes, you can. What is really used is the content of the file and two files
-can have the same content.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-> 2. Can we allow hyphens in the {name} token  (please see my change to
->    util/parse-events.l below). With this change, I can run:
->
-The current code does not support this but Andi fixed that in his HSW patch
-and I use it for the PEBS-LL patch series as well.
+Currently there are some unnecessary criss-cross
+dependencies between the PRCMU driver in MFD and a lot of
+other drivers, mainly because other drivers need to poke
+around in the PRCM register range.
 
->           perf stat -e cpu/cmplu-stall-bru /tmp/nop
->
->    without any changes to the user level tool (parse-events.l) I have
->    tested some common cases, not sure if it will break something :-)
->
->    If we are going to create generic or arch specific sysfs entries in
->    /sys/bus/event_source/devices/cpu/events, do we need to add corresponding
->    entry in tools/perf/util/parse-events.l ?
->
-Shouldn't be necessary. perf should grab those events automatically from sysfs.
-As per Jiri, the hardcoded tables are only used to support backward
-compatibility
-for kernels without sysfs event entries.
+In cases like this there are actually just a few select
+registers that the pinctrl driver need to read/modify/write,
+and it turns out that no other driver is actually using
+these registers, so there are no concurrency issues
+whatsoever.
 
-> Sukadev
->
-> ---
->  arch/powerpc/perf/power7-pmu.c |   13 +++++++++++++
->  tools/perf/util/parse-events.l |    2 +-
->  2 files changed, 14 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-> index aa9f588..9f46abc 100644
-> --- a/arch/powerpc/perf/power7-pmu.c
-> +++ b/arch/powerpc/perf/power7-pmu.c
-> @@ -303,6 +303,10 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
->  #define        PM_LD_MISS_L1                   0x400f0
->  #define        PM_BRU_FIN                      0x10068
->  #define        PM_BRU_MPRED                    0x400f6
-> +#define        PM_CMPLU_STALL_FXU              0x20014
-> +#define        PM_CMPLU_STALL_LSU              0x20012
-> +#define        PM_CMPLU_STALL_IFU              0x4004c
-> +#define        PM_CMPLU_STALL_BRU              0x4004e
->
->  static int power7_generic_events[] = {
->         [PERF_COUNT_HW_CPU_CYCLES] =                    PM_CYC,
-> @@ -369,6 +373,11 @@ EVENT_ATTR(cache-misses,               LD_MISS_L1);
->  EVENT_ATTR(branch-instructions,        BRU_FIN);
->  EVENT_ATTR(branch-misses,              BRU_MPRED);
->
-> +EVENT_ATTR(cmplu-stall-fxu,            CMPLU_STALL_FXU);
-> +EVENT_ATTR(cmplu-stall-lsu,            CMPLU_STALL_LSU);
-> +EVENT_ATTR(cmplu-stall-ifu,            CMPLU_STALL_IFU);
-> +EVENT_ATTR(cmplu-stall-bru,            CMPLU_STALL_BRU);
-> +
->  static struct attribute *power7_events_attr[] = {
->         EVENT_PTR(CYC),
->         EVENT_PTR(GCT_NOSLOT_CYC),
-> @@ -378,6 +387,10 @@ static struct attribute *power7_events_attr[] = {
->         EVENT_PTR(LD_MISS_L1),
->         EVENT_PTR(BRU_FIN),
->         EVENT_PTR(BRU_MPRED),
-> +       EVENT_PTR(CMPLU_STALL_FXU),
-> +       EVENT_PTR(CMPLU_STALL_LSU),
-> +       EVENT_PTR(CMPLU_STALL_IFU),
-> +       EVENT_PTR(CMPLU_STALL_BRU),
->         NULL,
->  };
->
-> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-> index c87efc1..1967bb2 100644
-> --- a/tools/perf/util/parse-events.l
-> +++ b/tools/perf/util/parse-events.l
-> @@ -80,7 +80,7 @@ event         [^,{}/]+
->  num_dec                [0-9]+
->  num_hex                0x[a-fA-F0-9]+
->  num_raw_hex    [a-fA-F0-9]+
-> -name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
-> +name           [-a-zA-Z_*?][-a-zA-Z0-9_*?]*
->  modifier_event [ukhpGH]{1,8}
->  modifier_bp    [rwx]{1,3}
->
-> --
-> 1.7.1
->
+So: don't let the location of the register range complicate
+things, just poke into these registers directly and skip
+a layer of indirection.
+
+Take this opportunity to add kerneldoc to the pinctrl
+state container.
+
+Cc: Loic Pallardy <loic.pallardy@st.com>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Have the pointer in the pin controller state container
+  instead of as part of SoC data.
+---
+ drivers/pinctrl/pinctrl-nomadik.c | 59 ++++++++++++++++++++++++++-------------
+ 1 file changed, 39 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 22f6937..6a95d04 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -30,20 +30,6 @@
+ #include <linux/pinctrl/pinconf.h>
+ /* Since we request GPIOs from ourself */
+ #include <linux/pinctrl/consumer.h>
+-/*
+- * For the U8500 archs, use the PRCMU register interface, for the older
+- * Nomadik, provide some stubs. The functions using these will only be
+- * called on the U8500 series.
+- */
+-#ifdef CONFIG_ARCH_U8500
+-#include <linux/mfd/dbx500-prcmu.h>
+-#else
+-static inline u32 prcmu_read(unsigned int reg) {
+-	return 0;
+-}
+-static inline void prcmu_write(unsigned int reg, u32 value) {}
+-static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value) {}
+-#endif
+ #include <linux/platform_data/pinctrl-nomadik.h>
+ 
+ #include <asm/mach/irq.h>
+@@ -82,10 +68,18 @@ struct nmk_gpio_chip {
+ 	u32 lowemi;
+ };
+ 
++/**
++ * struct nmk_pinctrl - state container for the Nomadik pin controller
++ * @dev: containing device pointer
++ * @pctl: corresponding pin controller device
++ * @soc: SoC data for this specific chip
++ * @prcm_base: PRCM register range virtual base
++ */
+ struct nmk_pinctrl {
+ 	struct device *dev;
+ 	struct pinctrl_dev *pctl;
+ 	const struct nmk_pinctrl_soc_data *soc;
++	void __iomem *prcm_base;
+ };
+ 
+ static struct nmk_gpio_chip *
+@@ -247,6 +241,15 @@ nmk_gpio_disable_lazy_irq(struct nmk_gpio_chip *nmk_chip, unsigned offset)
+ 	dev_dbg(nmk_chip->chip.dev, "%d: clearing interrupt mask\n", gpio);
+ }
+ 
++static void nmk_write_masked(void __iomem *reg, u32 mask, u32 value)
++{
++	u32 val;
++
++	val = readl(reg);
++	val = ((val & ~mask) | (value & mask));
++	writel(val, reg);
++}
++
+ static void nmk_prcm_altcx_set_mode(struct nmk_pinctrl *npct,
+ 	unsigned offset, unsigned alt_num)
+ {
+@@ -285,8 +288,8 @@ static void nmk_prcm_altcx_set_mode(struct nmk_pinctrl *npct,
+ 			if (pin_desc->altcx[i].used == true) {
+ 				reg = gpiocr_regs[pin_desc->altcx[i].reg_index];
+ 				bit = pin_desc->altcx[i].control_bit;
+-				if (prcmu_read(reg) & BIT(bit)) {
+-					prcmu_write_masked(reg, BIT(bit), 0);
++				if (readl(npct->prcm_base + reg) & BIT(bit)) {
++					nmk_write_masked(npct->prcm_base + reg, BIT(bit), 0);
+ 					dev_dbg(npct->dev,
+ 						"PRCM GPIOCR: pin %i: alternate-C%i has been disabled\n",
+ 						offset, i+1);
+@@ -314,8 +317,8 @@ static void nmk_prcm_altcx_set_mode(struct nmk_pinctrl *npct,
+ 		if (pin_desc->altcx[i].used == true) {
+ 			reg = gpiocr_regs[pin_desc->altcx[i].reg_index];
+ 			bit = pin_desc->altcx[i].control_bit;
+-			if (prcmu_read(reg) & BIT(bit)) {
+-				prcmu_write_masked(reg, BIT(bit), 0);
++			if (readl(npct->prcm_base + reg) & BIT(bit)) {
++				nmk_write_masked(npct->prcm_base + reg, BIT(bit), 0);
+ 				dev_dbg(npct->dev,
+ 					"PRCM GPIOCR: pin %i: alternate-C%i has been disabled\n",
+ 					offset, i+1);
+@@ -327,7 +330,7 @@ static void nmk_prcm_altcx_set_mode(struct nmk_pinctrl *npct,
+ 	bit = pin_desc->altcx[alt_index].control_bit;
+ 	dev_dbg(npct->dev, "PRCM GPIOCR: pin %i: alternate-C%i has been selected\n",
+ 		offset, alt_index+1);
+-	prcmu_write_masked(reg, BIT(bit), BIT(bit));
++	nmk_write_masked(npct->prcm_base + reg, BIT(bit), BIT(bit));
+ }
+ 
+ static void __nmk_config_pin(struct nmk_gpio_chip *nmk_chip, unsigned offset,
+@@ -693,7 +696,7 @@ static int nmk_prcm_gpiocr_get_mode(struct pinctrl_dev *pctldev, int gpio)
+ 		if (pin_desc->altcx[i].used == true) {
+ 			reg = gpiocr_regs[pin_desc->altcx[i].reg_index];
+ 			bit = pin_desc->altcx[i].control_bit;
+-			if (prcmu_read(reg) & BIT(bit))
++			if (readl(npct->prcm_base + reg) & BIT(bit))
+ 				return NMK_GPIO_ALT_C+i+1;
+ 		}
+ 	}
+@@ -1851,6 +1854,7 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	const struct platform_device_id *platid = platform_get_device_id(pdev);
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct nmk_pinctrl *npct;
++	struct resource *res;
+ 	unsigned int version = 0;
+ 	int i;
+ 
+@@ -1872,6 +1876,20 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	if (version == PINCTRL_NMK_DB8540)
+ 		nmk_pinctrl_db8540_init(&npct->soc);
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res) {
++		npct->prcm_base = devm_ioremap(&pdev->dev, res->start,
++					       resource_size(res));
++		if (!npct->prcm_base) {
++			dev_err(&pdev->dev,
++				"failed to ioremap PRCM registers\n");
++			return -ENOMEM;
++		}
++	} else {
++		dev_info(&pdev->dev,
++			 "No PRCM base, assume no ALT-Cx control is available\n");
++	}
++
+ 	/*
+ 	 * We need all the GPIO drivers to probe FIRST, or we will not be able
+ 	 * to obtain references to the struct gpio_chip * for them, and we
+@@ -1888,6 +1906,7 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	nmk_pinctrl_desc.pins = npct->soc->pins;
+ 	nmk_pinctrl_desc.npins = npct->soc->npins;
+ 	npct->dev = &pdev->dev;
++
+ 	npct->pctl = pinctrl_register(&nmk_pinctrl_desc, &pdev->dev, npct);
+ 	if (!npct->pctl) {
+ 		dev_err(&pdev->dev, "could not register Nomadik pinctrl driver\n");
+-- 
+1.7.11.3
+
