@@ -1,326 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245Ab2KIFPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 00:15:31 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40465 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2KIFP1 (ORCPT
+	id S1751484Ab2KIFQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 00:16:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14396 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab2KIFQT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 00:15:27 -0500
-Date: Fri, 9 Nov 2012 10:44:16 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, dave@linux.vnet.ibm.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        arjan@linux.intel.com, kmpark@infradead.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, amit.kachhap@linaro.org,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
- support Memory Power Management
-Message-ID: <20121109051247.GA499@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com>
- <20121108180257.GC8218@suse.de>
+	Fri, 9 Nov 2012 00:16:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,743,1344236400"; 
+   d="scan'208";a="217119746"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>, "Zhang, Rui" <rui.zhang@intel.com>
+CC: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>
+Subject: RE: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+Thread-Topic: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+Thread-Index: AQHNvWlKuI/lwtvFeEqAROZO0ibuK5ffFgeAgAAG54CAAdq3oA==
+Date: Fri, 9 Nov 2012 05:16:14 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59203FE6@BGSMSX101.gar.corp.intel.com>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	<1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+	<1352354503.2190.7.camel@rzhang1-mobl4>
+ <CAK44p22REJpaJiahX7sTofShNB-+OHVsULqHeuxFNu5msLk6vA@mail.gmail.com>
+In-Reply-To: <CAK44p22REJpaJiahX7sTofShNB-+OHVsULqHeuxFNu5msLk6vA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121108180257.GC8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12110905-4790-0000-0000-0000057B968A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman <mgorman@suse.de> [2012-11-08 18:02:57]:
+Hi Rui/Amit,
 
-> On Wed, Nov 07, 2012 at 01:22:13AM +0530, Srivatsa S. Bhat wrote:
-> > ------------------------------------------------------------
+Sorry for the late response..
 
-Hi Mel,
-
-Thanks for detailed review and comments.  The goal of this patch
-series is to brainstorm on ideas that enable Linux VM to record and
-exploit memory region boundaries.
-
-The first approach that we had last year (hierarchy) has more runtime
-overhead.  This approach of sorted-buddy was one of the alternative
-discussed earlier and we are trying to find out if simple requirements
-of biasing memory allocations can be achieved with this approach.
-
-Smart reclaim based on this approach is a key piece we still need to
-design.  Ideas from compaction will certainly help.
-
-> > Today memory subsystems are offer a wide range of capabilities for managing
-> > memory power consumption. As a quick example, if a block of memory is not
-> > referenced for a threshold amount of time, the memory controller can decide to
-> > put that chunk into a low-power content-preserving state. And the next
-> > reference to that memory chunk would bring it back to full power for read/write.
-> > With this capability in place, it becomes important for the OS to understand
-> > the boundaries of such power-manageable chunks of memory and to ensure that
-> > references are consolidated to a minimum number of such memory power management
-> > domains.
-> > 
+> -----Original Message-----
+> From: Amit Kachhap [mailto:amit.kachhap@linaro.org]
+> Sent: Thursday, November 08, 2012 11:56 AM
+> To: Zhang, Rui
+> Cc: linux-pm@lists.linux-foundation.org; linux-samsung-
+> soc@vger.kernel.org; linux-kernel@vger.kernel.org; R, Durgadoss;
+> lenb@kernel.org; linux-acpi@vger.kernel.org; jonghwa3.lee@samsung.com
+> Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
+> quick cooling
 > 
-> How much power is saved?
+> On 8 November 2012 11:31, Zhang Rui <rui.zhang@intel.com> wrote:
+> > On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+> >> This modification adds 2 new thermal trend type
+> THERMAL_TREND_RAISE_FULL
+> >> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to
+> quickly
+> >> jump to the upper or lower cooling level instead of incremental increase
+> >> or decrease.
+> >
+> > IMO, what we need is a new more aggressive cooling governor which
+> always
+> > uses upper limit when the temperature is raising and lower limit when
+> > the temperature is dropping.
+> Yes I agree that a new aggressive governor is the best approach but
+> then i thought adding a new trend type is a simple solution to achieve
+> this and since most of the governor logic might be same as the
+> step-wise governor. I have no objection in doing it through governor.
 
-On embedded platform the savings could be around 5% as discussed in
-the earlier thread: http://article.gmane.org/gmane.linux.kernel.mm/65935
+Yes, this sounds like a feasible and not-so-complicated implementation for now.
+In future, if we see a lot of drivers requiring this sudden raise/drop functionality,
+at that time we can introduce an 'aggressive' governor.
 
-On larger servers with large amounts of memory the savings could be
-more.  We do not yet have all the pieces together to evaluate.
+Thanks,
+Durga
 
-> > ACPI 5.0 has introduced MPST tables (Memory Power State Tables) [5] so that
-> > the firmware can expose information regarding the boundaries of such memory
-> > power management domains to the OS in a standard way.
-> > 
-> 
-> I'm not familiar with the ACPI spec but is there support for parsing of
-> MPST and interpreting the associated ACPI events? For example, if ACPI
-> fires an event indicating that a memory power node is to enter a low
-> state then presumably the OS should actively migrate pages away -- even
-> if it's going into a state where the contents are still refreshed
-> as exiting that state could take a long time.
-> 
-> I did not look closely at the patchset at all because it looked like the
-> actual support to use it and measure the benefit is missing.
-
-Correct.  The platform interface part is not included in this patch
-set mainly because there is not much design required there.  Each
-platform can have code to collect the memory region boundaries from
-BIOS/firmware and load it into the Linux VM.  The goal of this patch
-is to brainstorm on the idea of hos core VM should used the region
-information.
- 
-> > How can Linux VM help memory power savings?
-> > 
-> > o Consolidate memory allocations and/or references such that they are
-> > not spread across the entire memory address space.  Basically area of memory
-> > that is not being referenced, can reside in low power state.
-> > 
-> 
-> Which the series does not appear to do.
-
-Correct.  We need to design the correct reclaim strategy for this to
-work.  However having buddy list sorted by region address could get us
-one step closer to shaping the allocations.
-
-> > o Support targeted memory reclaim, where certain areas of memory that can be
-> > easily freed can be offlined, allowing those areas of memory to be put into
-> > lower power states.
-> > 
-> 
-> Which the series does not appear to do judging from this;
-> 
->   include/linux/mm.h     |   38 +++++++
->   include/linux/mmzone.h |   52 +++++++++
->   mm/compaction.c        |    8 +
->   mm/page_alloc.c        |  263 ++++++++++++++++++++++++++++++++++++++++++++----
->   mm/vmstat.c            |   59 ++++++++++-
-> 
-> This does not appear to be doing anything with reclaim and not enough with
-> compaction to indicate that the series actively manages memory placement
-> in response to ACPI events.
-
-Correct.  Evaluating different ideas for reclaim will be next step
-before getting into the platform interface parts.
-
-> Further in section 5.2.21.4 the spec says that power node regions can
-> overlap (but are not hierarchal for some reason) but have no gaps yet the
-> structure you use to represent is assumes there can be gaps and there are
-> no overlaps. Again, this is just glancing at the spec and a quick skim of
-> the patches so maybe I missed something that explains why this structure
-> is suitable.
-
-This patch is roughly based on the idea that ACPI MPST will give us
-memory region boundaries.  It is not designed to implement all options
-defined in the spec.  We have taken a general case of regions do not
-overlap while memory addresses itself can be discontinuous.
-
-> It seems to me that superficially the VM implementation for the support
-> would have
-> 
-> a) Involved a tree that managed the overlapping regions (even if it's
->    not hierarchal it feels more sensible) and picked the highest-power-state
->    common denominator in the tree. This would only be allocated if support
->    for MPST is available.
-> b) Leave memory allocations and reclaim as they are in the active state.
-> c) Use a "sticky" migrate list MIGRATE_LOWPOWER for regions that are in lower
->    power but still usable with a latency penalty. This might be a single
->    migrate type but could also be a parallel set of free_area called
->    free_area_lowpower that is only used when free_area is depleted and in
->    the very slow path of the allocator.
-> d) Use memory hot-remove for power states where the refresh rates were
->    not constant
-> 
-> and only did anything expensive in response to an ACPI event -- none of
-> the fast paths should be touched.
-> 
-> When transitioning to the low power state, memory should be migrated in
-> a vaguely similar fashion to what CMA does. For low-power, migration
-> failure is acceptable. If contents are not preserved, ACPI needs to know
-> if the migration failed because it cannot enter that power state.
-> 
-> For any of this to be worthwhile, low power states would need to be achieved
-> for long periods of time because that migration is not free.
-
-In this patch series we are assuming the simple case of hardware
-managing the actual power states and OS facilitates them by keeping
-the allocations in less number of memory regions.  As we keep
-allocations and references low to a regions, it becomes case (c)
-above.  We are addressing only a small subset of the above list.
-
-> > Memory Regions:
-> > ---------------
-> > 
-> > "Memory Regions" is a way of capturing the boundaries of power-managable
-> > chunks of memory, within the MM subsystem.
-> > 
-> > Short description of the "Sorted-buddy" design:
-> > -----------------------------------------------
-> > 
-> > In this design, the memory region boundaries are captured in a parallel
-> > data-structure instead of fitting regions between nodes and zones in the
-> > hierarchy. Further, the buddy allocator is altered, such that we maintain the
-> > zones' freelists in region-sorted-order and thus do page allocation in the
-> > order of increasing memory regions.
-> 
-> Implying that this sorting has to happen in the either the alloc or free
-> fast path.
-
-Yes, in the free path. This optimization can be actually be delayed in
-the free fast path and completely avoided if our memory is full and we
-are doing direct reclaim during allocations.
-
-> > (The freelists need not be fully
-> > address-sorted, they just need to be region-sorted. Patch 6 explains this
-> > in more detail).
-> > 
-> > The idea is to do page allocation in increasing order of memory regions
-> > (within a zone) and perform page reclaim in the reverse order, as illustrated
-> > below.
-> > 
-> > ---------------------------- Increasing region number---------------------->
-> > 
-> > Direction of allocation--->                         <---Direction of reclaim
-> > 
-> 
-> Compaction will work against this because it uses a PFN walker to isolate
-> free pages and will ignore memory regions. If pageblocks were used, it
-> could take that into account at least.
-> 
-> > The sorting logic (to maintain freelist pageblocks in region-sorted-order)
-> > lies in the page-free path and not the page-allocation path and hence the
-> > critical page allocation paths remain fast.
-> 
-> Page free can be a critical path for application performance as well.
-> Think network buffer heavy alloc and freeing of buffers.
-> 
-> However, migratetype information is already looked up for THP so ideally
-> power awareness would piggyback on it.
-> 
-> > Moreover, the heart of the page
-> > allocation algorithm itself remains largely unchanged, and the region-related
-> > data-structures are optimized to avoid unnecessary updates during the
-> > page-allocator's runtime.
-> > 
-> > Advantages of this design:
-> > --------------------------
-> > 1. No zone-fragmentation (IOW, we don't create more zones than necessary) and
-> >    hence we avoid its associated problems (like too many zones, extra page
-> >    reclaim threads, question of choosing watermarks etc).
-> >    [This is an advantage over the "Hierarchy" design]
-> > 
-> > 2. Performance overhead is expected to be low: Since we retain the simplicity
-> >    of the algorithm in the page allocation path, page allocation can
-> >    potentially remain as fast as it would be without memory regions. The
-> >    overhead is pushed to the page-freeing paths which are not that critical.
-> > 
-> > 
-> > Results:
-> > =======
-> > 
-> > Test setup:
-> > -----------
-> > This patchset applies cleanly on top of 3.7-rc3.
-> > 
-> > x86 dual-socket quad core HT-enabled machine booted with mem=8G
-> > Memory region size = 512 MB
-> > 
-> > Functional testing:
-> > -------------------
-> > 
-> > Ran pagetest, a simple C program that allocates and touches a required number
-> > of pages.
-> > 
-> > Below is the statistics from the regions within ZONE_NORMAL, at various sizes
-> > of allocations from pagetest.
-> > 
-> > 	     Present pages   |	Free pages at various allocations        |
-> > 			     |  start	|  512 MB  |  1024 MB | 2048 MB  |
-> >   Region 0      16	     |   0      |    0     |     0    |    0     |
-> >   Region 1      131072       |  87219   |  8066    |   7892   |  7387    |
-> >   Region 2      131072       | 131072   |  79036   |     0    |    0     |
-> >   Region 3      131072       | 131072   | 131072   |   79061  |    0     |
-> >   Region 4      131072       | 131072   | 131072   |  131072  |    0     |
-> >   Region 5      131072       | 131072   | 131072   |  131072  |  79051   |
-> >   Region 6      131072       | 131072   | 131072   |  131072  |  131072  |
-> >   Region 7      131072       | 131072   | 131072   |  131072  |  131072  |
-> >   Region 8      131056       | 105475   | 105472   |  105472  |  105472  |
-> > 
-> > This shows that page allocation occurs in the order of increasing region
-> > numbers, as intended in this design.
-> > 
-> > Performance impact:
-> > -------------------
-> > 
-> > Kernbench results didn't show much of a difference between the performance
-> > of vanilla 3.7-rc3 and this patchset.
-> > 
-> > 
-> > Todos:
-> > =====
-> > 
-> > 1. Memory-region aware page-reclamation:
-> > ----------------------------------------
-> > 
-> > We would like to do page reclaim in the reverse order of page allocation
-> > within a zone, ie., in the order of decreasing region numbers.
-> > To achieve that, while scanning lru pages to reclaim, we could potentially
-> > look for pages belonging to higher regions (considering region boundaries)
-> > or perhaps simply prefer pages of higher pfns (and skip lower pfns) as
-> > reclaim candidates.
-> > 
-> 
-> This would disrupting LRU ordering and if those pages were recently
-> allocated and you force a situation where swap has to be used then any
-> saving in low memory will be lost by having to access the disk instead.
-> 
-> > 2. Compile-time exclusion of Memory Power Management, and extending the
-> > support to also work with other features such as Mem cgroups, kexec etc.
-> >  
-> 
-> Compile-time exclusion is pointless because it'll be always activated by
-> distribution configs. Support for MPST should be detected at runtime and
-> 
-> 3. ACPI support to actually use this thing and validate the design is
->    compatible with the spec and actually works in hardware
-
-This is required to actually evaluate power saving benefit once we
-have candidate implementations in the VM.
-
-At this point we want to look at overheads of having region
-infrastructure in VM and how does that trade off in terms of
-requirements that we can meet.
-
-The first goal is to have memory allocations fill as few regions as
-possible when system's memory usage is significantly lower.  Next we
-would like VM to actively move pages around to cooperate with platform
-memory power saving features like notifications or policy changes.
-
---Vaidy
-
+> >
+> > I can write such a governor if you do not have time to.
+> ok. thanks
+> >
+> > thanks,
+> > rui
+> >>  This is needed for temperature sensors which support rising/falling
+> >> threshold interrupts and polling can be totally avoided.
+> >>
+> >
+> >
+> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> >> ---
+> >>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+> >>  include/linux/thermal.h     |    2 ++
+> >>  2 files changed, 17 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> >> index 1242cff..0d2d8d6 100644
+> >> --- a/drivers/thermal/step_wise.c
+> >> +++ b/drivers/thermal/step_wise.c
+> >> @@ -35,6 +35,10 @@
+> >>   *       state for this trip point
+> >>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+> >>   *       state for this trip point
+> >> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+> >> + *       state for this trip point
+> >> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+> >> + *       state for this trip point
+> >>   */
+> >>  static unsigned long get_target_state(struct thermal_instance *instance,
+> >>                                       enum thermal_trend trend)
+> >> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct
+> thermal_instance *instance,
+> >>       } else if (trend == THERMAL_TREND_DROPPING) {
+> >>               cur_state = cur_state > instance->lower ?
+> >>                           (cur_state - 1) : instance->lower;
+> >> -     }
+> >> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
+> >> +             cur_state = instance->upper;
+> >> +     else if (trend == THERMAL_TREND_DROP_FULL)
+> >> +             cur_state = instance->lower;
+> >>
+> >>       return cur_state;
+> >>  }
+> >> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct
+> thermal_zone_device *tz,
+> >>  }
+> >>
+> >>  static void update_instance_for_dethrottle(struct thermal_zone_device
+> *tz,
+> >> -                             int trip, enum thermal_trip_type trip_type)
+> >> +                             int trip, enum thermal_trip_type trip_type,
+> >> +                             enum thermal_trend trend)
+> >>  {
+> >>       struct thermal_instance *instance;
+> >>       struct thermal_cooling_device *cdev;
+> >> @@ -101,7 +109,10 @@ static void
+> update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> >>               cdev = instance->cdev;
+> >>               cdev->ops->get_cur_state(cdev, &cur_state);
+> >>
+> >> -             instance->target = cur_state > instance->lower ?
+> >> +             if (trend == THERMAL_TREND_DROP_FULL)
+> >> +                     instance->target = instance->lower;
+> >> +             else
+> >> +                     instance->target = cur_state > instance->lower ?
+> >>                           (cur_state - 1) : THERMAL_NO_TARGET;
+> >>
+> >>               /* Deactivate a passive thermal instance */
+> >> @@ -133,7 +144,7 @@ static void thermal_zone_trip_update(struct
+> thermal_zone_device *tz, int trip)
+> >>       if (tz->temperature >= trip_temp)
+> >>               update_instance_for_throttle(tz, trip, trip_type, trend);
+> >>       else
+> >> -             update_instance_for_dethrottle(tz, trip, trip_type);
+> >> +             update_instance_for_dethrottle(tz, trip, trip_type, trend);
+> >>
+> >>       mutex_unlock(&tz->lock);
+> >>  }
+> >> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> >> index 807f214..8bce3ec 100644
+> >> --- a/include/linux/thermal.h
+> >> +++ b/include/linux/thermal.h
+> >> @@ -68,6 +68,8 @@ enum thermal_trend {
+> >>       THERMAL_TREND_STABLE, /* temperature is stable */
+> >>       THERMAL_TREND_RAISING, /* temperature is raising */
+> >>       THERMAL_TREND_DROPPING, /* temperature is dropping */
+> >> +     THERMAL_TREND_RAISE_FULL, /* Apply highest cooling action*/
+> >> +     THERMAL_TREND_DROP_FULL, /* Apply lowest cooling action*/
+> >>  };
+> >>
+> >>  /* Events supported by Thermal Netlink */
+> >
+> >
