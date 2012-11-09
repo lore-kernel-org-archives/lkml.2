@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab2KIRrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 12:47:46 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58348 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab2KIRrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 12:47:42 -0500
+	id S1754921Ab2KIR7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 12:59:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753383Ab2KIR7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 12:59:37 -0500
+Date: Fri, 9 Nov 2012 15:58:44 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 3/7] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20121109175844.GD4308@optiplex.redhat.com>
+References: <cover.1352256081.git.aquini@redhat.com>
+ <4ea10ef1eb1544e12524c8ca7df20cf621395463.1352256087.git.aquini@redhat.com>
+ <20121109121133.GP3886@csn.ul.ie>
+ <20121109145321.GB4308@optiplex.redhat.com>
+ <20121109162327.GT3886@csn.ul.ie>
 MIME-Version: 1.0
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Nov 2012 10:47:20 -0700
-Message-ID: <CAErSpo4Wjh1t68W5z9a0iC0hJcEeGhJ7CKrEL42iZQJksboaOQ@mail.gmail.com>
-Subject: [GIT PULL] PCI updates for v3.7
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121109162327.GT3886@csn.ul.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Nov 09, 2012 at 04:23:27PM +0000, Mel Gorman wrote:
+> On Fri, Nov 09, 2012 at 12:53:22PM -0200, Rafael Aquini wrote:
+> > > <SNIP>
+> > > If you get the barrier issue sorted out then feel free to add
+> > > 
+> > > Acked-by: Mel Gorman <mel@csn.ul.ie>
+> > > 
+> > 
+> > I believe we can drop the barriers stuff, as the locking scheme is now provinding
+> > enough protection against collisions between isolation page scanning and
+> > balloon_leak() page release (the major concern that has lead to the barriers
+> > originally)
+> > 
+> > I'll refactor this patch with no barriers and ensure a better commentary on the
+> > aforementioned locking scheme and resubmit, if it's OK to everyone
+> > 
+> 
+> Sounds good to me. When they are dropped again feel free to stick my ack
+> on for the compaction and migration parts. The virtio aspects are up to
+> someone else :)
+> 
 
-Here are some fixes for v3.7.  Three are related to D3cold support,
-and the last portdrv one is a fix for the PCIe capability accessor
-rework we merged for v3.7-rc1.
+Andrew,
 
-Bjorn
+If we get no further objections raised on dropping those barriers, would you
+like me to resubmit the whole series rebased on the latest -next, 
+or just this (new) refactored patch?
 
-
-The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
-
-  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
-tags/3.7-pci-fixes
-
-for you to fetch changes up to ff8e59bc4ec3f31789a47dce9b6fe44bd7bc5fcc:
-
-  PCI/portdrv: Don't create hotplug slots unless port supports hotplug
-(2012-11-05 16:59:59 -0700)
-
-----------------------------------------------------------------
-PCI updates for v3.7:
-
-  Power management
-      PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-      PCI/PM: Resume device before shutdown
-      PCI/PM: Fix deadlock when unbinding device if parent in D3cold
-  Hotplug
-      PCI/portdrv: Don't create hotplug slots unless port supports hotplug
-
-----------------------------------------------------------------
-Bjorn Helgaas (1):
-      Merge branch 'pci/huang-d3cold-fixes' into for-linus
-
-Huang Ying (3):
-      PCI/PM: Fix deadlock when unbinding device if parent in D3cold
-      PCI/PM: Resume device before shutdown
-      PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-
-Taku Izumi (1):
-      PCI/portdrv: Don't create hotplug slots unless port supports hotplug
-
- drivers/pci/bus.c                  |  3 ---
- drivers/pci/pci-driver.c           | 12 ++----------
- drivers/pci/pci-sysfs.c            | 34 ----------------------------------
- drivers/pci/pci.c                  | 32 ++++++++++++++++++++++++++++++++
- drivers/pci/pci.h                  |  2 ++
- drivers/pci/pcie/aer/aerdrv_core.c | 20 ++++++++++++++++----
- drivers/pci/pcie/portdrv_core.c    |  3 ++-
- drivers/pci/proc.c                 |  8 ++++++++
- 8 files changed, 62 insertions(+), 52 deletions(-)
+-- Rafael
