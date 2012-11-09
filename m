@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2KIUPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 15:15:47 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37293 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab2KIUPq (ORCPT
+	id S1755887Ab2KIUSC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 15:18:02 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33258 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab2KIUSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 15:15:46 -0500
-Subject: Re: [PATCH v3 1/9] net: core: use this_cpu_ptr per-cpu helper
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shan Wei <shanwei88@gmail.com>, David Miller <davem@davemloft.net>,
-        timo.teras@iki.fi, steffen.klassert@secunet.com,
-        NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-In-Reply-To: <0000013ae6c9e81a-eabe295b-72a5-4ebd-85c5-231bec1a70c5-000000@email.amazonses.com>
-References: <509C686F.20400@gmail.com>
-	 <0000013ae6c9e81a-eabe295b-72a5-4ebd-85c5-231bec1a70c5-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Nov 2012 12:15:44 -0800
-Message-ID: <1352492144.19779.811.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 15:18:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121106015835.GA11971@localhost.localdomain>
+References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
+ <20121031011256.GC12325@amt.cnet> <50908354.5070608@cn.fujitsu.com>
+ <CA+1xoqdcaeAm05_=rx3h9KHph+j7Ab8vRG_w9yUk7jtn+wHuBg@mail.gmail.com> <20121106015835.GA11971@localhost.localdomain>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 9 Nov 2012 15:17:39 -0500
+Message-ID: <CA+1xoqd60YihExEuSU2qzsyFRXLS=XaeeX9AaMLhPHggfM6V3A@mail.gmail.com>
+Subject: Re: [PATCH v11] kvm: notify host when the guest is panicked
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 20:08 +0000, Christoph Lameter wrote:
-> On Fri, 9 Nov 2012, Shan Wei wrote:
-> 
-> > diff --git a/net/core/flow.c b/net/core/flow.c
-> > index e318c7e..b0901ee 100644
-> > --- a/net/core/flow.c
-> > +++ b/net/core/flow.c
-> > @@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
-> >  static void flow_cache_flush_per_cpu(void *data)
-> >  {
-> >  	struct flow_flush_info *info = data;
-> > -	int cpu;
-> >  	struct tasklet_struct *tasklet;
-> >
-> > -	cpu = smp_processor_id();
-> > -	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
-> > +	tasklet = this_cpu_ptr(&info->cache->percpu->flush_tasklet);
-> >  	tasklet->data = (unsigned long)info;
-> 
-> this_cpu_write(info->cache->percpu->flush_tasklet->data, (unsigned
-> 	long)info);
-> 
-> should also do the trick in less instructions and get rid of all temporary
-> variables as well.
+On Mon, Nov 5, 2012 at 8:58 PM, Hu Tao <hutao@cn.fujitsu.com> wrote:
+> But in the case of panic notification, more dependency means more
+> chances of failure of panic notification. Say, if we use a virtio device
+> to do panic notification, then we will fail if: virtio itself has
+> problems, virtio for some reason can't be deployed(neither built-in or
+> as a module), or guest doesn't support virtio, etc.
 
-Its not the case.
+Add polling to your virtio device. If it didn't notify of a panic but
+taking more than 20 sec to answer your poll request you can assume
+it's dead.
 
-We need the _pointer_ to call :
+Actually, just use virtio-serial and something in userspace on the guest.
 
-tasklet_schedule(tasklet);
+> We choose IO because compared to virtio device, it is not that heavy and
+> less problematic.
+
+Less problematic? Heavy? Are there any known issues with virtio that
+should be fixed? You make virtio sound like an old IDE drive or
+something.
 
 
-
-
+Thanks,
+Sasha
