@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab2KJAyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:54:20 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39709 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab2KJAyT (ORCPT
+	id S1752570Ab2KJAzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 19:55:24 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41340 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab2KJAzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:54:19 -0500
-Date: Fri, 09 Nov 2012 19:54:17 -0500 (EST)
-Message-Id: <20121109.195417.1781257873335425911.davem@davemloft.net>
-To: shuah.khan@hp.com
-Cc: kyungmin.park@samsung.com, arnd@arndb.de, m.szyprowski@samsung.com,
-        sam@ravnborg.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH RFT RESEND linux-next] sparc: dma-mapping: support
- debug_dma_mapping_error
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1352508743.5524.41.camel@lorien2>
-References: <1351267989.4013.20.camel@lorien2>
-	<20121109.193849.458704479891559672.davem@davemloft.net>
-	<1352508743.5524.41.camel@lorien2>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Nov 2012 19:55:22 -0500
+Date: Fri, 9 Nov 2012 16:55:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
+ block the readers unnecessarily
+Message-ID: <20121110005516.GM2419@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121108134805.GA23870@redhat.com>
+ <20121108134849.GB23870@redhat.com>
+ <20121108120700.42d438f2.akpm@linux-foundation.org>
+ <20121109154656.GA26134@redhat.com>
+ <20121109170107.GB2419@linux.vnet.ibm.com>
+ <20121109181048.GA1184@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121109181048.GA1184@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111000-5406-0000-0000-000001EB5C2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shuah Khan <shuah.khan@hp.com>
-Date: Fri, 09 Nov 2012 17:52:23 -0700
-
-> On Fri, 2012-11-09 at 19:38 -0500, David Miller wrote:
->> From: Shuah Khan <shuah.khan@hp.com>
->> Date: Fri, 26 Oct 2012 10:13:09 -0600
->> 
->> > Add support for debug_dma_mapping_error() call to avoid warning from
->> > debug_dma_unmap() interface when it checks for mapping error checked
->> > status. Without this patch, device driver failed to check map error
->> > warning is generated.
->> > 
->> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
->> 
->> This doesn't even compile:
->> 
->> /home/davem/src/GIT/sparc/arch/sparc/include/asm/dma-mapping.h: In function 'dma_mapping_error':
->> /home/davem/src/GIT/sparc/arch/sparc/include/asm/dma-mapping.h:62:2: error: implicit declaration of function 'debug_dma
->> _mapping_error' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> In file included from include/linux/dma-mapping.h:76:0,
->>                  from include/linux/skbuff.h:33,
->>                  from include/linux/icmpv6.h:4,
->>                  from include/linux/ipv6.h:58,
->>                  from include/net/ipv6.h:16,
->>                  from include/linux/sunrpc/clnt.h:26,
->>                  from include/linux/nfs_fs.h:30,
->>                  from init/do_mounts.c:30:
+On Fri, Nov 09, 2012 at 07:10:48PM +0100, Oleg Nesterov wrote:
+> On 11/09, Paul E. McKenney wrote:
+> >
+> > On Fri, Nov 09, 2012 at 04:46:56PM +0100, Oleg Nesterov wrote:
+> > > Contrary, I am going to try to add some complications later, so that
+> > > it can have more users. In particular, I think it can replace
+> > > get_online_cpus/cpu_hotplug_begin, just we need
+> > > percpu_down_write_but_dont_deadlock_with_recursive_readers().
+> >
+> > I must confess that I am a bit concerned about possible scalability
+> > bottlenecks in the current get_online_cpus(), so +1 from me on this one.
 > 
-> The problem the dependent patch is in linux-next and not in arch trees
-> yet. That is why I am trying it get this through linux-next and/or
-> dma-debug tree. I am open to suggestions on what is the best route.
+> OK, thanks...
+> 
+> And btw percpu_down_write_but_dont_deadlock_with_recursive_readers() is
+> trivial, just it needs down_write(rw_sem) "inside" wait_event(), not
+> before. But I'm afraid I will never manage to write the comments ;)
+> 
+> 	static bool xxx(brw)
+> 	{
+> 		down_write(&brw->rw_sem);
 
-Then please put this in via the dma-debug tree:
+		down_write_trylock()
 
-Acked-by: David S. Miller <davem@davemloft.net>
+As you noted in your later email.  Presumably you return false if
+the attempt to acquire it fails.
+
+> 		if (!atomic_read(&brw->slow_read_ctr))
+> 			return true;
+> 
+> 		up_write(&brw->rw_sem);
+> 		return false;
+> 	}
+> 
+> 	static void __percpu_down_write(struct percpu_rw_semaphore *brw, bool recursive_readers)
+> 	{
+> 		mutex_lock(&brw->writer_mutex);
+> 
+> 		synchronize_sched();
+> 
+> 		atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+> 
+> 		if (recursive_readers)  {
+> 			wait_event(brw->write_waitq, xxx(brw));
+
+I see what you mean about acquiring brw->rw_sem inside of wait_event().
+
+Cute trick!
+
+The "recursive_readers" is a global initialization-time thing, right?
+
+> 		} else {
+> 			down_write(&brw->rw_sem);
+> 
+> 			wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+> 		}
+> 	}
+
+Looks like it should work, and would perform and scale nicely even
+if we end up having to greatly increase the number of calls to
+get_online_cpus().
+
+> Of course, cpu.c still needs .active_writer to allow get_online_cpus()
+> under cpu_hotplug_begin(), but this is simple.
+
+Yep, same check as now.
+
+> But first we should do other changes, I think. IMHO we should not do
+> synchronize_sched() under mutex_lock() and this will add (a bit) more
+> complications. We will see.
+
+Indeed, that does put considerable delay on the writers.  There is always
+synchronize_sched_expedited(), I suppose.
+
+							Thanx, Paul
+
