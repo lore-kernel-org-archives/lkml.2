@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2KJVuB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 16:50:01 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50884 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab2KJVt6 (ORCPT
+	id S1752740Ab2KJVwc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 16:52:32 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37771 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab2KJVw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 16:49:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-Date: Sat, 10 Nov 2012 21:49:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Kim Jaegeuk <jaegeuk.kim@gmail.com>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com> <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com> <201211101933.38434.Martin@lichtvoll.de>
-In-Reply-To: <201211101933.38434.Martin@lichtvoll.de>
+	Sat, 10 Nov 2012 16:52:29 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211102149.48946.arnd@arndb.de>
-X-Provags-ID: V02:K0:5znzF5OM00hfRMzUV2ZOR1oZKkn+5zUkFXRnSd7KGpJ
- naHi6Z/n7Cx5/7L4odZH1cSiZNAjvZf7IbsNOw2L+YpKP2V5vq
- tlFUzc4mJpu+mH5ojEbazsLsJxmNEFtwTDxKqF+287LncFVNHU
- QzfL1d6jKFxXHvrj3rX7WeZiFDbmzm7jPUjZG3xjVI2AoUjqCr
- U4YQ3LgAmpTkA59HdAF8MKtS7aW1wOXAsRWmKeJVpblqPMM+gx
- 09IlhW/gpOEmJEKXVtvgO5g29qq57enSBBka1Z0n++AKWbs4YI
- Uca7fC0Fzpqlgt4GqH1hxacp3lT3TZt5v7eVaCzDeZCsGBTmca
- BktFchRqcP2aEQKoFlF8=
+In-Reply-To: <1352343356-4006-5-git-send-email-peter@hurleysoftware.com>
+References: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com> <1352343356-4006-5-git-send-email-peter@hurleysoftware.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 10 Nov 2012 14:52:08 -0700
+Message-ID: <CAErSpo6DV+HKHX=5mSUzGmbJVbZdDpco7Ct-FeJJcVjCO992bg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] x86: acpi: Print warning for malformed host bridge resources
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 10 November 2012, Martin Steigerwald wrote:
-> Command (m for help): n
-> Partition type:
->    p   primary (0 primary, 0 extended, 4 free)
->    e   extended
-> Select (default p): p
-> Partition number (1-4, default 1): 1
-> First sector (2048-4095998, default 2048): 
-> Using default value 2048
-> Last sector, +sectors or +size{K,M,G} (2048-4095998, default 4095998): 
-> Using default value 4095998
+On Wed, Nov 7, 2012 at 7:55 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> An incorrectly specified host bridge window may prevent
+> other devices from claiming assigned resources. For example,
+> this flawed _CRS resource descriptor from a Dell T5400:
+>      DWordMemory (ResourceProducer, PosDecode, MinFixed, MaxFixed, NonCacheable, ReadWrite,
+>          0x00000000,         // Granularity
+>          0xF0000000,         // Range Minimum
+>          0xFE000000,         // Range Maximum
+>          0x00000000,         // Translation Offset
+>          0x0E000000,         // Length
+>          ,, , AddressRangeMemory, TypeStatic)
 
-This is almost certainly not the right setting for f2fs, which only works
-at its design point if the segments are aligned to erase blocks. All modern
-flash devices have erase blocks larger than 1 MB, so starting the partition
-at a 1 MB offset will cause it to be misaligned. Also, some USB sticks
-have an area optimized for random writes in the beginning of the drive
-where both FAT32 and f2fs store their metadata. It may be worth testing
-again without a partition table, using just the raw device.
+I think the problem here is that the Range Maximum should be
+0xFDFFFFFF, not 0xFE000000, right?
 
-I would also recommend using flashbench to find out the optimum parameters
-for your device. You can download it from
-git://git.linaro.org/people/arnd/flashbench.git
-In the long run, we should automate those tests and make them part of
-mkfs.f2fs, but for now, try to find out the erase block size and the number
-of concurrently used erase blocks on your device using a timing attack
-in flashbench. The README file in there explains how to interpret the
-results from "./flashbench -a /dev/sdb  --blocksize=1024" to guess
-the erase block size, although that sometimes doesn't work.
+> prevents the adjacent device from claiming [mem 0xfe0000000-0xfe01ffff]
+>
+> Sanity check that the resource at least conforms to a valid
+> PCI BAR; if not, emit a diagnostic warning.
+>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  arch/x86/pci/acpi.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> index 192397c..3468d16 100644
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -298,6 +298,10 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
+>                         "host bridge window [%#llx-%#llx] "
+>                         "([%#llx-%#llx] ignored, not CPU addressable)\n",
+>                         start, orig_end, end + 1, orig_end);
+> +       } else if (flags & IORESOURCE_MEM && (start & 0x0f || ~end & 0x0f)) {
+> +               dev_warn(&info->bridge->dev,
+> +                        "invalid host bridge window [%#llx-%#llx]\n",
+> +                        start, end);
 
-With the correct guess, compare the performance you get using
+We didn't actually *fix* anything here, so I guess we're just pointing
+out the reason for a subsequent failure to claim the adjacent
+resource.
 
-$ ERASESIZE=$[2*1024*1024] # replace with guess from flashbench -a
-$ ./flashbench /dev/sdb --open-au --open-au-nr=1 --blocksize=4096 --erasesize=${ERASESIZE}
-$ ./flashbench /dev/sdb --open-au --open-au-nr=3 --blocksize=4096 --erasesize=${ERASESIZE}
-$ ./flashbench /dev/sdb --open-au --open-au-nr=5 --blocksize=4096 --erasesize=${ERASESIZE}
-$ ./flashbench /dev/sdb --open-au --open-au-nr=7 --blocksize=4096 --erasesize=${ERASESIZE}
-$ ./flashbench /dev/sdb --open-au --open-au-nr=13 --blocksize=4096 --erasesize=${ERASESIZE}
+As far as I know, the spec doesn't actually require resources of ACPI
+devices to be non-overlapping.  Windows accepts overlapping resources,
+and I think Linux probably should, too, but right now we trip over
+this.
 
-The first one of those should always be the fastest, hopefully followed by
-some that are equally fast and then some much slower ones (especially for the
-smaller block sizes). The "active_logs=N" mount option should be one less
-than the highest number above that is still "fast", and only "2", "4" and "6"
-are valid at the moment. If you are lucky, your device is still fast with
-"--open-au-nr=7" and slow only for higher numbers, then the default of "6"
-is ok.
+In the meantime (until we figure out how to handle overlapping
+resources better), can we do something to actually fix this?  Maybe we
+should truncate the end of the range to 0xFDFFFFFF like we do for
+non-addressable parts of the range?
 
-If the erase size is larger than 2 MB, then you have to "-s" option in
-mkfs.f2fs to configure how many 2 MB segments there are in one erase block.
-For a 2 GB USB stick, I would guess that the erase block size is 1, 2 or
-4 MB. Newer (larger) sticks will have larger erase blocks that may also
-be a multiple of 3 MB (3, 6, 12, or 24).
+Is there a bugzilla or a complete dmesg log to look at?
 
-	Arnd
+Bjorn
+
+>         }
+>
+>         res = &info->res[info->res_num];
+> --
+> 1.7.12.3
+>
