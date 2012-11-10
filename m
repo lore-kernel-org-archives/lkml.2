@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2KJSk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 13:40:29 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:60375 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2KJSk1 (ORCPT
+	id S1752529Ab2KJSrl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 13:47:41 -0500
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:65049 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab2KJSrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 13:40:27 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-Date: Sat, 10 Nov 2012 19:40:25 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc4-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: Kim Jaegeuk <jaegeuk.kim@gmail.com>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-fsdevel@vger.kernel.org, gregkh@linuxfoundation.org,
-        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com> <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com> <201211101933.38434.Martin@lichtvoll.de> (sfid-20121110_193431_591556_1E639DC0)
-In-Reply-To: <201211101933.38434.Martin@lichtvoll.de>
+	Sat, 10 Nov 2012 13:47:39 -0500
+Message-ID: <509EA129.800@cs.tu-berlin.de>
+Date: Sat, 10 Nov 2012 19:47:05 +0100
+From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211101940.25950.Martin@lichtvoll.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH resend] printk: drop ambiguous LOG_CONT flag
+References: <20121102233610.GA3239@kroah.com> <1351977176-28381-1-git-send-email-schnhrr@cs.tu-berlin.de>
+In-Reply-To: <1351977176-28381-1-git-send-email-schnhrr@cs.tu-berlin.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 10. November 2012 schrieb Martin Steigerwald:
-> merkaba:~> mkfs.f2fs /dev/sdb1              
-> Info: sector size = 512
-> Info: total sectors = 4093951 (in 512bytes)
-> Info: zone aligned segment0 blkaddr: 256
-> Info: This device doesn't support TRIM
-> Info: format successful
-> merkaba:~> mount -t f2fs /dev/sdb1 /mnt/zeit
-> merkaba:~> fio /tmp/usb-stick.job           
-> seq-read: (g=0): rw=read, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=4
-> rand-read: (g=1): rw=randread, bs=4K-4K/4K-4K, ioengine=libaio,
-> iodepth=4 seq-write: (g=2): rw=write, bs=4K-4K/4K-4K, ioengine=libaio,
-> iodepth=4 rand-write: (g=3): rw=randwrite, bs=4K-4K/4K-4K,
-> ioengine=libaio, iodepth=4 2.0.8
-> Starting 4 processes
-> seq-read: Laying out IO file(s) (1 file(s) / 512MB)
-> Jobs: 1 (f=1): [___w] [57.2% done] [0K/703K /s] [0 /175  iops] [eta
-> 03m:00s]     seq-read: (groupid=0, jobs=1): err= 0: pid=7819
->   read : io=470600KB, bw=7843.8KB/s, iops=1960 , runt= 60002msec
+Hi Greg.
 
-I forgot the job file I used:
+This still needs a small fix, see below.
 
-merkaba:~> cat /tmp/usb-stick.job 
-[global]
-bs=4k
-ioengine=libaio
-size=512m
-direct=1
-iodepth=4
-runtime=60
-directory=/mnt/zeit
-filename=test.file
+Am 03.11.2012 22:12, schrieb Jan H. Schönherr:
+> From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+> 
+> The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
+> ending, or middle fragment. Unfortunately, this cannot be inferred from
+> the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
+> Furthermore, in some cases LOG_CONT is set, although it is unknown if
+> there will be a continuation. This leads to wrongly concatenated output.
+> 
+> Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
+> distinguish the type of fragment. That is, if LOG_PREFIX is set, this
+> fragment does not continue the previous fragment. And if LOG_NEWLINE is
+> set, this fragment is not continued by the next fragment.
+> 
+> (Unfortunately, we still have to look at the previous fragment to catch the
+> case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
+> the previous fragment.)
+> 
+> Tested-By: Kay Sievers <kay@vrfy.org>
+> Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+> ---
+> Against linux-next from 20121102, added Kay's tested-by.
+> ---
+>  kernel/printk.c | 57 +++++++++++++++++++++++++++++++++------------------------
+>  1 file changed, 33 insertions(+), 24 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 22e070f..e8e4e67 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
 
-[seq-read]
-rw=read
-stonewall
+[...]
 
-[rand-read]
-rw=randread
-stonewall
+> @@ -1581,12 +1585,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  		 * Flush the conflicting buffer. An earlier newline was missing,
+>  		 * or another task also prints continuation lines.
+>  		 */
+> -		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+> -			cont_flush(LOG_NEWLINE);
+> +		if (cont.len) {
 
-[seq-write]
-rw=write
-stonewall
+This line should have been:
++		if (cont.len && !cont.flushed) {
 
-[rand-write]
-rw=randwrite
-stonewall
+The effect of this is that we now avoid to add a superfluous newline
+over and over (due to setting LOG_PREFIX), when the cont buffer has been
+flushed but not yet printed.
 
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+> +			if (cont.owner != current)
+> +				lflags |= LOG_PREFIX;
+> +			if (lflags & LOG_PREFIX)
+> +				cont_flush(LOG_NEWLINE);
+> +		}
+>  
+>  		/* buffer line if possible, otherwise store it right away */
+> -		if (!cont_add(facility, level, text, text_len))
+> -			log_store(facility, level, lflags | LOG_CONT, 0,
+> +		if (!cont_add(facility, level, lflags, text, text_len))
+> +			log_store(facility, level, lflags, 0,
+>  				  dict, dictlen, text, text_len);
+>  	} else {
+>  		bool stored = false;
+> @@ -1599,7 +1607,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  		 */
+>  		if (cont.len && cont.owner == current) {
+
+For symmetry reasons, the "if" here could use the same change. But here it
+does not really matter as currently cont_add() and cont_flush() are NOPs when
+cont.flushed is set.
+
+>  			if (!(lflags & LOG_PREFIX))
+> -				stored = cont_add(facility, level, text, text_len);
+> +				stored = cont_add(facility, level, lflags,
+> +							text, text_len);
+>  			cont_flush(LOG_NEWLINE);
+>  		}
+
+As I've not yet seen this patch turn up anywhere, I'm preparing a v2 of this
+together with a couple of other patches that are now more or less ready.
+
+Regards
+Jan
+
+
