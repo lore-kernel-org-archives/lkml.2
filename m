@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab2KJXaA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 18:30:00 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40358 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2KJX37 (ORCPT
+	id S1751927Ab2KJXeh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 18:34:37 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46773 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2KJXef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 18:29:59 -0500
-Message-ID: <1352590194.14983.3.camel@phoenix>
-Subject: [PATCH RFT 2/2] pinctrl: dove: Checking valid config in
- dove_audio1_ctrl_set
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 11 Nov 2012 07:29:54 +0800
-In-Reply-To: <1352590084.14983.1.camel@phoenix>
-References: <1352590084.14983.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Nov 2012 18:34:35 -0500
+Date: Sat, 10 Nov 2012 18:34:31 -0500 (EST)
+Message-Id: <20121110.183431.1207459372913956564.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, meravs@broadcom.com, dmitry@broadcom.com,
+        eilong@broadcom.com
+Subject: Re: linux-next: manual merge of the net-next tree with Linus' tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121109105318.e24e2fa2b899af6e4d444b30@canb.auug.org.au>
+References: <20121109105318.e24e2fa2b899af6e4d444b30@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the code checking valid config to dove_audio1_ctrl_set(), this ensures we
-always set valid config. And then dove_audio1_ctrl_get() always returns correct
-config.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 9 Nov 2012 10:53:18 +1100
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/mvebu/pinctrl-dove.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
+> 477864ddd365 ("bnx2x: Disable FCoE for 57840 since not yet supported by
+> FW") from Linus' tree and commit 55c11941e382 ("bnx2x: Support loading
+> cnic resources at run-time") from the net-next tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary
+> (no action is required).
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index e5cc694..a393790 100644
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -217,12 +217,6 @@ static int dove_audio1_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
- 	if (gcfg2 & DOVE_TWSI_OPTION3_GPIO)
- 		*config |= BIT(0);
- 
--	/* SSP/TWSI only if I2S1 not set*/
--	if ((*config & BIT(3)) == 0)
--		*config &= ~(BIT(2) | BIT(0));
--	/* TWSI only if SPDIFO not set*/
--	if ((*config & BIT(1)) == 0)
--		*config &= ~BIT(0);
- 	return 0;
- }
- 
-@@ -234,6 +228,13 @@ static int dove_audio1_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
- 	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
- 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
- 
-+	/* SSP/TWSI only if I2S1 not set*/
-+	if ((config & BIT(3)) == 0)
-+		config &= ~(BIT(2) | BIT(0));
-+	/* TWSI only if SPDIFO not set*/
-+	if ((config & BIT(1)) == 0)
-+		config &= ~BIT(0);
-+
- 	if (config & BIT(0))
- 		gcfg2 |= DOVE_TWSI_OPTION3_GPIO;
- 	else
--- 
-1.7.9.5
-
-
-
+I'm pulling 'net' into 'net-next' and this is exactly how I will resolve
+this conflict.  Thanks Stephen.
