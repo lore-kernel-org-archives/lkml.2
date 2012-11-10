@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab2KJB3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:29:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16972 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab2KJB2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752401Ab2KJB2L (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 9 Nov 2012 20:28:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:14144 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779Ab2KJB17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 20:27:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="217548804"
+   d="scan'208";a="166588281"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 32/32] perf, tools: List kernel supplied event aliases in perf list v2
-Date: Fri,  9 Nov 2012 17:27:48 -0800
-Message-Id: <1352510868-7911-33-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/32] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+Date: Fri,  9 Nov 2012 17:27:20 -0800
+Message-Id: <1352510868-7911-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,193 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-List the kernel supplied pmu event aliases in perf list
+Implement the TSX transaction and checkpointed transaction qualifiers for
+Haswell. This allows e.g. to profile the number of cycles in transactions.
 
-It's better when the users can actually see them.
+The checkpointed qualifier requires forcing the event to
+counter 2, implement this with a custom constraint for Haswell.
 
-v2: Fix pattern matching
+Also add sysfs format attributes for intx/intx_cp
+
+[Updated from earlier version that used generic attributes, now does
+raw + sysfs formats]
+v2: Moved bad hunk. Forbid some bad combinations.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-list.txt |    4 +-
- tools/perf/builtin-list.c              |    3 +
- tools/perf/util/parse-events.c         |    5 ++-
- tools/perf/util/pmu.c                  |   72 ++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h                  |    3 +
- 5 files changed, 85 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
+ 1 files changed, 61 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index d1e39dc..826f3d6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
- SYNOPSIS
- --------
- [verse]
--'perf list' [hw|sw|cache|tracepoint|event_glob]
-+'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
- 
- DESCRIPTION
- -----------
-@@ -104,6 +104,8 @@ To limit the list use:
-   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
-   block, etc.
- 
-+. 'pmu' to print the kernel supplied PMU events.
-+
- . If none of the above is matched, it will apply the supplied glob to all
-   events, printing the ones that match.
- 
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 1948ece..e79f423 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 634f639..44e18c02 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
 @@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
  
- #include "util/parse-events.h"
- #include "util/cache.h"
-+#include "util/pmu.h"
++#include <asm/cpufeature.h>
+ #include <asm/hardirq.h>
+ #include <asm/apic.h>
  
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 			else if (strcmp(argv[i], "cache") == 0 ||
- 				 strcmp(argv[i], "hwcache") == 0)
- 				print_hwcache_events(NULL, false);
-+			else if (strcmp(argv[i], "pmu") == 0)
-+				print_pmu_events(NULL, false);
- 			else if (strcmp(argv[i], "--raw-dump") == 0)
- 				print_events(NULL, true);
- 			else {
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 70cbd1c..2834f12 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1069,6 +1069,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 		}
+@@ -1597,6 +1598,44 @@ static void core_pmu_enable_all(int added)
  	}
- 
-+	if (printed)
-+		printf("\n");
- 	return printed;
  }
  
-@@ -1123,11 +1125,12 @@ void print_events(const char *event_glob, bool name_only)
- 
- 	print_hwcache_events(event_glob, name_only);
- 
-+	print_pmu_events(event_glob, name_only);
-+
- 	if (event_glob != NULL)
- 		return;
- 
- 	if (!name_only) {
--		printf("\n");
- 		printf("  %-50s [%s]\n",
- 		       "rNNN",
- 		       event_type_descriptors[PERF_TYPE_RAW]);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 18e8480..fbd5ca0 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -552,6 +552,78 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 		set_bit(b, bits);
- }
- 
-+static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
-+			  struct perf_pmu__alias *alias)
++static int hsw_hw_config(struct perf_event *event)
 +{
-+	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
-+	return buf;
++	int ret = intel_pmu_hw_config(event);
++
++	if (ret)
++		return ret;
++	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
++		return 0;
++	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
++
++	/* 
++	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
++	 */
++	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
++	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
++	      event->attr.precise_ip > 0))
++		return -EIO;
++	return 0;
 +}
 +
-+static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
-+			     struct perf_pmu__alias *alias)
++static struct event_constraint counter2_constraint = 
++			EVENT_CONSTRAINT(0, 0x4, 0);
++
++static struct event_constraint *
++hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
 +{
-+	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
-+	return buf;
-+}
++	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
 +
-+static int cmp_string(const void *a, const void *b)
-+{
-+	const char * const *as = a;
-+	const char * const *bs = b;
-+	return strcmp(*as, *bs);
-+}
-+
-+void print_pmu_events(const char *event_glob, bool name_only)
-+{
-+	struct perf_pmu *pmu;
-+	struct perf_pmu__alias *alias;
-+	char buf[1024];
-+	int printed = 0;
-+	int len, j;
-+	char **aliases;
-+
-+	pmu = NULL;
-+	len = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry (alias, &pmu->aliases, list)
-+			len++;
-+	aliases = malloc(sizeof(char *) * len);
-+	if (!aliases)
-+		return;
-+	pmu = NULL;
-+	j = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry (alias, &pmu->aliases, list) {
-+			char *name = format_alias(buf, sizeof buf, pmu, alias);
-+			bool is_cpu = !strcmp(pmu->name, "cpu");
-+
-+			if (event_glob != NULL &&
-+			    !(strglobmatch(name, event_glob) ||
-+			      (!is_cpu && strglobmatch(alias->name, event_glob))))
-+				continue;
-+			aliases[j] = name;
-+			if (is_cpu && !name_only)
-+				aliases[j] = format_alias_or(buf, sizeof buf,
-+							      pmu, alias);
-+			aliases[j] = strdup(aliases[j]);
-+			j++;
-+		}
-+	len = j;
-+	qsort(aliases, len, sizeof(char *), cmp_string);
-+	for (j = 0; j < len; j++) {
-+		if (name_only) {
-+			printf("%s ", aliases[j]);
-+			continue;
-+		}
-+		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
-+		free(aliases[j]);
-+		printed++;
++	/* Handle special quirk on intx_checkpointed only in counter 2 */
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		if (c->idxmsk64 & (1U << 2))
++			return &counter2_constraint;
++		return &emptyconstraint;
 +	}
-+	if (printed)
-+		printf("\n");
-+	free(aliases);
++
++	return c;
 +}
 +
- /* Simulated format definitions. */
- static struct test_format {
- 	const char *name;
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 39f3aba..da53c2a 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -3,6 +3,7 @@
+ PMU_FORMAT_ATTR(event,	"config:0-7"	);
+ PMU_FORMAT_ATTR(umask,	"config:8-15"	);
+ PMU_FORMAT_ATTR(edge,	"config:18"	);
+@@ -1604,6 +1643,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
+ PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
+ PMU_FORMAT_ATTR(inv,	"config:23"	);
+ PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
++PMU_FORMAT_ATTR(intx,	"config:32"	);
++PMU_FORMAT_ATTR(intx_cp,"config:33"	);
  
- #include <linux/bitops.h>
- #include "../../../include/uapi/linux/perf_event.h"
-+#include <stdbool.h>
+ static struct attribute *intel_arch_formats_attr[] = {
+ 	&format_attr_event.attr,
+@@ -1761,6 +1802,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
+ 	NULL,
+ };
  
- enum {
- 	PERF_PMU_FORMAT_VALUE_CONFIG,
-@@ -49,5 +50,7 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to);
- 
- struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
- 
-+void print_pmu_events(const char *event_glob, bool name_only);
++/* Arch3 + TSX support */
++static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_pc.attr,
++	&format_attr_any.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask.attr,
++	&format_attr_intx.attr,
++	&format_attr_intx_cp.attr,
 +
- int perf_pmu__test(void);
- #endif /* __PMU_H */
++	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
++	NULL,
++};
++
++
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -2135,6 +2193,9 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 
++		x86_pmu.hw_config = hsw_hw_config;
++		x86_pmu.get_event_constraints = hsw_get_event_constraints;
++		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		pr_cont("Haswell events, ");
+ 		break;
+ 
 -- 
 1.7.7.6
 
