@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab2KJRIA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 12:08:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56424 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2KJRH7 (ORCPT
+	id S1752445Ab2KJRPM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 12:15:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53209 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab2KJRPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 12:07:59 -0500
-Date: Sat, 10 Nov 2012 18:07:42 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] spi: tegra: sequence compatible strings as per preference
-Message-ID: <20121110170741.GA17689@avionic-0098.mockup.avionic-design.de>
-References: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com>
- <509D37B8.8020606@wwwdotorg.org>
- <20121109171008.GX23807@opensource.wolfsonmicro.com>
- <509D3D46.7060102@wwwdotorg.org>
+	Sat, 10 Nov 2012 12:15:09 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
-Content-Disposition: inline
-In-Reply-To: <509D3D46.7060102@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:hhRc0TQ7MTnLApcc678KU10V0zj98T92OOLpWgoeuIp
- RkQLMWbyFGEvCGIUDIrXgcJm2ZuiaS5Vq9sP5sYMnh+FtcclfG
- ANnr1zl3Dp/4ZEGGn5BngViwsHc4AeeclmmN73oELRTEcBqReD
- OacGZ8ITnjl8ppDFWltJaJg7XKyK2bo4t39soXt+FcL+WVu4dk
- QMz4KML5l7k/BLWfRewdyGA7Zms9sNXQaT1UahveIblut4N38B
- iJAOBb+lnCc7sIXbnjGebPVjCaFTRHLxPiT1cWlcWzinaqx3o8
- sD/KB1OkHYi3TZYWI+kxr+7TUdSq22n1H62kO+w6e94zF36Rhu
- 8t0Dp/WidQ6j6WnIq5yGX0N3b95LRf1gg2y8qLWKSPKdmpMxmJ
- ZkNb98AV9KucaG3RVTSXplutJfTa6YUl9R29+w9Azbo0WSz8q3
- 0yLrE
+In-Reply-To: <24155036.h7GFQbIk2D@vostro.rjw.lan>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACxGe6vgYKv92x8qk5dbdA8UJNJPVxT_1p5Mn58NfBfVF3x+iQ@mail.gmail.com>
+ <CAErSpo6z26RFZKaO4PuT9L+c3pz9By0UjundbKR7R+0X3dQ5MQ@mail.gmail.com> <24155036.h7GFQbIk2D@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 10 Nov 2012 10:14:47 -0700
+Message-ID: <CAErSpo71xh0F=8Q93d+yuxBsd6nxNuRJMwOmeVyN2Y-tnXgo9Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 10, 2012 at 4:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, November 09, 2012 09:53:26 AM Bjorn Helgaas wrote:
+>> On Fri, Nov 9, 2012 at 9:43 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> > On Fri, Nov 9, 2012 at 4:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >> On Fri, Nov 9, 2012 at 8:45 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> >>> On Fri, Nov 9, 2012 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >>>> [+cc Greg, Peter, Tony since they acked the original patch [1]]
+>> >>>>
+>> >>>> On Thu, Nov 8, 2012 at 1:04 PM, Mika Westerberg
+>> >>>> <mika.westerberg@linux.intel.com> wrote:
+>> >>>>> On Thu, Nov 08, 2012 at 12:32:25PM -0700, Bjorn Helgaas wrote:
+>> >>>>>> Struct device_driver is a generic structure, so it seems strange to
+>> >>>>>> have to include non-generic things like of_device_id and now
+>> >>>>>> acpi_match_table there.
+>> >>>>>
+>> >>>>> Yes, but in a sense the DT and ACPI are "generic". So that they are used to
+>> >>>>> describe the configuration of a machine.
+>> >>>>
+>> >>>> What I meant by "generic" was "useful across all architectures."  The
+>> >>>> new acpi_match_table and acpi_handle fields [1] are not generic in
+>> >>>> that sense because they're present on all architectures but used only
+>> >>>> on x86 and ia64.  The existing of_match_table and of_node are
+>> >>>> similarly unused on many architectures.  This doesn't seem like a
+>> >>>> scalable strategy to me.  Are we going to add a pnpbios_node for x86
+>> >>>> PNPBIOS machines without ACPI, a pdc_hpa for parisc machines with PDC,
+>> >>>> etc.?
+>> >>>>
+>> >>>> [1] https://patchwork.kernel.org/patch/1677221/
+>> >>>
+>> >>> Ultimately yes, I think that is what we want to do,
+>> >>
+>> >> Just to be clear, you think we *should* add things like pnpbios_node,
+>> >> pdc_hpa, etc., to struct device, one field for every scheme of telling
+>> >> the OS about non-enumerable devices, where only one of the N fields is
+>> >> used on any given machine?  That seems surprising to me, but maybe I
+>> >> just need to be educated :)
+>> >
+>> > Ah, I see what you're asking.
+>> >
+>> > In the short term, yes but only because we don't have any other
+>> > alternative. What I'd really rather have is a safe way to attach datum
+>> > (ie. acpi_device or device_node) to a struct device and get it back
+>> > later in a type safe way.
+>>
+>> Yep, *that* makes perfect sense to me.  Something along these lines, maybe:
+>>
+>>     #define dev_is_acpi(d)    ((d)->bus == &acpi_bus_type)
+>
+> No, that's not right.  It won't work for things like SPI and I2C with a
+> "backing" ACPI device node anyway (and for PCI too, by the way :-)).
+>
+>>     #define dev_acpi_handle(d)    (dev_is_acpi(d) ? (acpi_handle)
+>> d->datum : NULL)
+>
+> The problem basically is how we can tell that the given struct device has
+> a "backing" object containing device information (e.g. resources) and what
+> that "backing" object is.  For device trees that would be a struct device_node
+> and for ACPI that would be an acpi_handle or a struct acpi_device etc.  And by
+> the way, they _can_ be used simultaneously, in principle.
+>
+> So we need something like of_node(dev) or acpi_node(dev), but that can't be
+> something following two pointers or calling a function just in order to check
+> if the pointer _is_ _there_ in either case.
+>
+> And since we added of_node to struct device at one point, it is only logical to
+> treat ACPI in the same way.  If we come up with a better idea _later_, then we
+> can convert _all_ things to this new idea, whatever it is.
+>
+> Are you seriously expecting us to come up with such an idea on the fly just so
+> that we can use ACPI support, which already is there in the form of
+> archdata.acpi_handle anyway, on equal footing with Device Trees?
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Nov 09, 2012 at 10:28:38AM -0700, Stephen Warren wrote:
-> On 11/09/2012 10:10 AM, Mark Brown wrote:
-> > On Fri, Nov 09, 2012 at 10:04:56AM -0700, Stephen Warren wrote:
-> >=20
-> >> However just FYI, it should not be necessary for correctness; The
-> >> DT matching order is supposed to be driven purely by the order of
-> >> the compatible values in the DT now, and not affected by the
-> >> order of values in the table. (This wasn't always the case, but
-> >> was a bug that was fixed IIRC by Thierry Reding).
-> >=20
-> > I guess the driver is being used backported in older kernels which
-> > don't have that fix?
->=20
-> That sounds likely. Laxman, it'd be a good idea to track down the fix
-> to the DT matching code and backport it, so that hard-to debug issues
-> aren't caused by the lack of that patch!
-
-Unfortunately the patch that was supposed to fixed this caused a
-regression and was therefore reverted. Rob (Cc'ed) said there was a
-patch to fix it properly and was supposed to go into 3.6 but it seems
-that never happened. Rob, what's the status on this?
-
-The revert is here: bc51b0c22cebf5c311a6f1895fcca9f78efd0478
-
-Thierry
-
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQnondAAoJEN0jrNd/PrOhYJUP/20RMyzx47zR8nbEljYVYX46
-w/oQO0iK4IUhaxUJ+ApC+2biU2gNXxsPmR+Qo/C9aJ7U5xLnYNsywaM8reHQ/lJf
-+/aTRhd/XASmJUFeGquLEs6TbDgVkHaDP+6sGdBFLh8rQ1mT86pNOmQqvjcPXRrH
-RNmtmpQ9oAgqtYALK77swK2wtiLuoIB+Lgxcamw7PrIfx/yT0THL1zimbKlOZtw1
-fdIrLrJDBPsME+pkTMJXp7rQEdkwhmcP0SVG56K8Q9j9x2KMfhTKUZYsSokteI4k
-+uGXO2+mHyF3XAtPM2NJcrqOKcj/xaQKdlqeHv8ZOhnIpZxefEvEgma3R2cR6Vkd
-2SXYJoB7sDeCP0s64CFRkHwVULsyJLersiUnwp7FqQllrufTySKacajglOU7Kx4u
-3v7zAkrfM6eJm09PuLXoawD6rT9Relg4Tf4rg+snZ9GxSYquKY3DVXWsxUTkFkrS
-mtLMitFFrmtjGZqsYSr9xtSuwBcjh6QaHNssPf9+1OXSIVDRhzCkL+GWfqgLBNA8
-f9k5KuNuH9XTQJHihNSJeUREf0N0PgomQ2BtYVS6S7N2Q8d7NKFYXFUlrYj5Izd3
-u8gTi8z0Lullv9qPLEqa1GN+U/y8Rqbc4vBrWOoMGyrjj1XQh6CcvGhRvV7XUkko
-wThIvYpKIuZscj5A/ZxC
-=/WkF
------END PGP SIGNATURE-----
-
---J/dobhs11T7y2rNN--
+Of course not.  I'm just trying to understand where we're headed.
+That was not obvious from the patches I've seen so far.
