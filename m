@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab2KJN7T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 08:59:19 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab2KJN7P (ORCPT
+	id S1751904Ab2KJN70 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 08:59:26 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47743 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2KJN7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 08:59:15 -0500
+	Sat, 10 Nov 2012 08:59:22 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Alex Williamson <alex.williamson@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Joerg Roedel <joerg.roedel@amd.com>,
         Yinghai Lu <yinghai@kernel.org>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>
-Subject: [RFC PATCH 2/6] iommu: pass on BUS_NOTIFY_QUERY_BINDING to iommu group notifier clients
-Date: Sat, 10 Nov 2012 21:57:15 +0800
-Message-Id: <1352555839-18961-2-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH 3/6] VFIO: unregister IOMMU notifier on error recovery path
+Date: Sat, 10 Nov 2012 21:57:16 +0800
+Message-Id: <1352555839-18961-3-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352555839-18961-1-git-send-email-jiang.liu@huawei.com>
 References: <1352555839-18961-1-git-send-email-jiang.liu@huawei.com>
@@ -25,77 +25,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
  From: Jiang Liu <jiang.liu@huawei.com>
 
-Pass on BUS_NOTIFY_QUERY_BINDING event to iommu group notifier clients,
-so notifier clients have a chance to reject device driver binding.
+On error recovery path in function vfio_create_group(), it should
+unregister the IOMMU notifier for the new VFIO group. Otherwise it may
+cause invalid memory access later when handling bus notifications.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/iommu/iommu.c |   14 +++++++++-----
- include/linux/iommu.h |    1 +
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/vfio/vfio.c |   31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index ddbdaca..7fbe055 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -497,6 +497,7 @@ static int add_iommu_group(struct device *dev, void *data)
- static int iommu_bus_notifier(struct notifier_block *nb,
- 			      unsigned long action, void *data)
- {
-+	int ret = NOTIFY_DONE;
- 	struct device *dev = data;
- 	struct iommu_ops *ops = dev->bus->iommu_ops;
- 	struct iommu_group *group;
-@@ -512,7 +513,7 @@ static int iommu_bus_notifier(struct notifier_block *nb,
- 	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
- 		if (ops->remove_device && dev->iommu_group) {
- 			ops->remove_device(dev);
--			return 0;
-+			return NOTIFY_DONE;
- 		}
- 	}
- 
-@@ -522,9 +523,12 @@ static int iommu_bus_notifier(struct notifier_block *nb,
- 	 */
- 	group = iommu_group_get(dev);
- 	if (!group)
--		return 0;
-+		return NOTIFY_DONE;
- 
- 	switch (action) {
-+	case BUS_NOTIFY_SOLICIT_BINDING:
-+		group_action = IOMMU_GROUP_NOTIFY_SOLICIT_BINDING;
-+		break;
- 	case BUS_NOTIFY_BIND_DRIVER:
- 		group_action = IOMMU_GROUP_NOTIFY_BIND_DRIVER;
- 		break;
-@@ -540,11 +544,11 @@ static int iommu_bus_notifier(struct notifier_block *nb,
- 	}
- 
- 	if (group_action)
--		blocking_notifier_call_chain(&group->notifier,
--					     group_action, dev);
-+		ret = blocking_notifier_call_chain(&group->notifier,
-+						   group_action, dev);
- 
- 	iommu_group_put(group);
--	return 0;
-+	return ret;
+diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+index 17830c9..3359ec2 100644
+--- a/drivers/vfio/vfio.c
++++ b/drivers/vfio/vfio.c
+@@ -191,6 +191,17 @@ static void vfio_container_put(struct vfio_container *container)
+ 	kref_put(&container->kref, vfio_container_release);
  }
  
- static struct notifier_block iommu_bus_nb = {
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 7e83370..366435b 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -109,6 +109,7 @@ struct iommu_ops {
- #define IOMMU_GROUP_NOTIFY_BOUND_DRIVER		4 /* Post Driver bind */
- #define IOMMU_GROUP_NOTIFY_UNBIND_DRIVER	5 /* Pre Driver unbind */
- #define IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER	6 /* Post Driver unbind */
-+#define IOMMU_GROUP_NOTIFY_SOLICIT_BINDING	7 /* Check for objections */
++static void vfio_group_unlock_and_free(struct vfio_group *group)
++{
++	mutex_unlock(&vfio.group_lock);
++	/*
++	 * Unregister outside of lock.  A spurious callback is harmless now
++	 * that the group is no longer in vfio.group_list.
++	 */
++	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
++	kfree(group);
++}
++
+ /**
+  * Group objects - create, release, get, put, search
+  */
+@@ -229,8 +240,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
  
- extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
- extern bool iommu_present(struct bus_type *bus);
+ 	minor = vfio_alloc_group_minor(group);
+ 	if (minor < 0) {
+-		mutex_unlock(&vfio.group_lock);
+-		kfree(group);
++		vfio_group_unlock_and_free(group);
+ 		return ERR_PTR(minor);
+ 	}
+ 
+@@ -239,8 +249,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+ 		if (tmp->iommu_group == iommu_group) {
+ 			vfio_group_get(tmp);
+ 			vfio_free_group_minor(minor);
+-			mutex_unlock(&vfio.group_lock);
+-			kfree(group);
++			vfio_group_unlock_and_free(group);
+ 			return tmp;
+ 		}
+ 	}
+@@ -249,8 +258,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+ 			    group, "%d", iommu_group_id(iommu_group));
+ 	if (IS_ERR(dev)) {
+ 		vfio_free_group_minor(minor);
+-		mutex_unlock(&vfio.group_lock);
+-		kfree(group);
++		vfio_group_unlock_and_free(group);
+ 		return (struct vfio_group *)dev; /* ERR_PTR */
+ 	}
+ 
+@@ -274,16 +282,7 @@ static void vfio_group_release(struct kref *kref)
+ 	device_destroy(vfio.class, MKDEV(MAJOR(vfio.devt), group->minor));
+ 	list_del(&group->vfio_next);
+ 	vfio_free_group_minor(group->minor);
+-
+-	mutex_unlock(&vfio.group_lock);
+-
+-	/*
+-	 * Unregister outside of lock.  A spurious callback is harmless now
+-	 * that the group is no longer in vfio.group_list.
+-	 */
+-	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
+-
+-	kfree(group);
++	vfio_group_unlock_and_free(group);
+ }
+ 
+ static void vfio_group_put(struct vfio_group *group)
 -- 
 1.7.9.5
 
