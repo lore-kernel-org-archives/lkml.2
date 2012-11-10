@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab2KJBcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:32:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26777 "EHLO mga01.intel.com"
+	id S1752710Ab2KJBcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:32:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:41258 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab2KJB2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751967Ab2KJB2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Nov 2012 20:28:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="246777199"
+   d="scan'208";a="244848911"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 14/32] perf, core: Add a concept of a weightened sample
-Date: Fri,  9 Nov 2012 17:27:30 -0800
-Message-Id: <1352510868-7911-15-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 18/32] perf, x86: Support for printing PMU state on spurious PMIs v3
+Date: Fri,  9 Nov 2012 17:27:34 -0800
+Message-Id: <1352510868-7911-19-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,111 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
+I had some problems with spurious PMIs, so print the PMU state
+on a spurious one. This will not interact well with other NMI users.
+Disabled by default, has to be explicitely enabled through sysfs.
 
-There is already the period which is used similarly, but it means
-something different, so I chose to not overload it. Instead
-a new sample type for WEIGHT is added.
+Optional, but useful for debugging.
 
-Can be used for multiple things. Initially it is used for TSX abort costs
-and profiling by memory latencies (so to make expensive load appear higher
-up in the histograms)  The concept is quite generic and can be extended
-to many other kinds of events or architectures, as long as the hardware
-provides suitable auxillary values. In principle it could be also
-used for software tracpoints.
-
-This adds the generic glue. A new optional sample format for a 64bit
-weight value.
-
+v2: Move to /sys/devices/cpu
+v3: Print in more cases
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |    8 ++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |   11 ++++++-----
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 91052e1..c9686c8 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -588,6 +588,7 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-+	u64				weight;
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ec3c549..57bb4ce 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -38,6 +38,7 @@
+ #include "perf_event.h"
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -601,6 +602,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->weight = 0;
+ struct x86_pmu x86_pmu __read_mostly;
++int	       print_spurious_pmi __read_mostly;
+ 
+ DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
+ 	.enabled = 1,
+@@ -1758,9 +1759,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 8e38823..809a5fd 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+
-+	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
++static DEVICE_INT_ATTR(print_spurious_pmi, 0644, print_spurious_pmi);
  
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ static struct attribute *x86_pmu_attrs[] = {
+ 	&dev_attr_rdpmc.attr,
++	&dev_attr_print_spurious_pmi.attr.attr,
+ 	NULL,
  };
  
- /*
-@@ -201,8 +203,9 @@ enum perf_event_read_format {
- 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
- 	PERF_FORMAT_ID				= 1U << 2,
- 	PERF_FORMAT_GROUP			= 1U << 3,
-+	PERF_FORMAT_WEIGHT			= 1U << 4,
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index d55e502..2ef5b20 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -664,3 +664,5 @@ static inline struct intel_shared_regs *allocate_shared_regs(int cpu)
+ }
  
--	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
-+	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
- };
- 
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
-@@ -562,6 +565,7 @@ enum perf_event_type {
- 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
- 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *
- 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
- 	 *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dbccf83..d633581 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		size += sizeof(data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
+ #endif /* CONFIG_CPU_SUP_INTEL */
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
++extern int print_spurious_pmi;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 20caf0a..dc2f2a1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1146,11 +1146,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+-	if (!status) {
+-		intel_pmu_enable_all(0);
+-		return handled;
+-	}
+-
++	if (!status)
++		goto done;
+ 	loops = 0;
+ again:
+ 	intel_pmu_ack_status(status);
+@@ -1210,6 +1207,10 @@ again:
+ 		goto again;
  
-@@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		perf_output_put(handle, data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
- 
+ done:
++	if (!handled && print_spurious_pmi) {
++		pr_debug("Spurious PMI\n");
++		perf_event_print_debug();
++	}
+ 	intel_pmu_enable_all(0);
+ 	return handled;
+ }
 -- 
 1.7.7.6
 
