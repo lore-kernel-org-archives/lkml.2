@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2KJB3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:29:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1588 "EHLO mga02.intel.com"
+	id S1752807Ab2KJB3j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:29:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14512 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab2KJB2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752358Ab2KJB2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Nov 2012 20:28:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="217548801"
+   d="scan'208";a="217548802"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 28/32] perf, x86: Add Haswell TSX event aliases v2
-Date: Fri,  9 Nov 2012 17:27:44 -0800
-Message-Id: <1352510868-7911-29-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 29/32] perf, tools: Add perf stat --transaction v2
+Date: Fri,  9 Nov 2012 17:27:45 -0800
+Message-Id: <1352510868-7911-30-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,110 +26,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add infrastructure to generate event aliases in /sys/devices/cpu/events/
+Add support to perf stat to print the basic transactional execution statistics:
+Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+using the intx and intx_checkpoint qualifiers.
+Transaction Starts and Elision Starts, to compute the average transaction length.
 
-And use this to set up user friendly aliases for the common TSX events.
-TSX tuning relies heavily on the PMU, so it's important to be user friendly.
+This is a reasonable overview over the success of the transactions.
 
-This replaces the generic transaction events in an earlier version
-of this patchkit.
+Enable with a new --transaction / -T option.
 
-tx-start/commit/abort  to count RTM transactions
-el-start/commit/abort  to count HLE ("elision") transactions
-tx-conflict/overflow   to count conflict/overflow for both combined.
+This requires measuring these events in a group, since they depend on each
+other.
 
-The general abort events exist in precise and non precise variants
-Since the common case is sampling plain "tx-aborts" in precise.
+This is implemented by using TM sysfs events exported by the kernel
 
-This is very important because abort sampling only really works
-with PEBS enabled, otherwise it would report the IP after the abort,
-not the abort point. But counting with PEBS has more overhead,
-so also have tx/el-abort-count aliases that do not enable PEBS
-for perf stat.
-
-It would be nice to switch automatically between those two, like in the
-previous version, but that would need more new infrastructure for sysfs
-first.
-
-There is an tx-abort<->tx-aborts alias too, because I found myself
-using both variants.
-
-Also added friendly aliases for cpu/cycles,intx=1/ and
-cpu/cycles,intx=1,intx_cp=1/ and the same for instructions.
-These will be used by perf stat -T, and are also useful for users directly.
-
-So for example to get transactional cycles can use "perf stat -e cycles-t"
-
-v2: Move to new sysfs infrastructure
+v2: Only print the extended statistics when the option is enabled.
+This avoids negative output when the user specifies the -T events
+in separate groups.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   47 ++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  101 +++++++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h                |    6 ++
+ 3 files changed, 108 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index dc2f2a1..e8fb4e2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2010,6 +2010,52 @@ static __init void intel_nehalem_quirk(void)
- 	}
- }
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index cf0c310..0d5b8cb 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -114,6 +114,10 @@ with it.  --append may be used here.  Examples:
  
-+/* Haswell special events */
-+EVENT_ATTR_STR(tx-start,       tx_start,       "event=0xc9,umask=0x1");
-+EVENT_ATTR_STR(tx-commit,      tx_commit,      "event=0xc9,umask=0x2");
-+EVENT_ATTR_STR(tx-abort,       tx_abort,       "event=0xc9,umask=0x4,precise=2");
-+EVENT_ATTR_STR(tx-abort-count, tx_abort_count, "event=0xc9,umask=0x4");
-+/* alias */
-+EVENT_ATTR_STR(tx-aborts,      tx_aborts,      "event=0xc9,umask=0x4,precise=2");
-+EVENT_ATTR_STR(tx-capacity,    tx_capacity,    "event=0x54,umask=0x2");
-+EVENT_ATTR_STR(tx-conflict,    tx_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(el-start,       el_start,       "event=0xc8,umask=0x1");
-+EVENT_ATTR_STR(el-commit,      el_commit,      "event=0xc8,umask=0x2");
-+EVENT_ATTR_STR(el-abort,       el_abort,       "event=0xc8,umask=0x4,precise=2");
-+EVENT_ATTR_STR(el-abort-count, el_abort_count, "event=0xc8,umask=0x4");
-+/* alias */
-+EVENT_ATTR_STR(el-aborts,      el_aborts,      "event=0xc8,umask=0x4,precise=2");
-+/* shared with tx-* */
-+EVENT_ATTR_STR(el-capacity,    el_capacity,    "event=0x54,umask=0x2");
-+/* shared with tx-* */
-+EVENT_ATTR_STR(el-conflict,    el_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
-+EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
-+EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
-+EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
+ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
+ 
++-T::
++--transaction::
 +
-+static struct attribute *hsw_events_attrs[] = {
-+	EVENT_PTR(tx_start),
-+	EVENT_PTR(tx_commit),
-+	EVENT_PTR(tx_abort),
-+	EVENT_PTR(tx_aborts),
-+	EVENT_PTR(tx_abort_count),
-+	EVENT_PTR(tx_capacity),
-+	EVENT_PTR(tx_conflict),
-+	EVENT_PTR(el_start),
-+	EVENT_PTR(el_commit),
-+	EVENT_PTR(el_abort),
-+	EVENT_PTR(el_aborts),
-+	EVENT_PTR(el_abort_count),
-+	EVENT_PTR(el_capacity),
-+	EVENT_PTR(el_conflict),
-+	EVENT_PTR(cycles_t),
-+	EVENT_PTR(cycles_ct),
-+	EVENT_PTR(instructions_t),
-+	EVENT_PTR(instructions_ct),
-+	NULL
++Print statistics of transactional execution if supported.
+ 
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 6888960..6dfc8f8 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -65,6 +65,29 @@
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+ 
++static const char *transaction_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/cycles-ct/,"
++	"cpu/tx-start/,"
++	"cpu/el-start/"
++	"}"
 +};
 +
- __init int intel_pmu_init(void)
++/* must match the transaction_attrs above */
++enum {
++	T_TASK_CLOCK,
++	T_INSTRUCTIONS,
++	T_CYCLES,
++	T_CYCLES_INTX,
++	T_CYCLES_INTX_CP,
++	T_TRANSACTION_START,
++	T_ELISION_START
++};
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -78,6 +101,7 @@ static bool			no_aggr				= false;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
++static bool			transaction_run			=  false;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*csv_sep			= NULL;
+@@ -127,7 +151,11 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+ static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intx_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intxcp_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
++static struct stats runtime_transaction_stats[MAX_NR_CPUS];
++static struct stats runtime_elision_stats[MAX_NR_CPUS];
+ 
+ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 				    struct perf_evsel *first)
+@@ -187,6 +215,18 @@ static inline int nsec_counter(struct perf_evsel *evsel)
+ 	return 0;
+ }
+ 
++static struct perf_evsel *nth_evsel(int n)
++{
++	struct perf_evsel *ev;
++	int j;
++
++	j = 0;
++	list_for_each_entry (ev, &evsel_list->entries, node)
++		if (j++ == n)
++			return ev;
++	return NULL;
++}
++
+ /*
+  * Update various tracking values we maintain to print
+  * more semantic information such as miss/hit ratios,
+@@ -198,8 +238,14 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
+-	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+-		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX)))
++		update_stats(&runtime_cycles_intx_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX_CP)))
++		update_stats(&runtime_cycles_intxcp_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
++		update_stats(&runtime_transaction_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
++		update_stats(&runtime_elision_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+ 		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+@@ -663,7 +709,7 @@ static void print_ll_cache_misses(int cpu,
+ 
+ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
  {
- 	union cpuid10_edx edx;
-@@ -2235,6 +2281,7 @@ __init int intel_pmu_init(void)
- 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
- 		x86_pmu.format_attrs = intel_hsw_formats_attr;
- 		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
-+		x86_pmu.cpu_events = hsw_events_attrs;
- 		pr_cont("Haswell events, ");
- 		break;
+-	double total, ratio = 0.0;
++	double total, ratio = 0.0, total2;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt;
+ 
+@@ -763,6 +809,41 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 			ratio = 1.0 * avg / total;
+ 
+ 		fprintf(output, " # %8.3f GHz                    ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX)) &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% transactional cycles   ",
++				100.0 * (avg / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX_CP)) &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total2 = avg_stats(&runtime_cycles_intx_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% aborted cycles         ",
++				100.0 * ((total2-avg) / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / transaction ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / elision     ", ratio);
+ 	} else if (runtime_nsecs_stats[cpu].n != 0) {
+ 		char unit = 'M';
+ 
+@@ -1069,6 +1150,18 @@ static int add_default_attributes(void)
+ 	if (null_run)
+ 		return 0;
+ 
++	if (transaction_run) {
++		unsigned i;
++
++		for (i = 0; i < ARRAY_SIZE(transaction_attrs); i++) {
++			if (parse_events(evsel_list, transaction_attrs[i], 0)) {
++				fprintf(stderr, "Cannot set up transaction events\n");
++				return -1;
++			}
++		}
++		return 0;
++	}
++
+ 	if (!evsel_list->nr_entries) {
+ 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
+ 			return -1;
+@@ -1147,6 +1240,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run prior to the measured command"),
+ 	OPT_STRING(0, "post", &post_cmd, "command",
+ 			"command to run after to the measured command"),
++	OPT_BOOLEAN('T', "transaction", &transaction_run,
++		    "hardware transaction statistics"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 6f94d6d..418405e 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -158,6 +158,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	       (e1->attr.config == e2->attr.config);
+ }
+ 
++#define perf_evsel__cmp(a, b)			\
++	((a) &&					\
++	 (b) &&					\
++	 (a)->attr.type == (b)->attr.type &&	\
++	 (a)->attr.config == (b)->attr.config)
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
  
 -- 
 1.7.7.6
