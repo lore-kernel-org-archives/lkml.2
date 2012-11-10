@@ -1,320 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2KJAsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:48:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab2KJArP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:47:15 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/12] perf tests: Move test__open_syscall_event_on_all_cpus into separate object
-Date: Sat, 10 Nov 2012 01:46:43 +0100
-Message-Id: <1352508412-16914-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
-References: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
+	id S1756801Ab2KJAtB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 19:49:01 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41577 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab2KJAs5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 19:48:57 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6891"; a="5753877"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [RFC] dt/platform: Use cell-index for device naming if available
+Date: Fri,  9 Nov 2012 16:48:52 -0800
+Message-Id: <1352508532-19241-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separating test__open_syscall_event_on_all_cpus test from
-the builtin-test into open-syscall-all-cpus object.
+Use the cell-index property to construct names for platform
+devices, falling back on the existing scheme of using the
+device register address if cell-index is not specified.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+The cell-index property is a more useful device identifier,
+especially in systems containing several numbered instances
+of a particular hardware block, since it more easily
+illustrates how devices relate to each other.
+
+Additionally, userspace software may rely on the classic
+<name>.<id> naming scheme to access device attributes in
+sysfs, without having to know the physical addresses of
+that device on every platform the userspace software may
+support. Using cell-index for device naming allows the
+device addresses to be hidden from userspace and to be
+exposed by logical device number without having to rely on
+auxdata to perform name overrides. This allows userspace to
+make assumptions about which sysfs nodes map to which
+logical instance of a specific hardware block.
+
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- tools/perf/Makefile                      |   1 +
- tools/perf/tests/builtin-test.c          | 114 -----------------------------
- tools/perf/tests/open-syscall-all-cpus.c | 120 +++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                 |   1 +
- 4 files changed, 122 insertions(+), 114 deletions(-)
- create mode 100644 tools/perf/tests/open-syscall-all-cpus.c
+I had also considered using something like the linux,label property to allow
+custom names for platform devices without resorting to auxdata, but the
+cell-index approach seems more in line with what cell-index was intended for
+and with what the pre-DT platform device naming scheme used to be. Please let
+me know if you think there is a better way to accomplish this.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 69f582c..d413e89 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -433,6 +433,7 @@ LIB_OBJS += $(OUTPUT)tests/dso-data.o
- LIB_OBJS += $(OUTPUT)tests/attr.o
- LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall.o
-+LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
- LIB_OBJS += $(OUTPUT)tests/util.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b6b1e46..98e883b 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -29,120 +29,6 @@
- 
- #include <sched.h>
- 
--static int test__open_syscall_event_on_all_cpus(void)
--{
--	int err = -1, fd, cpu;
--	struct thread_map *threads;
--	struct cpu_map *cpus;
--	struct perf_evsel *evsel;
--	struct perf_event_attr attr;
--	unsigned int nr_open_calls = 111, i;
--	cpu_set_t cpu_set;
--	int id = trace_event__id("sys_enter_open");
--
--	if (id < 0) {
--		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
--		return -1;
--	}
--
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
--	if (threads == NULL) {
--		pr_debug("thread_map__new\n");
--		return -1;
--	}
--
--	cpus = cpu_map__new(NULL);
--	if (cpus == NULL) {
--		pr_debug("cpu_map__new\n");
--		goto out_thread_map_delete;
--	}
--
--
--	CPU_ZERO(&cpu_set);
--
--	memset(&attr, 0, sizeof(attr));
--	attr.type = PERF_TYPE_TRACEPOINT;
--	attr.config = id;
--	evsel = perf_evsel__new(&attr, 0);
--	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
--		goto out_thread_map_delete;
--	}
--
--	if (perf_evsel__open(evsel, cpus, threads) < 0) {
--		pr_debug("failed to open counter: %s, "
--			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
--			 strerror(errno));
--		goto out_evsel_delete;
--	}
--
--	for (cpu = 0; cpu < cpus->nr; ++cpu) {
--		unsigned int ncalls = nr_open_calls + cpu;
--		/*
--		 * XXX eventually lift this restriction in a way that
--		 * keeps perf building on older glibc installations
--		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
--		 * a reasonable upper limit tho :-)
--		 */
--		if (cpus->map[cpu] >= CPU_SETSIZE) {
--			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
--			continue;
--		}
--
--		CPU_SET(cpus->map[cpu], &cpu_set);
--		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
--			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
--				 cpus->map[cpu],
--				 strerror(errno));
--			goto out_close_fd;
--		}
--		for (i = 0; i < ncalls; ++i) {
--			fd = open("/etc/passwd", O_RDONLY);
--			close(fd);
--		}
--		CPU_CLR(cpus->map[cpu], &cpu_set);
--	}
--
--	/*
--	 * Here we need to explicitely preallocate the counts, as if
--	 * we use the auto allocation it will allocate just for 1 cpu,
--	 * as we start by cpu 0.
--	 */
--	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
--		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
--		goto out_close_fd;
--	}
--
--	err = 0;
--
--	for (cpu = 0; cpu < cpus->nr; ++cpu) {
--		unsigned int expected;
--
--		if (cpus->map[cpu] >= CPU_SETSIZE)
--			continue;
--
--		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
--			pr_debug("perf_evsel__read_on_cpu\n");
--			err = -1;
--			break;
--		}
--
--		expected = nr_open_calls + cpu;
--		if (evsel->counts->cpu[cpu].val != expected) {
--			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
--				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
--			err = -1;
--		}
--	}
--
--out_close_fd:
--	perf_evsel__close_fd(evsel, 1, threads->nr);
--out_evsel_delete:
--	perf_evsel__delete(evsel);
--out_thread_map_delete:
--	thread_map__delete(threads);
--	return err;
--}
- 
- /*
-  * This test will generate random numbers of calls to some getpid syscalls,
-diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
-new file mode 100644
-index 0000000..31072ab
---- /dev/null
-+++ b/tools/perf/tests/open-syscall-all-cpus.c
-@@ -0,0 +1,120 @@
-+#include "evsel.h"
-+#include "tests.h"
-+#include "thread_map.h"
-+#include "cpumap.h"
-+#include "debug.h"
-+
-+int test__open_syscall_event_on_all_cpus(void)
-+{
-+	int err = -1, fd, cpu;
-+	struct thread_map *threads;
-+	struct cpu_map *cpus;
-+	struct perf_evsel *evsel;
-+	struct perf_event_attr attr;
-+	unsigned int nr_open_calls = 111, i;
-+	cpu_set_t cpu_set;
-+	int id = trace_event__id("sys_enter_open");
-+
-+	if (id < 0) {
-+		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
-+		return -1;
-+	}
-+
-+	threads = thread_map__new(-1, getpid(), UINT_MAX);
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		return -1;
-+	}
-+
-+	cpus = cpu_map__new(NULL);
-+	if (cpus == NULL) {
-+		pr_debug("cpu_map__new\n");
-+		goto out_thread_map_delete;
-+	}
-+
-+
-+	CPU_ZERO(&cpu_set);
-+
-+	memset(&attr, 0, sizeof(attr));
-+	attr.type = PERF_TYPE_TRACEPOINT;
-+	attr.config = id;
-+	evsel = perf_evsel__new(&attr, 0);
-+	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		goto out_thread_map_delete;
-+	}
-+
-+	if (perf_evsel__open(evsel, cpus, threads) < 0) {
-+		pr_debug("failed to open counter: %s, "
-+			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
-+			 strerror(errno));
-+		goto out_evsel_delete;
-+	}
-+
-+	for (cpu = 0; cpu < cpus->nr; ++cpu) {
-+		unsigned int ncalls = nr_open_calls + cpu;
-+		/*
-+		 * XXX eventually lift this restriction in a way that
-+		 * keeps perf building on older glibc installations
-+		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
-+		 * a reasonable upper limit tho :-)
-+		 */
-+		if (cpus->map[cpu] >= CPU_SETSIZE) {
-+			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
-+			continue;
-+		}
-+
-+		CPU_SET(cpus->map[cpu], &cpu_set);
-+		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
-+			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
-+				 cpus->map[cpu],
-+				 strerror(errno));
-+			goto out_close_fd;
-+		}
-+		for (i = 0; i < ncalls; ++i) {
-+			fd = open("/etc/passwd", O_RDONLY);
-+			close(fd);
-+		}
-+		CPU_CLR(cpus->map[cpu], &cpu_set);
+This is just being sent out as an RFC for now. If there are no objections, I
+will send this out as an official patch, along with (or combined with) a patch
+to fix up the device names in things like clock tables of any affected
+platforms.
+
+ drivers/of/platform.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 343ad29..472e374 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -77,8 +77,9 @@ void of_device_make_bus_id(struct device *dev)
+ 	static atomic_t bus_no_reg_magic;
+ 	struct device_node *node = dev->of_node;
+ 	const u32 *reg;
++	u32 cell_index;
+ 	u64 addr;
+-	int magic;
++	int magic, ret;
+
+ #ifdef CONFIG_PPC_DCR
+ 	/*
+@@ -101,6 +102,16 @@ void of_device_make_bus_id(struct device *dev)
+ #endif /* CONFIG_PPC_DCR */
+
+ 	/*
++	 * For devices with a specified cell-index, use the traditional
++	 * naming scheme of <name>.<id>
++	 */
++	ret = of_property_read_u32(node, "cell-index", &cell_index);
++	if (ret == 0) {
++		dev_set_name(dev, "%s.%d", node->name, cell_index);
++		return;
 +	}
 +
 +	/*
-+	 * Here we need to explicitely preallocate the counts, as if
-+	 * we use the auto allocation it will allocate just for 1 cpu,
-+	 * as we start by cpu 0.
-+	 */
-+	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
-+		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
-+		goto out_close_fd;
-+	}
-+
-+	err = 0;
-+
-+	for (cpu = 0; cpu < cpus->nr; ++cpu) {
-+		unsigned int expected;
-+
-+		if (cpus->map[cpu] >= CPU_SETSIZE)
-+			continue;
-+
-+		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
-+			pr_debug("perf_evsel__read_on_cpu\n");
-+			err = -1;
-+			break;
-+		}
-+
-+		expected = nr_open_calls + cpu;
-+		if (evsel->counts->cpu[cpu].val != expected) {
-+			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
-+				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
-+			err = -1;
-+		}
-+	}
-+
-+out_close_fd:
-+	perf_evsel__close_fd(evsel, 1, threads->nr);
-+out_evsel_delete:
-+	perf_evsel__delete(evsel);
-+out_thread_map_delete:
-+	thread_map__delete(threads);
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index bac133e..c2887f2 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -4,6 +4,7 @@
- /* Tests */
- int test__vmlinux_matches_kallsyms(void);
- int test__open_syscall_event(void);
-+int test__open_syscall_event_on_all_cpus(void);
- 
- /* Util */
- int trace_event__id(const char *evname);
--- 
-1.7.11.7
+ 	 * For MMIO, get the physical address
+ 	 */
+ 	reg = of_get_property(node, "reg", NULL);
+--
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
