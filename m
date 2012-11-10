@@ -1,73 +1,707 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab2KJBCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:02:15 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:54770
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750859Ab2KJBB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 20:01:59 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzd6eahzz1de0h1202h1d1ah1d2ahzz8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h1155h)
-X-WSS-ID: 0MD8YV3-01-03M-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 0/4] perf, amd: Enable AMD family 15h northbridge counters
-Date: Fri, 9 Nov 2012 19:01:34 -0600
-Message-ID: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	id S1751869Ab2KJBDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:03:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab2KJBDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 20:03:02 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/12] perf tests: Move test__PERF_RECORD into separate object
+Date: Sat, 10 Nov 2012 01:46:45 +0100
+Message-Id: <1352508412-16914-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
+References: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patchset enables 4 additional performance counters in
-AMD family 15h processors that counts northbridge events -- such as
-DRAM accesses.
+Separating test__PERF_RECORD test from the builtin-test
+into perf-record object.
 
-This patchset is based on previous work done by Robert Richter
-<rric@kernel.org> :
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile             |   1 +
+ tools/perf/tests/builtin-test.c | 307 ---------------------------------------
+ tools/perf/tests/perf-record.c  | 314 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |   1 +
+ 4 files changed, 316 insertions(+), 307 deletions(-)
+ create mode 100644 tools/perf/tests/perf-record.c
 
-https://lkml.org/lkml/2012/6/19/324
-
-The main differences are:
-
-- The northbridge counters are indexed contiguously right above the
-  core performance counters.
-
-- MSR address offset calculations are moved to architecture specific
-  files.
-
-- Interrups are set up to be delivered only to a single core.
-
-Jacob Shin (3):
-  perf, amd: Refactor northbridge event constraints handler for code
-    sharing
-  perf, x86: Move MSR address offset calculation to architecture
-    specific files
-  perf, amd: Enable northbridge performance counters on AMD family 15h
-
-Robert Richter (1):
-  perf, amd: Simplify northbridge event constraints handler
-
- arch/x86/include/asm/cpufeature.h    |    2 +
- arch/x86/include/asm/msr-index.h     |    2 +
- arch/x86/include/asm/perf_event.h    |    6 +
- arch/x86/kernel/cpu/perf_event.h     |   21 +--
- arch/x86/kernel/cpu/perf_event_amd.c |  279 +++++++++++++++++++++++-----------
- 5 files changed, 207 insertions(+), 103 deletions(-)
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 337489e..a2d6153 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -435,6 +435,7 @@ LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
+ LIB_OBJS += $(OUTPUT)tests/open-syscall.o
+ LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
+ LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
++LIB_OBJS += $(OUTPUT)tests/perf-record.o
+ LIB_OBJS += $(OUTPUT)tests/util.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 609f592..7cb3928 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -31,313 +31,6 @@
+ 
+ 
+ 
+-static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
+-{
+-	int i, cpu = -1, nrcpus = 1024;
+-realloc:
+-	CPU_ZERO(maskp);
+-
+-	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
+-		if (errno == EINVAL && nrcpus < (1024 << 8)) {
+-			nrcpus = nrcpus << 2;
+-			goto realloc;
+-		}
+-		perror("sched_getaffinity");
+-			return -1;
+-	}
+-
+-	for (i = 0; i < nrcpus; i++) {
+-		if (CPU_ISSET(i, maskp)) {
+-			if (cpu == -1)
+-				cpu = i;
+-			else
+-				CPU_CLR(i, maskp);
+-		}
+-	}
+-
+-	return cpu;
+-}
+-
+-static int test__PERF_RECORD(void)
+-{
+-	struct perf_record_opts opts = {
+-		.target = {
+-			.uid = UINT_MAX,
+-			.uses_mmap = true,
+-		},
+-		.no_delay   = true,
+-		.freq	    = 10,
+-		.mmap_pages = 256,
+-	};
+-	cpu_set_t cpu_mask;
+-	size_t cpu_mask_size = sizeof(cpu_mask);
+-	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+-	struct perf_evsel *evsel;
+-	struct perf_sample sample;
+-	const char *cmd = "sleep";
+-	const char *argv[] = { cmd, "1", NULL, };
+-	char *bname;
+-	u64 prev_time = 0;
+-	bool found_cmd_mmap = false,
+-	     found_libc_mmap = false,
+-	     found_vdso_mmap = false,
+-	     found_ld_mmap = false;
+-	int err = -1, errs = 0, i, wakeups = 0;
+-	u32 cpu;
+-	int total_events = 0, nr_events[PERF_RECORD_MAX] = { 0, };
+-
+-	if (evlist == NULL || argv == NULL) {
+-		pr_debug("Not enough memory to create evlist\n");
+-		goto out;
+-	}
+-
+-	/*
+-	 * We need at least one evsel in the evlist, use the default
+-	 * one: "cycles".
+-	 */
+-	err = perf_evlist__add_default(evlist);
+-	if (err < 0) {
+-		pr_debug("Not enough memory to create evsel\n");
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * Create maps of threads and cpus to monitor. In this case
+-	 * we start with all threads and cpus (-1, -1) but then in
+-	 * perf_evlist__prepare_workload we'll fill in the only thread
+-	 * we're monitoring, the one forked there.
+-	 */
+-	err = perf_evlist__create_maps(evlist, &opts.target);
+-	if (err < 0) {
+-		pr_debug("Not enough memory to create thread/cpu maps\n");
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * Prepare the workload in argv[] to run, it'll fork it, and then wait
+-	 * for perf_evlist__start_workload() to exec it. This is done this way
+-	 * so that we have time to open the evlist (calling sys_perf_event_open
+-	 * on all the fds) and then mmap them.
+-	 */
+-	err = perf_evlist__prepare_workload(evlist, &opts, argv);
+-	if (err < 0) {
+-		pr_debug("Couldn't run the workload!\n");
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * Config the evsels, setting attr->comm on the first one, etc.
+-	 */
+-	evsel = perf_evlist__first(evlist);
+-	evsel->attr.sample_type |= PERF_SAMPLE_CPU;
+-	evsel->attr.sample_type |= PERF_SAMPLE_TID;
+-	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
+-	perf_evlist__config_attrs(evlist, &opts);
+-
+-	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
+-	if (err < 0) {
+-		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
+-
+-	cpu = err;
+-
+-	/*
+-	 * So that we can check perf_sample.cpu on all the samples.
+-	 */
+-	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
+-		pr_debug("sched_setaffinity: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * Call sys_perf_event_open on all the fds on all the evsels,
+-	 * grouping them if asked to.
+-	 */
+-	err = perf_evlist__open(evlist);
+-	if (err < 0) {
+-		pr_debug("perf_evlist__open: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * mmap the first fd on a given CPU and ask for events for the other
+-	 * fds in the same CPU to be injected in the same mmap ring buffer
+-	 * (using ioctl(PERF_EVENT_IOC_SET_OUTPUT)).
+-	 */
+-	err = perf_evlist__mmap(evlist, opts.mmap_pages, false);
+-	if (err < 0) {
+-		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+-	 * Now that all is properly set up, enable the events, they will
+-	 * count just on workload.pid, which will start...
+-	 */
+-	perf_evlist__enable(evlist);
+-
+-	/*
+-	 * Now!
+-	 */
+-	perf_evlist__start_workload(evlist);
+-
+-	while (1) {
+-		int before = total_events;
+-
+-		for (i = 0; i < evlist->nr_mmaps; i++) {
+-			union perf_event *event;
+-
+-			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+-				const u32 type = event->header.type;
+-				const char *name = perf_event__name(type);
+-
+-				++total_events;
+-				if (type < PERF_RECORD_MAX)
+-					nr_events[type]++;
+-
+-				err = perf_evlist__parse_sample(evlist, event, &sample);
+-				if (err < 0) {
+-					if (verbose)
+-						perf_event__fprintf(event, stderr);
+-					pr_debug("Couldn't parse sample\n");
+-					goto out_err;
+-				}
+-
+-				if (verbose) {
+-					pr_info("%" PRIu64" %d ", sample.time, sample.cpu);
+-					perf_event__fprintf(event, stderr);
+-				}
+-
+-				if (prev_time > sample.time) {
+-					pr_debug("%s going backwards in time, prev=%" PRIu64 ", curr=%" PRIu64 "\n",
+-						 name, prev_time, sample.time);
+-					++errs;
+-				}
+-
+-				prev_time = sample.time;
+-
+-				if (sample.cpu != cpu) {
+-					pr_debug("%s with unexpected cpu, expected %d, got %d\n",
+-						 name, cpu, sample.cpu);
+-					++errs;
+-				}
+-
+-				if ((pid_t)sample.pid != evlist->workload.pid) {
+-					pr_debug("%s with unexpected pid, expected %d, got %d\n",
+-						 name, evlist->workload.pid, sample.pid);
+-					++errs;
+-				}
+-
+-				if ((pid_t)sample.tid != evlist->workload.pid) {
+-					pr_debug("%s with unexpected tid, expected %d, got %d\n",
+-						 name, evlist->workload.pid, sample.tid);
+-					++errs;
+-				}
+-
+-				if ((type == PERF_RECORD_COMM ||
+-				     type == PERF_RECORD_MMAP ||
+-				     type == PERF_RECORD_FORK ||
+-				     type == PERF_RECORD_EXIT) &&
+-				     (pid_t)event->comm.pid != evlist->workload.pid) {
+-					pr_debug("%s with unexpected pid/tid\n", name);
+-					++errs;
+-				}
+-
+-				if ((type == PERF_RECORD_COMM ||
+-				     type == PERF_RECORD_MMAP) &&
+-				     event->comm.pid != event->comm.tid) {
+-					pr_debug("%s with different pid/tid!\n", name);
+-					++errs;
+-				}
+-
+-				switch (type) {
+-				case PERF_RECORD_COMM:
+-					if (strcmp(event->comm.comm, cmd)) {
+-						pr_debug("%s with unexpected comm!\n", name);
+-						++errs;
+-					}
+-					break;
+-				case PERF_RECORD_EXIT:
+-					goto found_exit;
+-				case PERF_RECORD_MMAP:
+-					bname = strrchr(event->mmap.filename, '/');
+-					if (bname != NULL) {
+-						if (!found_cmd_mmap)
+-							found_cmd_mmap = !strcmp(bname + 1, cmd);
+-						if (!found_libc_mmap)
+-							found_libc_mmap = !strncmp(bname + 1, "libc", 4);
+-						if (!found_ld_mmap)
+-							found_ld_mmap = !strncmp(bname + 1, "ld", 2);
+-					} else if (!found_vdso_mmap)
+-						found_vdso_mmap = !strcmp(event->mmap.filename, "[vdso]");
+-					break;
+-
+-				case PERF_RECORD_SAMPLE:
+-					/* Just ignore samples for now */
+-					break;
+-				default:
+-					pr_debug("Unexpected perf_event->header.type %d!\n",
+-						 type);
+-					++errs;
+-				}
+-			}
+-		}
+-
+-		/*
+-		 * We don't use poll here because at least at 3.1 times the
+-		 * PERF_RECORD_{!SAMPLE} events don't honour
+-		 * perf_event_attr.wakeup_events, just PERF_EVENT_SAMPLE does.
+-		 */
+-		if (total_events == before && false)
+-			poll(evlist->pollfd, evlist->nr_fds, -1);
+-
+-		sleep(1);
+-		if (++wakeups > 5) {
+-			pr_debug("No PERF_RECORD_EXIT event!\n");
+-			break;
+-		}
+-	}
+-
+-found_exit:
+-	if (nr_events[PERF_RECORD_COMM] > 1) {
+-		pr_debug("Excessive number of PERF_RECORD_COMM events!\n");
+-		++errs;
+-	}
+-
+-	if (nr_events[PERF_RECORD_COMM] == 0) {
+-		pr_debug("Missing PERF_RECORD_COMM for %s!\n", cmd);
+-		++errs;
+-	}
+-
+-	if (!found_cmd_mmap) {
+-		pr_debug("PERF_RECORD_MMAP for %s missing!\n", cmd);
+-		++errs;
+-	}
+-
+-	if (!found_libc_mmap) {
+-		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "libc");
+-		++errs;
+-	}
+-
+-	if (!found_ld_mmap) {
+-		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "ld");
+-		++errs;
+-	}
+-
+-	if (!found_vdso_mmap) {
+-		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "[vdso]");
+-		++errs;
+-	}
+-out_err:
+-	perf_evlist__munmap(evlist);
+-out_delete_evlist:
+-	perf_evlist__delete(evlist);
+-out:
+-	return (err < 0 || errs > 0) ? -1 : 0;
+-}
+-
+-
+ #if defined(__x86_64__) || defined(__i386__)
+ 
+ #define barrier() asm volatile("" ::: "memory")
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+new file mode 100644
+index 0000000..1d69b54
+--- /dev/null
++++ b/tools/perf/tests/perf-record.c
+@@ -0,0 +1,314 @@
++#include <sched.h>
++#include "evlist.h"
++#include "evsel.h"
++#include "perf.h"
++#include "debug.h"
++#include "tests.h"
++
++static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
++{
++	int i, cpu = -1, nrcpus = 1024;
++realloc:
++	CPU_ZERO(maskp);
++
++	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
++		if (errno == EINVAL && nrcpus < (1024 << 8)) {
++			nrcpus = nrcpus << 2;
++			goto realloc;
++		}
++		perror("sched_getaffinity");
++			return -1;
++	}
++
++	for (i = 0; i < nrcpus; i++) {
++		if (CPU_ISSET(i, maskp)) {
++			if (cpu == -1)
++				cpu = i;
++			else
++				CPU_CLR(i, maskp);
++		}
++	}
++
++	return cpu;
++}
++
++int test__PERF_RECORD(void)
++{
++	struct perf_record_opts opts = {
++		.target = {
++			.uid = UINT_MAX,
++			.uses_mmap = true,
++		},
++		.no_delay   = true,
++		.freq	    = 10,
++		.mmap_pages = 256,
++	};
++	cpu_set_t cpu_mask;
++	size_t cpu_mask_size = sizeof(cpu_mask);
++	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++	struct perf_evsel *evsel;
++	struct perf_sample sample;
++	const char *cmd = "sleep";
++	const char *argv[] = { cmd, "1", NULL, };
++	char *bname;
++	u64 prev_time = 0;
++	bool found_cmd_mmap = false,
++	     found_libc_mmap = false,
++	     found_vdso_mmap = false,
++	     found_ld_mmap = false;
++	int err = -1, errs = 0, i, wakeups = 0;
++	u32 cpu;
++	int total_events = 0, nr_events[PERF_RECORD_MAX] = { 0, };
++
++	if (evlist == NULL || argv == NULL) {
++		pr_debug("Not enough memory to create evlist\n");
++		goto out;
++	}
++
++	/*
++	 * We need at least one evsel in the evlist, use the default
++	 * one: "cycles".
++	 */
++	err = perf_evlist__add_default(evlist);
++	if (err < 0) {
++		pr_debug("Not enough memory to create evsel\n");
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * Create maps of threads and cpus to monitor. In this case
++	 * we start with all threads and cpus (-1, -1) but then in
++	 * perf_evlist__prepare_workload we'll fill in the only thread
++	 * we're monitoring, the one forked there.
++	 */
++	err = perf_evlist__create_maps(evlist, &opts.target);
++	if (err < 0) {
++		pr_debug("Not enough memory to create thread/cpu maps\n");
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * Prepare the workload in argv[] to run, it'll fork it, and then wait
++	 * for perf_evlist__start_workload() to exec it. This is done this way
++	 * so that we have time to open the evlist (calling sys_perf_event_open
++	 * on all the fds) and then mmap them.
++	 */
++	err = perf_evlist__prepare_workload(evlist, &opts, argv);
++	if (err < 0) {
++		pr_debug("Couldn't run the workload!\n");
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * Config the evsels, setting attr->comm on the first one, etc.
++	 */
++	evsel = perf_evlist__first(evlist);
++	evsel->attr.sample_type |= PERF_SAMPLE_CPU;
++	evsel->attr.sample_type |= PERF_SAMPLE_TID;
++	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
++	perf_evlist__config_attrs(evlist, &opts);
++
++	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
++	if (err < 0) {
++		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
++
++	cpu = err;
++
++	/*
++	 * So that we can check perf_sample.cpu on all the samples.
++	 */
++	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
++		pr_debug("sched_setaffinity: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * Call sys_perf_event_open on all the fds on all the evsels,
++	 * grouping them if asked to.
++	 */
++	err = perf_evlist__open(evlist);
++	if (err < 0) {
++		pr_debug("perf_evlist__open: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * mmap the first fd on a given CPU and ask for events for the other
++	 * fds in the same CPU to be injected in the same mmap ring buffer
++	 * (using ioctl(PERF_EVENT_IOC_SET_OUTPUT)).
++	 */
++	err = perf_evlist__mmap(evlist, opts.mmap_pages, false);
++	if (err < 0) {
++		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
++
++	/*
++	 * Now that all is properly set up, enable the events, they will
++	 * count just on workload.pid, which will start...
++	 */
++	perf_evlist__enable(evlist);
++
++	/*
++	 * Now!
++	 */
++	perf_evlist__start_workload(evlist);
++
++	while (1) {
++		int before = total_events;
++
++		for (i = 0; i < evlist->nr_mmaps; i++) {
++			union perf_event *event;
++
++			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
++				const u32 type = event->header.type;
++				const char *name = perf_event__name(type);
++
++				++total_events;
++				if (type < PERF_RECORD_MAX)
++					nr_events[type]++;
++
++				err = perf_evlist__parse_sample(evlist, event, &sample);
++				if (err < 0) {
++					if (verbose)
++						perf_event__fprintf(event, stderr);
++					pr_debug("Couldn't parse sample\n");
++					goto out_err;
++				}
++
++				if (verbose) {
++					pr_info("%" PRIu64" %d ", sample.time, sample.cpu);
++					perf_event__fprintf(event, stderr);
++				}
++
++				if (prev_time > sample.time) {
++					pr_debug("%s going backwards in time, prev=%" PRIu64 ", curr=%" PRIu64 "\n",
++						 name, prev_time, sample.time);
++					++errs;
++				}
++
++				prev_time = sample.time;
++
++				if (sample.cpu != cpu) {
++					pr_debug("%s with unexpected cpu, expected %d, got %d\n",
++						 name, cpu, sample.cpu);
++					++errs;
++				}
++
++				if ((pid_t)sample.pid != evlist->workload.pid) {
++					pr_debug("%s with unexpected pid, expected %d, got %d\n",
++						 name, evlist->workload.pid, sample.pid);
++					++errs;
++				}
++
++				if ((pid_t)sample.tid != evlist->workload.pid) {
++					pr_debug("%s with unexpected tid, expected %d, got %d\n",
++						 name, evlist->workload.pid, sample.tid);
++					++errs;
++				}
++
++				if ((type == PERF_RECORD_COMM ||
++				     type == PERF_RECORD_MMAP ||
++				     type == PERF_RECORD_FORK ||
++				     type == PERF_RECORD_EXIT) &&
++				     (pid_t)event->comm.pid != evlist->workload.pid) {
++					pr_debug("%s with unexpected pid/tid\n", name);
++					++errs;
++				}
++
++				if ((type == PERF_RECORD_COMM ||
++				     type == PERF_RECORD_MMAP) &&
++				     event->comm.pid != event->comm.tid) {
++					pr_debug("%s with different pid/tid!\n", name);
++					++errs;
++				}
++
++				switch (type) {
++				case PERF_RECORD_COMM:
++					if (strcmp(event->comm.comm, cmd)) {
++						pr_debug("%s with unexpected comm!\n", name);
++						++errs;
++					}
++					break;
++				case PERF_RECORD_EXIT:
++					goto found_exit;
++				case PERF_RECORD_MMAP:
++					bname = strrchr(event->mmap.filename, '/');
++					if (bname != NULL) {
++						if (!found_cmd_mmap)
++							found_cmd_mmap = !strcmp(bname + 1, cmd);
++						if (!found_libc_mmap)
++							found_libc_mmap = !strncmp(bname + 1, "libc", 4);
++						if (!found_ld_mmap)
++							found_ld_mmap = !strncmp(bname + 1, "ld", 2);
++					} else if (!found_vdso_mmap)
++						found_vdso_mmap = !strcmp(event->mmap.filename, "[vdso]");
++					break;
++
++				case PERF_RECORD_SAMPLE:
++					/* Just ignore samples for now */
++					break;
++				default:
++					pr_debug("Unexpected perf_event->header.type %d!\n",
++						 type);
++					++errs;
++				}
++			}
++		}
++
++		/*
++		 * We don't use poll here because at least at 3.1 times the
++		 * PERF_RECORD_{!SAMPLE} events don't honour
++		 * perf_event_attr.wakeup_events, just PERF_EVENT_SAMPLE does.
++		 */
++		if (total_events == before && false)
++			poll(evlist->pollfd, evlist->nr_fds, -1);
++
++		sleep(1);
++		if (++wakeups > 5) {
++			pr_debug("No PERF_RECORD_EXIT event!\n");
++			break;
++		}
++	}
++
++found_exit:
++	if (nr_events[PERF_RECORD_COMM] > 1) {
++		pr_debug("Excessive number of PERF_RECORD_COMM events!\n");
++		++errs;
++	}
++
++	if (nr_events[PERF_RECORD_COMM] == 0) {
++		pr_debug("Missing PERF_RECORD_COMM for %s!\n", cmd);
++		++errs;
++	}
++
++	if (!found_cmd_mmap) {
++		pr_debug("PERF_RECORD_MMAP for %s missing!\n", cmd);
++		++errs;
++	}
++
++	if (!found_libc_mmap) {
++		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "libc");
++		++errs;
++	}
++
++	if (!found_ld_mmap) {
++		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "ld");
++		++errs;
++	}
++
++	if (!found_vdso_mmap) {
++		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "[vdso]");
++		++errs;
++	}
++out_err:
++	perf_evlist__munmap(evlist);
++out_delete_evlist:
++	perf_evlist__delete(evlist);
++out:
++	return (err < 0 || errs > 0) ? -1 : 0;
++}
++
++
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 1a925dd..374b039 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -6,6 +6,7 @@ int test__vmlinux_matches_kallsyms(void);
+ int test__open_syscall_event(void);
+ int test__open_syscall_event_on_all_cpus(void);
+ int test__basic_mmap(void);
++int test__PERF_RECORD(void);
+ 
+ /* Util */
+ int trace_event__id(const char *evname);
 -- 
-1.7.9.5
-
+1.7.11.7
 
