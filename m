@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2KJOnY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 09:43:24 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58074 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2KJOnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 09:43:22 -0500
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH] bq27x00_battery: Do not report nominal available capaciy if battery is not calibrated
-Date: Sat, 10 Nov 2012 15:42:48 +0100
-Message-Id: <1352558568-30607-1-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752041Ab2KJPvT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 10:51:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033Ab2KJPvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 10:51:18 -0500
+Date: Sat, 10 Nov 2012 17:53:19 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Rafael Aquini <aquini@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 5/7] virtio_balloon: introduce migration primitives
+ to balloon pages
+Message-ID: <20121110155319.GA13846@redhat.com>
+References: <cover.1352256081.git.aquini@redhat.com>
+ <265aaff9a79f503672f0cdcdff204114b5b5ba5b.1352256088.git.aquini@redhat.com>
+ <87625h3tl1.fsf@rustcorp.com.au>
+ <20121107161146.b99dc4a8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121107161146.b99dc4a8.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- drivers/power/bq27x00_battery.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+On Wed, Nov 07, 2012 at 04:11:46PM -0800, Andrew Morton wrote:
+> On Thu, 08 Nov 2012 09:32:18 +1030
+> Rusty Russell <rusty@rustcorp.com.au> wrote:
+> 
+> > Rafael Aquini <aquini@redhat.com> writes:
+> > > + * virtballoon_migratepage - perform the balloon page migration on behalf of
+> > > + *			     a compation thread.     (called under page lock)
+> > 
+> > > +	if (!mutex_trylock(&vb->balloon_lock))
+> > > +		return -EAGAIN;
+> > 
+> > Erk, OK...
+> 
+> Not really.  As is almost always the case with a trylock, it needs a
+> comment explaining why we couldn't use the far superior mutex_lock(). 
+> Data: this reader doesn't know!
+> 
+> > > +	/* balloon's page migration 1st step  -- inflate "newpage" */
+> > > +	spin_lock_irqsave(&vb_dev_info->pages_lock, flags);
+> > > +	balloon_page_insert(newpage, mapping, &vb_dev_info->pages);
+> > > +	vb_dev_info->isolated_pages--;
+> > > +	spin_unlock_irqrestore(&vb_dev_info->pages_lock, flags);
+> > > +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
+> > > +	set_page_pfns(vb->pfns, newpage);
+> > > +	tell_host(vb, vb->inflate_vq);
+> > 
+> > tell_host does wait_event(), so you can't call it under the page_lock.
+> > Right?
+> 
+> Sleeping inside lock_page() is OK.  More problematic is that GFP_KERNEL
+> allocation.
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 5860d4d..41b3328 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -230,6 +230,14 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
-  */
- static inline int bq27x00_battery_read_nac(struct bq27x00_device_info *di)
- {
-+	int flags;
-+	bool is_bq27500 = di->chip == BQ27500;
-+	bool is_higher = bq27xxx_is_chip_version_higher(di);
-+
-+	flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
-+	if (flags >= 0 && !is_higher && (flags & BQ27000_FLAG_CI))
-+		return -ENODATA;
-+
- 	return bq27x00_battery_read_charge(di, BQ27x00_REG_NAC);
- }
- 
+Do you mean this one:
+        if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
+ ?
+
+In practice it never triggers an allocation, we can pass in
+GFP_ATOMIC just as well.
+
 -- 
-1.7.10.4
-
+MST
