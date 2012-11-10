@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab2KJArq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:47:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58295 "EHLO mx1.redhat.com"
+	id S1756325Ab2KJArz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 19:47:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503Ab2KJArj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:47:39 -0500
+	id S1751959Ab2KJArv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 19:47:51 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -13,17 +13,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/12] perf tests: Move perf_evsel__tp_sched_test into separate object
-Date: Sat, 10 Nov 2012 01:46:48 +0100
-Message-Id: <1352508412-16914-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/12] perf tests: Move test__syscall_open_tp_fields into separate object
+Date: Sat, 10 Nov 2012 01:46:49 +0100
+Message-Id: <1352508412-16914-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
 References: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separating perf_evsel__tp_sched_test test from the
-builtin-test into evsel-tp-sched object.
+Separating test__syscall_open_tp_fields test from the
+builtin-test into open-syscall-tp-fields object.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -33,225 +33,280 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile               |  1 +
- tools/perf/tests/builtin-test.c   | 83 +-------------------------------------
- tools/perf/tests/evsel-tp-sched.c | 84 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h          |  1 +
- 4 files changed, 87 insertions(+), 82 deletions(-)
- create mode 100644 tools/perf/tests/evsel-tp-sched.c
+ tools/perf/Makefile                       |   1 +
+ tools/perf/tests/builtin-test.c           | 112 ----------------------------
+ tools/perf/tests/open-syscall-tp-fields.c | 117 ++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h                  |   1 +
+ 4 files changed, 119 insertions(+), 112 deletions(-)
+ create mode 100644 tools/perf/tests/open-syscall-tp-fields.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ad6fcb5..e510b53 100644
+index e510b53..1e50559 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -438,6 +438,7 @@ LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
+@@ -434,6 +434,7 @@ LIB_OBJS += $(OUTPUT)tests/attr.o
+ LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
+ LIB_OBJS += $(OUTPUT)tests/open-syscall.o
+ LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
++LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
+ LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
  LIB_OBJS += $(OUTPUT)tests/perf-record.o
  LIB_OBJS += $(OUTPUT)tests/rdpmc.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
-+LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/util.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 93f5e91..c66caa7 100644
+index c66caa7..bab8490 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -35,87 +35,6 @@ static int test__perf_pmu(void)
+@@ -35,118 +35,6 @@ static int test__perf_pmu(void)
  	return perf_pmu__test();
  }
  
--static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
--				  int size, bool should_be_signed)
+-static int test__syscall_open_tp_fields(void)
 -{
--	struct format_field *field = perf_evsel__field(evsel, name);
--	int is_signed;
--	int ret = 0;
+-	struct perf_record_opts opts = {
+-		.target = {
+-			.uid = UINT_MAX,
+-			.uses_mmap = true,
+-		},
+-		.no_delay   = true,
+-		.freq	    = 1,
+-		.mmap_pages = 256,
+-		.raw_samples = true,
+-	};
+-	const char *filename = "/etc/passwd";
+-	int flags = O_RDONLY | O_DIRECTORY;
+-	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+-	struct perf_evsel *evsel;
+-	int err = -1, i, nr_events = 0, nr_polls = 0;
 -
--	if (field == NULL) {
--		pr_debug("%s: \"%s\" field not found!\n", evsel->name, name);
--		return -1;
+-	if (evlist == NULL) {
+-		pr_debug("%s: perf_evlist__new\n", __func__);
+-		goto out;
 -	}
 -
--	is_signed = !!(field->flags | FIELD_IS_SIGNED);
--	if (should_be_signed && !is_signed) {
--		pr_debug("%s: \"%s\" signedness(%d) is wrong, should be %d\n",
--			 evsel->name, name, is_signed, should_be_signed);
--		ret = -1;
--	}
--
--	if (field->size != size) {
--		pr_debug("%s: \"%s\" size (%d) should be %d!\n",
--			 evsel->name, name, field->size, size);
--		ret = -1;
--	}
--
--	return ret;
--}
--
--static int perf_evsel__tp_sched_test(void)
--{
--	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch", 0);
--	int ret = 0;
--
+-	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
 -	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
--		return -1;
+-		pr_debug("%s: perf_evsel__newtp\n", __func__);
+-		goto out_delete_evlist;
 -	}
 -
--	if (perf_evsel__test_field(evsel, "prev_comm", 16, true))
--		ret = -1;
+-	perf_evlist__add(evlist, evsel);
 -
--	if (perf_evsel__test_field(evsel, "prev_pid", 4, true))
--		ret = -1;
+-	err = perf_evlist__create_maps(evlist, &opts.target);
+-	if (err < 0) {
+-		pr_debug("%s: perf_evlist__create_maps\n", __func__);
+-		goto out_delete_evlist;
+-	}
 -
--	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
--		ret = -1;
+-	perf_evsel__config(evsel, &opts, evsel);
 -
--	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
--		ret = -1;
+-	evlist->threads->map[0] = getpid();
 -
--	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
--		ret = -1;
+-	err = perf_evlist__open(evlist);
+-	if (err < 0) {
+-		pr_debug("perf_evlist__open: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
 -
--	if (perf_evsel__test_field(evsel, "next_pid", 4, true))
--		ret = -1;
+-	err = perf_evlist__mmap(evlist, UINT_MAX, false);
+-	if (err < 0) {
+-		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
+-		goto out_delete_evlist;
+-	}
 -
--	if (perf_evsel__test_field(evsel, "next_prio", 4, true))
--		ret = -1;
+-	perf_evlist__enable(evlist);
 -
--	perf_evsel__delete(evsel);
+-	/*
+-	 * Generate the event:
+-	 */
+-	open(filename, flags);
 -
--	evsel = perf_evsel__newtp("sched", "sched_wakeup", 0);
+-	while (1) {
+-		int before = nr_events;
 -
--	if (perf_evsel__test_field(evsel, "comm", 16, true))
--		ret = -1;
+-		for (i = 0; i < evlist->nr_mmaps; i++) {
+-			union perf_event *event;
 -
--	if (perf_evsel__test_field(evsel, "pid", 4, true))
--		ret = -1;
+-			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+-				const u32 type = event->header.type;
+-				int tp_flags;
+-				struct perf_sample sample;
 -
--	if (perf_evsel__test_field(evsel, "prio", 4, true))
--		ret = -1;
+-				++nr_events;
 -
--	if (perf_evsel__test_field(evsel, "success", 4, true))
--		ret = -1;
+-				if (type != PERF_RECORD_SAMPLE)
+-					continue;
 -
--	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
--		ret = -1;
+-				err = perf_evsel__parse_sample(evsel, event, &sample);
+-				if (err) {
+-					pr_err("Can't parse sample, err = %d\n", err);
+-					goto out_munmap;
+-				}
 -
--	return ret;
+-				tp_flags = perf_evsel__intval(evsel, &sample, "flags");
+-
+-				if (flags != tp_flags) {
+-					pr_debug("%s: Expected flags=%#x, got %#x\n",
+-						 __func__, flags, tp_flags);
+-					goto out_munmap;
+-				}
+-
+-				goto out_ok;
+-			}
+-		}
+-
+-		if (nr_events == before)
+-			poll(evlist->pollfd, evlist->nr_fds, 10);
+-
+-		if (++nr_polls > 5) {
+-			pr_debug("%s: no events!\n", __func__);
+-			goto out_munmap;
+-		}
+-	}
+-out_ok:
+-	err = 0;
+-out_munmap:
+-	perf_evlist__munmap(evlist);
+-out_delete_evlist:
+-	perf_evlist__delete(evlist);
+-out:
+-	return err;
 -}
 -
- static int test__syscall_open_tp_fields(void)
- {
- 	struct perf_record_opts opts = {
-@@ -276,7 +195,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "Check parsing of sched tracepoints fields",
--		.func = perf_evsel__tp_sched_test,
-+		.func = test__perf_evsel__tp_sched_test,
- 	},
- 	{
- 		.desc = "Generate and check syscalls:sys_enter_open event fields",
-diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
 new file mode 100644
-index 0000000..a5d2fcc
+index 0000000..b05b6a6
 --- /dev/null
-+++ b/tools/perf/tests/evsel-tp-sched.c
-@@ -0,0 +1,84 @@
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -0,0 +1,117 @@
++#include "perf.h"
++#include "evlist.h"
 +#include "evsel.h"
++#include "thread_map.h"
 +#include "tests.h"
-+#include "event-parse.h"
 +
-+static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
-+				  int size, bool should_be_signed)
++int test__syscall_open_tp_fields(void)
 +{
-+	struct format_field *field = perf_evsel__field(evsel, name);
-+	int is_signed;
-+	int ret = 0;
++	struct perf_record_opts opts = {
++		.target = {
++			.uid = UINT_MAX,
++			.uses_mmap = true,
++		},
++		.no_delay   = true,
++		.freq	    = 1,
++		.mmap_pages = 256,
++		.raw_samples = true,
++	};
++	const char *filename = "/etc/passwd";
++	int flags = O_RDONLY | O_DIRECTORY;
++	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++	struct perf_evsel *evsel;
++	int err = -1, i, nr_events = 0, nr_polls = 0;
 +
-+	if (field == NULL) {
-+		pr_debug("%s: \"%s\" field not found!\n", evsel->name, name);
-+		return -1;
++	if (evlist == NULL) {
++		pr_debug("%s: perf_evlist__new\n", __func__);
++		goto out;
 +	}
 +
-+	is_signed = !!(field->flags | FIELD_IS_SIGNED);
-+	if (should_be_signed && !is_signed) {
-+		pr_debug("%s: \"%s\" signedness(%d) is wrong, should be %d\n",
-+			 evsel->name, name, is_signed, should_be_signed);
-+		ret = -1;
-+	}
-+
-+	if (field->size != size) {
-+		pr_debug("%s: \"%s\" size (%d) should be %d!\n",
-+			 evsel->name, name, field->size, size);
-+		ret = -1;
-+	}
-+
-+	return ret;
-+}
-+
-+int test__perf_evsel__tp_sched_test(void)
-+{
-+	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch", 0);
-+	int ret = 0;
-+
++	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
 +	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		return -1;
++		pr_debug("%s: perf_evsel__newtp\n", __func__);
++		goto out_delete_evlist;
 +	}
 +
-+	if (perf_evsel__test_field(evsel, "prev_comm", 16, true))
-+		ret = -1;
++	perf_evlist__add(evlist, evsel);
 +
-+	if (perf_evsel__test_field(evsel, "prev_pid", 4, true))
-+		ret = -1;
++	err = perf_evlist__create_maps(evlist, &opts.target);
++	if (err < 0) {
++		pr_debug("%s: perf_evlist__create_maps\n", __func__);
++		goto out_delete_evlist;
++	}
 +
-+	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
-+		ret = -1;
++	perf_evsel__config(evsel, &opts, evsel);
 +
-+	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
-+		ret = -1;
++	evlist->threads->map[0] = getpid();
 +
-+	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
-+		ret = -1;
++	err = perf_evlist__open(evlist);
++	if (err < 0) {
++		pr_debug("perf_evlist__open: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
 +
-+	if (perf_evsel__test_field(evsel, "next_pid", 4, true))
-+		ret = -1;
++	err = perf_evlist__mmap(evlist, UINT_MAX, false);
++	if (err < 0) {
++		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
++		goto out_delete_evlist;
++	}
 +
-+	if (perf_evsel__test_field(evsel, "next_prio", 4, true))
-+		ret = -1;
++	perf_evlist__enable(evlist);
 +
-+	perf_evsel__delete(evsel);
++	/*
++	 * Generate the event:
++	 */
++	open(filename, flags);
 +
-+	evsel = perf_evsel__newtp("sched", "sched_wakeup", 0);
++	while (1) {
++		int before = nr_events;
 +
-+	if (perf_evsel__test_field(evsel, "comm", 16, true))
-+		ret = -1;
++		for (i = 0; i < evlist->nr_mmaps; i++) {
++			union perf_event *event;
 +
-+	if (perf_evsel__test_field(evsel, "pid", 4, true))
-+		ret = -1;
++			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
++				const u32 type = event->header.type;
++				int tp_flags;
++				struct perf_sample sample;
 +
-+	if (perf_evsel__test_field(evsel, "prio", 4, true))
-+		ret = -1;
++				++nr_events;
 +
-+	if (perf_evsel__test_field(evsel, "success", 4, true))
-+		ret = -1;
++				if (type != PERF_RECORD_SAMPLE)
++					continue;
 +
-+	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
-+		ret = -1;
++				err = perf_evsel__parse_sample(evsel, event, &sample);
++				if (err) {
++					pr_err("Can't parse sample, err = %d\n", err);
++					goto out_munmap;
++				}
 +
-+	return ret;
++				tp_flags = perf_evsel__intval(evsel, &sample, "flags");
++
++				if (flags != tp_flags) {
++					pr_debug("%s: Expected flags=%#x, got %#x\n",
++						 __func__, flags, tp_flags);
++					goto out_munmap;
++				}
++
++				goto out_ok;
++			}
++		}
++
++		if (nr_events == before)
++			poll(evlist->pollfd, evlist->nr_fds, 10);
++
++		if (++nr_polls > 5) {
++			pr_debug("%s: no events!\n", __func__);
++			goto out_munmap;
++		}
++	}
++out_ok:
++	err = 0;
++out_munmap:
++	perf_evlist__munmap(evlist);
++out_delete_evlist:
++	perf_evlist__delete(evlist);
++out:
++	return err;
 +}
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 5897dd1..1ef265d 100644
+index 1ef265d..f70f998 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -9,6 +9,7 @@ int test__basic_mmap(void);
- int test__PERF_RECORD(void);
+@@ -10,6 +10,7 @@ int test__PERF_RECORD(void);
  int test__rdpmc(void);
  int test__perf_evsel__roundtrip_name_test(void);
-+int test__perf_evsel__tp_sched_test(void);
+ int test__perf_evsel__tp_sched_test(void);
++int test__syscall_open_tp_fields(void);
  
  /* Util */
  int trace_event__id(const char *evname);
