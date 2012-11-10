@@ -1,117 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2KJTfx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 14:35:53 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:37268 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752378Ab2KJTft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 14:35:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Sat, 10 Nov 2012 20:40:05 +0100
-Message-ID: <6905069.Zyn4j8K74b@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc4+; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAErSpo71xh0F=8Q93d+yuxBsd6nxNuRJMwOmeVyN2Y-tnXgo9Q@mail.gmail.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <24155036.h7GFQbIk2D@vostro.rjw.lan> <CAErSpo71xh0F=8Q93d+yuxBsd6nxNuRJMwOmeVyN2Y-tnXgo9Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752635Ab2KJTqo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 14:46:44 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45631 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab2KJTqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 14:46:42 -0500
+Date: Sat, 10 Nov 2012 14:46:38 -0500 (EST)
+Message-Id: <20121110.144638.541637828816382743.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 10, 2012 10:14:47 AM Bjorn Helgaas wrote:
-> On Sat, Nov 10, 2012 at 4:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, November 09, 2012 09:53:26 AM Bjorn Helgaas wrote:
-> >> On Fri, Nov 9, 2012 at 9:43 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> >> > On Fri, Nov 9, 2012 at 4:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >> >> On Fri, Nov 9, 2012 at 8:45 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> >> >>> On Fri, Nov 9, 2012 at 3:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >> >>>> [+cc Greg, Peter, Tony since they acked the original patch [1]]
-> >> >>>>
-> >> >>>> On Thu, Nov 8, 2012 at 1:04 PM, Mika Westerberg
-> >> >>>> <mika.westerberg@linux.intel.com> wrote:
-> >> >>>>> On Thu, Nov 08, 2012 at 12:32:25PM -0700, Bjorn Helgaas wrote:
-> >> >>>>>> Struct device_driver is a generic structure, so it seems strange to
-> >> >>>>>> have to include non-generic things like of_device_id and now
-> >> >>>>>> acpi_match_table there.
-> >> >>>>>
-> >> >>>>> Yes, but in a sense the DT and ACPI are "generic". So that they are used to
-> >> >>>>> describe the configuration of a machine.
-> >> >>>>
-> >> >>>> What I meant by "generic" was "useful across all architectures."  The
-> >> >>>> new acpi_match_table and acpi_handle fields [1] are not generic in
-> >> >>>> that sense because they're present on all architectures but used only
-> >> >>>> on x86 and ia64.  The existing of_match_table and of_node are
-> >> >>>> similarly unused on many architectures.  This doesn't seem like a
-> >> >>>> scalable strategy to me.  Are we going to add a pnpbios_node for x86
-> >> >>>> PNPBIOS machines without ACPI, a pdc_hpa for parisc machines with PDC,
-> >> >>>> etc.?
-> >> >>>>
-> >> >>>> [1] https://patchwork.kernel.org/patch/1677221/
-> >> >>>
-> >> >>> Ultimately yes, I think that is what we want to do,
-> >> >>
-> >> >> Just to be clear, you think we *should* add things like pnpbios_node,
-> >> >> pdc_hpa, etc., to struct device, one field for every scheme of telling
-> >> >> the OS about non-enumerable devices, where only one of the N fields is
-> >> >> used on any given machine?  That seems surprising to me, but maybe I
-> >> >> just need to be educated :)
-> >> >
-> >> > Ah, I see what you're asking.
-> >> >
-> >> > In the short term, yes but only because we don't have any other
-> >> > alternative. What I'd really rather have is a safe way to attach datum
-> >> > (ie. acpi_device or device_node) to a struct device and get it back
-> >> > later in a type safe way.
-> >>
-> >> Yep, *that* makes perfect sense to me.  Something along these lines, maybe:
-> >>
-> >>     #define dev_is_acpi(d)    ((d)->bus == &acpi_bus_type)
-> >
-> > No, that's not right.  It won't work for things like SPI and I2C with a
-> > "backing" ACPI device node anyway (and for PCI too, by the way :-)).
-> >
-> >>     #define dev_acpi_handle(d)    (dev_is_acpi(d) ? (acpi_handle)
-> >> d->datum : NULL)
-> >
-> > The problem basically is how we can tell that the given struct device has
-> > a "backing" object containing device information (e.g. resources) and what
-> > that "backing" object is.  For device trees that would be a struct device_node
-> > and for ACPI that would be an acpi_handle or a struct acpi_device etc.  And by
-> > the way, they _can_ be used simultaneously, in principle.
-> >
-> > So we need something like of_node(dev) or acpi_node(dev), but that can't be
-> > something following two pointers or calling a function just in order to check
-> > if the pointer _is_ _there_ in either case.
-> >
-> > And since we added of_node to struct device at one point, it is only logical to
-> > treat ACPI in the same way.  If we come up with a better idea _later_, then we
-> > can convert _all_ things to this new idea, whatever it is.
-> >
-> > Are you seriously expecting us to come up with such an idea on the fly just so
-> > that we can use ACPI support, which already is there in the form of
-> > archdata.acpi_handle anyway, on equal footing with Device Trees?
-> 
-> Of course not.  I'm just trying to understand where we're headed.
-> That was not obvious from the patches I've seen so far.
 
-No, it wasn't, fair enough.
+Bug fixes galore, mostly in drivers as is often the case:
 
-Thanks,
-Rafael
+1) USB gadget and cdc_eem drivers need adjustments to their frame
+   size lengths in order to handle VLANs correctly.  From Ian
+   Coolidge.
+
+2) TIPC and several network drivers erroneously call tasklet_disable
+   before tasklet_kill, fix from Xiaotian Feng.
+
+3) r8169 driver needs to apply the WOL suspend quirk to more chipsets,
+   fix from Cyril Brulebois.
+
+4) Fix multicast filters on RTL_GIGA_MAC_VER_35 r8169 chips, from
+   Nathan Walp.
+
+5) FDB netlink dumps should use RTM_NEWNEIGH as the message type,
+   not zero.  From John Fastabend.
+
+6) Fix smsc95xx tx checksum offload on big-endian, from Steve
+   Glendinning.
+
+7) __inet_diag_dump() needs to repsect and report the error value
+   returned from inet_diag_lock_handler() rather than ignore it.
+   Otherwise if an inet diag handler is not available for a particular
+   protocol, we essentially report success instead of giving an error
+   indication.  Fix from Cyrill Gorcunov.
+
+8) When the QFQ packet scheduler sees TSO/GSO packets it does not
+   handle things properly, and in fact ends up corrupting it's
+   datastructures as well as mis-schedule packets.  Fix from Paolo
+   Valente.
+
+9) Fix oopser in skb_loop_sk(), from Eric Leblond.
+
+10) CXGB4 passes partially uninitialized datastructures in to FW
+    commands, fix from Vipul Pandya.
+
+11) When we send unsolicited ipv6 neighbour advertisements, we should
+    send them to the link-local allnodes multicast address, as per
+    RFC4861.  Fix from Hannes Frederic Sowa.
+
+12) There is some kind of bug in the usbnet's kevent deferral mechanism,
+    but more immediately when it triggers an uncontrolled stream of
+    kernel messages spam the log.  Rate limit the error log message
+    triggered when this problem occurs, as sending thousands of error
+    messages into the kernel log doesn't help matters at all, and in
+    fact makes further diagnosis more difficult.
+
+    From Steve Glendinning.
+
+13) Fix gianfar restore from hibernation, from Wang Dongsheng.
+
+14) The netlink message attribute sizes are wrong in the ipv6 GRE driver,
+    it was using the size of ipv4 addresses instead of ipv6 ones :-)  Fix
+    from Nicolas Dichtel.
+
+Please pull, thanks a lot!
+
+The following changes since commit 0f89a5733a8d28174c7adeb1fdc20ac11439e766:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-11-02 20:48:41 -0700)
+
+are available in the git repository at:
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
+
+for you to fetch changes up to a375413311b39005ef281bfd71ae8f4e3df22e97:
+
+  gre6: fix rtnl dump messages (2012-11-09 17:11:17 -0500)
+
+----------------------------------------------------------------
+Cyril Brulebois (1):
+      r8169: Fix WoL on RTL8168d/8111d.
+
+Cyrill Gorcunov (1):
+      net: inet_diag -- Return error code if protocol handler is missed
+
+Eric Leblond (1):
+      af-packet: fix oops when socket is not present
+
+Hannes Frederic Sowa (1):
+      ipv6: send unsolicited neighbour advertisements to all-nodes
+
+Ian Coolidge (2):
+      usb: gadget: g_ether: fix frame size check for 802.1Q
+      net: usb: cdc_eem: Fix rx skb allocation for 802.1Q VLANs
+
+Jacob Keller (1):
+      ptp: update adjfreq callback description
+
+John Fastabend (1):
+      rtnetlink: Use nlmsg type RTM_NEWNEIGH from dflt fdb dump
+
+Lee Jones (1):
+      isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+
+Masanari Iida (1):
+      net: bnx2x: Fix typo in bnx2x driver
+
+Nathan Walp (1):
+      r8169: allow multicast packets on sub-8168f chipset.
+
+Nicolas Dichtel (1):
+      gre6: fix rtnl dump messages
+
+Paolo Valente (1):
+      pkt_sched: enable QFQ to support TSO/GSO
+
+Steve Glendinning (2):
+      smsc95xx: fix tx checksum offload for big endian
+      usbnet: ratelimit kevent may have been dropped warnings
+
+Vipul Pandya (2):
+      cxgb4: Initialize data structures before using.
+      cxgb4: Fix initialization of SGE_CONTROL register
+
+Wang Dongsheng (1):
+      gianfar: ethernet vanishes after restoring from hibernation
+
+Xiaotian Feng (2):
+      tipc: do not use tasklet_disable before tasklet_kill
+      drivers/net: use tasklet_kill in device remove/close process
+
+ drivers/isdn/Kconfig                                |   2 +-
+ drivers/isdn/i4l/Kconfig                            |   2 +-
+ drivers/isdn/i4l/isdn_common.c                      |   4 ---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c |   2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c    |   4 +--
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c          |   6 +++-
+ drivers/net/ethernet/freescale/gianfar.c            |   5 ++-
+ drivers/net/ethernet/jme.c                          |   8 ++---
+ drivers/net/ethernet/marvell/skge.c                 |   2 +-
+ drivers/net/ethernet/micrel/ksz884x.c               |   4 +--
+ drivers/net/ethernet/realtek/r8169.c                |   5 +++
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c   |   2 +-
+ drivers/net/usb/cdc_eem.c                           |   3 +-
+ drivers/net/usb/smsc95xx.c                          |   1 +
+ drivers/net/usb/usbnet.c                            |   8 +++--
+ drivers/net/wireless/b43legacy/pio.c                |   2 +-
+ drivers/usb/gadget/u_ether.c                        |   3 +-
+ include/linux/ptp_clock_kernel.h                    |   3 +-
+ net/core/dev.c                                      |   2 +-
+ net/core/rtnetlink.c                                |   3 +-
+ net/ipv4/inet_diag.c                                |   5 ++-
+ net/ipv6/ip6_gre.c                                  |   8 ++---
+ net/ipv6/ndisc.c                                    |   3 +-
+ net/sched/sch_qfq.c                                 | 109 +++++++++++++++++++++++++++++++++++++++++----------------
+ net/tipc/handler.c                                  |   1 -
+ 25 files changed, 131 insertions(+), 66 deletions(-)
