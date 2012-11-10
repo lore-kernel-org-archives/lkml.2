@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab2KJB17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:27:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:39679 "EHLO mga01.intel.com"
+	id S1752237Ab2KJB2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:28:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:27999 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142Ab2KJB15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 20:27:57 -0500
+	id S1751928Ab2KJB2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 20:28:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="246777196"
+   d="scan'208";a="166588284"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 07/32] perf, x86: Support Haswell v4 LBR format
-Date: Fri,  9 Nov 2012 17:27:23 -0800
-Message-Id: <1352510868-7911-8-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 15/32] perf, x86: Support weight samples for PEBS
+Date: Fri,  9 Nov 2012 17:27:31 -0800
+Message-Id: <1352510868-7911-16-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,98 +26,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-as a new v4 version of the LBR format.
+When a weighted sample is requested, first try to report the TSX abort cost
+on Haswell. If that is not available report the memory latency. This
+allows profiling both by abort cost and by memory latencies.
 
-Handle those in and adjust the sign extension code to still correctly extend.
-The flags are exported similarly in the LBR record to the existing misprediction
-flag
+Memory latencies requires enabling a different PEBS mode (LL).
+When both address and weight is requested address wins.
+
+The LL mode only works for memory related PEBS events, so add a
+separate event constraint table for those.
+
+I only did this for Haswell for now, but it could be added
+for several other Intel CPUs too by just adding the right
+table for them.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
- include/linux/perf_event.h                 |    7 ++++++-
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h          |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel.c    |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   47 +++++++++++++++++++++++++++-
+ 3 files changed, 53 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index da02e9c..2af6695b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,6 +12,7 @@ enum {
- 	LBR_FORMAT_LIP		= 0x01,
- 	LBR_FORMAT_EIP		= 0x02,
- 	LBR_FORMAT_EIP_FLAGS	= 0x03,
-+	LBR_FORMAT_EIP_FLAGS2	= 0x04,
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index ce2a863..d55e502 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -168,6 +168,7 @@ struct cpu_hw_events {
+ 	u64				perf_ctr_virt_mask;
+ 
+ 	void				*kfree_on_online;
++	u8				*memory_latency_events;
  };
  
- /*
-@@ -56,6 +57,8 @@ enum {
- 	 LBR_FAR)
+ #define __EVENT_CONSTRAINT(c, n, m, w, o) {\
+@@ -390,6 +391,7 @@ struct x86_pmu {
+ 	struct event_constraint *pebs_constraints;
+ 	void		(*pebs_aliases)(struct perf_event *event);
+ 	int 		max_pebs_events;
++	struct event_constraint *memory_lat_events;
  
- #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+#define LBR_FROM_FLAG_INTX     (1ULL << 62)
-+#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 	/*
+ 	 * Intel LBR
+@@ -599,6 +601,8 @@ extern struct event_constraint intel_ivb_pebs_event_constraints[];
  
- #define for_each_branch_sample_type(x) \
- 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
-@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ extern struct event_constraint intel_hsw_pebs_event_constraints[];
  
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, mis = 0, pred = 0;
-+		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
++extern struct event_constraint intel_hsw_memory_latency_events[];
++
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event);
  
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ void intel_pmu_pebs_enable(struct perf_event *event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9b4dda5..20caf0a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1624,6 +1624,9 @@ static int hsw_hw_config(struct perf_event *event)
  
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-+		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
-+		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			from = (u64)((((s64)from) << 1) >> 1);
-+			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
-+				from = (u64)((((s64)from) << 1) >> 1);
-+			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
-+				intx = !!(from & LBR_FROM_FLAG_INTX);
-+				abort = !!(from & LBR_FROM_FLAG_ABORT);
-+				from = (u64)((((s64)from) << 3) >> 3);
-+			}
- 		}
+ 	if (ret)
+ 		return ret;
++	/* PEBS cannot capture both */
++	if (event->attr.sample_type & PERF_SAMPLE_ADDR)
++		event->attr.sample_type &= ~PERF_SAMPLE_WEIGHT;
+ 	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
+ 		return 0;
+ 	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
+@@ -2230,6 +2233,7 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.hw_config = hsw_hw_config;
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.format_attrs = intel_hsw_formats_attr;
++		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
+ 		pr_cont("Haswell events, ");
+ 		break;
  
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
- 		cpuc->lbr_entries[i].mispred	= mis;
- 		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].intx	= intx;
-+		cpuc->lbr_entries[i].abort	= abort;
- 		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..91052e1 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -74,13 +74,18 @@ struct perf_raw_record {
-  *
-  * support for mispred, predicted is optional. In case it
-  * is not supported mispred = predicted = 0.
-+ *
-+ *     intx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-  */
- struct perf_branch_entry {
- 	__u64	from;
- 	__u64	to;
- 	__u64	mispred:1,  /* target mispredicted */
- 		predicted:1,/* target predicted */
--		reserved:62;
-+		intx:1,	    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index aa0f5fa..3094caa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -456,6 +456,17 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	EVENT_CONSTRAINT_END
  };
  
- /*
++/* Subset of PEBS events supporting memory latency. Not used for scheduling */
++
++struct event_constraint intel_hsw_memory_latency_events[] = {
++	INTEL_EVENT_CONSTRAINT(0xcd, 0), /* MEM_TRANS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ {
+ 	struct event_constraint *c;
+@@ -473,6 +484,21 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 	return &emptyconstraint;
+ }
+ 
++static bool is_memory_lat_event(struct perf_event *event)
++{
++	struct event_constraint *c;
++
++	if (x86_pmu.intel_cap.pebs_format < 1)
++		return false;
++	if (!x86_pmu.memory_lat_events)
++		return false;
++	for_each_event_constraint(c, x86_pmu.memory_lat_events) {
++		if ((event->hw.config & c->cmask) == c->code)
++			return true;
++	}
++	return false;
++}
++
+ void intel_pmu_pebs_enable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -480,7 +506,12 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+-	cpuc->pebs_enabled |= 1ULL << hwc->idx;
++	/* When weight is requested enable LL instead of normal PEBS */
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++		is_memory_lat_event(event))
++		cpuc->pebs_enabled |= 1ULL << (32 + hwc->idx);
++	else
++		cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ }
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -488,7 +519,11 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++		is_memory_lat_event(event))
++		cpuc->pebs_enabled &= ~(1ULL << (32 + hwc->idx));
++	else
++		cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+ 	if (cpuc->enabled)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+ 
+@@ -634,6 +669,14 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		x86_pmu.intel_cap.pebs_format >= 2)
+ 		data.addr = ((struct pebs_record_v2 *)pebs)->nhm.dla;
+ 
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++	    x86_pmu.intel_cap.pebs_format >= 2) {
++		data.weight = ((struct pebs_record_v2 *)pebs)->tsx_tuning &
++				0xffffffff;
++		if (!data.weight)
++			data.weight = ((struct pebs_record_v2 *)pebs)->nhm.lat;
++	}
++
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
+ 
 -- 
 1.7.7.6
 
