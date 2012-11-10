@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2KJBaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:30:22 -0500
-Received: from mga01.intel.com ([192.55.52.88]:39679 "EHLO mga01.intel.com"
+	id S1753219Ab2KJBaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:30:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:26777 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab2KJB2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752198Ab2KJB2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Nov 2012 20:28:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="246777200"
+   d="scan'208";a="244848912"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 19/32] perf, core: Add generic transaction flags v2
-Date: Fri,  9 Nov 2012 17:27:35 -0800
-Message-Id: <1352510868-7911-20-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 30/32] perf, x86: Add a Haswell precise instructions event v2
+Date: Fri,  9 Nov 2012 17:27:46 -0800
+Message-Id: <1352510868-7911-31-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,123 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
+Add a instructions-p event alias that uses the PDIR randomized instruction
+retirement event. This is useful to avoid some systematic sampling shadow
+problems. Normally PEBS sampling has a systematic shadow. With PDIR
+enabled the hardware adds some randomization that statistically avoids
+this problem. In this sense, it's more precise over a whole sampling
+interval, but an individual sample can be less precise. But since we
+sample overall it's a more precise event.
 
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
+This could be used before using the explicit event code syntax, but it's easier
+and more user friendly to use with an "instructions-p" alias. I expect
+this will eventually become a common use case.
 
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
+Right now for Haswell, will add to Ivy Bridge later too.
 
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
-
-This adds the perf core glue needed for reporting the new flag word out.
-
-v2: Add MEM/MISC
+v2: Use new sysfs infrastructure
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   26 ++++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 32 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c9686c8..c32fba3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -589,6 +589,7 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	u64				transaction;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index e8fb4e2..d177d88 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2033,6 +2033,7 @@ EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
+ EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
+ EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
+ EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
++EVENT_ATTR_STR(instructions-p, instructions_p, "event=0xc0,umask=0x01,precise=2");
+ 
+ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(tx_start),
+@@ -2053,6 +2054,7 @@ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(cycles_ct),
+ 	EVENT_PTR(instructions_t),
+ 	EVENT_PTR(instructions_ct),
++	EVENT_PTR(instructions_p),
+ 	NULL
  };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->transaction = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 809a5fd..e7b1a48 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 15,
- 
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
- };
- 
- /*
-@@ -179,6 +179,28 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the transaction event qualifier, mostly for abort events.
-+ */
-+enum {
-+	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
-+	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
-+	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
-+	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
-+	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
-+	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
-+	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
-+	PERF_SAMPLE_TXN_MEMORY      = (1 << 7), /* Memory related abort */
-+	PERF_SAMPLE_TXN_MISC        = (1 << 8), /* Misc aborts */
-+
-+	PERF_SAMPLE_TXN_MAX	    = (1 << 9),  /* non-ABI */
-+
-+	/* bits 24..31 are reserved for the abort code */
-+
-+	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
-+	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
-+};
-+
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d633581..534810d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
  
 -- 
 1.7.7.6
