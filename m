@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab2KJWdZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 17:33:25 -0500
-Received: from shrek-modem2.podlesie.net ([83.13.132.46]:59096 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750852Ab2KJWdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 17:33:23 -0500
-Date: Sat, 10 Nov 2012 23:33:19 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net
-Subject: Re: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
-Message-ID: <20121110223319.GA19796@shrek.podlesie.net>
-References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
- <1352292734.7340.35.camel@shinybook.infradead.org>
- <20121110202338.GA1749@shrek.podlesie.net>
- <1352581322.9449.109.camel@shinybook.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352581322.9449.109.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751781Ab2KJWpS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 17:45:18 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:48207 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab2KJWpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 17:45:16 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Geremy Condra <gcondra@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH 4/4] arch/arm: select HAVE_ARCH_SECCOMP_FILTER
+Date: Sat, 10 Nov 2012 14:44:45 -0800
+Message-Id: <1352587485-18348-5-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352587485-18348-1-git-send-email-keescook@chromium.org>
+References: <1352587485-18348-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 10, 2012 at 09:02:02PM +0000, David Woodhouse wrote:
-> On Sat, 2012-11-10 at 21:23 +0100, Krzysztof Mazur wrote:
-> > With this tasklet_schedule() we implement a "spin_lock" here, but in
-> > this case both conditions (vcc not ready and socket locked) can be
-> > true for a long time and we can spin here for a long time. I confirmed
-> > it by reverting patch 1 (atm: detach protocol before closing vcc) and
-> > now I have 50% of CPU used by ksoftirqd and 50% by pppd (UP system).
-> 
-> Ah, thanks.
-> 
-> Can we take the lock in the tasklet, so we wait for it instead of
-> spinning?
-> 
+From: Will Drewry <wad@chromium.org>
 
-I don't think so, we cannot sleep in tasklet.
+Reflect architectural support for seccomp filter.
 
-I think we should use sk_add_backlog() or release_cb (introduced by:
-46d3ceabd8d98ed0ad10f20c595ca784e34786c5 tcp: TCP Small Queues).
-The release_cb callback is almost exactly what we need except that
-it works on protocol level, not on socket. The same race with
-vcc_sendmsg() exists also in other ATM protocols, so maybe we should
-add wrapper in ATM layer that calls vcc->sock_release_cb().
-
-But what about socket flags? Maybe we should just drop that frame?
-When ppp is used on serial links "not-ready link" usually does that.
-I'm sending an updated patch 6.
-
-Krzysiek
--- >8 --
-Subject: [PATCH] pppoatm: drop frames to not-ready vcc
-
-Patches "atm: detach protocol before closing vcc"
-and "pppoatm: allow assign only on a connected socket" fixed
-common cases where the pppoatm_send() crashes while sending
-frame to not-ready vcc. However there are still some other cases
-where we can send frames to vcc, which is flagged as ATM_VF_CLOSE
-(for instance after vcc_release_async()) or it's opened but not
-ready yet.
-
-Now pppoatm_send(), like vcc_sendmsg(), checks for vcc flags that
-indicate that vcc is not ready. If the vcc is not ready we just
-drop frame. Queueing frames is much more complicated because we
-don't have callbacks that inform us about vcc flags changes.
-
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- net/atm/pppoatm.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index c4a57bc..63541a3 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -284,6 +284,13 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 	bh_lock_sock(sk_atm(vcc));
- 	if (sock_owned_by_user(sk_atm(vcc)))
- 		goto nospace;
-+	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
-+			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
-+			|| !test_bit(ATM_VF_READY, &vcc->flags)) {
-+		bh_unlock_sock(sk_atm(vcc));
-+		kfree_skb(skb);
-+		return DROP_PACKET;
-+	}
- 
- 	switch (pvcc->encaps) {		/* LLC encapsulation needed */
- 	case e_llc:
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ade7e92..0e8d490 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -21,6 +21,7 @@ config ARM
+ 	select HAVE_AOUT
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
++	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_BPF_JIT
+ 	select HAVE_C_RECORDMCOUNT
 -- 
-1.8.0.268.g9d5ca2e
+1.7.9.5
 
