@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2KJACH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:02:07 -0500
-Received: from www.covariable.com ([216.129.123.154]:39061 "EHLO sweaglesw.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab2KJACE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:02:04 -0500
-X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Nov 2012 19:02:04 EST
-Date: Fri, 9 Nov 2012 15:54:59 -0800
-From: "Darrick J. Wong" <djwong+lkml@djwong.org>
-To: linux-kernel@vger.kernel.org
-Cc: darrick.wong@oracle.com
-Subject: [RFC] Ever wonder what 21+ years of kernel development look like?
-Message-ID: <20121109235459.GO5486@sweaglesw.org>
+	id S1755048Ab2KJAKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 19:10:07 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32928 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2KJAKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 19:10:01 -0500
+Message-ID: <509D9B4F.6060003@wwwdotorg.org>
+Date: Fri, 09 Nov 2012 17:09:51 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
+References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de> <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 11/09/2012 06:59 AM, Thierry Reding wrote:
+> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+> support for host1x and the two display controllers found on the Tegra20
+> SoC. Each display controller can drive a separate RGB/LVDS output.
 
-With the upcoming U.S. holiday, are you worried that there won't be much work
-going on for a few days?  Or perhaps you have kids who need a babysitter while
-mom and dad hack code for a few hours?  Maybe you've gotten tired of
-fast-forwarding^W^W^Wwatching commercials on TV?
+I applied these two patches and the two arch/arm/mach-tegra patches you
+posted, directly on top of next-20121109, and I see the following build
+failure:
 
-This is not the solution for you!
+> drivers/gpu/drm/tegra/output.c: In function 'tegra_output_init':
+> drivers/gpu/drm/tegra/output.c:166:9: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c:166:3: error: implicit declaration of function 'of_get_display'
+> drivers/gpu/drm/tegra/output.c:167:20: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c:168:25: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c:179:13: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c:180:3: error: implicit declaration of function 'display_put'
+> drivers/gpu/drm/tegra/output.c:180:21: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c:257:20: error: 'struct tegra_output' has no member named 'display'
+> drivers/gpu/drm/tegra/output.c: In function 'tegra_output_exit':
+> drivers/gpu/drm/tegra/output.c:272:20: error: 'struct tegra_output' has no member named 'display'
 
-However, following the recent trend of gource animations popping up on YouTube
-(due at least in part to the Phoronix editor), I have posted a 2.75h video of
-gource animating the last 21 years of Linux kernel development.  Watch in
-amazement as 3D Linux hacker figures shoot multi-colored laser beams of code
-goodness (or not) at the source tree!  From Linux 0.01* all the way to 3.7-rc3,
-you can watch the tree glow brighter with code churn, and shrink during the
-less active times.  A pure delight for the whole family**!
-
-Enjoy! http://www.youtube.com/watch?v=pOSqctHH9vY
-
-Happy (belated) 21st birthday to Linux!  A penguin walks into a U.S. bar...
-
---D
-
-* The pre-2002 releases, sadly, all look like they're coming from Linus, and
-  have 2007-ish timestamps on them, probably due to the method used to shove
-  the early history into git.  Sorry.  I'll fix it if I ever figure out how.
-
-** Well, not /my/ family.  They complained about the lack of sound, so I
-   synthesized for them some bytebeats music until they fled the room.
+Does this depend on something not in linux-next?
