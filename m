@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2KJB3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:29:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14512 "EHLO mga02.intel.com"
+	id S1752732Ab2KJBaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:30:22 -0500
+Received: from mga01.intel.com ([192.55.52.88]:39679 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab2KJB2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 20:28:10 -0500
+	id S1752186Ab2KJB2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 20:28:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="217548802"
+   d="scan'208";a="246777200"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 29/32] perf, tools: Add perf stat --transaction v2
-Date: Fri,  9 Nov 2012 17:27:45 -0800
-Message-Id: <1352510868-7911-30-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 19/32] perf, core: Add generic transaction flags v2
+Date: Fri,  9 Nov 2012 17:27:35 -0800
+Message-Id: <1352510868-7911-20-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,230 +26,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support to perf stat to print the basic transactional execution statistics:
-Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-using the intx and intx_checkpoint qualifiers.
-Transaction Starts and Elision Starts, to compute the average transaction length.
+Add a generic qualifier for transaction events, as a new sample
+type that returns a flag word. This is particularly useful
+for qualifying aborts: to distinguish aborts which happen
+due to asynchronous events (like conflicts caused by another
+CPU) versus instructions that lead to an abort.
 
-This is a reasonable overview over the success of the transactions.
+The tuning strategies are very different for those cases,
+so it's important to distinguish them easily and early.
 
-Enable with a new --transaction / -T option.
+Since it's inconvenient and inflexible to filter for this
+in the kernel we report all the events out and allow
+some post processing in user space.
 
-This requires measuring these events in a group, since they depend on each
-other.
+The flags are based on the Intel TSX events, but should be fairly
+generic and mostly applicable to other architectures too. In addition
+to various flag words there's also reserved space to report an
+program supplied abort code. For TSX this is used to distinguish specific
+classes of aborts, like a lock busy abort when doing lock elision.
 
-This is implemented by using TM sysfs events exported by the kernel
+This adds the perf core glue needed for reporting the new flag word out.
 
-v2: Only print the extended statistics when the option is enabled.
-This avoids negative output when the user specifies the -T events
-in separate groups.
+v2: Add MEM/MISC
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-stat.txt |    4 +
- tools/perf/builtin-stat.c              |  101 +++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.h                |    6 ++
- 3 files changed, 108 insertions(+), 3 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |   26 ++++++++++++++++++++++++--
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index cf0c310..0d5b8cb 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -114,6 +114,10 @@ with it.  --append may be used here.  Examples:
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c9686c8..c32fba3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -589,6 +589,7 @@ struct perf_sample_data {
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
+ 	u64				weight;
++	u64				transaction;
+ };
  
- perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
- 
-+-T::
-+--transaction::
-+
-+Print statistics of transactional execution if supported.
- 
- EXAMPLES
- --------
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 6888960..6dfc8f8 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -65,6 +65,29 @@
- #define CNTR_NOT_SUPPORTED	"<not supported>"
- #define CNTR_NOT_COUNTED	"<not counted>"
- 
-+static const char *transaction_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/cycles-ct/,"
-+	"cpu/tx-start/,"
-+	"cpu/el-start/"
-+	"}"
-+};
-+
-+/* must match the transaction_attrs above */
-+enum {
-+	T_TASK_CLOCK,
-+	T_INSTRUCTIONS,
-+	T_CYCLES,
-+	T_CYCLES_INTX,
-+	T_CYCLES_INTX_CP,
-+	T_TRANSACTION_START,
-+	T_ELISION_START
-+};
-+
- static struct perf_evlist	*evsel_list;
- 
- static struct perf_target	target = {
-@@ -78,6 +101,7 @@ static bool			no_aggr				= false;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-+static bool			transaction_run			=  false;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
- static const char		*csv_sep			= NULL;
-@@ -127,7 +151,11 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
- static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_intx_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_intxcp_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
-+static struct stats runtime_transaction_stats[MAX_NR_CPUS];
-+static struct stats runtime_elision_stats[MAX_NR_CPUS];
- 
- static int create_perf_stat_counter(struct perf_evsel *evsel,
- 				    struct perf_evsel *first)
-@@ -187,6 +215,18 @@ static inline int nsec_counter(struct perf_evsel *evsel)
- 	return 0;
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->transaction = 0;
  }
  
-+static struct perf_evsel *nth_evsel(int n)
-+{
-+	struct perf_evsel *ev;
-+	int j;
-+
-+	j = 0;
-+	list_for_each_entry (ev, &evsel_list->entries, node)
-+		if (j++ == n)
-+			return ev;
-+	return NULL;
-+}
-+
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 809a5fd..e7b1a48 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_TRANSACTION			= 1U << 15,
+ 
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+-
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+ };
+ 
  /*
-  * Update various tracking values we maintain to print
-  * more semantic information such as miss/hit ratios,
-@@ -198,8 +238,14 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
- 		update_stats(&runtime_cycles_stats[0], count[0]);
--	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
--		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX)))
-+		update_stats(&runtime_cycles_intx_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX_CP)))
-+		update_stats(&runtime_cycles_intxcp_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
-+		update_stats(&runtime_transaction_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
-+		update_stats(&runtime_elision_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
- 		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
-@@ -663,7 +709,7 @@ static void print_ll_cache_misses(int cpu,
+@@ -179,6 +179,28 @@ enum perf_sample_regs_abi {
+ };
  
- static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- {
--	double total, ratio = 0.0;
-+	double total, ratio = 0.0, total2;
- 	char cpustr[16] = { '\0', };
- 	const char *fmt;
+ /*
++ * Values for the transaction event qualifier, mostly for abort events.
++ */
++enum {
++	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
++	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
++	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
++	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
++	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
++	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
++	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
++	PERF_SAMPLE_TXN_MEMORY      = (1 << 7), /* Memory related abort */
++	PERF_SAMPLE_TXN_MISC        = (1 << 8), /* Misc aborts */
++
++	PERF_SAMPLE_TXN_MAX	    = (1 << 9),  /* non-ABI */
++
++	/* bits 24..31 are reserved for the abort code */
++
++	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
++	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
++};
++
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d633581..534810d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		size += sizeof(data->weight);
  
-@@ -763,6 +809,41 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 			ratio = 1.0 * avg / total;
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		size += sizeof(data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
  
- 		fprintf(output, " # %8.3f GHz                    ", ratio);
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX)) &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% transactional cycles   ",
-+				100.0 * (avg / total));
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX_CP)) &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total2 = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% aborted cycles         ",
-+				100.0 * ((total2-avg) / total));
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_intx_stats[cpu].n != 0 &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / transaction ", ratio);
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_intx_stats[cpu].n != 0 &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / elision     ", ratio);
- 	} else if (runtime_nsecs_stats[cpu].n != 0) {
- 		char unit = 'M';
+@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
  
-@@ -1069,6 +1150,18 @@ static int add_default_attributes(void)
- 	if (null_run)
- 		return 0;
- 
-+	if (transaction_run) {
-+		unsigned i;
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		perf_output_put(handle, data->transaction);
 +
-+		for (i = 0; i < ARRAY_SIZE(transaction_attrs); i++) {
-+			if (parse_events(evsel_list, transaction_attrs[i], 0)) {
-+				fprintf(stderr, "Cannot set up transaction events\n");
-+				return -1;
-+			}
-+		}
-+		return 0;
-+	}
-+
- 	if (!evsel_list->nr_entries) {
- 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
- 			return -1;
-@@ -1147,6 +1240,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 			"command to run prior to the measured command"),
- 	OPT_STRING(0, "post", &post_cmd, "command",
- 			"command to run after to the measured command"),
-+	OPT_BOOLEAN('T', "transaction", &transaction_run,
-+		    "hardware transaction statistics"),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 6f94d6d..418405e 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -158,6 +158,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
- 	       (e1->attr.config == e2->attr.config);
- }
- 
-+#define perf_evsel__cmp(a, b)			\
-+	((a) &&					\
-+	 (b) &&					\
-+	 (a)->attr.type == (b)->attr.type &&	\
-+	 (a)->attr.config == (b)->attr.config)
-+
- int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 			      int cpu, int thread, bool scale);
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		perf_output_read(handle, event);
  
 -- 
 1.7.7.6
