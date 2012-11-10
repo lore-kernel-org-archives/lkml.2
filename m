@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab2KJCHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 21:07:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21442 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2KJCHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 21:07:19 -0500
-Message-ID: <509DB6AC.1030204@oracle.com>
-Date: Fri, 09 Nov 2012 21:06:36 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	id S1752061Ab2KJCIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 21:08:24 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:45340 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab2KJCIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 21:08:23 -0500
+Message-ID: <509DA63E.7070500@us.ibm.com>
+Date: Fri, 09 Nov 2012 16:56:30 -0800
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Antonio Quartulli <ordex@autistici.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: net, batman: NULL ptr deref in batadv_iv_ogm_queue_add
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2] pstore/ram: no timekeeping calls when unavailable
+References: <20121105220059.GA6379@www.outflux.net>
+In-Reply-To: <20121105220059.GA6379@www.outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111000-1976-0000-0000-0000133C9A0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 11/05/2012 02:00 PM, Kees Cook wrote:
+> We must not call timekeeping functions unless they are available. If we dump
+> before they have resumed, avoid a WARN_ON by setting the timestamp to 0.
+>
+> Since the "ram" pstore driver can be a module, we must have
+> timekeeping_suspended exported.
+>
+> Reported-by: Doug Anderson <dianders@chromium.org>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> v2:
+>   - export needed for timekeeping_suspended (thanks to Fengguang Wu).
+> ---
+>   fs/pstore/ram.c           |    8 +++++++-
+>   kernel/time/timekeeping.c |    1 +
+>   2 files changed, 8 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 1a4f6da..6d014e0 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -171,7 +171,13 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+>   	struct timeval timestamp;
+>   	size_t len;
+>
+> -	do_gettimeofday(&timestamp);
+> +	/* Handle dumping before timekeeping has resumed. */
+> +	if (unlikely(timekeeping_suspended)) {
+> +		timestamp.tv_sec = 0;
+> +		timestamp.tv_usec = 0;
+> +	} else
+> +		do_gettimeofday(&timestamp);
+> +
+Would nulling out the timestamp be better done in do_gettimeofday()?  
+That way we don't have to export timekeeping internals and users would 
+get something more sane for this corner case.
 
-While fuzzing with trinity in a KVM tools (lkvm) guest running latest -next
-kernel, I've stumbled on the following:
-
-[  469.854708] batman_adv: �,�]+: Removing interface: bond0
-[  469.890909] BUG: unable to handle kernel NULL pointer dereference at 0000000000000003
-[  469.906428] IP: [<ffffffff839e3810>] batadv_iv_ogm_queue_add+0x20/0x700
-[  469.906428] PGD 907c067 PUD 907b067 PMD 0
-[  469.906428] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  469.906428] Dumping ftrace buffer:
-[  469.921756]    (ftrace buffer empty)
-[  469.921756] CPU 1
-[  469.921756] Pid: 43, comm: kworker/u:1 Tainted: G        W    3.7.0-rc4-next-20121109-sasha-00013-g9407f3c #125
-[  469.921756] RIP: 0010:[<ffffffff839e3810>]  [<ffffffff839e3810>] batadv_iv_ogm_queue_add+0x20/0x700
-[  469.921756] RSP: 0000:ffff880013361c08  EFLAGS: 00010292
-[  469.921756] RAX: 0000000000000062 RBX: 0000000000000000 RCX: ffff8800622d2c00
-[  469.921756] RDX: 000000000000001a RSI: 0000000000000000 RDI: 0000000000000064
-[  469.921756] RBP: ffff880013361c88 R08: 0000000000000001 R09: 00000001000042bf
-[  469.921756] R10: 0000000000000000 R11: 0000000000000000 R12: 00000001000042bf
-[  469.921756] R13: ffff8800088e8b00 R14: ffff8800088e8b00 R15: 0000000000000001
-[  469.921756] FS:  0000000000000000(0000) GS:ffff880027800000(0000) knlGS:0000000000000000
-[  469.921756] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  469.921756] CR2: 0000000000000003 CR3: 000000000788e000 CR4: 00000000000406e0
-[  469.921756] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  469.921756] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  469.921756] Process kworker/u:1 (pid: 43, threadinfo ffff880013360000, task ffff880013358000)
-[  469.921756] Stack:
-[  469.921756]  ffff880013361c28 ffffffff81135a74 ffff8800088e8b00 0000000000000000
-[  469.921756]  ffff880013361c88 ffffffff839f32ed ffffffff839f3160 0000000000000000
-[  469.921756]  ffff880021f0cae0 0000000000000000 ffff8800622d2c00 0000000000000000
-[  469.921756] Call Trace:
-[  469.921756]  [<ffffffff81135a74>] ? __rcu_read_unlock+0x44/0xb0
-[  469.921756]  [<ffffffff839f32ed>] ? batadv_slide_own_bcast_window+0x1cd/0x1f0
-[  469.921756]  [<ffffffff839f3160>] ? batadv_slide_own_bcast_window+0x40/0x1f0
-[  469.921756]  [<ffffffff839e4196>] batadv_iv_ogm_schedule+0x2a6/0x300
-[  469.921756]  [<ffffffff839e3ef0>] ? batadv_iv_ogm_queue_add+0x700/0x700
-[  469.921756]  [<ffffffff811135cf>] ? local_bh_enable_ip+0xef/0x150
-[  469.921756]  [<ffffffff839f6d90>] batadv_send_outstanding_bat_ogm_packet+0xd0/0xf0
-[  469.921756]  [<ffffffff8112d539>] process_one_work+0x3b9/0x770
-[  469.921756]  [<ffffffff8112d3e8>] ? process_one_work+0x268/0x770
-[  469.921756]  [<ffffffff8117d3f2>] ? get_lock_stats+0x22/0x70
-[  469.921756]  [<ffffffff839f6cc0>] ? batadv_add_bcast_packet_to_list+0x320/0x320
-[  469.921756]  [<ffffffff8112deba>] worker_thread+0x2ba/0x3f0
-[  469.921756]  [<ffffffff8112dc00>] ? rescuer_thread+0x2d0/0x2d0
-[  469.921756]  [<ffffffff81138c23>] kthread+0xe3/0xf0
-[  469.921756]  [<ffffffff8117d47e>] ? put_lock_stats.isra.16+0xe/0x40
-[  469.921756]  [<ffffffff81138b40>] ? insert_kthread_work+0x90/0x90
-[  469.921756]  [<ffffffff83be1fbc>] ret_from_fork+0x7c/0xb0
-[  469.921756]  [<ffffffff81138b40>] ? insert_kthread_work+0x90/0x90
-[  469.921756] Code: 16 7a fd e8 43 22 75 fd 5d c3 90 55 48 89 e5 41 57 41 56 41 55 49 89 fd bf 64 00 00 00 41 54 4d 89 cc 53 48
-83 ec 58 48 89 75 b8 <0f> b6 5e 03 89 55 c0 48 89 4d b0 44 89 45 c4 e8 9c ec 72 fd 49
-[  469.921756] RIP  [<ffffffff839e3810>] batadv_iv_ogm_queue_add+0x20/0x700
-[  469.921756]  RSP <ffff880013361c08>
-[  469.921756] CR2: 0000000000000003
-[  470.016647] ---[ end trace 42fb97717ce977ba ]---
+thanks
+-john
 
 
-Thanks,
-Sasha
