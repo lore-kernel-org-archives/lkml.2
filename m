@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2KJDg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 22:36:29 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61684 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2KJDg1 (ORCPT
+	id S1753033Ab2KJDis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 22:38:48 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41483 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2KJDio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 22:36:27 -0500
+	Fri, 9 Nov 2012 22:38:44 -0500
+Message-ID: <509DCC5E.7020804@gmail.com>
+Date: Sat, 10 Nov 2012 14:39:10 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
-	<02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
-	<-4237940489086529028@unknownmsgid>
-	<559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com>
-Date: Fri, 9 Nov 2012 21:36:26 -0600
-Message-ID: <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 04/11] ARM: set arch_gettimeoffset directly
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org> <1352408516-21988-6-git-send-email-swarren@wwwdotorg.org> <509C3AE7.7030703@gmail.com> <509D708E.6080703@wwwdotorg.org>
+In-Reply-To: <509D708E.6080703@wwwdotorg.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pantelis,
+On 10/11/12 08:07, Stephen Warren wrote:
 
-On Fri, Nov 9, 2012 at 2:13 AM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-
->>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
->>>>       and passes the resolved tree to the kernel.
->>>>
->>>
->>> Could be made to work. Only really required if Joanne wants the
->>> cape interface to work for u-boot too. For example if the cape has some
->>> kind of network interface that u-boot will use to boot from.
->>>
+> On 11/08/2012 04:06 PM, Ryan Mallon wrote:
+>> On 09/11/12 08:01, Stephen Warren wrote:
+>>> remove ARM's struct sys_timer .offset function pointer, and instead
+>>> directly set the arch_gettimeoffset function pointer when the timer
+>>> driver is initialized. This requires multiplying all function results
+>>> by 1000, since the removed arm_gettimeoffset() did this. Also,
+>>> s/unsigned long/u32/ just to make the function prototypes exactly
+>>> match that of arch_gettimeoffset.
+> 
+>>> +static u32 ep93xx_gettimeoffset(void)
+>>> +{
+>>> +	int offset;
+>>> +
+>>> +	offset = __raw_readl(EP93XX_TIMER4_VALUE_LOW) - last_jiffy_time;
+>>> +
+>>> +	/* Calculate (1000000 / 983040) * offset.  */
 >>
->> I love Grant's hashing idea a lot keeping the phandle problem for
->> compile time and not requiring fixups.
+>> This comment is now incorrect, it should say:
 >>
->> IMO it is still a cleaner approach if u-boot does the tree merging for
->> all cases, and not the kernel.
+>> 	/* Calculate (1000000000 / 983040) * offset */
 >>
->> That way from a development standpoint, very little or nothing will
->> have to be changed in kernel (except for scripts/dtc) considering we
->> are moving forward with hashing.
+>> or perhaps to better explain what is being done:
 >>
->> Also this discussed a while back but at some point is going to brought
->> up again-  loading of dt fragment directly from EEPROM and merging at
->> run time. If we were to implement this in kernel, we would have to add
->> cape specific EEPROM reading code, merge the tree before it is
->> unflattened and parse. I think doing tree merging in kernel is messy
->> and we should do it in uboot. Ideally reading the fragment from the
->> EEPROM for all capes and merging without worrying about version
->> detection, Doing the merge and passing the merged blob to the kernel
->> which (kernel) works the same way it does today.
->
-> Not going to work, for a lot of cases. Doing it in the kernel seems to be
-> the cleaner option. There are valid use cases for doing in u-boot too.
-
-True, if dynamic runtime stuff from userspace is what we're talking
-about, then yeah I see the important need for kernel to do the merge.
-
->> Alternatively to hashing, reading david gibsons paper I followed,
->> phandle is supposed to 'uniquely' identity node. I wonder why the node
->> name itself is not sufficient to unquiely identify. The code that does
->> the tree walking can then just strcmp the node name while it walks the
->> tree instead of having to find a node with a phandle number. I guess
->> the reason is phandles are small to store as data values. Another
->> approach can be to arrange the string block in alphabetical order
->> (unless it already is), and store phandle as index of the node name
->> referenced relative to the starting of the strong block. This will not
->> affect nodes in dtb being moved around since they will still have the
->> same index value. the problem being adding or removing nodes Changes
->> the offsets of all other nodes in the string block as well.. Hmm.
+>> 	/*
+>> 	 * Timer 4 is based on a 983.04 kHz reference clock,
+>> 	 * so dividing by 983040 gives a milli-second value.
+>> 	 * Refactor the calculation to avoid overflow.
+>> 	 */
 >>
->
-> This is pretty radical change to the DT format, no?
+>>> +	return (offset + (53 * offset / 3072)) * 1000;
+> 
+> Thanks. I expanded on that slightly and went for:
+> 
+> 	/*
+> 	 * Timer 4 is based on a 983.04 kHz reference clock,
+> 	 * so dividing by 983040 gives the fraction of a second,
+> 	 * so dividing by 0.983040 converts to uS.
+> 	 * Refactor the calculation to avoid overflow.
+> 	 * Finally, multiply by 1000 to give nS.
+> 	 */
+> 
 
-Yes, true and the only way hypothetically to replace the phandle
-tree-walking mechanism is to store node paths instead of phandle which
-David pointed is too long to store, so I guess this wont work after
-all. Anyway this was an interesting exercise, thanks.
 
-Regards,
-Joel
+Looks good, thanks.
+
+~Ryan
+
