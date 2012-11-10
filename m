@@ -1,120 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2KJAzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:55:24 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:41340 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab2KJAzW (ORCPT
+	id S1751351Ab2KJBCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:02:01 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:37316
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750781Ab2KJBB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:55:22 -0500
-Date: Fri, 9 Nov 2012 16:55:16 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
- block the readers unnecessarily
-Message-ID: <20121110005516.GM2419@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121031194135.GA504@redhat.com>
- <20121031194158.GB504@redhat.com>
- <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
- <20121102180606.GA13255@redhat.com>
- <20121108134805.GA23870@redhat.com>
- <20121108134849.GB23870@redhat.com>
- <20121108120700.42d438f2.akpm@linux-foundation.org>
- <20121109154656.GA26134@redhat.com>
- <20121109170107.GB2419@linux.vnet.ibm.com>
- <20121109181048.GA1184@redhat.com>
+	Fri, 9 Nov 2012 20:01:58 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h1155h)
+X-WSS-ID: 0MD8YV3-01-03L-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 1/4] perf, amd: Simplify northbridge event constraints handler
+Date: Fri, 9 Nov 2012 19:01:35 -0600
+Message-ID: <1352509298-7319-2-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
+References: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121109181048.GA1184@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111000-5406-0000-0000-000001EB5C2E
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 07:10:48PM +0100, Oleg Nesterov wrote:
-> On 11/09, Paul E. McKenney wrote:
-> >
-> > On Fri, Nov 09, 2012 at 04:46:56PM +0100, Oleg Nesterov wrote:
-> > > Contrary, I am going to try to add some complications later, so that
-> > > it can have more users. In particular, I think it can replace
-> > > get_online_cpus/cpu_hotplug_begin, just we need
-> > > percpu_down_write_but_dont_deadlock_with_recursive_readers().
-> >
-> > I must confess that I am a bit concerned about possible scalability
-> > bottlenecks in the current get_online_cpus(), so +1 from me on this one.
-> 
-> OK, thanks...
-> 
-> And btw percpu_down_write_but_dont_deadlock_with_recursive_readers() is
-> trivial, just it needs down_write(rw_sem) "inside" wait_event(), not
-> before. But I'm afraid I will never manage to write the comments ;)
-> 
-> 	static bool xxx(brw)
-> 	{
-> 		down_write(&brw->rw_sem);
+From: Robert Richter <rric@kernel.org>
 
-		down_write_trylock()
+Code simplification, there is no functional change.
 
-As you noted in your later email.  Presumably you return false if
-the attempt to acquire it fails.
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event_amd.c |   68 +++++++++++++---------------------
+ 1 file changed, 26 insertions(+), 42 deletions(-)
 
-> 		if (!atomic_read(&brw->slow_read_ctr))
-> 			return true;
-> 
-> 		up_write(&brw->rw_sem);
-> 		return false;
-> 	}
-> 
-> 	static void __percpu_down_write(struct percpu_rw_semaphore *brw, bool recursive_readers)
-> 	{
-> 		mutex_lock(&brw->writer_mutex);
-> 
-> 		synchronize_sched();
-> 
-> 		atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
-> 
-> 		if (recursive_readers)  {
-> 			wait_event(brw->write_waitq, xxx(brw));
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 4528ae7..d60c5c7 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -256,9 +256,8 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct amd_nb *nb = cpuc->amd_nb;
+-	struct perf_event *old = NULL;
+-	int max = x86_pmu.num_counters;
+-	int i, j, k = -1;
++	struct perf_event *old;
++	int idx, new = -1;
+ 
+ 	/*
+ 	 * if not NB event or no NB, then no constraints
+@@ -276,48 +275,33 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	 * because of successive calls to x86_schedule_events() from
+ 	 * hw_perf_group_sched_in() without hw_perf_enable()
+ 	 */
+-	for (i = 0; i < max; i++) {
+-		/*
+-		 * keep track of first free slot
+-		 */
+-		if (k == -1 && !nb->owners[i])
+-			k = i;
++	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
++		if (new == -1 || hwc->idx == idx)
++			/* assign free slot, prefer hwc->idx */
++			old = cmpxchg(nb->owners + idx, NULL, event);
++		else if (nb->owners[idx] == event)
++			/* event already present */
++			old = event;
++		else
++			continue;
++
++		if (old && old != event)
++			continue;
++
++		/* reassign to this slot */
++		if (new != -1)
++			cmpxchg(nb->owners + new, event, NULL);
++		new = idx;
+ 
+ 		/* already present, reuse */
+-		if (nb->owners[i] == event)
+-			goto done;
+-	}
+-	/*
+-	 * not present, so grab a new slot
+-	 * starting either at:
+-	 */
+-	if (hwc->idx != -1) {
+-		/* previous assignment */
+-		i = hwc->idx;
+-	} else if (k != -1) {
+-		/* start from free slot found */
+-		i = k;
+-	} else {
+-		/*
+-		 * event not found, no slot found in
+-		 * first pass, try again from the
+-		 * beginning
+-		 */
+-		i = 0;
+-	}
+-	j = i;
+-	do {
+-		old = cmpxchg(nb->owners+i, NULL, event);
+-		if (!old)
++		if (old == event)
+ 			break;
+-		if (++i == max)
+-			i = 0;
+-	} while (i != j);
+-done:
+-	if (!old)
+-		return &nb->event_constraints[i];
+-
+-	return &emptyconstraint;
++	}
++
++	if (new == -1)
++		return &emptyconstraint;
++
++	return &nb->event_constraints[new];
+ }
+ 
+ static struct amd_nb *amd_alloc_nb(int cpu)
+-- 
+1.7.9.5
 
-I see what you mean about acquiring brw->rw_sem inside of wait_event().
-
-Cute trick!
-
-The "recursive_readers" is a global initialization-time thing, right?
-
-> 		} else {
-> 			down_write(&brw->rw_sem);
-> 
-> 			wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
-> 		}
-> 	}
-
-Looks like it should work, and would perform and scale nicely even
-if we end up having to greatly increase the number of calls to
-get_online_cpus().
-
-> Of course, cpu.c still needs .active_writer to allow get_online_cpus()
-> under cpu_hotplug_begin(), but this is simple.
-
-Yep, same check as now.
-
-> But first we should do other changes, I think. IMHO we should not do
-> synchronize_sched() under mutex_lock() and this will add (a bit) more
-> complications. We will see.
-
-Indeed, that does put considerable delay on the writers.  There is always
-synchronize_sched_expedited(), I suppose.
-
-							Thanx, Paul
 
