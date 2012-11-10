@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab2KJAsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 19:48:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57899 "EHLO mx1.redhat.com"
+	id S1756721Ab2KJAsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 19:48:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756106Ab2KJArQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 19:47:16 -0500
+	id S1756011Ab2KJArP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 19:47:15 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -13,17 +13,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/12] perf tests: Move test__basic_mmap into separate object
-Date: Sat, 10 Nov 2012 01:46:44 +0100
-Message-Id: <1352508412-16914-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 03/12] perf tests: Move test__open_syscall_event_on_all_cpus into separate object
+Date: Sat, 10 Nov 2012 01:46:43 +0100
+Message-Id: <1352508412-16914-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
 References: <1352508412-16914-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separating test__basic_mmap test from the builtin-test
-into mmap-basic object.
+Separating test__open_syscall_event_on_all_cpus test from
+the builtin-test into open-syscall-all-cpus object.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -33,79 +33,47 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |   1 +
- tools/perf/tests/builtin-test.c | 157 --------------------------------------
- tools/perf/tests/mmap-basic.c   | 162 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 4 files changed, 164 insertions(+), 157 deletions(-)
- create mode 100644 tools/perf/tests/mmap-basic.c
+ tools/perf/Makefile                      |   1 +
+ tools/perf/tests/builtin-test.c          | 114 -----------------------------
+ tools/perf/tests/open-syscall-all-cpus.c | 120 +++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h                 |   1 +
+ 4 files changed, 122 insertions(+), 114 deletions(-)
+ create mode 100644 tools/perf/tests/open-syscall-all-cpus.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d413e89..337489e 100644
+index 69f582c..d413e89 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -434,6 +434,7 @@ LIB_OBJS += $(OUTPUT)tests/attr.o
+@@ -433,6 +433,7 @@ LIB_OBJS += $(OUTPUT)tests/dso-data.o
+ LIB_OBJS += $(OUTPUT)tests/attr.o
  LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
  LIB_OBJS += $(OUTPUT)tests/open-syscall.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
-+LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
++LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
  LIB_OBJS += $(OUTPUT)tests/util.o
  
  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 98e883b..609f592 100644
+index b6b1e46..98e883b 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -30,163 +30,6 @@
+@@ -29,120 +29,6 @@
+ 
  #include <sched.h>
  
- 
--/*
-- * This test will generate random numbers of calls to some getpid syscalls,
-- * then establish an mmap for a group of events that are created to monitor
-- * the syscalls.
-- *
-- * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-- * sample.id field to map back to its respective perf_evsel instance.
-- *
-- * Then it checks if the number of syscalls reported as perf events by
-- * the kernel corresponds to the number of syscalls made.
-- */
--static int test__basic_mmap(void)
+-static int test__open_syscall_event_on_all_cpus(void)
 -{
--	int err = -1;
--	union perf_event *event;
+-	int err = -1, fd, cpu;
 -	struct thread_map *threads;
 -	struct cpu_map *cpus;
--	struct perf_evlist *evlist;
--	struct perf_event_attr attr = {
--		.type		= PERF_TYPE_TRACEPOINT,
--		.read_format	= PERF_FORMAT_ID,
--		.sample_type	= PERF_SAMPLE_ID,
--		.watermark	= 0,
--	};
+-	struct perf_evsel *evsel;
+-	struct perf_event_attr attr;
+-	unsigned int nr_open_calls = 111, i;
 -	cpu_set_t cpu_set;
--	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
--					"getpgid", };
--	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
--				      (void*)getpgid };
--#define nsyscalls ARRAY_SIZE(syscall_names)
--	int ids[nsyscalls];
--	unsigned int nr_events[nsyscalls],
--		     expected_nr_events[nsyscalls], i, j;
--	struct perf_evsel *evsels[nsyscalls], *evsel;
+-	int id = trace_event__id("sys_enter_open");
 -
--	for (i = 0; i < nsyscalls; ++i) {
--		char name[64];
--
--		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
--		ids[i] = trace_event__id(name);
--		if (ids[i] < 0) {
--			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
--			return -1;
--		}
--		nr_events[i] = 0;
--		expected_nr_events[i] = random() % 257;
+-	if (id < 0) {
+-		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+-		return -1;
 -	}
 -
 -	threads = thread_map__new(-1, getpid(), UINT_MAX);
@@ -117,167 +85,124 @@ index 98e883b..609f592 100644
 -	cpus = cpu_map__new(NULL);
 -	if (cpus == NULL) {
 -		pr_debug("cpu_map__new\n");
--		goto out_free_threads;
+-		goto out_thread_map_delete;
 -	}
+-
 -
 -	CPU_ZERO(&cpu_set);
--	CPU_SET(cpus->map[0], &cpu_set);
--	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
--	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
--		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
--			 cpus->map[0], strerror(errno));
--		goto out_free_cpus;
+-
+-	memset(&attr, 0, sizeof(attr));
+-	attr.type = PERF_TYPE_TRACEPOINT;
+-	attr.config = id;
+-	evsel = perf_evsel__new(&attr, 0);
+-	if (evsel == NULL) {
+-		pr_debug("perf_evsel__new\n");
+-		goto out_thread_map_delete;
 -	}
 -
--	evlist = perf_evlist__new(cpus, threads);
--	if (evlist == NULL) {
--		pr_debug("perf_evlist__new\n");
--		goto out_free_cpus;
+-	if (perf_evsel__open(evsel, cpus, threads) < 0) {
+-		pr_debug("failed to open counter: %s, "
+-			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+-			 strerror(errno));
+-		goto out_evsel_delete;
 -	}
 -
--	/* anonymous union fields, can't be initialized above */
--	attr.wakeup_events = 1;
--	attr.sample_period = 1;
--
--	for (i = 0; i < nsyscalls; ++i) {
--		attr.config = ids[i];
--		evsels[i] = perf_evsel__new(&attr, i);
--		if (evsels[i] == NULL) {
--			pr_debug("perf_evsel__new\n");
--			goto out_free_evlist;
+-	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+-		unsigned int ncalls = nr_open_calls + cpu;
+-		/*
+-		 * XXX eventually lift this restriction in a way that
+-		 * keeps perf building on older glibc installations
+-		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
+-		 * a reasonable upper limit tho :-)
+-		 */
+-		if (cpus->map[cpu] >= CPU_SETSIZE) {
+-			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
+-			continue;
 -		}
 -
--		perf_evlist__add(evlist, evsels[i]);
--
--		if (perf_evsel__open(evsels[i], cpus, threads) < 0) {
--			pr_debug("failed to open counter: %s, "
--				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+-		CPU_SET(cpus->map[cpu], &cpu_set);
+-		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
+-			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
+-				 cpus->map[cpu],
 -				 strerror(errno));
 -			goto out_close_fd;
 -		}
+-		for (i = 0; i < ncalls; ++i) {
+-			fd = open("/etc/passwd", O_RDONLY);
+-			close(fd);
+-		}
+-		CPU_CLR(cpus->map[cpu], &cpu_set);
 -	}
 -
--	if (perf_evlist__mmap(evlist, 128, true) < 0) {
--		pr_debug("failed to mmap events: %d (%s)\n", errno,
--			 strerror(errno));
+-	/*
+-	 * Here we need to explicitely preallocate the counts, as if
+-	 * we use the auto allocation it will allocate just for 1 cpu,
+-	 * as we start by cpu 0.
+-	 */
+-	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
+-		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
 -		goto out_close_fd;
 -	}
 -
--	for (i = 0; i < nsyscalls; ++i)
--		for (j = 0; j < expected_nr_events[i]; ++j) {
--			int foo = syscalls[i]();
--			++foo;
--		}
--
--	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
--		struct perf_sample sample;
--
--		if (event->header.type != PERF_RECORD_SAMPLE) {
--			pr_debug("unexpected %s event\n",
--				 perf_event__name(event->header.type));
--			goto out_munmap;
--		}
--
--		err = perf_evlist__parse_sample(evlist, event, &sample);
--		if (err) {
--			pr_err("Can't parse sample, err = %d\n", err);
--			goto out_munmap;
--		}
--
--		evsel = perf_evlist__id2evsel(evlist, sample.id);
--		if (evsel == NULL) {
--			pr_debug("event with id %" PRIu64
--				 " doesn't map to an evsel\n", sample.id);
--			goto out_munmap;
--		}
--		nr_events[evsel->idx]++;
--	}
--
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
--			pr_debug("expected %d %s events, got %d\n",
--				 expected_nr_events[evsel->idx],
--				 perf_evsel__name(evsel), nr_events[evsel->idx]);
--			goto out_munmap;
--		}
--	}
--
 -	err = 0;
--out_munmap:
--	perf_evlist__munmap(evlist);
+-
+-	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+-		unsigned int expected;
+-
+-		if (cpus->map[cpu] >= CPU_SETSIZE)
+-			continue;
+-
+-		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
+-			pr_debug("perf_evsel__read_on_cpu\n");
+-			err = -1;
+-			break;
+-		}
+-
+-		expected = nr_open_calls + cpu;
+-		if (evsel->counts->cpu[cpu].val != expected) {
+-			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
+-				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
+-			err = -1;
+-		}
+-	}
+-
 -out_close_fd:
--	for (i = 0; i < nsyscalls; ++i)
--		perf_evsel__close_fd(evsels[i], 1, threads->nr);
--out_free_evlist:
--	perf_evlist__delete(evlist);
--out_free_cpus:
--	cpu_map__delete(cpus);
--out_free_threads:
+-	perf_evsel__close_fd(evsel, 1, threads->nr);
+-out_evsel_delete:
+-	perf_evsel__delete(evsel);
+-out_thread_map_delete:
 -	thread_map__delete(threads);
 -	return err;
--#undef nsyscalls
 -}
  
- static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
- {
-diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+ /*
+  * This test will generate random numbers of calls to some getpid syscalls,
+diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
 new file mode 100644
-index 0000000..e174681
+index 0000000..31072ab
 --- /dev/null
-+++ b/tools/perf/tests/mmap-basic.c
-@@ -0,0 +1,162 @@
-+#include "evlist.h"
++++ b/tools/perf/tests/open-syscall-all-cpus.c
+@@ -0,0 +1,120 @@
 +#include "evsel.h"
++#include "tests.h"
 +#include "thread_map.h"
 +#include "cpumap.h"
-+#include "tests.h"
++#include "debug.h"
 +
-+/*
-+ * This test will generate random numbers of calls to some getpid syscalls,
-+ * then establish an mmap for a group of events that are created to monitor
-+ * the syscalls.
-+ *
-+ * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-+ * sample.id field to map back to its respective perf_evsel instance.
-+ *
-+ * Then it checks if the number of syscalls reported as perf events by
-+ * the kernel corresponds to the number of syscalls made.
-+ */
-+int test__basic_mmap(void)
++int test__open_syscall_event_on_all_cpus(void)
 +{
-+	int err = -1;
-+	union perf_event *event;
++	int err = -1, fd, cpu;
 +	struct thread_map *threads;
 +	struct cpu_map *cpus;
-+	struct perf_evlist *evlist;
-+	struct perf_event_attr attr = {
-+		.type		= PERF_TYPE_TRACEPOINT,
-+		.read_format	= PERF_FORMAT_ID,
-+		.sample_type	= PERF_SAMPLE_ID,
-+		.watermark	= 0,
-+	};
++	struct perf_evsel *evsel;
++	struct perf_event_attr attr;
++	unsigned int nr_open_calls = 111, i;
 +	cpu_set_t cpu_set;
-+	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
-+					"getpgid", };
-+	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
-+				      (void*)getpgid };
-+#define nsyscalls ARRAY_SIZE(syscall_names)
-+	int ids[nsyscalls];
-+	unsigned int nr_events[nsyscalls],
-+		     expected_nr_events[nsyscalls], i, j;
-+	struct perf_evsel *evsels[nsyscalls], *evsel;
++	int id = trace_event__id("sys_enter_open");
 +
-+	for (i = 0; i < nsyscalls; ++i) {
-+		char name[64];
-+
-+		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
-+		ids[i] = trace_event__id(name);
-+		if (ids[i] < 0) {
-+			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
-+			return -1;
-+		}
-+		nr_events[i] = 0;
-+		expected_nr_events[i] = random() % 257;
++	if (id < 0) {
++		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
++		return -1;
 +	}
 +
 +	threads = thread_map__new(-1, getpid(), UINT_MAX);
@@ -289,114 +214,104 @@ index 0000000..e174681
 +	cpus = cpu_map__new(NULL);
 +	if (cpus == NULL) {
 +		pr_debug("cpu_map__new\n");
-+		goto out_free_threads;
++		goto out_thread_map_delete;
 +	}
++
 +
 +	CPU_ZERO(&cpu_set);
-+	CPU_SET(cpus->map[0], &cpu_set);
-+	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
-+	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
-+		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
-+			 cpus->map[0], strerror(errno));
-+		goto out_free_cpus;
++
++	memset(&attr, 0, sizeof(attr));
++	attr.type = PERF_TYPE_TRACEPOINT;
++	attr.config = id;
++	evsel = perf_evsel__new(&attr, 0);
++	if (evsel == NULL) {
++		pr_debug("perf_evsel__new\n");
++		goto out_thread_map_delete;
 +	}
 +
-+	evlist = perf_evlist__new(cpus, threads);
-+	if (evlist == NULL) {
-+		pr_debug("perf_evlist__new\n");
-+		goto out_free_cpus;
++	if (perf_evsel__open(evsel, cpus, threads) < 0) {
++		pr_debug("failed to open counter: %s, "
++			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++			 strerror(errno));
++		goto out_evsel_delete;
 +	}
 +
-+	/* anonymous union fields, can't be initialized above */
-+	attr.wakeup_events = 1;
-+	attr.sample_period = 1;
-+
-+	for (i = 0; i < nsyscalls; ++i) {
-+		attr.config = ids[i];
-+		evsels[i] = perf_evsel__new(&attr, i);
-+		if (evsels[i] == NULL) {
-+			pr_debug("perf_evsel__new\n");
-+			goto out_free_evlist;
++	for (cpu = 0; cpu < cpus->nr; ++cpu) {
++		unsigned int ncalls = nr_open_calls + cpu;
++		/*
++		 * XXX eventually lift this restriction in a way that
++		 * keeps perf building on older glibc installations
++		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
++		 * a reasonable upper limit tho :-)
++		 */
++		if (cpus->map[cpu] >= CPU_SETSIZE) {
++			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
++			continue;
 +		}
 +
-+		perf_evlist__add(evlist, evsels[i]);
-+
-+		if (perf_evsel__open(evsels[i], cpus, threads) < 0) {
-+			pr_debug("failed to open counter: %s, "
-+				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++		CPU_SET(cpus->map[cpu], &cpu_set);
++		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
++			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
++				 cpus->map[cpu],
 +				 strerror(errno));
 +			goto out_close_fd;
 +		}
++		for (i = 0; i < ncalls; ++i) {
++			fd = open("/etc/passwd", O_RDONLY);
++			close(fd);
++		}
++		CPU_CLR(cpus->map[cpu], &cpu_set);
 +	}
 +
-+	if (perf_evlist__mmap(evlist, 128, true) < 0) {
-+		pr_debug("failed to mmap events: %d (%s)\n", errno,
-+			 strerror(errno));
++	/*
++	 * Here we need to explicitely preallocate the counts, as if
++	 * we use the auto allocation it will allocate just for 1 cpu,
++	 * as we start by cpu 0.
++	 */
++	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
++		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
 +		goto out_close_fd;
 +	}
 +
-+	for (i = 0; i < nsyscalls; ++i)
-+		for (j = 0; j < expected_nr_events[i]; ++j) {
-+			int foo = syscalls[i]();
-+			++foo;
-+		}
-+
-+	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
-+		struct perf_sample sample;
-+
-+		if (event->header.type != PERF_RECORD_SAMPLE) {
-+			pr_debug("unexpected %s event\n",
-+				 perf_event__name(event->header.type));
-+			goto out_munmap;
-+		}
-+
-+		err = perf_evlist__parse_sample(evlist, event, &sample);
-+		if (err) {
-+			pr_err("Can't parse sample, err = %d\n", err);
-+			goto out_munmap;
-+		}
-+
-+		evsel = perf_evlist__id2evsel(evlist, sample.id);
-+		if (evsel == NULL) {
-+			pr_debug("event with id %" PRIu64
-+				 " doesn't map to an evsel\n", sample.id);
-+			goto out_munmap;
-+		}
-+		nr_events[evsel->idx]++;
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
-+			pr_debug("expected %d %s events, got %d\n",
-+				 expected_nr_events[evsel->idx],
-+				 perf_evsel__name(evsel), nr_events[evsel->idx]);
-+			goto out_munmap;
-+		}
-+	}
-+
 +	err = 0;
-+out_munmap:
-+	perf_evlist__munmap(evlist);
++
++	for (cpu = 0; cpu < cpus->nr; ++cpu) {
++		unsigned int expected;
++
++		if (cpus->map[cpu] >= CPU_SETSIZE)
++			continue;
++
++		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
++			pr_debug("perf_evsel__read_on_cpu\n");
++			err = -1;
++			break;
++		}
++
++		expected = nr_open_calls + cpu;
++		if (evsel->counts->cpu[cpu].val != expected) {
++			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
++				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
++			err = -1;
++		}
++	}
++
 +out_close_fd:
-+	for (i = 0; i < nsyscalls; ++i)
-+		perf_evsel__close_fd(evsels[i], 1, threads->nr);
-+out_free_evlist:
-+	perf_evlist__delete(evlist);
-+out_free_cpus:
-+	cpu_map__delete(cpus);
-+out_free_threads:
++	perf_evsel__close_fd(evsel, 1, threads->nr);
++out_evsel_delete:
++	perf_evsel__delete(evsel);
++out_thread_map_delete:
 +	thread_map__delete(threads);
 +	return err;
 +}
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index c2887f2..1a925dd 100644
+index bac133e..c2887f2 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -5,6 +5,7 @@
+@@ -4,6 +4,7 @@
+ /* Tests */
  int test__vmlinux_matches_kallsyms(void);
  int test__open_syscall_event(void);
- int test__open_syscall_event_on_all_cpus(void);
-+int test__basic_mmap(void);
++int test__open_syscall_event_on_all_cpus(void);
  
  /* Util */
  int trace_event__id(const char *evname);
