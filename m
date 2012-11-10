@@ -1,136 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab2KJPxR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 10:53:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab2KJPxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 10:53:16 -0500
-Date: Sat, 10 Nov 2012 17:55:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 7/7] mm: add vm event counters for balloon pages
- compaction
-Message-ID: <20121110155538.GC13846@redhat.com>
-References: <cover.1352256081.git.aquini@redhat.com>
- <8dde7996f3e36a5efbe569afe1aadfc84355e79e.1352256088.git.aquini@redhat.com>
+	id S1752138Ab2KJP5S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 10:57:18 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42919 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab2KJP5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 10:57:17 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: yongjun_wei@trendmicro.com.cn, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fuse: remove unused variable in fuse_try_move_page()
+References: <CAPgLHd8MSy-k8Vpdw7r8iP3XL8Od-3jVGBzs63gnCv75yM8KUQ@mail.gmail.com>
+Date: Sat, 10 Nov 2012 16:59:33 +0100
+In-Reply-To: <CAPgLHd8MSy-k8Vpdw7r8iP3XL8Od-3jVGBzs63gnCv75yM8KUQ@mail.gmail.com>
+	(Wei Yongjun's message of "Thu, 18 Oct 2012 22:51:25 +0800")
+Message-ID: <87haoxa1p6.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8dde7996f3e36a5efbe569afe1aadfc84355e79e.1352256088.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 01:05:54AM -0200, Rafael Aquini wrote:
-> This patch introduces a new set of vm event counters to keep track of
-> ballooned pages compaction activity.
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Wei Yongjun <weiyj.lk@gmail.com> writes:
+
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> The variables mapping,index are initialized but never used
+> otherwise, so remove the unused variables.
+>
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+
+Thanks, applied.
+
+Miklos
+
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > ---
->  drivers/virtio/virtio_balloon.c |  1 +
->  include/linux/vm_event_item.h   |  8 +++++++-
->  mm/balloon_compaction.c         |  2 ++
->  mm/migrate.c                    |  1 +
->  mm/vmstat.c                     | 10 +++++++++-
->  5 files changed, 20 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index 69eede7..3756fc1 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -411,6 +411,7 @@ int virtballoon_migratepage(struct address_space *mapping,
->  	tell_host(vb, vb->deflate_vq);
+>  fs/fuse/dev.c | 5 -----
+>  1 file changed, 5 deletions(-)
+>
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index 8c23fa7..53c294c 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -692,8 +692,6 @@ static int fuse_try_move_page(struct fuse_copy_state *cs, struct page **pagep)
+>  	struct page *oldpage = *pagep;
+>  	struct page *newpage;
+>  	struct pipe_buffer *buf = cs->pipebufs;
+> -	struct address_space *mapping;
+> -	pgoff_t index;
 >  
->  	mutex_unlock(&vb->balloon_lock);
-> +	balloon_event_count(COMPACTBALLOONMIGRATED);
+>  	unlock_request(cs->fc, cs->req);
+>  	fuse_copy_finish(cs);
+> @@ -724,9 +722,6 @@ static int fuse_try_move_page(struct fuse_copy_state *cs, struct page **pagep)
+>  	if (fuse_check_page(newpage) != 0)
+>  		goto out_fallback_unlock;
 >  
->  	return MIGRATEPAGE_BALLOON_SUCCESS;
->  }
-
-Looks like any ballon would need to do this.
-Can this  chunk go into caller instead?
-
-> diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-> index 3d31145..cbd72fc 100644
-> --- a/include/linux/vm_event_item.h
-> +++ b/include/linux/vm_event_item.h
-> @@ -41,7 +41,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
->  #ifdef CONFIG_COMPACTION
->  		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
->  		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
-> -#endif
-> +#ifdef CONFIG_BALLOON_COMPACTION
-> +		COMPACTBALLOONISOLATED, /* isolated from balloon pagelist */
-> +		COMPACTBALLOONMIGRATED, /* balloon page sucessfully migrated */
-> +		COMPACTBALLOONRELEASED, /* old-page released after migration */
-> +		COMPACTBALLOONRETURNED, /* putback to pagelist, not-migrated */
-> +#endif /* CONFIG_BALLOON_COMPACTION */
-> +#endif /* CONFIG_COMPACTION */
->  #ifdef CONFIG_HUGETLB_PAGE
->  		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
->  #endif
-> diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-> index 90935aa..32927eb 100644
-> --- a/mm/balloon_compaction.c
-> +++ b/mm/balloon_compaction.c
-> @@ -215,6 +215,7 @@ bool balloon_page_isolate(struct page *page)
->  			if (__is_movable_balloon_page(page) &&
->  			    page_count(page) == 2) {
->  				__isolate_balloon_page(page);
-> +				balloon_event_count(COMPACTBALLOONISOLATED);
->  				unlock_page(page);
->  				return true;
->  			}
-> @@ -237,6 +238,7 @@ void balloon_page_putback(struct page *page)
->  	if (__is_movable_balloon_page(page)) {
->  		__putback_balloon_page(page);
->  		put_page(page);
-> +		balloon_event_count(COMPACTBALLOONRETURNED);
->  	} else {
->  		__WARN();
->  		dump_page(page);
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index adb3d44..ee3037d 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -896,6 +896,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  				    page_is_file_cache(page));
->  		put_page(page);
->  		__free_page(page);
-> +		balloon_event_count(COMPACTBALLOONRELEASED);
->  		return 0;
->  	}
->  out:
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index c737057..1363edc 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -781,7 +781,15 @@ const char * const vmstat_text[] = {
->  	"compact_stall",
->  	"compact_fail",
->  	"compact_success",
-> -#endif
-> +
-> +#ifdef CONFIG_BALLOON_COMPACTION
-> +	"compact_balloon_isolated",
-> +	"compact_balloon_migrated",
-> +	"compact_balloon_released",
-> +	"compact_balloon_returned",
-> +#endif /* CONFIG_BALLOON_COMPACTION */
-> +
-> +#endif /* CONFIG_COMPACTION */
->  
->  #ifdef CONFIG_HUGETLB_PAGE
->  	"htlb_buddy_alloc_success",
-> -- 
-> 1.7.11.7
+> -	mapping = oldpage->mapping;
+> -	index = oldpage->index;
+> -
+>  	/*
+>  	 * This is a new and locked page, it shouldn't be mapped or
+>  	 * have any special flags on it
