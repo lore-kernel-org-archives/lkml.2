@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab2KJB2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:28:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:5882 "EHLO mga03.intel.com"
+	id S1752941Ab2KJB2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:28:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16972 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2KJB2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 20:28:01 -0500
+	id S1752143Ab2KJB2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 20:28:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,749,1344236400"; 
-   d="scan'208";a="215766614"
+   d="scan'208";a="239778370"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, avi@redhat.com, gleb@redhat.com
-Subject: [PATCH 05/32] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v4
-Date: Fri,  9 Nov 2012 17:27:21 -0800
-Message-Id: <1352510868-7911-6-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 23/32] perf, tools: Add browser support for transaction flags v3
+Date: Fri,  9 Nov 2012 17:27:39 -0800
+Message-Id: <1352510868-7911-24-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
 References: <1352510868-7911-1-git-send-email-andi@firstfloor.org>
@@ -26,139 +26,260 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This is not arch perfmon, but older CPUs will just ignore it. This makes
-it possible to do at least some TSX measurements from a KVM guest
+Add histogram support for the transaction flags. Each flags instance becomes
+a separate histogram. Support sorting and displaying the flags in report
+and top.
 
-Cc: avi@redhat.com
-Cc: gleb@redhat.com
-v2: Various fixes to address review feedback
-v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
-v4: Use reserved bits for #GP
-Cc: gleb@redhat.com
+The patch is fairly large, but it's really mostly just plumbing to pass the
+flags around.
+
+v2: Increase column. Fix flags decoding. Use longer strings for flags
+to be more user friendly.
+v3: Fix WERROR=1 build. Tidy display
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/pmu.c              |   32 ++++++++++++++++++++++++--------
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ tools/perf/builtin-annotate.c |    2 +-
+ tools/perf/builtin-diff.c     |    8 +++--
+ tools/perf/builtin-report.c   |    4 +-
+ tools/perf/builtin-top.c      |    4 +-
+ tools/perf/util/hist.c        |    3 +-
+ tools/perf/util/hist.h        |    3 +-
+ tools/perf/util/sort.c        |   61 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h        |    2 +
+ 8 files changed, 77 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index b2e11f4..63d4be4 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -318,6 +318,7 @@ struct kvm_pmu {
- 	u64 global_ovf_ctrl;
- 	u64 counter_bitmask[2];
- 	u64 global_ctrl_mask;
-+	u64 reserved_bits;
- 	u8 version;
- 	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
- 	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index cfc258a..89405d0 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 0b9cd0f..5a27016 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -62,7 +62,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
+ 	}
  
- static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		unsigned config, bool exclude_user, bool exclude_kernel,
--		bool intr)
-+		bool intr, bool intx, bool intx_cp)
+-	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1);
++	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 84cdbd1..aebff56 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -249,9 +249,10 @@ int perf_diff__formula(char *buf, size_t size, struct hist_entry *he)
+ 
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period,
+-			    u64 weight)
++			    u64 weight, u64 transaction)
  {
- 	struct perf_event *event;
- 	struct perf_event_attr attr = {
-@@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		.exclude_kernel = exclude_kernel,
- 		.config = config,
+-	if (__hists__add_entry(self, al, NULL, period, weight) != NULL)
++	if (__hists__add_entry(self, al, NULL, period, weight, transaction)
++	    != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+@@ -273,7 +274,8 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	if (al.filtered)
+ 		return 0;
+ 
+-	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight)) {
++	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight,
++			     sample->transaction)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
+ 		return -1;
+ 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index bd7bb66..c3d3fb7 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -147,7 +147,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	}
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
+-					sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -597,7 +597,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx,  weight, local_weight"),
++		   " abort, intx,  weight, local_weight, transaction"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index eb4ba1d5..0d2a33d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -272,7 +272,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
+-				sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return NULL;
+ 
+@@ -1229,7 +1229,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx, weight, local_weight"),
++		   " abort, intx, weight, local_weight, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index cbedba7..df79b9f 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -359,7 +359,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *sym_parent, u64 period,
+-				      u64 weight)
++				      u64 weight, u64 transaction)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -377,6 +377,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
+ 		.hists	= self,
++		.transaction = transaction,
  	};
-+	if (intx)
-+		attr.config |= HSW_INTX;
-+	if (intx_cp)
-+		attr.config |= HSW_INTX_CHECKPOINTED;
  
- 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+ 	return add_hist_entry(self, &entry, al, period, weight);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f8b4bca..e70a58e 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -52,6 +52,7 @@ enum hist_column {
+ 	HISTC_SRCLINE,
+ 	HISTC_WEIGHT,
+ 	HISTC_GLOBAL_WEIGHT,
++	HISTC_TRANSACTION,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
  
-@@ -206,7 +210,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
- 	return arch_events[i].event_type;
- }
+@@ -77,7 +78,7 @@ struct hists {
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *parent, u64 period,
+-				      u64 weight);
++				      u64 weight, u64 transaction);
+ int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
+ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index a7a9691..41ddcf8 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -568,6 +568,64 @@ struct sort_entry sort_global_weight = {
+ 	.se_width_idx	= HISTC_GLOBAL_WEIGHT,
+ };
  
--static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
-+static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc, 
-+				 u64 eventsel)
- {
- 	unsigned config, type = PERF_TYPE_RAW;
- 	u8 event_select, unit_mask;
-@@ -226,7 +231,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
- 
- 	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
- 				ARCH_PERFMON_EVENTSEL_INV |
--				ARCH_PERFMON_EVENTSEL_CMASK))) {
-+				ARCH_PERFMON_EVENTSEL_CMASK |
-+				HSW_INTX |
-+				HSW_INTX_CHECKPOINTED))) {
- 		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
- 				unit_mask);
- 		if (config != PERF_COUNT_HW_MAX)
-@@ -239,7 +246,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
- 	reprogram_counter(pmc, type, config,
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
--			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-+			eventsel & ARCH_PERFMON_EVENTSEL_INT,
-+			(eventsel & HSW_INTX),
-+			(eventsel & HSW_INTX_CHECKPOINTED));
- }
- 
- static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-@@ -256,7 +265,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
- 			arch_events[fixed_pmc_events[idx]].event_type,
- 			!(en & 0x2), /* exclude user */
- 			!(en & 0x1), /* exclude kernel */
--			pmi);
-+			pmi, false, false);
- }
- 
- static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-@@ -289,7 +298,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
- 		return;
- 
- 	if (pmc_is_gp(pmc))
--		reprogram_gp_counter(pmc, pmc->eventsel);
-+		reprogram_gp_counter(pmu, pmc, pmc->eventsel);
- 	else {
- 		int fidx = idx - INTEL_PMC_IDX_FIXED;
- 		reprogram_fixed_counter(pmc,
-@@ -400,8 +409,8 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
- 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
- 			if (data == pmc->eventsel)
- 				return 0;
--			if (!(data & 0xffffffff00200000ull)) {
--				reprogram_gp_counter(pmc, data);
-+			if (!(data & pmu->reserved_bits)) {
-+				reprogram_gp_counter(pmu, pmc, data);
- 				return 0;
- 			}
- 		}
-@@ -442,6 +451,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
- 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
- 	pmu->version = 0;
-+	pmu->reserved_bits = 0xffffffff00200000ull;
- 
- 	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
- 	if (!entry)
-@@ -470,6 +480,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
- 		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
- 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
++static int64_t
++sort__transaction_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->transaction - right->transaction;
++}
 +
-+	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
-+	if (entry &&
-+	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
-+	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
-+		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
- }
++static inline char *add_str(char *p, const char *str)
++{
++	strcpy(p, str);
++	return p + strlen(str);
++}
++
++static struct txbit {
++	unsigned flag;
++	const char *name;
++} txbits[] = {
++	{ PERF_SAMPLE_TXN_ELISION,     "EL " },
++	{ PERF_SAMPLE_TXN_TRANSACTION, "TX " },
++	{ PERF_SAMPLE_TXN_SYNC,        "SYNC " },
++	{ PERF_SAMPLE_TXN_ASYNC,       "ASYNC " },
++	{ PERF_SAMPLE_TXN_RETRY,       "RETRY " },
++	{ PERF_SAMPLE_TXN_CONFLICT,    "CON " },
++	{ PERF_SAMPLE_TXN_CAPACITY,    "CAP " },
++	{ PERF_SAMPLE_TXN_MEMORY,      "MEM " },
++	{ PERF_SAMPLE_TXN_MISC,        "MISC " },
++	{ 0, NULL }
++};
++
++static int hist_entry__transaction_snprintf(struct hist_entry *self, char *bf,
++	 			    	    size_t size, unsigned int width)
++{
++	u64 t = self->transaction;
++	char buf[128];
++	char *p = buf;
++	int i;
++
++	for (i = 0; txbits[i].name; i++)
++		if (txbits[i].flag & t)
++			p = add_str(p, txbits[i].name);
++	if (t && !(t & (PERF_SAMPLE_TXN_SYNC|PERF_SAMPLE_TXN_ASYNC)))
++		p = add_str(p, "NEITHER ");
++	if (t & PERF_SAMPLE_TXN_ABORT_MASK) {
++		sprintf(p, ":%" PRIx64,
++			(t & PERF_SAMPLE_TXN_ABORT_MASK) >>
++			PERF_SAMPLE_TXN_ABORT_SHIFT);
++		p += strlen(p);
++	}
++
++	return repsep_snprintf(bf, size, "%-*s", width, buf);
++}
++
++struct sort_entry sort_transaction = {
++	.se_header	= "Transaction                ",
++	.se_cmp		= sort__transaction_cmp,
++	.se_snprintf	= hist_entry__transaction_snprintf,
++	.se_width_idx	= HISTC_TRANSACTION,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -593,6 +651,7 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_INTX, "intx", sort_intx),
+ 	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
+ 	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
++	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
+ };
  
- void kvm_pmu_init(struct kvm_vcpu *vcpu)
+ int sort_dimension__add(const char *tok)
+@@ -657,6 +716,8 @@ int sort_dimension__add(const char *tok)
+ 				sort__first_dimension = SORT_GLOBAL_WEIGHT;
+ 			else if (!strcmp(sd->name, "local_weight"))
+ 				sort__first_dimension = SORT_LOCAL_WEIGHT;
++			else if (!strcmp(sd->name, "transaction"))
++				sort__first_dimension = SORT_TRANSACTION;
+ 		}
+ 
+ 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 6628b42..cbcc354 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -82,6 +82,7 @@ struct hist_entry {
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	u64			ip;
++	u64			transaction;
+ 	s32			cpu;
+ 
+ 	struct hist_entry_diff	diff;
+@@ -123,6 +124,7 @@ enum sort_type {
+ 	SORT_INTX,
+ 	SORT_LOCAL_WEIGHT,
+ 	SORT_GLOBAL_WEIGHT,
++	SORT_TRANSACTION,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
