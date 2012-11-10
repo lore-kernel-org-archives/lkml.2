@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab2KJCIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 21:08:24 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:45340 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2KJCIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 21:08:23 -0500
-Message-ID: <509DA63E.7070500@us.ibm.com>
-Date: Fri, 09 Nov 2012 16:56:30 -0800
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752122Ab2KJCVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 21:21:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40565 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2KJCVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Nov 2012 21:21:41 -0500
+Message-ID: <509DC837.6040007@infradead.org>
+Date: Fri, 09 Nov 2012 19:21:27 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2] pstore/ram: no timekeeping calls when unavailable
-References: <20121105220059.GA6379@www.outflux.net>
-In-Reply-To: <20121105220059.GA6379@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>
+Subject: [PATCH] rapidio: fix kernel-doc warnings
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111000-1976-0000-0000-0000133C9A0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 02:00 PM, Kees Cook wrote:
-> We must not call timekeeping functions unless they are available. If we dump
-> before they have resumed, avoid a WARN_ON by setting the timestamp to 0.
->
-> Since the "ram" pstore driver can be a module, we must have
-> timekeeping_suspended exported.
->
-> Reported-by: Doug Anderson <dianders@chromium.org>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: John Stultz <johnstul@us.ibm.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> v2:
->   - export needed for timekeeping_suspended (thanks to Fengguang Wu).
-> ---
->   fs/pstore/ram.c           |    8 +++++++-
->   kernel/time/timekeeping.c |    1 +
->   2 files changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-> index 1a4f6da..6d014e0 100644
-> --- a/fs/pstore/ram.c
-> +++ b/fs/pstore/ram.c
-> @@ -171,7 +171,13 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
->   	struct timeval timestamp;
->   	size_t len;
->
-> -	do_gettimeofday(&timestamp);
-> +	/* Handle dumping before timekeeping has resumed. */
-> +	if (unlikely(timekeeping_suspended)) {
-> +		timestamp.tv_sec = 0;
-> +		timestamp.tv_usec = 0;
-> +	} else
-> +		do_gettimeofday(&timestamp);
-> +
-Would nulling out the timestamp be better done in do_gettimeofday()?  
-That way we don't have to export timekeeping internals and users would 
-get something more sane for this corner case.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-thanks
--john
+Fix rapidio kernel-doc warnings:
 
+Warning(drivers/rapidio/rio.c:415): No description found for parameter 'local'
+Warning(drivers/rapidio/rio.c:415): Excess function parameter 'lstart' description in 'rio_map_inb_region'
+Warning(include/linux/rio.h:290): No description found for parameter 'switches'
+Warning(include/linux/rio.h:290): No description found for parameter 'destid_table'
 
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Matt Porter <mporter@kernel.crashing.org>
+Cc:	Alexandre Bounine <alexandre.bounine@idt.com>
+---
+ drivers/rapidio/rio.c |    2 +-
+ include/linux/rio.h   |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+--- lnx-37-rc4.orig/include/linux/rio.h
++++ lnx-37-rc4/include/linux/rio.h
+@@ -275,9 +275,11 @@ struct rio_id_table {
+  * struct rio_net - RIO network info
+  * @node: Node in global list of RIO networks
+  * @devices: List of devices in this network
++ * @switches: List of switches in this netowrk
+  * @mports: List of master ports accessing this network
+  * @hport: Default port for accessing this network
+  * @id: RIO network ID
++ * @destid_table: destID allocation table
+  */
+ struct rio_net {
+ 	struct list_head node;	/* node in list of networks */
+--- lnx-37-rc4.orig/drivers/rapidio/rio.c
++++ lnx-37-rc4/drivers/rapidio/rio.c
+@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(rio_release_inb_pwrite
+ /**
+  * rio_map_inb_region -- Map inbound memory region.
+  * @mport: Master port.
+- * @lstart: physical address of memory region to be mapped
++ * @local: physical address of memory region to be mapped
+  * @rbase: RIO base address assigned to this window
+  * @size: Size of the memory region
+  * @rflags: Flags for mapping.
