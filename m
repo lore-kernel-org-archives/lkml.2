@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab2KJBWF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Nov 2012 20:22:05 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:24118 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab2KJBWB (ORCPT
+	id S1751486Ab2KJB06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Nov 2012 20:26:58 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38591 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2KJB0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Nov 2012 20:22:01 -0500
-Message-ID: <1352510516.7611.1.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] sparc: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: David Miller <davem@davemloft.net>, Joerg Roedel <joro@8bytes.org>
-Cc: kyungmin.park@samsung.com, arnd@arndb.de, m.szyprowski@samsung.com,
-        sam@ravnborg.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Fri, 09 Nov 2012 18:21:56 -0700
-In-Reply-To: <20121109.195417.1781257873335425911.davem@davemloft.net>
-References: <1351267989.4013.20.camel@lorien2>
-	 <20121109.193849.458704479891559672.davem@davemloft.net>
-	 <1352508743.5524.41.camel@lorien2>
-	 <20121109.195417.1781257873335425911.davem@davemloft.net>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 9 Nov 2012 20:26:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <509DA63E.7070500@us.ibm.com>
+References: <20121105220059.GA6379@www.outflux.net>
+	<509DA63E.7070500@us.ibm.com>
+Date: Fri, 9 Nov 2012 17:26:53 -0800
+X-Google-Sender-Auth: AIu2anCJQ5DNptdmkg3tSwKvIbg
+Message-ID: <CAGXu5jKq0=+XfH6yDSaJMcd-S3=o7xB67kspPkCRcXjRSGgciw@mail.gmail.com>
+Subject: Re: [PATCH v2] pstore/ram: no timekeeping calls when unavailable
+From: Kees Cook <keescook@chromium.org>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 19:54 -0500, David Miller wrote:
-> From: Shuah Khan <shuah.khan@hp.com>
-> Date: Fri, 09 Nov 2012 17:52:23 -0700
-> 
-> > On Fri, 2012-11-09 at 19:38 -0500, David Miller wrote:
-> >> From: Shuah Khan <shuah.khan@hp.com>
-> >> Date: Fri, 26 Oct 2012 10:13:09 -0600
-> >> 
-> >> > Add support for debug_dma_mapping_error() call to avoid warning from
-> >> > debug_dma_unmap() interface when it checks for mapping error checked
-> >> > status. Without this patch, device driver failed to check map error
-> >> > warning is generated.
-> >> > 
-> >> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> >> 
-> >> This doesn't even compile:
-> >> 
-> >> /home/davem/src/GIT/sparc/arch/sparc/include/asm/dma-mapping.h: In function 'dma_mapping_error':
-> >> /home/davem/src/GIT/sparc/arch/sparc/include/asm/dma-mapping.h:62:2: error: implicit declaration of function 'debug_dma
-> >> _mapping_error' [-Werror=implicit-function-declaration]
-> >> cc1: some warnings being treated as errors
-> >> In file included from include/linux/dma-mapping.h:76:0,
-> >>                  from include/linux/skbuff.h:33,
-> >>                  from include/linux/icmpv6.h:4,
-> >>                  from include/linux/ipv6.h:58,
-> >>                  from include/net/ipv6.h:16,
-> >>                  from include/linux/sunrpc/clnt.h:26,
-> >>                  from include/linux/nfs_fs.h:30,
-> >>                  from init/do_mounts.c:30:
-> > 
-> > The problem the dependent patch is in linux-next and not in arch trees
-> > yet. That is why I am trying it get this through linux-next and/or
-> > dma-debug tree. I am open to suggestions on what is the best route.
-> 
-> Then please put this in via the dma-debug tree:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+On Fri, Nov 9, 2012 at 4:56 PM, John Stultz <johnstul@us.ibm.com> wrote:
+> On 11/05/2012 02:00 PM, Kees Cook wrote:
+>>
+>> We must not call timekeeping functions unless they are available. If we
+>> dump
+>> before they have resumed, avoid a WARN_ON by setting the timestamp to 0.
+>>
+>> Since the "ram" pstore driver can be a module, we must have
+>> timekeeping_suspended exported.
+>>
+>> Reported-by: Doug Anderson <dianders@chromium.org>
+>> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+>> Cc: John Stultz <johnstul@us.ibm.com>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> v2:
+>>   - export needed for timekeeping_suspended (thanks to Fengguang Wu).
+>> ---
+>>   fs/pstore/ram.c           |    8 +++++++-
+>>   kernel/time/timekeeping.c |    1 +
+>>   2 files changed, 8 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+>> index 1a4f6da..6d014e0 100644
+>> --- a/fs/pstore/ram.c
+>> +++ b/fs/pstore/ram.c
+>> @@ -171,7 +171,13 @@ static size_t ramoops_write_kmsg_hdr(struct
+>> persistent_ram_zone *prz)
+>>         struct timeval timestamp;
+>>         size_t len;
+>>
+>> -       do_gettimeofday(&timestamp);
+>> +       /* Handle dumping before timekeeping has resumed. */
+>> +       if (unlikely(timekeeping_suspended)) {
+>> +               timestamp.tv_sec = 0;
+>> +               timestamp.tv_usec = 0;
+>> +       } else
+>> +               do_gettimeofday(&timestamp);
+>> +
+>
+> Would nulling out the timestamp be better done in do_gettimeofday()?  That
+> way we don't have to export timekeeping internals and users would get
+> something more sane for this corner case.
 
-Thanks
--- Shuah
+Well... I'm not sure. If we don't want to expose the
+timekeeping_suspended variable, maybe we need a function to check
+this? I think it's probably better to find the users of timekeeping
+that could call it when suspended. That's why I figured the BUG was
+there. Very very few things should be attempting to call gettimeofday
+in a place where it might be suspended. As such, it seems like those
+things should be able to determine how to handle it. Maybe not
+everything would be sensible to get back 0s.
 
+In this particular case, I'm fine with removing the BUG and returning
+0 instead, since that's fine for ramoops. :)
 
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
