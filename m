@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2KKQCe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 11:02:34 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61235 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab2KKQCc (ORCPT
+	id S1753474Ab2KKQGi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 11:06:38 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33639 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab2KKQGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 11:02:32 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v2] menuconfig: Replace CIRCLEQ by list_head-style lists.
-Date: Sun, 11 Nov 2012 17:02:24 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.6-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Michal Marek <mmarek@suse.cz>,
-        Benjamin Poirier <benjamin.poirier@gmail.com>,
-        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Davidlohr Bueso <dave@gnu.org>, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
-References: <1350754935-20014-1-git-send-email-benjamin.poirier@gmail.com> <201210222138.25805.yann.morin.1998@free.fr> <50893FCF.5030800@suse.cz>
-In-Reply-To: <50893FCF.5030800@suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211111702.24556.yann.morin.1998@free.fr>
+	Sun, 11 Nov 2012 11:06:37 -0500
+From: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+To: romieu@fr.zoreil.com, nic_swsd@realtek.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+Subject: [PATCH 1/1] 	r8169: Removed unused macros from r8169.c
+Date: Sat, 10 Nov 2012 22:37:48 -0800
+Message-Id: <1352615868-1869-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <[PATCH 1/1] 	r8169: Removed unused macros from r8169.c>
+References: <[PATCH 1/1] 	r8169: Removed unused macros from r8169.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, All,
 
-On Thursday 25 October 2012 Michal Marek wrote:
-> On 22.10.2012 21:38, Yann E. MORIN wrote:
-> > On Sunday 21 October 2012 Benjamin Poirier wrote:
-> >> Changes v1-v2:
-> >> * integrate the patch/suggestion from Yann to fix problems related to the
-> >>   usage of list.h with xconfig/c++
-> >> 	* "new" keyword
-> >> 	* offsetof redefinition
-> >> * silly #endif placement mistake
-[--SNIP--]
-> I pushed it to kbuild.git#rc-fixes now and will send it to Linus for 3.7
-> inclusion later.
+Signed-off-by: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-Not trying to sound like a nuisance, but this has still not been pushed
-to Linus yet... ;-)
-
-Regards,
-Yann E. MORIN.
-
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index b47d5b3..60b45ca 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -78,23 +78,18 @@ static const int multicast_filter_limit = 32;
+ 
+ #define MAX_READ_REQUEST_SHIFT	12
+ #define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
+-#define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+ 
+ #define R8169_REGS_SIZE		256
+ #define R8169_NAPI_WEIGHT	64
+ #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
+ #define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
+-#define RX_BUF_SIZE	1536	/* Rx Buffer size */
+ #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
+ #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
+ 
+ #define RTL8169_TX_TIMEOUT	(6*HZ)
+ #define RTL8169_PHY_TIMEOUT	(10*HZ)
+ 
+-#define RTL_EEPROM_SIG		cpu_to_le32(0x8129)
+-#define RTL_EEPROM_SIG_MASK	cpu_to_le32(0xffff)
+-#define RTL_EEPROM_SIG_ADDR	0x0000
+ 
+ /* write/read MMIO register */
+ #define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.7.5.4
+
