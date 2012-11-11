@@ -1,40 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab2KKW5w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:57:52 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:45003 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2KKW5v (ORCPT
+	id S1751495Ab2KKXDN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 18:03:13 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50038 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2KKXDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:57:51 -0500
-Message-Id: <201211112257.qABMvhP4021769@thirdoffive.cmf.nrl.navy.mil>
-From: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
-To: David Woodhouse <dwmw2@infradead.org>
-cc: Krzysztof Mazur <krzysiek@podlesie.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
-In-reply-to: <1352667081.9449.135.camel@shinybook.infradead.org>
-Date: Sun, 11 Nov 2012 17:57:43 -0500
+	Sun, 11 Nov 2012 18:03:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
+References: <509A915B.30105@redhat.com>
+	<CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
+	<509B117A.6070708@genband.com>
+	<509BE460.6010404@redhat.com>
+	<1352405111.29589.476.camel@haakon2.linux-iscsi.org>
+	<509C22B2.8010600@redhat.com>
+	<1352426896.29589.512.camel@haakon2.linux-iscsi.org>
+	<20121109110336.41833034@pyramind.ukuu.org.uk>
+	<14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
+	<CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
+Date: Mon, 12 Nov 2012 09:03:09 +1000
+Message-ID: <CAPM=9tyXG+AeNkXr2AUA8v1gHm_rL27dq8dhLWnXKXUOcrMyaw@mail.gmail.com>
+Subject: Re: scsi target, likely GPL violation
+From: Dave Airlie <airlied@gmail.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: lrosen@rosenlaw.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        kcopenhaver@choate.com, Richard Fontana <rfontana@redhat.com>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>,
+        alan@lxorguk.ukuu.org.uk, agrover@redhat.com, bkuhn@sfconservancy.org,
+        tytso@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1352667081.9449.135.camel@shinybook.infradead.org>,David Woodhouse writes:
->Acked-by: David Woodhouse <David.Woodhouse@intel.com> for your new
->version of patch #6 (returning DROP_PACKET for !VF_READY), and your
->followup to my patch #8, adding the 'need_wakeup' flag. Which we might
->as well merge into (the pppoatm part of) my patch.
+On Mon, Nov 12, 2012 at 8:41 AM, Julian Calaby <julian.calaby@gmail.com> wrote:
+> Hi Lawrence,
 >
->Chas, are you happy with the generic ATM part of that? And the
->nomenclature? I didn't want to call it 'release_cb' like the core socket
->code does, because we use 'release' to mean something different in ATM.
->So I called it 'unlock_cb' instead...
+> On Mon, Nov 12, 2012 at 9:13 AM, Lawrence Rosen <lrosen@rosenlaw.com> wrote:
+>> Alan Cox wrote:
+>>> So either your work is truely not derivative of the kernel (which I find
+>>> wildly improbable) or you have a problem and since you are aware
+>>> of the complaints publically I guess probably a triple damages sized
+>>> problem. But that's one for your lawyers and whatever opinion they
+>>> have on the subject.
+>>
+>> Hi Alan and others,
+>>
+>> I've been advising Rising Tide Systems (RTS) in this matter. Please let me
+>> reassure you that RTS is acting on advice of counsel.
+>
+> It's nice to hear from legal counsel on this matter.
+>
+> I don't think that the *usage* of the kernel APIs is the biggest issue
+> here. There are many examples where proprietary code uses these APIs
+> and is not violating the GPL.
+>
+> As I see it, one of the main concerns is because the proprietary and
+> in-kernel target systems are, from what I understand, quite similar,
+> there is the possibility that GPL licensed contributions to the
+> in-kernel target code may have "leaked" into to the proprietary code.
+> That said, proving this is a very difficult problem, but the question
+> must still be asked:
+>
+> Can Rising Tide Systems assure us that there is no GPL licensed code
+> within their proprietary target code?
 
-i really would prefer not to use a strange name since it might confuse
-larger group of people who are more familiar with the traditional meaning
-of this function.  vcc_release() isnt exported so we could rename it if
-things get too confusing.
+Its a bit of both actually.
 
-i have to look at this a bit more but we might be able to use release_cb
-to get rid of the null push to detach the underlying protocol.  that would
-be somewhat nice.
+The problem is if you design a kernel subsystem specifically for the
+Linux kernel, even if you use the internal APIs, you are most likely
+creating a derived work of the Linux kernel.
+
+questions that would need to be asked:
+Can the scsi target code work completely separate from a Linux kernel?
+Does it work with another operating system? was it designed for that
+operating system?
+
+The whole in-kernel version under the GPL isn't the problem here and
+has nothing to do with the violation. Its the one they distribute
+separately with their RTS OS kernel, and if they distribute it in one
+combined work, then a GPL violation is possibly indicated.
+
+The reasons for non-derived work status that have been suggested (but
+not accepted by all the community):
+a) AFS, a file system clearly not developed for Linux, where it being
+a derived work of something that came after it would be a bit crazy,
+b) binary GPU drivers, built from the same source base on their
+Windows platform, and the code existed on Windows before Linux,
+arguing this driver is a derived work is difficult as well. Also
+nvidia specifically don't distribute this driver linked against the
+kernel, and distros who have done this in the past have been on the
+end of cease-and-desist letters.
+
+So really this is purely a derived work issue, whether they release a
+trailing edge version of their code afterwards under the GPL isn't
+significant, other than a this might keep the community off our back.
+
+(Yes the secondary issue of people who contributed code and cleanups
+back to that code base and if they integrated it back into their
+internal code base, is a problem, but I don't believe its the primary
+issue).
+
+Dave.
