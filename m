@@ -1,45 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2KKJkU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 04:40:20 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59980 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab2KKJkS (ORCPT
+	id S1751901Ab2KKJmA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 04:42:00 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36000 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab2KKJl6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 04:40:18 -0500
+	Sun, 11 Nov 2012 04:41:58 -0500
 MIME-Version: 1.0
-X-Originating-IP: [93.172.250.186]
-In-Reply-To: <20121102192221.4253.34303.stgit@muffinssi.local>
-References: <20121102192221.4253.34303.stgit@muffinssi.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 11 Nov 2012 11:39:57 +0200
-Message-ID: <CAK=WgbYR8UMyDjySJLRC0tEbJO3FaFgjWxceNwMyVdMgEgwPig@mail.gmail.com>
-Subject: Re: [PATCH v5 0/6] Move rest of omap-iommu to live in drivers/iommu
-To: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1350333885-20323-1-git-send-email-geert@linux-m68k.org>
+References: <1350333885-20323-1-git-send-email-geert@linux-m68k.org>
+Date: Sun, 11 Nov 2012 10:41:57 +0100
+X-Google-Sender-Auth: HJoSk0yfkRKcjc9jXjt-xOR2yFw
+Message-ID: <CAMuHMdU_wQXO8nmxzQ0deoUqW-YP-HNn7sFWuvzJsj_hm67e7w@mail.gmail.com>
+Subject: Re: [PATCH] mfd/DA9055: Remove Unicode Byte Order Marks
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 9:23 PM, Tony Lindgren <tony@atomide.com> wrote:
-> We need to move the iommu code to live under drivers
-> for arm common zImage support.
+Ping? (akpm added to CC)
 
-For the iommu changes in the entire series:
+On Mon, Oct 15, 2012 at 10:44 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Older gcc (< 4.4) doesn't like files starting with Unicode BOMs:
+>
+> include/linux/mfd/da9055/core.h:1: error: stray ‘\357’ in program
+> include/linux/mfd/da9055/core.h:1: error: stray ‘\273’ in program
+> include/linux/mfd/da9055/core.h:1: error: stray ‘\277’ in program
+> include/linux/mfd/da9055/pdata.h:1: error: stray ‘\357’ in program
+> include/linux/mfd/da9055/pdata.h:1: error: stray ‘\273’ in program
+> include/linux/mfd/da9055/pdata.h:1: error: stray ‘\277’ in program
+> include/linux/mfd/da9055/reg.h:1: error: stray ‘\357’ in program
+> include/linux/mfd/da9055/reg.h:1: error: stray ‘\273’ in program
+> include/linux/mfd/da9055/reg.h:1: error: stray ‘\277’ in program
+>
+> Remove the BOMs, the rest of the files is plain ASCII anyway.
+>
+> Output of "file" before:
+>
+> include/linux/mfd/da9055/core.h:  UTF-8 Unicode (with BOM) C program text
+> include/linux/mfd/da9055/pdata.h: UTF-8 Unicode (with BOM) C program text
+> include/linux/mfd/da9055/reg.h:   UTF-8 Unicode (with BOM) C program text
+>
+> Output of "file" after:
+>
+> include/linux/mfd/da9055/core.h:  ASCII C program text
+> include/linux/mfd/da9055/pdata.h: ASCII C program text
+> include/linux/mfd/da9055/reg.h:   ASCII C program text
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  include/linux/mfd/da9055/core.h  |    2 +-
+>  include/linux/mfd/da9055/pdata.h |    2 +-
+>  include/linux/mfd/da9055/reg.h   |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/include/linux/mfd/da9055/core.h b/include/linux/mfd/da9055/core.h
+> index c96ad68..956afa4 100644
+> --- a/include/linux/mfd/da9055/core.h
+> +++ b/include/linux/mfd/da9055/core.h
+> @@ -1,4 +1,4 @@
+> -﻿/*
+> +/*
+>   * da9055 declarations for DA9055 PMICs.
+>   *
+>   * Copyright(c) 2012 Dialog Semiconductor Ltd.
+> diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
+> index 147293b..b9b204e 100644
+> --- a/include/linux/mfd/da9055/pdata.h
+> +++ b/include/linux/mfd/da9055/pdata.h
+> @@ -1,4 +1,4 @@
+> -﻿/* Copyright (C) 2012 Dialog Semiconductor Ltd.
+> +/* Copyright (C) 2012 Dialog Semiconductor Ltd.
+>   *
+>   *  This program is free software; you can redistribute it and/or modify
+>   *  it under the terms of the GNU General Public License as published by
+> diff --git a/include/linux/mfd/da9055/reg.h b/include/linux/mfd/da9055/reg.h
+> index df237ee..2b592e0 100644
+> --- a/include/linux/mfd/da9055/reg.h
+> +++ b/include/linux/mfd/da9055/reg.h
+> @@ -1,4 +1,4 @@
+> -﻿/*
+> +/*
+>   * DA9055 declarations for DA9055 PMICs.
+>   *
+>   * Copyright(c) 2012 Dialog Semiconductor Ltd.
+> --
+> 1.7.0.4
 
-Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
+Gr{oetje,eeting}s,
 
-Joerg, it might relieve some pain if this will go through Tony's tree,
-as there are some OMAP platform iommu changes coming in from Omar as
-well (part of which might have already been merged in the omap
-branches). Hope it's ok with both of you guys?
+                        Geert
 
-Omar, do you still have any iommu changes coming in ? Can we get
-everything merged to the same tree ?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Thanks!
-Ohad.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
