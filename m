@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab2KKB1p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 20:27:45 -0500
-Received: from nm29-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.255]:44594
-	"EHLO nm29-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751578Ab2KKB1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 20:27:41 -0500
-X-Yahoo-Newman-Id: 336199.67138.bm@smtp114.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: yiSEhqYVM1nBgwW31lEYGVedtJz4BlktsHcaMnIpnyM9V31
- l1pKzYiPUbryiDvYSW4ixn6JiifqRYaxpDWgQUC1ikb1mGXfCPunXoSU_2jA
- aCt27a0qqggphpt8S2a9gi_tKpbAo5q6hsuYWqrsIclIoGGihOQ34lfQr7Q1
- NddFZF.F5SHKiva49BVa27q04g.okWpVDL3aR0AkhPvaz0G8O.LvElBPzGsN
- uf_WG91sHFlKbhZ7jmz8A4Pt_soLUwrX7glX4EzaVbAXiEU_D02u_MWALSQ2
- PqfMQqa3_fzCEMaHhyN0c8q6Cgmq7oq8hOmYh_7SxskmRLFDLHgy8jcX5n5i
- wXdPMt3OZd9dAetdwjdMfvlidRMjspDMERWUmP2ds6WEuVZW9uyKYc59WpxB
- BeKLpEhuGPRu4KWgPiIJvKU7NmzDdCLo_UumR.yKqF0ROTAq8X.AlPysXdrz
- KJtF1tDoFwXmvz3226Yb8nA--
-X-Yahoo-SMTP: x3UJDw2swBBmiVP7941KaiyaoilgwM.0jf7QxQtKIw--
-Message-ID: <509EFDA3.4060900@pacbell.net>
-Date: Sat, 10 Nov 2012 17:21:39 -0800
-From: Richard <richjunk@pacbell.net>
-Reply-To: richjunk@pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120919 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH usb-linus] USB: keyspan: fix typo causing GPF on open
-References: <509D5BCD.3010901@pacbell.net> <1352538822-28221-1-git-send-email-bjorn@mork.no>
-In-Reply-To: <1352538822-28221-1-git-send-email-bjorn@mork.no>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752560Ab2KKCD3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 21:03:29 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:56512
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab2KKCD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 21:03:27 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        yinghan@google.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] mm: Export a function to read vm_committed_as
+Date: Sat, 10 Nov 2012 18:25:28 -0800
+Message-Id: <1352600728-17766-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjørn:
+It may be useful to be able to access vm_committed_as from device
+drivers. On the Hyper-V platform, the host has a policy engine to balance
+the available physical memory amongst all competing virtual machines
+hosted on a given node. This policy engine is driven by a number of metrics
+including the memory pressure reported by the guests. The balloon driver
+for Linux on Hyper-V uses this function to report memory pressure back to
+the host.
 
-I patched keyspan.c using your below supplied diff in 3.6.6 (I'm not
-using git.)  The patch WORKS for me.  (I tested using minicom and the
-two programs that usually access the Keyspan serial device.)
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ include/linux/mman.h |    2 ++
+ mm/mmap.c            |   11 +++++++++++
+ mm/nommu.c           |   11 +++++++++++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-Thank you for the quick fix.
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index d09dde1..d53dc3d 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -11,6 +11,8 @@ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
+ extern struct percpu_counter vm_committed_as;
+ 
++unsigned long read_vm_committed_as(void);
++
+ static inline void vm_acct_memory(long pages)
+ {
+ 	percpu_counter_add(&vm_committed_as, pages);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2d94235..e527239 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -89,6 +89,17 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+ struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
+ 
+ /*
++ * A wrapper to read vm_committed_as that can be used by external modules.
++ */
++
++unsigned long read_vm_committed_as(void)
++{
++	return percpu_counter_read_positive(&vm_committed_as);
++}
++
++EXPORT_SYMBOL_GPL(read_vm_committed_as);
++
++/*
+  * Check that a process has enough memory to allocate a new virtual
+  * mapping. 0 means there is enough memory for the allocation to
+  * succeed and -ENOMEM implies there is not.
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 45131b4..dbbd0aa 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -66,6 +66,17 @@ int heap_stack_gap = 0;
+ 
+ atomic_long_t mmap_pages_allocated;
+ 
++/*
++ * A wrapper to read vm_committed_as that can be used by external modules.
++ */
++
++unsigned long read_vm_committed_as(void)
++{
++	return percpu_counter_read_positive(&vm_committed_as);
++}
++
++EXPORT_SYMBOL_GPL(read_vm_committed_as);
++
+ EXPORT_SYMBOL(mem_map);
+ EXPORT_SYMBOL(num_physpages);
+ 
+-- 
+1.7.4.1
 
-Will this show up in 3.6.7?
-
-Richard
-richjunk@pacbell.net
-
-
-On 11/10/2012 01:13 AM, Bjørn Mork wrote:
-> Commit f79b2d0f (USB: keyspan: fix NULL-pointer dereferences and
-> memory leaks) had a small typo which made the driver use wrong
-> offsets when mapping serial port private data.  This results in
-> in a GPF when the port is opened.
-> 
-> Reported-by: Richard <richjunk@pacbell.net>
-> Cc: <stable@vger.kernel.org>
-> Cc: Johan Hovold <jhovold@gmail.com>
-> Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> ---
-> Hello Richard,
-> 
-> I wonder if you are able to test and verify this?  I do not guarantee
-> that there aren't other issues around, but this small typo looked like
-> an obvious killer...
-> 
-> Bjørn
-> 
->  drivers/usb/serial/keyspan.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-> index 7179b0c..cff8dd5 100644
-> --- a/drivers/usb/serial/keyspan.c
-> +++ b/drivers/usb/serial/keyspan.c
-> @@ -2430,7 +2430,7 @@ static void keyspan_release(struct usb_serial *serial)
->  static int keyspan_port_probe(struct usb_serial_port *port)
->  {
->  	struct usb_serial *serial = port->serial;
-> -	struct keyspan_port_private *s_priv;
-> +	struct keyspan_serial_private *s_priv;
->  	struct keyspan_port_private *p_priv;
->  	const struct keyspan_device_details *d_details;
->  	struct callbacks *cback;
-> @@ -2445,7 +2445,6 @@ static int keyspan_port_probe(struct usb_serial_port *port)
->  	if (!p_priv)
->  		return -ENOMEM;
->  
-> -	s_priv = usb_get_serial_data(port->serial);
->  	p_priv->device_details = d_details;
->  
->  	/* Setup values for the various callback routines */
-> 
