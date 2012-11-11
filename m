@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2KKWa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:30:28 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:39867 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab2KKWa0 (ORCPT
+	id S1753760Ab2KKWij (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 17:38:39 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56229 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab2KKWii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:30:26 -0500
-Date: Sun, 11 Nov 2012 23:07:25 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
-Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: [PATCH 1/1] r8169: Removed unused macros from r8169.c
-Message-ID: <20121111220725.GA873@electric-eye.fr.zoreil.com>
-References: <1352652518-2287-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352652518-2287-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Sun, 11 Nov 2012 17:38:38 -0500
+MIME-Version: 1.0
+Date: Mon, 12 Nov 2012 00:38:37 +0200
+X-Google-Sender-Auth: 4lODs9ncI4uvYy2MrBaDMXwrVZA
+Message-ID: <CAE7jHC-Z9wy=5HPzhZZpupcBVn862ERq1LRF9KQ=Ed7BXiDFBA@mail.gmail.com>
+Subject: Porting board initialization for fdt
+From: Constantine Shulyupin <const@makelinux.com>
+To: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, nsekhar@ti.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        tim.bird@am.sony.com, pandaboard@googlegroups.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com> :
-[...]
+What is architecture and the best strategy to port board initialization to fdt?
 
-I have fixed the conflict with the driver in net-next due to removal of
-the SafeMtu #define and pushed the result in branch davem-next.r8169 at
-git://violet.fr.zoreil.com/romieu/linux
+Let's see for example omap4_ehci_init and usbhs_bdata @
+arch/arm/mach-omap2/board-omap4panda.c.
 
-Next time you send a patch, please specify the branch it should apply
-to and check it does not conflict.
+How to perform board specific initializations?
+Can omap4_ehci_init be converted to probe function of new platform
+driver  omap4_ehci?
+Where and how define GPIO, clock?
+Should it be defined in of_dev_auxdata or in fdt?
 
-Thanks.
+Thanks
 
 -- 
-Ueimor
+Constantine Shulyupin
+http://www.MakeLinux.com/
+Embedded Linux Systems
