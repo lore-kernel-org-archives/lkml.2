@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2KKQKy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 11:10:54 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:59297 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab2KKQKw (ORCPT
+	id S1753558Ab2KKQMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 11:12:25 -0500
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:42629 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753160Ab2KKQMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 11:10:52 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH 3/3] fat: remove unneeded compare condition for __fat_write_inode
-References: <1352642304-2766-1-git-send-email-linkinjeon@gmail.com>
-Date: Mon, 12 Nov 2012 01:10:50 +0900
-In-Reply-To: <1352642304-2766-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 11 Nov 2012 22:58:24 +0900")
-Message-ID: <87zk2o6rxx.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Sun, 11 Nov 2012 11:12:24 -0500
+Date: Sun, 11 Nov 2012 17:12:19 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
+        davem@davemloft.net
+Subject: Re: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
+Message-ID: <20121111161219.GA25360@shrek.podlesie.net>
+References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
+ <1352292734.7340.35.camel@shinybook.infradead.org>
+ <20121110202338.GA1749@shrek.podlesie.net>
+ <1352618933.9449.113.camel@shinybook.infradead.org>
+ <20121111110437.GA25894@shrek.podlesie.net>
+ <1352633993.9449.120.camel@shinybook.infradead.org>
+ <20121111135002.GA32390@shrek.podlesie.net>
+ <1352647601.9449.130.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352647601.9449.130.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Sun, Nov 11, 2012 at 03:26:41PM +0000, David Woodhouse wrote:
+> On Sun, 2012-11-11 at 14:50 +0100, Krzysztof Mazur wrote:
+> > Looks and works ok after:
+> > +       atmvcc->unlock_cb = pppoatm_unlock_cb;
+> 
+> Heh, yeah. That would probably help :)
+> 
+> Not sure if it's really necessary to optimise out the unneeded wakeups ???
+> I don't think that code path gets exercised very hard for normal passing
+> of packets. Maybe only LCP echo and responses, on a live connection?
+> 
+> But yeah, the locking *is* that simple, isn't it ??? and not the painful
+> stuff I had to do for the BLOCKED flag, which is why I deferred that
+> question to concentrate on the basic concept of using ->release_cb().
+> 
+> So it's silly *not* to do the 'need_wakeup'. But could it also live in
+> the 'blocked' word rather than expanding the structure further? Or just
+> *use* the BLOCKED bit, for that matter?
+> 
 
-> In calling of __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL),
-> expression "wbc->sync_mode == WB_SYNC_ALL" will always be equivalent to value
-> of wbc->sync_mode. So, remove this additional compare condition from function
-> arguments.
+It would require using atomic ops because also pppoatm_pop() can modify this
+word. I think it's better to add additional word instead of using
+atomic ops.
 
-Current style is better. I.e. easy to add new sync mode.
-
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> ---
->  fs/fat/inode.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index 7b186a5..aa0138b 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -678,7 +678,7 @@ static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
->  		err = fat_clusters_flush(sb);
->  		mutex_unlock(&MSDOS_SB(sb)->s_lock);
->  	} else
-> -		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
-> +		err = __fat_write_inode(inode, wbc->sync_mode);
->  
->  	return err;
->  }
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Krzysiek
