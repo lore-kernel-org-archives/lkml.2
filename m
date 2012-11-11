@@ -1,185 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2KKKzD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 05:55:03 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42791 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2KKKy7 (ORCPT
+	id S1752681Ab2KKLEl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 06:04:41 -0500
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:36031 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750969Ab2KKLEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 05:54:59 -0500
+	Sun, 11 Nov 2012 06:04:39 -0500
+Date: Sun, 11 Nov 2012 12:04:37 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
+        davem@davemloft.net
+Subject: Re: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
+Message-ID: <20121111110437.GA25894@shrek.podlesie.net>
+References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
+ <1352292734.7340.35.camel@shinybook.infradead.org>
+ <20121110202338.GA1749@shrek.podlesie.net>
+ <1352618933.9449.113.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-X-Google-Sender-Delegation: a3at.mail@gmail.com
-In-Reply-To: <CAAW1UO9JAXVwiyk7qTf1U2JLwR1fPRpWGgtnYZLe58wjdv8Krg@mail.gmail.com>
-References: <CAAW1UO_X9eaBoiHMdj-ntCjGgBKpA6A_EDA2zifDf7f7dbs4Xw@mail.gmail.com>
-	<CAAW1UO_9ZRZEX8rU83niZuZxihcoHaj-dau-o+ym5ATJXyNvpg@mail.gmail.com>
-	<509C7D08.8030801@gmail.com>
-	<CAAW1UO9JAXVwiyk7qTf1U2JLwR1fPRpWGgtnYZLe58wjdv8Krg@mail.gmail.com>
-Date: Sun, 11 Nov 2012 14:54:58 +0400
-X-Google-Sender-Auth: UCum7epitpuBaBzSq9iY3n6FeD8
-Message-ID: <CAAW1UO-oNEA-u1c8_S3yxk9Yn231Vck9b3A7Z916MQ6r4YC_=g@mail.gmail.com>
-Subject: Re: macbook pro 9.2 stat/ata bus error
-From: Azat Khuzhin <dohardgopro@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352618933.9449.113.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also I have notice next thing:
+On Sun, Nov 11, 2012 at 07:28:53AM +0000, David Woodhouse wrote:
+> On Sat, 2012-11-10 at 21:23 +0100, Krzysztof Mazur wrote:
+> > With this tasklet_schedule() we implement a "spin_lock" here, but in
+> > this case both conditions (vcc not ready and socket locked) can be
+> > true for a long time and we can spin here for a long time. 
+> 
+> Reading this more carefully this morning... I hadn't realised it was
+> these conditions, and not the sock_owned_by_user(), which had triggered.
 
-At 04:21 I close lid, and laptop automatically suspend, with the
-following messages in the log:
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.114021] ata2.00:
-exception Emask 0x10 SAct 0x0 SErr 0x50000 action 0xe frozen
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.116459] ata2.00:
-irq_stat 0x00400000, PHY RDY changed
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.117665] ata2: SError: {
-PHYRdyChg CommWake }
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.118854] sr 1:0:0:0: CDB:
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.120061] Get event status
-notification: 4a 01 00 00 10 00 00 00 08 00
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.121275] ata2.00: cmd
-a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0 pio 16392 in
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.121275]          res
-50/00:03:00:00:00/00:00:00:00:00/a0 Emask 0x10 (ATA bus error)
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.126075] ata2.00: status: { DRDY }
-Nov 11 04:21:49 macbook-pro-sq kernel: [19489.127304] ata2: hard resetting link
+Yes, but socket can be also locked for a long time, vcc_sendmsg() sleeps
+owning socket lock waiting for memory or atm_may_send().
 
-But when I try to resume, it not turn on normally, the monitor don't bright.
-Laptop came out of suspend, I detected this by indicator at the front.
+pppd was spinning in tasklet_kill() (at least when I did sysrq+t).
 
-I think that because of it can't read from HDD.
-Am I right? What can I do next to investigate further?
+> Yes, perhaps we should just return zero in that case and find another
+> wakeup trigger... if indeed a wakeup is ever required in the VF_RELEASED
+> and VF_CLOSE case. And if we've fixed things so that !VF_READY can never
+> happen (have we?).... perhaps this one doesn't matter at all? It was the
 
-On Sat, Nov 10, 2012 at 5:22 PM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
-> Yeah, I'm guessed about this.
-> Thanks for reply.
->
-> On Fri, Nov 9, 2012 at 7:48 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> On 11/06/2012 09:41 PM, Azat Khuzhin wrote:
->>>
->>>   Anybody?
->>>
->>> On Mon, Nov 5, 2012 at 7:28 PM, Azat Khuzhin <dohardgopro@gmail.com>
->>> wrote:
->>>>
->>>> After installing linux on macbook 9.2 (mid 2012), I have next errors
->>>> in dmesg log:
->>>>
->>>> [  389.623828] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=600
->>>> [  410.038465] NMI watchdog: enabled on all CPUs, permanently consumes
->>>> one hw-PMU counter.
->>>> [  410.075042] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->>>> [  410.483526] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=0
->>>> [ 1401.834509] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=1800
->>>> [ 1406.467268] NMI watchdog: enabled on all CPUs, permanently consumes
->>>> one hw-PMU counter.
->>>> [ 1406.506769] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->>>> [ 1406.590122] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=0
->>>> [ 1407.492260] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
->>>> action 0xe frozen
->>>> [ 1407.494441] ata2.00: irq_stat 0x00400000, PHY RDY changed
->>>> [ 1407.495238] ata2: SError: { PHYRdyChg CommWake }
->>>> [ 1407.496035] sr 1:0:0:0: CDB:
->>>> [ 1407.497333] Get event status notification: 4a 01 00 00 10 00 00 00 08
->>>> 00
->>>> [ 1407.498285] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
->>>> pio 16392 in
->>>> [ 1407.498285]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
->>>> 0x10 (ATA bus error)
->>>> [ 1407.501987] ata2.00: status: { DRDY }
->>>> [ 1407.502882] ata2: hard resetting link
->>>> [ 1408.230302] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->>>> [ 1408.233279] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->>>> filtered out
->>>> [ 1408.237467] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->>>> filtered out
->>>> [ 1408.239084] ata2.00: configured for UDMA/100
->>>> [ 1408.262238] ata2: EH complete
->>
->>
->> Is this after a resume? It could be that for some reason the SATA link is a
->> little bit unstable right after the machine powers up again. There may not
->> be much the kernel can do about this..
->>
->>
->>>> [ 3565.785609] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=1800
->>>> [ 3576.921499] NMI watchdog: enabled on all CPUs, permanently consumes
->>>> one hw-PMU counter.
->>>> [ 3576.958624] ehci_hcd 0000:00:1a.0: setting latency timer to 64
->>>> [ 3577.114612] EXT4-fs (sda4): re-mounted. Opts:
->>>> errors=remount-ro,data=ordered,commit=0
->>>> [ 3577.923688] ata2.00: exception Emask 0x10 SAct 0x0 SErr 0x50000
->>>> action 0xe frozen
->>>> [ 3577.925852] ata2.00: irq_stat 0x00400000, PHY RDY changed
->>>> [ 3577.926746] ata2: SError: { PHYRdyChg CommWake }
->>>> [ 3577.927544] sr 1:0:0:0: CDB:
->>>> [ 3577.928345] Get event status notification: 4a 01 00 00 10 00 00 00 08
->>>> 00
->>>> [ 3577.929642] ata2.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0
->>>> pio 16392 in
->>>> [ 3577.929642]          res 50/00:03:00:00:00/00:00:00:00:00/a0 Emask
->>>> 0x10 (ATA bus error)
->>>> [ 3577.932954] ata2.00: status: { DRDY }
->>>> [ 3577.934264] ata2: hard resetting link
->>>> [ 3578.662228] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->>>> [ 3578.665211] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->>>> filtered out
->>>> [ 3578.669355] ata2.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES)
->>>> filtered out
->>>> [ 3578.670969] ata2.00: configured for UDMA/100
->>>> [ 3578.694145] ata2: EH complete
->>>>
->>>> Is it linux driver, or maybe
->>>>
->>>> $ lspci # sata information only
->>>> 00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family
->>>> 6-port SATA Controller [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
->>>>          Subsystem: Intel Corporation Device 7270
->>>>          Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 20
->>>>          I/O ports at 2098 [size=8]
->>>>          I/O ports at 20bc [size=4]
->>>>          I/O ports at 2090 [size=8]
->>>>          I/O ports at 20b8 [size=4]
->>>>          I/O ports at 2060 [size=32]
->>>>          Memory at a0816000 (32-bit, non-prefetchable) [size=2K]
->>>>          Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
->>>>          Capabilities: [70] Power Management version 3
->>>>          Capabilities: [a8] SATA HBA v1.0
->>>>          Capabilities: [b0] PCI Advanced Features
->>>>          Kernel driver in use: ahci
->>>>
->>>> $ uname -a
->>>> Linux macbook-pro 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
->>>> 12:39:03 UTC 2012 x86_64 GNU/Linux
->>>> $ cat /etc/debian_version
->>>> wheezy/sid
->>>>
->>>> In OSX there is no errors with hard drive.
->>>>
->>>> What else can I do investigate this situation next?
->>>>
->>>> --
->>>> Azat Khuzhin
->>>
->>>
->>>
->>>
->>
->
->
->
-> --
-> Azat Khuzhin
+I think we can just drop frame if vcc flags indicate not-ready link
+and in this case we not need a wakeup event. I already sent you
+an updated patch 3 that drops frame instead of returning zero.
+
+> sock_owned_by_user() case I was most interested in, and I was expecting
+> that lock would generally be held briefly enough that the tasklet would
+> be fine. Was that not so?
+> 
+
+When vcc_sendmsg() waits for memory it can be a problem.
+
+I think we can use release_cb callback that is called when socket lock
+is released (we will need small wrapper in ATM layer that will call
+new vcc->release_cb callback), but maybe we shouldn't use ATM socket
+lock and use some new vcc->send_lock instead that will protect
+vcc->send() and us against atm_may_send()/atomic_add(skb->truesize,
+&sk->sk_wmem_alloc)/ race with vcc_sendmsg().
 
 
+Any race with testing vcc flags is probably not really important
+because:
+	- vcc_release_async() does not take any lock so this check
+	  will be always racy so we are probably allowed to send
+	  new frames until vcc is really closed,
+	- we are already protected against vcc_destroy_socket()
+	- the only case that such test is really important
+	  is openned, but not ready vcc, and we avoid any race
+	  by not doing send.
 
--- 
-Azat Khuzhin
+Krzysiek
+
+-- >8 --
+release_cb wrapper for ATM - just to precisely show the first idea,
+with this patch we can just implement vcc->release_cb() and call
+tasklet_schedule() there (if needed).
+
+diff --git a/include/linux/atmdev.h b/include/linux/atmdev.h
+index 31c16c6..a6f9d4b 100644
+--- a/include/linux/atmdev.h
++++ b/include/linux/atmdev.h
+@@ -310,6 +310,7 @@ struct atm_vcc {
+ 	struct atm_sap	sap;		/* SAP */
+ 	void (*push)(struct atm_vcc *vcc,struct sk_buff *skb);
+ 	void (*pop)(struct atm_vcc *vcc,struct sk_buff *skb); /* optional */
++	void (*release_cb)(struct atm_vcc *vcc);
+ 	int (*push_oam)(struct atm_vcc *vcc,void *cell);
+ 	int (*send)(struct atm_vcc *vcc,struct sk_buff *skb);
+ 	void		*dev_data;	/* per-device data */
+diff --git a/net/atm/common.c b/net/atm/common.c
+index ea952b2..4e7f305 100644
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -126,10 +126,19 @@ static void vcc_write_space(struct sock *sk)
+ 	rcu_read_unlock();
+ }
+ 
++void vcc_release_cb(struct sock *sk)
++{
++	struct atm_vcc *vcc = atm_sk(sk);
++
++	if (vcc->release_cb)
++		vcc->release_cb(vcc);
++}
++
+ static struct proto vcc_proto = {
+ 	.name	  = "VCC",
+ 	.owner	  = THIS_MODULE,
+ 	.obj_size = sizeof(struct atm_vcc),
++	.release_cb = vcc_release_cb,
+ };
+ 
+ int vcc_create(struct net *net, struct socket *sock, int protocol, int family)
