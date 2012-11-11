@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab2KKM0t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:26:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60902 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab2KKMZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:25:03 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>, Daniel Mack <zonque@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 2/8] staging: line6: fix quoted string across lines in midibuf.c
-Date: Sun, 11 Nov 2012 13:24:40 +0100
-Message-Id: <1352636686-31170-3-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1352636686-31170-1-git-send-email-stefanha@gmail.com>
-References: <1352636686-31170-1-git-send-email-stefanha@gmail.com>
+	id S1752828Ab2KKMcM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:32:12 -0500
+Received: from mail.in-ulm.de ([217.10.8.10]:44151 "HELO mail.in-ulm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752730Ab2KKMcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 07:32:10 -0500
+Date: Sun, 11 Nov 2012 13:25:28 +0100
+From: Christian Ehrhardt <lk@c--e.de>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Fix lapic time counter read for periodic mode
+Message-ID: <20121111122528.GC19718@lisa.in-ulm.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch warns when quoted strings are split across lines.  The
-rationale is that quoted strings should be left on a single line so that
-grep works.  (The 80 character line limit does not apply to quoted
-strings.)
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/midibuf.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Hi,
 
-diff --git a/drivers/staging/line6/midibuf.c b/drivers/staging/line6/midibuf.c
-index 836e8c8..968e0de 100644
---- a/drivers/staging/line6/midibuf.c
-+++ b/drivers/staging/line6/midibuf.c
-@@ -64,9 +64,9 @@ int line6_midibuf_init(struct MidiBuffer *this, int size, int split)
+there is a bug in the emulation of the lapic time counter. In particular
+what we are seeing is that the time counter of a periodic lapic timer
+in the guest reads as zero 99% of the time. The patch below fixes that.
+
+The emulation of the lapic timer is done with the help of a hires
+timer that expires with the same frequency as the lapic counter.
+New expiration times for a periodic timer are calculated incrementally
+based on the last scheduled expiration time. This ensures long term
+accuracy of the emulated timer close to that of the underlying clock.
+
+The actual value of the lapic time counter is calculated from the
+real time difference between current time and scheduled expiration time
+of the hires timer. If this difference is negative, the hires timer
+expired. For oneshot mode this is correctly translated into a zero value
+for the time counter. However, in periodic mode we must use the negative
+difference unmodified.
+
+     regards   Christian
+
+Fix lapic time counter read for periodic mode.
+
+Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 43e9fad..eff902d 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -810,8 +810,13 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+ 	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
+ 		return 0;
  
- void line6_midibuf_status(struct MidiBuffer *this)
- {
--	pr_debug("midibuf size=%d split=%d pos_read=%d pos_write=%d "
--	       "full=%d command_prev=%02x\n", this->size, this->split,
--	       this->pos_read, this->pos_write, this->full, this->command_prev);
-+	pr_debug("midibuf size=%d split=%d pos_read=%d pos_write=%d full=%d command_prev=%02x\n",
-+		 this->size, this->split, this->pos_read, this->pos_write,
-+		 this->full, this->command_prev);
- }
++	/*
++	 * hrtimer_get_remaining returns the signed difference between
++	 * timer expiration time and current time. Keep negative return
++	 * value iff the the timer is periodic.
++	 */
+ 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+-	if (ktime_to_ns(remaining) < 0)
++	if (ktime_to_ns(remaining) < 0 && !apic_lvtt_period(apic))
+ 		remaining = ktime_set(0, 0);
  
- int line6_midibuf_bytes_free(struct MidiBuffer *this)
--- 
-1.7.12.1
-
+ 	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
