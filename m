@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2KKTCU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 14:02:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1561 "EHLO mx1.redhat.com"
+	id S1753400Ab2KKTCx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 14:02:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753686Ab2KKTCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 14:02:08 -0500
+	id S1753702Ab2KKTCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 14:02:17 -0500
 From: Rafael Aquini <aquini@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         "Michael S. Tsirkin" <mst@redhat.com>,
         Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
         Rusty Russell <rusty@rustcorp.com.au>, aquini@redhat.com
-Subject: [PATCH v12 4/7] mm: introduce compaction and migration for ballooned pages
-Date: Sun, 11 Nov 2012 17:01:17 -0200
-Message-Id: <6602296b38c073a5c6faa13ddbc74ceb1eceb2dd.1352656285.git.aquini@redhat.com>
+Subject: [PATCH v12 7/7] mm: add vm event counters for balloon pages compaction
+Date: Sun, 11 Nov 2012 17:01:20 -0200
+Message-Id: <005a797720c0759e73f83db0d4fc02d511e484f6.1352656285.git.aquini@redhat.com>
 In-Reply-To: <cover.1352656285.git.aquini@redhat.com>
 References: <cover.1352656285.git.aquini@redhat.com>
 In-Reply-To: <cover.1352656285.git.aquini@redhat.com>
@@ -24,143 +24,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory fragmentation introduced by ballooning might reduce significantly
-the number of 2MB contiguous memory blocks that can be used within a guest,
-thus imposing performance penalties associated with the reduced number of
-transparent huge pages that could be used by the guest workload.
-
-This patch introduces the helper functions as well as the necessary changes
-to teach compaction and migration bits how to cope with pages which are
-part of a guest memory balloon, in order to make them movable by memory
-compaction procedures.
+This patch introduces a new set of vm event counters to keep track of
+ballooned pages compaction activity.
 
 Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
- mm/compaction.c | 21 +++++++++++++++++++--
- mm/migrate.c    | 34 ++++++++++++++++++++++++++++++++--
- 2 files changed, 51 insertions(+), 4 deletions(-)
+ include/linux/balloon_compaction.h | 7 +++++++
+ include/linux/vm_event_item.h      | 7 ++++++-
+ mm/balloon_compaction.c            | 2 ++
+ mm/migrate.c                       | 1 +
+ mm/vmstat.c                        | 9 ++++++++-
+ 5 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9eef558..76abd84 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -14,6 +14,7 @@
- #include <linux/backing-dev.h>
- #include <linux/sysctl.h>
- #include <linux/sysfs.h>
-+#include <linux/balloon_compaction.h>
- #include "internal.h"
- 
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-@@ -565,9 +566,24 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			goto next_pageblock;
- 		}
- 
--		/* Check may be lockless but that's ok as we recheck later */
--		if (!PageLRU(page))
-+		/*
-+		 * Check may be lockless but that's ok as we recheck later.
-+		 * It's possible to migrate LRU pages and balloon pages
-+		 * Skip any other type of page
-+		 */
-+		if (!PageLRU(page)) {
-+			if (unlikely(balloon_page_movable(page))) {
-+				if (locked && balloon_page_isolate(page)) {
-+					/* Successfully isolated */
-+					cc->finished_update_migrate = true;
-+					list_add(&page->lru, migratelist);
-+					cc->nr_migratepages++;
-+					nr_isolated++;
-+					goto check_compact_cluster;
-+				}
-+			}
- 			continue;
-+		}
- 
- 		/*
- 		 * PageLRU is set. lru_lock normally excludes isolation
-@@ -621,6 +637,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		cc->nr_migratepages++;
- 		nr_isolated++;
- 
-+check_compact_cluster:
- 		/* Avoid isolating too much */
- 		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
- 			++low_pfn;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6f408c7..a771751 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -35,6 +35,7 @@
- #include <linux/hugetlb.h>
- #include <linux/hugetlb_cgroup.h>
- #include <linux/gfp.h>
-+#include <linux/balloon_compaction.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -79,7 +80,10 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--		putback_lru_page(page);
-+		if (unlikely(balloon_page_movable(page)))
-+			balloon_page_putback(page);
-+		else
-+			putback_lru_page(page);
- 	}
+diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
+index 2e63d94..68893bc 100644
+--- a/include/linux/balloon_compaction.h
++++ b/include/linux/balloon_compaction.h
+@@ -197,8 +197,15 @@ static inline bool balloon_compaction_check(void)
+ 	return true;
  }
  
-@@ -778,6 +782,18 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		}
++static inline void balloon_event_count(enum vm_event_item item)
++{
++	count_vm_event(item);
++}
+ #else /* !CONFIG_BALLOON_COMPACTION */
+ 
++/* A macro, to avoid generating references to the undefined COMPACTBALLOON* */
++#define balloon_event_count(item) do { } while (0)
++
+ static inline void *balloon_mapping_alloc(void *balloon_device,
+ 				const struct address_space_operations *a_ops)
+ {
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 3d31145..bd67c3f 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -41,7 +41,12 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ #ifdef CONFIG_COMPACTION
+ 		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+-#endif
++#ifdef CONFIG_BALLOON_COMPACTION
++		COMPACTBALLOONISOLATED, /* isolated from balloon pagelist */
++		COMPACTBALLOONMIGRATED, /* balloon page sucessfully migrated */
++		COMPACTBALLOONRETURNED, /* putback to pagelist, not-migrated */
++#endif /* CONFIG_BALLOON_COMPACTION */
++#endif /* CONFIG_COMPACTION */
+ #ifdef CONFIG_HUGETLB_PAGE
+ 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
+ #endif
+diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+index 07dbc8e..2c8ce49 100644
+--- a/mm/balloon_compaction.c
++++ b/mm/balloon_compaction.c
+@@ -242,6 +242,7 @@ bool balloon_page_isolate(struct page *page)
+ 			if (__is_movable_balloon_page(page) &&
+ 			    page_count(page) == 2) {
+ 				__isolate_balloon_page(page);
++				balloon_event_count(COMPACTBALLOONISOLATED);
+ 				unlock_page(page);
+ 				return true;
+ 			}
+@@ -265,6 +266,7 @@ void balloon_page_putback(struct page *page)
+ 		__putback_balloon_page(page);
+ 		/* drop the extra ref count taken for page isolation */
+ 		put_page(page);
++		balloon_event_count(COMPACTBALLOONRETURNED);
+ 	} else {
+ 		WARN_ON(1);
+ 		dump_page(page);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 107a281..ecae213 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -894,6 +894,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				    page_is_file_cache(page));
+ 		balloon_page_free(page);
++		balloon_event_count(COMPACTBALLOONMIGRATED);
+ 		return MIGRATEPAGE_SUCCESS;
  	}
- 
-+	if (unlikely(balloon_page_movable(page))) {
-+		/*
-+		 * A ballooned page does not need any special attention from
-+		 * physical to virtual reverse mapping procedures.
-+		 * Skip any attempt to unmap PTEs or to remap swap cache,
-+		 * in order to avoid burning cycles at rmap level, and perform
-+		 * the page migration right away (proteced by page lock).
-+		 */
-+		rc = balloon_page_migrate(newpage, page, mode);
-+		goto uncharge;
-+	}
-+
- 	/*
- 	 * Corner case handling:
- 	 * 1. When a new swap-cache page is read into, it is added to the LRU
-@@ -814,7 +830,9 @@ skip_unmap:
- 		put_anon_vma(anon_vma);
- 
- uncharge:
--	mem_cgroup_end_migration(mem, page, newpage, rc == MIGRATEPAGE_SUCCESS);
-+	mem_cgroup_end_migration(mem, page, newpage,
-+				 (rc == MIGRATEPAGE_SUCCESS ||
-+				  rc == MIGRATEPAGE_BALLOON_SUCCESS));
- unlock:
- 	unlock_page(page);
  out:
-@@ -846,6 +864,18 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 			goto out;
- 
- 	rc = __unmap_and_move(page, newpage, force, offlining, mode);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c737057..18a76ea 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -781,7 +781,14 @@ const char * const vmstat_text[] = {
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
+-#endif
 +
-+	if (unlikely(rc == MIGRATEPAGE_BALLOON_SUCCESS)) {
-+		/*
-+		 * A ballooned page has been migrated already.
-+		 * Now, it's the time to wrap-up counters,
-+		 * handle the page back to Buddy and return.
-+		 */
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				    page_is_file_cache(page));
-+		balloon_page_free(page);
-+		return MIGRATEPAGE_SUCCESS;
-+	}
- out:
- 	if (rc != -EAGAIN) {
- 		/*
++#ifdef CONFIG_BALLOON_COMPACTION
++	"compact_balloon_isolated",
++	"compact_balloon_migrated",
++	"compact_balloon_returned",
++#endif /* CONFIG_BALLOON_COMPACTION */
++
++#endif /* CONFIG_COMPACTION */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+ 	"htlb_buddy_alloc_success",
 -- 
 1.7.11.7
 
