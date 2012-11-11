@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab2KLDzK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 22:55:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39803 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab2KLDzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 22:55:09 -0500
-X-IronPort-AV: E=Sophos;i="4.80,759,1344182400"; 
-   d="scan'208";a="6179497"
-Message-ID: <50A07477.2050002@cn.fujitsu.com>
-Date: Mon, 12 Nov 2012 12:00:55 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com, rjw@sisk.pl,
-        lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 0/3] acpi: Introduce prepare_remove device operation
-References: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-In-Reply-To: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/12 11:54:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/12 11:54:50,
-	Serialize complete at 2012/11/12 11:54:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752411Ab2KLD42 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 22:56:28 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:41141 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab2KLD40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 22:56:26 -0500
+Date: Mon, 12 Nov 2012 10:43:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michel Lespinasse <walken@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [next:akpm 157/313] arch/tile/mm/hugetlbpage.c:256:20: error:
+ 'mm' undeclared
+Message-Id: <20121112104350.f173bba176ed68e27f9df564@canb.auug.org.au>
+In-Reply-To: <20121109062249.GB7022@google.com>
+References: <509c99fa.8Yp/oQzMiknhbdrT%fengguang.wu@intel.com>
+	<20121109062249.GB7022@google.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Nov_2012_10_43_50_+1100_FQI+uY30gCOcZgyS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/09/2012 02:29 AM, Vasilis Liaskovitis Wrote:
-> As discussed in
-> https://patchwork.kernel.org/patch/1581581/
-> the driver core remove function needs to always succeed. This means we need
-> to know that the device can be successfully removed before acpi_bus_trim / 
-> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> eject (echo 1 > /sys/bus/acpi/devices/PNP/eject) of memory devices fails, since
-> the ACPI core goes ahead and ejects the device regardless of whether the memory
-> is still in use or not.
-> 
-> For this reason a new acpi_device operation called prepare_remove is introduced.
-> This operation should be registered for acpi devices whose removal (from kernel
-> perspective) can fail.  Memory devices fall in this category.
-> 
-> acpi_bus_hot_remove_device is changed to handle removal in 2 steps:
-> - preparation for removal i.e. perform part of removal that can fail outside of
->   ACPI core. Should succeed for device and all its children.
-> - if above step was successfull, proceed to actual ACPI removal
+--Signature=_Mon__12_Nov_2012_10_43_50_+1100_FQI+uY30gCOcZgyS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we unbind the device from the driver, we still need to do preparation. But
-you don't do it in your patch.
+On Thu, 8 Nov 2012 22:22:49 -0800 Michel Lespinasse <walken@google.com> wro=
+te:
+>
+> commit 86234092170b43771c3f6257cb320ff6e2c10c52
+> Author: Michel Lespinasse <walken@google.com>
+> Date:   Thu Nov 8 22:13:58 2012 -0800
+>=20
+>     fix mm: use vm_unmapped_area() in hugetlbfs on tile architecture
+>=20
+> diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
+> index 6f74cce053e1..650ccff8378c 100644
+> --- a/arch/tile/mm/hugetlbpage.c
+> +++ b/arch/tile/mm/hugetlbpage.c
+> @@ -253,7 +253,7 @@ static unsigned long hugetlb_get_unmapped_area_topdow=
+n(struct file *file,
+>  	info.flags =3D VM_UNMAPPED_AREA_TOPDOWN;
+>  	info.length =3D len;
+>  	info.low_limit =3D PAGE_SIZE;
+> -	info.high_limit =3D mm->mmap_base;
+> +	info.high_limit =3D current->mm->mmap_base;
+>  	info.align_mask =3D PAGE_MASK & ~huge_page_mask(h);
+>  	info.align_offset =3D 0;
+>  	addr =3D vm_unmapped_area(&info);
 
-Thanks
-Wen Congyang
-> 
-> acpi_bus_trim is changed accordingly to handle preparation for removal and
-> actual removal.
-> 
-> With this patchset, only acpi memory devices use the new prepare_remove
-> device operation. The actual memory removal (VM-related offline and other memory
-> cleanups) is moved to prepare_remove. The old remove operation just cleans up
-> the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
-> haven't tested yet with an ACPI container which contains memory devices.
-> 
-> Other ACPI devices (e.g. CPU) do not register prepare_remove callbacks, and
-> their OSPM-side eject should not be affected.
-> 
-> I am not happy with the name prepare_remove. Comments welcome. Let me know if I
-> should work more in this direction (I think Yasuaki might also look into this
-> and might have a simpler idea)
-> 
-> Patches are on top of Rafael's linux-pm/linux-next
-> 
-> Vasilis Liaskovitis (3):
->   acpi: Introduce prepare_remove operation in acpi_device_ops
->   acpi: Make acpi_bus_trim handle device removal preparation
->   acpi_memhotplug: Add prepare_remove operation
-> 
->  drivers/acpi/acpi_memhotplug.c     |   24 +++++++++++++++++++++---
->  drivers/acpi/dock.c                |    2 +-
->  drivers/acpi/scan.c                |   32 +++++++++++++++++++++++++++++---
->  drivers/pci/hotplug/acpiphp_glue.c |    4 ++--
->  drivers/pci/hotplug/sgi_hotplug.c  |    2 +-
->  include/acpi/acpi_bus.h            |    4 +++-
->  6 files changed, 57 insertions(+), 11 deletions(-)
-> 
+Added to the akpm tree today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__12_Nov_2012_10_43_50_+1100_FQI+uY30gCOcZgyS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQoDg2AAoJEECxmPOUX5FEu88P/26FQ4XrZYnWIqCCQlXiPhEB
+hEVnoehvHl0dAPbwQoA2iGNbWOp4AmEwn9TllWIaVDZTbNN2FP0ps7Agq065TkYf
+ni6mhjn685e1oOTI/VMwfLUtcXLi0W7l5/h1TrlH0EZECRdHb2wboETjSSMpVdrM
+trhl+ev+5RWQHi0UDljj3MFJGAKRXwM84QQS9nt3nHLK8vuTOf0yc1wHlm3eYBC7
+X/YtzQoyNc9nrV+t12EW6Kf9oUgi6XOX5YinFC8KhcPP+4mzJbocVdCKqexQuvoz
+gd3a/E0i3AFYG88XmOhXbQqVejb4TD7MiS+i+MD+614AZUFvIJ+2vDhHbKczgIw5
+gY53Q5oo7aRQtlCKW0Rj8+ADZkV2KoP+UM5/Rc9LxiLjfdVk5ewd3i51bjrVZLN/
+8ElRlGnd0WxKKS/VESfqQZPcpSFjWsS/c0goEEKLV6SB1c5+4SI4vL35CtzKG6em
+tMY92MI0L5u/Dx6uLtEAi7vs4nO3t2mJODsZVKsEDZIag5fle7RkyrBEWlLkKKkr
+kgI/qSwNxhGC+1qcmrWU9GOXP68eoI7GsgCfAQMAD2/YaGmMCMhQfqNFecAseGwn
+JMlxU9W8cSMUjAxSEDYo3U1V1tBIQClJIayDH1GQR2YyqnTzK7naxtMbcWQVtoDO
+XrX1QCzbRhKtPMTPuM1J
+=FPN8
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__12_Nov_2012_10_43_50_+1100_FQI+uY30gCOcZgyS--
