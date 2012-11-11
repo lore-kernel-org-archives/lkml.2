@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab2KKXdH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 18:33:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:43702 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab2KKXdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 18:33:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
-   d="scan'208";a="245347542"
-Date: Mon, 12 Nov 2012 00:33:02 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 0/8] mfd: Batch together MFD related patches
-Message-ID: <20121111233302.GE27828@sortiz-mobl>
-References: <1352128236-11554-1-git-send-email-lee.jones@linaro.org>
+	id S1751531Ab2KKXno (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 18:43:44 -0500
+Received: from snt0-omc3-s10.snt0.hotmail.com ([65.55.90.149]:52282 "EHLO
+	snt0-omc3-s10.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751179Ab2KKXnm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 18:43:42 -0500
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Nov 2012 18:43:42 EST
+Message-ID: <SNT002-W1374257CE2BDB85F6026D7DC36E0@phx.gbl>
+X-Originating-IP: [142.58.21.131]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Girish Verma <girish@circuitsutra.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: RE: [PATCH] USB: XHCI: xhci-ring: Remove unused dma address
+ calculation in inc_enq and inc_deq function
+Date: Sun, 11 Nov 2012 15:36:36 -0800
+Importance: Normal
+In-Reply-To: <20120906182856.GC4618@xanatos>
+References: <1336922942.3945.12.camel@cst-girish-laptop>
+ <1346946453.5012.1.camel@cst-girish-laptop>,<20120906182856.GC4618@xanatos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352128236-11554-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 11 Nov 2012 23:36:36.0349 (UTC) FILETIME=[63E05AD0:01CDC065]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+> It looks like your mail client attempted to line wrap it. You might
+> want to use mutt, thunderbird, or maybe even the plain text gmail
+> interface to resend this.
+If anyone is using Outlook, see this:
+https://lkml.org/lkml/2011/1/25/587
 
-On Mon, Nov 05, 2012 at 04:10:28PM +0100, Lee Jones wrote:
-> Hi Sam,
-> 
-> I know you've been busy giving NFC presentations at ELC, but ... :)
-> 
-> All these patches have been on the list in various other patch-sets
-> for some time and have been reviewed by some key people already. All
-> other patches from the patch-sets have been taken, so I thought I'd
-> batch these up for easy review/acceptance.
-Thanks, much appreciated.
-I applied all of them to my for-next branch. I don't think patch #1 is rc
-material though, as it only fixes a boot warning and not an actual bug or
-regression.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Yuhong Bao 		 	   		  
