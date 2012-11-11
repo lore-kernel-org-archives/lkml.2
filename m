@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab2KKJeW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 04:34:22 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42710 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750785Ab2KKJeU (ORCPT
+	id S1751867Ab2KKJfo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 04:35:44 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49952 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2KKJfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 04:34:20 -0500
-Message-ID: <1352626456.6524.46.camel@dabdike>
-Subject: Re: scsi target, likely GPL violation
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andy Grover <agrover@redhat.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Date: Sun, 11 Nov 2012 09:34:16 +0000
-In-Reply-To: <509A915B.30105@redhat.com>
-References: <509A915B.30105@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Nov 2012 04:35:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jLpM_qvP65rXgjC-UV7Hc=-Lg17jtv0=dVUGHYJ_jB+tQ@mail.gmail.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-15-git-send-email-keescook@chromium.org>
+	<CAMuHMdUXKc03UrNiUaTmxeynAy1oDBDgVbjjDKcJor4vM+0P3w@mail.gmail.com>
+	<CAGXu5jLpM_qvP65rXgjC-UV7Hc=-Lg17jtv0=dVUGHYJ_jB+tQ@mail.gmail.com>
+Date: Sun, 11 Nov 2012 10:35:42 +0100
+X-Google-Sender-Auth: 4GjXIl5z5GmtVbEt4FtnlogjZ8o
+Message-ID: <CAMuHMdVkSZh+mRPz73z9UnLw2AZwipatn5nBJyG13QBd_4fQ6g@mail.gmail.com>
+Subject: Re: [PATCH 014/193] arch/m68k: remove CONFIG_EXPERIMENTAL
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-07 at 08:50 -0800, Andy Grover wrote:
-> Nick,
-> 
-> Your company appears to be shipping kernel features in RTS OS that are
-> not made available under the GPL, specifically support for the
-> EXTENDED_COPY and COMPARE_AND_WRITE SCSI commands, in order to claim
-> full Vmware vSphere 5 VAAI support.
-> 
-> http://www.risingtidesystems.com/storage.html
-> http://www.linux-iscsi.org/wiki/VAAI
-> 
-> Private emails to you and RTS CEO Marc Fleischmann have not elicited a
-> useful response.
-> 
-> You are subsystem maintainer for the in-kernel SCSI target support
-> (drivers/target/*), and your company appears to be violating the GPL.
-> Please explain.
+Hi Kees,
 
-Can we please cool it with the inflammatory accusations.  Please
-remember that statements which damage or seek to damage the reputation
-of a company amount to libel even under US law ... and using phrases
-like "appears to" doesn't shield you from this.
+On Sun, Oct 28, 2012 at 4:41 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Sun, Oct 28, 2012 at 2:18 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Tue, Oct 23, 2012 at 10:01 PM, Kees Cook <keescook@chromium.org> wrote:
+>>> This config item has not carried much meaning for a while now and is
+>>> almost always enabled by default. As agreed during the Linux kernel
+>>> summit, remove it.
+>>>
+>>> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>
+>> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>
+>> Or do you want me to take this through the m68k tree?
+>
+> Stephen Rothwell has mentioned he'd prefer maintainers take these
+> patches into their trees, but I'm happy to carry them in mine if you
+> want to avoid the hassle. I'm doing this for several areas already.
+> It's up to you, but just let me know so I can either drop it from my
+> tree or move it to my linux-next tree. :)
 
-I also note that whatever their website says RTS OS isn't in VMware's
-certified compatibility list:
+OK, will queue for 3.8.
 
-http://www.vmware.com/resources/compatibility/pdf/vi_io_guide.pdf
+Gr{oetje,eeting}s,
 
-Plus it's a grey area what you actually have to support to make that
-list (especially as XCOPY has now been removed from SBC-3 in favour of
-token copy), so I'd say that the chain of reasoning you've used to come
-up with this hearsay allegation of copyright violation is tenuous at
-best.
+                        Geert
 
-Anybody who does enforcement will tell you that you begin with first
-hand proof of a violation.  That means obtain the product and make sure
-it's been modified and that a request for corresponding source fails.
-In this case, since I presume Red Hat, as a RTS partner, has a bona fide
-copy of the RTS OS, please verify it does indeed implement or issue the
-commands which are not in the public git repository and that whoever
-owns the copy makes a request for the source code.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-I would really appreciate it if the next email I see from you on this
-subject is either
-
-     1. Yes, I've got first hand proof of a GPL violation (in which case
-        we'll then move to seeing how we can remedy this) or
-     2. A genuine public apology for the libel, which I'll do my best to
-        prevail on RTS to accept.
-
-Because any further discussion of unsubstantiated allegations of this
-nature exposes us all to jeopardy of legal sanction.
-
-James
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
