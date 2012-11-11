@@ -1,110 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab2KKASk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 19:18:40 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38653 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab2KKASi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 19:18:38 -0500
+	id S1752167Ab2KKAxX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 19:53:23 -0500
+Received: from mga14.intel.com ([143.182.124.37]:46820 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab2KKAxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 19:53:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,754,1344236400"; 
+   d="scan'208";a="166799797"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Martin Steigerwald <Martin@lichtvoll.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: RE: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
+ inserting/removing USB stick
+Thread-Topic: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
+ inserting/removing USB stick
+Thread-Index: AQHNv2E454CB974kpkKBPC/5IWStzZfjzFBQ
+Date: Sun, 11 Nov 2012 00:53:15 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com>
+References: <201211071501.38288.Martin@lichtvoll.de>
+ <20121107143800.GA14146@kroah.com> <201211071952.24509.Martin@lichtvoll.de>
+ (sfid-20121107_195431_785653_5B4780C0)
+ <201211101734.07084.Martin@lichtvoll.de>
+In-Reply-To: <201211101734.07084.Martin@lichtvoll.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1352502014-9782-1-git-send-email-nab@linux-iscsi.org>
-References: <1352502014-9782-1-git-send-email-nab@linux-iscsi.org>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sat, 10 Nov 2012 16:18:16 -0800
-Message-ID: <CAGZ=bqJ26Y2x9j+QuARAdfxSsU3ncSZV+YRU8ZiCvS6fSx=X_A@mail.gmail.com>
-Subject: Re: [PATCH] target: Update copyright ownership to 2012
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, bkuhn@sfconservancy.org,
-        Andy Grover <agrover@redhat.com>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        legal@lists.gpl-violations.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAB0rXtB003979
 
-On Fri, Nov 9, 2012 at 3:00 PM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
-> This patch to update copyright year to current for principal target core
-> ownership is now being pushed into target-pending/for-next.
+> The first bad commit is:
+> 
+> commit 73d4066055e0e2830533041f4b91df8e6e5976ff
+> Author: Chuansheng Liu <chuansheng.liu@intel.com>
+> Date:   Tue Sep 11 16:00:30 2012 +0800
+> 
+>     USB/host: Cleanup unneccessary irq disable code
+> 
+>     Because the IRQF_DISABLED as the flag is now a NOOP and has been
+>     deprecated and in hardirq context the interrupt is disabled.
+> 
+>     so in usb/host code:
+>     Removing the usage of flag IRQF_DISABLED;
+>     Removing the calling local_irq save/restore actions in irq
+>     handler usb_hcd_irq();
+> 
+>     Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+>     Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> 
+> But:
+> 
+> This ony happens with threadirqs option!
+> 
+> When I remove threadirqs from kernel command line and reboot with this
+> last bisect kernel USB sticks work.
+> 
+> That may explain why nobody else has seen this.
+> 
+> So I will try a 3.7-rc4 now, but without threadirqs enabled.
+> 
+Thanks your pointing out, the USB HCD irq handler is designed to execute in irq handler with irq disabled.
+When threadirqs is in commandline, it will be executed in thread context with local irq enabling, which causes
+this hardlockup.
 
-Pardon me, but you were just publicly accused of violating the GPL, so
-your response is to send a patch removing the copyright notices of all
-other organizations from the SCSI-target code?  Have you obtained
-ownership of all the relevant copyrights for Linux-iSCSI.org, PyX
-Technologies, Inc, and SBE, Inc?  If not, then this patch is an
-attempted violation of those organizations copyrights and of the GPL
-(which requires that you preserve copyright notices).
+I prepared one patch, could you have time to test it? Thanks. Sorry for missing threadirqs case.
 
-Further, while these notices are the only ones listed in those files,
-they are not the only individuals outside of RisingTide Systems which
-have significant copyright interest in this code.  If your goal is to
-obtain exclusive copyright ownership over this code then there are a
-great many other people you must contact and convince first.
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] USB/host: Mark USB HCD irq as non-threaded
 
-I would encourage you to talk privately with the Software Freedom
-Conservancy before sending more patches of this nature.
+Mark USB HCD irq as non-threaded. This prevent one crash/hard lockup
+when "threadirqs" is on the kernel commandline.
+And this interrupt handle is handling critial events which should not
+be in thread context.
 
-Cheers,
-Kyle Moffett
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/usb/core/hcd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-> - * Copyright (c) 2009-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-> - * Copyright (c) 2008-2011 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-> - * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005-2006 SBE, Inc.  All Rights Reserved.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
-> - * Copyright (c) 2010,2011 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
-> - * Copyright (c) 2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-> - * Copyright (c) 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005-2006 SBE, Inc.  All Rights Reserved.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
-> - * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> - * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
-> - * Copyright (c) 2009, 2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-> - * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-> - * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-> - * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-> - * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_stat.c b/drivers/target/target_core_stat.c
-> - * Copyright (c) 2011 Linux-iSCSI.org
-> - * Copyright (c) 2006-2007 SBE, Inc.  All Rights Reserved.
-> diff --git a/drivers/target/target_core_tmr.c b/drivers/target/target_core_tmr.c
-> - * Copyright (c) 2009,2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-> - * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> - * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
-> - * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-> - * Copyright (c) 2008-2010 Linux-iSCSI.org
-> diff --git a/drivers/target/target_core_ua.c b/drivers/target/target_core_ua.c
-> - * Copyright (c) 2009,2010 Linux-iSCSI.org
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 1e741bc..b1cd46e 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
+        if (hcd->driver->irq) {
+                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
+                                hcd->driver->description, hcd->self.busnum);
+-               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
++               retval = request_irq(irqnum, &usb_hcd_irq, irqflags|IRQF_NO_THREAD,
+                                hcd->irq_descr, hcd);
+                if (retval != 0) {
+                        dev_err(hcd->self.controller,
+-- 
+1.7.0.4
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
