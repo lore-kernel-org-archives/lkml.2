@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab2KKWN6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:13:58 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:53515 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752216Ab2KKWN4 (ORCPT
+	id S1753291Ab2KKW1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 17:27:46 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46619 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab2KKW1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:13:56 -0500
-Reply-To: <lrosen@rosenlaw.com>
-From: "Lawrence Rosen" <lrosen@rosenlaw.com>
-To: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <target-devel@vger.kernel.org>
-Cc: <kcopenhaver@choate.com>, "Richard Fontana" <rfontana@redhat.com>,
-        "Marc Fleischmann" <mwf@risingtidesystems.com>,
-        "Nicholas Bellinger" <nab@risingtidesystems.com>,
-        <alan@lxorguk.ukuu.org.uk>, <agrover@redhat.com>,
-        <bkuhn@sfconservancy.org>, <tytso@mit.edu>, <lrosen@rosenlaw.com>
-References: <509A915B.30105@redhat.com>	 <CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>	 <509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>	 <1352405111.29589.476.camel@haakon2.linux-iscsi.org>	 <509C22B2.8010600@redhat.com>	 <1352426896.29589.512.camel@haakon2.linux-iscsi.org> <20121109110336.41833034@pyramind.ukuu.org.uk>
-In-Reply-To: <20121109110336.41833034@pyramind.ukuu.org.uk>
-Subject: RE: scsi target, likely GPL violation
-Date: Sun, 11 Nov 2012 14:13:53 -0800
-Organization: Rosenlaw & Einschlag
-Message-ID: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
+	Sun, 11 Nov 2012 17:27:45 -0500
+Message-ID: <50A0265B.8040209@gmail.com>
+Date: Mon, 12 Nov 2012 09:27:39 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: linux-kernel@vger.kernel.org, Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH] vmxnet3: convert BUG_ON(true) into a simple BUG()
+References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQKiWmEupwXV+Zk7MhVwjar7imSUzQEl4rhnAfQMYuUCpeHO3AFABWG+AuJEEqgCkJrOLAJsiqlWlcUC9LA=
-Content-Language: en-us
-X-Identified-User: {1397:box597.bluehost.com:rosenla1:rosenlaw.com} {sentby:smtp auth 70.36.224.178 authed with lrosen@rosenlaw.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> So either your work is truely not derivative of the kernel (which I find
-> wildly improbable) or you have a problem and since you are aware 
-> of the complaints publically I guess probably a triple damages sized 
-> problem. But that's one for your lawyers and whatever opinion they 
-> have on the subject.
+On 09/11/12 07:23, Sasha Levin wrote:
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  drivers/net/vmxnet3/vmxnet3_drv.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+> index 0ae1bcc..7e9622f 100644
+> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
+> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+> @@ -1922,7 +1922,7 @@ vmxnet3_free_irqs(struct vmxnet3_adapter *adapter)
+>  		free_irq(adapter->pdev->irq, adapter->netdev);
+>  		break;
+>  	default:
+> -		BUG_ON(true);
+> +		BUG();
+>  	}
+>  }
 
-Hi Alan and others,
+All of the BUG_ON tests in this function look like programming error
+assertions. It looks like the worst that would happen is that some irqs
+might not be properly released, not the sort of thing that is going to
+make the system unstable if you don't bug.
 
-I've been advising Rising Tide Systems (RTS) in this matter. Please let me
-reassure you that RTS is acting on advice of counsel.
+Can't they just be replaced with (for example):
 
-RTS (and specifically Nicholas Bellinger) wrote the scsi target code and
-owns its copyright. We registered that copyright at the Library of Congress.
-RTS contributed a version of the scsi target to Linux for distribution under
-the GPL. On behalf of Marc Fleischmann, CEO of RTS, I can reassure you that
-RTS remains committed to the Linux project and will continue to contribute
-to it. We are pleased that RTS software is a part of the Linux distribution
-under the GPL.
+	if (WARN_ON(blah))
+		return;
 
-RTS also has a commercial software business. It distributes versions of its
-scsi target code that support features and functions not officially in Linux
-(or at least, not yet). That commercial RTS business includes the licensing
-of those derivative works of its own code to its own customers. Nothing
-whatsoever in the GPL or in the policies of the Linux Foundation prohibits
-that.
+Or even just:
 
-I would also like to address some comments made on these lists by Andy
-Grover and Bradley Kuhn. 
+	netdev_err(adapter->netdev, "bad irq type %d for free\n",
+			intr->type);
 
-First, I hope that we can tone down the arguments about whether the use of
-Linux APIs and headers automatically turns a program into a derivative work
-of Linux. I think that argument has been largely debunked in the U.S. in the
-recent decision in Oracle v. Google, and in Europe in SAS v. World
-Programming. Does anyone here question whether the original work that RTS
-contributed to Linux (and that *is* under the GPL) is an original work of
-authorship of RTS despite the fact that it links to other GPL code using
-headers and APIs?
-
-Second, we are grateful for the efforts that Bradley Kuhn and others put in
-to enforce the GPL. As I said above, RTS owns and has registered the
-copyright on its scsi target and will enforce it if necessary. So Brad, we
-may solicit your assistance if we find any third party who is distributing
-an unauthorized non-GPL derivative work of the scsi target now in Linux.
-RTS, of course, retains the exclusive right to do so, but no third party can
-do so without a license from RTS.
-
-Best regards,
-
-/Larry
-
-P.S. In accordance with my obligations as an attorney when communicating
-with a represented person, I am copying attorneys for Red Hat and Linux
-Foundation on this email.  If anyone wishes to respond to me, please copy me
-directly since I am not subscribed to these lists.
-
-Lawrence Rosen
-Rosenlaw & Einschlag, a technology law firm (www.rosenlaw.com)
-3001 King Ranch Rd., Ukiah, CA 95482
-Office: 707-485-1242
-
-
+~Ryan
 
