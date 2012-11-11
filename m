@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2KKKXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 05:23:09 -0500
-Received: from canardo.mork.no ([148.122.252.1]:35432 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab2KKKXG convert rfc822-to-8bit (ORCPT
+	id S1752550Ab2KKKvs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 05:51:48 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:51406 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2KKKvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 05:23:06 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: richjunk@pacbell.net
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH usb-linus] USB: keyspan: fix typo causing GPF on open
-Organization: m
-References: <509D5BCD.3010901@pacbell.net>
-	<1352538822-28221-1-git-send-email-bjorn@mork.no>
-	<509EFDA3.4060900@pacbell.net>
-Date: Sun, 11 Nov 2012 11:22:55 +0100
-In-Reply-To: <509EFDA3.4060900@pacbell.net> (Richard's message of "Sat, 10 Nov
-	2012 17:21:39 -0800")
-Message-ID: <87y5i8xwu8.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Sun, 11 Nov 2012 05:51:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <509F76D3.29142.1EC611@msetzerii.gmail.com>
+References: <509F5A53.26612.2D87FF@msetzerii.gmail.com>
+	<CACVXFVPQrA=t6CozL2rkQLnFTvq-bo=xVaMGUYEVAqcvFO2nog@mail.gmail.com>
+	<509F76D3.29142.1EC611@msetzerii.gmail.com>
+Date: Sun, 11 Nov 2012 18:51:45 +0800
+Message-ID: <CACVXFVPt9WiYVNkNm7OPNjsGdxMqyxRwUpx+e4NuUL9+ss6Ppw@mail.gmail.com>
+Subject: Re: Kernel Firmware - Adding Right way??
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Michael D. Setzer II" <msetzerii@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard <richjunk@pacbell.net> writes:
-
-> Bjørn:
+On Sun, Nov 11, 2012 at 5:58 PM, Michael D. Setzer II
+<msetzerii@gmail.com> wrote:
 >
-> I patched keyspan.c using your below supplied diff in 3.6.6 (I'm not
-> using git.)  The patch WORKS for me.  (I tested using minicom and the
-> two programs that usually access the Keyspan serial device.)
+> The project currently includes 10 different kernels, and prior to my
+> taking it over in 2004, it was the same basic setup. Don't really
+> know the whole proces that would be required to convert the
+> standalone kernels to kernels using moduals. Setting up the
+> moduals and the process to load them, which the kernel now does
+> automatically. Project has 800 to 1000+ downloads per week.
+>
+> I see it load the firmware, and the it shows loading the ramdisk
+> file, before the probing happens, but don't know if loading the
+> ramdisk is the same as making the rootfs available with the
 
-Thanks for testing.  Good to know that this really was the problem you
-were facing.
+>From the log, looks your kernel loads firmware from fs directly, so
+it should be same between ramdisk and rootfs.
 
-As you might have guessed, neither Johan nor I have the hardware to test
-this driver. So your bug report and testing is extremely valuable.
+> /lib/firmware directory.  Know that is the directory that distros
+> seem to use, but perhaps the kernel is using other location.
+> Message doesn't specify where it was looking for kernel?
 
-> Thank you for the quick fix.
+Below is the default path to search firmware by kernel:
 
-And thank you for an excellent bug report and quick testing.  The fact
-that you could describe exactly which stable releases this appeared in
-narrowed it down to just a single commit. And describing exactly what
-happened narrowed it down to just a few possible places within that
-commit.  This was the main reason the bug could be fixed this fast.
+static const char *fw_path[] = {
+        "/lib/firmware/updates/" UTS_RELEASE,
+        "/lib/firmware/updates",
+        "/lib/firmware/" UTS_RELEASE,
+        "/lib/firmware"
+};
 
-> Will this show up in 3.6.7?
+>
+>> As far as I know, now the preferred approach is to build the
+>> driver as module for the issue, or you can introduce probe
+>> deferral in driver to solve the problem.
+>>
+>
+> Don't write the drivers, so don't know if this is an option. I've only
+> heard of this issue with the bnx2x driver with HP servers and only
+> with a couple of users. So, perhaps just manually adding the
+> bnx2x.
 
-That's for Greg to answer.  But don't be surprised if this came in too
-late for 3.6.7.  All fixes for stable has to go through mainline first.
+You can try to make bnx2x as module to see if you problem can be fixed,
+and probe deferral for loading firmware is still not ready.
 
 
-
-Bjørn
+Thanks,
+-- 
+Ming Lei
