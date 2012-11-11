@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab2KKCdA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 21:33:00 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39362 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2KKCc6 (ORCPT
+	id S1752692Ab2KKCfL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 21:35:11 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35625 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab2KKCfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 21:32:58 -0500
-Message-ID: <509F0E56.6080806@gmail.com>
-Date: Sat, 10 Nov 2012 20:32:54 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Sat, 10 Nov 2012 21:35:08 -0500
+Date: Sat, 10 Nov 2012 18:35:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        yinghan@google.com
+Subject: Re: [PATCH 1/1] mm: Export a function to read vm_committed_as
+In-Reply-To: <1352600728-17766-1-git-send-email-kys@microsoft.com>
+Message-ID: <alpine.DEB.2.00.1211101830250.18494@chino.kir.corp.google.com>
+References: <1352600728-17766-1-git-send-email-kys@microsoft.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dt/platform: Use cell-index for device naming if available
-References: <1352508532-19241-1-git-send-email-stepanm@codeaurora.org>
-In-Reply-To: <1352508532-19241-1-git-send-email-stepanm@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 06:48 PM, Stepan Moskovchenko wrote:
-> Use the cell-index property to construct names for platform
-> devices, falling back on the existing scheme of using the
-> device register address if cell-index is not specified.
-> 
-> The cell-index property is a more useful device identifier,
-> especially in systems containing several numbered instances
-> of a particular hardware block, since it more easily
-> illustrates how devices relate to each other.
-> 
-> Additionally, userspace software may rely on the classic
-> <name>.<id> naming scheme to access device attributes in
-> sysfs, without having to know the physical addresses of
-> that device on every platform the userspace software may
-> support. Using cell-index for device naming allows the
-> device addresses to be hidden from userspace and to be
-> exposed by logical device number without having to rely on
-> auxdata to perform name overrides. This allows userspace to
-> make assumptions about which sysfs nodes map to which
-> logical instance of a specific hardware block.
-> 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> ---
-> I had also considered using something like the linux,label property to allow
-> custom names for platform devices without resorting to auxdata, but the
-> cell-index approach seems more in line with what cell-index was intended for
-> and with what the pre-DT platform device naming scheme used to be. Please let
-> me know if you think there is a better way to accomplish this.
-> 
-> This is just being sent out as an RFC for now. If there are no objections, I
-> will send this out as an official patch, along with (or combined with) a patch
-> to fix up the device names in things like clock tables of any affected
-> platforms.
+On Sat, 10 Nov 2012, K. Y. Srinivasan wrote:
 
-cell-index is basically deprecated. This has been discussed multiple
-times in the past. You can use auxdata if you really need to have the
-old name.
-
-Rob
-
-> 
->  drivers/of/platform.c |   13 ++++++++++++-
->  1 files changed, 12 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 343ad29..472e374 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -77,8 +77,9 @@ void of_device_make_bus_id(struct device *dev)
->  	static atomic_t bus_no_reg_magic;
->  	struct device_node *node = dev->of_node;
->  	const u32 *reg;
-> +	u32 cell_index;
->  	u64 addr;
-> -	int magic;
-> +	int magic, ret;
-> 
->  #ifdef CONFIG_PPC_DCR
->  	/*
-> @@ -101,6 +102,16 @@ void of_device_make_bus_id(struct device *dev)
->  #endif /* CONFIG_PPC_DCR */
-> 
->  	/*
-> +	 * For devices with a specified cell-index, use the traditional
-> +	 * naming scheme of <name>.<id>
-> +	 */
-> +	ret = of_property_read_u32(node, "cell-index", &cell_index);
-> +	if (ret == 0) {
-> +		dev_set_name(dev, "%s.%d", node->name, cell_index);
-> +		return;
-> +	}
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 2d94235..e527239 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -89,6 +89,17 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+>  struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
+>  
+>  /*
+> + * A wrapper to read vm_committed_as that can be used by external modules.
+> + */
 > +
-> +	/*
->  	 * For MMIO, get the physical address
->  	 */
->  	reg = of_get_property(node, "reg", NULL);
-> --
-> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+> +unsigned long read_vm_committed_as(void)
+> +{
+> +	return percpu_counter_read_positive(&vm_committed_as);
+> +}
+> +
+> +EXPORT_SYMBOL_GPL(read_vm_committed_as);
+> +
+> +/*
+>   * Check that a process has enough memory to allocate a new virtual
+>   * mapping. 0 means there is enough memory for the allocation to
+>   * succeed and -ENOMEM implies there is not.
+
+This is precisely what I didn't want to see; I was expecting that this 
+function was going to have some name that would describe what a hypervisor 
+would use it for, regardless of its implementation and current use of 
+vm_committed_as.  read_vm_committed_as() misses the entire point of the 
+suggestion and a few people have mentioned that they think this 
+implementation will evolve over time.
+
+Please think of what you're trying to determine in the code that will 
+depend on this and then convert the existing user in 
+drivers/xen/xen-selfballoon.c.
