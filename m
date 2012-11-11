@@ -1,157 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab2KKJNc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 04:13:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab2KKJN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 04:13:28 -0500
-Message-ID: <509F6C2A.9060502@redhat.com>
-Date: Sun, 11 Nov 2012 10:13:14 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1751987Ab2KKJZf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 04:25:35 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14842 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab2KKJZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 04:25:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6892"; a="5844451"
+Message-ID: <509F6EF5.2070009@codeaurora.org>
+Date: Sun, 11 Nov 2012 14:55:09 +0530
+From: Subhash Jadavani <subhashj@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: kswapd0: excessive CPU usage
-References: <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz> <509C84ED.8090605@linux.vnet.ibm.com> <509CB9D1.6060704@redhat.com> <20121109090635.GG8218@suse.de>
-In-Reply-To: <20121109090635.GG8218@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Maya Erez <merez@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] mmc: core: Add support for idle time BKOPS
+References: <n> <1349389748-815-1-git-send-email-merez@codeaurora.org>
+In-Reply-To: <1349389748-815-1-git-send-email-merez@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 9.11.2012 10:06, Mel Gorman napsal(a):
-> On Fri, Nov 09, 2012 at 09:07:45AM +0100, Zdenek Kabelac wrote:
->>> fe2c2a106663130a5ab45cb0e3414b52df2fff0c is the first bad commit
->>> commit fe2c2a106663130a5ab45cb0e3414b52df2fff0c
->>> Author: Rik van Riel <riel@redhat.com>
->>> Date:   Wed Mar 21 16:33:51 2012 -0700
->>>
->>>      vmscan: reclaim at order 0 when compaction is enabled
->>> ...
->>>
->>> This is plausible since the issue seems to be in the kswapd + compaction
->>> realm.  I've yet to figure out exactly what about this commit results in
->>> kswapd spinning.
->>>
->>> I would be interested if someone can confirm this finding.
->>>
->>> --
->>> Seth
->>>
->>
->>
->> On my system 3.7-rc4 the problem seems to be effectively solved by
->> revert patch: https://lkml.org/lkml/2012/11/5/308
->>
+
+Thanks Maya. Looks good to me.
+Reviewed-by: subhashj@codeaurora.org
+
+Regards,
+Subhash
+
+On 10/5/2012 3:58 AM, Maya Erez wrote:
+> Devices have various maintenance operations need to perform internally.
+> In order to reduce latencies during time critical operations like read
+> and write, it is better to execute maintenance operations in other
+> times - when the host is not being serviced. Such operations are called
+> Background operations (BKOPS).
+> The device notifies the status of the BKOPS need by updating BKOPS_STATUS
+> (EXT_CSD byte [246]).
 >
-> Ok, while there is still a question on whether it's enough I think it's
-> sensible to at least start with the obvious one.
+> According to the standard a host that supports BKOPS shall check the
+> status periodically and start background operations as needed, so that
+> the device has enough time for its maintenance operations.
 >
-
-
-Hmm,  so it's just took longer to hit the problem and observe kswapd0
-spinning on my CPU again - it's not as endless like before - but still it 
-easily eats minutes - it helps to  turn off  Firefox or TB  (memory hungry 
-apps) so kswapd0 stops soon - and restart those apps again.
-(And I still have like >1GB of cached memory)
-
-kswapd0         R  running task        0    30      2 0x00000000
-  ffff8801331efae8 0000000000000082 0000000000000018 0000000000000246
-  ffff880135b9a340 ffff8801331effd8 ffff8801331effd8 ffff8801331effd8
-  ffff880055dfa340 ffff880135b9a340 00000000331efad8 ffff8801331ee000
-Call Trace:
-  [<ffffffff81555bf2>] preempt_schedule+0x42/0x60
-  [<ffffffff81557a95>] _raw_spin_unlock+0x55/0x60
-  [<ffffffff81192971>] put_super+0x31/0x40
-  [<ffffffff81192a42>] drop_super+0x22/0x30
-  [<ffffffff81193b89>] prune_super+0x149/0x1b0
-  [<ffffffff81141e2a>] shrink_slab+0xba/0x510
-  [<ffffffff81185b4a>] ? mem_cgroup_iter+0x17a/0x2e0
-  [<ffffffff81185a9a>] ? mem_cgroup_iter+0xca/0x2e0
-  [<ffffffff81145099>] balance_pgdat+0x629/0x7f0
-  [<ffffffff811453d4>] kswapd+0x174/0x620
-  [<ffffffff8106fd20>] ? __init_waitqueue_head+0x60/0x60
-  [<ffffffff81145260>] ? balance_pgdat+0x7f0/0x7f0
-  [<ffffffff8106f50b>] kthread+0xdb/0xe0
-  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
-  [<ffffffff8155fa1c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
-
-
-runnable tasks:
-             task   PID         tree-key  switches  prio     exec-runtime 
-     sum-exec        sum-sleep
-----------------------------------------------------------------------------------------------------------
-          kswapd0    30   8689943.729790     36266   120   8689943.729790 
-201495.640629  56609485.489414 /
-      kworker/0:1 14790   8689937.729790     16969   120   8689937.729790 
-   374.385996    150405.181652 /
-R           bash 14855       821.749268        50   120       821.749268 
-   24.027535      5252.291128 /autogroup-304
-
-
-
-
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 146
-CPU    1: hi:  186, btch:  31 usd: 135
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 131
-CPU    1: hi:  186, btch:  31 usd: 132
-active_anon:726521 inactive_anon:26442 isolated_anon:0
-  active_file:77765 inactive_file:76890 isolated_file:0
-  unevictable:12 dirty:4 writeback:0 unstable:0
-  free:40261 slab_reclaimable:12414 slab_unreclaimable:9694
-  mapped:26382 shmem:162712 pagetables:6618 bounce:0
-  free_cma:0
-DMA free:15676kB min:272kB low:340kB high:408kB active_anon:208kB 
-inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB 
-isolated(anon):0kB isolated(file):0kB present:15900kB mlocked:0kB dirty:0kB 
-writeback:0kB mapped:0kB shmem:208kB slab_reclaimable:8kB 
-slab_unreclaimable:8kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB 
-free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-lowmem_reserve[]: 0 2951 3836 3836
-DMA32 free:126072kB min:51776kB low:64720kB high:77664kB active_anon:2175104kB 
-inactive_anon:98976kB active_file:296252kB inactive_file:297648kB 
-unevictable:48kB isolated(anon):0kB isolated(file):0kB present:3021960kB 
-mlocked:48kB dirty:12kB writeback:0kB mapped:77664kB shmem:620388kB 
-slab_reclaimable:19128kB slab_unreclaimable:6292kB kernel_stack:624kB 
-pagetables:8900kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB 
-pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 885 885
-Normal free:19296kB min:15532kB low:19412kB high:23296kB active_anon:730772kB 
-inactive_anon:6792kB active_file:14808kB inactive_file:9912kB unevictable:0kB 
-isolated(anon):0kB isolated(file):0kB present:906664kB mlocked:0kB dirty:4kB 
-writeback:0kB mapped:27864kB shmem:30252kB slab_reclaimable:30520kB 
-slab_unreclaimable:32476kB kernel_stack:2496kB pagetables:17572kB unstable:0kB 
-bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 1*4kB 1*8kB 3*16kB 2*32kB 3*64kB 2*128kB 3*256kB 2*512kB 3*1024kB 
-3*2048kB 1*4096kB = 15676kB
-DMA32: 730*4kB 328*8kB 223*16kB 123*32kB 182*64kB 96*128kB 172*256kB 56*512kB 
-12*1024kB 1*2048kB 1*4096kB = 128120kB
-Normal: 600*4kB 384*8kB 164*16kB 122*32kB 40*64kB 7*128kB 1*256kB 1*512kB 
-1*1024kB 1*2048kB 0*4096kB = 19296kB
-317367 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 0kB
-Total swap = 0kB
-1032176 pages RAM
-42789 pages reserved
-642501 pages shared
-869271 pages non-shared
+> This patch adds support for this periodic check of the BKOPS status.
+> Since foreground operations are of higher priority than background
+> operations the host will check the need for BKOPS when it is idle,
+> and in case of an incoming request the BKOPS operation will be
+> interrupted.
+>
+> When the mmcqd thread is idle, a delayed work is created to check the
+> need for BKOPS. The time to start the delayed work is calculated based
+> on the host controller suspend timeout, in case it was set. If not, a
+> default time is used.
+> If BKOPS are required in level 1, which is non-blocking, there will be
+> polling of the card status to wait for the BKOPS completion and prevent
+> suspend that will interrupt the BKOPS.
+> If the card raised an exception, the need for urgent BKOPS (level 2/3)
+> will be checked immediately and if needed, the BKOPS will be performed
+> without waiting for the next idle time.
+>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+> ---
+> This patch is based on the periodic BKOPS implementation in version 8 of "support BKOPS feature for eMMC" patch.
+> The patch was modified to answer the following issues:
+> - In order to prevent a race condition between going into suspend and starting BKOPS,
+>    the suspend timeout of the host controller is taking into accound in determination of the start time
+>    of the delayed work
+> - Since mmc_start_bkops is called from two contexts now, mmc_claim_host was moved to the beginning of the function
+> - Also, the check of doing_bkops should be protected when determing if an HPI is needed due to the same reason.
+> - Starting and canceling the delayed work in each idle caused degradation of iozone performance. Therefore,
+>    the delayed work is not started on each idle. The amount of sectors changed (written or discard) from the last
+>    delayed work is the trigger for starting the delayed BKOPS work.
+> ---
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 172a768..ed040d5 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -827,6 +827,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
+>   	from = blk_rq_pos(req);
+>   	nr = blk_rq_sectors(req);
+>   
+> +	if (card->ext_csd.bkops_en)
+> +		card->bkops_info.sectors_changed += blk_rq_sectors(req);
+> +
+>   	if (mmc_can_discard(card))
+>   		arg = MMC_DISCARD_ARG;
+>   	else if (mmc_can_trim(card))
+> @@ -1268,6 +1271,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
+>   	if (!rqc && !mq->mqrq_prev->req)
+>   		return 0;
+>   
+> +	if (rqc && (card->ext_csd.bkops_en) && (rq_data_dir(rqc) == WRITE))
+> +			card->bkops_info.sectors_changed += blk_rq_sectors(rqc);
+> +
+>   	do {
+>   		if (rqc) {
+>   			/*
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index e360a97..e96f5cf 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>   {
+>   	struct mmc_queue *mq = d;
+>   	struct request_queue *q = mq->queue;
+> +	struct mmc_card *card = mq->card;
+>   
+>   	current->flags |= PF_MEMALLOC;
+>   
+> @@ -66,6 +67,17 @@ static int mmc_queue_thread(void *d)
+>   		spin_unlock_irq(q->queue_lock);
+>   
+>   		if (req || mq->mqrq_prev->req) {
+> +			/*
+> +			 * If this is the first request, BKOPs might be in
+> +			 * progress and needs to be stopped before issuing the
+> +			 * request
+> +			 */
+> +			if (card->ext_csd.bkops_en &&
+> +			    card->bkops_info.started_delayed_bkops) {
+> +				card->bkops_info.started_delayed_bkops = false;
+> +				mmc_stop_bkops(card);
+> +			}
+> +
+>   			set_current_state(TASK_RUNNING);
+>   			mq->issue_fn(mq, req);
+>   		} else {
+> @@ -73,6 +85,7 @@ static int mmc_queue_thread(void *d)
+>   				set_current_state(TASK_RUNNING);
+>   				break;
+>   			}
+> +			mmc_start_delayed_bkops(card);
+>   			up(&mq->thread_sem);
+>   			schedule();
+>   			down(&mq->thread_sem);
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 6612163..fd8783d 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -253,9 +253,42 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+>   }
+>   
+>   /**
+> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+> + *      the need of non urgent BKOPS
+> + *
+> + * @card: MMC card to start BKOPS on
+> + */
+> +void mmc_start_delayed_bkops(struct mmc_card *card)
+> +{
+> +	if (!card || !card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +		return;
+> +
+> +	if (card->bkops_info.sectors_changed <
+> +	    BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK)
+> +		return;
+> +
+> +	pr_debug("%s: %s: queueing delayed_bkops_work\n",
+> +		 mmc_hostname(card->host), __func__);
+> +
+> +	card->bkops_info.sectors_changed = 0;
+> +
+> +	/*
+> +	 * cancel_delayed_bkops_work will prevent a race condition between
+> +	 * fetching a request by the mmcqd and the delayed work, in case
+> +	 * it was removed from the queue work but not started yet
+> +	 */
+> +	card->bkops_info.cancel_delayed_work = false;
+> +	card->bkops_info.started_delayed_bkops = true;
+> +	queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+> +			   msecs_to_jiffies(
+> +				   card->bkops_info.delay_ms));
+> +}
+> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+> +
+> +/**
+>    *	mmc_start_bkops - start BKOPS for supported cards
+>    *	@card: MMC card to start BKOPS
+> - *	@form_exception: A flag to indicate if this function was
+> + *	@from_exception: A flag to indicate if this function was
+>    *			 called due to an exception raised by the card
+>    *
+>    *	Start background operations whenever requested.
+> @@ -269,25 +302,47 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
+>   	bool use_busy_signal;
+>   
+>   	BUG_ON(!card);
+> -
+> -	if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +	if (!card->ext_csd.bkops_en)
+>   		return;
+>   
+> +	mmc_claim_host(card->host);
+> +
+> +	if ((card->bkops_info.cancel_delayed_work) && !from_exception) {
+> +		pr_debug("%s: %s: cancel_delayed_work was set, exit\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		card->bkops_info.cancel_delayed_work = false;
+> +		goto out;
+> +	}
+> +
+> +	if (mmc_card_doing_bkops(card)) {
+> +		pr_debug("%s: %s: already doing bkops, exit\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		goto out;
+> +	}
+> +
+>   	err = mmc_read_bkops_status(card);
+>   	if (err) {
+>   		pr_err("%s: Failed to read bkops status: %d\n",
+>   		       mmc_hostname(card->host), err);
+> -		return;
+> +		goto out;
+>   	}
+>   
+>   	if (!card->ext_csd.raw_bkops_status)
+> -		return;
+> +		goto out;
+> +
+> +	pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+> +		mmc_hostname(card->host), __func__,
+> +		card->ext_csd.raw_bkops_status);
+>   
+> +	/*
+> +	 * If the function was called due to exception but there is no need
+> +	 * for urgent BKOPS, BKOPs will be performed by the delayed BKOPs
+> +	 * work, before going to suspend
+> +	 */
+>   	if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>   	    from_exception)
+> -		return;
+> +		goto out;
+>   
+> -	mmc_claim_host(card->host);
+>   	if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>   		timeout = MMC_BKOPS_MAX_TIMEOUT;
+>   		use_busy_signal = true;
+> @@ -309,13 +364,108 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
+>   	 * bkops executed synchronously, otherwise
+>   	 * the operation is in progress
+>   	 */
+> -	if (!use_busy_signal)
+> +	if (!use_busy_signal) {
+>   		mmc_card_set_doing_bkops(card);
+> +		pr_debug("%s: %s: starting the polling thread\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		queue_work(system_nrt_wq,
+> +			   &card->bkops_info.poll_for_completion);
+> +	}
+> +
+>   out:
+>   	mmc_release_host(card->host);
+>   }
+>   EXPORT_SYMBOL(mmc_start_bkops);
+>   
+> +/**
+> + * mmc_bkops_completion_polling() - Poll on the card status to
+> + * wait for the non-blocking BKOPS completion
+> + * @work:	The completion polling work
+> + *
+> + * The on-going reading of the card status will prevent the card
+> + * from getting into suspend while it is in the middle of
+> + * performing BKOPS.
+> + * Since the non blocking BKOPS can be interrupted by a fetched
+> + * request we also check IF mmc_card_doing_bkops in each
+> + * iteration.
+> + */
+> +void mmc_bkops_completion_polling(struct work_struct *work)
+> +{
+> +	struct mmc_card *card = container_of(work, struct mmc_card,
+> +			bkops_info.poll_for_completion);
+> +	unsigned long timeout_jiffies = jiffies +
+> +		msecs_to_jiffies(BKOPS_COMPLETION_POLLING_TIMEOUT_MS);
+> +	u32 status;
+> +	int err;
+> +
+> +	/*
+> +	 * Wait for the BKOPs to complete. Keep reading the status to prevent
+> +	 * the host from getting into suspend
+> +	 */
+> +	do {
+> +		mmc_claim_host(card->host);
+> +
+> +		if (!mmc_card_doing_bkops(card))
+> +			goto out;
+> +
+> +		err = mmc_send_status(card, &status);
+> +		if (err) {
+> +			pr_err("%s: error %d requesting status\n",
+> +			       mmc_hostname(card->host), err);
+> +			goto out;
+> +		}
+> +
+> +		/*
+> +		 * Some cards mishandle the status bits, so make sure to check
+> +		 * both the busy indication and the card state.
+> +		 */
+> +		if ((status & R1_READY_FOR_DATA) &&
+> +		    (R1_CURRENT_STATE(status) != R1_STATE_PRG)) {
+> +			pr_debug("%s: %s: completed BKOPs, exit polling\n",
+> +				 mmc_hostname(card->host), __func__);
+> +			mmc_card_clr_doing_bkops(card);
+> +			card->bkops_info.started_delayed_bkops = false;
+> +			goto out;
+> +		}
+> +
+> +		mmc_release_host(card->host);
+> +
+> +		/*
+> +		 * Sleep before checking the card status again to allow the
+> +		 * card to complete the BKOPs operation
+> +		 */
+> +		msleep(BKOPS_COMPLETION_POLLING_INTERVAL_MS);
+> +	} while (time_before(jiffies, timeout_jiffies));
+> +
+> +	pr_err("%s: %s: exit polling due to timeout\n",
+> +	       mmc_hostname(card->host), __func__);
+> +
+> +	return;
+> +out:
+> +	mmc_release_host(card->host);
+> +}
+> +
+> +/**
+> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+> + * needed
+> + * @work:	The idle time BKOPS work
+> + */
+> +void mmc_start_idle_time_bkops(struct work_struct *work)
+> +{
+> +	struct mmc_card *card = container_of(work, struct mmc_card,
+> +			bkops_info.dw.work);
+> +
+> +	/*
+> +	 * Prevent a race condition between mmc_stop_bkops and the delayed
+> +	 * BKOPS work in case the delayed work is executed on another CPU
+> +	 */
+> +	if (card->bkops_info.cancel_delayed_work)
+> +		return;
+> +
+> +	mmc_start_bkops(card, false);
+> +}
+> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+> +
+>   static void mmc_wait_done(struct mmc_request *mrq)
+>   {
+>   	complete(&mrq->completion);
+> @@ -582,6 +732,19 @@ int mmc_stop_bkops(struct mmc_card *card)
+>   	int err = 0;
+>   
+>   	BUG_ON(!card);
+> +
+> +	mmc_claim_host(card->host);
+> +
+> +	/*
+> +	 * Notify the delayed work to be cancelled, in case it was already
+> +	 * removed from the queue, but was not started yet
+> +	 */
+> +	card->bkops_info.cancel_delayed_work = true;
+> +	if (delayed_work_pending(&card->bkops_info.dw))
+> +		cancel_delayed_work_sync(&card->bkops_info.dw);
+> +	if (!mmc_card_doing_bkops(card))
+> +		goto out;
+> +
+>   	err = mmc_interrupt_hpi(card);
+>   
+>   	/*
+> @@ -593,6 +756,8 @@ int mmc_stop_bkops(struct mmc_card *card)
+>   		err = 0;
+>   	}
+>   
+> +out:
+> +	mmc_release_host(card->host);
+>   	return err;
+>   }
+>   EXPORT_SYMBOL(mmc_stop_bkops);
+> @@ -2566,15 +2731,13 @@ int mmc_pm_notify(struct notifier_block *notify_block,
+>   	switch (mode) {
+>   	case PM_HIBERNATION_PREPARE:
+>   	case PM_SUSPEND_PREPARE:
+> -		if (host->card && mmc_card_mmc(host->card) &&
+> -		    mmc_card_doing_bkops(host->card)) {
+> +		if (host->card && mmc_card_mmc(host->card)) {
+>   			err = mmc_stop_bkops(host->card);
+>   			if (err) {
+>   				pr_err("%s: didn't stop bkops\n",
+>   					mmc_hostname(host));
+>   				return err;
+>   			}
+> -			mmc_card_clr_doing_bkops(host->card);
+>   		}
+>   
+>   		spin_lock_irqsave(&host->lock, flags);
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 7509de1..f8ff640 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1258,6 +1258,30 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>   		}
+>   	}
+>   
+> +	if (!oldcard) {
+> +		if (card->ext_csd.bkops_en) {
+> +			INIT_DELAYED_WORK(&card->bkops_info.dw,
+> +					  mmc_start_idle_time_bkops);
+> +			INIT_WORK(&card->bkops_info.poll_for_completion,
+> +				  mmc_bkops_completion_polling);
+> +
+> +			/*
+> +			 * Calculate the time to start the BKOPs checking.
+> +			 * The idle time of the host controller should be taken
+> +			 * into account in order to prevent a race condition
+> +			 * before starting BKOPs and going into suspend.
+> +			 * If the host controller didn't set its idle time,
+> +			 * a default value is used.
+> +			 */
+> +			card->bkops_info.delay_ms = MMC_IDLE_BKOPS_TIME_MS;
+> +			if (card->bkops_info.host_suspend_tout_ms)
+> +				card->bkops_info.delay_ms = min(
+> +					card->bkops_info.delay_ms,
+> +				      card->bkops_info.host_suspend_tout_ms/2);
+> +
+> +		}
+> +	}
+> +
+>   	if (!oldcard)
+>   		host->card = card;
+>   
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 78cc3be..0e4d55a 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -207,6 +207,48 @@ struct mmc_part {
+>   #define MMC_BLK_DATA_AREA_GP	(1<<2)
+>   };
+>   
+> +/**
+> + * struct mmc_bkops_info - BKOPS data
+> + * @dw:	Idle time bkops delayed work
+> + * @host_suspend_tout_ms:	The host controller idle time,
+> + * before getting into suspend
+> + * @delay_ms:	The time to start the BKOPS
+> + *        delayed work once MMC thread is idle
+> + * @poll_for_completion:	Poll on BKOPS completion
+> + * @cancel_delayed_work: A flag to indicate if the delayed work
+> + *        should be cancelled
+> + * @started_delayed_bkops:  A flag to indicate if the delayed
+> + *        work was scheduled
+> + * @sectors_changed:  number of  sectors written or
+> + *       discard since the last idle BKOPS were scheduled
+> + */
+> +struct mmc_bkops_info {
+> +	struct delayed_work	dw;
+> +	unsigned int		host_suspend_tout_ms;
+> +	unsigned int		delay_ms;
+> +/*
+> + * A default time for checking the need for non urgent BKOPS once mmcqd
+> + * is idle.
+> + */
+> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+> +	struct work_struct	poll_for_completion;
+> +/* Polling timeout and interval for waiting on non-blocking BKOPs completion */
+> +#define BKOPS_COMPLETION_POLLING_TIMEOUT_MS 10000 /* in ms */
+> +#define BKOPS_COMPLETION_POLLING_INTERVAL_MS 1000 /* in ms */
+> +	bool			cancel_delayed_work;
+> +	bool			started_delayed_bkops;
+> +	unsigned int		sectors_changed;
+> +/*
+> + * Since canceling the delayed work might have significant effect on the
+> + * performance of small requests we won't queue the delayed work every time
+> + * mmcqd thread is idle.
+> + * The delayed work for idle BKOPS will be scheduled only after a significant
+> + * amount of write or discard data.
+> + * 100MB is chosen based on benchmark tests.
+> + */
+> +#define BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK 204800 /* 100MB */
+> +};
+> +
+>   /*
+>    * MMC device
+>    */
+> @@ -281,6 +323,8 @@ struct mmc_card {
+>   	struct dentry		*debugfs_root;
+>   	struct mmc_part	part[MMC_NUM_PHY_PARTITION]; /* physical partitions */
+>   	unsigned int    nr_parts;
+> +
+> +	struct mmc_bkops_info	bkops_info;
+>   };
+>   
+>   /*
+> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+> index 9b9cdaf..665d345 100644
+> --- a/include/linux/mmc/core.h
+> +++ b/include/linux/mmc/core.h
+> @@ -145,6 +145,9 @@ extern int mmc_app_cmd(struct mmc_host *, struct mmc_card *);
+>   extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+>   	struct mmc_command *, int);
+>   extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
+> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+> +extern void mmc_bkops_completion_polling(struct work_struct *work);
+>   extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int, bool);
+>   extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>   
 
