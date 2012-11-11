@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab2KKMuz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:50:55 -0500
+	id S1753378Ab2KKMvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:51:03 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:45333 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab2KKMuw (ORCPT
+	with ESMTP id S1753358Ab2KKMu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:50:52 -0500
+	Sun, 11 Nov 2012 07:50:59 -0500
 From: Jonas Gorski <jonas.gorski@gmail.com>
 To: linux-mips@linux-mips.org
 Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
@@ -14,9 +14,9 @@ Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
         Florian Fainelli <florian@openwrt.org>,
         Kevin Cernekee <cernekee@gmail.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [RFC] MIPS: BCM63XX: switch to common clock and Device Tree
-Date: Sun, 11 Nov 2012 13:50:44 +0100
-Message-Id: <1352638249-29298-11-git-send-email-jonas.gorski@gmail.com>
+Subject: [RFC] MIPS: BCM63XX: add empty Device Trees for all supported boards
+Date: Sun, 11 Nov 2012 13:50:48 +0100
+Message-Id: <1352638249-29298-15-git-send-email-jonas.gorski@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
 References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
@@ -24,707 +24,596 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch BCM63XX to the common clock framework and use clkdev for
-providing clock name lookups for non-DT devices.
-
-Clocks can have a frequency and gate-bit, or none, in case they
-are just provided for drivers expecting them to be present.
+Add empty board files for all boards supported by the legacy board
+support.
 
 Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
 ---
- .../devicetree/bindings/clock/bcm63xx-clock.txt    |   32 ++
- arch/mips/Kconfig                                  |    3 +-
- arch/mips/bcm63xx/Makefile                         |    7 +-
- arch/mips/bcm63xx/clk.c                            |  331 --------------------
- arch/mips/include/asm/mach-bcm63xx/bcm63xx_clk.h   |   11 -
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk-bcm63xx.c                          |  241 ++++++++++++++
- 7 files changed, 279 insertions(+), 347 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/bcm63xx-clock.txt
- delete mode 100644 arch/mips/bcm63xx/clk.c
- delete mode 100644 arch/mips/include/asm/mach-bcm63xx/bcm63xx_clk.h
- create mode 100644 drivers/clk/clk-bcm63xx.c
+ arch/mips/bcm63xx/dts/96328avng.dts   |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96338gw.dts     |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96338w.dts      |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96345gw2.dts    |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96348gw.dts     |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96348gw_10.dts  |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96348gw_11.dts  |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96348gw_a.dts   |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96348r.dts      |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96358vw.dts     |   22 +++++++++++
+ arch/mips/bcm63xx/dts/96358vw2.dts    |   23 ++++++++++++
+ arch/mips/bcm63xx/dts/Kconfig         |   64 +++++++++++++++++++++++++++++++++
+ arch/mips/bcm63xx/dts/Makefile        |   18 +++++++++
+ arch/mips/bcm63xx/dts/agpf_s0.dts     |   22 +++++++++++
+ arch/mips/bcm63xx/dts/dv201amr.dts    |   22 +++++++++++
+ arch/mips/bcm63xx/dts/dwv_s0.dts      |   22 +++++++++++
+ arch/mips/bcm63xx/dts/fast2404.dts    |   22 +++++++++++
+ arch/mips/bcm63xx/dts/rta1025w_16.dts |   22 +++++++++++
+ 18 files changed, 435 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/bcm63xx/dts/96328avng.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96338gw.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96338w.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96345gw2.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96348gw.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96348gw_10.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96348gw_11.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96348gw_a.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96348r.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96358vw.dts
+ create mode 100644 arch/mips/bcm63xx/dts/96358vw2.dts
+ create mode 100644 arch/mips/bcm63xx/dts/agpf_s0.dts
+ create mode 100644 arch/mips/bcm63xx/dts/dv201amr.dts
+ create mode 100644 arch/mips/bcm63xx/dts/dwv_s0.dts
+ create mode 100644 arch/mips/bcm63xx/dts/fast2404.dts
+ create mode 100644 arch/mips/bcm63xx/dts/rta1025w_16.dts
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm63xx-clock.txt b/Documentation/devicetree/bindings/clock/bcm63xx-clock.txt
+diff --git a/arch/mips/bcm63xx/dts/96328avng.dts b/arch/mips/bcm63xx/dts/96328avng.dts
 new file mode 100644
-index 0000000..467c0c2
+index 0000000..c1aee15
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/bcm63xx-clock.txt
-@@ -0,0 +1,32 @@
-+* Broadcom BCM63XX Clock bindings
++++ b/arch/mips/bcm63xx/dts/96328avng.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
 +
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible: one of
-+  a) "brcm,bcm63xx-clock"
-+  Standard BCM63XX clock.
-+  b) "brcm,bcm63xx-sar-clock"
-+  SAR/ATM clock, which requires a reset of the SAR/ATM block.
-+  c) "brcm,bcm63xx-enetsw-clock"
-+  Generic ethernet switch clock, which requires a reset of the block.
-+  d) "brcm,bcm6368-enetsw-clock"
-+  BCM6368 ethernet switch clock, which requires additional clocks to be
-+  enabled during reset.
-+
-+Optional properties:
-+- brcm,gate-bit: gate bit in the clock control register.
-+
-+- clock-frequency: frequency of this clock.
-+
-+Example:
-+
-+	hsspi: clock@9 {
-+		compatible = "brcm,bcm63xx-clock";
-+		#clock-cells = <0>;
-+		clock-output-names = "hsspi";
-+		brcm,gate-bit = <9>;
-+		clock-frequency = <133333333>;
-+	};
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 168b0fc..1203113 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -131,7 +131,8 @@ config BCM63XX
- 	select SYS_HAS_EARLY_PRINTK
- 	select SWAP_IO_SPACE
- 	select ARCH_REQUIRE_GPIOLIB
--	select HAVE_CLK
-+	select COMMON_CLK
-+	select CLKDEV
- 	select USE_OF
- 	help
- 	 Support for BCM63XX based boards
-diff --git a/arch/mips/bcm63xx/Makefile b/arch/mips/bcm63xx/Makefile
-index 30971a7..994893c 100644
---- a/arch/mips/bcm63xx/Makefile
-+++ b/arch/mips/bcm63xx/Makefile
-@@ -1,7 +1,6 @@
--obj-y		+= clk.o cpu.o cs.o gpio.o irq.o nvram.o prom.o reset.o \
--		   setup.o timer.o dev-dsp.o dev-enet.o dev-flash.o \
--		   dev-pcmcia.o dev-rng.o dev-spi.o dev-uart.o dev-wdt.o \
--		   dev-usb-usbd.o
-+obj-y		+= cpu.o cs.o gpio.o irq.o nvram.o prom.o reset.o setup.o \
-+		   timer.o dev-dsp.o dev-enet.o dev-flash.o dev-pcmcia.o \
-+		   dev-rng.o dev-spi.o dev-uart.o dev-wdt.o dev-usb-usbd.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
- 
- obj-y		+= boards/
-diff --git a/arch/mips/bcm63xx/clk.c b/arch/mips/bcm63xx/clk.c
-deleted file mode 100644
-index b9e948d..0000000
---- a/arch/mips/bcm63xx/clk.c
-+++ /dev/null
-@@ -1,331 +0,0 @@
--/*
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file "COPYING" in the main directory of this archive
-- * for more details.
-- *
-- * Copyright (C) 2008 Maxime Bizon <mbizon@freebox.fr>
-- */
--
--#include <linux/module.h>
--#include <linux/mutex.h>
--#include <linux/err.h>
--#include <linux/clk.h>
--#include <linux/delay.h>
--#include <bcm63xx_cpu.h>
--#include <bcm63xx_io.h>
--#include <bcm63xx_regs.h>
--#include <bcm63xx_reset.h>
--#include <bcm63xx_clk.h>
--
--static DEFINE_MUTEX(clocks_mutex);
--
--
--static void clk_enable_unlocked(struct clk *clk)
--{
--	if (clk->set && (clk->usage++) == 0)
--		clk->set(clk, 1);
--}
--
--static void clk_disable_unlocked(struct clk *clk)
--{
--	if (clk->set && (--clk->usage) == 0)
--		clk->set(clk, 0);
--}
--
--static void bcm_hwclock_set(u32 mask, int enable)
--{
--	u32 reg;
--
--	reg = bcm_perf_readl(PERF_CKCTL_REG);
--	if (enable)
--		reg |= mask;
--	else
--		reg &= ~mask;
--	bcm_perf_writel(reg, PERF_CKCTL_REG);
--}
--
--/*
-- * Ethernet MAC "misc" clock: dma clocks and main clock on 6348
-- */
--static void enet_misc_set(struct clk *clk, int enable)
--{
--	u32 mask;
--
--	if (BCMCPU_IS_6338())
--		mask = CKCTL_6338_ENET_EN;
--	else if (BCMCPU_IS_6345())
--		mask = CKCTL_6345_ENET_EN;
--	else if (BCMCPU_IS_6348())
--		mask = CKCTL_6348_ENET_EN;
--	else
--		/* BCMCPU_IS_6358 */
--		mask = CKCTL_6358_EMUSB_EN;
--	bcm_hwclock_set(mask, enable);
--}
--
--static struct clk clk_enet_misc = {
--	.set	= enet_misc_set,
--};
--
--/*
-- * Ethernet MAC clocks: only revelant on 6358, silently enable misc
-- * clocks
-- */
--static void enetx_set(struct clk *clk, int enable)
--{
--	if (enable)
--		clk_enable_unlocked(&clk_enet_misc);
--	else
--		clk_disable_unlocked(&clk_enet_misc);
--
--	if (BCMCPU_IS_6358()) {
--		u32 mask;
--
--		if (clk->id == 0)
--			mask = CKCTL_6358_ENET0_EN;
--		else
--			mask = CKCTL_6358_ENET1_EN;
--		bcm_hwclock_set(mask, enable);
--	}
--}
--
--static struct clk clk_enet0 = {
--	.id	= 0,
--	.set	= enetx_set,
--};
--
--static struct clk clk_enet1 = {
--	.id	= 1,
--	.set	= enetx_set,
--};
--
--/*
-- * Ethernet PHY clock
-- */
--static void ephy_set(struct clk *clk, int enable)
--{
--	if (!BCMCPU_IS_6358())
--		return;
--	bcm_hwclock_set(CKCTL_6358_EPHY_EN, enable);
--}
--
--
--static struct clk clk_ephy = {
--	.set	= ephy_set,
--};
--
--/*
-- * Ethernet switch clock
-- */
--static void enetsw_set(struct clk *clk, int enable)
--{
--	if (!BCMCPU_IS_6368())
--		return;
--	bcm_hwclock_set(CKCTL_6368_ROBOSW_EN |
--			CKCTL_6368_SWPKT_USB_EN |
--			CKCTL_6368_SWPKT_SAR_EN, enable);
--	if (enable) {
--		/* reset switch core afer clock change */
--		bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
--		msleep(10);
--		bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
--		msleep(10);
--	}
--}
--
--static struct clk clk_enetsw = {
--	.set	= enetsw_set,
--};
--
--/*
-- * PCM clock
-- */
--static void pcm_set(struct clk *clk, int enable)
--{
--	if (!BCMCPU_IS_6358())
--		return;
--	bcm_hwclock_set(CKCTL_6358_PCM_EN, enable);
--}
--
--static struct clk clk_pcm = {
--	.set	= pcm_set,
--};
--
--/*
-- * USB host clock
-- */
--static void usbh_set(struct clk *clk, int enable)
--{
--	if (BCMCPU_IS_6328())
--		bcm_hwclock_set(CKCTL_6328_USBH_EN, enable);
--	else if (BCMCPU_IS_6348())
--		bcm_hwclock_set(CKCTL_6348_USBH_EN, enable);
--	else if (BCMCPU_IS_6368())
--		bcm_hwclock_set(CKCTL_6368_USBH_EN, enable);
--}
--
--static struct clk clk_usbh = {
--	.set	= usbh_set,
--};
--
--/*
-- * USB device clock
-- */
--static void usbd_set(struct clk *clk, int enable)
--{
--	if (BCMCPU_IS_6328())
--		bcm_hwclock_set(CKCTL_6328_USBD_EN, enable);
--	else if (BCMCPU_IS_6368())
--		bcm_hwclock_set(CKCTL_6368_USBD_EN, enable);
--}
--
--static struct clk clk_usbd = {
--	.set	= usbd_set,
--};
--
--/*
-- * SPI clock
-- */
--static void spi_set(struct clk *clk, int enable)
--{
--	u32 mask;
--
--	if (BCMCPU_IS_6338())
--		mask = CKCTL_6338_SPI_EN;
--	else if (BCMCPU_IS_6348())
--		mask = CKCTL_6348_SPI_EN;
--	else if (BCMCPU_IS_6358())
--		mask = CKCTL_6358_SPI_EN;
--	else
--		/* BCMCPU_IS_6368 */
--		mask = CKCTL_6368_SPI_EN;
--	bcm_hwclock_set(mask, enable);
--}
--
--static struct clk clk_spi = {
--	.set	= spi_set,
--};
--
--/*
-- * XTM clock
-- */
--static void xtm_set(struct clk *clk, int enable)
--{
--	if (!BCMCPU_IS_6368())
--		return;
--
--	bcm_hwclock_set(CKCTL_6368_SAR_EN |
--			CKCTL_6368_SWPKT_SAR_EN, enable);
--
--	if (enable) {
--		/* reset sar core afer clock change */
--		bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 1);
--		mdelay(1);
--		bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 0);
--		mdelay(1);
--	}
--}
--
--
--static struct clk clk_xtm = {
--	.set	= xtm_set,
--};
--
--/*
-- * IPsec clock
-- */
--static void ipsec_set(struct clk *clk, int enable)
--{
--	bcm_hwclock_set(CKCTL_6368_IPSEC_EN, enable);
--}
--
--static struct clk clk_ipsec = {
--	.set	= ipsec_set,
--};
--
--/*
-- * PCIe clock
-- */
--
--static void pcie_set(struct clk *clk, int enable)
--{
--	bcm_hwclock_set(CKCTL_6328_PCIE_EN, enable);
--}
--
--static struct clk clk_pcie = {
--	.set	= pcie_set,
--};
--
--/*
-- * Internal peripheral clock
-- */
--static struct clk clk_periph = {
--	.rate	= (50 * 1000 * 1000),
--};
--
--
--/*
-- * Linux clock API implementation
-- */
--int clk_enable(struct clk *clk)
--{
--	mutex_lock(&clocks_mutex);
--	clk_enable_unlocked(clk);
--	mutex_unlock(&clocks_mutex);
--	return 0;
--}
--
--EXPORT_SYMBOL(clk_enable);
--
--void clk_disable(struct clk *clk)
--{
--	mutex_lock(&clocks_mutex);
--	clk_disable_unlocked(clk);
--	mutex_unlock(&clocks_mutex);
--}
--
--EXPORT_SYMBOL(clk_disable);
--
--unsigned long clk_get_rate(struct clk *clk)
--{
--	return clk->rate;
--}
--
--EXPORT_SYMBOL(clk_get_rate);
--
--struct clk *clk_get(struct device *dev, const char *id)
--{
--	if (!strcmp(id, "enet0"))
--		return &clk_enet0;
--	if (!strcmp(id, "enet1"))
--		return &clk_enet1;
--	if (!strcmp(id, "enetsw"))
--		return &clk_enetsw;
--	if (!strcmp(id, "ephy"))
--		return &clk_ephy;
--	if (!strcmp(id, "usbh"))
--		return &clk_usbh;
--	if (!strcmp(id, "usbd"))
--		return &clk_usbd;
--	if (!strcmp(id, "spi"))
--		return &clk_spi;
--	if (!strcmp(id, "xtm"))
--		return &clk_xtm;
--	if (!strcmp(id, "periph"))
--		return &clk_periph;
--	if (BCMCPU_IS_6358() && !strcmp(id, "pcm"))
--		return &clk_pcm;
--	if (BCMCPU_IS_6368() && !strcmp(id, "ipsec"))
--		return &clk_ipsec;
--	if (BCMCPU_IS_6328() && !strcmp(id, "pcie"))
--		return &clk_pcie;
--	return ERR_PTR(-ENOENT);
--}
--
--EXPORT_SYMBOL(clk_get);
--
--void clk_put(struct clk *clk)
--{
--}
--
--EXPORT_SYMBOL(clk_put);
-diff --git a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_clk.h b/arch/mips/include/asm/mach-bcm63xx/bcm63xx_clk.h
-deleted file mode 100644
-index 8fcf8df..0000000
---- a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_clk.h
-+++ /dev/null
-@@ -1,11 +0,0 @@
--#ifndef BCM63XX_CLK_H_
--#define BCM63XX_CLK_H_
--
--struct clk {
--	void		(*set)(struct clk *, int);
--	unsigned int	rate;
--	unsigned int	usage;
--	int		id;
--};
--
--#endif /* ! BCM63XX_CLK_H_ */
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 71a25b9..c991c8b 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -19,6 +19,7 @@ endif
- obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
- obj-$(CONFIG_ARCH_U8500)	+= ux500/
- obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
-+obj-$(CONFIG_BCM63XX)		+= clk-bcm63xx.o
- 
- # Chip specific
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-diff --git a/drivers/clk/clk-bcm63xx.c b/drivers/clk/clk-bcm63xx.c
-new file mode 100644
-index 0000000..571bb71
---- /dev/null
-+++ b/drivers/clk/clk-bcm63xx.c
-@@ -0,0 +1,241 @@
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * Device Tree Source for Broadcom BCM96328avng reference board
 + *
 + * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/of.h>
-+#include <linux/delay.h>
++/include/ "bcm6328.dtsi"
 +
-+#include <bcm63xx_cpu.h>
-+#include <bcm63xx_io.h>
-+#include <bcm63xx_regs.h>
-+#include <bcm63xx_reset.h>
++/ {
++	model = "96328avng";
++	compatible = "96328avng";
 +
-+DEFINE_SPINLOCK(bcm63xx_clk_lock);
++	ubus@10000000 {
 +
-+struct bcm63xx_clk {
-+	struct clk_hw hw;
-+	u32 rate;
-+	s8 gate_bit;
-+	void (*reset)(void);
++	};
 +};
+diff --git a/arch/mips/bcm63xx/dts/96338gw.dts b/arch/mips/bcm63xx/dts/96338gw.dts
+new file mode 100644
+index 0000000..5e4f893
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96338gw.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
 +
-+#define to_bcm63xx_clk(p) container_of(p, struct bcm63xx_clk, hw)
++/*
++ * Device Tree Source for Broadcom BCM96338GW reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
 +
-+static void bcm63xx_clk_set(u32 bit, int enable)
-+{
-+	unsigned long flags;
-+	u32 val;
++/include/ "bcm6338.dtsi"
 +
-+	spin_lock_irqsave(&bcm63xx_clk_lock, flags);
++/ {
++	model = "96338GW";
++	compatible = "96338GW";
 +
-+	val = bcm_perf_readl(PERF_CKCTL_REG);
-+	if (enable)
-+		val |= BIT(bit);
-+	else
-+		val &= ~BIT(bit);
++	ubus@fffe0000 {
 +
-+	bcm_perf_writel(val, PERF_CKCTL_REG);
-+
-+	spin_unlock_irqrestore(&bcm63xx_clk_lock, flags);
-+
-+}
-+
-+static int bcm63xx_clk_enable(struct clk_hw *hw)
-+{
-+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
-+
-+	if (clk->gate_bit >= 0)
-+		bcm63xx_clk_set(clk->gate_bit, 1);
-+
-+	if (clk->reset)
-+		clk->reset();
-+
-+	return 0;
-+}
-+
-+static void bcm63xx_clk_disable(struct clk_hw *hw)
-+{
-+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
-+
-+	if (clk->gate_bit >= 0)
-+		bcm63xx_clk_set(clk->gate_bit, 0);
-+}
-+
-+static int bcm63xx_clk_is_enabled(struct clk_hw *hw)
-+{
-+	struct bcm63xx_clk *clk = to_bcm63xx_clk(hw);
-+
-+	if (clk->gate_bit >= 0)
-+		return bcm_perf_readl(PERF_CKCTL_REG) & BIT(clk->gate_bit);
-+
-+	return 1;
-+}
-+
-+static unsigned long bcm63xx_clk_recalc_rate(struct clk_hw *hw,
-+					     unsigned long parent_state)
-+{
-+	return to_bcm63xx_clk(hw)->rate;
-+}
-+
-+static const struct clk_ops bcm63xx_clk_ops = {
-+	.enable		= bcm63xx_clk_enable,
-+	.disable	= bcm63xx_clk_disable,
-+	.is_enabled	= bcm63xx_clk_is_enabled,
-+	.recalc_rate	= bcm63xx_clk_recalc_rate,
++	};
 +};
+diff --git a/arch/mips/bcm63xx/dts/96338w.dts b/arch/mips/bcm63xx/dts/96338w.dts
+new file mode 100644
+index 0000000..972a530
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96338w.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
 +
-+static void bcm63xx_enetsw_reset(void)
-+{
-+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 1);
-+	mdelay(100);
-+	bcm63xx_core_set_reset(BCM63XX_RESET_ENETSW, 0);
-+	mdelay(100);
-+}
++/*
++ * Device Tree Source for Broadcom BCM963338W reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
 +
-+static void bcm6368_enetsw_reset(void)
-+{
-+	struct clk *enetsw_sar = clk_get(NULL, "enetsw-sar");
-+	struct clk *enetsw_usb = clk_get(NULL, "enetsw-usb");
++/include/ "bcm6338.dtsi"
 +
-+	/* secondary clocks need to be enabled while resetting the core */
-+	clk_prepare_enable(enetsw_sar);
-+	clk_prepare_enable(enetsw_usb);
++/ {
++	model = "96338W";
++	compatible = "96338W";
 +
-+	bcm63xx_enetsw_reset();
++	ubus@fffe0000 {
 +
-+	clk_disable_unprepare(enetsw_usb);
-+	clk_disable_unprepare(enetsw_sar);
-+
-+	clk_put(enetsw_sar);
-+	clk_put(enetsw_usb);
-+}
-+
-+static void bcm63xx_sar_reset(void)
-+{
-+	bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 1);
-+	mdelay(1);
-+	bcm63xx_core_set_reset(BCM63XX_RESET_SAR, 0);
-+	mdelay(1);
-+}
-+
-+static void __init bcm63xx_clock_init(struct device_node *node,
-+				      void (*reset)(void))
-+{
-+	u32 gate_bit_dt, rate = 0;
-+	s8 gate_bit = -1;
-+	struct clk *clk;
-+	struct bcm63xx_clk *bcm63xx_clk;
-+	const char *clk_name = node->name;
-+	const char *parent = NULL;
-+	int num_names, i;
-+	struct clk_init_data init;
-+
-+	if (!of_property_read_u32(node, "brcm,gate-bit", &gate_bit_dt) &&
-+	    !WARN_ON(gate_bit_dt > 32))
-+		gate_bit = gate_bit_dt;
-+
-+	of_property_read_u32(node, "clock-frequency", &rate);
-+
-+	num_names = of_property_count_strings(node, "clock-output-names");
-+
-+	if (!WARN_ON(num_names == 0))
-+		of_property_read_string_index(node, "clock-output-names", 0,
-+					      &clk_name);
-+
-+	parent = of_clk_get_parent_name(node, 0);
-+
-+	bcm63xx_clk = kzalloc(sizeof(*bcm63xx_clk), GFP_KERNEL);
-+	if (!bcm63xx_clk)
-+		return;
-+
-+	bcm63xx_clk->rate = rate;
-+	bcm63xx_clk->gate_bit = gate_bit;
-+	bcm63xx_clk->reset = reset;
-+
-+	init.name = clk_name;
-+	init.ops = &bcm63xx_clk_ops;
-+
-+	if (parent) {
-+		init.flags = 0;
-+		init.num_parents = 1;
-+		init.parent_names = &parent;
-+	} else {
-+		init.flags = CLK_IS_ROOT;
-+		init.num_parents = 0;
-+		init.parent_names = NULL;
-+	}
-+
-+	bcm63xx_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &bcm63xx_clk->hw);
-+	if (IS_ERR(clk)) {
-+		kfree(bcm63xx_clk);
-+		return;
-+	}
-+
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, clk_name, NULL);
-+
-+	/* register aliases */
-+	for (i = 1; i < num_names; i++) {
-+		of_property_read_string_index(node, "clock-output-names", i,
-+					      &clk_name);
-+		clk_register_clkdev(clk, clk_name, NULL);
-+	}
-+}
-+
-+static void __init bcm63xx_generic_clock_init(struct device_node *node)
-+{
-+	bcm63xx_clock_init(node, NULL);
-+}
-+
-+static void __init bcm63xx_enetsw_clock_init(struct device_node *node)
-+{
-+	bcm63xx_clock_init(node, bcm63xx_enetsw_reset);
-+}
-+
-+static void __init bcm6368_enetsw_clock_init(struct device_node *node)
-+{
-+	bcm63xx_clock_init(node, bcm6368_enetsw_reset);
-+}
-+
-+static void __init bcm63xx_sar_clock_init(struct device_node *node)
-+{
-+	bcm63xx_clock_init(node, bcm63xx_sar_reset);
-+}
-+
-+static const __initconst struct of_device_id clk_match[] = {
-+	{
-+		.compatible = "brcm,bcm63xx-clock",
-+		.data = bcm63xx_generic_clock_init,
-+	},
-+	{
-+		.compatible = "brcm,bcm63xx-enetsw-clock",
-+		.data = bcm63xx_enetsw_clock_init,
-+	},
-+	{
-+		.compatible = "brcm,bcm6368-enetsw-clock",
-+		.data = bcm63xx_enetsw_clock_init,
-+	},
-+	{
-+		.compatible = "brcm,bcm63xx-sar-clock",
-+		.data = bcm63xx_sar_clock_init,
-+	},
++	};
 +};
+diff --git a/arch/mips/bcm63xx/dts/96345gw2.dts b/arch/mips/bcm63xx/dts/96345gw2.dts
+new file mode 100644
+index 0000000..0114733
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96345gw2.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
 +
-+int __init bcm63xx_clocks_init(void)
-+{
-+	of_clk_init(clk_match);
++/*
++ * Device Tree Source for Broadcom BCM96345GW2 reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
 +
-+	return 0;
-+}
-+arch_initcall(bcm63xx_clocks_init);
++/include/ "bcm6345.dtsi"
++
++/ {
++	model = "96345GW2";
++	compatible = "96345GW2";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96348gw.dts b/arch/mips/bcm63xx/dts/96348gw.dts
+new file mode 100644
+index 0000000..8d7f7ca
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96348gw.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96348GW reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "96348GW";
++	compatible = "96348GW";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96348gw_10.dts b/arch/mips/bcm63xx/dts/96348gw_10.dts
+new file mode 100644
+index 0000000..3b27b5b
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96348gw_10.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96348GW-10 reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "96348GW-10";
++	compatible = "96348GW-10";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96348gw_11.dts b/arch/mips/bcm63xx/dts/96348gw_11.dts
+new file mode 100644
+index 0000000..07837ac
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96348gw_11.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96348GW-11 reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "96348GW-11";
++	compatible = "96348GW-11";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96348gw_a.dts b/arch/mips/bcm63xx/dts/96348gw_a.dts
+new file mode 100644
+index 0000000..9b0e5bd
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96348gw_a.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96348GW-A reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "96348GW-A";
++	compatible = "96348GW-A";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96348r.dts b/arch/mips/bcm63xx/dts/96348r.dts
+new file mode 100644
+index 0000000..309f898
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96348r.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96348GWR reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "96348R";
++	compatible = "96348R";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96358vw.dts b/arch/mips/bcm63xx/dts/96358vw.dts
+new file mode 100644
+index 0000000..55c3e92
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96358vw.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96358VW reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6358.dtsi"
++
++/ {
++	model = "96358VW";
++	compatible = "96358VW";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/96358vw2.dts b/arch/mips/bcm63xx/dts/96358vw2.dts
+new file mode 100644
+index 0000000..88f12ba
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/96358vw2.dts
+@@ -0,0 +1,23 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Broadcom 96358GWVW2 reference board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++
++/include/ "bcm6358.dtsi"
++
++/ {
++	model = "96358VW2";
++	compatible = "96358VW2";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/Kconfig b/arch/mips/bcm63xx/dts/Kconfig
+index 919f3f6..1c35054 100644
+--- a/arch/mips/bcm63xx/dts/Kconfig
++++ b/arch/mips/bcm63xx/dts/Kconfig
+@@ -1,3 +1,67 @@
+ menu "Built-in Device Tree support"
+ 
++config BOARD_96328AVNG
++	bool "96328avng reference board"
++	select BCM63XX_CPU_6328
++
++config BOARD_96338GW
++	bool "96338GW reference board"
++	select BCM63XX_CPU_6338
++
++config BOARD_96338W
++	bool "96338W reference board"
++	select BCM63XX_CPU_6338
++
++config BOARD_96345GW2
++	bool "96345GW2 reference board"
++	select BCM63XX_CPU_6345
++
++config BOARD_96348R
++	bool "96348R reference board"
++	select BCM63XX_CPU_6348
++
++config BOARD_96348GW
++	bool "96348GW reference board"
++	select BCM63XX_CPU_6348
++
++config BOARD_96348GW_10
++	bool "96348GW-10 reference board"
++	select BCM63XX_CPU_6348
++
++config BOARD_96348GW_11
++	bool "96348GW-11 reference board"
++	select BCM63XX_CPU_6348
++
++config BOARD_96348GW_A
++	bool "96348GW-A reference board"
++	select BCM63XX_CPU_6348
++
++config BOARD_96358VW
++	bool "96358VW2 reference board"
++	select BCM63XX_CPU_6358
++
++config BOARD_96358VW2
++	bool "96358VW2 reference board"
++	select BCM63XX_CPU_6358
++
++config BOARD_AGPF_S0
++	bool "AGPF-S0 (Pirelli Alice Gate VoIP 2 Plus Wi-Fi Business)"
++	select BCM63XX_CPU_6358
++
++config BOARD_DV201AMR
++	bool "DV201AMR (Davolink DV-201AMR)"
++	select BCM63XX_CPU_6348
++
++config BOARD_DWV_S0
++	bool "DWV-S0 (Pirelli A226G)"
++	select BCM63XX_CPU_6358
++
++config BOARD_FAST2404
++	bool "F@ST2404 (Sagem F@ST2404)"
++	select BCM63XX_CPU_6348
++
++config BOARD_RTA2015W_16
++	bool "RTA2015W_16 (Dynalink RTA2015W)"
++	select BCM63XX_CPU_6348
++
+ endmenu
+diff --git a/arch/mips/bcm63xx/dts/Makefile b/arch/mips/bcm63xx/dts/Makefile
+index 94d1057..e4f6439 100644
+--- a/arch/mips/bcm63xx/dts/Makefile
++++ b/arch/mips/bcm63xx/dts/Makefile
+@@ -6,5 +6,23 @@ obj-$(CONFIG_BCM63XX_CPU_6348)		+= bcm96348_generic.dtb.o
+ obj-$(CONFIG_BCM63XX_CPU_6358)		+= bcm96358_generic.dtb.o
+ obj-$(CONFIG_BCM63XX_CPU_6368)		+= bcm96368_generic.dtb.o
+ 
++# board support
++obj-$(CONFIG_BOARD_96328AVNG)		+= 96328avng.dtb.o
++obj-$(CONFIG_BOARD_96338GW)		+= 96338gw.dtb.o
++obj-$(CONFIG_BOARD_96338G)		+= 96338g.dtb.o
++obj-$(CONFIG_BOARD_96345GW2)		+= 96345gw2.dtb.o
++obj-$(CONFIG_BOARD_96348GW)		+= 96348gw.dtb.o
++obj-$(CONFIG_BOARD_96348GW_10)		+= 96348gw_10.dtb.o
++obj-$(CONFIG_BOARD_96348GW_11)		+= 96348gw_11.dtb.o
++obj-$(CONFIG_BOARD_96348GW_A)		+= 96348gw_a.dtb.o
++obj-$(CONFIG_BOARD_96348R)		+= 96348r.dtb.o
++obj-$(CONFIG_BOARD_96358VW)		+= 96358vw.dtb.o
++obj-$(CONFIG_BOARD_96358VW2)		+= 96358vw2.dtb.o
++obj-$(CONFIG_BOARD_AGPF_S0)		+= agpf_s0.dtb.o
++obj-$(CONFIG_BOARD_DV201AMR)		+= dv201amr.dtb.o
++obj-$(CONFIG_BOARD_DWV_S0)		+= dwv_s0.dtb.o
++obj-$(CONFIG_BOARD_FAST2404)		+= fast2404.dtb.o
++obj-$(CONFIG_BOARD_RTA1025W_16)		+= rta1025w_16.dtb.o
++
+ $(obj)/%.dtb: $(obj)/%.dts
+ 	$(call if_changed,dtc)
+diff --git a/arch/mips/bcm63xx/dts/agpf_s0.dts b/arch/mips/bcm63xx/dts/agpf_s0.dts
+new file mode 100644
+index 0000000..bb0defd0
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/agpf_s0.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Pirelli Alice Gate VoIP 2 Plus Wi-Fi Business board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6358.dtsi"
++
++/ {
++	model = "AGPF-S0";
++	compatible = "AGPF-S0";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/dv201amr.dts b/arch/mips/bcm63xx/dts/dv201amr.dts
+new file mode 100644
+index 0000000..7cdb41f
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/dv201amr.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Davolink DV-201AMR
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "DV201AMR";
++	compatible = "DV201AMR";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/dwv_s0.dts b/arch/mips/bcm63xx/dts/dwv_s0.dts
+new file mode 100644
+index 0000000..96e79cd
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/dwv_s0.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Pirelli A226G
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6358.dtsi"
++
++/ {
++	model = "DWV-S0";
++	compatible = "DWV-S0";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/fast2404.dts b/arch/mips/bcm63xx/dts/fast2404.dts
+new file mode 100644
+index 0000000..55d31ce
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/fast2404.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Sagem F@ST2404 board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "F@ST2404";
++	compatible = "F@ST2404";
++
++	ubus@fffe0000 {
++
++	};
++};
+diff --git a/arch/mips/bcm63xx/dts/rta1025w_16.dts b/arch/mips/bcm63xx/dts/rta1025w_16.dts
+new file mode 100644
+index 0000000..825fe4e
+--- /dev/null
++++ b/arch/mips/bcm63xx/dts/rta1025w_16.dts
+@@ -0,0 +1,22 @@
++/dts-v1/;
++
++/*
++ * Device Tree Source for Dynalink RTA2015W board
++ *
++ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++/include/ "bcm6348.dtsi"
++
++/ {
++	model = "RTA1025W_16";
++	compatible = "RTA1025W_16";
++
++	ubus@fffe0000 {
++
++	};
++};
 -- 
 1.7.2.5
 
