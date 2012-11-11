@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab2KKXDN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 18:03:13 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50038 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2KKXDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 18:03:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
-References: <509A915B.30105@redhat.com>
-	<CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
-	<509B117A.6070708@genband.com>
-	<509BE460.6010404@redhat.com>
-	<1352405111.29589.476.camel@haakon2.linux-iscsi.org>
-	<509C22B2.8010600@redhat.com>
-	<1352426896.29589.512.camel@haakon2.linux-iscsi.org>
-	<20121109110336.41833034@pyramind.ukuu.org.uk>
-	<14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
-	<CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
-Date: Mon, 12 Nov 2012 09:03:09 +1000
-Message-ID: <CAPM=9tyXG+AeNkXr2AUA8v1gHm_rL27dq8dhLWnXKXUOcrMyaw@mail.gmail.com>
-Subject: Re: scsi target, likely GPL violation
-From: Dave Airlie <airlied@gmail.com>
-To: Julian Calaby <julian.calaby@gmail.com>
-Cc: lrosen@rosenlaw.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        kcopenhaver@choate.com, Richard Fontana <rfontana@redhat.com>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>,
-        alan@lxorguk.ukuu.org.uk, agrover@redhat.com, bkuhn@sfconservancy.org,
-        tytso@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751624Ab2KKXDZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 18:03:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55691 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751166Ab2KKXDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 18:03:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
+   d="scan'208";a="240386994"
+From: Jon Mason <jon.mason@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: [PATCH v2] dmatest: Fix NULL pointer dereference on ioat
+Date: Sun, 11 Nov 2012 16:03:20 -0700
+Message-Id: <1352675000-29627-1-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 8:41 AM, Julian Calaby <julian.calaby@gmail.com> wrote:
-> Hi Lawrence,
->
-> On Mon, Nov 12, 2012 at 9:13 AM, Lawrence Rosen <lrosen@rosenlaw.com> wrote:
->> Alan Cox wrote:
->>> So either your work is truely not derivative of the kernel (which I find
->>> wildly improbable) or you have a problem and since you are aware
->>> of the complaints publically I guess probably a triple damages sized
->>> problem. But that's one for your lawyers and whatever opinion they
->>> have on the subject.
->>
->> Hi Alan and others,
->>
->> I've been advising Rising Tide Systems (RTS) in this matter. Please let me
->> reassure you that RTS is acting on advice of counsel.
->
-> It's nice to hear from legal counsel on this matter.
->
-> I don't think that the *usage* of the kernel APIs is the biggest issue
-> here. There are many examples where proprietary code uses these APIs
-> and is not violating the GPL.
->
-> As I see it, one of the main concerns is because the proprietary and
-> in-kernel target systems are, from what I understand, quite similar,
-> there is the possibility that GPL licensed contributions to the
-> in-kernel target code may have "leaked" into to the proprietary code.
-> That said, proving this is a very difficult problem, but the question
-> must still be asked:
->
-> Can Rising Tide Systems assure us that there is no GPL licensed code
-> within their proprietary target code?
+device_control is an optional and not implemented in all DMA drivers.
+Any calls to these will result in a NULL pointer dereference.  dmatest
+makes two of these calls when completing the kernel thread and removing
+the module.  These are corrected by calling the dmaengine_device_control
+wrapper and checking for a non-existant device_control function pointer
+there.
 
-Its a bit of both actually.
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <djbw@fb.com>
+---
+ drivers/dma/dmatest.c     |    4 ++--
+ include/linux/dmaengine.h |    5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-The problem is if you design a kernel subsystem specifically for the
-Linux kernel, even if you use the internal APIs, you are most likely
-creating a derived work of the Linux kernel.
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 24225f0..6ef9465 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -499,7 +499,7 @@ err_srcs:
+ 			thread_name, total_tests, failed_tests, ret);
+ 
+ 	/* terminate all transfers on specified channels */
+-	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	if (iterations > 0)
+ 		while (!kthread_should_stop()) {
+ 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
+@@ -524,7 +524,7 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
+ 	}
+ 
+ 	/* terminate all transfers on specified channels */
+-	dtc->chan->device->device_control(dtc->chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(dtc->chan);
+ 
+ 	kfree(dtc);
+ }
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index d3201e4..cf94e5f 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -608,7 +608,10 @@ static inline int dmaengine_device_control(struct dma_chan *chan,
+ 					   enum dma_ctrl_cmd cmd,
+ 					   unsigned long arg)
+ {
+-	return chan->device->device_control(chan, cmd, arg);
++	if (chan->device->device_control)
++		return chan->device->device_control(chan, cmd, arg);
++	else
++		return -ENOSYS;
+ }
+ 
+ static inline int dmaengine_slave_config(struct dma_chan *chan,
+-- 
+1.7.9.5
 
-questions that would need to be asked:
-Can the scsi target code work completely separate from a Linux kernel?
-Does it work with another operating system? was it designed for that
-operating system?
-
-The whole in-kernel version under the GPL isn't the problem here and
-has nothing to do with the violation. Its the one they distribute
-separately with their RTS OS kernel, and if they distribute it in one
-combined work, then a GPL violation is possibly indicated.
-
-The reasons for non-derived work status that have been suggested (but
-not accepted by all the community):
-a) AFS, a file system clearly not developed for Linux, where it being
-a derived work of something that came after it would be a bit crazy,
-b) binary GPU drivers, built from the same source base on their
-Windows platform, and the code existed on Windows before Linux,
-arguing this driver is a derived work is difficult as well. Also
-nvidia specifically don't distribute this driver linked against the
-kernel, and distros who have done this in the past have been on the
-end of cease-and-desist letters.
-
-So really this is purely a derived work issue, whether they release a
-trailing edge version of their code afterwards under the GPL isn't
-significant, other than a this might keep the community off our back.
-
-(Yes the secondary issue of people who contributed code and cleanups
-back to that code base and if they integrated it back into their
-internal code base, is a problem, but I don't believe its the primary
-issue).
-
-Dave.
