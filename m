@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab2KKWij (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:38:39 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56229 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2KKWii (ORCPT
+	id S1753797Ab2KKWmO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 17:42:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56254 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2KKWmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:38:38 -0500
+	Sun, 11 Nov 2012 17:42:12 -0500
 MIME-Version: 1.0
-Date: Mon, 12 Nov 2012 00:38:37 +0200
-X-Google-Sender-Auth: 4lODs9ncI4uvYy2MrBaDMXwrVZA
-Message-ID: <CAE7jHC-Z9wy=5HPzhZZpupcBVn862ERq1LRF9KQ=Ed7BXiDFBA@mail.gmail.com>
-Subject: Porting board initialization for fdt
-From: Constantine Shulyupin <const@makelinux.com>
-To: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, nsekhar@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        tim.bird@am.sony.com, pandaboard@googlegroups.com
+In-Reply-To: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
+References: <509A915B.30105@redhat.com> <CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
+ <509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>
+ <1352405111.29589.476.camel@haakon2.linux-iscsi.org> <509C22B2.8010600@redhat.com>
+ <1352426896.29589.512.camel@haakon2.linux-iscsi.org> <20121109110336.41833034@pyramind.ukuu.org.uk>
+ <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Mon, 12 Nov 2012 09:41:49 +1100
+Message-ID: <CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
+Subject: Re: scsi target, likely GPL violation
+To: lrosen@rosenlaw.com
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, kcopenhaver@choate.com,
+        Richard Fontana <rfontana@redhat.com>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>,
+        alan@lxorguk.ukuu.org.uk, agrover@redhat.com, bkuhn@sfconservancy.org,
+        tytso@mit.edu
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is architecture and the best strategy to port board initialization to fdt?
+Hi Lawrence,
 
-Let's see for example omap4_ehci_init and usbhs_bdata @
-arch/arm/mach-omap2/board-omap4panda.c.
+On Mon, Nov 12, 2012 at 9:13 AM, Lawrence Rosen <lrosen@rosenlaw.com> wrote:
+> Alan Cox wrote:
+>> So either your work is truely not derivative of the kernel (which I find
+>> wildly improbable) or you have a problem and since you are aware
+>> of the complaints publically I guess probably a triple damages sized
+>> problem. But that's one for your lawyers and whatever opinion they
+>> have on the subject.
+>
+> Hi Alan and others,
+>
+> I've been advising Rising Tide Systems (RTS) in this matter. Please let me
+> reassure you that RTS is acting on advice of counsel.
 
-How to perform board specific initializations?
-Can omap4_ehci_init be converted to probe function of new platform
-driver  omap4_ehci?
-Where and how define GPIO, clock?
-Should it be defined in of_dev_auxdata or in fdt?
+It's nice to hear from legal counsel on this matter.
 
-Thanks
+I don't think that the *usage* of the kernel APIs is the biggest issue
+here. There are many examples where proprietary code uses these APIs
+and is not violating the GPL.
+
+As I see it, one of the main concerns is because the proprietary and
+in-kernel target systems are, from what I understand, quite similar,
+there is the possibility that GPL licensed contributions to the
+in-kernel target code may have "leaked" into to the proprietary code.
+That said, proving this is a very difficult problem, but the question
+must still be asked:
+
+Can Rising Tide Systems assure us that there is no GPL licensed code
+within their proprietary target code?
+
+Thanks,
 
 -- 
-Constantine Shulyupin
-http://www.MakeLinux.com/
-Embedded Linux Systems
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
