@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2KKMcM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:32:12 -0500
-Received: from mail.in-ulm.de ([217.10.8.10]:44151 "HELO mail.in-ulm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752730Ab2KKMcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:32:10 -0500
-Date: Sun, 11 Nov 2012 13:25:28 +0100
-From: Christian Ehrhardt <lk@c--e.de>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Fix lapic time counter read for periodic mode
-Message-ID: <20121111122528.GC19718@lisa.in-ulm.de>
+	id S1752880Ab2KKMck (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:32:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61578 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab2KKMch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 07:32:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACRpkdawAdbwackZeST4iDkFZx9-exhTVoUzAABaWr1G89tATg@mail.gmail.com>
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+	<20121024161429.GA16350@core.coreip.homeip.net>
+	<CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
+	<4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
+	<CACRpkdaiLXVeUg1quuw3XPTenbKOjn+aWbGQezpcyvzQCtCWow@mail.gmail.com>
+	<20121030113407.GA24335@sirena.org.uk>
+	<CACRpkdapQJY0aoam741O0fb8EeM9BLk_Psq5TaPG84J7wEvCLw@mail.gmail.com>
+	<87obji8kta.fsf@deeprootsystems.com>
+	<CACRpkdbCk9+HSBPtfT-1dO8paSRYJ5VXX_0SxiyxgrObnJEvmQ@mail.gmail.com>
+	<20121101120713.GA4413@opensource.wolfsonmicro.com>
+	<CACRpkdawAdbwackZeST4iDkFZx9-exhTVoUzAABaWr1G89tATg@mail.gmail.com>
+Date: Sun, 11 Nov 2012 13:32:35 +0100
+Message-ID: <CACRpkdZy1zRQM8Ww3RGc=Q+yt_eS6ekb02MDM-ixzaG8LDRacQ@mail.gmail.com>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 1, 2012 at 3:01 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Nov 1, 2012 at 1:07 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>> On Thu, Nov 01, 2012 at 09:54:00AM +0100, Linus Walleij wrote:
+>
+>> For the pin hogging I'd actually been thinking separately that we should
+>> just have the device core do a devm_pinctrl_get_set_default() prior to
+>> probing the device and store the result in the struct device.  That
+>> would immediately remove almost all of the current pinctrl users, users
+>> that do need to do things with the data or check the result can then
+>> pick up the pinctrl pointer from the device struct.
+>
+> I never thought of that. This sounds like it would work.
 
-Hi,
+So I've looked closer at this.
 
-there is a bug in the emulation of the lapic time counter. In particular
-what we are seeing is that the time counter of a periodic lapic timer
-in the guest reads as zero 99% of the time. The patch below fixes that.
+> And the good thing is that this is a clean cut so we
+> will centralized code without having to decide right now
+> how to handle the pm idle/sleep cases.
+>
+> Talking here with Kevin Hilman on my left and Grant
+> Likely on my right (they're physically here) there is some
+> worry about stashing stuff into struct device.
+>
+> What if I retrieve this in the pinctrl subsystem using
+> bus notifiers and then expose the struct pinctrl * to
+> the clients by using pinctrl_get() and when you get
+> such a handle in your probe() you know that the
+> pinctrl subsystem has already fetched the handle and
+> set it to "default" at that point?
 
-The emulation of the lapic timer is done with the help of a hires
-timer that expires with the same frequency as the lapic counter.
-New expiration times for a periodic timer are calculated incrementally
-based on the last scheduled expiration time. This ensures long term
-accuracy of the emulated timer close to that of the underlying clock.
+I have sent out an RFC for this approach. It actually
+works quite well on the U300 for example.
 
-The actual value of the lapic time counter is calculated from the
-real time difference between current time and scheduled expiration time
-of the hires timer. If this difference is negative, the hires timer
-expired. For oneshot mode this is correctly translated into a zero value
-for the time counter. However, in periodic mode we must use the negative
-difference unmodified.
+However as stated in the patch we run into another
+problem: what if the pinctrl provider returns
+-EDEFER_PROBE?
 
-     regards   Christian
+(The same will be true for clocks, regulators etc I
+guess...)
 
-Fix lapic time counter read for periodic mode.
+If I use notifiers like this, I cannot return -EPROBE_DEFER
+to the core. :-(
 
-Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+The PM domains seem to be built on the notification
+mechanism as well (AFAICT), so it will not allow drivers to
+defer their probes, as it is an optional layer after all.
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 43e9fad..eff902d 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -810,8 +810,13 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
- 	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
- 		return 0;
- 
-+	/*
-+	 * hrtimer_get_remaining returns the signed difference between
-+	 * timer expiration time and current time. Keep negative return
-+	 * value iff the the timer is periodic.
-+	 */
- 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
--	if (ktime_to_ns(remaining) < 0)
-+	if (ktime_to_ns(remaining) < 0 && !apic_lvtt_period(apic))
- 		remaining = ktime_set(0, 0);
- 
- 	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
+As a matter of fact it seems that there is an implicit
+assumption in PM domains that the resources that
+are taken there cannot defer any probing, so they are
+assumed to always be present. Is this correct?
+If so, any resources that may be deferred (such as
+pinctrl) can never be handled in PM domains. Only
+simple stuff that the SoC controls directly e.g through
+some fixed register pokes to voltage domains.
+
+So then the only option that remains to centralize
+pinctrl handling is indeed to do that in the device core,
+before probe(). I need to know Greg's feelings about that.
+
+At the same time this sort of give me the feeling that
+we might be doing something wrong. The distributed
+nature of deferred probes will become quite elusive
+if the deferral request comes from some place
+before probe() is even called on the driver.
+
+Please check my RFC patch and tell me above errors
+in the above reasoning....
+
+Yours,
+Linus Walleij
