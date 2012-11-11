@@ -1,33 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab2KKQmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 11:42:36 -0500
-Received: from mx3.suomi24.fi ([80.76.154.16]:57133 "EHLO
-	s24-maa01.sth.basefarm.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751377Ab2KKQme (ORCPT
+	id S1753512Ab2KKQt3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 11:49:29 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61546 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2KKQt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 11:42:34 -0500
-Message-ID: <31519799.43221352652152005.JavaMail.defaultUser@defaultHost>
-Date: Sun, 11 Nov 2012 17:42:32 +0100 (CET)
-From: favour arisa <favourarisa300@suomi24.fi>
-Subject: Hello My Dear,
-MIME-Version: 1.0
-Content-Type: text/plain;charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 11 Nov 2012 11:49:27 -0500
+From: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+To: romieu@fr.zoreil.com, nic_swsd@realtek.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+Subject: [PATCH 1/1] 	r8169: Removed unused macros from r8169.c
+Date: Sun, 11 Nov 2012 11:48:38 -0500
+Message-Id: <1352652518-2287-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <r8169-Removed-unused-macros-from-r8169.c>
+References: <r8169-Removed-unused-macros-from-r8169.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello My Dear,
-how are you today,i hope your doing ever there. my name is miss
-favour and i am single,I come across your profile today and its my pleasure
-and interesting sending mail to you as a new friend. and I will like you to
-contact me back with my e-mail ( favourarisaa300@live.com  ) so i can
-give you my picture and tell you more about me.Remember good relationship
-goes beyond distance and color, honest, emotions, careering and kind that
-lead both lovers to fly highly on the wings of happiness.
-Awaiting to hear from you soon.
-Have a nice day.
-Yours favour
-                     favourarisaa300@live.com 
+
+Signed-off-by: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index b47d5b3..60b45ca 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -78,23 +78,18 @@ static const int multicast_filter_limit = 32;
+ 
+ #define MAX_READ_REQUEST_SHIFT	12
+ #define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
+-#define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+ 
+ #define R8169_REGS_SIZE		256
+ #define R8169_NAPI_WEIGHT	64
+ #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
+ #define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
+-#define RX_BUF_SIZE	1536	/* Rx Buffer size */
+ #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
+ #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
+ 
+ #define RTL8169_TX_TIMEOUT	(6*HZ)
+ #define RTL8169_PHY_TIMEOUT	(10*HZ)
+ 
+-#define RTL_EEPROM_SIG		cpu_to_le32(0x8129)
+-#define RTL_EEPROM_SIG_MASK	cpu_to_le32(0xffff)
+-#define RTL_EEPROM_SIG_ADDR	0x0000
+ 
+ /* write/read MMIO register */
+ #define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
+-- 
+1.7.5.4
+
