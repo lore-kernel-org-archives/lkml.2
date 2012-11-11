@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab2KKXDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 18:03:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55691 "EHLO mga02.intel.com"
+	id S1751429Ab2KKXK4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 18:10:56 -0500
+Received: from gherkin.frus.com ([192.158.254.49]:42285 "EHLO gherkin.frus.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab2KKXDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 18:03:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
-   d="scan'208";a="240386994"
-From: Jon Mason <jon.mason@intel.com>
+	id S1751333Ab2KKXKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 18:10:55 -0500
+Date: Sun, 11 Nov 2012 17:10:53 -0600
+From: Bob Tracy <rct@gherkin.frus.com>
 To: linux-kernel@vger.kernel.org
-Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [PATCH v2] dmatest: Fix NULL pointer dereference on ioat
-Date: Sun, 11 Nov 2012 16:03:20 -0700
-Message-Id: <1352675000-29627-1-git-send-email-jon.mason@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+Cc: mcree@orcon.net.nz
+Subject: Re: 3.7.0-rc4 build failure on alpha: MPILIB
+Message-ID: <20121111231053.GA11769@gherkin.frus.com>
+References: <20121105135313.GA3979@gherkin.frus.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121105135313.GA3979@gherkin.frus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_control is an optional and not implemented in all DMA drivers.
-Any calls to these will result in a NULL pointer dereference.  dmatest
-makes two of these calls when completing the kernel thread and removing
-the module.  These are corrected by calling the dmaengine_device_control
-wrapper and checking for a non-existant device_control function pointer
-there.
+On Mon, Nov 05, 2012 at 07:53:13AM -0600, Bob Tracy wrote:
+> With digital signature verification support (SIGNATURE, MPILIB) enabled
+> on the Alpha platform, I get the following during the MODPOST section of
+> the build:
+> 
+> ERROR: "__udiv_qrnnd" [lib/mpi/mpi.ko] undefined!
+> 
+> Current compiler is gcc-4.6.3
 
-Signed-off-by: Jon Mason <jon.mason@intel.com>
-CC: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <djbw@fb.com>
----
- drivers/dma/dmatest.c     |    4 ++--
- include/linux/dmaengine.h |    5 ++++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+Got a workaround.  I'll leave it to the "powers that be" for a proper
+fix.  Issue is "__udiv_qrnnd" is part of "arch/alpha/math-emu" and is
+built-in.  If MPILIB is built as a module, you get the undefined symbol
+error.  If "CONFIG_MPILIB=y" (built-in), no undefined symbol issue.
 
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index 24225f0..6ef9465 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -499,7 +499,7 @@ err_srcs:
- 			thread_name, total_tests, failed_tests, ret);
- 
- 	/* terminate all transfers on specified channels */
--	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+	dmaengine_terminate_all(chan);
- 	if (iterations > 0)
- 		while (!kthread_should_stop()) {
- 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
-@@ -524,7 +524,7 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
- 	}
- 
- 	/* terminate all transfers on specified channels */
--	dtc->chan->device->device_control(dtc->chan, DMA_TERMINATE_ALL, 0);
-+	dmaengine_terminate_all(dtc->chan);
- 
- 	kfree(dtc);
- }
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index d3201e4..cf94e5f 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -608,7 +608,10 @@ static inline int dmaengine_device_control(struct dma_chan *chan,
- 					   enum dma_ctrl_cmd cmd,
- 					   unsigned long arg)
- {
--	return chan->device->device_control(chan, cmd, arg);
-+	if (chan->device->device_control)
-+		return chan->device->device_control(chan, cmd, arg);
-+	else
-+		return -ENOSYS;
- }
- 
- static inline int dmaengine_slave_config(struct dma_chan *chan,
+My best guess is, the proper solution will involve either tightening the
+configuration dependencies a bit, or making sure required symbols are
+properly exported for use by modules.
+
 -- 
-1.7.9.5
-
+------------------------------------------------------------------------
+Bob Tracy          |  "Build a man a fire, he'll be warm for a day.  Set
+rct@frus.com       |   a man on fire, he'll be warm for the rest of his
+                   |   life."	-- David Burge (Iowahawk)
+------------------------------------------------------------------------
