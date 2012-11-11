@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2KKMyR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:54:17 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64872 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab2KKMyO (ORCPT
+	id S1753259Ab2KKMye (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:54:34 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56079 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab2KKMun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:54:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352638346-32273-1-git-send-email-stefanha@gmail.com>
-References: <1352638346-32273-1-git-send-email-stefanha@gmail.com>
-Date: Sun, 11 Nov 2012 13:54:13 +0100
-Message-ID: <CAJSP0QWq35dZOdFEPJ_fh-Gbk-JatfCt5hwsAu_ysHxgOWSWvA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] staging: line6: replace CONFIG_LINE6_USB_DEBUG with dyndbg
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>, Daniel Mack <zonque@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 11 Nov 2012 07:50:43 -0500
+From: Jonas Gorski <jonas.gorski@gmail.com>
+To: linux-mips@linux-mips.org
+Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        Maxime Bizon <mbizon@freebox.fr>,
+        Florian Fainelli <florian@openwrt.org>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [RFC] SPI: spi-bcm63xx: use clk_{prepare_enable,disable_unprepare}
+Date: Sun, 11 Nov 2012 13:50:39 +0100
+Message-Id: <1352638249-29298-6-git-send-email-jonas.gorski@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
+References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 11, 2012 at 1:52 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> Daniel Mack <zonque@gmail.com> suggested the dyndbg mechanism which allows
-> dev_dbg() messages to be enabled/disabled at run-time.  This is more powerful
-> than the compile-time CONFIG_LINE6_USB_DEBUG option.
->
-> This patch series converts debug messages to dev_dbg() and drops the obsolete
-> CONFIG_LINE6_USB_DEBUG option.
->
-> Stefan Hajnoczi (3):
->   staging: line6: replace DEBUG_MESSAGES() with dev_dbg()
->   staging: line6: drop unused DEBUG_MESSAGES() macro
->   staging: line6: drop unused CONFIG_LINE6_USB_DEBUG
->
->  drivers/staging/line6/Kconfig  |  8 ------
->  drivers/staging/line6/driver.c |  6 ++---
->  drivers/staging/line6/driver.h |  6 -----
->  drivers/staging/line6/pod.c    | 57 ++++++++++++++++--------------------------
->  drivers/staging/line6/variax.c | 12 ++++-----
->  5 files changed, 28 insertions(+), 61 deletions(-)
+Use proper clk_prepare/unprepare calls in preparation for switching
+to the generic clock framework.
 
-I forgot to mention these patches apply on top of the "staging: line6:
-checkpatch.pl cleanups" series I sent earlier today.
+Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
+---
+ drivers/spi/spi-bcm63xx.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Stefan
+diff --git a/drivers/spi/spi-bcm63xx.c b/drivers/spi/spi-bcm63xx.c
+index a9f4049..69cb96a 100644
+--- a/drivers/spi/spi-bcm63xx.c
++++ b/drivers/spi/spi-bcm63xx.c
+@@ -431,7 +431,7 @@ static int __devinit bcm63xx_spi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Initialize hardware */
+-	clk_enable(bs->clk);
++	clk_prepare_enable(bs->clk);
+ 	bcm_spi_writeb(bs, SPI_INTR_CLEAR_ALL, SPI_INT_STATUS);
+ 
+ 	/* register and we are done */
+@@ -447,7 +447,7 @@ static int __devinit bcm63xx_spi_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ out_clk_disable:
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ out_err:
+ 	platform_set_drvdata(pdev, NULL);
+ 	spi_master_put(master);
+@@ -468,7 +468,7 @@ static int __devexit bcm63xx_spi_remove(struct platform_device *pdev)
+ 	bcm_spi_writeb(bs, 0, SPI_INT_MASK);
+ 
+ 	/* HW shutdown */
+-	clk_disable(bs->clk);
++	clk_disable_unprepare(bs->clk);
+ 	clk_put(bs->clk);
+ 
+ 	platform_set_drvdata(pdev, 0);
+-- 
+1.7.2.5
+
