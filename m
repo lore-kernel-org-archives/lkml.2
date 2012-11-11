@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2KKMum (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:50:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56079 "EHLO
+	id S1753242Ab2KKMy5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:54:57 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45333 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab2KKMuh (ORCPT
+	with ESMTP id S1753114Ab2KKMul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:50:37 -0500
+	Sun, 11 Nov 2012 07:50:41 -0500
 From: Jonas Gorski <jonas.gorski@gmail.com>
 To: linux-mips@linux-mips.org
 Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
@@ -14,9 +14,9 @@ Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
         Florian Fainelli <florian@openwrt.org>,
         Kevin Cernekee <cernekee@gmail.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [RFC] MIPS: BCM63XX: add support for loading DTB
-Date: Sun, 11 Nov 2012 13:50:35 +0100
-Message-Id: <1352638249-29298-2-git-send-email-jonas.gorski@gmail.com>
+Subject: [RFC] MIPS: BCM63XX: add Device Tree glue code for IRQ handling
+Date: Sun, 11 Nov 2012 13:50:38 +0100
+Message-Id: <1352638249-29298-5-git-send-email-jonas.gorski@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
 References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
@@ -24,184 +24,286 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for loading DTBs embedded into the kernel. Iterate through
-all embedded ones until a match is found and use that.
-
-Use the NVRAM provided board name for constructing the compatible
-property for selecting the appropriate in-kernel DTB.
+Register IRQ domains through Device Tree for the internal and external
+interrupt controllers. Register the same IRQ ranges as previously to
+provide backward compatibility for non-DT drivers.
 
 Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
 ---
- arch/mips/Kconfig              |    1 +
- arch/mips/bcm63xx/Kconfig      |    2 +
- arch/mips/bcm63xx/Makefile     |    1 +
- arch/mips/bcm63xx/dts/Kconfig  |    3 +
- arch/mips/bcm63xx/dts/Makefile |    2 +
- arch/mips/bcm63xx/setup.c      |   80 ++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/bcm63xx/dts/Kconfig
- create mode 100644 arch/mips/bcm63xx/dts/Makefile
+ .../devicetree/bindings/mips/bcm63xx/epic.txt      |   20 ++++++++++++
+ .../devicetree/bindings/mips/bcm63xx/ipic.txt      |   18 +++++++++++
+ arch/mips/bcm63xx/dts/bcm6328.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/dts/bcm6338.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/dts/bcm6345.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/dts/bcm6348.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/dts/bcm6358.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/dts/bcm6368.dtsi                 |   16 ++++++++++
+ arch/mips/bcm63xx/irq.c                            |   32 ++++++++++++++++++++
+ 9 files changed, 166 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mips/bcm63xx/epic.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/bcm63xx/ipic.txt
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 9934a46..168b0fc 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -132,6 +132,7 @@ config BCM63XX
- 	select SWAP_IO_SPACE
- 	select ARCH_REQUIRE_GPIOLIB
- 	select HAVE_CLK
-+	select USE_OF
- 	help
- 	 Support for BCM63XX based boards
- 
-diff --git a/arch/mips/bcm63xx/Kconfig b/arch/mips/bcm63xx/Kconfig
-index d03e879..03d693b 100644
---- a/arch/mips/bcm63xx/Kconfig
-+++ b/arch/mips/bcm63xx/Kconfig
-@@ -31,3 +31,5 @@ config BCM63XX_CPU_6368
- endmenu
- 
- source "arch/mips/bcm63xx/boards/Kconfig"
-+
-+source "arch/mips/bcm63xx/dts/Kconfig"
-diff --git a/arch/mips/bcm63xx/Makefile b/arch/mips/bcm63xx/Makefile
-index ac28073..30971a7 100644
---- a/arch/mips/bcm63xx/Makefile
-+++ b/arch/mips/bcm63xx/Makefile
-@@ -5,3 +5,4 @@ obj-y		+= clk.o cpu.o cs.o gpio.o irq.o nvram.o prom.o reset.o \
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
- 
- obj-y		+= boards/
-+obj-y		+= dts/
-diff --git a/arch/mips/bcm63xx/dts/Kconfig b/arch/mips/bcm63xx/dts/Kconfig
+diff --git a/Documentation/devicetree/bindings/mips/bcm63xx/epic.txt b/Documentation/devicetree/bindings/mips/bcm63xx/epic.txt
 new file mode 100644
-index 0000000..919f3f6
+index 0000000..4fc74e8
 --- /dev/null
-+++ b/arch/mips/bcm63xx/dts/Kconfig
-@@ -0,0 +1,3 @@
-+menu "Built-in Device Tree support"
++++ b/Documentation/devicetree/bindings/mips/bcm63xx/epic.txt
+@@ -0,0 +1,20 @@
++* Broadcom BCM63XX External Interrupt Controller
 +
-+endmenu
-diff --git a/arch/mips/bcm63xx/dts/Makefile b/arch/mips/bcm63xx/dts/Makefile
++Properties:
++- compatible: "brcm,bcm63xx-epic"
++  Compatible with all bcm63xx SoCs.
++
++- interrupt-controller: This is an interrupt controller.
++
++- #interrupt-cells: <2>
++  This controller supports level and edge triggered interrupts. The
++  first cell is the interrupt number, the second is a 1:1 mapping to
++  the linux interrupt flags.
++
++Example:
++
++	epic: interrupt-controller@18 {
++		compatible = "brcm,bcm63xx-epic";
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	}
+diff --git a/Documentation/devicetree/bindings/mips/bcm63xx/ipic.txt b/Documentation/devicetree/bindings/mips/bcm63xx/ipic.txt
 new file mode 100644
-index 0000000..69c374b
+index 0000000..1cbabf90
 --- /dev/null
-+++ b/arch/mips/bcm63xx/dts/Makefile
-@@ -0,0 +1,2 @@
-+$(obj)/%.dtb: $(obj)/%.dts
-+	$(call if_changed,dtc)
-diff --git a/arch/mips/bcm63xx/setup.c b/arch/mips/bcm63xx/setup.c
-index 314231b..8712354 100644
---- a/arch/mips/bcm63xx/setup.c
-+++ b/arch/mips/bcm63xx/setup.c
-@@ -4,6 +4,7 @@
-  * for more details.
-  *
-  * Copyright (C) 2008 Maxime Bizon <mbizon@freebox.fr>
-+ * Copyright (C) 2012 Jonas Gorski <jonas.gorski@gmail.com>
-  */
- 
- #include <linux/init.h>
-@@ -12,6 +13,8 @@
- #include <linux/bootmem.h>
- #include <linux/ioport.h>
- #include <linux/pm.h>
-+#include <linux/of_fdt.h>
-+#include <linux/of_platform.h>
- #include <asm/bootinfo.h>
- #include <asm/time.h>
- #include <asm/reboot.h>
-@@ -20,6 +23,7 @@
++++ b/Documentation/devicetree/bindings/mips/bcm63xx/ipic.txt
+@@ -0,0 +1,18 @@
++* BCM63XX Internal Interrupt Controller
++
++Properties:
++- compatible: "brcm,bcm63xx-ipic"
++  Compatible with all bcm63xx SoCs.
++
++- interrupt-controller: This is an interrupt controller.
++
++- #interrupt-cells: <1>
++  This controller supports only level interrupts.
++
++Example:
++
++	ipic: interrupt-controller@20 {
++		compatible = "brcm,bcm63xx-ipic";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++	}
+diff --git a/arch/mips/bcm63xx/dts/bcm6328.dtsi b/arch/mips/bcm63xx/dts/bcm6328.dtsi
+index a0e1835..a41033a 100644
+--- a/arch/mips/bcm63xx/dts/bcm6328.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6328.dtsi
+@@ -26,5 +26,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0x10000000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			epic: interrupt-controller@18 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			ipic: interrupt-controller@20 {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/dts/bcm6338.dtsi b/arch/mips/bcm63xx/dts/bcm6338.dtsi
+index 21772d9..8ecbc4f 100644
+--- a/arch/mips/bcm63xx/dts/bcm6338.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6338.dtsi
+@@ -26,5 +26,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0xfffe0000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			ipic: interrupt-controller@c {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			epic: interrupt-controller@14 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/dts/bcm6345.dtsi b/arch/mips/bcm63xx/dts/bcm6345.dtsi
+index f1e7153..ed17c12 100644
+--- a/arch/mips/bcm63xx/dts/bcm6345.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6345.dtsi
+@@ -26,5 +26,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0xfffe0000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			ipic: interrupt-controller@c {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			epic: interrupt-controller@14 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/dts/bcm6348.dtsi b/arch/mips/bcm63xx/dts/bcm6348.dtsi
+index 8a5a2dc..d54cf20 100644
+--- a/arch/mips/bcm63xx/dts/bcm6348.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6348.dtsi
+@@ -26,5 +26,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0xfffe0000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			ipic: interrupt-controller@c {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			epic: interrupt-controller@14 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/dts/bcm6358.dtsi b/arch/mips/bcm63xx/dts/bcm6358.dtsi
+index 1d3f20f..6ef283f 100644
+--- a/arch/mips/bcm63xx/dts/bcm6358.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6358.dtsi
+@@ -29,5 +29,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0xfffe0000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			epic: interrupt-controller@18 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			ipic: interrupt-controller@20 {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/dts/bcm6368.dtsi b/arch/mips/bcm63xx/dts/bcm6368.dtsi
+index a7624b9..ae1b584 100644
+--- a/arch/mips/bcm63xx/dts/bcm6368.dtsi
++++ b/arch/mips/bcm63xx/dts/bcm6368.dtsi
+@@ -29,5 +29,21 @@
+ 		#size-cells = <1>;
+ 		ranges = <0 0x10000000 0x20000>;
+ 		compatible = "simple-bus";
++
++		interrupt-parent = <&ipic>;
++
++		perf@0 {
++			epic: interrupt-controller@18 {
++				compatible = "brcm,bcm63xx-epic";
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			ipic: interrupt-controller@20 {
++				compatible = "brcm,bcm63xx-ipic";
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/mips/bcm63xx/irq.c b/arch/mips/bcm63xx/irq.c
+index da24c2b..3b64066 100644
+--- a/arch/mips/bcm63xx/irq.c
++++ b/arch/mips/bcm63xx/irq.c
+@@ -12,6 +12,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
+ #include <asm/irq_cpu.h>
+ #include <asm/mipsregs.h>
  #include <bcm63xx_cpu.h>
- #include <bcm63xx_regs.h>
- #include <bcm63xx_io.h>
-+#include <bcm963xx_tag.h>
+@@ -515,6 +517,34 @@ static struct irqaction cpu_ext_cascade_action = {
+ 	.flags		= IRQF_NO_THREAD,
+ };
  
- void bcm63xx_machine_halt(void)
- {
-@@ -152,6 +156,82 @@ void __init plat_mem_setup(void)
- 	board_setup();
- }
- 
-+extern struct boot_param_header __dtb_start;
-+extern struct boot_param_header __dtb_end;
-+
-+int __init bcm63xx_is_compatible(struct boot_param_header *devtree,
-+				   const char *compat)
++static int __init bcm63xx_ipic_of_init(struct device_node *node,
++				       struct device_node *parent)
 +{
-+	unsigned long dt_root;
-+	struct boot_param_header *old_ibp = initial_boot_params;
-+	int ret;
++	if (!irq_domain_add_simple(node,
++				   IRQ_EXTERNAL_BASE - IRQ_INTERNAL_BASE,
++				   IRQ_INTERNAL_BASE, &irq_domain_simple_ops,
++				   NULL))
++		panic("unable to add ipic domain!\n");
 +
-+	initial_boot_params = devtree;
-+
-+	dt_root = of_get_flat_dt_root();
-+	ret = of_flat_dt_is_compatible(dt_root, compat);
-+
-+	initial_boot_params = old_ibp;
-+
-+	return ret;
++	return 0;
 +}
 +
-+static struct of_device_id of_ids[] = {
-+	{ /* will be filled at runtime */ },
-+	{ .compatible = "simple-bus" },
++static int __init bcm63xx_epic_of_init(struct device_node *node,
++				       struct device_node *parent)
++{
++	if (!irq_domain_add_simple(node, ext_irq_count, IRQ_EXTERNAL_BASE,
++				   &irq_domain_simple_ops, NULL))
++		panic("unable to add epic domain!\n");
++
++	return 0;
++}
++
++static const struct of_device_id bcm63xx_pic_of_match[] __initconst = {
++	{ .compatible = "brcm,bcm63xx-ipic", .data = bcm63xx_ipic_of_init },
++	{ .compatible = "brcm,bcm63xx-epic", .data = bcm63xx_epic_of_init },
 +	{ },
 +};
 +
-+static struct boot_param_header *find_compatible_tree(const char *compat)
-+{
-+	struct boot_param_header *curr = &__dtb_start;
-+
-+	while (curr < &__dtb_end) {
-+		if (be32_to_cpu(curr->magic) != OF_DT_HEADER)
-+			continue;
-+
-+		if (bcm63xx_is_compatible(curr, compat))
-+			return curr;
-+
-+		/* in-kernel dtbs are aligned to 32 bytes */
-+		curr = (void *)curr + roundup(be32_to_cpu(curr->totalsize), 32);
-+	}
-+
-+	return NULL;
-+}
-+
-+void __init device_tree_init(void)
-+{
-+	struct boot_param_header *devtree = NULL;
-+	const char *name = board_get_name();
-+
-+	strncpy(of_ids[0].compatible, name, BOARDID_LEN);
-+
-+	devtree = find_compatible_tree(of_ids[0].compatible);
-+	if (!devtree) {
-+		pr_warn("no compatible device tree found for board %s\n"
-+			of_ids[0].compatible);
-+		return;
-+	}
-+
-+	__dt_setup_arch(devtree);
-+	reserve_bootmem(virt_to_phys(devtree), be32_to_cpu(devtree->totalsize),
-+			BOOTMEM_DEFAULT);
-+
-+	unflatten_device_tree();
-+}
-+
-+int __init bcm63xx_populate_device_tree(void)
-+{
-+	if (!of_have_populated_dt()) {
-+		pr_warn("device tree not available\n");
-+		return -ENODEV;
-+	}
-+
-+	return of_platform_populate(NULL, of_ids, NULL, NULL);
-+}
-+arch_initcall(bcm63xx_populate_device_tree);
-+
- int __init bcm63xx_register_devices(void)
+ void __init arch_init_irq(void)
  {
- 	return board_register_devices();
+ 	int i;
+@@ -535,4 +565,6 @@ void __init arch_init_irq(void)
+ 	}
+ 
+ 	setup_irq(MIPS_CPU_IRQ_BASE + 2, &cpu_ip2_cascade_action);
++
++	of_irq_init(bcm63xx_pic_of_match);
+ }
 -- 
 1.7.2.5
 
