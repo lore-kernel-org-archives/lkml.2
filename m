@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab2KKVBW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 16:01:22 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35819 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2KKVBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 16:01:21 -0500
-Date: Sun, 11 Nov 2012 22:00:53 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Drunkard Zhang <gongfan193@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Auto reboot when CPU at full load with X86_ACPI_CPUFREQ
-Message-ID: <20121111210053.GA6436@elf.ucw.cz>
-References: <CAJiejCRAZjNWGyJipfprHGptR2051Fdqf-10OkO0Yks7C2dQ0A@mail.gmail.com>
- <CAJiejCT8F18fH9yrtTDfHydFi6TDNdDWf8Ny7OATokf7EM-X1g@mail.gmail.com>
+	id S1753717Ab2KKVKk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 16:10:40 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:34555 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab2KKVKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 16:10:39 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: [PATCH] snd-ice1712: enable suspend on unknown ICE1724 cards
+Date: Sun, 11 Nov 2012 22:10:13 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CAJiejCT8F18fH9yrtTDfHydFi6TDNdDWf8Ny7OATokf7EM-X1g@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201211112210.13837.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Assume that unknown ICE1724-based cards are AC97-only that can suspend
+without any additional card-specific code.
 
-> I'm using Intel Xeon X5570 x2 with Asus Z8PE-D18, and experiencing
-> auto reboot when CPU full loaded for minutes, like building kernel
-> with "make -j17". After a lot of bisecting of config file, I found the
-> option leads to the reboot: X86_ACPI_CPUFREQ, both configed
-> X86_ACPI_CPUFREQ as a module or built in will lead to reboot.
-> 
-> Config file finally bisected appended, config-3.7.0-rc3+-bad is the
-> one leads to reboot, config-3.7.0-rc3+-ok works OK. Hardware info also
-> appended.
-> 
-> I think it is a bug, anything I can do? When the bug triggered, the
-> screen blanked immediately, any advice for me to debug? Happy to match
-> to code :-)
-> 
-> This bug is CPU specific, with Xeon E5606 or E5620 it's all fine, just
-> triggered with Xeon X5570, or maybe all Xeon X serial.
-> 
-> Tested kernel version: 3.1.x, 3.3.x, 3.5.x, 3.6.x, 3.7*, they are all affected.
+This fixes suspend on Gainward Hollywood@Home 7.1.
 
-What does temperature do during those runs? 
-								Pavel
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ sound/pci/ice1712/ice1724.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+index 5cc3fa5..aebd584 100644
+--- a/sound/pci/ice1712/ice1724.c
++++ b/sound/pci/ice1712/ice1724.c
+@@ -2363,6 +2363,8 @@ static int __devinit snd_vt1724_read_eeprom(struct snd_ice1712 *ice,
+ 	}
+ 	printk(KERN_WARNING "ice1724: No matching model found for ID 0x%x\n",
+ 	       ice->eeprom.subvendor);
++	/* assume AC97-only card which can suspend without additional code */
++	ice->pm_suspend_enabled = 1;
+ 
+  found:
+ 	ice->eeprom.size = snd_vt1724_read_i2c(ice, dev, 0x04);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ondrej Zary
