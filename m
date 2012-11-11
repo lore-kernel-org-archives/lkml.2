@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2KKTDP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 14:03:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62452 "EHLO mx1.redhat.com"
+	id S1753654Ab2KKTB7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 14:01:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab2KKTCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 14:02:15 -0500
+	id S1751656Ab2KKTB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 14:01:58 -0500
 From: Rafael Aquini <aquini@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
@@ -13,123 +13,156 @@ Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         "Michael S. Tsirkin" <mst@redhat.com>,
         Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
         Rusty Russell <rusty@rustcorp.com.au>, aquini@redhat.com
-Subject: [PATCH v12 6/7] mm: introduce putback_movable_pages()
-Date: Sun, 11 Nov 2012 17:01:19 -0200
-Message-Id: <b875501753c23fbdb3e4f572e70dcbacd6d01d40.1352656285.git.aquini@redhat.com>
-In-Reply-To: <cover.1352656285.git.aquini@redhat.com>
-References: <cover.1352656285.git.aquini@redhat.com>
-In-Reply-To: <cover.1352656285.git.aquini@redhat.com>
-References: <cover.1352656285.git.aquini@redhat.com>
+Subject: [PATCH v12 0/7] make balloon pages movable by compaction
+Date: Sun, 11 Nov 2012 17:01:13 -0200
+Message-Id: <cover.1352656285.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PATCH "mm: introduce compaction and migration for virtio ballooned pages"
-hacks around putback_lru_pages() in order to allow ballooned pages to be
-re-inserted on balloon page list as if a ballooned page was like a LRU page.
+Memory fragmentation introduced by ballooning might reduce significantly
+the number of 2MB contiguous memory blocks that can be used within a guest,
+thus imposing performance penalties associated with the reduced number of
+transparent huge pages that could be used by the guest workload.
 
-As ballooned pages are not legitimate LRU pages, this patch introduces
-putback_movable_pages() to properly cope with cases where the isolated
-pageset contains ballooned pages and LRU pages, thus fixing the mentioned
-inelegant hack around putback_lru_pages().
+This patch-set follows the main idea discussed at 2012 LSFMMS session:
+"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
+to introduce the required changes to the virtio_balloon driver, as well as
+the changes to the core compaction & migration bits, in order to make those
+subsystems aware of ballooned pages and allow memory balloon pages become
+movable within a guest, thus avoiding the aforementioned fragmentation issue
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- include/linux/migrate.h |  2 ++
- mm/compaction.c         |  6 +++---
- mm/migrate.c            | 20 ++++++++++++++++++++
- mm/page_alloc.c         |  2 +-
- 4 files changed, 26 insertions(+), 4 deletions(-)
+Following are numbers that prove this patch benefits on allowing compaction
+to be more effective at memory ballooned guests.
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 4ce2ee9..42fafb4 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -27,6 +27,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
- #ifdef CONFIG_MIGRATION
- 
- extern void putback_lru_pages(struct list_head *l);
-+extern void putback_movable_pages(struct list_head *l);
- extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
-@@ -51,6 +52,7 @@ extern int migrate_misplaced_page(struct page *page, int node);
- #else
- 
- static inline void putback_lru_pages(struct list_head *l) {}
-+static inline void putback_movable_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 76abd84..f268bd8 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -995,7 +995,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		switch (isolate_migratepages(zone, cc)) {
- 		case ISOLATE_ABORT:
- 			ret = COMPACT_PARTIAL;
--			putback_lru_pages(&cc->migratepages);
-+			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
- 			goto out;
- 		case ISOLATE_NONE:
-@@ -1018,9 +1018,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
- 						nr_remaining);
- 
--		/* Release LRU pages not migrated */
-+		/* Release isolated pages not migrated */
- 		if (err) {
--			putback_lru_pages(&cc->migratepages);
-+			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
- 			if (err == -ENOMEM) {
- 				ret = COMPACT_PARTIAL;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index a771751..107a281 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -80,6 +80,26 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
-+			putback_lru_page(page);
-+	}
-+}
-+
-+/*
-+ * Put previously isolated pages back onto the appropriate lists
-+ * from where they were once taken off for compaction/migration.
-+ *
-+ * This function shall be used instead of putback_lru_pages(),
-+ * whenever the isolated pageset has been built by isolate_migratepages_range()
-+ */
-+void putback_movable_pages(struct list_head *l)
-+{
-+	struct page *page;
-+	struct page *page2;
-+
-+	list_for_each_entry_safe(page, page2, l, lru) {
-+		list_del(&page->lru);
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				page_is_file_cache(page));
- 		if (unlikely(balloon_page_movable(page)))
- 			balloon_page_putback(page);
- 		else
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8fd1919..6b990cb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5795,7 +5795,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
- 				    0, false, MIGRATE_SYNC);
- 	}
- 
--	putback_lru_pages(&cc->migratepages);
-+	putback_movable_pages(&cc->migratepages);
- 	return ret > 0 ? 0 : ret;
- }
- 
+Results for STRESS-HIGHALLOC benchmark, from Mel Gorman's mmtests suite,
+running on a 4gB RAM KVM guest which was ballooning 512mB RAM in 64mB chunks,
+at every minute (inflating/deflating), while test was running:
+
+===BEGIN stress-highalloc
+
+STRESS-HIGHALLOC
+                 highalloc-3.7     highalloc-3.7
+                     rc4-clean         rc4-patch
+Pass 1          55.00 ( 0.00%)    62.00 ( 7.00%)
+Pass 2          54.00 ( 0.00%)    62.00 ( 8.00%)
+while Rested    75.00 ( 0.00%)    80.00 ( 5.00%)
+
+MMTests Statistics: duration
+                 3.7         3.7
+           rc4-clean   rc4-patch
+User         1207.59     1207.46
+System       1300.55     1299.61
+Elapsed      2273.72     2157.06
+
+MMTests Statistics: vmstat
+                                3.7         3.7
+                          rc4-clean   rc4-patch
+Page Ins                    3581516     2374368
+Page Outs                  11148692    10410332
+Swap Ins                         80          47
+Swap Outs                      3641         476
+Direct pages scanned          37978       33826
+Kswapd pages scanned        1828245     1342869
+Kswapd pages reclaimed      1710236     1304099
+Direct pages reclaimed        32207       31005
+Kswapd efficiency               93%         97%
+Kswapd velocity             804.077     622.546
+Direct efficiency               84%         91%
+Direct velocity              16.703      15.682
+Percentage direct scans          2%          2%
+Page writes by reclaim        79252        9704
+Page writes file              75611        9228
+Page writes anon               3641         476
+Page reclaim immediate        16764       11014
+Page rescued immediate            0           0
+Slabs scanned               2171904     2152448
+Direct inode steals             385        2261
+Kswapd inode steals          659137      609670
+Kswapd skipped wait               1          69
+THP fault alloc                 546         631
+THP collapse alloc              361         339
+THP splits                      259         263
+THP fault fallback               98          50
+THP collapse fail                20          17
+Compaction stalls               747         499
+Compaction success              244         145
+Compaction failures             503         354
+Compaction pages moved       370888      474837
+Compaction move failure       77378       65259
+
+===END stress-highalloc
+
+Rafael Aquini (7):
+  mm: adjust address_space_operations.migratepage() return code
+  mm: redefine address_space.assoc_mapping
+  mm: introduce a common interface for balloon pages mobility
+  mm: introduce compaction and migration for ballooned pages
+  virtio_balloon: introduce migration primitives to balloon pages
+  mm: introduce putback_movable_pages()
+  mm: add vm event counters for balloon pages compaction
+
+ drivers/virtio/virtio_balloon.c    | 139 +++++++++++++++--
+ fs/buffer.c                        |  12 +-
+ fs/gfs2/glock.c                    |   2 +-
+ fs/hugetlbfs/inode.c               |   4 +-
+ fs/inode.c                         |   2 +-
+ fs/nilfs2/page.c                   |   2 +-
+ include/linux/balloon_compaction.h | 263 ++++++++++++++++++++++++++++++++
+ include/linux/fs.h                 |   2 +-
+ include/linux/migrate.h            |  19 +++
+ include/linux/pagemap.h            |  16 ++
+ include/linux/vm_event_item.h      |   7 +-
+ mm/Kconfig                         |  15 ++
+ mm/Makefile                        |   3 +-
+ mm/balloon_compaction.c            | 304 +++++++++++++++++++++++++++++++++++++
+ mm/compaction.c                    |  27 +++-
+ mm/migrate.c                       |  86 ++++++++---
+ mm/page_alloc.c                    |   2 +-
+ mm/vmstat.c                        |   9 +-
+ 18 files changed, 862 insertions(+), 52 deletions(-)
+ create mode 100644 include/linux/balloon_compaction.h
+ create mode 100644 mm/balloon_compaction.c
+
+Change log:
+v12:
+ * Address last suggestions on sorting the barriers usage out      (Mel Gorman);
+ * Fix reported build breakages for CONFIG_BALLOON_COMPACTION=n (Andrew Morton);
+ * Enhance commentary on the locking scheme used for balloon page compaction;
+ * Move all the 'balloon vm_event counter' changes to PATCH 07;
+v11:
+ * Address AKPM's last review suggestions;
+ * Extend the balloon compaction common API and simplify its usage at driver;
+ * Minor nitpicks on code commentary;
+v10:
+ * Adjust leak_balloon() wait_event logic to make a clear locking scheme (MST);
+ * Drop the RCU protection approach for dereferencing balloon's page->mapping;
+ * Minor nitpitcks on code commentaries (MST);
+v9:
+ * Adjust rcu_dereference usage to leverage page lock protection  (Paul, Peter);
+ * Enhance doc on compaction interface introduced to balloon driver   (Michael);
+ * Fix issue with isolated pages breaking leak_balloon() logics       (Michael);
+v8:
+ * introduce a common MM interface for balloon driver page compaction (Michael);
+ * remove the global state preventing multiple balloon device support (Michael);
+ * introduce RCU protection/syncrhonization to balloon page->mapping  (Michael);
+v7:
+ * fix a potential page leak case at 'putback_balloon_page'               (Mel);
+ * adjust vm-events-counter patch and remove its drop-on-merge message    (Rik);
+ * add 'putback_movable_pages' to avoid hacks on 'putback_lru_pages'  (Minchan);
+v6:
+ * rename 'is_balloon_page()' to 'movable_balloon_page()'                 (Rik);
+v5:
+ * address Andrew Morton's review comments on the patch series;
+ * address a couple extra nitpick suggestions on PATCH 01             (Minchan);
+v4:
+ * address Rusty Russel's review comments on PATCH 02;
+ * re-base virtio_balloon patch on 9c378abc5c0c6fc8e3acf5968924d274503819b3;
+V3:
+ * address reviewers nitpick suggestions on PATCH 01             (Mel, Minchan);
+V2:
+ * address Mel Gorman's review comments on PATCH 01;
+
 -- 
 1.7.11.7
 
