@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2KKPiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 10:38:50 -0500
+	id S1753429Ab2KKPiR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 10:38:17 -0500
 Received: from mga02.intel.com ([134.134.136.20]:12053 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab2KKPiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 10:38:23 -0500
+	id S1753252Ab2KKPiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 10:38:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,757,1344236400"; 
-   d="scan'208";a="217934061"
+   d="scan'208";a="217934028"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 6/7] mei: use link and unlink terms for connecting ME and HOST client
-Date: Sun, 11 Nov 2012 17:38:03 +0200
-Message-Id: <1352648284-8838-6-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 2/7] mei: use type struct mei_cl *cl instead of void in struct mei_cb
+Date: Sun, 11 Nov 2012 17:37:59 +0200
+Message-Id: <1352648284-8838-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1352648284-8838-1-git-send-email-tomas.winkler@intel.com>
 References: <1352648284-8838-1-git-send-email-tomas.winkler@intel.com>
@@ -23,245 +23,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. rename mei_me_cl_update_filext to mei_me_cl_link
-2. rename mei_remove_client_from_file_list to mei_me_cl_unlink
+We can use correct type 'struct mei_cl' instead of
+'void *' for file_private in the struct mei_cb
+as there is no other type assigned to this member of the structure
 
-Code style, documenation, and usage of both function is updated
+We rename the member from file_private to cl
+
+Remove about 10 lines of declarations of temporary variables
+used for type casting
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/amthif.c  |    4 +-
- drivers/misc/mei/init.c    |   67 +++++++++++++++++++++-----------------------
- drivers/misc/mei/iorw.c    |   16 +----------
- drivers/misc/mei/main.c    |    6 ++--
- drivers/misc/mei/mei_dev.h |    4 +-
- drivers/misc/mei/wd.c      |    8 ++--
- 6 files changed, 44 insertions(+), 61 deletions(-)
+ drivers/misc/mei/amthif.c    |   14 ++++----------
+ drivers/misc/mei/init.c      |    6 ++----
+ drivers/misc/mei/interrupt.c |   14 +++++++-------
+ drivers/misc/mei/iorw.c      |    2 +-
+ drivers/misc/mei/main.c      |    8 ++------
+ drivers/misc/mei/mei_dev.h   |    9 ++++++++-
+ 6 files changed, 24 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 7416241..095d059 100644
+index 1de28df..74d593f 100644
 --- a/drivers/misc/mei/amthif.c
 +++ b/drivers/misc/mei/amthif.c
-@@ -73,10 +73,10 @@ void mei_amthif_host_init(struct mei_device *dev)
- 	dev->iamthif_cl.state = MEI_FILE_DISCONNECTED;
+@@ -119,14 +119,12 @@ void mei_amthif_host_init(struct mei_device *dev)
+ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+ 						struct file *file)
+ {
+-	struct mei_cl *cl_temp;
+ 	struct mei_cl_cb *pos = NULL;
+ 	struct mei_cl_cb *next = NULL;
  
- 	/* find ME amthi client */
--	i = mei_me_cl_update_filext(dev, &dev->iamthif_cl,
-+	i = mei_me_cl_link(dev, &dev->iamthif_cl,
- 			    &mei_amthi_guid, MEI_IAMTHIF_HOST_CLIENT_ID);
- 	if (i < 0) {
--		dev_dbg(&dev->pdev->dev, "failed to find iamthif client.\n");
-+		dev_info(&dev->pdev->dev, "failed to find iamthif client.\n");
- 		return;
+ 	list_for_each_entry_safe(pos, next,
+ 				&dev->amthif_rd_complete_list.list, list) {
+-		cl_temp = (struct mei_cl *)pos->file_private;
+-		if (cl_temp && cl_temp == &dev->iamthif_cl &&
++		if (pos->cl && pos->cl == &dev->iamthif_cl &&
+ 			pos->file_object == file)
+ 			return pos;
  	}
+@@ -370,7 +368,6 @@ int mei_amthif_write(struct mei_device *dev, struct mei_cl_cb *cb)
+  */
+ void mei_amthif_run_next_cmd(struct mei_device *dev)
+ {
+-	struct mei_cl *cl_tmp;
+ 	struct mei_cl_cb *pos = NULL;
+ 	struct mei_cl_cb *next = NULL;
+ 	int status;
+@@ -390,9 +387,8 @@ void mei_amthif_run_next_cmd(struct mei_device *dev)
  
+ 	list_for_each_entry_safe(pos, next, &dev->amthif_cmd_list.list, list) {
+ 		list_del(&pos->list);
+-		cl_tmp = (struct mei_cl *)pos->file_private;
+ 
+-		if (cl_tmp && cl_tmp == &dev->iamthif_cl) {
++		if (pos->cl && pos->cl == &dev->iamthif_cl) {
+ 			status = mei_amthif_send_cmd(dev, pos);
+ 			if (status) {
+ 				dev_dbg(&dev->pdev->dev,
+@@ -500,7 +496,6 @@ int mei_amthif_irq_process_completed(struct mei_device *dev, s32 *slots,
+ int mei_amthif_irq_read_message(struct mei_cl_cb *complete_list,
+ 		struct mei_device *dev, struct mei_msg_hdr *mei_hdr)
+ {
+-	struct mei_cl *cl;
+ 	struct mei_cl_cb *cb;
+ 	unsigned char *buffer;
+ 
+@@ -528,14 +523,13 @@ int mei_amthif_irq_read_message(struct mei_cl_cb *complete_list,
+ 	cb = dev->iamthif_current_cb;
+ 	dev->iamthif_current_cb = NULL;
+ 
+-	cl = (struct mei_cl *)cb->file_private;
+-	if (!cl)
++	if (!cb->cl)
+ 		return -ENODEV;
+ 
+ 	dev->iamthif_stall_timer = 0;
+ 	cb->buf_idx = dev->iamthif_msg_buf_index;
+ 	cb->read_time = jiffies;
+-	if (dev->iamthif_ioctl && cl == &dev->iamthif_cl) {
++	if (dev->iamthif_ioctl && cb->cl == &dev->iamthif_cl) {
+ 		/* found the iamthif cb */
+ 		dev_dbg(&dev->pdev->dev, "complete the amthi read cb.\n ");
+ 		dev_dbg(&dev->pdev->dev, "add the amthi read cb to complete.\n ");
 diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 85b6520..4fcb0bb 100644
+index 7e6d591..0046ca5 100644
 --- a/drivers/misc/mei/init.c
 +++ b/drivers/misc/mei/init.c
-@@ -281,12 +281,10 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- 			cl_pos->timer_count = 0;
+@@ -55,10 +55,8 @@ void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
+ 	struct mei_cl_cb *next;
+ 
+ 	list_for_each_entry_safe(pos, next, &list->list, list) {
+-		if (pos->file_private) {
+-			struct mei_cl *cl_tmp;
+-			cl_tmp = (struct mei_cl *)pos->file_private;
+-			if (mei_cl_cmp_id(cl, cl_tmp))
++		if (pos->cl) {
++			if (mei_cl_cmp_id(cl, pos->cl))
+ 				list_del(&pos->list);
  		}
- 		/* remove entry if already in list */
--		dev_dbg(&dev->pdev->dev, "list del iamthif and wd file list.\n");
--		mei_remove_client_from_file_list(dev,
--				dev->wd_cl.host_client_id);
-+		dev_dbg(&dev->pdev->dev, "remove iamthif and wd from the file list.\n");
-+		mei_me_cl_unlink(dev, &dev->wd_cl);
+ 	}
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 7193149..acc994e 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -113,7 +113,7 @@ static int mei_irq_thread_read_client_message(struct mei_cl_cb *complete_list,
+ 		goto quit;
  
--		mei_remove_client_from_file_list(dev,
--				dev->iamthif_cl.host_client_id);
-+		mei_me_cl_unlink(dev, &dev->iamthif_cl);
+ 	list_for_each_entry_safe(cb_pos, cb_next, &dev->read_list.list, list) {
+-		cl = (struct mei_cl *)cb_pos->file_private;
++		cl = cb_pos->cl;
+ 		if (cl && _mei_irq_thread_state_ok(cl, mei_hdr)) {
+ 			cl->reading_state = MEI_READING;
+ 			buffer = cb_pos->response_buffer.data + cb_pos->buf_idx;
+@@ -263,7 +263,7 @@ static void mei_client_connect_response(struct mei_device *dev,
+ 	}
+ 	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
  
- 		mei_amthif_reset_params(dev);
- 		dev->extra_write_index = 0;
-@@ -520,17 +518,20 @@ int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *cuuid)
+-		cl = (struct mei_cl *)pos->file_private;
++		cl = pos->cl;
+ 		if (!cl) {
+ 			list_del(&pos->list);
+ 			return;
+@@ -301,7 +301,7 @@ static void mei_client_disconnect_response(struct mei_device *dev,
+ 			rs->status);
+ 
+ 	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
+-		cl = (struct mei_cl *)pos->file_private;
++		cl = pos->cl;
+ 
+ 		if (!cl) {
+ 			list_del(&pos->list);
+@@ -981,7 +981,7 @@ static int mei_irq_thread_write_handler(struct mei_cl_cb *cmpl_list,
+ 
+ 	list = &dev->write_waiting_list;
+ 	list_for_each_entry_safe(pos, next, &list->list, list) {
+-		cl = (struct mei_cl *)pos->file_private;
++		cl = pos->cl;
+ 		if (cl == NULL)
+ 			continue;
+ 
+@@ -1039,7 +1039,7 @@ static int mei_irq_thread_write_handler(struct mei_cl_cb *cmpl_list,
+ 	/* complete control write list CB */
+ 	dev_dbg(&dev->pdev->dev, "complete control write list cb.\n");
+ 	list_for_each_entry_safe(pos, next, &dev->ctrl_wr_list.list, list) {
+-		cl = (struct mei_cl *) pos->file_private;
++		cl = pos->cl;
+ 		if (!cl) {
+ 			list_del(&pos->list);
+ 			return -ENODEV;
+@@ -1077,7 +1077,7 @@ static int mei_irq_thread_write_handler(struct mei_cl_cb *cmpl_list,
+ 	/* complete  write list CB */
+ 	dev_dbg(&dev->pdev->dev, "complete write list cb.\n");
+ 	list_for_each_entry_safe(pos, next, &dev->write_list.list, list) {
+-		cl = (struct mei_cl *)pos->file_private;
++		cl = pos->cl;
+ 		if (cl == NULL)
+ 			continue;
+ 
+@@ -1316,7 +1316,7 @@ end:
  
  
- /**
-- * mei_me_cl_update_filext - searches for ME client guid
-- *                       sets client_id in mei_file_private if found
-+ * mei_me_cl_link - create link between host and me clinet and add
-+ *   me_cl to the list
-+ *
-  * @dev: the device structure
-- * @cl: private file structure to set client_id in
-- * @cuuid: searched uuid of ME client
-- * @client_id: id of host client to be set in file private structure
-+ * @cl: link between me and host client assocated with opened file descriptor
-+ * @cuuid: uuid of ME client
-+ * @client_id: id of the host client
-  *
-- * returns ME client index
-+ * returns ME client index if ME client
-+ *	-EINVAL on incorrect values
-+ *	-ENONET if client not found
-  */
--int mei_me_cl_update_filext(struct mei_device *dev, struct mei_cl *cl,
--				const uuid_le *cuuid, u8 host_cl_id)
-+int mei_me_cl_link(struct mei_device *dev, struct mei_cl *cl,
-+			const uuid_le *cuuid, u8 host_cl_id)
- {
- 	int i;
- 
-@@ -550,6 +551,24 @@ int mei_me_cl_update_filext(struct mei_device *dev, struct mei_cl *cl,
- 
- 	return -ENOENT;
- }
-+/**
-+ * mei_me_cl_unlink - remove me_cl from the list
-+ *
-+ * @dev: the device structure
-+ * @host_client_id: host client id to be removed
-+ */
-+void mei_me_cl_unlink(struct mei_device *dev, struct mei_cl *cl)
-+{
-+	struct mei_cl *pos, *next;
-+	list_for_each_entry_safe(pos, next, &dev->file_list, link) {
-+		if (cl->host_client_id == pos->host_client_id) {
-+			dev_dbg(&dev->pdev->dev, "remove host client = %d, ME client = %d\n",
-+					pos->host_client_id, pos->me_client_id);
-+			list_del_init(&pos->link);
-+			break;
-+		}
-+	}
-+}
- 
- /**
-  * mei_alloc_file_private - allocates a private file structure and sets it up.
-@@ -642,25 +661,3 @@ free:
- 	return rets;
- }
- 
--/**
-- * mei_remove_client_from_file_list -
-- *	removes file private data from device file list
-- *
-- * @dev: the device structure
-- * @host_client_id: host client id to be removed
-- */
--void mei_remove_client_from_file_list(struct mei_device *dev,
--				       u8 host_client_id)
--{
--	struct mei_cl *cl_pos = NULL;
--	struct mei_cl *cl_next = NULL;
--	list_for_each_entry_safe(cl_pos, cl_next, &dev->file_list, link) {
--		if (host_client_id == cl_pos->host_client_id) {
--			dev_dbg(&dev->pdev->dev, "remove host client = %d, ME client = %d\n",
--					cl_pos->host_client_id,
--					cl_pos->me_client_id);
--			list_del_init(&cl_pos->link);
--			break;
--		}
--	}
--}
+ 	list_for_each_entry_safe(cb_pos, cb_next, &complete_list.list, list) {
+-		cl = (struct mei_cl *)cb_pos->file_private;
++		cl = cb_pos->cl;
+ 		list_del(&cb_pos->list);
+ 		if (cl) {
+ 			if (cl != &dev->iamthif_cl) {
 diff --git a/drivers/misc/mei/iorw.c b/drivers/misc/mei/iorw.c
-index cf11076..eb93a1b 100644
+index a1d9ba1..cc53ce7 100644
 --- a/drivers/misc/mei/iorw.c
 +++ b/drivers/misc/mei/iorw.c
-@@ -171,8 +171,6 @@ int mei_ioctl_connect_client(struct file *file,
- 	struct mei_cl_cb *cb;
- 	struct mei_client *client;
- 	struct mei_cl *cl;
--	struct mei_cl *cl_pos = NULL;
--	struct mei_cl *cl_next = NULL;
- 	long timeout = mei_secs_to_jiffies(MEI_CL_CONNECT_TIMEOUT);
- 	int i;
- 	int err;
-@@ -229,21 +227,9 @@ int mei_ioctl_connect_client(struct file *file,
- 			goto end;
- 		}
- 		clear_bit(cl->host_client_id, dev->host_clients_map);
--		list_for_each_entry_safe(cl_pos, cl_next,
--					 &dev->file_list, link) {
--			if (mei_cl_cmp_id(cl, cl_pos)) {
--				dev_dbg(&dev->pdev->dev,
--					"remove file private data node host"
--				    " client = %d, ME client = %d.\n",
--				    cl_pos->host_client_id,
--				    cl_pos->me_client_id);
--				list_del(&cl_pos->link);
--			}
-+		mei_me_cl_unlink(dev, cl);
+@@ -71,7 +71,7 @@ struct mei_cl_cb *mei_io_cb_init(struct mei_cl *cl, struct file *fp)
+ 	mei_io_list_init(cb);
  
--		}
--		dev_dbg(&dev->pdev->dev, "free file private data memory.\n");
- 		kfree(cl);
--
- 		cl = NULL;
- 		file->private_data = &dev->iamthif_cl;
- 
+ 	cb->file_object = fp;
+-	cb->file_private = cl;
++	cb->cl = cl;
+ 	cb->buf_idx = 0;
+ 	return cb;
+ }
 diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 2cc1ebb..251aaff 100644
+index bea545a..e0e39c4 100644
 --- a/drivers/misc/mei/main.c
 +++ b/drivers/misc/mei/main.c
-@@ -227,7 +227,7 @@ static int mei_release(struct inode *inode, struct file *file)
- 		clear_bit(cl->host_client_id, dev->host_clients_map);
- 		dev->open_handle_count--;
- 	}
--	mei_remove_client_from_file_list(dev, cl->host_client_id);
-+	mei_me_cl_unlink(dev, cl);
+@@ -189,13 +189,9 @@ static struct mei_cl_cb *find_read_list_entry(
+ 	struct mei_cl_cb *next = NULL;
  
- 	/* free read cb */
- 	cb = NULL;
-@@ -913,8 +913,8 @@ static void __devexit mei_remove(struct pci_dev *pdev)
+ 	dev_dbg(&dev->pdev->dev, "remove read_list CB\n");
+-	list_for_each_entry_safe(pos, next, &dev->read_list.list, list) {
+-		struct mei_cl *cl_temp;
+-		cl_temp = (struct mei_cl *)pos->file_private;
+-
+-		if (mei_cl_cmp_id(cl, cl_temp))
++	list_for_each_entry_safe(pos, next, &dev->read_list.list, list)
++		if (mei_cl_cmp_id(cl, pos->cl))
+ 			return pos;
+-	}
+ 	return NULL;
+ }
  
- 	/* remove entry if already in list */
- 	dev_dbg(&pdev->dev, "list del iamthif and wd file list.\n");
--	mei_remove_client_from_file_list(dev, dev->wd_cl.host_client_id);
--	mei_remove_client_from_file_list(dev, dev->iamthif_cl.host_client_id);
-+	mei_me_cl_unlink(dev, &dev->wd_cl);
-+	mei_me_cl_unlink(dev, &dev->iamthif_cl);
- 
- 	dev->iamthif_current_cb = NULL;
- 	dev->me_clients_num = 0;
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index dad85f3..aaee666 100644
+index ce246b0..da0c1f5 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -301,12 +301,12 @@ int mei_hw_init(struct mei_device *dev);
- int mei_task_initialize_clients(void *data);
- int mei_initialize_clients(struct mei_device *dev);
- int mei_disconnect_host_client(struct mei_device *dev, struct mei_cl *cl);
--void mei_remove_client_from_file_list(struct mei_device *dev, u8 host_client_id);
- void mei_allocate_me_clients_storage(struct mei_device *dev);
+@@ -143,10 +143,17 @@ struct mei_message_data {
+ };
  
  
--int mei_me_cl_update_filext(struct mei_device *dev, struct mei_cl *cl,
-+int mei_me_cl_link(struct mei_device *dev, struct mei_cl *cl,
- 			const uuid_le *cguid, u8 host_client_id);
-+void mei_me_cl_unlink(struct mei_device *dev, struct mei_cl *cl);
- int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *cuuid);
- int mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
- 
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 4fc2b3d..636409f 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -62,6 +62,7 @@ static void mei_wd_set_start_timeout(struct mei_device *dev, u16 timeout)
-  */
- int mei_wd_host_init(struct mei_device *dev)
- {
-+	int id;
- 	mei_cl_init(&dev->wd_cl, dev);
- 
- 	/* look for WD client and connect to it */
-@@ -69,12 +70,11 @@ int mei_wd_host_init(struct mei_device *dev)
- 	dev->wd_timeout = MEI_WD_DEFAULT_TIMEOUT;
- 	dev->wd_state = MEI_WD_IDLE;
- 
--	/* find ME WD client */
--	mei_me_cl_update_filext(dev, &dev->wd_cl,
-+	/* Connect WD ME client to the host client */
-+	id = mei_me_cl_link(dev, &dev->wd_cl,
- 				&mei_wd_guid, MEI_WD_HOST_CLIENT_ID);
- 
--	dev_dbg(&dev->pdev->dev, "wd: check client\n");
--	if (MEI_FILE_CONNECTING != dev->wd_cl.state) {
-+	if (id < 0) {
- 		dev_info(&dev->pdev->dev, "wd: failed to find the client\n");
- 		return -ENOENT;
- 	}
++struct mei_cl;
++
++/*
++ * struct mei_cl_cb - file operation callback structure
++ *
++ * @cl - file client who is running this operation
++ */
+ struct mei_cl_cb {
+ 	struct list_head list;
++	struct mei_cl *cl;
+ 	enum mei_cb_major_types major_file_operations;
+-	void *file_private;
+ 	struct mei_message_data request_buffer;
+ 	struct mei_message_data response_buffer;
+ 	unsigned long buf_idx;
 -- 
 1.7.4.4
 
