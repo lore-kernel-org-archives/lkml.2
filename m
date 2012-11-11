@@ -1,125 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2KKRXA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 12:23:00 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:47150 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753354Ab2KKRW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 12:22:59 -0500
-Date: Sun, 11 Nov 2012 18:22:43 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Soren Moch <smoch@web.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20121111172243.GB821@lunn.ch>
-References: <1352356737-14413-1-git-send-email-m.szyprowski@samsung.com>
+	id S1753080Ab2KKR1K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 12:27:10 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:64599 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2KKR1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 12:27:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352356737-14413-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <509FB25F.3030307@gmail.com>
+References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
+	<50991C41.50705@gmail.com>
+	<CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com>
+	<509FB25F.3030307@gmail.com>
+Date: Sun, 11 Nov 2012 22:57:08 +0530
+Message-ID: <CAKohpoksQ4ShO_QFAQORO2_oEgNtOeENFnX1C3gN_5POQSGexg@mail.gmail.com>
+Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16
+ variables & arrays
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linaro-dev@lists.linaro.org, andriy.shevchenko@intel.com,
+        patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 08, 2012 at 07:38:57AM +0100, Marek Szyprowski wrote:
-> dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag, regardless
-> the flags provided by the caller. This causes excessive pruning of
-> emergency memory pools without any good reason. This patch changes the code
-> to correctly use gfp flags provided by the dmapool caller. This should
-> solve the dmapool usage on ARM architecture, where GFP_ATOMIC DMA
-> allocations can be served only from the special, very limited memory pool.
-> 
-> Reported-by: Soren Moch <smoch@web.de>
-> Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+On 11 November 2012 19:42, Rob Herring <robherring2@gmail.com> wrote:
+> On 11/06/2012 10:22 PM, viresh kumar wrote:
 
-Tested-by: Andrew Lunn <andrew@lunn.ch>
+>>                 cluster0: cluster@0 {
+>> +                       data1 = <0x50 0x60 0x70>;
+>> +                       data2 = <0x5000 0x6000 0x7000>;
+>> +                       data3 = <0x50000000 0x60000000 0x70000000>;
+>
+> So there is a mismatch in our assumptions. You are just truncating
+> 32-bit values. I assumed you were using the 8 and 16 bit sizes that are
+> now supported in dts. I don't think we should just truncate values
+> blindly. We have support for specifying 8 and 16 values now so you
+> should use that and define that as part of a binding.
 
-I tested this on a Kirkwood QNAP after removing the call to
-init_dma_coherent_pool_size().
+Sorry couldn't get your point at all :(
+What did you mean by "truncating 32 bit values" and how should we
+tell via DT, that the value passed is 8 bit, 16 bit or 32 bit?
 
-	Andrew
-
-
-> ---
->  mm/dmapool.c |   27 +++++++--------------------
->  1 file changed, 7 insertions(+), 20 deletions(-)
-> 
-> diff --git a/mm/dmapool.c b/mm/dmapool.c
-> index c5ab33b..86de9b2 100644
-> --- a/mm/dmapool.c
-> +++ b/mm/dmapool.c
-> @@ -62,8 +62,6 @@ struct dma_page {		/* cacheable header for 'allocation' bytes */
->  	unsigned int offset;
->  };
->  
-> -#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
-> -
->  static DEFINE_MUTEX(pools_lock);
->  
->  static ssize_t
-> @@ -227,7 +225,6 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
->  		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
->  #endif
->  		pool_initialise_page(pool, page);
-> -		list_add(&page->page_list, &pool->page_list);
->  		page->in_use = 0;
->  		page->offset = 0;
->  	} else {
-> @@ -315,30 +312,21 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
->  	might_sleep_if(mem_flags & __GFP_WAIT);
->  
->  	spin_lock_irqsave(&pool->lock, flags);
-> - restart:
->  	list_for_each_entry(page, &pool->page_list, page_list) {
->  		if (page->offset < pool->allocation)
->  			goto ready;
->  	}
-> -	page = pool_alloc_page(pool, GFP_ATOMIC);
-> -	if (!page) {
-> -		if (mem_flags & __GFP_WAIT) {
-> -			DECLARE_WAITQUEUE(wait, current);
->  
-> -			__set_current_state(TASK_UNINTERRUPTIBLE);
-> -			__add_wait_queue(&pool->waitq, &wait);
-> -			spin_unlock_irqrestore(&pool->lock, flags);
-> +	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
-> +	spin_unlock_irqrestore(&pool->lock, flags);
->  
-> -			schedule_timeout(POOL_TIMEOUT_JIFFIES);
-> +	page = pool_alloc_page(pool, mem_flags);
-> +	if (!page)
-> +		return NULL;
->  
-> -			spin_lock_irqsave(&pool->lock, flags);
-> -			__remove_wait_queue(&pool->waitq, &wait);
-> -			goto restart;
-> -		}
-> -		retval = NULL;
-> -		goto done;
-> -	}
-> +	spin_lock_irqsave(&pool->lock, flags);
->  
-> +	list_add(&page->page_list, &pool->page_list);
->   ready:
->  	page->in_use++;
->  	offset = page->offset;
-> @@ -348,7 +336,6 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
->  #ifdef	DMAPOOL_DEBUG
->  	memset(retval, POOL_POISON_ALLOCATED, pool->size);
->  #endif
-> - done:
->  	spin_unlock_irqrestore(&pool->lock, flags);
->  	return retval;
->  }
-> -- 
-> 1.7.9.5
-> 
+--
+viresh
