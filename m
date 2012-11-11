@@ -1,32 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab2KKQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 11:10:25 -0500
-Received: from relay01.ioffe.ru ([194.85.224.36]:55992 "EHLO relay.ioffe.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753160Ab2KKQKX convert rfc822-to-8bit (ORCPT
+	id S1753542Ab2KKQKy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 11:10:54 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:59297 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab2KKQKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 11:10:23 -0500
-X-Greylist: delayed 1990 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Nov 2012 11:10:23 EST
-Message-Id: <201211081956.qA8JlWtP028412@mail.ioffe.ru>
-Content-Type: text/plain; charset="iso-8859-1"
+	Sun, 11 Nov 2012 11:10:52 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH 3/3] fat: remove unneeded compare condition for __fat_write_inode
+References: <1352642304-2766-1-git-send-email-linkinjeon@gmail.com>
+Date: Mon, 12 Nov 2012 01:10:50 +0900
+In-Reply-To: <1352642304-2766-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 11 Nov 2012 22:58:24 +0900")
+Message-ID: <87zk2o6rxx.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: WEBMAIL ACTIVE ACCOUNT PROBLEM SERVICE UPGRADE AGAINST SPAM, SPY AND VIRUS
-To: Recipients <Bailey.798@buckeyemail.osu.edu>
-From: "Webmail System Administrator" <Bailey.798@buckeyemail.osu.edu>
-Date: Thu, 08 Nov 2012 20:51:15 +0100
-Reply-To: lisa.wolff@ruhr-uni-bochum.de
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear email user,a hard virus has been detected in your mail box. Help protect unwanted spam and delete virus from your webmail account by
-clicking the link below to upgrade and protect your account from unwanted
-spam and spy, virus from your account:
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dEZXV0wxYUY1VjNQNjl4VkRUd1IzM2c6MQ
+> In calling of __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL),
+> expression "wbc->sync_mode == WB_SYNC_ALL" will always be equivalent to value
+> of wbc->sync_mode. So, remove this additional compare condition from function
+> arguments.
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+Current style is better. I.e. easy to add new sync mode.
+
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> ---
+>  fs/fat/inode.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+> index 7b186a5..aa0138b 100644
+> --- a/fs/fat/inode.c
+> +++ b/fs/fat/inode.c
+> @@ -678,7 +678,7 @@ static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
+>  		err = fat_clusters_flush(sb);
+>  		mutex_unlock(&MSDOS_SB(sb)->s_lock);
+>  	} else
+> -		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+> +		err = __fat_write_inode(inode, wbc->sync_mode);
+>  
+>  	return err;
+>  }
+
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
