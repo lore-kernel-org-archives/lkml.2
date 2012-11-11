@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab2KKMx4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:53:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45333 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2KKMuo (ORCPT
+	id S1753308Ab2KKMyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:54:17 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64872 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab2KKMyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:50:44 -0500
-From: Jonas Gorski <jonas.gorski@gmail.com>
-To: linux-mips@linux-mips.org
-Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
-        Maxime Bizon <mbizon@freebox.fr>,
-        Florian Fainelli <florian@openwrt.org>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [RFC] bcm63xx-rng: use clk_{prepare_enable,disable_unprepare}
-Date: Sun, 11 Nov 2012 13:50:40 +0100
-Message-Id: <1352638249-29298-7-git-send-email-jonas.gorski@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
-References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
+	Sun, 11 Nov 2012 07:54:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352638346-32273-1-git-send-email-stefanha@gmail.com>
+References: <1352638346-32273-1-git-send-email-stefanha@gmail.com>
+Date: Sun, 11 Nov 2012 13:54:13 +0100
+Message-ID: <CAJSP0QWq35dZOdFEPJ_fh-Gbk-JatfCt5hwsAu_ysHxgOWSWvA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] staging: line6: replace CONFIG_LINE6_USB_DEBUG with dyndbg
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Markus Grabner <grabner@icg.tugraz.at>, Daniel Mack <zonque@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        line6linux-devel@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use proper clk_prepare/unprepare calls in preparation for switching to
-the generic clock framework.
+On Sun, Nov 11, 2012 at 1:52 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
+> Daniel Mack <zonque@gmail.com> suggested the dyndbg mechanism which allows
+> dev_dbg() messages to be enabled/disabled at run-time.  This is more powerful
+> than the compile-time CONFIG_LINE6_USB_DEBUG option.
+>
+> This patch series converts debug messages to dev_dbg() and drops the obsolete
+> CONFIG_LINE6_USB_DEBUG option.
+>
+> Stefan Hajnoczi (3):
+>   staging: line6: replace DEBUG_MESSAGES() with dev_dbg()
+>   staging: line6: drop unused DEBUG_MESSAGES() macro
+>   staging: line6: drop unused CONFIG_LINE6_USB_DEBUG
+>
+>  drivers/staging/line6/Kconfig  |  8 ------
+>  drivers/staging/line6/driver.c |  6 ++---
+>  drivers/staging/line6/driver.h |  6 -----
+>  drivers/staging/line6/pod.c    | 57 ++++++++++++++++--------------------------
+>  drivers/staging/line6/variax.c | 12 ++++-----
+>  5 files changed, 28 insertions(+), 61 deletions(-)
 
-Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
----
- drivers/char/hw_random/bcm63xx-rng.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I forgot to mention these patches apply on top of the "staging: line6:
+checkpatch.pl cleanups" series I sent earlier today.
 
-diff --git a/drivers/char/hw_random/bcm63xx-rng.c b/drivers/char/hw_random/bcm63xx-rng.c
-index aec6a42..3693f56 100644
---- a/drivers/char/hw_random/bcm63xx-rng.c
-+++ b/drivers/char/hw_random/bcm63xx-rng.c
-@@ -122,7 +122,7 @@ static int __devinit bcm63xx_rng_probe(struct platform_device *pdev)
- 		goto out_free_rng;
- 	}
- 
--	clk_enable(clk);
-+	clk_prepare_enable(clk);
- 
- 	ret = hwrng_register(rng);
- 	if (ret) {
-@@ -135,7 +135,7 @@ static int __devinit bcm63xx_rng_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_clk_disable:
--	clk_disable(clk);
-+	clk_disable_unprepare(clk);
- out_free_rng:
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(rng);
-@@ -151,7 +151,7 @@ static int __devexit bcm63xx_rng_remove(struct platform_device *pdev)
- 	struct bcm63xx_rng_priv *priv = to_rng_priv(rng);
- 
- 	hwrng_unregister(rng);
--	clk_disable(priv->clk);
-+	clk_disable_unprepare(priv->clk);
- 	kfree(priv);
- 	kfree(rng);
- 	platform_set_drvdata(pdev, NULL);
--- 
-1.7.2.5
-
+Stefan
