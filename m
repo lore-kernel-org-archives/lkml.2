@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab2KKAxX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 19:53:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:46820 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab2KKAxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 19:53:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,754,1344236400"; 
-   d="scan'208";a="166799797"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: RE: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
- inserting/removing USB stick
-Thread-Topic: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
- inserting/removing USB stick
-Thread-Index: AQHNv2E454CB974kpkKBPC/5IWStzZfjzFBQ
-Date: Sun, 11 Nov 2012 00:53:15 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com>
-References: <201211071501.38288.Martin@lichtvoll.de>
- <20121107143800.GA14146@kroah.com> <201211071952.24509.Martin@lichtvoll.de>
- (sfid-20121107_195431_785653_5B4780C0)
- <201211101734.07084.Martin@lichtvoll.de>
-In-Reply-To: <201211101734.07084.Martin@lichtvoll.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752401Ab2KKB1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 20:27:45 -0500
+Received: from nm29-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.255]:44594
+	"EHLO nm29-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751578Ab2KKB1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Nov 2012 20:27:41 -0500
+X-Yahoo-Newman-Id: 336199.67138.bm@smtp114.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: yiSEhqYVM1nBgwW31lEYGVedtJz4BlktsHcaMnIpnyM9V31
+ l1pKzYiPUbryiDvYSW4ixn6JiifqRYaxpDWgQUC1ikb1mGXfCPunXoSU_2jA
+ aCt27a0qqggphpt8S2a9gi_tKpbAo5q6hsuYWqrsIclIoGGihOQ34lfQr7Q1
+ NddFZF.F5SHKiva49BVa27q04g.okWpVDL3aR0AkhPvaz0G8O.LvElBPzGsN
+ uf_WG91sHFlKbhZ7jmz8A4Pt_soLUwrX7glX4EzaVbAXiEU_D02u_MWALSQ2
+ PqfMQqa3_fzCEMaHhyN0c8q6Cgmq7oq8hOmYh_7SxskmRLFDLHgy8jcX5n5i
+ wXdPMt3OZd9dAetdwjdMfvlidRMjspDMERWUmP2ds6WEuVZW9uyKYc59WpxB
+ BeKLpEhuGPRu4KWgPiIJvKU7NmzDdCLo_UumR.yKqF0ROTAq8X.AlPysXdrz
+ KJtF1tDoFwXmvz3226Yb8nA--
+X-Yahoo-SMTP: x3UJDw2swBBmiVP7941KaiyaoilgwM.0jf7QxQtKIw--
+Message-ID: <509EFDA3.4060900@pacbell.net>
+Date: Sat, 10 Nov 2012 17:21:39 -0800
+From: Richard <richjunk@pacbell.net>
+Reply-To: richjunk@pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120919 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH usb-linus] USB: keyspan: fix typo causing GPF on open
+References: <509D5BCD.3010901@pacbell.net> <1352538822-28221-1-git-send-email-bjorn@mork.no>
+In-Reply-To: <1352538822-28221-1-git-send-email-bjorn@mork.no>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAB0rXtB003979
 
-> The first bad commit is:
-> 
-> commit 73d4066055e0e2830533041f4b91df8e6e5976ff
-> Author: Chuansheng Liu <chuansheng.liu@intel.com>
-> Date:   Tue Sep 11 16:00:30 2012 +0800
-> 
->     USB/host: Cleanup unneccessary irq disable code
-> 
->     Because the IRQF_DISABLED as the flag is now a NOOP and has been
->     deprecated and in hardirq context the interrupt is disabled.
-> 
->     so in usb/host code:
->     Removing the usage of flag IRQF_DISABLED;
->     Removing the calling local_irq save/restore actions in irq
->     handler usb_hcd_irq();
-> 
->     Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
->     Acked-by: Alan Stern <stern@rowland.harvard.edu>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> 
-> But:
-> 
-> This ony happens with threadirqs option!
-> 
-> When I remove threadirqs from kernel command line and reboot with this
-> last bisect kernel USB sticks work.
-> 
-> That may explain why nobody else has seen this.
-> 
-> So I will try a 3.7-rc4 now, but without threadirqs enabled.
-> 
-Thanks your pointing out, the USB HCD irq handler is designed to execute in irq handler with irq disabled.
-When threadirqs is in commandline, it will be executed in thread context with local irq enabling, which causes
-this hardlockup.
+Bj√∏rn:
 
-I prepared one patch, could you have time to test it? Thanks. Sorry for missing threadirqs case.
+I patched keyspan.c using your below supplied diff in 3.6.6 (I'm not
+using git.)  The patch WORKS for me.  (I tested using minicom and the
+two programs that usually access the Keyspan serial device.)
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] USB/host: Mark USB HCD irq as non-threaded
+Thank you for the quick fix.
 
-Mark USB HCD irq as non-threaded. This prevent one crash/hard lockup
-when "threadirqs" is on the kernel commandline.
-And this interrupt handle is handling critial events which should not
-be in thread context.
+Will this show up in 3.6.7?
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/usb/core/hcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Richard
+richjunk@pacbell.net
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 1e741bc..b1cd46e 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
-        if (hcd->driver->irq) {
-                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-                                hcd->driver->description, hcd->self.busnum);
--               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-+               retval = request_irq(irqnum, &usb_hcd_irq, irqflags|IRQF_NO_THREAD,
-                                hcd->irq_descr, hcd);
-                if (retval != 0) {
-                        dev_err(hcd->self.controller,
--- 
-1.7.0.4
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+On 11/10/2012 01:13 AM, Bj√∏rn Mork wrote:
+> Commit f79b2d0f (USB: keyspan: fix NULL-pointer dereferences and
+> memory leaks) had a small typo which made the driver use wrong
+> offsets when mapping serial port private data.  This results in
+> in a GPF when the port is opened.
+> 
+> Reported-by: Richard <richjunk@pacbell.net>
+> Cc: <stable@vger.kernel.org>
+> Cc: Johan Hovold <jhovold@gmail.com>
+> Signed-off-by: Bj√∏rn Mork <bjorn@mork.no>
+> ---
+> Hello Richard,
+> 
+> I wonder if you are able to test and verify this?  I do not guarantee
+> that there aren't other issues around, but this small typo looked like
+> an obvious killer...
+> 
+> Bj√∏rn
+> 
+>  drivers/usb/serial/keyspan.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+> index 7179b0c..cff8dd5 100644
+> --- a/drivers/usb/serial/keyspan.c
+> +++ b/drivers/usb/serial/keyspan.c
+> @@ -2430,7 +2430,7 @@ static void keyspan_release(struct usb_serial *serial)
+>  static int keyspan_port_probe(struct usb_serial_port *port)
+>  {
+>  	struct usb_serial *serial = port->serial;
+> -	struct keyspan_port_private *s_priv;
+> +	struct keyspan_serial_private *s_priv;
+>  	struct keyspan_port_private *p_priv;
+>  	const struct keyspan_device_details *d_details;
+>  	struct callbacks *cback;
+> @@ -2445,7 +2445,6 @@ static int keyspan_port_probe(struct usb_serial_port *port)
+>  	if (!p_priv)
+>  		return -ENOMEM;
+>  
+> -	s_priv = usb_get_serial_data(port->serial);
+>  	p_priv->device_details = d_details;
+>  
+>  	/* Setup values for the various callback routines */
+> 
