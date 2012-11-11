@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab2KKWmO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:42:14 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56254 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2KKWmM (ORCPT
+	id S1752960Ab2KKWtg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 17:49:36 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58764 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2KKWte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:42:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
-References: <509A915B.30105@redhat.com> <CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
- <509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>
- <1352405111.29589.476.camel@haakon2.linux-iscsi.org> <509C22B2.8010600@redhat.com>
- <1352426896.29589.512.camel@haakon2.linux-iscsi.org> <20121109110336.41833034@pyramind.ukuu.org.uk>
- <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Mon, 12 Nov 2012 09:41:49 +1100
-Message-ID: <CAGRGNgWLE_hf41bz19H-QNJeEY7eGrq7vdEmx4AGFFJ3US6ENw@mail.gmail.com>
-Subject: Re: scsi target, likely GPL violation
-To: lrosen@rosenlaw.com
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, kcopenhaver@choate.com,
-        Richard Fontana <rfontana@redhat.com>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>,
-        alan@lxorguk.ukuu.org.uk, agrover@redhat.com, bkuhn@sfconservancy.org,
-        tytso@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 11 Nov 2012 17:49:34 -0500
+Date: Mon, 12 Nov 2012 09:49:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: comment on the mips tree
+Message-Id: <20121112094925.e374a7f7b51df1738c152026@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Nov_2012_09_49_25_+1100_bf4n4U33mc2VkyF4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lawrence,
+--Signature=_Mon__12_Nov_2012_09_49_25_+1100_bf4n4U33mc2VkyF4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 12, 2012 at 9:13 AM, Lawrence Rosen <lrosen@rosenlaw.com> wrote:
-> Alan Cox wrote:
->> So either your work is truely not derivative of the kernel (which I find
->> wildly improbable) or you have a problem and since you are aware
->> of the complaints publically I guess probably a triple damages sized
->> problem. But that's one for your lawyers and whatever opinion they
->> have on the subject.
->
-> Hi Alan and others,
->
-> I've been advising Rising Tide Systems (RTS) in this matter. Please let me
-> reassure you that RTS is acting on advice of counsel.
+Hi Ralf,
 
-It's nice to hear from legal counsel on this matter.
+After fetching the mips tree today I had a look at the changes (as I
+often do when I fetch all trees) and noticed that today's changes are to
+add 6 new patches to your mips-for-linux-next branch and then to merge
+another branch (current/for-linus) that contains only those same six
+patches.  :-(
 
-I don't think that the *usage* of the kernel APIs is the biggest issue
-here. There are many examples where proprietary code uses these APIs
-and is not violating the GPL.
+You really only needed to do one of those two things - and preferably the
+second (assuming that you intend to submit that second branch to Linus
+shortly).
 
-As I see it, one of the main concerns is because the proprietary and
-in-kernel target systems are, from what I understand, quite similar,
-there is the possibility that GPL licensed contributions to the
-in-kernel target code may have "leaked" into to the proprietary code.
-That said, proving this is a very difficult problem, but the question
-must still be asked:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Can Rising Tide Systems assure us that there is no GPL licensed code
-within their proprietary target code?
+--Signature=_Mon__12_Nov_2012_09_49_25_+1100_bf4n4U33mc2VkyF4
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Julian Calaby
+iQIcBAEBCAAGBQJQoCt1AAoJEECxmPOUX5FECyQP/RpcQT4vy3uP6urrX/M7VSAU
+AYR326Jent1SN9Bp1aOrkHtxt6pfpovtHY30piJ6C3D3tmAgCm9y+/ZNkZS5zNng
+yo0pbQIE67vCL4JThyvg7zo/SE5yDKpt+/wKXoIW+hCvO6I638GTmV0ArGvmZE/n
+lrC7wUrg+vjVkMMmRKaeRy59MEKhJHgY49C4iETNgqTNLtQWDJCcruiByq7/gdzJ
+yjA2YI7M0Nrx70ps0TxrNS8+V07NoUNhv2cmaJR3Y6ioGFQVjT1d0ld7iXMI6KkS
+EzliiqTPI17Sj3niwlBVyDH4AfWWqHStHfSH6vVEYBflgLmVvfm8CXF09X/WtJGL
+knW043fHvSJ4xer/97izRiSyGNbfr1a/lYfyf4NiruYbZZgQw11olbeZetasEZaB
+znHkc2WF/NAAmx1rJFeBSrWblSJCsggPvpkNaVPGAu+hrCAEKBrQSrKbQPcgSvNV
+NLPpsOmRK2E/TtT+cB1RnCBQ/5KL4h4NPcf4ZBk3IUL0Vn0rk5xSlL4IBmqGdtGs
+2PMCVbFpsbPhRRDZgmXcSx21br6wx6mV6aZi7a9tR0sJSPBH57rx0cQ1m22l5en6
+Ot2NI8pa5sLI0sxj+tgqHOe3r7srOtu6D/H9Y6bs0IONjqlOiYgSBd2ly6EHkQQ5
+uFsvrrjOpp6Ep3+7j3ta
+=xJop
+-----END PGP SIGNATURE-----
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+--Signature=_Mon__12_Nov_2012_09_49_25_+1100_bf4n4U33mc2VkyF4--
