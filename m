@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2KKCoo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Nov 2012 21:44:44 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40622 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2KKCon (ORCPT
+	id S1752758Ab2KKCpK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Nov 2012 21:45:10 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46212 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab2KKCpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Nov 2012 21:44:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352600980.23129.5.camel@phoenix>
-References: <1352600980.23129.5.camel@phoenix>
-Date: Sun, 11 Nov 2012 08:14:42 +0530
-X-Google-Sender-Auth: BLZMGVXxaAzgGp_5osnyRlyrXIU
-Message-ID: <CAOh2x=kGzg6eFph5OF9E8mosR0C+yP+aB1R15aiJG5OvwoErrw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: spear: Staticize non-exported symbols
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 10 Nov 2012 21:45:08 -0500
+Subject: Re: [PATCH] target: Update copyright ownership to 2012
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, bkuhn@sfconservancy.org,
+        Andy Grover <agrover@redhat.com>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        legal@lists.gpl-violations.org
+In-Reply-To: <CAGZ=bqJ26Y2x9j+QuARAdfxSsU3ncSZV+YRU8ZiCvS6fSx=X_A@mail.gmail.com>
+References: <1352502014-9782-1-git-send-email-nab@linux-iscsi.org>
+	 <CAGZ=bqJ26Y2x9j+QuARAdfxSsU3ncSZV+YRU8ZiCvS6fSx=X_A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 10 Nov 2012 18:44:59 -0800
+Message-ID: <1352601899.4168.35.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 11, 2012 at 7:59 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> They are not referenced outside of this file, make them static.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pinctrl/spear/pinctrl-spear.c |   12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/pinctrl/spear/pinctrl-spear.c b/drivers/pinctrl/spear/pinctrl-spear.c
-> index b1fd6ee..9a4dd4e 100644
-> --- a/drivers/pinctrl/spear/pinctrl-spear.c
-> +++ b/drivers/pinctrl/spear/pinctrl-spear.c
-> @@ -121,9 +121,10 @@ static void spear_pinctrl_pin_dbg_show(struct pinctrl_dev *pctldev,
->         seq_printf(s, " " DRIVER_NAME);
->  }
->
-> -int spear_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
-> -                                struct device_node *np_config,
-> -                                struct pinctrl_map **map, unsigned *num_maps)
-> +static int spear_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
-> +                                       struct device_node *np_config,
-> +                                       struct pinctrl_map **map,
-> +                                       unsigned *num_maps)
->  {
->         struct spear_pmx *pmx = pinctrl_dev_get_drvdata(pctldev);
->         struct device_node *np;
-> @@ -168,8 +169,9 @@ int spear_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
->         return 0;
->  }
->
-> -void spear_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
-> -               struct pinctrl_map *map, unsigned num_maps)
-> +static void spear_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
-> +                                     struct pinctrl_map *map,
-> +                                     unsigned num_maps)
->  {
->         kfree(map);
->  }
+On Sat, 2012-11-10 at 16:18 -0800, Kyle Moffett wrote:
+> On Fri, Nov 9, 2012 at 3:00 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> > This patch to update copyright year to current for principal target core
+> > ownership is now being pushed into target-pending/for-next.
+> 
+> Pardon me, but you were just publicly accused of violating the GPL, so
+> your response is to send a patch removing the copyright notices of all
+> other organizations from the SCSI-target code?  Have you obtained
+> ownership of all the relevant copyrights for Linux-iSCSI.org, PyX
+> Technologies, Inc, and SBE, Inc?
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+I understand and appreciate your concerns.
+
+To answer your question, we have rightfully obtained ownership of all
+relevant copyrights to the target code for PyX Technologies LLC, and
+SBEi, Inc.
+
+I co-founded PyX in 2002, where we started the development of the target
+code. PyX was subsequently acquired by SBEi in 2005. In 2007, I
+purchased (at significant personal cost) all rights, title and interest
+(incl. the copyright) in the target code. I then co-founded RisingTide
+with this code in 2009.
+
+Linux-iSCSI.org is only a URL and website that is owned by RisingTide
+Systems, and not a legal entity or person, so listing it as a copyright
+holder is meaningless.
+
+> If not, then this patch is an
+> attempted violation of those organizations copyrights and of the GPL
+> (which requires that you preserve copyright notices).
+> 
+> Further, while these notices are the only ones listed in those files,
+> they are not the only individuals outside of RisingTide Systems which
+> have significant copyright interest in this code.
+>
+>   If your goal is to
+> obtain exclusive copyright ownership over this code then there are a
+> great many other people you must contact and convince first.
+> 
+
+The goal is to update the copyright to the current year, and to remove
+legal entities that no longer exist or were meaningless.
+
+I hope this clarifies your concerns.
+
+Thank you,
+
+--nab
+
