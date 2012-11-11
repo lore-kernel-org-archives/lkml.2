@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab2KKWJq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 17:09:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58012 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab2KKWJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 17:09:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,758,1344236400"; 
-   d="scan'208";a="247319139"
-Date: Sun, 11 Nov 2012 15:09:43 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH] dmatest: Fix NULL pointer dereference on ioat
-Message-ID: <20121111220943.GB20133@jonmason-lab>
-References: <1352494660-6650-1-git-send-email-jon.mason@intel.com>
- <CAOh2x=mE8d1YtRy_Efqbtc+24SCgEYuKwVpFHrFZBTpt2CB08w@mail.gmail.com>
+	id S1752883Ab2KKWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 17:13:58 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:53515 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752216Ab2KKWN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 17:13:56 -0500
+Reply-To: <lrosen@rosenlaw.com>
+From: "Lawrence Rosen" <lrosen@rosenlaw.com>
+To: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <target-devel@vger.kernel.org>
+Cc: <kcopenhaver@choate.com>, "Richard Fontana" <rfontana@redhat.com>,
+        "Marc Fleischmann" <mwf@risingtidesystems.com>,
+        "Nicholas Bellinger" <nab@risingtidesystems.com>,
+        <alan@lxorguk.ukuu.org.uk>, <agrover@redhat.com>,
+        <bkuhn@sfconservancy.org>, <tytso@mit.edu>, <lrosen@rosenlaw.com>
+References: <509A915B.30105@redhat.com>	 <CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>	 <509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>	 <1352405111.29589.476.camel@haakon2.linux-iscsi.org>	 <509C22B2.8010600@redhat.com>	 <1352426896.29589.512.camel@haakon2.linux-iscsi.org> <20121109110336.41833034@pyramind.ukuu.org.uk>
+In-Reply-To: <20121109110336.41833034@pyramind.ukuu.org.uk>
+Subject: RE: scsi target, likely GPL violation
+Date: Sun, 11 Nov 2012 14:13:53 -0800
+Organization: Rosenlaw & Einschlag
+Message-ID: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOh2x=mE8d1YtRy_Efqbtc+24SCgEYuKwVpFHrFZBTpt2CB08w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQKiWmEupwXV+Zk7MhVwjar7imSUzQEl4rhnAfQMYuUCpeHO3AFABWG+AuJEEqgCkJrOLAJsiqlWlcUC9LA=
+Content-Language: en-us
+X-Identified-User: {1397:box597.bluehost.com:rosenla1:rosenlaw.com} {sentby:smtp auth 70.36.224.178 authed with lrosen@rosenlaw.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 10, 2012 at 09:00:15AM +0530, viresh kumar wrote:
-> On Sat, Nov 10, 2012 at 2:27 AM, Jon Mason <jon.mason@intel.com> wrote:
-> > device_control is an optional and not implemented in all DMA drivers.
-> > Any calls to these will result in a NULL pointer dereference.  dmatest
-> > makes two of these calls when completing the kernel thread and removing
-> > the module.  These are corrected by calling the dmaengine_device_control
-> > wrapper and checking for a non-existant device_control function pointer
-> > there.
-> >
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > CC: Vinod Koul <vinod.koul@intel.com>
-> > CC: Dan Williams <djbw@fb.com>
-> > ---
-> >  drivers/dma/dmatest.c     |    4 ++--
-> >  include/linux/dmaengine.h |    5 ++++-
-> >  2 files changed, 6 insertions(+), 3 deletions(-)
-> >
-> 
-> > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> > index d3201e4..e0004fb 100644
-> > --- a/include/linux/dmaengine.h
-> > +++ b/include/linux/dmaengine.h
-> > @@ -608,7 +608,10 @@ static inline int dmaengine_device_control(struct dma_chan *chan,
-> >                                            enum dma_ctrl_cmd cmd,
-> >                                            unsigned long arg)
-> >  {
-> > -       return chan->device->device_control(chan, cmd, arg);
-> > +       if (chan->device->device_control)
-> > +               return chan->device->device_control(chan, cmd, arg);
-> > +       else
-> > +               return -EINVAL;
-> 
-> -ENOTSUPP or -ENOSYS ??
+Alan Cox wrote:
+> So either your work is truely not derivative of the kernel (which I find
+> wildly improbable) or you have a problem and since you are aware 
+> of the complaints publically I guess probably a triple damages sized 
+> problem. But that's one for your lawyers and whatever opinion they 
+> have on the subject.
 
-ENOSYS makes more sense to me.  I'll send out another version shortly.
+Hi Alan and others,
 
-Dan, do you want me to send the patch to Greg KH for inclusion in the
-stable branches back to v3.2?
+I've been advising Rising Tide Systems (RTS) in this matter. Please let me
+reassure you that RTS is acting on advice of counsel.
 
-Thanks,
-Jon
+RTS (and specifically Nicholas Bellinger) wrote the scsi target code and
+owns its copyright. We registered that copyright at the Library of Congress.
+RTS contributed a version of the scsi target to Linux for distribution under
+the GPL. On behalf of Marc Fleischmann, CEO of RTS, I can reassure you that
+RTS remains committed to the Linux project and will continue to contribute
+to it. We are pleased that RTS software is a part of the Linux distribution
+under the GPL.
 
-> 
-> @Dan: I believe i don't have to send another version now. Correct??
-> 
-> --
-> viresh
+RTS also has a commercial software business. It distributes versions of its
+scsi target code that support features and functions not officially in Linux
+(or at least, not yet). That commercial RTS business includes the licensing
+of those derivative works of its own code to its own customers. Nothing
+whatsoever in the GPL or in the policies of the Linux Foundation prohibits
+that.
+
+I would also like to address some comments made on these lists by Andy
+Grover and Bradley Kuhn. 
+
+First, I hope that we can tone down the arguments about whether the use of
+Linux APIs and headers automatically turns a program into a derivative work
+of Linux. I think that argument has been largely debunked in the U.S. in the
+recent decision in Oracle v. Google, and in Europe in SAS v. World
+Programming. Does anyone here question whether the original work that RTS
+contributed to Linux (and that *is* under the GPL) is an original work of
+authorship of RTS despite the fact that it links to other GPL code using
+headers and APIs?
+
+Second, we are grateful for the efforts that Bradley Kuhn and others put in
+to enforce the GPL. As I said above, RTS owns and has registered the
+copyright on its scsi target and will enforce it if necessary. So Brad, we
+may solicit your assistance if we find any third party who is distributing
+an unauthorized non-GPL derivative work of the scsi target now in Linux.
+RTS, of course, retains the exclusive right to do so, but no third party can
+do so without a license from RTS.
+
+Best regards,
+
+/Larry
+
+P.S. In accordance with my obligations as an attorney when communicating
+with a represented person, I am copying attorneys for Red Hat and Linux
+Foundation on this email.  If anyone wishes to respond to me, please copy me
+directly since I am not subscribed to these lists.
+
+Lawrence Rosen
+Rosenlaw & Einschlag, a technology law firm (www.rosenlaw.com)
+3001 King Ranch Rd., Ukiah, CA 95482
+Office: 707-485-1242
+
+
+
