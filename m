@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2KKLnB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 06:43:01 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43337 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab2KKLm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 06:42:59 -0500
-Message-ID: <1352634168.1893.9.camel@kjgkr>
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Date: Sun, 11 Nov 2012 20:42:48 +0900
-In-Reply-To: <8A3372F6-6294-404E-909B-3FDE0C2368B7@dubeyko.com>
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-	 <201211021439.02797.Martin@lichtvoll.de>
-	 <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com>
-	 (sfid-20121105_204523_384093_CECB414C) <201211101933.38434.Martin@lichtvoll.de>
-	 <8A3372F6-6294-404E-909B-3FDE0C2368B7@dubeyko.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752581Ab2KKLo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 06:44:56 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:55843 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751244Ab2KKLoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 06:44:55 -0500
+From: guanxuetao@mprc.pku.edu.cn
+Message-ID: <3855.124.205.227.162.1352635619.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <CA+55aFzjQATP7WCeK6hHbjEG5yLksB50GcpB7NAJGg=bWRPBQg@mail.gmail.com>
+References: <20121109093508.BD26A1460351@linuxdev-32>
+    <CA+55aFzjQATP7WCeK6hHbjEG5yLksB50GcpB7NAJGg=bWRPBQg@mail.gmail.com>
+Date: Sun, 11 Nov 2012 20:06:59 +0800 (CST)
+Subject: Re: [GIT PULL REQUEST] UniCore32 update for v3.7-rc4
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "guanxuetao" <guanxuetao@mprc.pku.edu.cn>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+MIME-Version: 1.0
+Content-Type: text/plain;charset=GB2312
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-11-11 (일), 00:55 +0300, Vyacheslav Dubeyko:
-> Hi,
-> 
-> On Nov 10, 2012, at 9:33 PM, Martin Steigerwald wrote:
-> 
-> [snip]
-> > 
-> > merkaba:~> mkfs.f2fs /dev/sdb1
-> > Info: sector size = 512
-> > Info: total sectors = 4093951 (in 512bytes)
-> > Info: zone aligned segment0 blkaddr: 256
-> > Info: This device doesn't support TRIM
-> > Info: format successful
-> > merkaba:~> mount /dev/sdb1 /mnt/zeit
-> > mount: you must specify the filesystem type
-> > merkaba:~#32> mount -t f2fs /dev/sdb1 /mnt/zeit
-> > merkaba:~> df -hT /mnt/zeit
-> > Dateisystem    Typ  Größe Benutzt Verf. Verw% Eingehängt auf
-> > /dev/sdb1      f2fs  2,0G    147M  1,8G    8% /mnt/zeit
-> > 
-> 
-> Do you really have trouble with f2fs mount without definition of filesystem type? If so, it is a bug.
+> On Fri, Nov 9, 2012 at 10:35 AM, guanxuetao <guanxuetao@mprc.pku.edu.cn>
+> wrote:
+>>
+>>   git://github.com/gxt/linux.git ..BRANCH.NOT.VERIFIED..
+>
+> Let's try that again. With you checking what you send me. I hope
+> there's a signed tag somewhere, but the above certainly isn't that..
+>
+>              Linus
+>
 
-Could you explain this bug in more detail?
-Or, can anyone comment this?
+I used following command to generate a signed tag.
+  'git tag for-linus -s -u gxt@mprc.pku.edu.cn'
+Then, I pushed this tag into github.com by:
+  'git push github -f --tags'
+Finally, I checked github repo, and tag 'for-linus' can be found.
 
-Actually, I've looking at the *mount* in linux-utils.
-I suspect something does not support f2fs in linux-utils.
+Could you tell me what's wrong with my operation?
 
-> 
-> Moreover, I think that it is really inconvenient that mkfs.f2fs doesn't output its version. I suggest to output version of f2fs utilities.
-
-Agreed.
-But, I'd like to note that f2fs is not merged yet.
-IMHO, it'd better give an initial version after f2fs is merged.
-Thanks,
-
-> 
-> With the best regards,
-> Vyacheslav Dubeyko.
-> 
-
--- 
-Jaegeuk Kim
-Samsung
-
+Thanks & Regards,
+Guan Xuetao
