@@ -1,120 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2KKS1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 13:27:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21089 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab2KKS1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 13:27:15 -0500
-Date: Sun, 11 Nov 2012 19:27:44 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH -mm]
-	percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessari
-	ly.fix
-Message-ID: <20121111182744.GA25282@redhat.com>
-References: <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121108120700.42d438f2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753639Ab2KKS1u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 13:27:50 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47633 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2KKS1s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 13:27:48 -0500
+Date: Sun, 11 Nov 2012 18:32:43 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: Re: scsi target, likely GPL violation
+Message-ID: <20121111183243.62602d9b@pyramind.ukuu.org.uk>
+In-Reply-To: <1352658157.6524.58.camel@dabdike>
+References: <509A915B.30105@redhat.com>
+	<1352626456.6524.46.camel@dabdike>
+	<20121111130553.GA30943@thunk.org>
+	<87390gxjbd.fsf@ebb.org>
+	<1352658157.6524.58.camel@dabdike>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More include's and more comments, no changes in code.
+> >      1. Yes, I've got first hand proof of a GPL violation (in which case
+> >         we'll then move to seeing how we can remedy this) or
+> >      2. A genuine public apology for the libel, which I'll do my best to
+> >         prevail on RTS to accept.
+> > 
+> > Because any further discussion of unsubstantiated allegations of this
+> > nature exposes us all to jeopardy of legal sanction.
+> 
+> That asks for moderation until we have a better investigation of the
+> facts.  It definitely doesn't try to prejudge them or express preference
+> for a specific outcome as your misquote makes out.
 
-To remind, once/if I am sure you agree with this patch I'll send 2 additional
-and simple patches:
+So how can you demand a public apology for libel or instant first hand
+proof and now claim you just wanted moderation ? It's not hard to see why
+your position was misinterpreted ?
 
-	1. lockdep annotations
-
-	2. CONFIG_PERCPU_RWSEM
-
-It seems that we can do much more improvements to a) speedup the writers and
-b) make percpu_rw_semaphore more useful, but not right now.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- lib/percpu-rwsem.c |   35 +++++++++++++++++++++++++++++++++--
- 1 files changed, 33 insertions(+), 2 deletions(-)
-
-diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
-index 0e3bc0f..02bd157 100644
---- a/lib/percpu-rwsem.c
-+++ b/lib/percpu-rwsem.c
-@@ -1,6 +1,11 @@
-+#include <linux/mutex.h>
-+#include <linux/rwsem.h>
-+#include <linux/percpu.h>
-+#include <linux/wait.h>
- #include <linux/percpu-rwsem.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
-+#include <linux/errno.h>
- 
- int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
- {
-@@ -21,6 +26,29 @@ void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
- 	brw->fast_read_ctr = NULL; /* catch use after free bugs */
- }
- 
-+/*
-+ * This is the fast-path for down_read/up_read, it only needs to ensure
-+ * there is no pending writer (!mutex_is_locked() check) and inc/dec the
-+ * fast per-cpu counter. The writer uses synchronize_sched() to serialize
-+ * with the preempt-disabled section below.
-+ *
-+ * The nontrivial part is that we should guarantee acquire/release semantics
-+ * in case when
-+ *
-+ *	R_W: down_write() comes after up_read(), the writer should see all
-+ *	     changes done by the reader
-+ * or
-+ *	W_R: down_read() comes after up_write(), the reader should see all
-+ *	     changes done by the writer
-+ *
-+ * If this helper fails the callers rely on the normal rw_semaphore and
-+ * atomic_dec_and_test(), so in this case we have the necessary barriers.
-+ *
-+ * But if it succeeds we do not have any barriers, mutex_is_locked() or
-+ * __this_cpu_add() below can be reordered with any LOAD/STORE done by the
-+ * reader inside the critical section. See the comments in down_write and
-+ * up_write below.
-+ */
- static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
- {
- 	bool success = false;
-@@ -98,6 +126,7 @@ void percpu_down_write(struct percpu_rw_semaphore *brw)
- 	 *
- 	 * 3. Ensures that if any reader has exited its critical section via
- 	 *    fast-path, it executes a full memory barrier before we return.
-+	 *    See R_W case in the comment above update_fast_ctr().
- 	 */
- 	synchronize_sched();
- 
-@@ -116,8 +145,10 @@ void percpu_up_write(struct percpu_rw_semaphore *brw)
- 	/* allow the new readers, but only the slow-path */
- 	up_write(&brw->rw_sem);
- 
--	/* insert the barrier before the next fast-path in down_read */
-+	/*
-+	 * Insert the barrier before the next fast-path in down_read,
-+	 * see W_R case in the comment above update_fast_ctr().
-+	 */
- 	synchronize_sched();
--
- 	mutex_unlock(&brw->writer_mutex);
- }
--- 
-1.5.5.1
-
-
+Alan
