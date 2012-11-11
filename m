@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2KKMck (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 07:32:40 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61578 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2KKMch (ORCPT
+	id S1752905Ab2KKMex (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 07:34:53 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34954 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab2KKMev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 07:32:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdawAdbwackZeST4iDkFZx9-exhTVoUzAABaWr1G89tATg@mail.gmail.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-	<20121024161429.GA16350@core.coreip.homeip.net>
-	<CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
-	<4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
-	<CACRpkdaiLXVeUg1quuw3XPTenbKOjn+aWbGQezpcyvzQCtCWow@mail.gmail.com>
-	<20121030113407.GA24335@sirena.org.uk>
-	<CACRpkdapQJY0aoam741O0fb8EeM9BLk_Psq5TaPG84J7wEvCLw@mail.gmail.com>
-	<87obji8kta.fsf@deeprootsystems.com>
-	<CACRpkdbCk9+HSBPtfT-1dO8paSRYJ5VXX_0SxiyxgrObnJEvmQ@mail.gmail.com>
-	<20121101120713.GA4413@opensource.wolfsonmicro.com>
-	<CACRpkdawAdbwackZeST4iDkFZx9-exhTVoUzAABaWr1G89tATg@mail.gmail.com>
-Date: Sun, 11 Nov 2012 13:32:35 +0100
-Message-ID: <CACRpkdZy1zRQM8Ww3RGc=Q+yt_eS6ekb02MDM-ixzaG8LDRacQ@mail.gmail.com>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 11 Nov 2012 07:34:51 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v5 0/6] solve deadlock caused by memory allocation with I/O
+Date: Sun, 11 Nov 2012 20:34:32 +0800
+Message-Id: <1352637278-19968-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 3:01 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Nov 1, 2012 at 1:07 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Thu, Nov 01, 2012 at 09:54:00AM +0100, Linus Walleij wrote:
->
->> For the pin hogging I'd actually been thinking separately that we should
->> just have the device core do a devm_pinctrl_get_set_default() prior to
->> probing the device and store the result in the struct device.  That
->> would immediately remove almost all of the current pinctrl users, users
->> that do need to do things with the data or check the result can then
->> pick up the pinctrl pointer from the device struct.
->
-> I never thought of that. This sounds like it would work.
+This patchset try to solve one deadlock problem which might be caused
+by memory allocation with block I/O during runtime PM and block device
+error handling path. Traditionly, the problem is addressed by passing
+GFP_NOIO statically to mm, but that is not a effective solution, see
+detailed description in patch 1's commit log.
 
-So I've looked closer at this.
+This patch set introduces one process flag and trys to fix the deadlock
+problem on block device/network device during runtime PM or usb bus reset.
 
-> And the good thing is that this is a clean cut so we
-> will centralized code without having to decide right now
-> how to handle the pm idle/sleep cases.
->
-> Talking here with Kevin Hilman on my left and Grant
-> Likely on my right (they're physically here) there is some
-> worry about stashing stuff into struct device.
->
-> What if I retrieve this in the pinctrl subsystem using
-> bus notifiers and then expose the struct pinctrl * to
-> the clients by using pinctrl_get() and when you get
-> such a handle in your probe() you know that the
-> pinctrl subsystem has already fetched the handle and
-> set it to "default" at that point?
+The 1st one is the change on include/sched.h and mm.
 
-I have sent out an RFC for this approach. It actually
-works quite well on the U300 for example.
+The 2nd patch introduces the flag of memalloc_noio on 'dev_pm_info',
+and pm_runtime_set_memalloc_noio(), so that PM Core can teach mm to not
+allocate mm with GFP_IO during the runtime_resume callback only on
+device with the flag set.
 
-However as stated in the patch we run into another
-problem: what if the pinctrl provider returns
--EDEFER_PROBE?
+The following 2 patches apply the introduced pm_runtime_set_memalloc_noio()
+to mark all devices as memalloc_noio_resume in the path from the block or
+network device to the root device in device tree.
 
-(The same will be true for clocks, regulators etc I
-guess...)
+The last 2 patches are applied again PM and USB subsystem to demonstrate
+how to use the introduced mechanism to fix the deadlock problem.
 
-If I use notifiers like this, I cannot return -EPROBE_DEFER
-to the core. :-(
+Change logs:
+V5:
+	- don't clear GFP_FS
+	- coding style fix
+	- add comments
+	- see details in individual change logs
 
-The PM domains seem to be built on the notification
-mechanism as well (AFAICT), so it will not allow drivers to
-defer their probes, as it is an optional layer after all.
+V4:
+        - patches from the 2nd to the 6th changed
+        - call pm_runtime_set_memalloc_noio() after device_add() as pointed
+        by Alan
+        - set PF_MEMALLOC_NOIO during runtime_suspend()
 
-As a matter of fact it seems that there is an implicit
-assumption in PM domains that the resources that
-are taken there cannot defer any probing, so they are
-assumed to always be present. Is this correct?
-If so, any resources that may be deferred (such as
-pinctrl) can never be handled in PM domains. Only
-simple stuff that the SoC controls directly e.g through
-some fixed register pokes to voltage domains.
+V3:
+        - patch 2/6 and 5/6 changed, see their commit log
+        - remove RFC from title since several guys have expressed that
+        it is a reasonable solution
+V2:
+        - remove changes on 'may_writepage' and 'may_swap'(1/6)
+        - unset GFP_IOFS in try_to_free_pages() path(1/6)
+        - introduce pm_runtime_set_memalloc_noio()
+        - only apply the meachnism on block/network device and its ancestors
+        for runtime resume context
+V1:
+        - take Minchan's change to avoid the check in alloc_page hot path
+        - change the helpers' style into save/restore as suggested by Alan
+        - memory allocation with no io in usb bus reset path for all devices
+        as suggested by Greg and Oliver
 
-So then the only option that remains to centralize
-pinctrl handling is indeed to do that in the device core,
-before probe(). I need to know Greg's feelings about that.
+ block/genhd.c                |   10 +++++
+ drivers/base/power/runtime.c |   92 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/usb/core/hub.c       |   13 ++++++
+ include/linux/pm.h           |    1 +
+ include/linux/pm_runtime.h   |    3 ++
+ include/linux/sched.h        |   22 ++++++++++
+ mm/page_alloc.c              |    9 ++++-
+ mm/vmscan.c                  |    4 +-
+ net/core/net-sysfs.c         |    5 +++
+ 9 files changed, 154 insertions(+), 5 deletions(-)
 
-At the same time this sort of give me the feeling that
-we might be doing something wrong. The distributed
-nature of deferred probes will become quite elusive
-if the deferral request comes from some place
-before probe() is even called on the driver.
 
-Please check my RFC patch and tell me above errors
-in the above reasoning....
+Thanks,
+--
+Ming Lei
 
-Yours,
-Linus Walleij
