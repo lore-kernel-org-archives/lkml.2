@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2KKPoq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 10:44:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066Ab2KKPoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 10:44:44 -0500
-Date: Sun, 11 Nov 2012 16:45:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 1/1] percpu_rw_semaphore: reimplement to not
-	block the readers unnecessarily
-Message-ID: <20121111154509.GA15652@redhat.com>
-References: <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121109154656.GA26134@redhat.com> <20121109170107.GB2419@linux.vnet.ibm.com> <20121109181048.GA1184@redhat.com> <20121110005516.GM2419@linux.vnet.ibm.com>
+	id S1753451Ab2KKQCe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 11:02:34 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61235 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab2KKQCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 11:02:32 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v2] menuconfig: Replace CIRCLEQ by list_head-style lists.
+Date: Sun, 11 Nov 2012 17:02:24 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.6-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Michal Marek <mmarek@suse.cz>,
+        Benjamin Poirier <benjamin.poirier@gmail.com>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Davidlohr Bueso <dave@gnu.org>, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+References: <1350754935-20014-1-git-send-email-benjamin.poirier@gmail.com> <201210222138.25805.yann.morin.1998@free.fr> <50893FCF.5030800@suse.cz>
+In-Reply-To: <50893FCF.5030800@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121110005516.GM2419@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211111702.24556.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09, Paul E. McKenney wrote:
->
-> On Fri, Nov 09, 2012 at 07:10:48PM +0100, Oleg Nesterov wrote:
-> >
-> > 	static bool xxx(brw)
-> > 	{
-> > 		down_write(&brw->rw_sem);
->
-> 		down_write_trylock()
->
-> As you noted in your later email.  Presumably you return false if
-> the attempt to acquire it fails.
+Michal, All,
 
-Yes, yes, thanks.
+On Thursday 25 October 2012 Michal Marek wrote:
+> On 22.10.2012 21:38, Yann E. MORIN wrote:
+> > On Sunday 21 October 2012 Benjamin Poirier wrote:
+> >> Changes v1-v2:
+> >> * integrate the patch/suggestion from Yann to fix problems related to the
+> >>   usage of list.h with xconfig/c++
+> >> 	* "new" keyword
+> >> 	* offsetof redefinition
+> >> * silly #endif placement mistake
+[--SNIP--]
+> I pushed it to kbuild.git#rc-fixes now and will send it to Linus for 3.7
+> inclusion later.
 
-> > But first we should do other changes, I think. IMHO we should not do
-> > synchronize_sched() under mutex_lock() and this will add (a bit) more
-> > complications. We will see.
->
-> Indeed, that does put considerable delay on the writers.  There is always
-> synchronize_sched_expedited(), I suppose.
+Not trying to sound like a nuisance, but this has still not been pushed
+to Linus yet... ;-)
 
-I am not sure about synchronize_sched_expedited() (at least unconditionally),
-but: only the 1st down_write() needs  synchronize_, and up_write() do not
-need to sleep in synchronize_ at all.
+Regards,
+Yann E. MORIN.
 
-To simplify, lets ignore the fact that the writers need to serialize with
-each other. IOW, the pseudo-code below is obviously deadly wrong and racy,
-just to illustrate the idea.
-
-1. We remove brw->writer_mutex and add "atomic_t writers_ctr".
-
-   update_fast_ctr() uses atomic_read(brw->writers_ctr) == 0 instead
-   of !mutex_is_locked().
-
-2. down_write() does
-
-	if (atomic_add_return(brw->writers_ctr) == 1) {
-		// first writer
-		synchronize_sched();
-		...
-	} else {
-		... XXX: wait for percpu_up_write() from the first writer ...
-	}
-
-3. up_write() does
-
-	if (atomic_dec_unless_one(brw->writers_ctr)) {
-		... wake up XXX writers above ...
-		return;
-	} else {
-		// the last writer
-		call_rcu_sched( func => { atomic_dec(brw->writers_ctr) } );
-	}
-
-Once again, this all is racy, but hopefully the idea is clear:
-
-	- down_write(brw) sleeps in synchronize_sched() only if brw
-	  has already switched back to fast-path-mode
-
-	- up_write() never sleeps in synchronize_sched(), it uses
-	  call_rcu_sched() or wakes up the next writer.
-
-Of course I am not sure this all worth the trouble, this should be discussed.
-(and, cough, I'd like to add the multi-writers mode which I'm afraid nobody
-will like) But I am not going to even try to do this until the current patch
-is applied, I need it to fix the bug in uprobes and I think the current code
-is "good enough". These changes can't help to speedup the readers, and the
-writers are slow/rare anyway.
-
-Thanks!
-
-Oleg.
-
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
