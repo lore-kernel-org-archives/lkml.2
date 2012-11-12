@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab2KLMdq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:33:46 -0500
-Received: from mail.agmk.net ([91.192.224.71]:53862 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab2KLMdp convert rfc822-to-8bit (ORCPT
+	id S1751869Ab2KLMf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:35:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47425 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab2KLMfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:33:45 -0500
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, arekm@pld-linux.org,
-        baggins@pld-linux.org
-Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule)
-Date: Mon, 12 Nov 2012 13:33:39 +0100
-Message-ID: <3023364.Bjpo0brdul@pawels>
-User-Agent: KMail/4.9.1 (Linux/3.6.6; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1539324.MIArxLN8tE@pawels>
-References: <56378024.A3Kec8xZj0@pawels> <50A0A7EF.3050706@linux.vnet.ibm.com> <1539324.MIArxLN8tE@pawels>
+	Mon, 12 Nov 2012 07:35:25 -0500
+Message-ID: <50A0ED09.6010106@suse.cz>
+Date: Mon, 12 Nov 2012 13:35:21 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH] HID: microsoft, do not use compound literal
+References: <1352711769-28911-1-git-send-email-jslaby@suse.cz> <CAMuHMdUEW9K6cfpcUNphte_VzBCL_Oa_od3892DQ3QbX5xMMnA@mail.gmail.com> <alpine.LNX.2.00.1211121314270.27271@pobox.suse.cz> <CAMuHMdWq9S9oO+2OH6oiAogFR+JJxnxrtGoMp+uMm-qXCLr55A@mail.gmail.com>
+In-Reply-To: <CAMuHMdWq9S9oO+2OH6oiAogFR+JJxnxrtGoMp+uMm-qXCLr55A@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
-> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
-> > On 11/12/2012 03:16 PM, Paweł Sikora wrote:
-> > > On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
-> > >> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
-> > >>> Hi,
-> > >>>
-> > >>> during playing with new ups i've caught an nice oops on reboot:
-> > >>>
-> > >>> http://imgbin.org/index.php?page=image&id=10253
-> > >>>
-> > >>> probably the upstream is also affected.
-> > >>
-> > >> Hi, Paweł
-> > >>
-> > >> Are you using a clean 3.6.6 without any modify?
-> > > 
-> > > yes, pure 3.6.6 form git tree with modular config.
-> > > 
-> > >> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
-> > >> any design on switch itself back later(or the time is too long), are you
-> > >> accidentally using some bad designed module?
-> > > 
-> > > hmm, hard to say. mostly all modules are loaded automatically by kernel.
-> > 
-> > Could you please provide the whole dmesg in text? your picture lost the
-> > print info of the hung task.
-> 
-> i've grabbed the console via rs232 but there's no more info (see attached txt).
+On 11/12/2012 01:30 PM, Geert Uytterhoeven wrote:
+> My comment was purely cosmetic, as it applies to the quoted compiler error
+> messages only.
 
-hmm, i have one observation.
+Ah, I see. When you are applying the patch Jiri, could you remove errors
+about line 50 from the commit log? What I wanted to have there
+apparently was only "hid-microsoft.c:51:18: error: macro "memcmp" passed
+6 arguments, but takes just 3".
 
-during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
-afaics this file descriptor points to vnc log file on a remote machine, e.g.:
+> Your latest version doesn't use memcmp() anymore, so I think there's no need to
+> include <linux/string.h> anymore.
 
-# ps aux|grep xfwm4
-eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4 
+s/Your/His/ perhaps :). Otherwise I'd be confused -- did Jiri send some
+other version?
 
-# readlink -m /proc/1748/fd/1
-/remote/dragon/ahome/eda/.vnc/odra:11.log
-
-# mount|grep ahome
-dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
-
-
-so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
-and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
-
-BR,
-Paweł.
-
+thanks,
+-- 
+js
+suse labs
