@@ -1,65 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab2KLUXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 15:23:54 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:65087 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab2KLUXw (ORCPT
+	id S1753011Ab2KLU1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 15:27:04 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:51978 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab2KLU1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 15:23:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1378.1352379110@warthog.procyon.org.uk>
-References: <1378.1352379110@warthog.procyon.org.uk>
-Date: Mon, 12 Nov 2012 15:23:51 -0500
-Message-ID: <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com>
-Subject: Re: [GIT PULL] UAPI: perf fixes
-From: Josh Boyer <jwboyer@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: acme@ghostprotocols.net, mingo@kernel.org, tglx@linutronix.de,
-        bp@alien8.de, namhyung@gmail.com, torvalds@linux-foundation.org,
-        paulus@samba.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Nov 2012 15:27:02 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: linux-pm@vger.kernel.org
+Cc: jwerner@chromium.org, khilman@ti.com, len.brown@intel.com,
+        g.trinabh@gmail.com, deepthi@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl, akpm@linux-foundation.org,
+        snanda@chromium.org, linaro-dev@lists.linaro.org
+Subject: [RFC] cpuidle - remove the power_specified field in the driver
+Date: Mon, 12 Nov 2012 21:26:56 +0100
+Message-Id: <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <50831CA3.2020602@linaro.org>
+References: <50831CA3.2020602@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 7:51 AM, David Howells <dhowells@redhat.com> wrote:
->
->  (6) Make perf work for x86 by adding -I flags and changing long #includes
->      with "../../include" in them into short <asm/foo.h> type things.
+This patch follows the discussion about reinitializing the power usage
+when a C-state is added/removed.
 
-This patch seems to break building perf on ppc64.  It fails with:
+ https://lkml.org/lkml/2012/10/16/518
 
-+ make -j16 -C tools/perf -s V=1 WERROR=0 HAVE_CPLUS_DEMANGLE=1 prefix=/usr all
+We realized the power usage field is never filled and when it is
+filled for tegra, the power_specified flag is not set making all these
+values to be resetted when the driver is initialized with the set_power_state
+function.
 
-<snip>
+Julius and I feel this is over-engineered and the power_specified
+flag could be simply removed and continue assuming the states are
+backward sorted.
 
-builtin-kvm.c:25:21: fatal error: asm/svm.h: No such file or directory
-compilation terminated.
-make: *** [builtin-kvm.o] Error 1
-make: *** Waiting for unfinished jobs....
+The menu governor select function is simplified as the power is ordered.
+Actually the condition is always true with the current code.
 
-And that is indeed because arch/powerpc/include/asm/svm.h doesn't exist
-(and therefore can't be exported like the first patch for x86 in this
-series does).  You can find full build logs with this patch series
-applied here: http://ppc.koji.fedoraproject.org/koji/taskinfo?taskID=781782
+The cpuidle_play_dead function is also simplified by doing a reverse lookup
+on the array.
 
-However, without some form of fix for the ../.. includes, perf still
-fails to build on arches like ARM and powerpc with errors like this:
+The set_power_states function is removed as it does no make sense anymore.
 
-In file included from util/../perf.h:29:0,
-                 from util/cache.h:7,
-                 from util/quote.c:1:
-util/../../../arch/powerpc/include/asm/unistd.h:12:29: fatal error:
-uapi/asm/unistd.h: No such file or directory
-compilation terminated.
-make: *** [util/parse-events-test.o] Error 1
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/cpuidle.c        |   17 ++++-------------
+ drivers/cpuidle/driver.c         |   25 -------------------------
+ drivers/cpuidle/governors/menu.c |    8 ++------
+ include/linux/cpuidle.h          |    2 +-
+ 4 files changed, 7 insertions(+), 45 deletions(-)
 
-Full build logs here:
-http://ppc.koji.fedoraproject.org/koji/taskinfo?taskID=781076
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 711dd83..f983262 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
+ {
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+-	int i, dead_state = -1;
+-	int power_usage = -1;
++	int i;
+ 
+ 	if (!drv)
+ 		return -ENODEV;
+ 
+ 	/* Find lowest-power state that supports long-term idle */
+-	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+-		struct cpuidle_state *s = &drv->states[i];
+-
+-		if (s->power_usage < power_usage && s->enter_dead) {
+-			power_usage = s->power_usage;
+-			dead_state = i;
+-		}
+-	}
+-
+-	if (dead_state != -1)
+-		return drv->states[dead_state].enter_dead(dev, dead_state);
++	for (i = drv->state_count; i >= CPUIDLE_DRIVER_STATE_START; i--)
++		if (drv->states[i].play_dead)
++			return drv->states[i].enter_dead(dev, i);
+ 
+ 	return -ENODEV;
+ }
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 3af841f..bb045f1 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -19,34 +19,9 @@ DEFINE_SPINLOCK(cpuidle_driver_lock);
+ static void __cpuidle_set_cpu_driver(struct cpuidle_driver *drv, int cpu);
+ static struct cpuidle_driver * __cpuidle_get_cpu_driver(int cpu);
+ 
+-static void set_power_states(struct cpuidle_driver *drv)
+-{
+-	int i;
+-
+-	/*
+-	 * cpuidle driver should set the drv->power_specified bit
+-	 * before registering if the driver provides
+-	 * power_usage numbers.
+-	 *
+-	 * If power_specified is not set,
+-	 * we fill in power_usage with decreasing values as the
+-	 * cpuidle code has an implicit assumption that state Cn
+-	 * uses less power than C(n-1).
+-	 *
+-	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
+-	 * an power value of -1.  So we use -2, -3, etc, for other
+-	 * c-states.
+-	 */
+-	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
+-		drv->states[i].power_usage = -1 - i;
+-}
+-
+ static void __cpuidle_driver_init(struct cpuidle_driver *drv)
+ {
+ 	drv->refcnt = 0;
+-
+-	if (!drv->power_specified)
+-		set_power_states(drv);
+ }
+ 
+ static int __cpuidle_register_driver(struct cpuidle_driver *drv, int cpu)
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 2efee27..14eb11f 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -312,7 +312,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+-	int power_usage = -1;
+ 	int i;
+ 	int multiplier;
+ 	struct timespec t;
+@@ -383,11 +382,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 		if (s->exit_latency * multiplier > data->predicted_us)
+ 			continue;
+ 
+-		if (s->power_usage < power_usage) {
+-			power_usage = s->power_usage;
+-			data->last_state_idx = i;
+-			data->exit_us = s->exit_latency;
+-		}
++		data->last_state_idx = i;
++		data->exit_us = s->exit_latency;
+ 	}
+ 
+ 	/* not deepest C-state chosen for low predicted residency */
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 3711b34..24cd103 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -126,9 +126,9 @@ struct cpuidle_driver {
+ 	struct module 		*owner;
+ 	int                     refcnt;
+ 
+-	unsigned int		power_specified:1;
+ 	/* set to 1 to use the core cpuidle time keeping (for all states). */
+ 	unsigned int		en_core_tk_irqen:1;
++	/* states array must be ordered in decreasing power consumption */
+ 	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
+ 	int			state_count;
+ 	int			safe_state_index;
+-- 
+1.7.5.4
 
-So.  Something else might need to be done to fix perf builds for non-x86
-arches.
-
-josh
