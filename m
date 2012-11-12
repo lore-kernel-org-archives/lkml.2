@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2KLOKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:10:55 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48582 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2KLOKx (ORCPT
+	id S1753271Ab2KLOMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:12:55 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62530 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab2KLOMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:10:53 -0500
-Date: Mon, 12 Nov 2012 14:15:38 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andy Grover <agrover@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: Re: scsi target, likely GPL violation
-Message-ID: <20121112141538.19c90be8@pyramind.ukuu.org.uk>
-In-Reply-To: <20121112140843.GC4895@thunk.org>
-References: <509A915B.30105@redhat.com>
-	<1352626456.6524.46.camel@dabdike>
-	<20121111130553.GA30943@thunk.org>
-	<87390gxjbd.fsf@ebb.org>
-	<20121112140843.GC4895@thunk.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 12 Nov 2012 09:12:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [RFC PATCH v1 08/31] ARC: Fundamental ARCH data-types/defines
+Date: Mon, 12 Nov 2012 14:12:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Jonas Bonn <jonas.bonn@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <CACM3HyHAKgJ2aTGjidZr5T9WFL3m+FTbUz_1QtO2gAgSFQm8fA@mail.gmail.com> <50A10091.6020606@synopsys.com>
+In-Reply-To: <50A10091.6020606@synopsys.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201211121412.47702.arnd@arndb.de>
+X-Provags-ID: V02:K0:qZ5b94zLIM6Fu7devvrCEQ+nrGU+Bnjh6WfAMoGEsvD
+ 97rpBkGUxWTHop9qVsQLhGGUqoRQ0JnrdyPFI4hbP4zwhbluoq
+ 6l/5JcVV2wMxdE+S8Vd0bwnI0/MEmduPUsUbgAeTXSF0/JcgGo
+ YZaQWuZjKSs3WiqTKstVyIr8kvpn1CnEEPDJiAFhKqOaDt7nqe
+ WHWvdhboPM0wr4HrO4jarL5I22S80YGSkTylDSbUlCRz1DGtXj
+ iP0MY2mAZHXmjhTc7W96Go1RTfLd2Nm44+eMeMV/0dzmYieSbx
+ 6VxUtMOvP+ym++x9cH6S1PQ9tJyBEBCZNuGeroiHwP0Hv7PYjC
+ C5FD/UVNMDniszabaZtg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 09:08:43 -0500
-"Theodore Ts'o" <tytso@mit.edu> wrote:
+On Monday 12 November 2012, Vineet Gupta wrote:
+> But just to clarify, gdbserver will still use ARC specific
+> ptrace(PEEKUSR) as opposed to regset interface. The switch to new gdb
+> version is non trivial and I can't ask our active customers to go to
+> some out-of-mainline tree until that gets fixed.
 
-> On Sun, Nov 11, 2012 at 10:15:02AM -0500, Bradley M. Kuhn wrote:
-> > Andy's initial email ended with the request: "Please explain."  Thus,
-> > Andy's email seemed designed to seek facts, which I think is a
-> > reasonable and good thing to do here.  Meanwhile, the facts *still*
-> > aren't clear here yet.
-> 
-> ... and the statement, "When did you stop beating your wife?" is also
-> a request for information?
+But your customers could use an out-of-tree kernel patch to put the
+implementation of PEEKUSR back into their kernels, right?
 
-Ted can you explain what this has to do with the original discussion ?
+Over time, they could just drop that patch once they move to a
+newer gdb version.
+
+	Arnd
