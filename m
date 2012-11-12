@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2KLV04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:26:56 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29676 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab2KLVTc (ORCPT
+	id S1754419Ab2KLV1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:27:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37895 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196Ab2KLV13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:32 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 10/46] x86, mm: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
-Date: Mon, 12 Nov 2012 13:18:06 -0800
-Message-Id: <1352755122-25660-11-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
- <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 12 Nov 2012 16:27:29 -0500
+Date: Mon, 12 Nov 2012 16:27:23 -0500 (EST)
+Message-Id: <20121112.162723.264622334265396904.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: akpm@linux-foundation.org, bhelgaas@google.com,
+        hartleys@visionengravers.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
+        linux-arch@vger.kernel.org, lethal@linux-sh.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] Centralise CONFIG_ARCH_NO_VIRT_TO_BUS
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au>
+References: <ADE657CA350FB648AAC2C43247A983F00206B25884B1@AUSP01VMBX24.collaborationhost.net>
+	<CAErSpo6WG2R_8sa=rOmAOci-3iFpDs2NFzNkZYxDnD2oTiMQJg@mail.gmail.com>
+	<20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 13 Nov 2012 08:26:15 +1100
 
-There could be cases where user supplied memmap=exactmap memory
-mappings do not mark the region where the kernel .text .data and
-.bss reside as E820_RAM, as reported here:
+> Make if easier for more architectures to select it and thus disable
+> drivers that use virt_to_bus().
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-https://lkml.org/lkml/2012/8/14/86
-
-Handle it by complaining, and adding the range back into the e820.
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
----
- arch/x86/kernel/setup.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4bd8921..d85cbd9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -832,6 +832,20 @@ void __init setup_arch(char **cmdline_p)
- 	insert_resource(&iomem_resource, &data_resource);
- 	insert_resource(&iomem_resource, &bss_resource);
- 
-+	/*
-+	 * Complain if .text .data and .bss are not marked as E820_RAM and
-+	 * attempt to fix it by adding the range. We may have a confused BIOS,
-+	 * or the user may have incorrectly supplied it via memmap=exactmap. If
-+	 * we really are running on top non-RAM, we will crash later anyways.
-+	 */
-+	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
-+		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
-+
-+		e820_add_region(code_resource.start,
-+				__pa(__brk_limit) - code_resource.start + 1,
-+				E820_RAM);
-+	}
-+
- 	trim_bios_range();
- #ifdef CONFIG_X86_32
- 	if (ppro_with_ram_bug()) {
--- 
-1.7.7
-
+Acked-by: David S. Miller <davem@davemloft.net>
