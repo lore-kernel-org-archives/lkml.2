@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab2KLVdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:33:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035Ab2KLVdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:33:01 -0500
-Date: Mon, 12 Nov 2012 19:32:37 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Christian Ehrhardt <lk@c--e.de>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fix lapic time counter read for periodic mode
-Message-ID: <20121112213237.GA31377@amt.cnet>
-References: <20121111122528.GC19718@lisa.in-ulm.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121111122528.GC19718@lisa.in-ulm.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754468Ab2KLVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:32:56 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24592 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754039Ab2KLVTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:19:30 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 35/46] x86, mm: use round_up/down in split_mem_range()
+Date: Mon, 12 Nov 2012 13:18:31 -0800
+Message-Id: <1352755122-25660-36-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+ <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 11, 2012 at 01:25:28PM +0100, Christian Ehrhardt wrote:
-> 
-> Hi,
-> 
-> there is a bug in the emulation of the lapic time counter. In particular
-> what we are seeing is that the time counter of a periodic lapic timer
-> in the guest reads as zero 99% of the time. The patch below fixes that.
-> 
-> The emulation of the lapic timer is done with the help of a hires
-> timer that expires with the same frequency as the lapic counter.
-> New expiration times for a periodic timer are calculated incrementally
-> based on the last scheduled expiration time. This ensures long term
-> accuracy of the emulated timer close to that of the underlying clock.
-> 
-> The actual value of the lapic time counter is calculated from the
-> real time difference between current time and scheduled expiration time
-> of the hires timer. If this difference is negative, the hires timer
-> expired. For oneshot mode this is correctly translated into a zero value
-> for the time counter. However, in periodic mode we must use the negative
-> difference unmodified.
-> 
->      regards   Christian
-> 
-> Fix lapic time counter read for periodic mode.
+to replace own inline version for those roundup and rounddown.
 
-In periodic mode the hrtimer is rearmed once expired, see
-apic_timer_fn. So _get_remaining should return proper value
-even if the guest is not able to process timer interrupts. 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/init.c |   30 ++++++++++++------------------
+ 1 files changed, 12 insertions(+), 18 deletions(-)
 
-Can you describe your specific scenario in more detail?
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 61734b4..ae3d642 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -214,13 +214,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	 * slowdowns.
+ 	 */
+ 	if (pos == 0)
+-		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = PMD_SIZE >> PAGE_SHIFT;
+ 	else
+-		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-				 << (PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
+-			<< (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 	if (end_pfn > (end >> PAGE_SHIFT))
+ 		end_pfn = end >> PAGE_SHIFT;
+@@ -230,15 +228,13 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* big page (2M) range */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #ifdef CONFIG_X86_32
+-	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
+-		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
++	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
++		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 
+ 	if (start_pfn < end_pfn) {
+@@ -249,9 +245,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+-	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -260,9 +255,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* tail is not big page (1G) alignment */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
+-- 
+1.7.7
 
-> Signed-off-by: Christian Ehrhardt <lk@c--e.de>
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index 43e9fad..eff902d 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -810,8 +810,13 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
->  	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
->  		return 0;
->  
-> +	/*
-> +	 * hrtimer_get_remaining returns the signed difference between
-> +	 * timer expiration time and current time. Keep negative return
-> +	 * value iff the the timer is periodic.
-> +	 */
->  	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
-> -	if (ktime_to_ns(remaining) < 0)
-> +	if (ktime_to_ns(remaining) < 0 && !apic_lvtt_period(apic))
->  		remaining = ktime_set(0, 0);
->  
->  	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
