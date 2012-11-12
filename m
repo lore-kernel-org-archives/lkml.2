@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2KLR4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:56:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51017 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752198Ab2KLR4t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:56:49 -0500
-Date: Mon, 12 Nov 2012 17:56:48 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: arizona: Move chip reset to before register patch
-Message-ID: <20121112175648.GA29044@opensource.wolfsonmicro.com>
+	id S1751549Ab2KLSDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 13:03:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:52569 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab2KLSDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 13:03:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
+   d="scan'208";a="240820207"
+Date: Mon, 12 Nov 2012 10:03:37 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Julius Werner <jwerner@google.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: Re: [PATCH] xhci: fix null-pointer dereference when destroying
+ half-built segment rings
+Message-ID: <20121112180337.GB6217@xanatos>
+References: <20121101175217.GJ29270@xanatos>
+ <1351799279-23824-1-git-send-email-jwerner@chromium.org>
+ <CAHp75VfqYNMxxDKKvHOVOdtf0+ZkC_N3Zfy0Ahb0nNdG4Xh9xA@mail.gmail.com>
+ <20121101201552.GA9472@xanatos>
+ <95F2AD07-450E-422C-AB0B-9DFC4734CA1C@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <95F2AD07-450E-422C-AB0B-9DFC4734CA1C@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the absence of a physical reset line the chip is reset by writing the
-first register, this was done after the register patch was applied which
-negates the settings applied in the register patch.
+On Thu, Nov 01, 2012 at 01:28:46PM -0700, Julius Werner wrote:
+> >> Is it just
+> >> for (prev = *first; prev; prev = prev->next)
+> >>    xhci_segment_free(xhci, prev);
+> >> 
+> >> ?
+> > 
+> > Yeah, that seems cleaner.
+> > 
+> > Sarah Sharp
+> 
+> I can submit it that way if you want, but I would advise against it. This way you access the prev pointer after it has been freed already… that's probably not a problem in the current kernel, but it depends on how the underlying memory is managed and is generally just not a good idea in my opinion.
 
-This patch moves the reset to take place before the register patch is
-applied.
+Yep, you're right.  I'll take the second patch you submitted, thanks.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 1b48f20..1d241ea 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -366,6 +366,15 @@ int __devinit arizona_dev_init(struct arizona *arizona)
- 
- 	regcache_cache_only(arizona->regmap, false);
- 
-+	/* If we have a /RESET GPIO we'll already be reset */
-+	if (!arizona->pdata.reset) {
-+		ret = regmap_write(arizona->regmap, ARIZONA_SOFTWARE_RESET, 0);
-+		if (ret != 0) {
-+			dev_err(dev, "Failed to reset device: %d\n", ret);
-+			goto err_reset;
-+		}
-+	}
-+
- 	ret = regmap_read(arizona->regmap, ARIZONA_SOFTWARE_RESET, &reg);
- 	if (ret != 0) {
- 		dev_err(dev, "Failed to read ID register: %d\n", ret);
-@@ -413,15 +422,6 @@ int __devinit arizona_dev_init(struct arizona *arizona)
- 	if (ret != 0)
- 		dev_err(arizona->dev, "Failed to apply patch: %d\n", ret);
- 
--	/* If we have a /RESET GPIO we'll already be reset */
--	if (!arizona->pdata.reset) {
--		ret = regmap_write(arizona->regmap, ARIZONA_SOFTWARE_RESET, 0);
--		if (ret != 0) {
--			dev_err(dev, "Failed to reset device: %d\n", ret);
--			goto err_reset;
--		}
--	}
--
- 	ret = arizona_wait_for_boot(arizona);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Device failed initial boot: %d\n", ret);
--- 
-1.7.2.5
-
+Sarah Sharp
