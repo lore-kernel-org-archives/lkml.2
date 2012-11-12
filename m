@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2KLNAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:00:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38015 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2KLNAL (ORCPT
+	id S1752508Ab2KLNBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:01:49 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34096 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2KLNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:00:11 -0500
-Message-ID: <50A0F2D0.2050308@gmail.com>
-Date: Mon, 12 Nov 2012 21:00:00 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 12 Nov 2012 08:01:47 -0500
 MIME-Version: 1.0
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        Shan Wei <shanwei88@gmail.com>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH cleanup RFC] ftrace: kill unused and puzzled sample code
- in ftrace.h
-References: <50949FC9.6050202@gmail.com>
-In-Reply-To: <50949FC9.6050202@gmail.com>
+In-Reply-To: <AEFB103E-C71E-4A3C-B946-19ABD9025A17@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
+ <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com>
+ <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+ <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com>
+ <509A3595.7050600@ti.com> <A6697FB9-3614-4027-A71B-59C7556005BF@antoniou-consulting.com>
+ <CACxGe6uXyTt_kr4=0ob+-ubgV9he+SfobLwux6X0m6y7yQU7EA@mail.gmail.com> <AEFB103E-C71E-4A3C-B946-19ABD9025A17@antoniou-consulting.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 12 Nov 2012 13:01:27 +0000
+X-Google-Sender-Auth: jwZD6yCAW9I66Ra1qD_ft3vTNtc
+Message-ID: <CACxGe6sXnhFpGWG3Ak431=dnu0p-kFPLVDMfWLeyWE-ETeykKQ@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 12, 2012 at 11:34 AM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> Hi Grant,
+>
+> On Nov 9, 2012, at 10:33 PM, Grant Likely wrote:
+>
+>> On Wed, Nov 7, 2012 at 11:02 AM, Pantelis Antoniou
+>> <panto@antoniou-consulting.com> wrote:
+>>> On Nov 7, 2012, at 11:19 AM, Benoit Cousson wrote:
+>>>> Maybe some extra version match table can just be passed during the board machine_init
+>>>>
+>>>>      of_platform_populate(NULL, omap_dt_match_table, NULL, NULL, panda_version_match_table);
+>>>>
+>>>
+>>> Would we need explicit of_platform_populate calls if we have node modification notifiers?
+>>> In that case the notifier would pick it up automatically, and can do the per
+>>> version matching internally.
+>>
+>> There still needs to be something to register "everything below this
+>> node is interesting" which is exactly what of_platform_populate() does
+>> now. I see the notifiers being used by the of_platform_populate
+>> backend to know when nodes have been created (or destroyed).
+>>
+>> g.
+>
+> I see. So of_platform_populate could just register the notifier and
+> not do the tree walk itself. Perhaps the name is a bit misleading then?
 
-ping...................
+Kind of, yes. of_platform_populate() would still have the same effect
+that it does now except that it would also pay attention to additions
+and removals from the DT nodes it is interested in. This would work
+cleanly enough for node additions/removals, but it wouldn't process
+changes to properties on existing nodes.
 
-Shan Wei said, at 2012/11/3 12:38:
-> From: Shan Wei <davidshan@tencent.com>
-> 
-> When doing per-cpu helper optimizing work, find that this code is so puzzled.
-> 1. It's mark as comment text, maybe a sample function for guidelines 
->    or a todo work.
-> 2. But, this sample code is odd where struct perf_trace_buf is nonexistent.
->    commit ce71b9 delete struct perf_trace_buf definition.
-> 
->    Author: Frederic Weisbecker <fweisbec@gmail.com>
->    Date:   Sun Nov 22 05:26:55 2009 +0100
-> 
->    tracing: Use the perf recursion protection from trace event
-> 
-> Is it necessary to keep there?
-> just compile test. 
-
-> 
-> 
-> 
-> Signed-off-by: Shan Wei <davidshan@tencent.com>
-> ---
->  include/trace/ftrace.h |   73 ------------------------------------------------
->  1 files changed, 0 insertions(+), 73 deletions(-)
-> 
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index a763888..4f993c2 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -620,79 +620,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
->  
->  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
->  
-> -/*
-> - * Define the insertion callback to perf events
-> - *
-> - * The job is very similar to ftrace_raw_event_<call> except that we don't
-> - * insert in the ring buffer but in a perf counter.
-> - *
-> - * static void ftrace_perf_<call>(proto)
-> - * {
-> - *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-> - *	struct ftrace_event_call *event_call = &event_<call>;
-> - *	extern void perf_tp_event(int, u64, u64, void *, int);
-> - *	struct ftrace_raw_##call *entry;
-> - *	struct perf_trace_buf *trace_buf;
-> - *	u64 __addr = 0, __count = 1;
-> - *	unsigned long irq_flags;
-> - *	struct trace_entry *ent;
-> - *	int __entry_size;
-> - *	int __data_size;
-> - *	int __cpu
-> - *	int pc;
-> - *
-> - *	pc = preempt_count();
-> - *
-> - *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
-> - *
-> - *	// Below we want to get the aligned size by taking into account
-> - *	// the u32 field that will later store the buffer size
-> - *	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),
-> - *			     sizeof(u64));
-> - *	__entry_size -= sizeof(u32);
-> - *
-> - *	// Protect the non nmi buffer
-> - *	// This also protects the rcu read side
-> - *	local_irq_save(irq_flags);
-> - *	__cpu = smp_processor_id();
-> - *
-> - *	if (in_nmi())
-> - *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
-> - *	else
-> - *		trace_buf = rcu_dereference_sched(perf_trace_buf);
-> - *
-> - *	if (!trace_buf)
-> - *		goto end;
-> - *
-> - *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
-> - *
-> - * 	// Avoid recursion from perf that could mess up the buffer
-> - * 	if (trace_buf->recursion++)
-> - *		goto end_recursion;
-> - *
-> - * 	raw_data = trace_buf->buf;
-> - *
-> - *	// Make recursion update visible before entering perf_tp_event
-> - *	// so that we protect from perf recursions.
-> - *
-> - *	barrier();
-> - *
-> - *	//zero dead bytes from alignment to avoid stack leak to userspace:
-> - *	*(u64 *)(&raw_data[__entry_size - sizeof(u64)]) = 0ULL;
-> - *	entry = (struct ftrace_raw_<call> *)raw_data;
-> - *	ent = &entry->ent;
-> - *	tracing_generic_entry_update(ent, irq_flags, pc);
-> - *	ent->type = event_call->id;
-> - *
-> - *	<tstruct> <- do some jobs with dynamic arrays
-> - *
-> - *	<assign>  <- affect our values
-> - *
-> - *	perf_tp_event(event_call->id, __addr, __count, entry,
-> - *		     __entry_size);  <- submit them to perf counter
-> - *
-> - * }
-> - */
->  
->  #ifdef CONFIG_PERF_EVENTS
->  
-> 
-
+g.
