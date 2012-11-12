@@ -1,199 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2KLVYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:24:31 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24645 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab2KLVTd (ORCPT
+	id S1754294Ab2KLVZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:25:31 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51197 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab2KLVZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:33 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 24/46] x86, mm: Merge alloc_low_page between 64bit and 32bit
-Date: Mon, 12 Nov 2012 13:18:20 -0800
-Message-Id: <1352755122-25660-25-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
- <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 12 Nov 2012 16:25:23 -0500
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: cooloney@gmail.com, rpurdie@rpsys.net
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH v3 1/2] leds/tca6507: Add support for devicetree.
+Date: Mon, 12 Nov 2012 22:25:10 +0100
+Message-Id: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are almost same except 64 bit need to handle after_bootmem case.
+Support added only for leds (not for gpio's).
 
-Add mm_internal.h to make that alloc_low_page() only to be accessible
-from arch/x86/mm/init*.c
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- arch/x86/mm/init.c        |   34 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/init_32.c     |   26 ++------------------------
- arch/x86/mm/init_64.c     |   32 ++------------------------------
- arch/x86/mm/mm_internal.h |    6 ++++++
- 4 files changed, 44 insertions(+), 54 deletions(-)
- create mode 100644 arch/x86/mm/mm_internal.h
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 76a6e82..ffbb7af 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -17,10 +17,44 @@
- #include <asm/proto.h>
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
+Changes from v2:
+- change compatible property to "ti,tca6507"
+- add documentation for linux,default-trigger
+
+Changes from v1:
+- return proper error value not NULL from tca6507_led_dt_init()
+- remove empty lines
+- remove kfree()
+
+ drivers/leds/leds-tca6507.c |   70 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 67 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+index dabcf7a..fdc1ea6 100644
+--- a/drivers/leds/leds-tca6507.c
++++ b/drivers/leds/leds-tca6507.c
+@@ -667,6 +667,66 @@ static void tca6507_remove_gpio(struct tca6507_chip *tca)
+ }
+ #endif /* CONFIG_GPIOLIB */
  
-+#include "mm_internal.h"
-+
- unsigned long __initdata pgt_buf_start;
- unsigned long __meminitdata pgt_buf_end;
- unsigned long __meminitdata pgt_buf_top;
- 
-+__ref void *alloc_low_page(void)
++#ifdef CONFIG_OF
++static struct tca6507_platform_data * __devinit tca6507_led_dt_init(struct i2c_client *client)
 +{
-+	unsigned long pfn;
-+	void *adr;
++	struct device_node *np = client->dev.of_node, *child;
++	struct tca6507_platform_data *pdata;
++	struct led_info *tca_leds;
++	int count = 0;
 +
-+#ifdef CONFIG_X86_64
-+	if (after_bootmem) {
-+		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
++	for_each_child_of_node(np, child)
++		count++;
++	if (!count)
++		return ERR_PTR(-ENODEV);
 +
-+		return adr;
++	if (count > NUM_LEDS)
++		return ERR_PTR(-ENODEV);
++
++	tca_leds = devm_kzalloc(&client->dev, sizeof(struct led_info) * NUM_LEDS, GFP_KERNEL);
++	if (!tca_leds)
++		return ERR_PTR(-ENOMEM);
++
++	for_each_child_of_node(np, child) {
++		struct led_info led;
++		u32 reg;
++		int ret;
++
++		led.name = of_get_property(child, "label", NULL) ? : child->name;
++		led.default_trigger =
++			of_get_property(child, "linux,default-trigger", NULL);
++
++		ret = of_property_read_u32(child, "reg", &reg);
++
++		if (ret != 0)
++			continue;
++		tca_leds[reg] = led;
 +	}
-+#endif
++	pdata = devm_kzalloc(&client->dev, sizeof(struct tca6507_platform_data), GFP_KERNEL);
++	if (!pdata) {
++		return ERR_PTR(-ENOMEM);
++	}
 +
-+	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-+		unsigned long ret;
-+		if (min_pfn_mapped >= max_pfn_mapped)
-+			panic("alloc_low_page: ran out of memory");
-+		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
-+					max_pfn_mapped << PAGE_SHIFT,
-+					PAGE_SIZE, PAGE_SIZE);
-+		if (!ret)
-+			panic("alloc_low_page: can not alloc memory");
-+		memblock_reserve(ret, PAGE_SIZE);
-+		pfn = ret >> PAGE_SHIFT;
-+	} else
-+		pfn = pgt_buf_end++;
++	pdata->leds.leds = tca_leds;
++	pdata->leds.num_leds = NUM_LEDS;
 +
-+	adr = __va(pfn * PAGE_SIZE);
-+	clear_page(adr);
-+	return adr;
++	return pdata;
 +}
 +
- /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
- #define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
- RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 7bb1106..a7f2df1 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -53,36 +53,14 @@
- #include <asm/page_types.h>
- #include <asm/init.h>
- 
-+#include "mm_internal.h"
++static const struct of_device_id of_tca6507_leds_match[] = {
++	{ .compatible = "ti,tca6507", },
++	{},
++};
 +
- unsigned long highstart_pfn, highend_pfn;
- 
- static noinline int do_test_wp_bit(void);
- 
- bool __read_mostly __vmalloc_start_set = false;
- 
--static __init void *alloc_low_page(void)
--{
--	unsigned long pfn;
--	void *adr;
--
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
--		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
--		if (!ret)
--			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
--		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
--
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
--}
--
- /*
-  * Creates a middle page table and puts a pointer to it in the
-  * given global directory entry. This only returns the gd entry
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 1960820..1d53def 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -54,6 +54,8 @@
- #include <asm/uv/uv.h>
- #include <asm/setup.h>
- 
-+#include "mm_internal.h"
++#else
++static int __devinit tca6507_led_dt_init(struct i2c_client *client, struct tca6507_platform_data *data)
++{
++	return -1;
++}
 +
- static int __init parse_direct_gbpages_off(char *arg)
++#define of_tca6507_leds_match NULL
++#endif
++
+ static int __devinit tca6507_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *id)
  {
- 	direct_gbpages = 0;
-@@ -314,36 +316,6 @@ void __init cleanup_highmap(void)
- 	}
- }
+@@ -683,9 +743,12 @@ static int __devinit tca6507_probe(struct i2c_client *client,
+ 		return -EIO;
  
--static __ref void *alloc_low_page(void)
--{
--	unsigned long pfn;
--	void *adr;
--
--	if (after_bootmem) {
--		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
--
--		return adr;
--	}
--
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
--		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
--		if (!ret)
--			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
--		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
--
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-new file mode 100644
-index 0000000..b3f993a
---- /dev/null
-+++ b/arch/x86/mm/mm_internal.h
-@@ -0,0 +1,6 @@
-+#ifndef __X86_MM_INTERNAL_H
-+#define __X86_MM_INTERNAL_H
-+
-+void *alloc_low_page(void);
-+
-+#endif	/* __X86_MM_INTERNAL_H */
+ 	if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
+-		dev_err(&client->dev, "Need %d entries in platform-data list\n",
+-			NUM_LEDS);
+-		return -ENODEV;
++		pdata = tca6507_led_dt_init(client);
++		if (IS_ERR(pdata)) {
++			dev_err(&client->dev, "Need %d entries in platform-data list\n",
++				NUM_LEDS);
++			return PTR_ERR(pdata);
++		}
+ 	}
+ 	tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
+ 	if (!tca)
+@@ -750,6 +813,7 @@ static struct i2c_driver tca6507_driver = {
+ 	.driver   = {
+ 		.name    = "leds-tca6507",
+ 		.owner   = THIS_MODULE,
++		.of_match_table = of_tca6507_leds_match,
+ 	},
+ 	.probe    = tca6507_probe,
+ 	.remove   = __devexit_p(tca6507_remove),
 -- 
-1.7.7
+1.7.9.5
 
