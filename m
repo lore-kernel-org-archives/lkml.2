@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab2KLLxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:53:52 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61230 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab2KLLxt (ORCPT
+	id S1753225Ab2KLLvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:51:51 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50803 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab2KLLvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:53:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121105214753.GB1254@beefymiracle.amer.corp.natinst.com>
-References: <cover.1351721190.git.josh.cartwright@ni.com>
-	<c0347788fbad559a249a25128a23f40c85d9cbda.1351721190.git.josh.cartwright@ni.com>
-	<CAHTX3d++0fGSw7GQHcc-S1X1Qh-rfekpr-E8Jkg2_vFqdCFFTg@mail.gmail.com>
-	<20121105214753.GB1254@beefymiracle.amer.corp.natinst.com>
-Date: Mon, 12 Nov 2012 12:53:47 +0100
-X-Google-Sender-Auth: pjktv39mIg6EnqB0Rg8QTieUOaQ
-Message-ID: <CAHTX3dKYJ_rWy-bWdhz24R=0ksw9YDixtqpJfEwRGcffu6vwkA@mail.gmail.com>
-Subject: Re: [PATCH 2/8] ARM: zynq: move ttc timer code to drivers/clocksource
-From: Michal Simek <michal.simek@xilinx.com>
-To: Josh Cartwright <josh.cartwright@ni.com>
-Cc: Russell King <linux@arm.linux.org.uk>, John Stultz <johnstul@us.ibm.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Nov 2012 06:51:45 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 0/3] fix missing rb_subtree_gap updates on vma insert/erase
+Date: Mon, 12 Nov 2012 03:51:28 -0800
+Message-Id: <1352721091-27022-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/5 Josh Cartwright <josh.cartwright@ni.com>:
-> On Mon, Nov 05, 2012 at 12:22:55PM +0100, Michal Simek wrote:
->> 2012/10/29 Josh Cartwright <josh.cartwright@ni.com>:
->> > Suggested cleanup by Arnd Bergmann.  Move the ttc timer.c code to
->> > drivers/clocksource, and out of the mach-zynq directory.
->> >
->> > The common.h (which only held the timer declaration) was renamed to
->> > xilinx_ttc.h and moved into include/linux.
->> >
->> > Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
->> > Cc: Arnd Bergmann <arnd@arndb.de>
->> > ---
->> >  arch/arm/mach-zynq/Makefile                                    | 2 +-
->> >  arch/arm/mach-zynq/common.c                                    | 2 +-
->> >  drivers/clocksource/Makefile                                   | 1 +
->> >  arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c | 1 -
->> >  arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h      | 4 ++--
->> >  5 files changed, 5 insertions(+), 5 deletions(-)
->> >  rename arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c (99%)
->> >  rename arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h (91%)
->>
->> Not going to apply this patch till there is clean way how to move all
->> drivers there.  Especially I don't like to add xilinx_ttc.h to
->> include/linux folder.
->
-> Okay;  I think it's best to defer the moving of the ttc driver from this
-> patchset.  It is not a dependency of the clk driver support stuff.
-> If you agree, I can spin up a v2 of the patchset w/o this change, and
-> without the serial CONFIG_OF stuff.  Should v2 contain the patches
-> you've already pulled into testing?
+Using the trinity fuzzer, Sasha Levin uncovered a case where
+rb_subtree_gap wasn't correctly updated.
 
-Sure and I see you have done which is good.
+Digging into this, the root cause was that vma insertions and removals
+require both an rbtree insert or erase operation (which may trigger
+tree rotations), and an update of the next vma's gap (which does not
+change the tree topology, but may require iterating on the node's
+ancestors to propagate the update). The rbtree rotations caused the
+rb_subtree_gap values to be updated in some of the internal nodes, but
+without upstream propagation. Then the subsequent update on the next
+vma didn't iterate as high up the tree as it should have, as it
+stopped as soon as it hit one of the internal nodes that had been
+updated as part of a tree rotation.
 
-Thanks,
-Michal
+The fix is to impose that all rb_subtree_gap values must be up to date
+before any rbtree insertion or erase, with the possible exception that
+the node being erased doesn't need to have an up to date rb_subtree_gap.
+
+These 3 patches apply on top of the stack I previously sent (or equally,
+on top of the last published mmotm).
+
+Michel Lespinasse (3):
+  mm: ensure safe rb_subtree_gap update when inserting new VMA
+  mm: ensure safe rb_subtree_gap update when removing VMA
+  mm: debug code to verify rb_subtree_gap updates are safe
+
+ mm/mmap.c |  121 +++++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 73 insertions(+), 48 deletions(-)
+
+-- 
+1.7.7.3
