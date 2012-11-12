@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab2KLMsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:48:43 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:57565 "EHLO
+	id S1752329Ab2KLMuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:50:54 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:57576 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751552Ab2KLMsm convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1751386Ab2KLMux convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:48:42 -0500
+	Mon, 12 Nov 2012 07:50:53 -0500
 Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
 Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
-Date: Mon, 12 Nov 2012 14:48:33 +0200
+In-Reply-To: <1352666833.20434.5@driftwood>
+Date: Mon, 12 Nov 2012 14:50:47 +0200
 Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         Rob Herring <robherring2@gmail.com>,
         Deepak Saxena <dsaxena@linaro.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <C26F7AC2-3C0E-47BF-AC37-BB1F1E246145@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <-4237940489086529028@unknownmsgid> <559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com> <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
-To: Joel A Fernandes <agnel.joel@gmail.com>
+Message-Id: <ABAD0875-A618-405D-954F-CD76F09DDF04@antoniou-consulting.com>
+References: <1352666833.20434.5@driftwood>
+To: Rob Landley <rob@landley.net>
 X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
+Hi Rob.
 
-Again, sorry for the late reply due to travel.
+On Nov 11, 2012, at 10:47 PM, Rob Landley wrote:
 
-On Nov 10, 2012, at 5:36 AM, Joel A Fernandes wrote:
-
-> Hi Pantelis,
+>              On 11/09/2012 10:28:59 AM, Grant Likely wrote:
+>> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> > On 11/05/2012 01:40 PM, Grant Likely wrote:
+>> I'm not actually opposed to it, but it needs to be done in an elegant
+>> way. The DT data model already imposes more of a conceptual learning
+>> curve than I wish it did and I don't want to make that worse with a
+>> versioning model that is difficult to get ones head around.
 > 
-> On Fri, Nov 9, 2012 at 2:13 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
+> Speaking of which...
 > 
->>>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
->>>>>      and passes the resolved tree to the kernel.
->>>>> 
->>>> 
->>>> Could be made to work. Only really required if Joanne wants the
->>>> cape interface to work for u-boot too. For example if the cape has some
->>>> kind of network interface that u-boot will use to boot from.
->>>> 
->>> 
->>> I love Grant's hashing idea a lot keeping the phandle problem for
->>> compile time and not requiring fixups.
->>> 
->>> IMO it is still a cleaner approach if u-boot does the tree merging for
->>> all cases, and not the kernel.
->>> 
->>> That way from a development standpoint, very little or nothing will
->>> have to be changed in kernel (except for scripts/dtc) considering we
->>> are moving forward with hashing.
->>> 
->>> Also this discussed a while back but at some point is going to brought
->>> up again-  loading of dt fragment directly from EEPROM and merging at
->>> run time. If we were to implement this in kernel, we would have to add
->>> cape specific EEPROM reading code, merge the tree before it is
->>> unflattened and parse. I think doing tree merging in kernel is messy
->>> and we should do it in uboot. Ideally reading the fragment from the
->>> EEPROM for all capes and merging without worrying about version
->>> detection, Doing the merge and passing the merged blob to the kernel
->>> which (kernel) works the same way it does today.
->> 
->> Not going to work, for a lot of cases. Doing it in the kernel seems to be
->> the cleaner option. There are valid use cases for doing in u-boot too.
+> I want to poke at board emulation in qemu, from scratch. Specifically, I want to start with an unpopulated board (just the processor), add a block of physical memory and a serial device, and boot an initramfs in there with stdin/stdout. Then I want to incrementally add an RTC, network card, and three block devices.
 > 
-> True, if dynamic runtime stuff from userspace is what we're talking
-> about, then yeah I see the important need for kernel to do the merge.
+> I'd like to define this board by giving qemu and the kernel the same device tree they can parse, and I'd like to _build_ this device tree so I understand what's in it. I'd like to repeat this exercize for arm, mips, ppc, x86, x86-64, sparc, sh4, and maybe other boards.
 > 
-
-Kernel doing the merge is our use case, and I feel it's the use case of
-about 90% of users.
-
-u-boot doing the merge is the rest.
-
->>> Alternatively to hashing, reading david gibsons paper I followed,
->>> phandle is supposed to 'uniquely' identity node. I wonder why the node
->>> name itself is not sufficient to unquiely identify. The code that does
->>> the tree walking can then just strcmp the node name while it walks the
->>> tree instead of having to find a node with a phandle number. I guess
->>> the reason is phandles are small to store as data values. Another
->>> approach can be to arrange the string block in alphabetical order
->>> (unless it already is), and store phandle as index of the node name
->>> referenced relative to the starting of the strong block. This will not
->>> affect nodes in dtb being moved around since they will still have the
->>> same index value. the problem being adding or removing nodes Changes
->>> the offsets of all other nodes in the string block as well.. Hmm.
->>> 
->> 
->> This is pretty radical change to the DT format, no?
+> And I'd like to write up an article on doing it as a learning exercise.
 > 
-> Yes, true and the only way hypothetically to replace the phandle
-> tree-walking mechanism is to store node paths instead of phandle which
-> David pointed is too long to store, so I guess this wont work after
-> all. Anyway this was an interesting exercise, thanks.
+> Last time I checked, doing this wasn't possible. (qemu couldn't define a board by parsing a device tree, the kernel used the device tree as a guideline but it only really read data the drivers you linked in were expecting, the only documentation about what any of the nodes were was was read the other device trees as examples or read the source code of the drivers looking for data in the tree...)
 > 
+> Is it a more realistic project now? If so, where would I start? (Once upon a time I read the booting-without-of document, back when it lived in the ppc directory. It didn't really say what should go in any of the nodes.)
+> 
+> Rob
 
-It is always nice to have a fresh perspective. Thank you.
+It should be possible when the stuff we're talking about is ready.
 
-> Regards,
-> Joel
+I don't know what you'll find is broken during the exercise, but I guess
+your article is going to be entertaining at least :)
 
 Regards
 
