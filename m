@@ -1,130 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2KLUMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 15:12:00 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53886 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab2KLUL7 (ORCPT
+	id S1753090Ab2KLUQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 15:16:27 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:58758 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab2KLUQZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 15:11:59 -0500
+	Mon, 12 Nov 2012 15:16:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAK3+h2z87F5gAMwM8ndQMGV+Xik+gEmWPcdd_B74FgmUhMw+og@mail.gmail.com>
-References: <CAK3+h2z87F5gAMwM8ndQMGV+Xik+gEmWPcdd_B74FgmUhMw+og@mail.gmail.com>
-Date: Mon, 12 Nov 2012 12:11:58 -0800
-Message-ID: <CAK3+h2yc0OdA9WeL=CqfnemsiriPTrwHyEW9rL2WxESor2QpBw@mail.gmail.com>
-Subject: Re: ubuntu 10.04 with kernel 3.7.0-rc4 cause ssh fail to start
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+	<50999145.2070306@wwwdotorg.org>
+	<CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com>
+	<C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com>
+Date: Mon, 12 Nov 2012 12:16:23 -0800
+X-Google-Sender-Auth: RSC6McAcCpGHEUzUEgPW72y7YUc
+Message-ID: <CA+Bv8XZV_RXQ351QG6ztvX=aTQubFHOR2Hgtc+ZSLKRo4_MNsQ@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+From: Russ Dill <Russ.Dill@ti.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 4:54 PM, Vincent Li <vincent.mc.li@gmail.com> wrote:
-> Hi,
+On Mon, Nov 12, 2012 at 3:23 AM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> Hi Grant,
 >
-> I am running ubuntu 10.04  with most recent kernel based on this link
-> https://wiki.ubuntu.com/KernelTeam/GitKernelBuild. I had experienced a
-> strange issue that with 3.7.0-rc4. the ssh service fail to start, but
-> with 3.6.0 kernel, ssh service startup fine. I did 'strace -tt -f -o
-> <output>  service start ssh'  the difference here:
+> Sorry for the late comments, travelling...
 >
-> 3.7.0-rc4 strace:
+> On Nov 9, 2012, at 6:28 PM, Grant Likely wrote:
 >
-> 1868  16:45:06.047289 writev(3,
-> [{"l\1\2\1\10\0\0\0\2\0\0\0i\0\0\0\1\1o\0\34\0\0\0/com/ubu"..., 128},
-> {"\0\0\0\0\1\0\0\0", 8}], 2) = 136
-> 1868  16:45:06.047441 poll([{fd=3, events=POLLIN}], 1, -1) = 1
-> ([{fd=3, revents=POLLIN}])
-> 1868  16:45:06.047742 read(3,
-> "l\4\1\1#\0\0\0\2\0\0\0o\0\0\0\1\1o\0\34\0\0\0/com/ubu"..., 2048) =
-> 163
-> 1868  16:45:06.047892 read(3, 0xb92eb050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 1868  16:45:06.047985 gettimeofday({1352421906, 48023}, NULL) = 0
-> 1868  16:45:06.048083 poll([{fd=3, events=POLLIN}], 1, 2078517183) = 1
-> ([{fd=3, revents=POLLIN}])
-> 1868  16:45:06.048984 read(3,
-> "l\3\1\1\30\0\0\0\3\0\0\0?\0\0\0\4\1s\0%\0\0\0com.ubun"..., 2048) =
-> 104
-> 1868  16:45:06.049121 read(3, 0xb92eb050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 1868  16:45:06.049319 write(2, "start: Job failed to start\n", 27) = 27
-> 1868  16:45:06.049514 close(3)          = 0
-> 1868  16:45:06.049837 exit_group(1)     = ?
+>> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> On 11/05/2012 01:40 PM, Grant Likely wrote:
+>>>> Hey folks,
+>>>>
+>>>> As promised, here is my early draft to try and capture what device
+>>>> tree overlays need to do and how to get there. Comments and
+>>>> suggestions greatly appreciated.
+>>>
+>>> Interesting. This just came up internally at NVIDIA within the last
+>>> couple weeks, and was discussed on the U-Boot mailing list very recently
+>>> too:
+>>>
+>>> http://lists.denx.de/pipermail/u-boot/2012-October/thread.html#138227
+>>> (it spills into the November archive too)
+>>>
+>>>> For these cases it is proposed to implement an overlay feature for the
+>>>> so that the initial device tree data can be modified by userspace at
+>>>
+>>> I don't know if you're maintaining this as a document and taking patches
+>>> to it, but if so:
+>>
+>> Sure, why not...
+>>
+>> http://git.secretlab.ca/?p=devicetree-overlays.git;a=summary
+>>
+>>>
+>>> "for the so" split across those two lines.
+>>
+>> fixed
+>>
+>>>>  - SHOULD reliably handle changes between different underlying overlays
+>>>>    (ie. what happens to existing .dtb overly files if the structure of
+>>>>    the dtb it is layered over changes. If not possible, then SHALL
+>>>>    detect when the base tree doesn't match and refuse to apply the
+>>>>    overlay.
+>>>
+>>> Perhaps use (versioned) DT bindings to represent the interface between
+>>> the two .dts files? See the links to the U-Boot mailing list discussions
+>>> below?
+>>
+>> Implementing versioning is conceptually a lot more complex than plain
+>> overlays since it means either the kernel or u-boot needs to start
+>> filtering the data that it's given. This can get really complex in a
+>> hurry. Mitch makes a valid point later in this thread that when it
+>> comes to manipulating the data depending on the board then the data
+>> overlay model alone doesn't handle it well.
+>>
+>> I'm not actually opposed to it, but it needs to be done in an elegant
+>> way. The DT data model already imposes more of a conceptual learning
+>> curve than I wish it did and I don't want to make that worse with a
+>> versioning model that is difficult to get ones head around.
+>>
+>> Suggestions and proposals are definitely welcome here.
+>>
 >
+> I didn't find versioning all that difficult TBH.
 >
+> Making the property access functions work sanely with versioning
+> should cover most (if not all) kernel users.
+> Keep non versioned property access function available to possibly
+> users with a prefix for those that need it.
 >
-> 3.6.0 strace:
+>>>
+>>>> - What is the model for overlays?
+>>>>  - Can an overlay modify existing properties?
+>>>>  - Can an overlay add new properties to existing nodes?
+>>>>  - Can an overlay delete existing nodes/properties?
+>>>
+>>> This proposal is very oriented at an overlay-based approach. I'm not
+>>> totally convinced that a pure overlay approach (as in how dtc does
+>>> overlayed DT nodes) will be flexible enough, but would love to be
+>>> persuaded. Again see below.
+>>
+>> The way I'm currently thinking about the overlay approach is as a
+>> discrete set of changes that all can be applied at once.* That
+>> certainly doesn't preclude the change being generated with a script or
+>> other tool in either firmware or userspace. For most changes it works
+>> really well. Of the scenarios that don't work well, I can think of
+>> two. The first is it moving or renaming existing nodes, and the second
+>> is if the structure of the base tree changes (say due to a firmware
+>> update). Although the second limitation is specifically with binary
+>> .dtb overlays. Recompiling the dts overlay against the new tree would
+>> work fine.**
+>>
 >
-> 2125  16:41:09.150074 writev(3,
-> [{"l\1\2\1\10\0\0\0\2\0\0\0i\0\0\0\1\1o\0\34\0\0\0/com/ubu"..., 128},
-> {"\0\0\0\0\1\0\0\0", 8}], 2) = 136
-> 2125  16:41:09.150224 poll([{fd=3, events=POLLIN}], 1, -1) = 1
-> ([{fd=3, revents=POLLIN}])
-> 2125  16:41:09.150527 read(3,
-> "l\4\1\1#\0\0\0\2\0\0\0o\0\0\0\1\1o\0\34\0\0\0/com/ubu"..., 2048) =
-> 163
-> 2125  16:41:09.150671 read(3, 0xb9302050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 2125  16:41:09.150760 gettimeofday({1352421669, 150798}, NULL) = 0
-> 2125  16:41:09.150857 poll([{fd=3, events=POLLIN}], 1, -2122005215) =
-> 1 ([{fd=3, revents=POLLIN}])
-> 2125  16:41:09.155263 read(3,
-> "l\2\1\1#\0\0\0\3\0\0\0\17\0\0\0\5\1u\0\2\0\0\0\10\1g\0\1o\0\0"...,
-> 2048) = 67
-> 2125  16:41:09.155456 read(3, 0xb9302050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 2125  16:41:09.155716 writev(3,
-> [{"l\1\2\1)\0\0\0\3\0\0\0h\0\0\0\1\1o\0\34\0\0\0/com/ubu"..., 120},
-> {"\31\0\0\0com.ubuntu.Upstart0_6.Job\0\0\0"..., 41}], 2) = 161
-> 2125  16:41:09.156108 gettimeofday({1352421669, 156142}, NULL) = 0
-> 2125  16:41:09.156199 poll([{fd=3, events=POLLIN}], 1, 25000) = 1
-> ([{fd=3, revents=POLLIN}])
-> 2125  16:41:09.156308 read(3,
-> "l\2\1\1\f\0\0\0\4\0\0\0\17\0\0\0\5\1u\0\3\0\0\0\10\1g\0\1v\0\0"...,
-> 2048) = 44
-> 2125  16:41:09.156465 read(3, 0xb9302050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 2125  16:41:09.156641 writev(3,
-> [{"l\1\2\1#\0\0\0\4\0\0\0g\0\0\0\1\1o\0\36\0\0\0/com/ubu"..., 120},
-> {"\36\0\0\0com.ubuntu.Upstart0_6.Instan"..., 35}], 2) = 155
-> 2125  16:41:09.157043 gettimeofday({1352421669, 157080}, NULL) = 0
-> 2125  16:41:09.157144 poll([{fd=3, events=POLLIN}], 1, 25000) = 1
-> ([{fd=3, revents=POLLIN}])
-> 2125  16:41:09.157258 read(3,
-> "l\2\1\1\210\0\0\0\5\0\0\0\23\0\0\0\5\1u\0\4\0\0\0\10\1g\0\5a{s"...,
-> 2048) = 176
-> 2125  16:41:09.157412 read(3, 0xb9302050, 2048) = -1 EAGAIN (Resource
-> temporarily unavailable)
-> 2125  16:41:09.157564 fstat64(1, {st_mode=S_IFCHR|0600,
-> st_rdev=makedev(136, 0), ...}) = 0
-> 2125  16:41:09.157739 mmap2(NULL, 4096, PROT_READ|PROT_WRITE,
-> MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb73d8000
-> 2125  16:41:09.157834 write(1, "ssh start/running, process 2131\n", 32) = 32
-> 2125  16:41:09.158004 close(3)          = 0
-> 2125  16:41:09.158410 exit_group(0)     = ?
+> Atomicity should be handled correctly. I can't imagine how hard would
+> be to back out a semi-applied overlay without some kind of core DT
+> tracking support. Leaving it to the driver/user is too difficult to get
+> right.
 >
-> I attached the kernel config and full strace log, is there anything
-> else I can provide to help diagnosis the issue?
+> About moving and renaming nodes, I can't think of a user-case today that
+> needs it. Perhaps it can be handled by removal & re-insertion?
 >
-> Thanks
+>> *with the caveat that not all types of changes are a good idea and we
+>> may disallow. For example, is changing properties in existing nodes a
+>> good idea?
 >
-> Vincent
+> Yes, changing properties is something that we need. One such change is
+> the change of the bus controller 'status' properties to enabled upon
+> insertion of a child device node, and change back to 'on-demand' when
+> all the child device nodes are gone.
 
-FYI:
-
-it looks to be this kernel commit caused user space issue:
-
-commit 01dc52ebdf472f77cca623ca693ca24cfc0f1bbe
-Author: Davidlohr Bueso <dave@gnu.org>
-Date:   Mon Oct 8 16:29:30 2012 -0700
-
-    oom: remove deprecated oom_adj
-
-    The deprecated /proc/<pid>/oom_adj is scheduled for removal this month.
-
-I filed a bug report in ubuntu
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1077248
-
-Vincent
+Some devices will probably have to support on the fly changes that
+they may not have otherwise supported. An example of a driver that
+needs to modify it's device based on DT would be an I²C bus speed
+change.
