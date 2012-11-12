@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab2KLUoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 15:44:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56993 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab2KLUoU (ORCPT
+	id S1753382Ab2KLUqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 15:46:08 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:60532 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2KLUqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 15:44:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] ARM: integrator: use BUG_ON where possible
-Date: Mon, 12 Nov 2012 20:44:13 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        David Howells <dhowells@redhat.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-6-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1352406191-14303-6-git-send-email-sasha.levin@oracle.com>
+	Mon, 12 Nov 2012 15:46:06 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211122044.13663.arnd@arndb.de>
-X-Provags-ID: V02:K0:4lxG+DOZoAPOqdKDueFTerz9/sc/G954CMxB+eoqtil
- 3G+CJ9kpj+abU7nU6Ebn8FmNKGk7QmJyvgBA4llpQmCscX//Na
- 2WjemXvj7kcQdbk8QoQKKfFZqMLO78oi/ECWyBDDzf68TWgpQ6
- cIquI10QIG4/jRP0zl6LRGG/SoRbdmvSArp2w9wAcXAHhg8OBx
- JDP5Tn+KUH3zbyobw5bbtJPVLc0sy5tRZHWT9hT8JSbGM96de7
- 5s7zOa/KitWgVm2Q40RjJ+0mq+0yAXdRHBej/PPxG8bHfLlOIf
- CTUg4iPqZYhQSMcYO7fpbWLh19l4maKSi4dkmdmGEmzfyYQ7KF
- TD0tp7x0GXq8GFWDlKMQ=
+In-Reply-To: <1352700425.1834.11.camel@rzhang1-mobl4>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+	<1352460548-3494-3-git-send-email-hongbo.zhang@linaro.com>
+	<1352700425.1834.11.camel@rzhang1-mobl4>
+Date: Mon, 12 Nov 2012 21:46:03 +0100
+Message-ID: <CACRpkdb-C-z1bWA2+xbuGt8TKSWRaD2xYUKS4M=KNMO0mOKF2g@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] Thermal: Add ST-Ericsson DB8500 thermal properties
+ and platform data.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: "hongbo.zhang" <hongbo.zhang@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 November 2012, Sasha Levin wrote:
-> Just use BUG_ON() instead of constructions such as:
-> 
-> 	if (...)
-> 		BUG()
-> 
-> A simplified version of the semantic patch that makes this transformation
-> is as follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> @@
-> - if (e) BUG();
-> + BUG_ON(e);
-> // </smpl>
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+On Mon, Nov 12, 2012 at 7:07 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
+>> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>>
+>> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+>> also adds the platform data to support the old fashion.
+>>
+>> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> hmmm,
+>
+> who should take this patch?
+> I'd like to see ACK from the maintainer of these code before applying
+> them to thermal tree.
 
-Linus Walleij is doing most of the integrator work these days, maybe he
-wants to apply the patch.
+I guess it needs to go through Thermal.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Let's hope it's not creating too much conflict...
 
->  arch/arm/mach-integrator/pci_v3.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-> index bbeca59..85938de 100644
-> --- a/arch/arm/mach-integrator/pci_v3.c
-> +++ b/arch/arm/mach-integrator/pci_v3.c
-> @@ -191,12 +191,9 @@ static void __iomem *v3_open_config_window(struct pci_bus *bus,
->  	/*
->  	 * Trap out illegal values
->  	 */
-> -	if (offset > 255)
-> -		BUG();
-> -	if (busnr > 255)
-> -		BUG();
-> -	if (devfn > 255)
-> -		BUG();
-> +	BUG_ON(offset > 255);
-> +	BUG_ON(busnr > 255);
-> +	BUG_ON(devfn > 255);
->  
->  	if (busnr == 0) {
->  		int slot = PCI_SLOT(devfn);
-> -- 
-> 1.7.10.4
-> 
-> 
-
+Yours,
+Linus Walleij
