@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2KLRUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:20:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43625 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab2KLRUx (ORCPT
+	id S1753940Ab2KLRVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:21:41 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34461 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab2KLRVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:20:53 -0500
-Date: Mon, 12 Nov 2012 18:20:47 +0100
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com, rjw@sisk.pl,
-        lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 0/3] acpi: Introduce prepare_remove device operation
-Message-ID: <20121112172046.GA4931@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
- <50A07477.2050002@cn.fujitsu.com>
+	Mon, 12 Nov 2012 12:21:39 -0500
+Message-ID: <50A12FF1.4000800@infradead.org>
+Date: Mon, 12 Nov 2012 09:20:49 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A07477.2050002@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
+References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
+In-Reply-To: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 12:00:55PM +0800, Wen Congyang wrote:
-> At 11/09/2012 02:29 AM, Vasilis Liaskovitis Wrote:
-> > As discussed in
-> > https://patchwork.kernel.org/patch/1581581/
-> > the driver core remove function needs to always succeed. This means we need
-> > to know that the device can be successfully removed before acpi_bus_trim / 
-> > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > eject (echo 1 > /sys/bus/acpi/devices/PNP/eject) of memory devices fails, since
-> > the ACPI core goes ahead and ejects the device regardless of whether the memory
-> > is still in use or not.
-> > 
-> > For this reason a new acpi_device operation called prepare_remove is introduced.
-> > This operation should be registered for acpi devices whose removal (from kernel
-> > perspective) can fail.  Memory devices fall in this category.
-> > 
-> > acpi_bus_hot_remove_device is changed to handle removal in 2 steps:
-> > - preparation for removal i.e. perform part of removal that can fail outside of
-> >   ACPI core. Should succeed for device and all its children.
-> > - if above step was successfull, proceed to actual ACPI removal
-> 
-> If we unbind the device from the driver, we still need to do preparation. But
-> you don't do it in your patch.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-yes, driver_unbind breaks with the current patchset. I 'll try to fix and
-repost. However, I think this will require a new driver-core wide prepare_remove
-callback (not only acpi-specific). I am not sure that would be acceptable.
+Fix build errors when CONFIG_OF is not enabled by including
+<linux/of.h> (needs to be added in any case).
+An alternative fix could be to make the driver depend on OF.
 
-thanks,
+drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
+drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
+drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
 
-- Vasilis
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/stmpe.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> 
-> Thanks
-> Wen Congyang
-> > 
-> > acpi_bus_trim is changed accordingly to handle preparation for removal and
-> > actual removal.
-> > 
-> > With this patchset, only acpi memory devices use the new prepare_remove
-> > device operation. The actual memory removal (VM-related offline and other memory
-> > cleanups) is moved to prepare_remove. The old remove operation just cleans up
-> > the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
-> > haven't tested yet with an ACPI container which contains memory devices.
-> > 
-> > Other ACPI devices (e.g. CPU) do not register prepare_remove callbacks, and
-> > their OSPM-side eject should not be affected.
-> > 
-> > I am not happy with the name prepare_remove. Comments welcome. Let me know if I
-> > should work more in this direction (I think Yasuaki might also look into this
-> > and might have a simpler idea)
-> > 
-> > Patches are on top of Rafael's linux-pm/linux-next
-> > 
-> > Vasilis Liaskovitis (3):
-> >   acpi: Introduce prepare_remove operation in acpi_device_ops
-> >   acpi: Make acpi_bus_trim handle device removal preparation
-> >   acpi_memhotplug: Add prepare_remove operation
-> > 
-> >  drivers/acpi/acpi_memhotplug.c     |   24 +++++++++++++++++++++---
-> >  drivers/acpi/dock.c                |    2 +-
-> >  drivers/acpi/scan.c                |   32 +++++++++++++++++++++++++++++---
-> >  drivers/pci/hotplug/acpiphp_glue.c |    4 ++--
-> >  drivers/pci/hotplug/sgi_hotplug.c  |    2 +-
-> >  include/acpi/acpi_bus.h            |    4 +++-
-> >  6 files changed, 57 insertions(+), 11 deletions(-)
-> > 
-> 
+--- linux-next-20121112.orig/drivers/mfd/stmpe.c
++++ linux-next-20121112/drivers/mfd/stmpe.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/of.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
