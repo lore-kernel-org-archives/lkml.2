@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2KLVTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:19:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24493 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab2KLVT1 (ORCPT
+	id S1754200Ab2KLVY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:24:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29705 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2KLVTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:27 -0500
+	Mon, 12 Nov 2012 16:19:33 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 07/46] x86, mm: Find early page table buffer together
-Date: Mon, 12 Nov 2012 13:18:03 -0800
-Message-Id: <1352755122-25660-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 23/46] x86, mm: Remove parameter in alloc_low_page for 64bit
+Date: Mon, 12 Nov 2012 13:18:19 -0800
+Message-Id: <1352755122-25660-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
@@ -26,113 +26,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not do that in every calling of init_memory_mapping.
+Now all page table buf are pre-mapped, and could use virtual address directly.
+So don't need to remember physical address anymore.
 
-At the same time need to move down early_memtest, and could remove after_bootmem
-checking.
-
--v2: fix one early_memtest with 32bit by passing max_pfn_mapped instead.
+Remove that phys pointer in alloc_low_page(), and that will allow us to merge
+alloc_low_page between 64bit and 32bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   66 ++++++++++++++++++++++++++-------------------------
- 1 files changed, 34 insertions(+), 32 deletions(-)
+ arch/x86/mm/init_64.c |   19 +++++++------------
+ 1 files changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 00089bf..c273edb 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -275,16 +275,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	nr_range = 0;
- 	nr_range = split_mem_range(mr, nr_range, start, end);
- 
--	/*
--	 * Find space for the kernel direct mapping tables.
--	 *
--	 * Later we should allocate these tables in the local node of the
--	 * memory mapped. Unfortunately this is done currently before the
--	 * nodes are discovered.
--	 */
--	if (!after_bootmem)
--		find_early_table_space(start, end);
--
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
- 						   mr[i].page_size_mask);
-@@ -297,6 +287,36 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- 	__flush_tlb_all();
- 
-+	return ret >> PAGE_SHIFT;
-+}
-+
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/*
-+	 * Find space for the kernel direct mapping tables.
-+	 *
-+	 * Later we should allocate these tables in the local node of the
-+	 * memory mapped. Unfortunately this is done currently before the
-+	 * nodes are discovered.
-+	 */
-+#ifdef CONFIG_X86_64
-+	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
-+#else
-+	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
-+#endif
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
-@@ -312,32 +332,14 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * RO all the pagetable pages, including the ones that are beyond
- 	 * pgt_buf_end at that time.
- 	 */
--	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
-+	if (pgt_buf_end > pgt_buf_start)
- 		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
- 				PFN_PHYS(pgt_buf_end));
- 
--	if (!after_bootmem)
--		early_memtest(start, end);
-+	/* stop the wrong using */
-+	pgt_buf_top = 0;
- 
--	return ret >> PAGE_SHIFT;
--}
--
--void __init init_mem_mapping(void)
--{
--	probe_page_size_mask();
--
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
--
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 5ee9242..1960820 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
+ 	}
  }
  
- /*
+-static __ref void *alloc_low_page(unsigned long *phys)
++static __ref void *alloc_low_page(void)
+ {
+ 	unsigned long pfn;
+ 	void *adr;
+ 
+ 	if (after_bootmem) {
+ 		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+-		*phys = __pa(adr);
+ 
+ 		return adr;
+ 	}
+@@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+ 	clear_page(adr);
+-	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+ 
+@@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 	int i = pmd_index(address);
+ 
+ 	for (; i < PTRS_PER_PMD; i++, address = next) {
+-		unsigned long pte_phys;
+ 		pmd_t *pmd = pmd_page + pmd_index(address);
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
+@@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pte = alloc_low_page(&pte_phys);
++		pte = alloc_low_page();
+ 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
++		pmd_populate_kernel(&init_mm, pmd, pte);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	update_page_count(PG_LEVEL_2M, pages);
+@@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 	int i = pud_index(addr);
+ 
+ 	for (; i < PTRS_PER_PUD; i++, addr = next) {
+-		unsigned long pmd_phys;
+ 		pud_t *pud = pud_page + pud_index(addr);
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
+@@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pmd = alloc_low_page(&pmd_phys);
++		pmd = alloc_low_page();
+ 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+ 					      prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pud_populate(&init_mm, pud, __va(pmd_phys));
++		pud_populate(&init_mm, pud, pmd);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	__flush_tlb_all();
+@@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
+ 
+ 	for (; start < end; start = next) {
+ 		pgd_t *pgd = pgd_offset_k(start);
+-		unsigned long pud_phys;
+ 		pud_t *pud;
+ 
+ 		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+@@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
+ 			continue;
+ 		}
+ 
+-		pud = alloc_low_page(&pud_phys);
++		pud = alloc_low_page();
+ 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+ 						 page_size_mask);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pgd_populate(&init_mm, pgd, __va(pud_phys));
++		pgd_populate(&init_mm, pgd, pud);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 		pgd_changed = true;
+ 	}
 -- 
 1.7.7
 
