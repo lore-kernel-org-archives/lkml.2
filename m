@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab2KLVgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:36:39 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49045 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab2KLVgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:36:35 -0500
-Message-ID: <50A16BD3.5010707@us.ibm.com>
-Date: Mon, 12 Nov 2012 13:36:19 -0800
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Mike Frysinger <vapier@gentoo.org>, Mikael Starvik <starvik@axis.com>,
-        Hirokazu Takata <takata@linux-m32r.org>
-Subject: Re: [PATCH V2 2/11] time: convert arch_gettimeoffset to a pointer
-References: <1352753462-2915-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1352753462-2915-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111221-7182-0000-0000-00000329BFE5
+	id S1753880Ab2KLVfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:35:55 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29620 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab2KLVT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:19:28 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 25/46] x86, mm: Move min_pfn_mapped back to mm/init.c
+Date: Mon, 12 Nov 2012 13:18:21 -0800
+Message-Id: <1352755122-25660-26-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+ <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 12:51 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->
-> Currently, whenever CONFIG_ARCH_USES_GETTIMEOFFSET is enabled, each
-> arch core provides a single implementation of arch_gettimeoffset(). In
-> many cases, different sub-architectures, different machines, or
-> different timer providers exist, and so the arch ends up implementing
-> arch_gettimeoffset() as a call-through-pointer anyway. Examples are
-> ARM, Cris, M68K, and it's arguable that the remaining architectures,
-> M32R and Blackfin, should be doing this anyway.
->
-> Modify arch_gettimeoffset so that it itself is a function pointer, which
-> the arch initializes. This will allow later changes to move the
-> initialization of this function into individual machine support or timer
-> drivers. This is particularly useful for code in drivers/clocksource
-> which should rely on an arch-independant mechanism to register their
-> implementation of arch_gettimeoffset().
->
-> This patch also converts the Cris architecture to set arch_gettimeoffset
-> directly to the final implementation in time_init(), because Cris already
-> had separate time_init() functions per sub-architecture. M68K and ARM
-> are converted to set arch_gettimeoffset the final implementation in later
-> patches, because they already have function pointers in place for this
-> purpose.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Mikael Starvik <starvik@axis.com>
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
-> Cc: John Stultz <johnstul@us.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v2:
-> * s/gettimeoffset/get_arch_timeoffset/ to make the name less generic
->    and more arch-specific.
->
-> (Note: I've only reposted patch 2/11 this time around, and I still hope
-> to take it through the arm-soc tree due to dependencies, so I'm not
-> requesting this be applied by the timekeeping maintainers)
+Also change it to static.
 
-One last thing to watch out for: If you're trying to build a kernel that 
-mixes clocksource support with get_arch_timeoffset, you'll need to 
-rework the #ifdef in update_wall_time(), since we currently assume with 
-get_arch_timeoffset() that you're using tick + interpolation, so every 
-call to update_wall_time() only moves time forward by one jiffy.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/page_types.h |    1 -
+ arch/x86/kernel/setup.c           |    1 -
+ arch/x86/mm/init.c                |    2 ++
+ 3 files changed, 2 insertions(+), 2 deletions(-)
 
-Otherwise, thanks for the name tweak. Going through the arm-soc tree is 
-fine with me.
-
-Acked-by: John Stultz <johnstul@us.ibm.com>
-
-thanks
--john
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index 9f6f3e6..54c9787 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -45,7 +45,6 @@ extern int devmem_is_allowed(unsigned long pagenr);
+ 
+ extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
+-extern unsigned long min_pfn_mapped;
+ 
+ static inline phys_addr_t get_max_mapped(void)
+ {
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f7634092..2015194 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -124,7 +124,6 @@
+  */
+ unsigned long max_low_pfn_mapped;
+ unsigned long max_pfn_mapped;
+-unsigned long min_pfn_mapped;
+ 
+ #ifdef CONFIG_DMI
+ RESERVE_BRK(dmi_alloc, 65536);
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index ffbb7af..7a6669e 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -23,6 +23,8 @@ unsigned long __initdata pgt_buf_start;
+ unsigned long __meminitdata pgt_buf_end;
+ unsigned long __meminitdata pgt_buf_top;
+ 
++static unsigned long min_pfn_mapped;
++
+ __ref void *alloc_low_page(void)
+ {
+ 	unsigned long pfn;
+-- 
+1.7.7
 
