@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2KLRAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:00:24 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:52697 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751795Ab2KLRAV (ORCPT
+	id S1753892Ab2KLRA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:00:29 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:22904 "HELO
+	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753867Ab2KLRA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:00:21 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <50A128AF.1010803@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 19:00:13 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com> <50A128AF.1010803@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-X-Mailer: Apple Mail (2.1085)
+	Mon, 12 Nov 2012 12:00:26 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>
+Cc: linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: [PATCH v2 0/2] i2c: i2c-ocores: Add support for sparc, custom set and get functions, and the GRLIB port of the controller
+Date: Mon, 12 Nov 2012 17:59:49 +0100
+Message-Id: <1352739591-1317-1-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On sparc, irqs are not present as an IORESOURCE in the struct platform_device
+representation. By using platform_get_irq instead of platform_get_resource the
+driver works for sparc.
 
-On Nov 12, 2012, at 6:49 PM, Stephen Warren wrote:
+The GRLIB port of the ocores i2c controller needs custom getreg and setreg
+functions to allow for big endian register access and to deal with the fact that
+the PRELOW and PREHIGH registers have been merged into one register.
 
-> On 11/12/2012 04:23 AM, Pantelis Antoniou wrote:
->> Hi Grant,
->> 
->> Sorry for the late comments, travelling...
->> 
->> On Nov 9, 2012, at 6:28 PM, Grant Likely wrote:
-> ...
->>> *with the caveat that not all types of changes are a good idea and we
->>> may disallow. For example, is changing properties in existing nodes a
->>> good idea?
->> 
->> Yes, changing properties is something that we need. One such change is
->> the change of the bus controller 'status' properties to enabled upon
->> insertion of a child device node, and change back to 'on-demand' when
->> all the child device nodes are gone.
-> 
-> Do we actually need to do that?
-> 
-> From the base-board perspective, consider an SoC's I2C channel that is
-> routed to the child board connector. The routing to the connector is
-> always present on the base board. Only the presence (or lack thereof) of
-> devices on that I2C bus is influenced by whether a child board is
-> connected or not, and the design of the child board. Therefore, wouldn't
-> it make sense for the base board to always enable the I2C controller?
-> 
-> That would make it easier for someone to hook up a couple wires to the
-> I2C pins and use utilities such as i2cget/set to communicate with it,
-> without going through the whole process of creating a DT to represent
-> the device. This could speed up simple hacking/prototyping and allow it
-> to proceed in a less structured way.
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-Unfortunately that doesn't work for the beaglebone (am355x) and a large
-number of general purpose SoCs.
+Changes since v1:
+ - platform_get_irq now works for sparc, so that is used for all platforms
+ - Acks by Peter Korsgaard <jacmet@sunsite.dk>
 
-What is different between general purpose SoCs and vertical market SoCs
-(i.e. OMAP) is that the design of the the latter is for devices where
-pretty much all the interfaces are expected to be active at the same time.
+Andreas Larsson (2):
+  i2c: i2c-ocores: Add irq support for sparc
+  i2c: i2c-ocores: Add support for the GRLIB port of the controller and
+    custom getreg and setreg functions
 
-General purpose SoCs put more peripherals in the SoC, but due to packaging
-considerations (and price), the peripheral pins are highly muxed.
+ drivers/i2c/busses/i2c-ocores.c |   66 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 60 insertions(+), 6 deletions(-)
 
-So the i2c bus pins are shared with the LCD controller are shared with the
-analog input and so on.
-
-It is impossible (and on top of that really dangerous) to enable peripheral
-blocks without knowing what's connected on the other side.
-
-In a nutshell, for the bone and similar devices, probing with the devices
-enabled doesn't work.
-
-Regards
-
--- Pantelis
-  
