@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab2KLP3n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:29:43 -0500
-Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:44995 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753406Ab2KLP3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:29:41 -0500
-X-Greylist: delayed 2250 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Nov 2012 10:29:41 EST
-Date: Mon, 12 Nov 2012 15:49:36 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH 05/11] ARM: at91: convert timer suspend/resume to
- clock_event_device
-Message-ID: <20121112144936.GL4576@game.jcrosoft.org>
-References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
- <1352408516-21988-7-git-send-email-swarren@wwwdotorg.org>
+	id S1753653Ab2KLPaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:30:00 -0500
+Received: from umail.aei.mpg.de ([194.94.224.6]:36596 "EHLO umail.aei.mpg.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753687Ab2KLP37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 10:29:59 -0500
+Date: Mon, 12 Nov 2012 16:29:57 +0100
+From: Steffen Grunewald <Steffen.Grunewald@aei.mpg.de>
+To: =?utf-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, htejun@gmail.com, tj@kernel.org,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+Subject: Re: Need assistance fixing a tg3 driver side-effect on IPMI
+Message-ID: <20121112152957.GP30936@casco.aei.mpg.de>
+References: <20121107082820.GP30936@casco.aei.mpg.de>
+ <CAD9gYJ+2D6-Lu4L_CNEjsypd6WxhUzmkC1gY5STQSPp41p6J5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1352408516-21988-7-git-send-email-swarren@wwwdotorg.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAD9gYJ+2D6-Lu4L_CNEjsypd6WxhUzmkC1gY5STQSPp41p6J5Q@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 934778398571473741
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:01 Thu 08 Nov     , Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+On Wed, Nov 07, 2012 at 05:40:19PM +0800, 王金浦 wrote:
+> Ferenc met samilar problem :
 > 
-> Move at91's timer suspend/resume functions from struct sys_timer
-> at91sam926x_timer into struct clock_event_device pit_clkevt. This
-> will allow the sys_timer suspend/resume fields to be removed, and
-> eventually lead to a complete removal of struct sys_timer.
+> "Michael Chan" <mchan@broadcom.com> writes:
 > 
-> Cc: Andrew Victor <linux@maxim.org.za>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-look fine
+> > On Tue, 2012-10-02 at 18:49 +0200, Ferenc Wagner wrote:
+> >
+> >> Going into the opposite direction: I found that Linux 3.6 does not
+> >> permanently break the SoL console on upping eth0!  I'll try to find
+> >> the commit which (sort of) fixed it.
+> >
+> > These are the likely fixes:
+> >
+> > commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db
+> > Author: Matt Carlson <mcarlson@broadcom.com>
+> > Date: Mon Nov 28 09:41:03 2011 +0000
+> >
+> > tg3: Fix TSO CAP for 5704 devs w / ASF enabled
+> 
+> You are exactly right: cf9ecf4b fixed the premanent SoL breakage
+> introduced by dabc5c67.  Looks like ASF utilizes similar technology to
+> that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
+> wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it's
+> possible to work around in 3.2 by eg. fiddling some ethtool setting?
+> 
+> the fix already go into Precise update to 3.2.31 stable release
+> 
+> So update your kernel should fix your problem.
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Indeed, only a few days ago, 3.2.32 migrated into Wheezy - which cures
+the problem.
 
-Best Regards,
-J.
+Issue resolved (for now).
+
+Thanks a lot to everyone,
+ S
+
+-- 
+Steffen Grunewald * MPI Grav.Phys.(AEI) * Am Mühlenberg 1, D-14476 Potsdam
+Cluster Admin * --------------------------------- * http://www.aei.mpg.de/
+* e-mail: steffen.grunewald(*)aei.mpg.de * +49-331-567-{fon:7274,fax:7298}
