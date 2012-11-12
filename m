@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab2KLLzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:55:08 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43575 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2KLLvs (ORCPT
+	id S1753163Ab2KLLzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:55:22 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56936 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2KLLzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:51:48 -0500
+	Mon, 12 Nov 2012 06:55:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <509D0F86.30607@gmail.com>
+References: <1352155633-8648-1-git-send-email-walken@google.com>
+	<1352155633-8648-4-git-send-email-walken@google.com>
+	<509D0F86.30607@gmail.com>
+Date: Mon, 12 Nov 2012 03:55:16 -0800
+Message-ID: <CANN689E4jXT-VA3j54h_MBgCCc9YK0o_E7PY326NnvdiHmAgFQ@mail.gmail.com>
+Subject: Re: [PATCH 03/16] mm: check rb_subtree_gap correctness
 From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 2/3] mm: ensure safe rb_subtree_gap update when removing VMA
-Date: Mon, 12 Nov 2012 03:51:30 -0800
-Message-Id: <1352721091-27022-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1352721091-27022-1-git-send-email-walken@google.com>
-References: <1352721091-27022-1-git-send-email-walken@google.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the trinity fuzzer, Sasha Levin uncovered a case where
-rb_subtree_gap wasn't correctly updated.
+On Fri, Nov 9, 2012 at 6:13 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> While fuzzing with trinity inside a KVM tools (lkvm) guest, using today's -next
+> kernel, I'm getting these:
+>
+> [  117.007714] free gap 7fba0dd1c000, correct 7fba0dcfb000
+> [  117.019773] map_count 750 rb -1
+> [  117.028362] ------------[ cut here ]------------
+> [  117.029813] kernel BUG at mm/mmap.c:439!
+>
+> Note that they are very easy to reproduce.
 
-Digging into this, the root cause was that vma insertions and removals
-require both an rbtree insert or erase operation (which may trigger
-tree rotations), and an update of the next vma's gap (which does not
-change the tree topology, but may require iterating on the node's
-ancestors to propagate the update). The rbtree rotations caused the
-rb_subtree_gap values to be updated in some of the internal nodes, but
-without upstream propagation. Then the subsequent update on the next
-vma didn't iterate as high up the tree as it should have, as it
-stopped as soon as it hit one of the internal nodes that had been
-updated as part of a tree rotation.
+Thanks for the report. I had trouble reproducing this on Friday, but
+after Hugh came up with an easy test case I think I have it figured
+out. I sent out a proposed fix as "[PATCH 0/3] fix missing
+rb_subtree_gap updates on vma insert/erase". Let's follow up the
+discussion there if necessary.
 
-The fix is to impose that all rb_subtree_gap values must be up to date
-before any rbtree insertion or erase, with the possible exception that
-the node being erased doesn't need to have an up to date rb_subtree_gap.
+Cheers,
 
-This change: during VMA removal, remove VMA from the rbtree before we
-remove it from the linked list. The implication is the next vma's
-rb_subtree_gap value becomes stale when next->vm_prev is updated,
-and we want to make sure vma_rb_erase() runs before there are any
-such stale rb_subtree_gap values in the rbtree.
-
-(I don't know of a reproduceable test case for this particular issue)
-
-Signed-off-by: Michel Lespinasse <walken@google.com>
-
----
- mm/mmap.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 14859b999a9f..c60ac9fe2d7e 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -578,12 +578,12 @@ static inline void
- __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct vm_area_struct *prev)
- {
--	struct vm_area_struct *next = vma->vm_next;
-+	struct vm_area_struct *next;
- 
--	prev->vm_next = next;
-+	vma_rb_erase(vma, &mm->mm_rb);
-+	prev->vm_next = next = vma->vm_next;
- 	if (next)
- 		next->vm_prev = prev;
--	vma_rb_erase(vma, &mm->mm_rb);
- 	if (mm->mmap_cache == vma)
- 		mm->mmap_cache = prev;
- }
 -- 
-1.7.7.3
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
