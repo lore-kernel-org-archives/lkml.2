@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab2KLSeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 13:34:04 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35248 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2KLSeC convert rfc822-to-8bit (ORCPT
+	id S1752242Ab2KLSgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 13:36:35 -0500
+Received: from cassarossa.samfundet.no ([129.241.93.19]:53467 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab2KLSge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 13:34:02 -0500
-Content-Type: text/plain; charset="utf-8"
+	Mon, 12 Nov 2012 13:36:34 -0500
+Date: Mon, 12 Nov 2012 19:36:31 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH 2/4] avr32, kconfig: remove HAVE_ARCH_BOOTMEM
+Message-ID: <20121112183631.GA18118@samfundet.no>
+References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
+ <1352737915-30906-2-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Ulf Hansson <ulf.hansson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-User-Agent: alot/0.3.2+
-To: torvalds@linux-foundation.org
-Message-ID: <20121112183341.17970.71457@nucleus>
-Subject: common clk fixes for 3.7-rc6
-Date: Mon, 12 Nov 2012 10:33:41 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352737915-30906-2-git-send-email-js1304@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
+Around Tue 13 Nov 2012 01:31:53 +0900 or thereabout, Joonsoo Kim wrote:
+> Now, there is no code for CONFIG_HAVE_ARCH_BOOTMEM.
+> So remove it.
 
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
+Indeed, thanks for cleaning. In a not too distant future I'll re-establish
+the AVR32 tree on kernel.org, I'm just waiting for my account to be
+made/enabled again.
 
-are available in the git repository at:
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-  git://git.linaro.org/people/mturquette/linux.git tags/clk-fixes-for-linus
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-for you to fetch changes up to 3d930678034e756d0960d214412d344772b21109:
+<snipp diff>
 
-  clk: ux500: Register slimbus clock lookups for u8500 (2012-11-12 10:20:23 -0800)
-
-----------------------------------------------------------------
-Missing clkdev entries are causing regressions on the U8500 platform.
-This pull request contains those missing clkdev entries which are needed
-to boot that platform.
-
-----------------------------------------------------------------
-Ulf Hansson (5):
-      clk: ux500: Register i2c clock lookups for u8500
-      clk: ux500: Register ssp clock lookups for u8500
-      clk: ux500: Register msp clock lookups for u8500
-      clk: ux500: Update rtc clock lookup for u8500
-      clk: ux500: Register slimbus clock lookups for u8500
-
- drivers/clk/ux500/u8500_clk.c |   50 +++++++++++++++++++++++++++++++++++++----
- 1 file changed, 46 insertions(+), 4 deletions(-)
+-- 
+mvh
+Hans-Christian Egtvedt
