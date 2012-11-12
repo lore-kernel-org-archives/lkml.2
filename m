@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab2KLAJk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 19:09:40 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39123 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab2KLAJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 19:09:38 -0500
-Date: Mon, 12 Nov 2012 11:09:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20121112110935.eee5f582f16ab07c9faeabb1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1751807Ab2KLAht (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 19:37:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1543 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab2KLAhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 19:37:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
+   d="scan'208";a="218056656"
+Message-ID: <1352680649.7176.140.camel@yhuang-dev>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
+ forbidden
+From: Huang Ying <ying.huang@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Mon, 12 Nov 2012 08:37:29 +0800
+In-Reply-To: <Pine.LNX.4.44L0.1211091131190.1702-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211091131190.1702-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__12_Nov_2012_11_09_35_+1100_r.XhkYmBkL.eNKL1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__12_Nov_2012_11_09_35_+1100_r.XhkYmBkL.eNKL1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2012-11-09 at 11:41 -0500, Alan Stern wrote:
+> On Fri, 9 Nov 2012, Huang Ying wrote:
+> 
+> > On Thu, 2012-11-08 at 12:07 -0500, Alan Stern wrote:
+> > > On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
+> > > 
+> > > > > > > is it a good idea to allow to set device state to SUSPENDED if the device
+> > > > > > > is disabled?
+> > > > > > 
+> > > > > > No, it is not.  The status should always be ACTIVE as long as usage_count > 0.
+> > > 
+> > > That isn't strictly true, because pm_runtime_get_noresume violates this
+> > > rule.  What the PM core actually does is prevent a transition from the
+> > > ACTIVE state to the SUSPENDING/SUSPENDED state if usage_count > 0,
+> > > _provided_ runtime PM is enabled.  There's no such restriction when it
+> > > is disabled.
+> > 
+> > Usage count may be not a issue for the end user.  But "on" in "control"
+> > sysfs file + SUSPENDED can be confusing for the end user.  Maybe we need
+> > to check dev->power.runtime_auto in pm_runtime_set_suspended().
+> 
+> You are confusing the issue by raising two separate (though related)
+> questions.
 
-Hi Mauro,
+Thanks for clarify.
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> The first question: How should the PCI subsystem prevent the parents of 
+> driverless VGA devices from being runtime suspended while userspace is 
+> accessing them?
 
-ERROR: "sms_ir_exit" [drivers/media/common/siano/smsmdtv.ko] undefined!
-ERROR: "sms_ir_event" [drivers/media/common/siano/smsmdtv.ko] undefined!
-ERROR: "sms_ir_init" [drivers/media/common/siano/smsmdtv.ko] undefined!
+I think Rafael's patch is good for that.
 
-This is better than Friday, but still not quite there. :-(
+> The second question: Should the PM core allow devices that are disabled
+> for runtime PM to be in the SUSPENDED state when
+> dev->power.runtime_auto is clear?
 
-I have used the v4l-dvb tree from next-20121026 again.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I think that should not be allowed.
 
---Signature=_Mon__12_Nov_2012_11_09_35_+1100_r.XhkYmBkL.eNKL1
-Content-Type: application/pgp-signature
+> Assuming we don't want to allow this, there's a third question: Should
+> pm_runtime_allow call pm_runtime_set_suspended if the device is
+> disabled?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Is it absolute necessary to call pm_runtime_set_suspended?  If the
+device is disabled, the transition to SUSPENDED state will not be
+triggered even if the device is ACTIVE.
 
-iQIcBAEBCAAGBQJQoD4/AAoJEECxmPOUX5FEvGgP/07RGSo63kAMbiw+MOV5mmYi
-WIueVbF3lNNC4XQvmO5oV3sjkzg6aURpPTtXBg1/TjI70jqCgao44AHBOw5DLhlm
-MxNkC+Gp3PtMGaTURnw3uWz2QiKMqMc3cOH6BQkfCWWoEoZsp3PRqxbEUGsUuqNJ
-IRo5ohaJAoBYF0Ub3VWgjAffRuS2wJRnNErc0EsEj+5bdcIwAzuiqWXYyavcdYs2
-MLOMRKEPoz7QmB8uYTYmMzr1A2AUDqP0VIfnBJIctWZSRbUBSHbQRX1b7u4+JbK4
-isP4P7UqhofaPVnOKVtLOYvPpQmQ7zXGgUUCUke79l3LhE7o2Dp41FVoPcpE45ZU
-dmc7LEpowufRuUQk0K0pU4Kz/LSAho4cVB3KE8xrLmWnOxRYoIHiWQmlKVZrMUsm
-sgAvg+ffq8vbCfufX/xagov7efXF0DL8IIOTl1Q1aVjKwOAcyPahZJdaJ74dXWTA
-Yl/TsqqybxypZXh23/DFR0rrkSiBrKKYOgHn2M1wLC67y8YeBsE/6uGXUS42TNui
-qEa26uUUyvR5jTLBeej2CPF7TqTl8LOPxjOjyaMfu+hGYTQROr6uljRGK8oelusH
-MdAP1rjaJ3PNqFy9+Lrwpy2Cp5EjQxJdEk9rTaLyhKsi8piec3Cn4pJF9a9LpfDb
-DQCw+zpW6bmfk6rf8lks
-=67qG
------END PGP SIGNATURE-----
+Best Regards,
+Huang Ying
 
---Signature=_Mon__12_Nov_2012_11_09_35_+1100_r.XhkYmBkL.eNKL1--
+
