@@ -1,207 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab2KLWI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 17:08:27 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60385 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab2KLWIZ (ORCPT
+	id S1753385Ab2KLWKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 17:10:53 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40879 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2KLWKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 17:08:25 -0500
-Message-ID: <50A17353.8010604@linaro.org>
-Date: Mon, 12 Nov 2012 23:08:19 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 12 Nov 2012 17:10:51 -0500
 MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: linux-pm@vger.kernel.org, khilman@ti.com, len.brown@intel.com,
-        Trinabh Gupta <g.trinabh@gmail.com>, deepthi@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, akpm@linux-foundation.org,
-        Sameer Nanda <snanda@chromium.org>,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>
-Subject: Re: [RFC] cpuidle - remove the power_specified field in the driver
-References: <50831CA3.2020602@linaro.org> <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org> <CAODwPW-yjzrAFRA4Bv-MZETFEfq+cpaLvHaYX5K5HBtQtJKZQA@mail.gmail.com>
-In-Reply-To: <CAODwPW-yjzrAFRA4Bv-MZETFEfq+cpaLvHaYX5K5HBtQtJKZQA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net>
+	<20121025041620.GH2616@ZenIV.linux.org.uk>
+	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
+	<20121025120952.GI2616@ZenIV.linux.org.uk>
+	<20121025123843.GJ2616@ZenIV.linux.org.uk>
+	<alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
+	<20121026183601.GR2616@ZenIV.linux.org.uk>
+	<alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
+	<CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
+	<alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
+	<CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
+	<alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
+Date: Mon, 12 Nov 2012 14:10:50 -0800
+X-Google-Sender-Auth: pgf4b3P4XSUS45EI47abPBnkVWE
+Message-ID: <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+From: Kees Cook <keescook@chromium.org>
+To: P J P <ppandit@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 10:09 PM, Julius Werner wrote:
-> Thanks for moving this along, Daniel. I think this is the right
-> approach... the cpuidle driver shouldn't be more complex than
-> necessary.
-> 
-> Note that you are starting your loop too high in cpuidle_play_dead...
-> states[state_count] is not an actual state anymore, it should start at
-> state_count - 1. 
+On Tue, Nov 6, 2012 at 12:10 AM, P J P <ppandit@redhat.com> wrote:
+>
+>   Hello Kees, Al,
+>
+> +-- On Sat, 27 Oct 2012, Kees Cook wrote --+
+> | If we change binfmt_script to not make a recursive call, then we still
+> | need to keep the interp change somewhere off the stack. I still think
+> | my patchset is the least bad.
+> |
+> | Al, do you have something else in mind?
+>
+>   Guys, are there any updates further?
+>
+>   Al, what's your take on the *rare* extra call to request_module?
 
-Yep. Thanks for catching this.
+Without any other feedback, I'd like to use my minimal allocation
+patch, since it fixes the problem and doesn't change any of the
+semantics of how/when loading happens.
 
-> Also, I think you can go ahead and do the same
-> last-to-first loop transformation with immediate return in the menu
-> governor, for an extra tiny bit of performance.
-
-Yes, that makes sense.
-
-Thanks for the review.
-
-  -- Daniel
-
-> On Mon, Nov 12, 2012 at 12:26 PM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> This patch follows the discussion about reinitializing the power usage
->> when a C-state is added/removed.
->>
->>  https://lkml.org/lkml/2012/10/16/518
->>
->> We realized the power usage field is never filled and when it is
->> filled for tegra, the power_specified flag is not set making all these
->> values to be resetted when the driver is initialized with the set_power_state
->> function.
->>
->> Julius and I feel this is over-engineered and the power_specified
->> flag could be simply removed and continue assuming the states are
->> backward sorted.
->>
->> The menu governor select function is simplified as the power is ordered.
->> Actually the condition is always true with the current code.
->>
->> The cpuidle_play_dead function is also simplified by doing a reverse lookup
->> on the array.
->>
->> The set_power_states function is removed as it does no make sense anymore.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>  drivers/cpuidle/cpuidle.c        |   17 ++++-------------
->>  drivers/cpuidle/driver.c         |   25 -------------------------
->>  drivers/cpuidle/governors/menu.c |    8 ++------
->>  include/linux/cpuidle.h          |    2 +-
->>  4 files changed, 7 insertions(+), 45 deletions(-)
->>
->> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
->> index 711dd83..f983262 100644
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
->>  {
->>         struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
->>         struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
->> -       int i, dead_state = -1;
->> -       int power_usage = -1;
->> +       int i;
->>
->>         if (!drv)
->>                 return -ENODEV;
->>
->>         /* Find lowest-power state that supports long-term idle */
->> -       for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
->> -               struct cpuidle_state *s = &drv->states[i];
->> -
->> -               if (s->power_usage < power_usage && s->enter_dead) {
->> -                       power_usage = s->power_usage;
->> -                       dead_state = i;
->> -               }
->> -       }
->> -
->> -       if (dead_state != -1)
->> -               return drv->states[dead_state].enter_dead(dev, dead_state);
->> +       for (i = drv->state_count; i >= CPUIDLE_DRIVER_STATE_START; i--)
->> +               if (drv->states[i].play_dead)
->> +                       return drv->states[i].enter_dead(dev, i);
->>
->>         return -ENODEV;
->>  }
->> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
->> index 3af841f..bb045f1 100644
->> --- a/drivers/cpuidle/driver.c
->> +++ b/drivers/cpuidle/driver.c
->> @@ -19,34 +19,9 @@ DEFINE_SPINLOCK(cpuidle_driver_lock);
->>  static void __cpuidle_set_cpu_driver(struct cpuidle_driver *drv, int cpu);
->>  static struct cpuidle_driver * __cpuidle_get_cpu_driver(int cpu);
->>
->> -static void set_power_states(struct cpuidle_driver *drv)
->> -{
->> -       int i;
->> -
->> -       /*
->> -        * cpuidle driver should set the drv->power_specified bit
->> -        * before registering if the driver provides
->> -        * power_usage numbers.
->> -        *
->> -        * If power_specified is not set,
->> -        * we fill in power_usage with decreasing values as the
->> -        * cpuidle code has an implicit assumption that state Cn
->> -        * uses less power than C(n-1).
->> -        *
->> -        * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
->> -        * an power value of -1.  So we use -2, -3, etc, for other
->> -        * c-states.
->> -        */
->> -       for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
->> -               drv->states[i].power_usage = -1 - i;
->> -}
->> -
->>  static void __cpuidle_driver_init(struct cpuidle_driver *drv)
->>  {
->>         drv->refcnt = 0;
->> -
->> -       if (!drv->power_specified)
->> -               set_power_states(drv);
->>  }
->>
->>  static int __cpuidle_register_driver(struct cpuidle_driver *drv, int cpu)
->> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
->> index 2efee27..14eb11f 100644
->> --- a/drivers/cpuidle/governors/menu.c
->> +++ b/drivers/cpuidle/governors/menu.c
->> @@ -312,7 +312,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->>  {
->>         struct menu_device *data = &__get_cpu_var(menu_devices);
->>         int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
->> -       int power_usage = -1;
->>         int i;
->>         int multiplier;
->>         struct timespec t;
->> @@ -383,11 +382,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->>                 if (s->exit_latency * multiplier > data->predicted_us)
->>                         continue;
->>
->> -               if (s->power_usage < power_usage) {
->> -                       power_usage = s->power_usage;
->> -                       data->last_state_idx = i;
->> -                       data->exit_us = s->exit_latency;
->> -               }
->> +               data->last_state_idx = i;
->> +               data->exit_us = s->exit_latency;
->>         }
->>
->>         /* not deepest C-state chosen for low predicted residency */
->> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
->> index 3711b34..24cd103 100644
->> --- a/include/linux/cpuidle.h
->> +++ b/include/linux/cpuidle.h
->> @@ -126,9 +126,9 @@ struct cpuidle_driver {
->>         struct module           *owner;
->>         int                     refcnt;
->>
->> -       unsigned int            power_specified:1;
->>         /* set to 1 to use the core cpuidle time keeping (for all states). */
->>         unsigned int            en_core_tk_irqen:1;
->> +       /* states array must be ordered in decreasing power consumption */
->>         struct cpuidle_state    states[CPUIDLE_STATE_MAX];
->>         int                     state_count;
->>         int                     safe_state_index;
->> --
->> 1.7.5.4
->>
-
+-Kees
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Kees Cook
+Chrome OS Security
