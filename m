@@ -1,161 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2KLPJW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:09:22 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:39889 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab2KLPJU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:09:20 -0500
+	id S1753599Ab2KLPJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:09:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753454Ab2KLPJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 10:09:30 -0500
+Date: Mon, 12 Nov 2012 17:11:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        maxk@qti.qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
+        ernesto.martin@viasat.com, haixiao@juniper.net
+Subject: Re: [net-next v5 6/7] tuntap: add ioctl to attach or detach a file
+ form tuntap device
+Message-ID: <20121112151154.GA16484@redhat.com>
+References: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
+ <1351748762-3455-7-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121112143846.GI2346@mudshark.cambridge.arm.com>
-References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
-	<20121112104601.GB2346@mudshark.cambridge.arm.com>
-	<CAF6AEGtR0WBjoWbb2BF-hJa9sQi2Aa75dfrfb1u5EncaOB7Pyw@mail.gmail.com>
-	<20121112143846.GI2346@mudshark.cambridge.arm.com>
-Date: Mon, 12 Nov 2012 09:09:19 -0600
-X-Google-Sender-Auth: X1NG4DG0QxS4f-RWR4XXoH_zkYo
-Message-ID: <CAF6AEGsSng_Ma_0Q6PXTRHOVYRtC5RRBA65=fpBCM8O2QThQWg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
-From: Rob Clark <rob.clark@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351748762-3455-7-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 8:38 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Mon, Nov 12, 2012 at 01:46:57PM +0000, Rob Clark wrote:
->> On Mon, Nov 12, 2012 at 4:46 AM, Will Deacon <will.deacon@arm.com> wrote:
->> > On Fri, Nov 09, 2012 at 09:17:33PM +0000, Rob Clark wrote:
->> >> @@ -122,22 +124,35 @@ extern int __get_user_4(void *);
->> >>       ({                                                              \
->> >>               unsigned long __limit = current_thread_info()->addr_limit - 1; \
->> >>               register const typeof(*(p)) __user *__p asm("r0") = (p);\
->> >> -             register unsigned long __r2 asm("r2");                  \
->> >>               register unsigned long __l asm("r1") = __limit;         \
->> >>               register int __e asm("r0");                             \
->> >>               switch (sizeof(*(__p))) {                               \
->> >> -             case 1:                                                 \
->> >> +             case 1: {                                               \
->> >> +                     register unsigned long __r2 asm("r2");          \
->> >>                       __get_user_x(__r2, __p, __e, __l, 1);           \
->> >> +                     x = (typeof(*(p))) __r2;                        \
->> >>                       break;                                          \
->> >> -             case 2:                                                 \
->> >> +             }                                                       \
->> >> +             case 2: {                                               \
->> >> +                     register unsigned long __r2 asm("r2");          \
->> >>                       __get_user_x(__r2, __p, __e, __l, 2);           \
->> >> +                     x = (typeof(*(p))) __r2;                        \
->> >>                       break;                                          \
->> >> -             case 4:                                                 \
->> >> +             }                                                       \
->> >> +             case 4: {                                               \
->> >> +                     register unsigned long __r2 asm("r2");          \
->> >>                       __get_user_x(__r2, __p, __e, __l, 4);           \
->> >> +                     x = (typeof(*(p))) __r2;                        \
->> >> +                     break;                                          \
->> >> +             }                                                       \
->> >> +             case 8: {                                               \
->> >> +                     register unsigned long long __r2 asm("r2");     \
->> >
->> > Does this matter? For EABI, we'll pass in (r2, r3) and it's all handcrafted
->> > asm, so the compiler shouldn't care much. For OABI, I think you may have to
->> > do some more work to get the two words where you want them.
->>
->> Is the question whether the compiler is guaranteed to allocate r2 and
->> r3 in all cases?  I'm not quite sure, I confess to usually trying to
->> avoid inline asm.  But from looking at the disassembly (for little
->> endian EABI build) it seemed to do the right thing.
->
-> I can't recall how OABI represents 64-bit values and particularly whether this
-> differs between little and big-endian, so I wondered whether you may have to
-> do some marshalling when you assign x. However, a few quick experiments with
-> GCC suggest that the register representation matches EABI in regards to word
-> ordering (it just doesn't require an even base register), although it would
-> be good to find this written down somewhere...
+On Thu, Nov 01, 2012 at 01:46:01PM +0800, Jason Wang wrote:
+> Sometimes usespace may need to active/deactive a queue, this could be done by
+> detaching and attaching a file from tuntap device.
+> 
+> This patch introduces a new ioctls - TUNSETQUEUE which could be used to do
+> this. Flag IFF_ATTACH_QUEUE were introduced to do attaching while
+> IFF_DETACH_QUEUE were introduced to do the detaching.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/tun.c           |   56 ++++++++++++++++++++++++++++++++++++------
+>  include/uapi/linux/if_tun.h |    3 ++
+>  2 files changed, 51 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 2762c55..79b6f9e 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -195,6 +195,15 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  	return txq;
+>  }
+>  
+> +static inline bool tun_not_capable(struct tun_struct *tun)
+> +{
+> +	const struct cred *cred = current_cred();
+> +
+> +	return ((uid_valid(tun->owner) && !uid_eq(cred->euid, tun->owner)) ||
+> +		  (gid_valid(tun->group) && !in_egroup_p(tun->group))) &&
+> +		!capable(CAP_NET_ADMIN);
+> +}
+> +
+>  static void tun_set_real_num_queues(struct tun_struct *tun)
+>  {
+>  	netif_set_real_num_tx_queues(tun->dev, tun->numqueues);
+> @@ -1310,8 +1319,6 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  
+>  	dev = __dev_get_by_name(net, ifr->ifr_name);
+>  	if (dev) {
+> -		const struct cred *cred = current_cred();
+> -
+>  		if (ifr->ifr_flags & IFF_TUN_EXCL)
+>  			return -EBUSY;
+>  		if ((ifr->ifr_flags & IFF_TUN) && dev->netdev_ops == &tun_netdev_ops)
+> @@ -1321,9 +1328,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  		else
+>  			return -EINVAL;
+>  
+> -		if (((uid_valid(tun->owner) && !uid_eq(cred->euid, tun->owner)) ||
+> -		     (gid_valid(tun->group) && !in_egroup_p(tun->group))) &&
+> -		    !capable(CAP_NET_ADMIN))
+> +		if (tun_not_capable(tun))
+>  			return -EPERM;
+>  		err = security_tun_dev_attach(tfile->socket.sk);
+>  		if (err < 0)
+> @@ -1530,6 +1535,40 @@ static void tun_set_sndbuf(struct tun_struct *tun)
+>  	}
+>  }
+>  
+> +static int tun_set_queue(struct file *file, struct ifreq *ifr)
+> +{
+> +	struct tun_file *tfile = file->private_data;
+> +	struct tun_struct *tun;
+> +	struct net_device *dev;
+> +	int ret = 0;
+> +
+> +	rtnl_lock();
+> +
+> +	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
+> +		dev = __dev_get_by_name(tfile->net, ifr->ifr_name);
+> +		if (!dev) {
+> +			ret = -EINVAL;
+> +			goto unlock;
+> +		}
+> +
+> +		tun = netdev_priv(dev);
+> +		if (dev->netdev_ops != &tap_netdev_ops &&
+> +			dev->netdev_ops != &tun_netdev_ops)
+> +			ret = -EINVAL;
+> +		else if (tun_not_capable(tun))
+> +			ret = -EPERM;
+> +		else
+> +			ret = tun_attach(tun, file);
 
-yeah, I was kinda hoping that someone a bit closer to the compiler
-would speak up here :-)
+looks like we need to check 
+security_tun_dev_attach here as well.
+As the patch is in net-next now we need a patch on top for that.
 
->> The only other idea I had was to explicitly declare two 'unsigned
->> long's and then shift them into a 64bit x, although I'm open to
->> suggestions if there is a better way.
->
-> Can't you just use register unsigned long long for all cases? Even better,
-> follow what put_user does and use typeof(*(p))?
 
-typeof(*(p) was my first try but:
 
-  register typeof(*(p)) __r2 asm("r2");
-
-gives me the error:
-
-  error: read-only variable ‘__r2’ used as ‘asm’ output
-
-I guess because 'const' ends up being part of the typeof *p?  I
-suppose I could do typeof(x) instead
-
-BR,
--R
-
->> >> diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
->> >> index 9b06bb4..d05285c 100644
->> >> --- a/arch/arm/lib/getuser.S
->> >> +++ b/arch/arm/lib/getuser.S
->> >> @@ -18,7 +18,7 @@
->> >>   * Inputs:   r0 contains the address
->> >>   *           r1 contains the address limit, which must be preserved
->> >>   * Outputs:  r0 is the error code
->> >> - *           r2 contains the zero-extended value
->> >> + *           r2, r3 contains the zero-extended value
->> >>   *           lr corrupted
->> >>   *
->> >>   * No other registers must be altered.  (see <asm/uaccess.h>
->> >> @@ -66,6 +66,19 @@ ENTRY(__get_user_4)
->> >>       mov     pc, lr
->> >>  ENDPROC(__get_user_4)
->> >>
->> >> +ENTRY(__get_user_8)
->> >> +     check_uaccess r0, 4, r1, r2, __get_user_bad
->> >
->> > Shouldn't you be passing 8 here, so that we validate the correct range?
->>
->> yes, sorry, I'll fix that
->>
->> >> +#ifdef CONFIG_THUMB2_KERNEL
->> >> +5: TUSER(ldr)        r2, [r0]
->> >> +6: TUSER(ldr)        r3, [r0, #4]
->> >> +#else
->> >> +5: TUSER(ldr)        r2, [r0], #4
->> >> +6: TUSER(ldr)        r3, [r0]
->> >> +#endif
->> >
->> > This doesn't work for EABI big-endian systems.
->>
->> Hmm, is that true?  Wouldn't put_user() then have the same problem?
->
-> I dug up the PCS and it seems that we arrange the two halves of the
-> doubleword to match the ldm/stm memory representation for EABI, so sorry
-> for the confusion.
->
->> I guess __ARMEB__ is the flag for big-endian?
->
-> That's the thing defined by the compiler, yes.
->
-> Will
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
+> +		__tun_detach(tfile, false);
+> +	else
+> +		ret = -EINVAL;
+> +
+> +unlock:
+> +	rtnl_unlock();
+> +	return ret;
+> +}
+> +
+>  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  			    unsigned long arg, int ifreq_len)
+>  {
+> @@ -1543,7 +1582,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  	int vnet_hdr_sz;
+>  	int ret;
+>  
+> -	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89) {
+> +	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
+>  		if (copy_from_user(&ifr, argp, ifreq_len))
+>  			return -EFAULT;
+>  	} else {
+> @@ -1554,9 +1593,10 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  		 * This is needed because we never checked for invalid flags on
+>  		 * TUNSETIFF. */
+>  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+> -				IFF_VNET_HDR,
+> +				IFF_VNET_HDR | IFF_MULTI_QUEUE,
+>  				(unsigned int __user*)argp);
+> -	}
+> +	} else if (cmd == TUNSETQUEUE)
+> +		return tun_set_queue(file, &ifr);
+>  
+>  	ret = 0;
+>  	rtnl_lock();
+> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+> index 8ef3a87..958497a 100644
+> --- a/include/uapi/linux/if_tun.h
+> +++ b/include/uapi/linux/if_tun.h
+> @@ -54,6 +54,7 @@
+>  #define TUNDETACHFILTER _IOW('T', 214, struct sock_fprog)
+>  #define TUNGETVNETHDRSZ _IOR('T', 215, int)
+>  #define TUNSETVNETHDRSZ _IOW('T', 216, int)
+> +#define TUNSETQUEUE  _IOW('T', 217, int)
+>  
+>  /* TUNSETIFF ifr flags */
+>  #define IFF_TUN		0x0001
+> @@ -63,6 +64,8 @@
+>  #define IFF_VNET_HDR	0x4000
+>  #define IFF_TUN_EXCL	0x8000
+>  #define IFF_MULTI_QUEUE 0x0100
+> +#define IFF_ATTACH_QUEUE 0x0200
+> +#define IFF_DETACH_QUEUE 0x0400
+>  
+>  /* Features for GSO (TUNSETOFFLOAD). */
+>  #define TUN_F_CSUM	0x01	/* You can hand me unchecksummed packets. */
+> -- 
+> 1.7.1
