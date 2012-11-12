@@ -1,50 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab2KLOzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:55:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62819 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab2KLOzL (ORCPT
+	id S1753286Ab2KLPAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:00:37 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:34565 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752097Ab2KLPAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:55:11 -0500
-Date: Mon, 12 Nov 2012 15:55:05 +0100
-From: Robert Richter <rric@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] perf, amd: Enable AMD family 15h northbridge counters
-Message-ID: <20121112145505.GC24433@rric.localhost>
-References: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
- <20121110115027.GC2777@rric.localhost>
- <20121111184426.GA5415@jshin-Toonie>
+	Mon, 12 Nov 2012 10:00:36 -0500
+From: Per Forlin <per.forlin@stericsson.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>, <lee.jones@linaro.org>,
+        <fredrik.soderstedt@stericsson.com>
+Cc: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Per Forlin <per.forlin@stericsson.com>
+Subject: [PATCH] dt: platform: Extract device name from device tree blob
+Date: Mon, 12 Nov 2012 15:59:03 +0100
+Message-ID: <1352732343-1199-1-git-send-email-per.forlin@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121111184426.GA5415@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jacob,
+Add support to extract device name from device tree blob.
+If the property "dev-name" is set in the DTS this name will
+be used when creating the device.
+The auxdata_lookup has precedence and will override
+the "dev-name" property.
 
-On 11.11.12 12:44:26, Jacob Shin wrote:
-> Because
-> in an upcoming processor family, there is no core performance counter
-> extensions, but we do have northbridge performance counters. Meaning
-> the counter address base would be c0010000 and northbridge counters
-> live in c0010240, being 0x240 apart, we could make counter masks work
-> but that testng awful alot of 0's for every address offset calculation
-> .
+Adding support to parse DTS "dev-name" will make it possible to
+replace these kind of structures with a dev-name in the DTS.
+OF_DEV_AUXDATA("compatible", BASE_ADDRESS, "dev-name", NULL)
 
-I agree with you that my imlementation of counter masks does not fit
-perfectly for this reason and also since it requires too much changes
-in generic code (for_each_generic_counter()) which Peter did not like
-either. So it is ok to me to replace your solution with the patch that
-implenents counter bitmasks.
+Examples
+OF_DEV_AUXDATA("marvell,orion-spi", 0xf1010600, "orion_spi.0", NULL),
+OF_DEV_AUXDATA("marvell,mv64xxx-i2c", 0xf1011000, "mv64xxx_i2c.0",
+OF_DEV_AUXDATA("marvell,orion-sata", 0xf10a0000, "sata_mv.0", NULL),
+OF_DEV_AUXDATA("marvell,dove-sdhci", 0xf1092000, "sdhci-dove.0", NULL),
+OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA0, "dma-pl330.0", NULL),
+OF_DEV_AUXDATA("arm,pl330", EXYNOS5_PA_PDMA0, "dma-pl330.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-uart", MX27_UART1_BASE_ADDR, "imx21-uart.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-fec", MX27_FEC_BASE_ADDR, "imx27-fec.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-i2c", MX27_I2C1_BASE_ADDR, "imx-i2c.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-cspi", MX27_CSPI1_BASE_ADDR, "imx27-cspi.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-wdt", MX27_WDOG_BASE_ADDR, "imx2-wdt.0", NULL),
+OF_DEV_AUXDATA("fsl,imx27-nand", MX27_NFC_BASE_ADDR, "mxc_nand.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-uart", MX51_UART1_BASE_ADDR, "imx21-uart.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-fec", MX51_FEC_BASE_ADDR, "imx27-fec.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-esdhc", MX51_ESDHC1_BASE_ADDR, "sdhci-esdhc-imx51.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-ecspi", MX51_ECSPI1_BASE_ADDR, "imx51-ecspi.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-cspi", MX51_CSPI_BASE_ADDR, "imx35-cspi.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-i2c", MX51_I2C1_BASE_ADDR, "imx-i2c.0", NULL),
+OF_DEV_AUXDATA("fsl,imx51-wdt", MX51_WDOG1_BASE_ADDR, "imx2-wdt.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-uart", MX53_UART1_BASE_ADDR, "imx21-uart.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-fec", MX53_FEC_BASE_ADDR, "imx25-fec.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-esdhc", MX53_ESDHC1_BASE_ADDR, "sdhci-esdhc-imx53.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-ecspi", MX53_ECSPI1_BASE_ADDR, "imx51-ecspi.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-cspi", MX53_CSPI_BASE_ADDR, "imx35-cspi.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-i2c", MX53_I2C1_BASE_ADDR, "imx-i2c.0", NULL),
+OF_DEV_AUXDATA("fsl,imx53-wdt", MX53_WDOG1_BASE_ADDR, "imx2-wdt.0", NULL),
+OF_DEV_AUXDATA("marvell,orion-spi", 0xf1010600, "orion_spi.0", NULL),
+OF_DEV_AUXDATA("marvell,mv64xxx-i2c", 0xf1011000, "mv64xxx_i2c.0",
+OF_DEV_AUXDATA("marvell,orion-sata", 0xf1080000, "sata_mv.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4030000, "pxa2xx-uart.0", NULL),
+OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
+OF_DEV_AUXDATA("mrvl,pxa-uart",		0x40100000, "pxa2xx-uart.0", NULL),
+OF_DEV_AUXDATA("marvell,pxa-mmc",	0x41100000, "pxa2xx-mci.0", NULL),
+OF_DEV_AUXDATA("mrvl,pxa-i2c",		0x40301680, "pxa2xx-i2c.0", NULL),
+OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
+OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C_BASE, "tegra-i2c.0", NULL),
+OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra20-i2s.0", NULL),
+OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB_BASE, "tegra-ehci.0",
+OF_DEV_AUXDATA("nvidia,tegra20-sdhci", 0x78000000, "sdhci-tegra.0", NULL),
+OF_DEV_AUXDATA("nvidia,tegra20-i2c", 0x7000C000, "tegra-i2c.0", NULL),
+OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
+OF_DEV_AUXDATA("st,nomadik-i2c", 0x80004000, "nmk-i2c.0", NULL),
 
--Robert
+Signed-off-by: Per Forlin <per.forlin@stericsson.com>
+---
+ drivers/of/platform.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 9600480..999ee95 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -169,6 +169,8 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
++	else if (of_property_read_string(np, "dev-name", &bus_id) == 0)
++		dev_set_name(&dev->dev, "%s", bus_id);
+ 	else
+ 		of_device_make_bus_id(&dev->dev);
+ 
+@@ -264,6 +266,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 	dev->dev.platform_data = platform_data;
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
++	else if (of_property_read_string(node, "dev-name", &bus_id) == 0)
++		dev_set_name(&dev->dev, "%s", bus_id);
+ 	else
+ 		of_device_make_bus_id(&dev->dev);
+ 
+-- 
+1.7.11.3
+
