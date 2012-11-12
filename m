@@ -1,75 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab2KLVbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:31:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45204 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276Ab2KLV2l (ORCPT
+	id S1754441Ab2KLVcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:32:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24632 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab2KLVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:41 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Fabio Porcedda <fabio.porcedda@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [ 3.5.yuz extended stable] Patch "usb: gadget: at91_udc: fix dt support" has been added to staging queue
-Date: Mon, 12 Nov 2012 19:28:35 -0200
-Message-Id: <1352755716-15825-1-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 12 Nov 2012 16:19:32 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 22/46] x86, mm: Remove early_memremap workaround for page table accessing on 64bit
+Date: Mon, 12 Nov 2012 13:18:18 -0800
+Message-Id: <1352755122-25660-23-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+ <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+We try to put page table high to make room for kdump, and at that time
+those ranges are not mapped yet, and have to use ioremap to access it.
 
-    usb: gadget: at91_udc: fix dt support
+Now after patch that pre-map page table top down.
+	x86, mm: setup page table in top-down
+We do not need that workaround anymore.
 
-to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
-which can be found at:
+Just use __va to return directly mapping address.
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
-
-If you, or anyone else, feels it should not be added to the 3.5
-Linux kernel, or for any feedback related to it, please reply to
-this email. For more information on extended stable, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Herton
-
-------
-
->From b28eb5bd6675bbe7393b21e8611b9dc2411687ba Mon Sep 17 00:00:00 2001
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Fri, 7 Sep 2012 15:27:42 +0200
-Subject: [PATCH] usb: gadget: at91_udc: fix dt support
-
-commit 9c6d196d5aa35e07482f23c3e37755e7a82140e0 upstream.
-
-Don't fail the initialization check for the platform_data
-if there is avaiable an associated device tree node.
-
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/usb/gadget/at91_udc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/init_64.c |   38 ++++----------------------------------
+ 1 files changed, 4 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index 22865dd..aad16ac 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1698,7 +1698,7 @@ static int __devinit at91udc_probe(struct platform_device *pdev)
- 	int		retval;
- 	struct resource	*res;
-
--	if (!dev->platform_data) {
-+	if (!dev->platform_data && !pdev->dev.of_node) {
- 		/* small (so we copy it) but critical! */
- 		DBG("missing platform_data\n");
- 		return -ENODEV;
---
-1.7.9.5
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index eefaea6..5ee9242 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -340,36 +340,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 	} else
+ 		pfn = pgt_buf_end++;
+ 
+-	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
++	adr = __va(pfn * PAGE_SIZE);
+ 	clear_page(adr);
+ 	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+ 
+-static __ref void *map_low_page(void *virt)
+-{
+-	void *adr;
+-	unsigned long phys, left;
+-
+-	if (after_bootmem)
+-		return virt;
+-
+-	phys = __pa(virt);
+-	left = phys & (PAGE_SIZE - 1);
+-	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
+-	adr = (void *)(((unsigned long)adr) | left);
+-
+-	return adr;
+-}
+-
+-static __ref void unmap_low_page(void *adr)
+-{
+-	if (after_bootmem)
+-		return;
+-
+-	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
+-}
+-
+ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
+@@ -442,10 +418,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+-				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
++				pte = (pte_t *)pmd_page_vaddr(*pmd);
+ 				last_map_addr = phys_pte_init(pte, address,
+ 								end, prot);
+-				unmap_low_page(pte);
+ 				spin_unlock(&init_mm.page_table_lock);
+ 				continue;
+ 			}
+@@ -483,7 +458,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 
+ 		pte = alloc_low_page(&pte_phys);
+ 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+-		unmap_low_page(pte);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
+@@ -518,10 +492,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 
+ 		if (pud_val(*pud)) {
+ 			if (!pud_large(*pud)) {
+-				pmd = map_low_page(pmd_offset(pud, 0));
++				pmd = pmd_offset(pud, 0);
+ 				last_map_addr = phys_pmd_init(pmd, addr, end,
+ 							 page_size_mask, prot);
+-				unmap_low_page(pmd);
+ 				__flush_tlb_all();
+ 				continue;
+ 			}
+@@ -560,7 +533,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		pmd = alloc_low_page(&pmd_phys);
+ 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+ 					      prot);
+-		unmap_low_page(pmd);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pud_populate(&init_mm, pud, __va(pmd_phys));
+@@ -596,17 +568,15 @@ kernel_physical_mapping_init(unsigned long start,
+ 			next = end;
+ 
+ 		if (pgd_val(*pgd)) {
+-			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
++			pud = (pud_t *)pgd_page_vaddr(*pgd);
+ 			last_map_addr = phys_pud_init(pud, __pa(start),
+ 						 __pa(end), page_size_mask);
+-			unmap_low_page(pud);
+ 			continue;
+ 		}
+ 
+ 		pud = alloc_low_page(&pud_phys);
+ 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+ 						 page_size_mask);
+-		unmap_low_page(pud);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pgd_populate(&init_mm, pgd, __va(pud_phys));
+-- 
+1.7.7
 
