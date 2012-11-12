@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2KLXgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:36:20 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42261 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab2KLXgT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:36:19 -0500
-MIME-Version: 1.0
-Date: Mon, 12 Nov 2012 21:36:17 -0200
-Message-ID: <CACnwZYdPntxqWh_Hb2=fa4NPFhtZQSj-sRK3hMHcK6FdctQEXw@mail.gmail.com>
-Subject: xfs: Use bool type rather than a custom boolean_t type.
-From: Thiago Farina <tfransosi@gmail.com>
-To: linux list <linux-kernel@vger.kernel.org>
-Cc: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Content-Type: multipart/mixed; boundary=f46d0401692396fa1a04ce54c475
+	id S1754389Ab2KLXky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:40:54 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:37590 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754309Ab2KLXkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 18:40:52 -0500
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Zheng Li <zheng.x.li@oracle.com>
+cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, joe.jin@oracle.com
+Subject: Re: [PATCH] bonding: rlb mode of bond should not alter ARP replies originating via bridge
+In-reply-to: <1352714143-28160-1-git-send-email-zheng.x.li@oracle.com>
+References: <1352714143-28160-1-git-send-email-zheng.x.li@oracle.com>
+Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
+   message dated "Mon, 12 Nov 2012 17:55:43 +0800."
+X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
+Date: Mon, 12 Nov 2012 15:40:45 -0800
+Message-ID: <29827.1352763645@death.nxdomain>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111223-3534-0000-0000-00000EE12803
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0401692396fa1a04ce54c475
-Content-Type: text/plain; charset=UTF-8
+Zheng Li <zheng.x.li@oracle.com> wrote:
 
-Hi,
+>ARP traffic passing through a bridge and out via the bond (when the bond is a 
+>port of the bridge) should not have its source MAC address adjusted by the 
+>receive load balance code in rlb_arp_xmit.
+>
+>Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>Cc: Jay Vosburgh <fubar@us.ibm.com>
+>Cc: Andy Gospodarek <andy@greyhouse.net>
+>Cc: "David S. Miller" <davem@davemloft.net>
+>
+>---
+> drivers/net/bonding/bond_alb.c |   21 ++++++++++++++++++++-
+> 1 files changed, 20 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+>index e15cc11..a99e658 100644
+>--- a/drivers/net/bonding/bond_alb.c
+>+++ b/drivers/net/bonding/bond_alb.c
+>@@ -685,6 +685,18 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
+> 	return assigned_slave;
+> }
+>
+>+struct slave *bond_slave_has_mac(struct bonding *bond, const u8 *mac)
+>+{
+>+	int i = 0;
+>+	struct slave *tmp;
+>+
+>+	bond_for_each_slave(bond, tmp, i)
+>+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
+>+			return tmp;
+>+
+>+	return NULL;
+>+}
 
-Please, take a look.
+	This should go in bonding.h as a static line, so that other
+parts of bonding can use it in the future.  I'll also point out that
+this function is one I suggested in a prior email, but did not test.
+Presumably you've tested this.
 
-Patch attached.
+> /* chooses (and returns) transmit channel for arp reply
+>  * does not choose channel for other arp types since they are
+>  * sent on the curr_active_slave
+>@@ -700,7 +712,14 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
+> 		*/
+> 		tx_slave = rlb_choose_channel(skb, bond);
+> 		if (tx_slave) {
+>-			memcpy(arp->mac_src,tx_slave->dev->dev_addr, ETH_ALEN);
+>+			struct slave *tmp_slave = NULL;
 
-Thanks,
+	This does not need to be initialized, as the next line of code
+assigns a value to it.
 
---f46d0401692396fa1a04ce54c475
-Content-Type: application/octet-stream; 
-	name="0001-xfs-Use-bool-type-rather-than-a-custom-boolean_t-typ.patch"
-Content-Disposition: attachment; 
-	filename="0001-xfs-Use-bool-type-rather-than-a-custom-boolean_t-typ.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h9g8cz5q0
+	-J
 
-RnJvbSA2NWU4ZTk1Y2FlYzhlMTg3ZDg3M2M2YzE0NTFhYjAwZmYxMzFkYmU0IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBUaGlhZ28gRmFyaW5hIDx0ZmFyaW5hQGNocm9taXVtLm9yZz4K
-RGF0ZTogTW9uLCAxMiBOb3YgMjAxMiAyMTozMjo1OSAtMDIwMApTdWJqZWN0OiBbUEFUQ0hdIHhm
-czogVXNlIGJvb2wgdHlwZSByYXRoZXIgdGhhbiBhIGN1c3RvbSBib29sZWFuX3QgdHlwZS4KClNp
-Z25lZC1vZmYtYnk6IFRoaWFnbyBGYXJpbmEgPHRmYXJpbmFAY2hyb21pdW0ub3JnPgotLS0KIGZz
-L3hmcy94ZnNfbG9nLmMgfCA4ICsrKystLS0tCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRpb25z
-KCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL3hmcy94ZnNfbG9nLmMgYi9mcy94
-ZnMveGZzX2xvZy5jCmluZGV4IDRkYWQ3NTYuLjRlN2ViNzYgMTAwNjQ0Ci0tLSBhL2ZzL3hmcy94
-ZnNfbG9nLmMKKysrIGIvZnMveGZzL3hmc19sb2cuYwpAQCAtMTE4LDcgKzExOCw3IEBAIHhsb2df
-dmVyaWZ5X2ljbG9nKAogCXN0cnVjdCB4bG9nCQkqbG9nLAogCXN0cnVjdCB4bG9nX2luX2NvcmUJ
-KmljbG9nLAogCWludAkJCWNvdW50LAotCWJvb2xlYW5fdAkJc3luY2luZyk7CisJYm9vbCAgICAg
-ICAgICAgICAgICAgICAgc3luY2luZyk7CiBTVEFUSUMgdm9pZAogeGxvZ192ZXJpZnlfdGFpbF9s
-c24oCiAJc3RydWN0IHhsb2cJCSpsb2csCkBAIC0zNDUxLDcgKzM0NTEsNyBAQCB4bG9nX3Zlcmlm
-eV9pY2xvZygKIAlzdHJ1Y3QgeGxvZwkJKmxvZywKIAlzdHJ1Y3QgeGxvZ19pbl9jb3JlCSppY2xv
-ZywKIAlpbnQJCQljb3VudCwKLQlib29sZWFuX3QJCXN5bmNpbmcpCisJYm9vbCAgICAgICAgICAg
-ICAgICAgICAgc3luY2luZykKIHsKIAl4bG9nX29wX2hlYWRlcl90CSpvcGhlYWQ7CiAJeGxvZ19p
-bl9jb3JlX3QJCSppY3B0cjsKQEAgLTM0OTksNyArMzQ5OSw3IEBAIHhsb2dfdmVyaWZ5X2ljbG9n
-KAogCQkvKiBjbGllbnRpZCBpcyBvbmx5IDEgYnl0ZSAqLwogCQlmaWVsZF9vZmZzZXQgPSAoX19w
-c2ludF90KQogCQkJICAgICAgICgoeGZzX2NhZGRyX3QpJihvcGhlYWQtPm9oX2NsaWVudGlkKSAt
-IGJhc2VfcHRyKTsKLQkJaWYgKHN5bmNpbmcgPT0gQl9GQUxTRSB8fCAoZmllbGRfb2Zmc2V0ICYg
-MHgxZmYpKSB7CisJCWlmICghc3luY2luZyB8fCAoZmllbGRfb2Zmc2V0ICYgMHgxZmYpKSB7CiAJ
-CQljbGllbnRpZCA9IG9waGVhZC0+b2hfY2xpZW50aWQ7CiAJCX0gZWxzZSB7CiAJCQlpZHggPSBC
-VE9CQlQoKHhmc19jYWRkcl90KSYob3BoZWFkLT5vaF9jbGllbnRpZCkgLSBpY2xvZy0+aWNfZGF0
-YXApOwpAQCAtMzUyMiw3ICszNTIyLDcgQEAgeGxvZ192ZXJpZnlfaWNsb2coCiAJCS8qIGNoZWNr
-IGxlbmd0aCAqLwogCQlmaWVsZF9vZmZzZXQgPSAoX19wc2ludF90KQogCQkJICAgICAgICgoeGZz
-X2NhZGRyX3QpJihvcGhlYWQtPm9oX2xlbikgLSBiYXNlX3B0cik7Ci0JCWlmIChzeW5jaW5nID09
-IEJfRkFMU0UgfHwgKGZpZWxkX29mZnNldCAmIDB4MWZmKSkgeworCQlpZiAoIXN5bmNpbmcgfHwg
-KGZpZWxkX29mZnNldCAmIDB4MWZmKSkgewogCQkJb3BfbGVuID0gYmUzMl90b19jcHUob3BoZWFk
-LT5vaF9sZW4pOwogCQl9IGVsc2UgewogCQkJaWR4ID0gQlRPQkJUKChfX3BzaW50X3QpJm9waGVh
-ZC0+b2hfbGVuIC0KLS0gCjEuOC4wLnJjMgoK
---f46d0401692396fa1a04ce54c475--
+>+			/* Only modify ARP's MAC if it originates locally;
+>+			 * don't change ARPs arriving via a bridge.
+>+			 */
+>+			tmp_slave = bond_slave_has_mac(bond, arp->mac_src);
+>+			if (tmp_slave)
+>+				memcpy(arp->mac_src, tx_slave->dev->dev_addr,
+>+				       ETH_ALEN);
+> 		}
+> 		pr_debug("Server sent ARP Reply packet\n");
+> 	} else if (arp->op_code == htons(ARPOP_REQUEST)) {
+>-- 
+>1.7.6.5
+
+---
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+
