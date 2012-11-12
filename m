@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab2KLX0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:26:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab2KLX0X (ORCPT
+	id S1754164Ab2KLX1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:27:46 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:42782 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2KLX1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:26:23 -0500
-Date: Mon, 12 Nov 2012 15:26:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 00/23] printk: refactoring
-Message-Id: <20121112152621.eb14d7f0.akpm@linux-foundation.org>
-In-Reply-To: <1352760850.18715.8.camel@joe-AO722>
-References: <cover.1351135988.git.joe@perches.com>
-	<1351864140.3537.1.camel@joe-AO722>
-	<1352760850.18715.8.camel@joe-AO722>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 12 Nov 2012 18:27:45 -0500
+Date: Tue, 13 Nov 2012 00:03:39 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: davem@davemloft.net, stable@vger.kernel.org,
+        Cyril Brulebois <kibi@debian.org>, netdev@vger.kernel.org,
+        nic_swsd@realtek.com, Hayes Wang <hayeswang@realtek.com>,
+        linux-kernel@vger.kernel.org, florent.fourcot@enst-bretagne.fr
+Subject: Re: [3.0.y, 3.2.y, 3.4.y] Re: [PATCH v2] r8169: Fix WoL on RTL8168d/8111d.
+Message-ID: <20121112230339.GA28555@electric-eye.fr.zoreil.com>
+References: <20121028230523.GA26778@electric-eye.fr.zoreil.com> <1351728046-32105-1-git-send-email-kibi@debian.org> <20121101222113.GB7708@electric-eye.fr.zoreil.com> <20121112163858.GA4343@elie.Belkin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121112163858.GA4343@elie.Belkin>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 14:54:10 -0800
-Joe Perches <joe@perches.com> wrote:
-
-> On Fri, 2012-11-02 at 06:49 -0700, Joe Perches wrote:
-> > On Wed, 2012-10-24 at 20:43 -0700, Joe Perches wrote:
-> > > Make printk a bit more readable.
-> > 
-> > Andrew?  Are you going to apply this again for -next?
+Jonathan Nieder <jrnieder@gmail.com> :
+[...]
+> This has been applied as commit b00e69dee4cc in mainline; thanks!
 > 
-> Andrew?  Any answer?
+> Fran??ois and David, would this be a candidate for inclusion in
+> 3.0- and newer stable kernels?
 
-Backlogged, not lost.  Hopefully this week or next week.
+- 3.0.51
+  b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
+  aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
 
-I trust it has had more thorough compilation coverage testing
-than v1?
+- 3.4.18
+  0481776b7a70f09acf7d9d97c288c3a8403fbfe4
+  b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
+  aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
+
+- 3.6.6
+  0481776b7a70f09acf7d9d97c288c3a8403fbfe4
+  b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
+  aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
+
+I'll cook the patches.
+
+-- 
+Ueimor
