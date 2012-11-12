@@ -1,139 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2KLO1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:27:06 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:60664 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab2KLO1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:27:04 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after inserting/removing USB stick
-Date: Mon, 12 Nov 2012 15:27:01 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc5-f2fs-usb-hcd-nothread-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211071501.38288.Martin@lichtvoll.de> <201211101734.07084.Martin@lichtvoll.de> <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com> (sfid-20121111_105423_761739_F064F5AE)
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com>
+	id S1753393Ab2KLO16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:27:58 -0500
+Received: from catholic.ebb.org ([67.207.139.67]:40016 "EHLO catholic.ebb.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab2KLO1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 09:27:55 -0500
+From: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>
+To: <lrosen@rosenlaw.com>, "Richard Fontana" <rfontana@redhat.com>,
+        <kcopenhaver@choate.com>, <agrover@redhat.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <target-devel@vger.kernel.org>,
+        "Marc Fleischmann" <mwf@risingtidesystems.com>,
+        "Nicholas Bellinger" <nab@risingtidesystems.com>,
+        <alan@lxorguk.ukuu.org.uk>
+Subject: Re: scsi target, likely GPL violation
+Organization: Software Freedom Conservancy
+References: <509A915B.30105@redhat.com>
+	<CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>
+	<509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>
+	<1352405111.29589.476.camel@haakon2.linux-iscsi.org>
+	<509C22B2.8010600@redhat.com>
+	<1352426896.29589.512.camel@haakon2.linux-iscsi.org>
+	<20121109110336.41833034@pyramind.ukuu.org.uk>
+	<14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
+Date: Mon, 12 Nov 2012 09:21:29 -0500
+In-Reply-To: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com> (Lawrence Rosen's
+	message of "Sun, 11 Nov 2012 14:13:53 -0800")
+Message-ID: <87ip9aoqae.fsf@ebb.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211121527.02007.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 11. November 2012 schrieb Liu, Chuansheng:
-> > The first bad commit is:
-> > 
-> > commit 73d4066055e0e2830533041f4b91df8e6e5976ff
-> > Author: Chuansheng Liu <chuansheng.liu@intel.com>
-> > Date:   Tue Sep 11 16:00:30 2012 +0800
-> > 
-> >     USB/host: Cleanup unneccessary irq disable code
-> > 
-> >     Because the IRQF_DISABLED as the flag is now a NOOP and has been
-> >     deprecated and in hardirq context the interrupt is disabled.
-> > 
-> >     so in usb/host code:
-> >     Removing the usage of flag IRQF_DISABLED;
-> >     Removing the calling local_irq save/restore actions in irq
-> >     handler usb_hcd_irq();
-> > 
-> >     Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> >     Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > 
-> > But:
-> > 
-> > This ony happens with threadirqs option!
-> > 
-> > When I remove threadirqs from kernel command line and reboot with this
-> > last bisect kernel USB sticks work.
-> > 
-> > That may explain why nobody else has seen this.
-> > 
-> > So I will try a 3.7-rc4 now, but without threadirqs enabled.
-> > 
-> Thanks your pointing out, the USB HCD irq handler is designed to execute in irq handler with irq disabled.
-> When threadirqs is in commandline, it will be executed in thread context with local irq enabling, which causes
-> this hardlockup.
-> 
-> I prepared one patch, could you have time to test it? Thanks. Sorry for missing threadirqs case.
-> 
-> From: liu chuansheng <chuansheng.liu@intel.com>
-> Subject: [PATCH] USB/host: Mark USB HCD irq as non-threaded
-> 
-> Mark USB HCD irq as non-threaded. This prevent one crash/hard lockup
-> when "threadirqs" is on the kernel commandline.
-> And this interrupt handle is handling critial events which should not
-> be in thread context.
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  drivers/usb/core/hcd.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index 1e741bc..b1cd46e 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
->         if (hcd->driver->irq) {
->                 snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
->                                 hcd->driver->description, hcd->self.busnum);
-> -               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-> +               retval = request_irq(irqnum, &usb_hcd_irq, irqflags|IRQF_NO_THREAD,
->                                 hcd->irq_descr, hcd);
->                 if (retval != 0) {
->                         dev_err(hcd->self.controller,
-> 
+Lawrence Rosen wrote at 17:13 (EST) on Sunday:
+> First, I hope that we can tone down the arguments about whether the
+> use of Linux APIs and headers automatically turns a program into a
+> derivative work of Linux. I think that argument has been largely
+> debunked in the U.S. in the recent decision in Oracle v. Google, and
+> in Europe in SAS v. World Programming. Does anyone here question
+> whether the original work that RTS contributed to Linux (and that *is*
+> under the GPL) is an original work of authorship of RTS despite the
+> fact that it links to other GPL code using headers and APIs?
 
-3.7-rc5 with manually patched to
+My point remains that most of us simply don't have enough facts to know
+at this point what case law applies to the situation.  Andy is seeking
+facts to determine if a violation occurred, and I hope he gets them.
 
-martin@merkaba:~/Computer/Merkaba/Kernel/linux-2.6> git diff drivers | cat
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 1e741bc..b1cd46e 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
-        if (hcd->driver->irq) {
-                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-                                hcd->driver->description, hcd->self.busnum);
--               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-+               retval = request_irq(irqnum, &usb_hcd_irq, irqflags|IRQF_NO_THREAD,
-                                hcd->irq_descr, hcd);
-                if (retval != 0) {
-                        dev_err(hcd->self.controller,
+As I said in my previous email at 10:15 (EST) on Sunday:
+>> lawyers disagree, and will often just take the position their client
+>> wants them to take ...
 
-(KMail outputs your mail as base64 and cut&paste did not retain tabs.)
+I realize fully, Larry, that you're taking the position of your client,
+whom you've identified as Rising Tide Systems.  Meanwhile, obviously, I
+know many lawyers who disagree with your widely known interpretation of
+the implications of the two cases you mention.
 
-gives:
+I'd suspect that most lawyers looking at this situation would probably
+agree with me that the facts aren't fully known enough to make an
+assessment about the derivative nature of any code involved (other that
+the code that Rising Tide Systems pushed upstream already).  While the
+facts regarding other code are presumably fully known to you, Larry,
+because you have extra information under attorney-client privilege from
+your client Rising Tide Systems, no one else can make an independent
+evaluation of the facts yet.
 
-1) with threadirqs enabled: No action at all when inserting USB sticks,
-nothing in dmesg.
+I therefore suggest that Andy be permitted to continue seeking facts on
+this question without being squelched, and we see what the facts bear
+out.  If some copyright holders believe a violation has occurred,
+provided the facts can be ascertained (which might prove difficult,
+given the political climate this thread has created), I'm sure those
+copyright holders will take up the matter at that point.
 
-2) with threadirqs disabled: USB sticks work normal.
+> Second, we are grateful for the efforts that Bradley Kuhn and others
+> put in to enforce the GPL.
 
-So your patch fixed the CPU lockup by disabling USB altogether, when
-thread IRQs are active it seems. :) Or I made a mistake while manually
-applying your patch. Seems okay to me tough.
+Thank you.
 
+> So Brad[ley], we may solicit your assistance if we find any third
+> party who is distributing an unauthorized non-GPL derivative work of
+> the scsi target now in Linux.
 
-PS: I think that thread IRQs for USB based interrupts might not be a good
-from another experience I had with an ThinkPad T42 and USB sound card
-Sonica Theater. I was not able to have it produce fluent sound with
-Phonon Gstreamer or Phonon VLC from Amarok playing back music unless
-I disabled threadirqs on that machine as well. Often I just heard a view
-seconds of sound at the beginning and then nothing more at all. Works fine
-with thread IRQs disabled. At least from VLC backend. Gives about 30% CPU
-usage for that interrupt with thread IRQs enabled. Card is USB 1.1 only.
+Conservancy is a 501(c)(3) charity in the USA and is thus not able to
+engage in copyright enforcement action on behalf of for-profit companies
+like Rising Tide Systems.  However, individual copyright holders who
+wish to put their copyrights forward as part of the coalition described
+in Conservancy's May announcement at
+http://sfconservancy.org/news/2012/may/29/compliance/ are welcome to do
+so, provided those copyright holders agree in writing that their
+copyrights will only be enforced to advance the public's access to Free
+Software. (Details of that can be discussed in private email; feel free
+to contact me if you're an individual copyright holder in Linux and
+interested in discussing it.)
 
-Ciao,
+Larry, Conservancy *could* accept a charitable donation of
+copyright assignment to Conservancy if Rising Tide Systems wishes to
+do that.  Feel free to contact my privately if your client is
+interested in that.
+
+> RTS, of course, retains the exclusive right to do so, but no third
+> party can do so without a license from RTS.
+
+I'm sure you agree that Rising Tide Systems has already granted a
+license under GPLv2 for their contributions to Linux, so parties
+redistributing the derivatives of their code that are part of upstream
+Linux already have a license under GPLv2 for that specific code.
+
+> P.S. In accordance with my obligations as an attorney when
+> communicating with a represented person, I am copying attorneys for
+> Red Hat and Linux Foundation on this email.
+
+This inclusion seems a bit more than necessary to me, but I'm always
+happy to have Karen Copenhaver's and Richard Fontana's input on any
+situation where they're willing to opine. :)
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Bradley M. Kuhn, Executive Director, Software Freedom Conservancy
