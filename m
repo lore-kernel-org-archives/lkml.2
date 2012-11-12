@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab2KLOKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:10:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57830 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2KLOKM (ORCPT
+	id S1753322Ab2KLOKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:10:55 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48582 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab2KLOKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:10:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet.Gupta1@synopsys.com
-Subject: Re: [RFC Patch v1 52/55] ARC: Support for single cycle Close Coupled Mem (CCM)
-Date: Mon, 12 Nov 2012 14:10:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-22-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1352720953-24321-22-git-send-email-vgupta@synopsys.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 12 Nov 2012 09:10:53 -0500
+Date: Mon, 12 Nov 2012 14:15:38 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: Re: scsi target, likely GPL violation
+Message-ID: <20121112141538.19c90be8@pyramind.ukuu.org.uk>
+In-Reply-To: <20121112140843.GC4895@thunk.org>
+References: <509A915B.30105@redhat.com>
+	<1352626456.6524.46.camel@dabdike>
+	<20121111130553.GA30943@thunk.org>
+	<87390gxjbd.fsf@ebb.org>
+	<20121112140843.GC4895@thunk.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211121410.02682.arnd@arndb.de>
-X-Provags-ID: V02:K0:7LbtWjCXqlQ79/O2+yZFz/w9COxp2ZHiwGMnbHOXxHY
- Nu21uCdX1/egFnS99QAkXxFuUgUVNj+9GCuV13PbvJDVFZR8UO
- UzHSdezD0EoT67s/n7PYkonds4ZaE3NGEDSw1zPeemQ+/amk2S
- OtmgzpTqdoMM+Mmg3yUocfOvQJCEeUjXRjzYrTfpHI7HsscVja
- EKBIQ35dPKNU6C39k42AOwSjfBZ94PycyHpZMF2tc05+/wH0PX
- ySv7g3LFUPDJLqKBpPaNHzSL2ieXHQAL4pBY02v1q3W5tWyFKS
- 1yf2xa6iQ8R7mFVV8qrCbYb15EeL6986NFrM0AFsUugDqD7NUe
- k9PPqEH9w4i/ov1FKCtc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
-> +config ARC_DCCM_SZ
-> +       int "DCCM Size in KB"
-> +       default "64"
-> +       depends on ARC_HAS_DCCM
-> +
-> +config ARC_DCCM_BASE
-> +       hex "DCCM map address"
-> +       default "0xA0000000"
-> +       depends on ARC_HAS_DCCM
-> +
+On Mon, 12 Nov 2012 09:08:43 -0500
+"Theodore Ts'o" <tytso@mit.edu> wrote:
 
-I suppose these should be configured from the device tree at boot time, not
-during the build process.
+> On Sun, Nov 11, 2012 at 10:15:02AM -0500, Bradley M. Kuhn wrote:
+> > Andy's initial email ended with the request: "Please explain."  Thus,
+> > Andy's email seemed designed to seek facts, which I think is a
+> > reasonable and good thing to do here.  Meanwhile, the facts *still*
+> > aren't clear here yet.
+> 
+> ... and the statement, "When did you stop beating your wife?" is also
+> a request for information?
 
-I also wonder if the interface should be unified with what we use for
-accessing the sram on some of the ARM platforms.
-
-	Arnd
+Ted can you explain what this has to do with the original discussion ?
