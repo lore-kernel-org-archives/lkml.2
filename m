@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2KLVWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:22:06 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36287 "EHLO
+	id S1754222Ab2KLVWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:22:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36293 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab2KLVTk (ORCPT
+	with ESMTP id S1754110Ab2KLVTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:40 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 32/46] x86, mm: change low/hignmem_pfn_init to static on 32bit
-Date: Mon, 12 Nov 2012 13:18:28 -0800
-Message-Id: <1352755122-25660-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 41/46] x86, mm: Use clamp_t() in init_range_memory_mapping
+Date: Mon, 12 Nov 2012 13:18:37 -0800
+Message-Id: <1352755122-25660-42-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
@@ -26,32 +26,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+save some lines, and make code more readable.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_32.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c |   21 +++++----------------
+ 1 files changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 0ae1ba8..322ee56 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -575,7 +575,7 @@ early_param("highmem", parse_highmem);
-  * artificially via the highmem=x boot parameter then create
-  * it:
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 028a129..3c48114 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -354,31 +354,20 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+  * this one could take range with hole in it.
   */
--void __init lowmem_pfn_init(void)
-+static void __init lowmem_pfn_init(void)
+ static unsigned long __init init_range_memory_mapping(
+-					   unsigned long range_start,
+-					   unsigned long range_end)
++					   unsigned long r_start,
++					   unsigned long r_end)
  {
- 	/* max_low_pfn is 0, we already have early_res support */
- 	max_low_pfn = max_pfn;
-@@ -611,7 +611,7 @@ void __init lowmem_pfn_init(void)
-  * We have more RAM than fits into lowmem - we try to put it into
-  * highmem, also taking the highmem=x boot parameter into account:
-  */
--void __init highmem_pfn_init(void)
-+static void __init highmem_pfn_init(void)
- {
- 	max_low_pfn = MAXMEM_PFN;
+ 	unsigned long start_pfn, end_pfn;
+ 	unsigned long mapped_ram_size = 0;
+ 	int i;
+ 
+ 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
+-		u64 start = (u64)start_pfn << PAGE_SHIFT;
+-		u64 end = (u64)end_pfn << PAGE_SHIFT;
+-
+-		if (end <= range_start)
+-			continue;
+-
+-		if (start < range_start)
+-			start = range_start;
+-
+-		if (start >= range_end)
++		u64 start = clamp_val(PFN_PHYS(start_pfn), r_start, r_end);
++		u64 end = clamp_val(PFN_PHYS(end_pfn), r_start, r_end);
++		if (start >= end)
+ 			continue;
+ 
+-		if (end > range_end)
+-			end = range_end;
+-
+ 		init_memory_mapping(start, end);
+-
+ 		mapped_ram_size += end - start;
+ 	}
  
 -- 
 1.7.7
