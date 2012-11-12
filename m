@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab2KLNx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:53:27 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50584 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab2KLNxZ (ORCPT
+	id S1753074Ab2KLNyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:54:51 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50604 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2KLNyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:53:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet.Gupta1@synopsys.com
-Subject: Re: [RFC Patch v1 37/55] ARC: dynamic loadable module support
-Date: Mon, 12 Nov 2012 13:53:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-7-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1352720953-24321-7-git-send-email-vgupta@synopsys.com>
+	Mon, 12 Nov 2012 08:54:50 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211121353.15314.arnd@arndb.de>
-X-Provags-ID: V02:K0:cq4MCLJEN2V7mMoqktg0a6k/0WiZqb32nFQMVYv2gjs
- t7F/vwR3gndrl5IyX/n8kuua6Z1a9WUv7h7g0AkwPZ8ZjO026r
- lkzbFqt1jchrmxt4/G43u1W60hN7vRyJjpt6FMpr8Fe9mS/HhG
- P9ovWEr3+3u4FyJQE0++214NiFB+6JVmCdBrZkiwGffYI8NC4K
- U7l9/ckGpXwOPFEuaiv+Z45BiRCwzBDvQoGAdpjpfb/0phAtcU
- 1wkNNP+vWle5H84onh1QQ+srZednNDFIpC7iDjvHNOsXxev8zD
- 93yAxj5QcJI4wiV1/vhlJzw6B1LDIV85HSaPcNxM8IcVR3Ihz8
- wgYZv4q02voT/EQQe+d4=
+In-Reply-To: <1352719406-26405-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1352719406-26405-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Mon, 12 Nov 2012 19:24:49 +0530
+X-Google-Sender-Auth: -sFOqXPtv_CEJCv_t0Y67NBsNZM
+Message-ID: <CAOh2x=m9TyMOhh=nCD0nznEBy6jN7eUddp7hLT7TnCf0xM07dA@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: absence of pdata isn't critical when autocfg is set
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
-> +void *module_alloc(unsigned long size)
-> +{
-> +       if (size == 0)
-> +               return NULL;
-> +
-> +       return vmalloc(size);
-> +
-> +}
-> +
-> +void module_free(struct module *module, void *region)
-> +{
-> +       vfree(region);
-> +}
-> +
-> +int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
-> +                             char *secstr, struct module *mod)
-> +{
-> +    return 0;
-> +}
-> +
-> +void module_arch_cleanup(struct module *mod)
-> +{
-> +}
-> +
-> +int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
-> +                   struct module *mod)
-> +{
-> +    return 0;
-> +} 
+On Mon, Nov 12, 2012 at 4:53 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
 
-All of these are identical to the default implementation in kernel/module.c
-and you can simply drop your own definitions.
+>  static int __devinit dw_probe(struct platform_device *pdev)
+>  {
+>         struct dw_dma_platform_data *pdata;
+> @@ -1604,9 +1610,6 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>         if (!pdata)
+>                 pdata = dw_dma_parse_dt(pdev);
+>
+> -       if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
+> -               return -EINVAL;
+> -
+>         io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         if (!io)
+>                 return -EINVAL;
+> @@ -1622,6 +1625,12 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>         dw_params = dma_read_byaddr(regs, DW_PARAMS);
+>         autocfg = dw_params >> DW_PARAMS_EN & 0x1;
+>
+> +       if (!pdata && autocfg)
+> +               pdata = &dw_dma_pdata;
 
-	Arnd
+Allocate it dynamically to support multiple controllers with different
+configuration
+in a SoC.
