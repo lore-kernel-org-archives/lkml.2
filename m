@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab2KLOET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:04:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628Ab2KLOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:04:18 -0500
-Message-ID: <50A0FC2F.9030207@redhat.com>
-Date: Mon, 12 Nov 2012 08:39:59 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753335Ab2KLOIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:08:51 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:60647 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab2KLOIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 09:08:49 -0500
+Date: Mon, 12 Nov 2012 09:08:43 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: Re: scsi target, likely GPL violation
+Message-ID: <20121112140843.GC4895@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Bradley M. Kuhn" <bkuhn@sfconservancy.org>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Andy Grover <agrover@redhat.com>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	target-devel <target-devel@vger.kernel.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Marc Fleischmann <mwf@risingtidesystems.com>,
+	Nicholas Bellinger <nab@risingtidesystems.com>
+References: <509A915B.30105@redhat.com>
+ <1352626456.6524.46.camel@dabdike>
+ <20121111130553.GA30943@thunk.org>
+ <87390gxjbd.fsf@ebb.org>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: ensure safe rb_subtree_gap update when inserting
- new VMA
-References: <1352721091-27022-1-git-send-email-walken@google.com> <1352721091-27022-2-git-send-email-walken@google.com>
-In-Reply-To: <1352721091-27022-2-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87390gxjbd.fsf@ebb.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 06:51 AM, Michel Lespinasse wrote:
-> Using the trinity fuzzer, Sasha Levin uncovered a case where
-> rb_subtree_gap wasn't correctly updated.
->
-> Digging into this, the root cause was that vma insertions and removals
-> require both an rbtree insert or erase operation (which may trigger
-> tree rotations), and an update of the next vma's gap (which does not
-> change the tree topology, but may require iterating on the node's
-> ancestors to propagate the update). The rbtree rotations caused the
-> rb_subtree_gap values to be updated in some of the internal nodes, but
-> without upstream propagation. Then the subsequent update on the next
-> vma didn't iterate as high up the tree as it should have, as it
-> stopped as soon as it hit one of the internal nodes that had been
-> updated as part of a tree rotation.
->
-> The fix is to impose that all rb_subtree_gap values must be up to date
-> before any rbtree insertion or erase, with the possible exception that
-> the node being erased doesn't need to have an up to date rb_subtree_gap.
->
-> This change: during vma insertion, make sure to update the rb_subtree_gap
-> values for both the current and next vmas prior to rebalancing the rbtree
-> to account for the just-inserted vma.
->
-> (Thanks to Sasha Levin for uncovering the problem and to Hugh Dickins
-> for coming up with a simpler test case)
->
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+On Sun, Nov 11, 2012 at 10:15:02AM -0500, Bradley M. Kuhn wrote:
+> Andy's initial email ended with the request: "Please explain."  Thus,
+> Andy's email seemed designed to seek facts, which I think is a
+> reasonable and good thing to do here.  Meanwhile, the facts *still*
+> aren't clear here yet.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+... and the statement, "When did you stop beating your wife?" is also
+a request for information?
 
-
--- 
-All rights reversed
+							- Ted
