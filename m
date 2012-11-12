@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2KLMro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:47:44 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38830 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab2KLMrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:47:42 -0500
-Message-ID: <50A0EFE7.9010100@gmail.com>
-Date: Mon, 12 Nov 2012 20:47:35 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: venkat.x.venkatsubra@oracle.com, David Miller <davem@davemloft.net>,
-        rds-devel@oss.oracle.com, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/9] net: rds: use this_cpu_ptr per-cpu helper
-References: <509C687E.1080106@gmail.com> <0000013ae6cadebe-0e44d6a0-5e8c-4ded-a337-d2f41f2ab0e4-000000@email.amazonses.com>
-In-Reply-To: <0000013ae6cadebe-0e44d6a0-5e8c-4ded-a337-d2f41f2ab0e4-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752346Ab2KLMsn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:48:43 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:57565 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751552Ab2KLMsm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 07:48:42 -0500
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
+Date: Mon, 12 Nov 2012 14:48:33 +0200
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C26F7AC2-3C0E-47BF-AC37-BB1F1E246145@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <-4237940489086529028@unknownmsgid> <559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com> <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter said, at 2012/11/10 4:09:
->> -	chp = per_cpu_ptr(cache->percpu, smp_processor_id());
->> +	chp = this_cpu_ptr(cache->percpu);
->>  	if (!chp->first)
+Hi Joel,
+
+Again, sorry for the late reply due to travel.
+
+On Nov 10, 2012, at 5:36 AM, Joel A Fernandes wrote:
+
+> Hi Pantelis,
 > 
-> if (!__this_cpu_read(cache-0>percpu->first))
+> On Fri, Nov 9, 2012 at 2:13 AM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
 > 
-> ?
+>>>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
+>>>>>      and passes the resolved tree to the kernel.
+>>>>> 
+>>>> 
+>>>> Could be made to work. Only really required if Joanne wants the
+>>>> cape interface to work for u-boot too. For example if the cape has some
+>>>> kind of network interface that u-boot will use to boot from.
+>>>> 
+>>> 
+>>> I love Grant's hashing idea a lot keeping the phandle problem for
+>>> compile time and not requiring fixups.
+>>> 
+>>> IMO it is still a cleaner approach if u-boot does the tree merging for
+>>> all cases, and not the kernel.
+>>> 
+>>> That way from a development standpoint, very little or nothing will
+>>> have to be changed in kernel (except for scripts/dtc) considering we
+>>> are moving forward with hashing.
+>>> 
+>>> Also this discussed a while back but at some point is going to brought
+>>> up again-  loading of dt fragment directly from EEPROM and merging at
+>>> run time. If we were to implement this in kernel, we would have to add
+>>> cape specific EEPROM reading code, merge the tree before it is
+>>> unflattened and parse. I think doing tree merging in kernel is messy
+>>> and we should do it in uboot. Ideally reading the fragment from the
+>>> EEPROM for all capes and merging without worrying about version
+>>> detection, Doing the merge and passing the merged blob to the kernel
+>>> which (kernel) works the same way it does today.
+>> 
+>> Not going to work, for a lot of cases. Doing it in the kernel seems to be
+>> the cleaner option. There are valid use cases for doing in u-boot too.
+> 
+> True, if dynamic runtime stuff from userspace is what we're talking
+> about, then yeah I see the important need for kernel to do the merge.
+> 
 
-__percpu annotations in struct rds_ib_refill_cache is missing.
+Kernel doing the merge is our use case, and I feel it's the use case of
+about 90% of users.
 
-you mean that read/write fields of struct rds_ib_cache_head
-using __this_cpu_* operation like following?
-How about it?
+u-boot doing the merge is the rest.
 
-diff --git a/net/rds/ib.h b/net/rds/ib.h
-index 8d2b3d5..7280ab8 100644
---- a/net/rds/ib.h
-+++ b/net/rds/ib.h
-@@ -50,7 +50,7 @@ struct rds_ib_cache_head {
- };
- 
- struct rds_ib_refill_cache {
--	struct rds_ib_cache_head *percpu;
-+	struct rds_ib_cache_head __percpu *percpu;
- 	struct list_head	 *xfer;
- 	struct list_head	 *ready;
- };
-diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
-index 8d19491..8c5bc85 100644
---- a/net/rds/ib_recv.c
-+++ b/net/rds/ib_recv.c
-@@ -418,20 +418,21 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
- 				 struct rds_ib_refill_cache *cache)
- {
- 	unsigned long flags;
--	struct rds_ib_cache_head *chp;
- 	struct list_head *old;
-+	struct list_head __percpu *chpfirst;
- 
- 	local_irq_save(flags);
- 
--	chp = per_cpu_ptr(cache->percpu, smp_processor_id());
--	if (!chp->first)
-+	chpfirst = __this_cpu_read(cache->percpu->first);
-+	if (!chpfirst)
- 		INIT_LIST_HEAD(new_item);
- 	else /* put on front */
--		list_add_tail(new_item, chp->first);
--	chp->first = new_item;
--	chp->count++;
-+		list_add_tail(new_item, chpfirst);
- 
--	if (chp->count < RDS_IB_RECYCLE_BATCH_COUNT)
-+	__this_cpu_write(chpfirst, new_item);
-+	__this_cpu_inc(cache->percpu->count);
-+
-+	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
- 		goto end;
- 
- 	/*
-@@ -443,12 +444,13 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
- 	do {
- 		old = xchg(&cache->xfer, NULL);
- 		if (old)
--			list_splice_entire_tail(old, chp->first);
--		old = cmpxchg(&cache->xfer, NULL, chp->first);
-+			list_splice_entire_tail(old, chpfirst);
-+		old = cmpxchg(&cache->xfer, NULL, chpfirst);
- 	} while (old);
- 
--	chp->first = NULL;
--	chp->count = 0;
-+
-+	__this_cpu_write(chpfirst, NULL);
-+	__this_cpu_write(cache->percpu->count, 0);
- end:
- 	local_irq_restore(flags);
- }
+>>> Alternatively to hashing, reading david gibsons paper I followed,
+>>> phandle is supposed to 'uniquely' identity node. I wonder why the node
+>>> name itself is not sufficient to unquiely identify. The code that does
+>>> the tree walking can then just strcmp the node name while it walks the
+>>> tree instead of having to find a node with a phandle number. I guess
+>>> the reason is phandles are small to store as data values. Another
+>>> approach can be to arrange the string block in alphabetical order
+>>> (unless it already is), and store phandle as index of the node name
+>>> referenced relative to the starting of the strong block. This will not
+>>> affect nodes in dtb being moved around since they will still have the
+>>> same index value. the problem being adding or removing nodes Changes
+>>> the offsets of all other nodes in the string block as well.. Hmm.
+>>> 
+>> 
+>> This is pretty radical change to the DT format, no?
+> 
+> Yes, true and the only way hypothetically to replace the phandle
+> tree-walking mechanism is to store node paths instead of phandle which
+> David pointed is too long to store, so I guess this wont work after
+> all. Anyway this was an interesting exercise, thanks.
+> 
+
+It is always nice to have a fresh perspective. Thank you.
+
+> Regards,
+> Joel
+
+Regards
+
+-- Pantelis
 
