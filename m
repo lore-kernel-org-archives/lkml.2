@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2KLCK4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 21:10:56 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48860 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2KLCKz (ORCPT
+	id S1752211Ab2KLCYp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 21:24:45 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:16167 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2KLCYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 21:10:55 -0500
-X-AuditID: 9c930197-b7b45ae000000e9e-90-50a05aaca58d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Irina Tirdea <irina.tirdea@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Vinson Lee <vlee@twitter.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, acme@ghostprotocols.net,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-References: <1352497390-17716-1-git-send-email-acme@infradead.org>
-Date: Mon, 12 Nov 2012 11:10:52 +0900
-In-Reply-To: <1352497390-17716-1-git-send-email-acme@infradead.org> (Arnaldo
-	Carvalho de Melo's message of "Fri, 9 Nov 2012 18:42:49 -0300")
-Message-ID: <87390fo9jn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 11 Nov 2012 21:24:44 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-70-50a05deabe59
+Message-id: <50A05DE9.8070907@samsung.com>
+Date: Mon, 12 Nov 2012 11:24:41 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
+ Thunderbird/16.0.1
+MIME-version: 1.0
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, cjb@laptop.org,
+        patches@linaro.org
+Subject: Re: [PATCH 0/8] Fix coding style in sdhci.c
+References: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
+In-reply-to: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t8zXd1XsQsCDJb9l7C4vGsOm8WR//2M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXMOf6IseAOe8W3G6ENjDPYuhg5OSQETCRe/OxlhLDF
+	JC7cWw8U5+IQEljGKLFt/2ommKKtiw+zQySmM0psXTGdBcJ5ySjx78h+VpAqXgEtidkNh8DG
+	sgioShxb2ARmswnoSGz/dhxoEgeHqECYxM7N6RDlghI/Jt9jAbFFgEoeLNoLZjMLJEq8X30a
+	bKQw0OK9T3+xgLQKCXhIvPlZBxLmFPCU+NI/kRmiXEdif+s0NghbXmLzmrfMEBcISHybfAis
+	VUJAVmLTAWaIV9rZJc73+kLYkhIHV9xgmcAoNgvJQbOQTJ2FZOoCRuZVjKKpBckFxUnpuYZ6
+	xYm5xaV56XrJ+bmbGCFxIbWDcWWDxSFGAQ5GJR5eycAFAUKsiWXFlbmHGCU4mJVEeKeJAIV4
+	UxIrq1KL8uOLSnNSiw8x+gAdO5FZSjQ5HxizeSXxhsYGxoaGloZmppamBjiElcR5mz1SAoQE
+	0hNLUrNTUwtSi2DGMXFwSjUwWp12kGAu4zzNtINJ6ov36YVTmDcwNqy/r7l8k7/ZhZf8STMX
+	7ZhUYPTi+frddqITPlzz7b/bVxH6XG/Sn7u53yf2bDQNv62QxrzChqGSt5DZ9frj2UZ1V7Ta
+	VMUD7fY3fu1+ctG/eNdZDufb4rL2B6aJvVBdJPdyZ8nrvjyTxj1+opcq6vLMlFiKMxINtZiL
+	ihMBzeKkULgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jQd1XsQsCDC6dF7a4vGsOm8WR//2M
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmzDn+iLHgDnvF
+	txuhDYwz2LoYOTkkBEwkti4+zA5hi0lcuLceKM7FISQwnVFi64rpLBDOS0aJf0f2s4JU8Qpo
+	ScxuOATWzSKgKnFsYROYzSagI7H923GmLkYODlGBMImdm9MhygUlfky+xwJiiwCVPFi0F8xm
+	FkiUeL/6NNhIYaAj9j79xQLSKiTgIfHmZx1ImFPAU+JL/0RmiHIdif2t09ggbHmJzWveMk9g
+	FJiFZMMsJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcd8+kdjCubLA4xCjA
+	wajEwysZuCBAiDWxrLgy9xCjBAezkgjvNBGgEG9KYmVValF+fFFpTmrxIUYfoP8nMkuJJucD
+	U0JeSbyhsYmZkaWRmbGJubExDmElcd5mj5QAIYH0xJLU7NTUgtQimHFMHJxSDYwnb3p9v6vJ
+	PXOPMEf2v7+ORxSy2cwkDP/avz18q/eWn72S8ZI7gXMnh32Q1fnALLPkhpRo3LwfrXxWEz/+
+	UC9/+bxn69Mrs7dkbd3HZCKqlpK1+uS7IBWbabHzX4psW8/gJ6HL+F6tPYX9XMu3/KV7i+u6
+	j9zhEheOfme/XXk/U8xZCdnJq14qsRRnJBpqMRcVJwIAsgxOe+gCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Hi Tushar,
 
-On Fri,  9 Nov 2012 18:42:49 -0300, Arnaldo Carvalho de Melo wrote:
-> Hi Ingo,
->
-> 	Please consider pulling.
->
-> - Arnaldo
->
-> The following changes since commit 8dfec403e39b7c37fd6e8813bacc01da1e1210ab:
->
->   perf tests: Removing 'optional' field (2012-11-05 14:03:59 -0300)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
->
-> for you to fetch changes up to 27f94d52394003d444a383eaf8d4824daf32432e:
->
->   tools lib traceevent: Use 'const' in variables pointing to const strings (2012-11-09 17:42:47 -0300)
->
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
->
-> . Add a 'link' method for hists, so that we can have the leader with
->   buckets for all the entries in all the hists.  This new method
->   is now used in the default 'diff' output, making the sum of the 'baseline'
->   column be 100%, eliminating blind spots. Now we need to use this
->   for 'diff' with > 2 perf.data files and for multi event 'report' and
->   'annotate'.
+Could you make one patch? Why do you separate patches?
 
-I'm not sure it can be used for group report at least in its current
-form.  IIUC it connects multiple hist entries using a list head and
-create a dummy entry in the leader if need be.  But it didn't handle
-non-leader entries so it's hard to tell which is which if less entries
-are present only.  For example consider following case:
+Best Regards,
+Jaehoon Chung
 
-	leader		member1		member2
-	A		A		A
-	B
-			C
-					D
+On 11/09/2012 08:39 PM, Tushar Behera wrote:
+> Documents/CodingStyle Chapter 3 recommends usage of braces for both
+> if and else statements if any of the branches contains multiple
+> statements.
+> 
+> Cleaning up drivers/mmc/host/sdhci.c for all these occurrences.
+> 
+> Tushar Behera (8):
+>   mmc: sdhci: fix coding style in sdhci_calc_timeout
+>   mmc: sdhci: fix coding style in sdhci_set_transfer_mode
+>   mmc: sdhci: fix coding style in sdhci_finish_data
+>   mmc: sdhci: fix coding style in sdhci_set_clock
+>   mmc: sdhci: fix coding style in sdhci_do_set_ios
+>   mmc: sdhci: fix coding style in sdhci_execute_tuning
+>   mmc: sdhci: fix coding style in sdhci_data_irq
+>   mmc: sdhci: fix coding style in sdhci_add_host
+> 
+>  drivers/mmc/host/sdhci.c |   58 +++++++++++++++++++++++++--------------------
+>  1 files changed, 32 insertions(+), 26 deletions(-)
+> 
 
-where leader, member1 and member2 are evsel/hists and A, B, C and D are
-hist entries.  After 'linking' the entries the leader will have
-following linkage:
-
-	leader
-	A	->	A	->	A
-	B
-	C (dummy) ->	C
-	D (dummy)		->	D
-
-In this case, for entry A the leader can determine which entry came from
-which hists by looking its order in the list.  For entry B the leader
-can use zero value for them since the list is empty.  However for
-entries C and D, it cannot know which one is the right hists unless it
-records a hist index or creates dummy entry and insert it in a correct
-order (looks far from an optimal solution).  Am I missing something?
-
-Thanks,
-Namhyung
