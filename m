@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab2KLLvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:51:32 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:51552 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab2KLLv2 (ORCPT
+	id S1753172Ab2KLLvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:51:41 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:35818 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab2KLLvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:51:28 -0500
+	Mon, 12 Nov 2012 06:51:37 -0500
 From: <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tglx@linutronix.de>, <arnd@arndb.de>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC Patch v1 44/55] ARC: kprobes support
-Date: Mon, 12 Nov 2012 17:19:02 +0530
-Message-ID: <1352720953-24321-14-git-send-email-vgupta@synopsys.com>
+Subject: [RFC Patch v1 45/55] ARC: unaligned access emulation
+Date: Mon, 12 Nov 2012 17:19:03 +0530
+Message-ID: <1352720953-24321-15-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
 References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
@@ -26,39 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vineet Gupta <vgupta@synopsys.com>
 
-Origin port done by Rajeshwar Ranga <rajeshwar.ranga@gmail.com>
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig               |    2 +
- arch/arc/include/asm/kprobes.h |   62 +++++
- arch/arc/kernel/Makefile       |    1 +
- arch/arc/kernel/disasm.c       |    5 +-
- arch/arc/kernel/kprobes.c      |  525 ++++++++++++++++++++++++++++++++++++++++
- arch/arc/kernel/traps.c        |   13 +
- 6 files changed, 605 insertions(+), 3 deletions(-)
- create mode 100644 arch/arc/include/asm/kprobes.h
- create mode 100644 arch/arc/kernel/kprobes.c
+ arch/arc/Kconfig                 |    9 ++
+ arch/arc/include/asm/Kbuild      |    1 -
+ arch/arc/include/asm/ptrace.h    |    3 +
+ arch/arc/include/asm/unaligned.h |   29 +++++
+ arch/arc/kernel/Makefile         |    3 +-
+ arch/arc/kernel/disasm.c         |    2 +-
+ arch/arc/kernel/entry.S          |   13 ++
+ arch/arc/kernel/traps.c          |   26 +++++
+ arch/arc/kernel/unaligned.c      |  225 ++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 308 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arc/include/asm/unaligned.h
+ create mode 100644 arch/arc/kernel/unaligned.c
 
 diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 26609d6..3ef21be 100644
+index 3ef21be..81d78fc 100644
 --- a/arch/arc/Kconfig
 +++ b/arch/arc/Kconfig
-@@ -22,6 +22,8 @@ config ARC
- 	select GENERIC_SMP_IDLE_THREAD
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_GENERIC_HARDIRQS
-+	select HAVE_KPROBES
-+	select HAVE_KRETPROBES
- 	select HAVE_MOD_ARCH_SPECIFIC if ARC_DW2_UNWIND
- 	select HAVE_OPROFILE
- 	select HOTPLUG if !INITRAMFS_SOURCE=""
-diff --git a/arch/arc/include/asm/kprobes.h b/arch/arc/include/asm/kprobes.h
+@@ -343,6 +343,15 @@ config ARC_CURR_IN_REG
+ 	  This reserved Register R25 to point to Current Task in
+ 	  kernel mode. This saves memory access for each such access
+ 
++
++config ARC_MISALIGN_ACCESS
++	bool "Emulate unaligned memory access (userspace only)"
++	default N
++	help
++	  This enables misaligned 16 & 32 bit memory access from user space.
++	  Use ONLY-IF-ABS-NECESSARY as it will be very slow and also can hide
++	  potential bugs in code
++
+ config ARC_STACK_NONEXEC
+ 	bool "Make stack non-executable"
+ 	default n
+diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
+index a246390..06ca702 100644
+--- a/arch/arc/include/asm/Kbuild
++++ b/arch/arc/include/asm/Kbuild
+@@ -51,7 +51,6 @@ generic-y += termios.h
+ generic-y += topology.h
+ generic-y += types.h
+ generic-y += ucontext.h
+-generic-y += unaligned.h
+ generic-y += user.h
+ generic-y += vga.h
+ generic-y += xor.h
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index bb621e8..2843dd4 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -117,6 +117,9 @@ struct user_regs_struct {
+ /* return 1 if user mode or 0 if kernel mode */
+ #define user_mode(regs) (regs->status32 & STATUS_U_MASK)
+ 
++/* return 1 if PC in delay slot */
++#define delay_mode(regs) ((regs->status32 & STATUS_DE_MASK) == STATUS_DE_MASK)
++
+ /* return 1 if in syscall, 0 if Intr or Exception */
+ #define in_syscall(regs) (((regs->orig_r8) >= 0 && \
+ 			   (regs->orig_r8 <= NR_syscalls)) ? 1 : 0)
+diff --git a/arch/arc/include/asm/unaligned.h b/arch/arc/include/asm/unaligned.h
 new file mode 100644
-index 0000000..4d9c211
+index 0000000..5dbe63f
 --- /dev/null
-+++ b/arch/arc/include/asm/kprobes.h
-@@ -0,0 +1,62 @@
++++ b/arch/arc/include/asm/unaligned.h
+@@ -0,0 +1,29 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -67,668 +101,375 @@ index 0000000..4d9c211
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ARC_KPROBES_H
-+#define _ARC_KPROBES_H
++#ifndef _ASM_ARC_UNALIGNED_H
++#define _ASM_ARC_UNALIGNED_H
 +
-+#ifdef CONFIG_KPROBES
++/* ARC700 can't handle unaligned Data accesses. */
 +
-+typedef u16 kprobe_opcode_t;
++#include <asm-generic/unaligned.h>
++#include <asm/ptrace.h>
 +
-+#define UNIMP_S_INSTRUCTION 0x79e0
-+#define TRAP_S_2_INSTRUCTION 0x785e
-+
-+#define MAX_INSN_SIZE   8
-+#define MAX_STACK_SIZE  64
-+
-+struct arch_specific_insn {
-+	int is_short;
-+	kprobe_opcode_t *t1_addr, *t2_addr;
-+	kprobe_opcode_t t1_opcode, t2_opcode;
-+};
-+
-+#define flush_insn_slot(p)  do {  } while (0)
-+
-+#define kretprobe_blacklist_size    0
-+
-+struct kprobe;
-+
-+void arch_remove_kprobe(struct kprobe *p);
-+
-+int kprobe_exceptions_notify(struct notifier_block *self,
-+			     unsigned long val, void *data);
-+
-+struct prev_kprobe {
-+	struct kprobe *kp;
-+	unsigned long status;
-+};
-+
-+struct kprobe_ctlblk {
-+	unsigned int kprobe_status;
-+	struct pt_regs jprobe_saved_regs;
-+	char jprobes_stack[MAX_STACK_SIZE];
-+	struct prev_kprobe prev_kprobe;
-+};
-+
-+int kprobe_fault_handler(struct pt_regs *regs, unsigned long cause);
-+void kretprobe_trampoline(void);
-+void trap_is_kprobe(unsigned long cause, unsigned long address,
-+			   struct pt_regs *regs);
++#ifdef CONFIG_ARC_MISALIGN_ACCESS
++int misaligned_fixup(unsigned long address, struct pt_regs *regs,
++		     unsigned long cause, struct callee_regs *cregs);
 +#else
-+static void trap_is_kprobe(unsigned long cause, unsigned long address,
-+			   struct pt_regs *regs)
++static inline int
++misaligned_fixup(unsigned long address, struct pt_regs *regs,
++		 unsigned long cause, struct callee_regs *cregs)
 +{
++	return 0;
 +}
 +#endif
 +
-+#endif
++#endif /* _ASM_ARC_UNALIGNED_H */
 diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index 1fc0461..442d024 100644
+index 442d024..52ef6ce 100644
 --- a/arch/arc/kernel/Makefile
 +++ b/arch/arc/kernel/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
+@@ -9,13 +9,14 @@
+ CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
+ 
+ obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
+-	   signal.o traps.o sys.o troubleshoot.o stacktrace.o disasm.c
++	   signal.o traps.o sys.o troubleshoot.o stacktrace.o disasm.o
+ 
+ obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
  obj-$(CONFIG_ARC_DBG_EVENT_TIMELINE)	+= event-log.o
  obj-$(CONFIG_SMP) 			+= smp.o
  obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
-+obj-$(CONFIG_KPROBES)      		+= kprobes.o
+ obj-$(CONFIG_KPROBES)      		+= kprobes.o
++obj-$(CONFIG_ARC_MISALIGN_ACCESS) 	+= unaligned.o
  obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
  CFLAGS_fpu.o   += -mdpfp
  
 diff --git a/arch/arc/kernel/disasm.c b/arch/arc/kernel/disasm.c
-index 254d11a..51bad8f 100644
+index 51bad8f..2f39028 100644
 --- a/arch/arc/kernel/disasm.c
 +++ b/arch/arc/kernel/disasm.c
-@@ -497,9 +497,8 @@ void __kprobes set_reg(int reg, long val, struct pt_regs *regs,
-  * @pc +2/4/6 (ARCompact ISA allows free intermixing of 16/32 bit insns).
+@@ -15,7 +15,7 @@
+ #include <asm/disasm.h>
+ #include <asm/uaccess.h>
+ 
+-#if defined(CONFIG_KGDB) || defined(CONFIG_MISALIGN_ACCESS) || \
++#if defined(CONFIG_KGDB) || defined(CONFIG_ARC_MISALIGN_ACCESS) || \
+ 	defined(CONFIG_KPROBES)
+ 
+ /* disasm_instr: Analyses instruction at addr, stores
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 13d6feb..2ff15e0 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -12,6 +12,9 @@
+  *   needed before task_pt_regs was invented. This saves a branch per call
+  *   and more importantly allows clean invocation of post-syscall ptrace hook
   *
-  * If @pc is a branch
-- * 	-@tgt_if_br is set to branch target.
-- * 	-If branch has delay slot, @next_pc updated with actual next PC.
-- *
-+ *	-@tgt_if_br is set to branch target.
-+ *	-If branch has delay slot, @next_pc updated with actual next PC.
++ * vineetg: May 2011
++ *  -Userspace unaligned access emulation
++ *
+  * vineetg: Feb 2011 (ptrace low level code fixes)
+  *  -traced syscall return code (r0) was not saved into pt_regs for restoring
+  *   into user reg-file when traded task rets to user space.
+@@ -404,7 +407,17 @@ ARC_ENTRY EV_TLBProtV
+ 	mov r1, r4              ; faulting address
+ 	mov r2, sp              ; pt_regs
+ 
++#ifdef  CONFIG_ARC_MISALIGN_ACCESS
++	SAVE_CALLEE_SAVED_USER
++	mov r3, sp              ; callee_regs
++#endif
++
+ 	bl  do_misaligned_access
++
++#ifdef  CONFIG_ARC_MISALIGN_ACCESS
++	DISCARD_CALLEE_SAVED_USER
++#endif
++
+ 	b   ret_from_exception
+ 
+ ARC_EXIT EV_TLBProtV
+diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
+index c6396b4..d2bc5bd 100644
+--- a/arch/arc/kernel/traps.c
++++ b/arch/arc/kernel/traps.c
+@@ -7,6 +7,9 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  *
++ * vineetg: May 2011
++ *  -user-space unaligned access emulation
++ *
+  * Rahul Trivedi: Codito Technologies 2004
   */
- int __kprobes disasm_next_pc(unsigned long pc, struct pt_regs *regs,
- 			     struct callee_regs *cregs,
-diff --git a/arch/arc/kernel/kprobes.c b/arch/arc/kernel/kprobes.c
-new file mode 100644
-index 0000000..47e42f2
---- /dev/null
-+++ b/arch/arc/kernel/kprobes.c
-@@ -0,0 +1,525 @@
+ 
+@@ -16,6 +19,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/setup.h>
+ #include <asm/kprobes.h>
++#include <asm/unaligned.h>
+ 
+ void __init trap_init(void)
+ {
+@@ -79,7 +83,29 @@ DO_ERROR_INFO(SIGILL, "Illegal Insn (or Seq)", insterror_is_error, ILL_ILLOPC)
+ DO_ERROR_INFO(SIGBUS, "Invalid Mem Access", do_memory_error, BUS_ADRERR)
+ DO_ERROR_INFO(SIGTRAP, "Breakpoint Set", trap_is_brkpt, TRAP_BRKPT)
+ 
++#ifdef CONFIG_ARC_MISALIGN_ACCESS
 +/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ * Entry Point for Misaligned Data access Exception, for emulating in software
++ */
++int do_misaligned_access(unsigned long cause, unsigned long address,
++			 struct pt_regs *regs, struct callee_regs *cregs)
++{
++	if (misaligned_fixup(address, regs, cause, cregs) != 0) {
++		siginfo_t info;
++
++		info.si_signo = SIGSEGV;
++		info.si_errno = 0;
++		info.si_code = SEGV_ACCERR;
++		info.si_addr = (void __user *)address;
++		return handle_exception(cause, "Misaligned Access", regs,
++					  &info);
++	}
++	return 0;
++}
++
++#else
+ DO_ERROR_INFO(SIGSEGV, "Misaligned Access", do_misaligned_access, SEGV_ACCERR)
++#endif
+ 
+ /*
+  * Entry point for miscll errors such as Nested Exceptions
+diff --git a/arch/arc/kernel/unaligned.c b/arch/arc/kernel/unaligned.c
+new file mode 100644
+index 0000000..b41e218
+--- /dev/null
++++ b/arch/arc/kernel/unaligned.c
+@@ -0,0 +1,225 @@
++/*
++ * Copyright (C) 2011-2012 Synopsys (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
++ *
++ * vineetg : May 2011
++ *  -Adapted (from .26 to .35)
++ *  -original contribution by Tim.yao@amlogic.com
++ *
 + */
 +
 +#include <linux/types.h>
-+#include <linux/kprobes.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/kprobes.h>
-+#include <linux/kdebug.h>
-+#include <linux/sched.h>
++#include <linux/ptrace.h>
 +#include <linux/uaccess.h>
-+#include <asm/cacheflush.h>
-+#include <asm/current.h>
 +#include <asm/disasm.h>
 +
-+#define MIN_STACK_SIZE(addr)	min((unsigned long)MAX_STACK_SIZE, \
-+		(unsigned long)current_thread_info() + THREAD_SIZE - (addr))
++#define __get8_unaligned_check(val, addr, err)		\
++	__asm__(					\
++	"1:	ldb.ab	%1, [%2, 1]\n"			\
++	"2:\n"						\
++	"	.section .fixup,\"ax\"\n"		\
++	"	.align	4\n"				\
++	"3:	mov	%0, 1\n"			\
++	"	b	2b\n"				\
++	"	.previous\n"				\
++	"	.section __ex_table,\"a\"\n"		\
++	"	.align	4\n"				\
++	"	.long	1b, 3b\n"			\
++	"	.previous\n"				\
++	: "=r" (err), "=&r" (val), "=r" (addr)		\
++	: "0" (err), "2" (addr))
 +
-+DEFINE_PER_CPU(struct kprobe *, current_kprobe) = NULL;
-+DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
++#define get16_unaligned_check(val, addr)		\
++	do {						\
++		unsigned int err = 0, v, a = addr;	\
++		__get8_unaligned_check(v, a, err);	\
++		val =  v ;				\
++		__get8_unaligned_check(v, a, err);	\
++		val |= v << 8;				\
++		if (err)				\
++			goto fault;			\
++	} while (0)
 +
-+int __kprobes arch_prepare_kprobe(struct kprobe *p)
++#define get32_unaligned_check(val, addr)		\
++	do {						\
++		unsigned int err = 0, v, a = addr;	\
++		__get8_unaligned_check(v, a, err);	\
++		val =  v << 0;				\
++		__get8_unaligned_check(v, a, err);	\
++		val |= v << 8;				\
++		__get8_unaligned_check(v, a, err);	\
++		val |= v << 16;				\
++		__get8_unaligned_check(v, a, err);	\
++		val |= v << 24;				\
++		if (err)				\
++			goto fault;			\
++	} while (0)
++
++#define put16_unaligned_check(val, addr)		\
++	do {						\
++		unsigned int err = 0, v = val, a = addr;\
++							\
++		__asm__(				\
++		"1:	stb.ab	%1, [%2, 1]\n"		\
++		"	lsr %1, %1, 8\n"		\
++		"2:	stb	%1, [%2]\n"		\
++		"3:\n"					\
++		"	.section .fixup,\"ax\"\n"	\
++		"	.align	4\n"			\
++		"4:	mov	%0, 1\n"		\
++		"	b	3b\n"			\
++		"	.previous\n"			\
++		"	.section __ex_table,\"a\"\n"	\
++		"	.align	4\n"			\
++		"	.long	1b, 4b\n"		\
++		"	.long	2b, 4b\n"		\
++		"	.previous\n"			\
++		: "=r" (err), "=&r" (v), "=&r" (a)	\
++		: "0" (err), "1" (v), "2" (a));		\
++							\
++		if (err)				\
++			goto fault;			\
++	} while (0)
++
++#define put32_unaligned_check(val, addr)		\
++	do {						\
++		unsigned int err = 0, v = val, a = addr;\
++		__asm__(				\
++							\
++		"1:	stb.ab	%1, [%2, 1]\n"		\
++		"	lsr %1, %1, 8\n"		\
++		"2:	stb.ab	%1, [%2, 1]\n"		\
++		"	lsr %1, %1, 8\n"		\
++		"3:	stb.ab	%1, [%2, 1]\n"		\
++		"	lsr %1, %1, 8\n"		\
++		"4:	stb	%1, [%2]\n"		\
++		"5:\n"					\
++		"	.section .fixup,\"ax\"\n"	\
++		"	.align	4\n"			\
++		"6:	mov	%0, 1\n"		\
++		"	b	5b\n"			\
++		"	.previous\n"			\
++		"	.section __ex_table,\"a\"\n"	\
++		"	.align	4\n"			\
++		"	.long	1b, 6b\n"		\
++		"	.long	2b, 6b\n"		\
++		"	.long	3b, 6b\n"		\
++		"	.long	4b, 6b\n"		\
++		"	.previous\n"			\
++		: "=r" (err), "=&r" (v), "=&r" (a)	\
++		: "0" (err), "1" (v), "2" (a));		\
++							\
++		if (err)				\
++			goto fault;			\
++	} while (0)
++
++static void fixup_load(struct disasm_state *state, struct pt_regs *regs,
++			struct callee_regs *cregs)
 +{
-+	/* Attempt to probe at unaligned address */
-+	if ((unsigned long)p->addr & 0x01)
-+		return -EINVAL;
++	int val;
 +
-+	/* Address should not be in exception handling code */
++	/* register write back */
++	if ((state->aa == 1) || (state->aa == 2)) {
++		set_reg(state->wb_reg, state->src1 + state->src2, regs,
++				cregs);
 +
-+	p->ainsn.is_short = is_short_instr((unsigned long)p->addr);
-+	p->opcode = *p->addr;
-+
-+	return 0;
-+}
-+
-+void __kprobes arch_arm_kprobe(struct kprobe *p)
-+{
-+	*p->addr = UNIMP_S_INSTRUCTION;
-+
-+	flush_icache_range((unsigned long)p->addr,
-+			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
-+}
-+
-+void __kprobes arch_disarm_kprobe(struct kprobe *p)
-+{
-+	*p->addr = p->opcode;
-+
-+	flush_icache_range((unsigned long)p->addr,
-+			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
-+}
-+
-+void __kprobes arch_remove_kprobe(struct kprobe *p)
-+{
-+	arch_disarm_kprobe(p);
-+
-+	/* Can we remove the kprobe in the middle of kprobe handling? */
-+	if (p->ainsn.t1_addr) {
-+		*(p->ainsn.t1_addr) = p->ainsn.t1_opcode;
-+
-+		flush_icache_range((unsigned long)p->ainsn.t1_addr,
-+				   (unsigned long)p->ainsn.t1_addr +
-+				   sizeof(kprobe_opcode_t));
-+
-+		p->ainsn.t1_addr = NULL;
++		if (state->aa == 2)
++			state->src2 = 0;
 +	}
 +
-+	if (p->ainsn.t2_addr) {
-+		*(p->ainsn.t2_addr) = p->ainsn.t2_opcode;
++	if (state->zz == 0) {
++		get32_unaligned_check(val, state->src1 + state->src2);
++	} else {
++		get16_unaligned_check(val, state->src1 + state->src2);
 +
-+		flush_icache_range((unsigned long)p->ainsn.t2_addr,
-+				   (unsigned long)p->ainsn.t2_addr +
-+				   sizeof(kprobe_opcode_t));
-+
-+		p->ainsn.t2_addr = NULL;
-+	}
-+}
-+
-+static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
-+{
-+	kcb->prev_kprobe.kp = kprobe_running();
-+	kcb->prev_kprobe.status = kcb->kprobe_status;
-+}
-+
-+static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
-+{
-+	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	kcb->kprobe_status = kcb->prev_kprobe.status;
-+}
-+
-+static inline void __kprobes set_current_kprobe(struct kprobe *p)
-+{
-+	__get_cpu_var(current_kprobe) = p;
-+}
-+
-+static void __kprobes resume_execution(struct kprobe *p, unsigned long addr,
-+				       struct pt_regs *regs)
-+{
-+	/* Remove the trap instructions inserted for single step and
-+	 * restore the original instructions
-+	 */
-+	if (p->ainsn.t1_addr) {
-+		*(p->ainsn.t1_addr) = p->ainsn.t1_opcode;
-+
-+		flush_icache_range((unsigned long)p->ainsn.t1_addr,
-+				   (unsigned long)p->ainsn.t1_addr +
-+				   sizeof(kprobe_opcode_t));
-+
-+		p->ainsn.t1_addr = NULL;
++		if (state->x)
++			val = (val << 16) >> 16;
 +	}
 +
-+	if (p->ainsn.t2_addr) {
-+		*(p->ainsn.t2_addr) = p->ainsn.t2_opcode;
++	if (state->pref == 0)
++		set_reg(state->dest, val, regs, cregs);
 +
-+		flush_icache_range((unsigned long)p->ainsn.t2_addr,
-+				   (unsigned long)p->ainsn.t2_addr +
-+				   sizeof(kprobe_opcode_t));
++	return;
 +
-+		p->ainsn.t2_addr = NULL;
++fault:	state->fault = 1;
++}
++
++static void fixup_store(struct disasm_state *state, struct pt_regs *regs,
++			struct callee_regs *cregs)
++{
++	/* register write back */
++	if ((state->aa == 1) || (state->aa == 2)) {
++		set_reg(state->wb_reg, state->src2 + state->src3, regs, cregs);
++
++		if (state->aa == 3)
++			state->src3 = 0;
++	} else if (state->aa == 3) {
++		if (state->zz == 2) {
++			set_reg(state->wb_reg, state->src2 +
++				(state->src3 << 1), regs, cregs);
++		} else if (!state->zz) {
++			set_reg(state->wb_reg, state->src2 +
++				(state->src3 << 2), regs, cregs);
++		} else {
++			goto fault;
++		}
++	}
++
++	/* write fix-up */
++	if (!state->zz) {
++		put32_unaligned_check(state->src1, state->src2 +
++					state->src3);
++	} else {
++		put16_unaligned_check(state->src1, state->src2 +
++					state->src3);
 +	}
 +
 +	return;
++
++fault:	state->fault = 1;
 +}
 +
-+static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs)
++int misaligned_fixup(unsigned long address, struct pt_regs *regs,
++		     unsigned long cause,  struct callee_regs *cregs)
 +{
-+	unsigned long next_pc;
-+	unsigned long tgt_if_br = 0;
-+	int is_branch;
-+	unsigned long bta;
++	struct disasm_state state;
 +
-+	/* Copy the opcode back to the kprobe location and execute the
-+	 * instruction. Because of this we will not be able to get into the
-+	 * same kprobe until this kprobe is done
-+	 */
-+	*(p->addr) = p->opcode;
-+
-+	flush_icache_range((unsigned long)p->addr,
-+			   (unsigned long)p->addr + sizeof(kprobe_opcode_t));
-+
-+	/* Now we insert the trap at the next location after this instruction to
-+	 * single step. If it is a branch we insert the trap at possible branch
-+	 * targets
-+	 */
-+
-+	bta = regs->bta;
-+
-+	if (regs->status32 & 0x40) {
-+		/* We are in a delay slot with the branch taken */
-+
-+		next_pc = bta & ~0x01;
-+
-+		if (!p->ainsn.is_short) {
-+			if (bta & 0x01)
-+				regs->blink += 2;
-+			else {
-+				/* Branch not taken */
-+				next_pc += 2;
-+
-+				/* next pc is taken from bta after executing the
-+				 * delay slot instruction
-+				 */
-+				regs->bta += 2;
-+			}
-+		}
-+
-+		is_branch = 0;
-+	} else
-+		is_branch =
-+		    disasm_next_pc((unsigned long)p->addr, regs,
-+			(struct callee_regs *) current->thread.callee_reg,
-+			&next_pc, &tgt_if_br);
-+
-+	p->ainsn.t1_addr = (kprobe_opcode_t *) next_pc;
-+	p->ainsn.t1_opcode = *(p->ainsn.t1_addr);
-+	*(p->ainsn.t1_addr) = TRAP_S_2_INSTRUCTION;
-+
-+	flush_icache_range((unsigned long)p->ainsn.t1_addr,
-+			   (unsigned long)p->ainsn.t1_addr +
-+			   sizeof(kprobe_opcode_t));
-+
-+	if (is_branch) {
-+		p->ainsn.t2_addr = (kprobe_opcode_t *) tgt_if_br;
-+		p->ainsn.t2_opcode = *(p->ainsn.t2_addr);
-+		*(p->ainsn.t2_addr) = TRAP_S_2_INSTRUCTION;
-+
-+		flush_icache_range((unsigned long)p->ainsn.t2_addr,
-+				   (unsigned long)p->ainsn.t2_addr +
-+				   sizeof(kprobe_opcode_t));
-+	}
-+}
-+
-+int __kprobes arc_kprobe_handler(unsigned long addr, struct pt_regs *regs)
-+{
-+	struct kprobe *p;
-+	struct kprobe_ctlblk *kcb;
-+
-+	preempt_disable();
-+
-+	kcb = get_kprobe_ctlblk();
-+	p = get_kprobe((unsigned long *)addr);
-+
-+	if (p) {
-+		/*
-+		 * We have reentered the kprobe_handler, since another kprobe
-+		 * was hit while within the handler, we save the original
-+		 * kprobes and single step on the instruction of the new probe
-+		 * without calling any user handlers to avoid recursive
-+		 * kprobes.
-+		 */
-+		if (kprobe_running()) {
-+			save_previous_kprobe(kcb);
-+			set_current_kprobe(p);
-+			kprobes_inc_nmissed_count(p);
-+			setup_singlestep(p, regs);
-+			kcb->kprobe_status = KPROBE_REENTER;
-+			return 1;
-+		}
-+
-+		set_current_kprobe(p);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+
-+		/* If we have no pre-handler or it returned 0, we continue with
-+		 * normal processing. If we have a pre-handler and it returned
-+		 * non-zero - which is expected from setjmp_pre_handler for
-+		 * jprobe, we return without single stepping and leave that to
-+		 * the break-handler which is invoked by a kprobe from
-+		 * jprobe_return
-+		 */
-+		if (!p->pre_handler || !p->pre_handler(p, regs)) {
-+			setup_singlestep(p, regs);
-+			kcb->kprobe_status = KPROBE_HIT_SS;
-+		}
-+
-+		return 1;
-+	} else if (kprobe_running()) {
-+		p = __get_cpu_var(current_kprobe);
-+		if (p->break_handler && p->break_handler(p, regs)) {
-+			setup_singlestep(p, regs);
-+			kcb->kprobe_status = KPROBE_HIT_SS;
-+			return 1;
-+		}
-+	}
-+
-+	/* no_kprobe: */
-+	preempt_enable_no_resched();
-+	return 0;
-+}
-+
-+static int __kprobes arc_post_kprobe_handler(unsigned long addr,
-+					 struct pt_regs *regs)
-+{
-+	struct kprobe *cur = kprobe_running();
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+
-+	if (!cur)
-+		return 0;
-+
-+	resume_execution(cur, addr, regs);
-+
-+	/* Rearm the kprobe */
-+	arch_arm_kprobe(cur);
-+
-+	/*
-+	 * When we return from trap instruction we go to the next instruction
-+	 * We restored the actual instruction in resume_exectuiont and we to
-+	 * return to the same address and execute it
-+	 */
-+	regs->ret = addr;
-+
-+	if ((kcb->kprobe_status != KPROBE_REENTER) && cur->post_handler) {
-+		kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+		cur->post_handler(cur, regs, 0);
-+	}
-+
-+	if (kcb->kprobe_status == KPROBE_REENTER) {
-+		restore_previous_kprobe(kcb);
-+		goto out;
-+	}
-+
-+	reset_current_kprobe();
-+
-+out:
-+	preempt_enable_no_resched();
-+	return 1;
-+}
-+
-+/*
-+ * Fault can be for the instruction being single stepped or for the
-+ * pre/post handlers in the module.
-+ * This is applicable for applications like user probes, where we have the
-+ * probe in user space and the handlers in the kernel
-+ */
-+
-+int __kprobes kprobe_fault_handler(struct pt_regs *regs, unsigned long trapnr)
-+{
-+	struct kprobe *cur = kprobe_running();
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+
-+	switch (kcb->kprobe_status) {
-+	case KPROBE_HIT_SS:
-+	case KPROBE_REENTER:
-+		/*
-+		 * We are here because the instruction being single stepped
-+		 * caused the fault. We reset the current kprobe and allow the
-+		 * exception handler as if it is regular exception. In our
-+		 * case it doesn't matter because the system will be halted
-+		 */
-+		resume_execution(cur, (unsigned long)cur->addr, regs);
-+
-+		if (kcb->kprobe_status == KPROBE_REENTER)
-+			restore_previous_kprobe(kcb);
-+		else
-+			reset_current_kprobe();
-+
-+		preempt_enable_no_resched();
-+		break;
-+
-+	case KPROBE_HIT_ACTIVE:
-+	case KPROBE_HIT_SSDONE:
-+		/*
-+		 * We are here because the instructions in the pre/post handler
-+		 * caused the fault.
-+		 */
-+
-+		/* We increment the nmissed count for accounting,
-+		 * we can also use npre/npostfault count for accouting
-+		 * these specific fault cases.
-+		 */
-+		kprobes_inc_nmissed_count(cur);
-+
-+		/*
-+		 * We come here because instructions in the pre/post
-+		 * handler caused the page_fault, this could happen
-+		 * if handler tries to access user space by
-+		 * copy_from_user(), get_user() etc. Let the
-+		 * user-specified handler try to fix it first.
-+		 */
-+		if (cur->fault_handler && cur->fault_handler(cur, regs, trapnr))
-+			return 1;
-+
-+		/*
-+		 * In case the user-specified fault handler returned zero,
-+		 * try to fix up.
-+		 */
-+		if (fixup_exception(regs))
-+			return 1;
-+
-+		/*
-+		 * fixup_exception() could not handle it,
-+		 * Let do_page_fault() fix it.
-+		 */
-+		break;
-+
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
-+int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
-+				       unsigned long val, void *data)
-+{
-+	struct die_args *args = data;
-+	unsigned long addr = args->err;
-+	int ret = NOTIFY_DONE;
-+
-+	switch (val) {
-+	case DIE_IERR:
-+		if (arc_kprobe_handler(addr, args->regs))
-+			return NOTIFY_STOP;
-+		break;
-+
-+	case DIE_TRAP:
-+		if (arc_post_kprobe_handler(addr, args->regs))
-+			return NOTIFY_STOP;
-+		break;
-+
-+	default:
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+{
-+	struct jprobe *jp = container_of(p, struct jprobe, kp);
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+	unsigned long sp_addr = regs->sp;
-+
-+	kcb->jprobe_saved_regs = *regs;
-+	memcpy(kcb->jprobes_stack, (void *)sp_addr, MIN_STACK_SIZE(sp_addr));
-+	regs->ret = (unsigned long)(jp->entry);
-+
-+	return 1;
-+}
-+
-+void __kprobes jprobe_return(void)
-+{
-+	__asm__ __volatile__("unimp_s");
-+	return;
-+}
-+
-+int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
-+{
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+	unsigned long sp_addr;
-+
-+	*regs = kcb->jprobe_saved_regs;
-+	sp_addr = regs->sp;
-+	memcpy((void *)sp_addr, kcb->jprobes_stack, MIN_STACK_SIZE(sp_addr));
-+	preempt_enable_no_resched();
-+
-+	return 1;
-+}
-+
-+static void __used kretprobe_trampoline_holder(void)
-+{
-+	__asm__ __volatile__(".global kretprobe_trampoline\n"
-+			     "kretprobe_trampoline:\n" "nop\n");
-+}
-+
-+void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
-+				      struct pt_regs *regs)
-+{
-+
-+	ri->ret_addr = (kprobe_opcode_t *) regs->blink;
-+
-+	/* Replace the return addr with trampoline addr */
-+	regs->blink = (unsigned long)&kretprobe_trampoline;
-+}
-+
-+static int __kprobes trampoline_probe_handler(struct kprobe *p,
-+					      struct pt_regs *regs)
-+{
-+	struct kretprobe_instance *ri = NULL;
-+	struct hlist_head *head, empty_rp;
-+	struct hlist_node *node, *tmp;
-+	unsigned long flags, orig_ret_address = 0;
-+	unsigned long trampoline_address = (unsigned long)&kretprobe_trampoline;
-+
-+	INIT_HLIST_HEAD(&empty_rp);
-+	kretprobe_hash_lock(current, &head, &flags);
-+
-+	/*
-+	 * It is possible to have multiple instances associated with a given
-+	 * task either because an multiple functions in the call path
-+	 * have a return probe installed on them, and/or more than one return
-+	 * return probe was registered for a target function.
-+	 *
-+	 * We can handle this because:
-+	 *     - instances are always inserted at the head of the list
-+	 *     - when multiple return probes are registered for the same
-+	 *       function, the first instance's ret_addr will point to the
-+	 *       real return address, and all the rest will point to
-+	 *       kretprobe_trampoline
-+	 */
-+	hlist_for_each_entry_safe(ri, node, tmp, head, hlist) {
-+		if (ri->task != current)
-+			/* another task is sharing our hash bucket */
-+			continue;
-+
-+		if (ri->rp && ri->rp->handler)
-+			ri->rp->handler(ri, regs);
-+
-+		orig_ret_address = (unsigned long)ri->ret_addr;
-+		recycle_rp_inst(ri, &empty_rp);
-+
-+		if (orig_ret_address != trampoline_address) {
-+			/*
-+			 * This is the real return address. Any other
-+			 * instances associated with this task are for
-+			 * other calls deeper on the call stack
-+			 */
-+			break;
-+		}
-+	}
-+
-+	kretprobe_assert(ri, orig_ret_address, trampoline_address);
-+	regs->ret = orig_ret_address;
-+
-+	reset_current_kprobe();
-+	kretprobe_hash_unlock(current, &flags);
-+	preempt_enable_no_resched();
-+
-+	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
-+		hlist_del(&ri->hlist);
-+		kfree(ri);
-+	}
-+
-+	/* By returning a non zero value, we are telling the kprobe handler
-+	 * that we don't want the post_handler to run
-+	 */
-+	return 1;
-+}
-+
-+static struct kprobe trampoline_p = {
-+	.addr = (kprobe_opcode_t *) &kretprobe_trampoline,
-+	.pre_handler = trampoline_probe_handler
-+};
-+
-+int __init arch_init_kprobes(void)
-+{
-+	/* Registering the trampoline code for the kret probe */
-+	return register_kprobe(&trampoline_p);
-+}
-+
-+int __kprobes arch_trampoline_kprobe(struct kprobe *p)
-+{
-+	if (p->addr == (kprobe_opcode_t *) &kretprobe_trampoline)
++	/* handle user mode only */
++	if (!user_mode(regs))
 +		return 1;
 +
++	disasm_instr(regs->ret, &state, 1, regs, cregs);
++
++	if (state.fault)
++		goto fault;
++
++	/* ldb/stb should not have unaligned exception */
++	if ((state.zz == 1) || (state.di))
++		goto fault;
++
++	if (!state.write)
++		fixup_load(&state, regs, cregs);
++	else
++		fixup_store(&state, regs, cregs);
++
++	if (state.fault)
++		goto fault;
++
++	if (delay_mode(regs)) {
++		regs->ret = regs->bta;
++		regs->status32 &= ~STATUS_DE_MASK;
++	} else {
++		regs->ret += state.instr_len;
++	}
++
 +	return 0;
++
++fault:
++	pr_err("Alignment trap: fault in fix-up %08lx at [<%08lx>]\n",
++		state.words[0], address);
++
++	return 1;
 +}
-+
-+void trap_is_kprobe(unsigned long cause, unsigned long address,
-+		    struct pt_regs *regs)
-+{
-+	notify_die(DIE_TRAP, "kprobe_trap", regs, address, cause, SIGTRAP);
-+}
-diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
-index fd2457c..c6396b4 100644
---- a/arch/arc/kernel/traps.c
-+++ b/arch/arc/kernel/traps.c
-@@ -15,6 +15,7 @@
- #include <linux/uaccess.h>
- #include <asm/ptrace.h>
- #include <asm/setup.h>
-+#include <asm/kprobes.h>
- 
- void __init trap_init(void)
- {
-@@ -90,6 +91,7 @@ void do_machine_check_fault(unsigned long cause, unsigned long address,
- 	die("Machine Check Exception", regs, address, cause);
- }
- 
-+
- /*
-  * Entry point for traps induced by ARCompact TRAP_S <n> insn
-  * This is same family as TRAP0/SWI insn (use the same vector).
-@@ -109,6 +111,10 @@ void do_non_swi_trap(unsigned long cause, unsigned long address,
- 		trap_is_brkpt(cause, address, regs);
- 		break;
- 
-+	case 2:
-+		trap_is_kprobe(param, address, regs);
-+		break;
-+
- 	default:
- 		break;
- 	}
-@@ -116,10 +122,17 @@ void do_non_swi_trap(unsigned long cause, unsigned long address,
- 
- /*
-  * Entry point for Instruction Error Exception
-+ *  -For a corner case, ARC kprobes implementation resorts to using
-+ *   this exception, hence the check
-  */
- void do_insterror_or_kprobe(unsigned long cause,
- 				       unsigned long address,
- 				       struct pt_regs *regs)
- {
-+	/* Check if this exception is caused by kprobes */
-+	if (notify_die(DIE_IERR, "kprobe_ierr", regs, address,
-+		       cause, SIGILL) == NOTIFY_STOP)
-+		return;
-+
- 	insterror_is_error(cause, address, regs);
- }
 -- 
 1.7.4.1
 
