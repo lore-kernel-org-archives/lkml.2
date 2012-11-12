@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab2KLC4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 21:56:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8337 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab2KLC4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 21:56:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
-   d="scan'208";a="218089358"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH v2 3/3] ipgre: capture inner headers during encapsulation
-Date: Sun, 11 Nov 2012 19:04:10 -0800
-Message-Id: <1352689450-4092-1-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1751816Ab2KLDEY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 22:04:24 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43405 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2KLDEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 22:04:22 -0500
+Message-ID: <50A0672C.6030808@linux.vnet.ibm.com>
+Date: Mon, 12 Nov 2012 11:04:12 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pawel.sikora@agmk.net>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, arekm@pld-linux.org,
+        baggins@pld-linux.org
+Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule)
+References: <56378024.A3Kec8xZj0@pawels>
+In-Reply-To: <56378024.A3Kec8xZj0@pawels>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+x-cbid: 12111203-5140-0000-0000-000002591748
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Populating the inner header pointers of skb for ipgre
-This patch has been compile-tested only.
+On 11/09/2012 09:48 PM, Paweł Sikora wrote:
+> Hi,
+> 
+> during playing with new ups i've caught an nice oops on reboot:
+> 
+> http://imgbin.org/index.php?page=image&id=10253
+> 
+> probably the upstream is also affected.
 
-v2 Makes sure that checksumming does not take place if the offload flag is set in the skb's netdev features
+Hi, Paweł
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
----
- net/ipv4/ip_gre.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+Are you using a clean 3.6.6 without any modify?
 
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index 7240f8e..e35ed52 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -766,8 +766,10 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 	int    gre_hlen;
- 	__be32 dst;
- 	int    mtu;
-+	unsigned int offset;
- 
--	if (skb->ip_summed == CHECKSUM_PARTIAL &&
-+	if (!(skb->dev->features & NETIF_F_HW_CSUM_ENC_BIT) &&
-+	    skb->ip_summed == CHECKSUM_PARTIAL &&
- 	    skb_checksum_help(skb))
- 		goto tx_error;
- 
-@@ -902,6 +904,17 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
- 			tunnel->err_count = 0;
- 	}
- 
-+	offset = skb->data - skb->head;
-+
-+	skb_reset_inner_mac_header(skb);
-+
-+	if (skb->network_header)
-+		skb_set_inner_network_header(skb, skb->network_header - offset);
-+
-+	if (skb->transport_header)
-+		skb_set_inner_transport_header(skb, skb->transport_header -
-+					       offset);
-+
- 	max_headroom = LL_RESERVED_SPACE(tdev) + gre_hlen + rt->dst.header_len;
- 
- 	if (skb_headroom(skb) < max_headroom || skb_shared(skb)||
--- 
-1.7.11.7
+Looks like some threads has set itself to be UNINTERRUPTIBLE with out
+any design on switch itself back later(or the time is too long), are you
+accidentally using some bad designed module?
+
+BTW, it's better to paste whole log in mail with text style not a picture.
+
+Regards,
+Michael Wang
+
+> 
+> BR,
+> Paweł.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
