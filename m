@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2KLLvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:51:41 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:35818 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2KLLvh (ORCPT
+	id S1753264Ab2KLLv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:51:57 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:51557 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2KLLvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:51:37 -0500
+	Mon, 12 Nov 2012 06:51:53 -0500
 From: <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tglx@linutronix.de>, <arnd@arndb.de>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC Patch v1 45/55] ARC: unaligned access emulation
-Date: Mon, 12 Nov 2012 17:19:03 +0530
-Message-ID: <1352720953-24321-15-git-send-email-vgupta@synopsys.com>
+Subject: [RFC Patch v1 47/55] ARC: startup #2: Verbose Boot reporting / feature verification
+Date: Mon, 12 Nov 2012 17:19:05 +0530
+Message-ID: <1352720953-24321-17-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
 References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
@@ -28,71 +28,208 @@ From: Vineet Gupta <vgupta@synopsys.com>
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig                 |    9 ++
- arch/arc/include/asm/Kbuild      |    1 -
- arch/arc/include/asm/ptrace.h    |    3 +
- arch/arc/include/asm/unaligned.h |   29 +++++
- arch/arc/kernel/Makefile         |    3 +-
- arch/arc/kernel/disasm.c         |    2 +-
- arch/arc/kernel/entry.S          |   13 ++
- arch/arc/kernel/traps.c          |   26 +++++
- arch/arc/kernel/unaligned.c      |  225 ++++++++++++++++++++++++++++++++++++++
- 9 files changed, 308 insertions(+), 3 deletions(-)
- create mode 100644 arch/arc/include/asm/unaligned.h
- create mode 100644 arch/arc/kernel/unaligned.c
+ arch/arc/Makefile              |    2 +
+ arch/arc/include/asm/arcregs.h |  122 ++++++++++++++++++++--
+ arch/arc/include/asm/defines.h |   56 ++++++++++
+ arch/arc/include/asm/setup.h   |   14 +++
+ arch/arc/kernel/setup.c        |  223 +++++++++++++++++++++++++++++++++++++++-
+ arch/arc/mm/cache_arc700.c     |   46 ++++++++
+ arch/arc/mm/tlb.c              |   38 +++++++
+ 7 files changed, 490 insertions(+), 11 deletions(-)
+ create mode 100644 arch/arc/include/asm/defines.h
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 3ef21be..81d78fc 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -343,6 +343,15 @@ config ARC_CURR_IN_REG
- 	  This reserved Register R25 to point to Current Task in
- 	  kernel mode. This saves memory access for each such access
+diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+index a86e284..3de315e 100644
+--- a/arch/arc/Makefile
++++ b/arch/arc/Makefile
+@@ -20,6 +20,8 @@ export PLATFORM
+ cflags-y	+= -Iarch/arc/plat-$(PLATFORM)/include
+ cflags-y	+= -mA7 -fno-common -pipe -fno-builtin -D__linux__
  
++LINUXINCLUDE	+=  -include ${src}/arch/arc/include/asm/defines.h
 +
-+config ARC_MISALIGN_ACCESS
-+	bool "Emulate unaligned memory access (userspace only)"
-+	default N
-+	help
-+	  This enables misaligned 16 & 32 bit memory access from user space.
-+	  Use ONLY-IF-ABS-NECESSARY as it will be very slow and also can hide
-+	  potential bugs in code
-+
- config ARC_STACK_NONEXEC
- 	bool "Make stack non-executable"
- 	default n
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index a246390..06ca702 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -51,7 +51,6 @@ generic-y += termios.h
- generic-y += topology.h
- generic-y += types.h
- generic-y += ucontext.h
--generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
-index bb621e8..2843dd4 100644
---- a/arch/arc/include/asm/ptrace.h
-+++ b/arch/arc/include/asm/ptrace.h
-@@ -117,6 +117,9 @@ struct user_regs_struct {
- /* return 1 if user mode or 0 if kernel mode */
- #define user_mode(regs) (regs->status32 & STATUS_U_MASK)
+ ifdef CONFIG_ARC_CURR_IN_REG
+ # For a global register defintion, make sure it gets passed to every file
+ # We had a customer reported bug where some code built in kernel was NOT using
+diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
+index 725b94c..bd126c9 100644
+--- a/arch/arc/include/asm/arcregs.h
++++ b/arch/arc/include/asm/arcregs.h
+@@ -12,8 +12,26 @@
+ #ifdef __KERNEL__
  
-+/* return 1 if PC in delay slot */
-+#define delay_mode(regs) ((regs->status32 & STATUS_DE_MASK) == STATUS_DE_MASK)
+ /* Build Configuration Registers */
++#define ARC_REG_DCCMBASE_BCR	0x61	/* DCCM Base Addr */
++#define ARC_REG_CRC_BCR		0x62
++#define ARC_REG_DVFB_BCR	0x64
++#define ARC_REG_EXTARITH_BCR	0x65
+ #define ARC_REG_VECBASE_BCR	0x68
++#define ARC_REG_PERIBASE_BCR	0x69
++#define ARC_REG_FP_BCR		0x6B	/* Single-Precision FPU */
++#define ARC_REG_DPFP_BCR	0x6C	/* Dbl Precision FPU */
+ #define ARC_REG_MMU_BCR		0x6f
++#define ARC_REG_DCCM_BCR	0x74	/* DCCM Present + SZ */
++#define ARC_REG_TIMERS_BCR	0x75
++#define ARC_REG_ICCM_BCR	0x78
++#define ARC_REG_XY_MEM_BCR	0x79
++#define ARC_REG_MAC_BCR		0x7a
++#define ARC_REG_MUL_BCR		0x7b
++#define ARC_REG_SWAP_BCR	0x7c
++#define ARC_REG_NORM_BCR	0x7d
++#define ARC_REG_MIXMAX_BCR	0x7e
++#define ARC_REG_BARREL_BCR	0x7f
++#define ARC_REG_D_UNCACH_BCR	0x6A
+ 
+ /* status32 Bits Positions */
+ #define STATUS_H_BIT		0	/* CPU Halted */
+@@ -87,16 +105,6 @@
+ #define TIMER_CTRL_IE		(1 << 0) /* Interupt when Count reachs limit */
+ #define TIMER_CTRL_NH		(1 << 1) /* Count only when CPU NOT halted */
+ 
+-#if defined(CONFIG_ARC_MMU_V1)
+-#define CONFIG_ARC_MMU_VER 1
+-#elif defined(CONFIG_ARC_MMU_V2)
+-#define CONFIG_ARC_MMU_VER 2
+-#elif defined(CONFIG_ARC_MMU_V3)
+-#define CONFIG_ARC_MMU_VER 3
+-#else
+-#error "Error: MMU ver"
+-#endif
+-
+ /* MMU Management regs */
+ #define ARC_REG_TLBPD0		0x405
+ #define ARC_REG_TLBPD1		0x406
+@@ -276,6 +284,13 @@ struct arc_fpu {
+  ***************************************************************
+  * Build Configuration Registers, with encoded hardware config
+  */
++struct bcr_identity {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int chip_id:16, cpu_id:8, family:8;
++#else
++	unsigned int family:8, cpu_id:8, chip_id:16;
++#endif
++};
+ 
+ struct bcr_mmu_1_2 {
+ #ifdef CONFIG_CPU_BIG_ENDIAN
+@@ -295,6 +310,38 @@ struct bcr_mmu_3 {
+ #endif
+ };
+ 
++#define EXTN_SWAP_VALID     0x1
++#define EXTN_NORM_VALID     0x2
++#define EXTN_MINMAX_VALID   0x2
++#define EXTN_BARREL_VALID   0x2
 +
- /* return 1 if in syscall, 0 if Intr or Exception */
- #define in_syscall(regs) (((regs->orig_r8) >= 0 && \
- 			   (regs->orig_r8 <= NR_syscalls)) ? 1 : 0)
-diff --git a/arch/arc/include/asm/unaligned.h b/arch/arc/include/asm/unaligned.h
++struct bcr_extn {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int pad:20, crc:1, ext_arith:2, mul:2, barrel:2, minmax:2,
++		     norm:2, swap:1;
++#else
++	unsigned int swap:1, norm:2, minmax:2, barrel:2, mul:2, ext_arith:2,
++		     crc:1, pad:20;
++#endif
++};
++
++/* DSP Options Ref Manual */
++struct bcr_extn_mac_mul {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int pad:16, type:8, ver:8;
++#else
++	unsigned int ver:8, type:8, pad:16;
++#endif
++};
++
++struct bcr_extn_xymem {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int ram_org:2, num_banks:4, bank_sz:4, ver:8;
++#else
++	unsigned int ver:8, bank_sz:4, num_banks:4, ram_org:2;
++#endif
++};
++
+ struct bcr_cache {
+ #ifdef CONFIG_CPU_BIG_ENDIAN
+ 	unsigned int pad:12, line_len:4, sz:4, config:4, ver:8;
+@@ -303,6 +350,48 @@ struct bcr_cache {
+ #endif
+ };
+ 
++struct bcr_perip {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int start:8, pad2:8, sz:8, pad:8;
++#else
++	unsigned int pad:8, sz:8, pad2:8, start:8;
++#endif
++};
++struct bcr_iccm {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int base:16, pad:5, sz:3, ver:8;
++#else
++	unsigned int ver:8, sz:3, pad:5, base:16;
++#endif
++};
++
++/* DCCM Base Address Register: ARC_REG_DCCMBASE_BCR */
++struct bcr_dccm_base {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int addr:24, ver:8;
++#else
++	unsigned int ver:8, addr:24;
++#endif
++};
++
++/* DCCM RAM Configuration Register: ARC_REG_DCCM_BCR */
++struct bcr_dccm {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int res:21, sz:3, ver:8;
++#else
++	unsigned int ver:8, sz:3, res:21;
++#endif
++};
++
++/* Both SP and DP FPU BCRs have same format */
++struct bcr_fp {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	unsigned int fast:1, ver:8;
++#else
++	unsigned int ver:8, fast:1;
++#endif
++};
++
+ /*
+  *******************************************************************
+  * Generic structures to hold build configuration used at runtime
+@@ -316,9 +405,22 @@ struct cpuinfo_arc_cache {
+ 	unsigned int has_aliasing, sz, line_len, assoc, ver;
+ };
+ 
++struct cpuinfo_arc_ccm {
++	unsigned int base_addr, sz;
++};
++
+ struct cpuinfo_arc {
+ 	struct cpuinfo_arc_cache icache, dcache;
+ 	struct cpuinfo_arc_mmu mmu;
++	struct bcr_identity core;
++	unsigned int timers;
++	unsigned int vec_base;
++	unsigned int uncached_base;
++	struct cpuinfo_arc_ccm iccm, dccm;
++	struct bcr_extn extn;
++	struct bcr_extn_xymem extn_xymem;
++	struct bcr_extn_mac_mul extn_mac_mul;
++	struct bcr_fp fp, dpfp;
+ };
+ 
+ extern struct cpuinfo_arc cpuinfo_arc700[];
+diff --git a/arch/arc/include/asm/defines.h b/arch/arc/include/asm/defines.h
 new file mode 100644
-index 0000000..5dbe63f
+index 0000000..6097bb4
 --- /dev/null
-+++ b/arch/arc/include/asm/unaligned.h
-@@ -0,0 +1,29 @@
++++ b/arch/arc/include/asm/defines.h
+@@ -0,0 +1,56 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -101,375 +238,473 @@ index 0000000..5dbe63f
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ASM_ARC_UNALIGNED_H
-+#define _ASM_ARC_UNALIGNED_H
++#ifndef __ARC_ASM_DEFINES_H__
++#define __ARC_ASM_DEFINES_H__
 +
-+/* ARC700 can't handle unaligned Data accesses. */
++#if defined(CONFIG_ARC_MMU_V1)
++#define CONFIG_ARC_MMU_VER 1
++#elif defined(CONFIG_ARC_MMU_V2)
++#define CONFIG_ARC_MMU_VER 2
++#elif defined(CONFIG_ARC_MMU_V3)
++#define CONFIG_ARC_MMU_VER 3
++#endif
 +
-+#include <asm-generic/unaligned.h>
-+#include <asm/ptrace.h>
-+
-+#ifdef CONFIG_ARC_MISALIGN_ACCESS
-+int misaligned_fixup(unsigned long address, struct pt_regs *regs,
-+		     unsigned long cause, struct callee_regs *cregs);
++#ifdef CONFIG_ARC_HAS_LLSC
++#define __CONFIG_ARC_HAS_LLSC_VAL 1
 +#else
-+static inline int
-+misaligned_fixup(unsigned long address, struct pt_regs *regs,
-+		 unsigned long cause, struct callee_regs *cregs)
-+{
-+	return 0;
-+}
++#define __CONFIG_ARC_HAS_LLSC_VAL 0
 +#endif
 +
-+#endif /* _ASM_ARC_UNALIGNED_H */
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index 442d024..52ef6ce 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -9,13 +9,14 @@
- CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
- 
- obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
--	   signal.o traps.o sys.o troubleshoot.o stacktrace.o disasm.c
-+	   signal.o traps.o sys.o troubleshoot.o stacktrace.o disasm.o
- 
- obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
- obj-$(CONFIG_ARC_DBG_EVENT_TIMELINE)	+= event-log.o
- obj-$(CONFIG_SMP) 			+= smp.o
- obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
- obj-$(CONFIG_KPROBES)      		+= kprobes.o
-+obj-$(CONFIG_ARC_MISALIGN_ACCESS) 	+= unaligned.o
- obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
- CFLAGS_fpu.o   += -mdpfp
- 
-diff --git a/arch/arc/kernel/disasm.c b/arch/arc/kernel/disasm.c
-index 51bad8f..2f39028 100644
---- a/arch/arc/kernel/disasm.c
-+++ b/arch/arc/kernel/disasm.c
-@@ -15,7 +15,7 @@
- #include <asm/disasm.h>
- #include <asm/uaccess.h>
- 
--#if defined(CONFIG_KGDB) || defined(CONFIG_MISALIGN_ACCESS) || \
-+#if defined(CONFIG_KGDB) || defined(CONFIG_ARC_MISALIGN_ACCESS) || \
- 	defined(CONFIG_KPROBES)
- 
- /* disasm_instr: Analyses instruction at addr, stores
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 13d6feb..2ff15e0 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -12,6 +12,9 @@
-  *   needed before task_pt_regs was invented. This saves a branch per call
-  *   and more importantly allows clean invocation of post-syscall ptrace hook
-  *
-+ * vineetg: May 2011
-+ *  -Userspace unaligned access emulation
-+ *
-  * vineetg: Feb 2011 (ptrace low level code fixes)
-  *  -traced syscall return code (r0) was not saved into pt_regs for restoring
-  *   into user reg-file when traded task rets to user space.
-@@ -404,7 +407,17 @@ ARC_ENTRY EV_TLBProtV
- 	mov r1, r4              ; faulting address
- 	mov r2, sp              ; pt_regs
- 
-+#ifdef  CONFIG_ARC_MISALIGN_ACCESS
-+	SAVE_CALLEE_SAVED_USER
-+	mov r3, sp              ; callee_regs
++#ifdef CONFIG_ARC_HAS_SWAPE
++#define __CONFIG_ARC_HAS_SWAPE_VAL 1
++#else
++#define __CONFIG_ARC_HAS_SWAPE_VAL 0
 +#endif
 +
- 	bl  do_misaligned_access
-+
-+#ifdef  CONFIG_ARC_MISALIGN_ACCESS
-+	DISCARD_CALLEE_SAVED_USER
++#ifdef CONFIG_ARC_HAS_RTSC
++#define __CONFIG_ARC_HAS_RTSC_VAL 1
++#else
++#define __CONFIG_ARC_HAS_RTSC_VAL 0
 +#endif
 +
- 	b   ret_from_exception
++#ifdef CONFIG_ARC_MMU_SASID
++#define __CONFIG_ARC_MMU_SASID_VAL 1
++#else
++#define __CONFIG_ARC_MMU_SASID_VAL 0
++#endif
++
++#ifdef CONFIG_ARC_HAS_ICACHE
++#define __CONFIG_ARC_HAS_ICACHE	1
++#else
++#define __CONFIG_ARC_HAS_ICACHE	0
++#endif
++
++#ifdef CONFIG_ARC_HAS_DCACHE
++#define __CONFIG_ARC_HAS_DCACHE	1
++#else
++#define __CONFIG_ARC_HAS_DCACHE	0
++#endif
++
++#endif /* __ARC_ASM_DEFINES_H__ */
+diff --git a/arch/arc/include/asm/setup.h b/arch/arc/include/asm/setup.h
+index ab427e6..fc97411 100644
+--- a/arch/arc/include/asm/setup.h
++++ b/arch/arc/include/asm/setup.h
+@@ -13,6 +13,20 @@
  
- ARC_EXIT EV_TLBProtV
-diff --git a/arch/arc/kernel/traps.c b/arch/arc/kernel/traps.c
-index c6396b4..d2bc5bd 100644
---- a/arch/arc/kernel/traps.c
-+++ b/arch/arc/kernel/traps.c
-@@ -7,6 +7,9 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  *
-+ * vineetg: May 2011
-+ *  -user-space unaligned access emulation
-+ *
-  * Rahul Trivedi: Codito Technologies 2004
-  */
+ #define COMMAND_LINE_SIZE 256
  
-@@ -16,6 +19,7 @@
- #include <asm/ptrace.h>
- #include <asm/setup.h>
- #include <asm/kprobes.h>
-+#include <asm/unaligned.h>
++/*
++ * Data structure to map a ID to string
++ * Used a lot for bootup reporting of hardware diversity
++ */
++struct id_to_str {
++	int id;
++	const char *str;
++};
++
++struct cpuinfo_data {
++	struct id_to_str info;
++	int up_range;
++};
++
+ extern int root_mountflags, end_mem;
+ extern int running_on_hw;
  
- void __init trap_init(void)
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index 34a2ff5..d470aa1 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -13,6 +13,7 @@
+ #include <linux/console.h>
+ #include <linux/module.h>
+ #include <linux/cpu.h>
++#include <asm/sections.h>
+ #include <asm/arcregs.h>
+ #include <asm/tlb.h>
+ #include <asm/cache.h>
+@@ -32,10 +33,205 @@ struct task_struct *_current_task[NR_CPUS];	/* For stack switching */
+ 
+ struct cpuinfo_arc cpuinfo_arc700[NR_CPUS];
+ 
++
+ void __init read_arc_build_cfg_regs(void)
  {
-@@ -79,7 +83,29 @@ DO_ERROR_INFO(SIGILL, "Illegal Insn (or Seq)", insterror_is_error, ILL_ILLOPC)
- DO_ERROR_INFO(SIGBUS, "Invalid Mem Access", do_memory_error, BUS_ADRERR)
- DO_ERROR_INFO(SIGTRAP, "Breakpoint Set", trap_is_brkpt, TRAP_BRKPT)
- 
-+#ifdef CONFIG_ARC_MISALIGN_ACCESS
-+/*
-+ * Entry Point for Misaligned Data access Exception, for emulating in software
-+ */
-+int do_misaligned_access(unsigned long cause, unsigned long address,
-+			 struct pt_regs *regs, struct callee_regs *cregs)
-+{
-+	if (misaligned_fixup(address, regs, cause, cregs) != 0) {
-+		siginfo_t info;
++	struct bcr_perip uncached_space;
++	struct cpuinfo_arc *cpu = &cpuinfo_arc700[smp_processor_id()];
++	FIX_PTR(cpu);
 +
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		info.si_code = SEGV_ACCERR;
-+		info.si_addr = (void __user *)address;
-+		return handle_exception(cause, "Misaligned Access", regs,
-+					  &info);
-+	}
-+	return 0;
++	READ_BCR(AUX_IDENTITY, cpu->core);
++
++	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
++
++	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
++	if (cpu->vec_base == 0)
++		cpu->vec_base = (unsigned int)_int_vec_base_lds;
++
++	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
++	cpu->uncached_base = uncached_space.start << 24;
++
++	cpu->extn.mul = read_aux_reg(ARC_REG_MUL_BCR);
++	cpu->extn.swap = read_aux_reg(ARC_REG_SWAP_BCR);
++	cpu->extn.norm = read_aux_reg(ARC_REG_NORM_BCR);
++	cpu->extn.minmax = read_aux_reg(ARC_REG_MIXMAX_BCR);
++	cpu->extn.barrel = read_aux_reg(ARC_REG_BARREL_BCR);
++	READ_BCR(ARC_REG_MAC_BCR, cpu->extn_mac_mul);
++
++	cpu->extn.ext_arith = read_aux_reg(ARC_REG_EXTARITH_BCR);
++	cpu->extn.crc = read_aux_reg(ARC_REG_CRC_BCR);
++
++	READ_BCR(ARC_REG_XY_MEM_BCR, cpu->extn_xymem);
++
+ 	read_decode_mmu_bcr();
+ 	read_decode_cache_bcr();
++
++	READ_BCR(ARC_REG_FP_BCR, cpu->fp);
++	READ_BCR(ARC_REG_DPFP_BCR, cpu->dpfp);
 +}
 +
-+#else
- DO_ERROR_INFO(SIGSEGV, "Misaligned Access", do_misaligned_access, SEGV_ACCERR)
++static const struct cpuinfo_data arc_cpu_tbl[] = {
++	{ {0x10, "ARCTangent A5"}, 0x1F},
++	{ {0x20, "ARC 600"      }, 0x2F},
++	{ {0x30, "ARC 700"      }, 0x33},
++	{ {0x34, "ARC 700 R4.10"}, 0x34},
++	{ {0x00, NULL		} }
++};
++
++char *arc_cpu_mumbojumbo(int cpu_id, char *buf, int len)
++{
++	int n = 0;
++	struct cpuinfo_arc *cpu = &cpuinfo_arc700[cpu_id];
++	struct bcr_identity *core = &cpu->core;
++	const struct cpuinfo_data *tbl;
++	int be = 0;
++#ifdef CONFIG_CPU_BIG_ENDIAN
++	be = 1;
 +#endif
- 
- /*
-  * Entry point for miscll errors such as Nested Exceptions
-diff --git a/arch/arc/kernel/unaligned.c b/arch/arc/kernel/unaligned.c
-new file mode 100644
-index 0000000..b41e218
---- /dev/null
-+++ b/arch/arc/kernel/unaligned.c
-@@ -0,0 +1,225 @@
-+/*
-+ * Copyright (C) 2011-2012 Synopsys (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg : May 2011
-+ *  -Adapted (from .26 to .35)
-+ *  -original contribution by Tim.yao@amlogic.com
-+ *
-+ */
++	FIX_PTR(cpu);
 +
-+#include <linux/types.h>
-+#include <linux/ptrace.h>
-+#include <linux/uaccess.h>
-+#include <asm/disasm.h>
++	n += scnprintf(buf + n, len - n,
++		       "\nARC IDENTITY\t: Family [%#02x]"
++		       " Cpu-id [%#02x] Chip-id [%#4x]\n",
++		       core->family, core->cpu_id,
++		       core->chip_id);
 +
-+#define __get8_unaligned_check(val, addr, err)		\
-+	__asm__(					\
-+	"1:	ldb.ab	%1, [%2, 1]\n"			\
-+	"2:\n"						\
-+	"	.section .fixup,\"ax\"\n"		\
-+	"	.align	4\n"				\
-+	"3:	mov	%0, 1\n"			\
-+	"	b	2b\n"				\
-+	"	.previous\n"				\
-+	"	.section __ex_table,\"a\"\n"		\
-+	"	.align	4\n"				\
-+	"	.long	1b, 3b\n"			\
-+	"	.previous\n"				\
-+	: "=r" (err), "=&r" (val), "=r" (addr)		\
-+	: "0" (err), "2" (addr))
-+
-+#define get16_unaligned_check(val, addr)		\
-+	do {						\
-+		unsigned int err = 0, v, a = addr;	\
-+		__get8_unaligned_check(v, a, err);	\
-+		val =  v ;				\
-+		__get8_unaligned_check(v, a, err);	\
-+		val |= v << 8;				\
-+		if (err)				\
-+			goto fault;			\
-+	} while (0)
-+
-+#define get32_unaligned_check(val, addr)		\
-+	do {						\
-+		unsigned int err = 0, v, a = addr;	\
-+		__get8_unaligned_check(v, a, err);	\
-+		val =  v << 0;				\
-+		__get8_unaligned_check(v, a, err);	\
-+		val |= v << 8;				\
-+		__get8_unaligned_check(v, a, err);	\
-+		val |= v << 16;				\
-+		__get8_unaligned_check(v, a, err);	\
-+		val |= v << 24;				\
-+		if (err)				\
-+			goto fault;			\
-+	} while (0)
-+
-+#define put16_unaligned_check(val, addr)		\
-+	do {						\
-+		unsigned int err = 0, v = val, a = addr;\
-+							\
-+		__asm__(				\
-+		"1:	stb.ab	%1, [%2, 1]\n"		\
-+		"	lsr %1, %1, 8\n"		\
-+		"2:	stb	%1, [%2]\n"		\
-+		"3:\n"					\
-+		"	.section .fixup,\"ax\"\n"	\
-+		"	.align	4\n"			\
-+		"4:	mov	%0, 1\n"		\
-+		"	b	3b\n"			\
-+		"	.previous\n"			\
-+		"	.section __ex_table,\"a\"\n"	\
-+		"	.align	4\n"			\
-+		"	.long	1b, 4b\n"		\
-+		"	.long	2b, 4b\n"		\
-+		"	.previous\n"			\
-+		: "=r" (err), "=&r" (v), "=&r" (a)	\
-+		: "0" (err), "1" (v), "2" (a));		\
-+							\
-+		if (err)				\
-+			goto fault;			\
-+	} while (0)
-+
-+#define put32_unaligned_check(val, addr)		\
-+	do {						\
-+		unsigned int err = 0, v = val, a = addr;\
-+		__asm__(				\
-+							\
-+		"1:	stb.ab	%1, [%2, 1]\n"		\
-+		"	lsr %1, %1, 8\n"		\
-+		"2:	stb.ab	%1, [%2, 1]\n"		\
-+		"	lsr %1, %1, 8\n"		\
-+		"3:	stb.ab	%1, [%2, 1]\n"		\
-+		"	lsr %1, %1, 8\n"		\
-+		"4:	stb	%1, [%2]\n"		\
-+		"5:\n"					\
-+		"	.section .fixup,\"ax\"\n"	\
-+		"	.align	4\n"			\
-+		"6:	mov	%0, 1\n"		\
-+		"	b	5b\n"			\
-+		"	.previous\n"			\
-+		"	.section __ex_table,\"a\"\n"	\
-+		"	.align	4\n"			\
-+		"	.long	1b, 6b\n"		\
-+		"	.long	2b, 6b\n"		\
-+		"	.long	3b, 6b\n"		\
-+		"	.long	4b, 6b\n"		\
-+		"	.previous\n"			\
-+		: "=r" (err), "=&r" (v), "=&r" (a)	\
-+		: "0" (err), "1" (v), "2" (a));		\
-+							\
-+		if (err)				\
-+			goto fault;			\
-+	} while (0)
-+
-+static void fixup_load(struct disasm_state *state, struct pt_regs *regs,
-+			struct callee_regs *cregs)
-+{
-+	int val;
-+
-+	/* register write back */
-+	if ((state->aa == 1) || (state->aa == 2)) {
-+		set_reg(state->wb_reg, state->src1 + state->src2, regs,
-+				cregs);
-+
-+		if (state->aa == 2)
-+			state->src2 = 0;
-+	}
-+
-+	if (state->zz == 0) {
-+		get32_unaligned_check(val, state->src1 + state->src2);
-+	} else {
-+		get16_unaligned_check(val, state->src1 + state->src2);
-+
-+		if (state->x)
-+			val = (val << 16) >> 16;
-+	}
-+
-+	if (state->pref == 0)
-+		set_reg(state->dest, val, regs, cregs);
-+
-+	return;
-+
-+fault:	state->fault = 1;
-+}
-+
-+static void fixup_store(struct disasm_state *state, struct pt_regs *regs,
-+			struct callee_regs *cregs)
-+{
-+	/* register write back */
-+	if ((state->aa == 1) || (state->aa == 2)) {
-+		set_reg(state->wb_reg, state->src2 + state->src3, regs, cregs);
-+
-+		if (state->aa == 3)
-+			state->src3 = 0;
-+	} else if (state->aa == 3) {
-+		if (state->zz == 2) {
-+			set_reg(state->wb_reg, state->src2 +
-+				(state->src3 << 1), regs, cregs);
-+		} else if (!state->zz) {
-+			set_reg(state->wb_reg, state->src2 +
-+				(state->src3 << 2), regs, cregs);
-+		} else {
-+			goto fault;
++	for (tbl = &arc_cpu_tbl[0]; tbl->info.id != 0; tbl++) {
++		if ((core->family >= tbl->info.id) &&
++		    (core->family <= tbl->up_range)) {
++			n += scnprintf(buf + n, len - n,
++				       "processor\t: %s %s\n",
++				       tbl->info.str,
++				       be ? "[Big Endian]" : "");
++			break;
 +		}
 +	}
 +
-+	/* write fix-up */
-+	if (!state->zz) {
-+		put32_unaligned_check(state->src1, state->src2 +
-+					state->src3);
-+	} else {
-+		put16_unaligned_check(state->src1, state->src2 +
-+					state->src3);
-+	}
++	if (tbl->info.id == 0)
++		n += scnprintf(buf + n, len - n, "UNKNOWN ARC Processor\n");
 +
-+	return;
++	n += scnprintf(buf + n, len - n, "CPU speed\t: %u.%02u Mhz\n",
++		       (unsigned int)(CONFIG_ARC_PLAT_CLK / 1000000),
++		       (unsigned int)(CONFIG_ARC_PLAT_CLK / 10000) % 100);
 +
-+fault:	state->fault = 1;
++	n += scnprintf(buf + n, len - n, "Timers\t\t: %s %s\n",
++		       (cpu->timers & 0x200) ? "TIMER1" : "",
++		       (cpu->timers & 0x100) ? "TIMER0" : "");
++
++	n += scnprintf(buf + n, len - n, "Vect Tbl Base\t: %#x\n",
++		       cpu->vec_base);
++
++	n += scnprintf(buf + n, len - n, "UNCACHED Base\t: %#x\n",
++		       cpu->uncached_base);
++
++	return buf;
 +}
 +
-+int misaligned_fixup(unsigned long address, struct pt_regs *regs,
-+		     unsigned long cause,  struct callee_regs *cregs)
++static const struct id_to_str mul_type_nm[] = {
++	{ 0x0, "N/A"},
++	{ 0x1, "32x32 (spl Result Reg)" },
++	{ 0x2, "32x32 (ANY Result Reg)" }
++};
++
++static const struct id_to_str mac_mul_nm[] = {
++	{0x0, "N/A"},
++	{0x1, "N/A"},
++	{0x2, "Dual 16 x 16"},
++	{0x3, "N/A"},
++	{0x4, "32x16"},
++	{0x5, "N/A"},
++	{0x6, "Dual 16x16 and 32x16"}
++};
++
++char *arc_extn_mumbojumbo(int cpu_id, char *buf, int len)
 +{
-+	struct disasm_state state;
++	int n = 0;
++	struct cpuinfo_arc *cpu = &cpuinfo_arc700[cpu_id];
 +
-+	/* handle user mode only */
-+	if (!user_mode(regs))
-+		return 1;
++	FIX_PTR(cpu);
++#define IS_AVAIL1(var, str)	((var) ? str : "")
++#define IS_AVAIL2(var, str)	((var == 0x2) ? str : "")
++#define IS_USED(var)		((var) ? "(in-use)" : "(not used)")
 +
-+	disasm_instr(regs->ret, &state, 1, regs, cregs);
++	n += scnprintf(buf + n, len - n,
++		       "Extn [700-Base]\t: %s %s %s %s %s %s\n",
++		       IS_AVAIL2(cpu->extn.norm, "norm,"),
++		       IS_AVAIL2(cpu->extn.barrel, "barrel-shift,"),
++		       IS_AVAIL1(cpu->extn.swap, "swap,"),
++		       IS_AVAIL2(cpu->extn.minmax, "minmax,"),
++		       IS_AVAIL1(cpu->extn.crc, "crc,"),
++		       IS_AVAIL2(cpu->extn.ext_arith, "ext-arith"));
 +
-+	if (state.fault)
-+		goto fault;
++	n += scnprintf(buf + n, len - n, "Extn [700-MPY]\t: %s",
++		       mul_type_nm[cpu->extn.mul].str);
 +
-+	/* ldb/stb should not have unaligned exception */
-+	if ((state.zz == 1) || (state.di))
-+		goto fault;
++	n += scnprintf(buf + n, len - n, "   MAC MPY: %s\n",
++		       mac_mul_nm[cpu->extn_mac_mul.type].str);
 +
-+	if (!state.write)
-+		fixup_load(&state, regs, cregs);
-+	else
-+		fixup_store(&state, regs, cregs);
-+
-+	if (state.fault)
-+		goto fault;
-+
-+	if (delay_mode(regs)) {
-+		regs->ret = regs->bta;
-+		regs->status32 &= ~STATUS_DE_MASK;
-+	} else {
-+		regs->ret += state.instr_len;
++	if (cpu->core.family == 0x34) {
++		n += scnprintf(buf + n, len - n,
++		"Extn [700-4.10]\t: LLOCK/SCOND %s, SWAPE %s, RTSC %s\n",
++			       IS_USED(__CONFIG_ARC_HAS_LLSC_VAL),
++			       IS_USED(__CONFIG_ARC_HAS_SWAPE_VAL),
++			       IS_USED(__CONFIG_ARC_HAS_RTSC_VAL));
 +	}
 +
-+	return 0;
++	n += scnprintf(buf + n, len - n, "Extn [CCM]\t: %s",
++		       !(cpu->dccm.sz || cpu->iccm.sz) ? "N/A" : "");
 +
-+fault:
-+	pr_err("Alignment trap: fault in fix-up %08lx at [<%08lx>]\n",
-+		state.words[0], address);
++	if (cpu->dccm.sz)
++		n += scnprintf(buf + n, len - n, "DCCM: @ %x, %d KB ",
++			       cpu->dccm.base_addr, TO_KB(cpu->dccm.sz));
 +
-+	return 1;
++	if (cpu->iccm.sz)
++		n += scnprintf(buf + n, len - n, "ICCM: @ %x, %d KB",
++			       cpu->iccm.base_addr, TO_KB(cpu->iccm.sz));
++
++	n += scnprintf(buf + n, len - n, "\nExtn [FPU]\t: %s",
++		       !(cpu->fp.ver || cpu->dpfp.ver) ? "N/A" : "");
++
++	if (cpu->fp.ver)
++		n += scnprintf(buf + n, len - n, "SP [v%d] %s",
++			       cpu->fp.ver, cpu->fp.fast ? "(fast)" : "");
++
++	if (cpu->dpfp.ver)
++		n += scnprintf(buf + n, len - n, "DP [v%d] %s",
++			       cpu->dpfp.ver, cpu->dpfp.fast ? "(fast)" : "");
++
++	n += scnprintf(buf + n, len - n, "\n");
++
++#ifdef _ASM_GENERIC_UNISTD_H
++	n += scnprintf(buf + n, len - n,
++		       "OS ABI [v2]\t: asm-generic/{unistd,stat,fcntl}\n");
++#endif
++
++	return buf;
 +}
++
++/*
++ * Ensure that FP hardware and kernel config match
++ * -If hardware contains DPFP, kernel needs to save/restore FPU state
++ *  across context switches
++ * -If hardware lacks DPFP, but kernel configured to save FPU state then
++ *  kernel trying to access non-existant DPFP regs will crash
++ *
++ * We only check for Dbl precision Floating Point, because only DPFP
++ * hardware has dedicated regs which need to be saved/restored on ctx-sw
++ * (Single Precision uses core regs), thus kernel is kind of oblivious to it
++ */
++void __init arc_chk_fpu(void)
++{
++	struct cpuinfo_arc *cpu = &cpuinfo_arc700[smp_processor_id()];
++
++	if (cpu->dpfp.ver) {
++#ifndef CONFIG_ARC_FPU_SAVE_RESTORE
++		pr_warn("DPFP support broken in this kernel...\n");
++#endif
++	} else {
++#ifdef CONFIG_ARC_FPU_SAVE_RESTORE
++		panic("H/w lacks DPFP support, apps won't work\n");
++#endif
++	}
+ }
+ 
+ /*
+@@ -46,10 +242,25 @@ void __init read_arc_build_cfg_regs(void)
+ 
+ void __init setup_processor(void)
+ {
++	char str[512];
++	int cpu_id = smp_processor_id();
++
+ 	read_arc_build_cfg_regs();
+ 	arc_init_IRQ();
++
++	printk(arc_cpu_mumbojumbo(cpu_id, str, sizeof(str)));
++
+ 	arc_mmu_init();
+ 	arc_cache_init();
++
++
++	printk(arc_extn_mumbojumbo(cpu_id, str, sizeof(str)));
++
++#ifdef CONFIG_SMP
++	printk(arc_platform_smp_cpuinfo());
++#endif
++
++	arc_chk_fpu();
+ }
+ 
+ void __init __attribute__((weak)) arc_platform_early_init(void)
+@@ -117,12 +328,22 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+ 	if (!str)
+ 		goto done;
+ 
+-	seq_printf(m, "ARC700 #%d\n", cpu_id);
++	seq_printf(m, arc_cpu_mumbojumbo(cpu_id, str, PAGE_SIZE));
+ 
+ 	seq_printf(m, "Bogo MIPS : \t%lu.%02lu\n",
+ 		   loops_per_jiffy / (500000 / HZ),
+ 		   (loops_per_jiffy / (5000 / HZ)) % 100);
+ 
++	seq_printf(m, arc_mmu_mumbojumbo(cpu_id, str, PAGE_SIZE));
++
++	seq_printf(m, arc_cache_mumbojumbo(cpu_id, str, PAGE_SIZE));
++
++	seq_printf(m, arc_extn_mumbojumbo(cpu_id, str, PAGE_SIZE));
++
++#ifdef CONFIG_SMP
++	seq_printf(m, arc_platform_smp_cpuinfo());
++#endif
++
+ 	free_page((unsigned long)str);
+ done:
+ 	seq_printf(m, "\n\n");
+diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
+index 9f8f567..a50f947 100644
+--- a/arch/arc/mm/cache_arc700.c
++++ b/arch/arc/mm/cache_arc700.c
+@@ -82,6 +82,28 @@ static void __ic_line_inv_4_alias(unsigned long, int);
+ static void (*___flush_icache_rtn) (unsigned long, int);
+ #endif
+ 
++char *arc_cache_mumbojumbo(int cpu_id, char *buf, int len)
++{
++	int n = 0;
++	unsigned int c = smp_processor_id();
++
++#define PR_CACHE(p, enb, str)						\
++{									\
++	if (!(p)->ver)							\
++		n += scnprintf(buf + n, len - n, str"\t\t: N/A\n");	\
++	else								\
++		n += scnprintf(buf + n, len - n,			\
++			str"\t\t: (%uK) VIPT, %dway set-asc, %ub Line %s\n", \
++			TO_KB((p)->sz), (p)->assoc, (p)->line_len,	\
++			enb ?  "" : "DISABLED (kernel-build)");		\
++}
++
++	PR_CACHE(&cpuinfo_arc700[c].icache, __CONFIG_ARC_HAS_ICACHE, "I-Cache");
++	PR_CACHE(&cpuinfo_arc700[c].dcache, __CONFIG_ARC_HAS_DCACHE, "D-Cache");
++
++	return buf;
++}
++
+ /*
+  * Read the Cache Build Confuration Registers, Decode them and save into
+  * the cpuinfo structure for later use.
+@@ -132,10 +154,29 @@ void __init arc_cache_init(void)
+ 	struct cpuinfo_arc_cache *dc;
+ #endif
+ 	int way_pg_ratio = way_pg_ratio;
++	char str[256];
++
++	printk(arc_cache_mumbojumbo(0, str, sizeof(str)));
+ 
+ #ifdef CONFIG_ARC_HAS_ICACHE
+ 	ic = &cpuinfo_arc700[cpu].icache;
+ 
++	/* 1. Confirm some of I-cache params which Linux assumes */
++	if ((ic->assoc != ARC_ICACHE_WAYS) ||
++	    (ic->line_len != ARC_ICACHE_LINE_LEN)) {
++		panic("Cache H/W doesn't match kernel Config");
++	}
++#if (CONFIG_ARC_MMU_VER > 2)
++	if (ic->ver != 3) {
++		if (running_on_hw)
++			panic("Cache ver doesn't match MMU ver\n");
++
++		/* For ISS - suggest the toggles to use */
++		pr_err("Use -prop=icache_version=3,-prop=dcache_version=3\n");
++
++	}
++#endif
++
+ 	/*
+ 	 * if Cache way size is <= page size then no aliasing exhibited
+ 	 * otherwise ratio determines num of aliases.
+@@ -175,6 +216,11 @@ void __init arc_cache_init(void)
+ #ifdef CONFIG_ARC_HAS_DCACHE
+ 	dc = &cpuinfo_arc700[cpu].dcache;
+ 
++	if ((dc->assoc != ARC_DCACHE_WAYS) ||
++	    (dc->line_len != ARC_DCACHE_LINE_LEN)) {
++		panic("Cache H/W doesn't match kernel Config");
++	}
++
+ 	/* check for D-Cache aliasing */
+ 	if ((dc->sz / ARC_DCACHE_WAYS) > PAGE_SIZE)
+ 		panic("D$ aliasing not handled right now\n");
+diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
+index defa0c0..36bae47 100644
+--- a/arch/arc/mm/tlb.c
++++ b/arch/arc/mm/tlb.c
+@@ -451,8 +451,46 @@ void __init read_decode_mmu_bcr(void)
+ 	mmu->num_tlb = mmu->sets * mmu->ways;
+ }
+ 
++char *arc_mmu_mumbojumbo(int cpu_id, char *buf, int len)
++{
++	int n = 0;
++	struct cpuinfo_arc_mmu *p_mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
++
++	n += scnprintf(buf + n, len - n, "ARC700 MMU [v%x]\t: %dk PAGE, ",
++		       p_mmu->ver, TO_KB(p_mmu->pg_sz));
++
++	n += scnprintf(buf + n, len - n,
++		       "J-TLB %d (%dx%d), uDTLB %d, uITLB %d, %s\n",
++		       p_mmu->num_tlb, p_mmu->sets, p_mmu->ways,
++		       p_mmu->u_dtlb, p_mmu->u_itlb,
++		       __CONFIG_ARC_MMU_SASID_VAL ? "SASID" : "");
++
++	return buf;
++}
++
+ void __init arc_mmu_init(void)
+ {
++	char str[256];
++	struct cpuinfo_arc_mmu *mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
++
++	printk(arc_mmu_mumbojumbo(0, str, sizeof(str)));
++
++	/* For efficiency sake, kernel is compile time built for a MMU ver
++	 * This must match the hardware it is running on.
++	 * Linux built for MMU V2, if run on MMU V1 will break down because V1
++	 *  hardware doesn't understand cmds such as WriteNI, or IVUTLB
++	 * On the other hand, Linux built for V1 if run on MMU V2 will do
++	 *   un-needed workarounds to prevent memcpy thrashing.
++	 * Similarly MMU V3 has new features which won't work on older MMU
++	 */
++	if (mmu->ver != CONFIG_ARC_MMU_VER) {
++		panic("MMU ver %d doesn't match kernel built for %d...\n",
++		      mmu->ver, CONFIG_ARC_MMU_VER);
++	}
++
++	if (mmu->pg_sz != PAGE_SIZE)
++		panic("MMU pg size != PAGE_SIZE (%luk)\n", TO_KB(PAGE_SIZE));
++
+ 	/*
+ 	 * ASID mgmt data structures are compile time init
+ 	 *  asid_cache = FIRST_ASID and asid_mm_map[] all zeroes
 -- 
 1.7.4.1
 
