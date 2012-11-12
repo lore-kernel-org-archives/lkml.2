@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab2KLHuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 02:50:13 -0500
-Received: from ozlabs.org ([203.10.76.45]:44436 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab2KLHuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 02:50:12 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 5/7] virtio_balloon: introduce migration primitives to balloon pages
-In-Reply-To: <20121108003403.GE10444@optiplex.redhat.com>
-References: <cover.1352256081.git.aquini@redhat.com> <265aaff9a79f503672f0cdcdff204114b5b5ba5b.1352256088.git.aquini@redhat.com> <87625h3tl1.fsf@rustcorp.com.au> <20121108003403.GE10444@optiplex.redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 12 Nov 2012 18:19:23 +1030
-Message-ID: <87lie71csc.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751750Ab2KLHyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 02:54:37 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:40904 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750856Ab2KLHyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 02:54:36 -0500
+Message-ID: <1352706875.2015.10.camel@joe-AO722>
+Subject: Re: [PATCH 0/8] Fix coding style in sdhci.c
+From: Joe Perches <joe@perches.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, patches@linaro.org
+Date: Sun, 11 Nov 2012 23:54:35 -0800
+In-Reply-To: <87a9unnvl1.fsf@octavius.laptop.org>
+References: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
+	 <50A05DE9.8070907@samsung.com> <50A07D30.4030705@linaro.org>
+	 <87a9unnvl1.fsf@octavius.laptop.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael Aquini <aquini@redhat.com> writes:
+On Mon, 2012-11-12 at 02:12 -0500, Chris Ball wrote:
+> Hi,
+> 
+> On Sun, Nov 11 2012, Tushar Behera wrote:
+> > Yes, I can do that. I did split it specifically so that we could drop
+> > any patches if required.
+> >
+> > I will wait for a word from Chris regarding what he prefers.
+> 
+> I would want to merge one patch, but I'm afraid I don't generally want
+> to merge changes like these.  sdhci.c is one of the most modified files
+> in drivers/mmc, so a change like this can create merge conflicts that
+> require many people to update their work, and that's not worth it.
 
-> On Thu, Nov 08, 2012 at 09:32:18AM +1030, Rusty Russell wrote:
->> The first one can be delayed, the second one can be delayed if the host
->> didn't ask for VIRTIO_BALLOON_F_MUST_TELL_HOST (qemu doesn't).
->> 
->> We could implement a proper request queue for these, and return -EAGAIN
->> if the queue fills.  Though in practice, it's not important (it might
->> help performance).
->
-> I liked the idea. Give me the directions to accomplish it and I'll give it a try
-> for sure.
+I think brace style isn't important enough too.
 
-OK, let's get this applied first, but here are some pointers:
+I suggested this awhile ago, but it went nowhere.
 
-Here's the current callback function when the host has processed the
-buffers we put in the queue:
+https://lkml.org/lkml/2011/8/11/425
 
- static void balloon_ack(struct virtqueue *vq)
- {
-	struct virtio_balloon *vb = vq->vdev->priv;
 
-	wake_up(&vb->acked);
- }
-
-It's almost a noop: here's how we use it to make our queues synchronous:
-
- static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
- {
-	struct scatterlist sg;
-	unsigned int len;
-
-	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-
-	/* We should always be able to add one buffer to an empty queue. */
-	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
-		BUG();
-	virtqueue_kick(vq);
-
-	/* When host has read buffer, this completes via balloon_ack */
-	wait_event(vb->acked, virtqueue_get_buf(vq, &len));
- }
-
-And we set up the callback when we create the virtqueue:
-
-	vq_callback_t *callbacks[] = { balloon_ack, balloon_ack, stats_request };
-...
-	err = vb->vdev->config->find_vqs(vb->vdev, nvqs, vqs, callbacks, names);
-
-So off the top of my head it should be as simple as changing tell_host()
-to only wait if the virtqueue_add_buf() fails (ie. queue is full).
-
-Hmm, though you will want to synchronize the inflate and deflate queues:
-if we tell the host we're giving a page up we want it to have seen that
-before we tell it we're using it again...
-
-Cheers,
-Rusty.
