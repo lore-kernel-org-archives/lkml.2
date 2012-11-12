@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2KLWKx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 17:10:53 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40879 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2KLWKv (ORCPT
+	id S1753543Ab2KLWOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 17:14:43 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62477 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab2KLWOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 17:10:51 -0500
+	Mon, 12 Nov 2012 17:14:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net>
-	<20121025041620.GH2616@ZenIV.linux.org.uk>
-	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
-	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-	<20121025120952.GI2616@ZenIV.linux.org.uk>
-	<20121025123843.GJ2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-	<20121026183601.GR2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
-	<CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
-	<alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
-	<CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
-	<alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
-Date: Mon, 12 Nov 2012 14:10:50 -0800
-X-Google-Sender-Auth: pgf4b3P4XSUS45EI47abPBnkVWE
-Message-ID: <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-From: Kees Cook <keescook@chromium.org>
-To: P J P <ppandit@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+In-Reply-To: <20121108155112.GN31821@dhcp22.suse.cz>
+References: <alpine.DEB.2.00.1211080125150.3450@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1211080126390.3450@chino.kir.corp.google.com>
+	<20121108155112.GN31821@dhcp22.suse.cz>
+Date: Mon, 12 Nov 2012 20:14:40 -0200
+Message-ID: <CACnwZYcUEmEStT7uwN3O3=m34uLi9YnJSYWFPZafuzCy_t4uaw@mail.gmail.com>
+Subject: Re: [patch 2/2] mm, oom: fix race when specifying a thread as the oom origin
+From: Thiago Farina <tfransosi@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Content-Type: text/plain; charset=ISO-8859-1
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 12:10 AM, P J P <ppandit@redhat.com> wrote:
+On Thu, Nov 8, 2012 at 1:51 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Thu 08-11-12 01:27:00, David Rientjes wrote:
+>> test_set_oom_score_adj() and compare_swap_oom_score_adj() are used to
+>> specify that current should be killed first if an oom condition occurs in
+>> between the two calls.
+>>
+>> The usage is
+>>
+>>       short oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
+>>       ...
+>>       compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
+>>
+>> to store the thread's oom_score_adj, temporarily change it to the maximum
+>> score possible, and then restore the old value if it is still the same.
+>>
+>> This happens to still be racy, however, if the user writes
+>> OOM_SCORE_ADJ_MAX to /proc/pid/oom_score_adj in between the two calls.
+>> The compare_swap_oom_score_adj() will then incorrectly reset the old
+>> value prior to the write of OOM_SCORE_ADJ_MAX.
+>>
+>> To fix this, introduce a new oom_flags_t member in struct signal_struct
+>> that will be used for per-thread oom killer flags.  KSM and swapoff can
+>> now use a bit in this member to specify that threads should be killed
+>> first in oom conditions without playing around with oom_score_adj.
+>>
+>> This also allows the correct oom_score_adj to always be shown when
+>> reading /proc/pid/oom_score.
+>>
+>> Signed-off-by: David Rientjes <rientjes@google.com>
 >
->   Hello Kees, Al,
->
-> +-- On Sat, 27 Oct 2012, Kees Cook wrote --+
-> | If we change binfmt_script to not make a recursive call, then we still
-> | need to keep the interp change somewhere off the stack. I still think
-> | my patchset is the least bad.
-> |
-> | Al, do you have something else in mind?
->
->   Guys, are there any updates further?
->
->   Al, what's your take on the *rare* extra call to request_module?
-
-Without any other feedback, I'd like to use my minimal allocation
-patch, since it fixes the problem and doesn't change any of the
-semantics of how/when loading happens.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+> I didn't like the previous playing with the oom_score_adj and what you
+> propose looks much nicer.
+> Maybe s/oom_task_origin/task_oom_origin/ would be a better fit
+May be s/oom_task_origin/is_task_origin_oom? Just my 2 cents.
