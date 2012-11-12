@@ -1,217 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab2KLRpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:45:42 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:39194 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab2KLRpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:45:40 -0500
-Date: Mon, 12 Nov 2012 14:45:34 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 02/12] perf header: Add HEADER_GROUP_DESC feature
-Message-ID: <20121112174534.GF18978@ghostprotocols.net>
-References: <1352479414-2324-1-git-send-email-namhyung@kernel.org>
- <1352479414-2324-3-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352479414-2324-3-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754025Ab2KLRzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:55:36 -0500
+Received: from xes-mad.com ([216.165.139.218]:40852 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab2KLRze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 12:55:34 -0500
+X-Greylist: delayed 1411 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Nov 2012 12:55:34 EST
+Message-ID: <1352741475.6008.16.camel@petert>
+Subject: Re: mfd: lpc_ich: NULL pointer dereference at (second) module
+ removal
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Mon, 12 Nov 2012 11:31:15 -0600
+In-Reply-To: <1352467148.1895.20.camel@x61.thuisdomein>
+References: <1352467148.1895.20.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Nov 10, 2012 at 01:43:24AM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Save group relationship information so that it can be restored when
-> perf report is running.
-> 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Thanks for reporting the issue!
 
-<SNIP>
-  
-> +static int process_group_desc(struct perf_file_section *section __maybe_unused,
-> +			      struct perf_header *ph, int fd,
-> +			      void *data __maybe_unused)
-> +{
-> +	size_t ret = -1;
+On Fri, 2012-11-09 at 14:19 +0100, Paul Bolle wrote:
+> 0) I can trigger a NULL pointer dereference if I remove the lpc_ich
+> module. This seems to only happen if I remove it for the second time
+> (ie, remove the module, insert it and remove it again). This happens
+> both on i686 and x86_64 (different setups, as inserting the module
+> triggers different messages about the initialization of the MFD cells on
+> these machines). Both machines are running v3.6.6.
 
-why initialize ret if the first thing you do with it is...
+I believe this is caused by the fact that non-MFD devices get attached
+to the same parent as the iTCO_wdt driver, which is an MFD.  When the
+MFD code attempts unregister the MFD drivers, it oops when the non-MFD
+devices are accessed since they don't have the mfd_cell node.  I was
+able to trigger the problem on the first removal of the lpc_ich driver
+by doing:
+$ insmod iTCO_wdt.ko
+$ insmod lpc_ich.ko
+$ rmmod lpc_ich
 
-> +	u32 i, nr, nr_groups;
-> +	struct perf_session *session;
-> +	struct perf_evsel *evsel, *leader = NULL;
-> +	struct group_desc {
-> +		char *name;
-> +		u32 leader_idx;
-> +		u32 nr_members;
-> +	} *desc;
-> +
-> +	ret = read(fd, &nr_groups, sizeof(nr_groups));
 
-assign another value?
+> 1) On x86_64 the Oops looks like this:
+> [...]
+> <6>[11783.359637] iTCO_wdt: Found a ICH8M-E TCO device (Version=2, TCOBASE=0x1060)
+> <6>[11783.360477] iTCO_wdt: initialized. heartbeat=30 sec (nowayout=0)
+> <4>[11783.360492] ACPI Warning: 0x0000000000001028-0x000000000000102f SystemIO conflicts with Region \_SB_.PCI0.LPC_.PMIO 1 (20120711/utaddress-251)
+> <6>[11783.360498] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+> <4>[11783.360503] ACPI Warning: 0x0000000000001180-0x00000000000011bf SystemIO conflicts with Region \_SB_.PCI0.LPC_.LPIO 1 (20120711/utaddress-251)
+> <6>[11783.360507] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+> <4>[11783.360509] lpc_ich: Resource conflict(s) found affecting gpio_ich
+> [modprobe -r lcp_ich must have been done in these two seconds]
+> <1>[11785.617128] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
 
-We need to use readn instead of read, and not use ret here, just do
-	if (read(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
+<snip>
 
-> +	if (ret != sizeof(nr_groups))
-> +		return -1;
-> +
-> +	if (ph->needs_swap)
-> +		nr_groups = bswap_32(nr_groups);
-> +
-> +	ph->env.nr_groups = nr_groups;
-> +	if (!nr_groups) {
-> +		pr_debug("group desc not available\n");
-> +		return 0;
-> +	}
-> +
-> +	desc = calloc(nr_groups, sizeof(*desc));
-> +	if (!desc)
-> +		return -1;
-> +
-> +	for (i = 0; i < nr_groups; i++) {
-> +		desc[i].name = do_read_string(fd, ph);
-> +		if (!desc[i].name)
-> +			goto out_free;
-> +
-> +		ret = read(fd, &desc[i].leader_idx, sizeof(u32));
-> +		if (ret != sizeof(u32))
-> +			goto out_free;
+> 3) So to me it looks like "cell" is NULL here, and we oops when we're
+> trying to access "cell->usage_count" (which will then be at offset
+> 0x10). I have no idea how this can happen.
 
-ditto
+Your analysis looks correct.  This patch should fix the problem I
+believe.
 
-> +
-> +		ret = read(fd, &desc[i].nr_members, sizeof(u32));
-> +		if (ret != sizeof(u32))
-> +			goto out_free;
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -208,6 +208,14 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
+        const struct mfd_cell *cell = mfd_get_cell(pdev);
+        atomic_t **usage_count = c;
+ 
++       /*
++        * Ignore non-MFD devices.  MFD and non-MFD devices can be children of
++        * the same parent in some cases.  Eg the iTCO WDT is a MFD driver, but
++        * the common WDT core and dev drivers it instantiates are not.
++        */
++       if (!cell)
++               return 0;
++
+        /* find the base address of usage_count pointers (for freeing) */
+        if (!*usage_count || (cell->usage_count < *usage_count))
+                *usage_count = cell->usage_count;
 
-ditto
+Samuel, let me know if you have any comments on the fix, otherwise I'll
+submit a proper patch shortly.
 
-> +
-> +		if (ph->needs_swap) {
-> +			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-> +			desc[i].nr_members = bswap_32(desc[i].nr_members);
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * Rebuild group relationship based on the group_desc
-> +	 */
-> +	session = container_of(ph, struct perf_session, header);
-> +	session->evlist->nr_groups = nr_groups;
-> +
-> +	i = nr = 0;
-> +	list_for_each_entry(evsel, &session->evlist->entries, node) {
-> +		if (evsel->idx == (int) desc[i].leader_idx) {
-> +			evsel->leader = NULL;
+> 4) Side note: why does the kernel print offsets in hex and gdb in
+> decimal? (Of course, here it's trivial to realize that 0x1d is 29.)
 
-Humm, isn't it better to set evsel->leader to evsel, that way all
-members in a group have its evsel->leader pointing to the leader and for
-things like the group idx we can do just:
+Note sure about that one...
 
-		evsel->idx - evsel->leader->idx
+Thanks for the report.
 
-avoiding the need to special case the leader, will do that.
+Best,
+Peter
 
-> +			/* {anon_group} is a dummy name */
-> +			if (strcmp(desc[i].name, "{anon_group}"))
-> +				evsel->group_name = desc[i].name;
-> +			evsel->nr_members = desc[i].nr_members;
-> +
-> +			BUG_ON(i >= nr_groups);
-> +			BUG_ON(nr > 0);
 
-BUG_ON here is way too extreme, we should just bail out, testing and if
-the problem is found, goto out_free
-
-> +			leader = evsel;
-> +			nr = evsel->nr_members;
-> +			i++;
-> +		} else if (nr) {
-
-Humm, do we really need to test against nr? Or even use nr at all?
-
-> +			/* This is a group member */
-> +			evsel->leader = leader;
-> +			/* group_idx starts from 0 */
-> +			evsel->group_idx = leader->nr_members - nr;
-> +			nr--;
-> +		}
-> +	}
-> +
-> +	BUG_ON(i != nr_groups);
-> +	BUG_ON(nr != 0);
-
-Too extreme, goto out_free.
-
-And just before out_free we need to set ret = 0, otherwise we will
-return...
-
-> +out_free:
-> +	while ((int) --i >= 0)
-> +		free(desc[i].name);
-> +	free(desc);
-
-here, whatever value was in ret, in this patch it will be, if all goes
-well, sizeof(u32) :-)
-
-> +	return ret;
-> +}
-> +
->  struct feature_ops {
->  	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
->  	void (*print)(struct perf_header *h, int fd, FILE *fp);
-> @@ -1986,6 +2137,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
->  	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
->  	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
->  	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-> +	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
->  };
->  
->  struct header_print_data {
-> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-> index 5f1cd6884f37..e3e7fb490310 100644
-> --- a/tools/perf/util/header.h
-> +++ b/tools/perf/util/header.h
-> @@ -29,6 +29,7 @@ enum {
->  	HEADER_NUMA_TOPOLOGY,
->  	HEADER_BRANCH_STACK,
->  	HEADER_PMU_MAPPINGS,
-> +	HEADER_GROUP_DESC,
->  	HEADER_LAST_FEATURE,
->  	HEADER_FEAT_BITS	= 256,
->  };
-
-Here we're adding holes to the struct:
-
-> @@ -79,6 +80,7 @@ struct perf_session_env {
->  	char			*numa_nodes;
->  	int			nr_pmu_mappings;
-
-4 byte hole
-
->  	char			*pmu_mappings;
-
-4 byte hole
-
-> +	int			nr_groups;
-
-I'm working on a patch implementing my suggestions.
-
->  };
->  
->  struct perf_header {
-> -- 
-> 1.7.9.2
