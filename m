@@ -1,174 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab2KLPJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:09:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9169 "EHLO mx1.redhat.com"
+	id S1753593Ab2KLPMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:12:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16183 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab2KLPJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:09:30 -0500
-Date: Mon, 12 Nov 2012 17:11:54 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        maxk@qti.qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
-        ernesto.martin@viasat.com, haixiao@juniper.net
-Subject: Re: [net-next v5 6/7] tuntap: add ioctl to attach or detach a file
- form tuntap device
-Message-ID: <20121112151154.GA16484@redhat.com>
-References: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
- <1351748762-3455-7-git-send-email-jasowang@redhat.com>
+	id S1752097Ab2KLPMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 10:12:21 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [patch,v3 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
+References: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
+	<1352488687-19935-5-git-send-email-jmoyer@redhat.com>
+	<509E178B.6090601@acm.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 12 Nov 2012 09:25:05 -0500
+In-Reply-To: <509E178B.6090601@acm.org> (Bart Van Assche's message of "Sat, 10
+	Nov 2012 09:59:55 +0100")
+Message-ID: <x49zk2mkif2.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351748762-3455-7-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 01:46:01PM +0800, Jason Wang wrote:
-> Sometimes usespace may need to active/deactive a queue, this could be done by
-> detaching and attaching a file from tuntap device.
-> 
-> This patch introduces a new ioctls - TUNSETQUEUE which could be used to do
-> this. Flag IFF_ATTACH_QUEUE were introduced to do attaching while
-> IFF_DETACH_QUEUE were introduced to do the detaching.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/tun.c           |   56 ++++++++++++++++++++++++++++++++++++------
->  include/uapi/linux/if_tun.h |    3 ++
->  2 files changed, 51 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 2762c55..79b6f9e 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -195,6 +195,15 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
->  	return txq;
->  }
->  
-> +static inline bool tun_not_capable(struct tun_struct *tun)
-> +{
-> +	const struct cred *cred = current_cred();
-> +
-> +	return ((uid_valid(tun->owner) && !uid_eq(cred->euid, tun->owner)) ||
-> +		  (gid_valid(tun->group) && !in_egroup_p(tun->group))) &&
-> +		!capable(CAP_NET_ADMIN);
-> +}
-> +
->  static void tun_set_real_num_queues(struct tun_struct *tun)
->  {
->  	netif_set_real_num_tx_queues(tun->dev, tun->numqueues);
-> @@ -1310,8 +1319,6 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  
->  	dev = __dev_get_by_name(net, ifr->ifr_name);
->  	if (dev) {
-> -		const struct cred *cred = current_cred();
-> -
->  		if (ifr->ifr_flags & IFF_TUN_EXCL)
->  			return -EBUSY;
->  		if ((ifr->ifr_flags & IFF_TUN) && dev->netdev_ops == &tun_netdev_ops)
-> @@ -1321,9 +1328,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  		else
->  			return -EINVAL;
->  
-> -		if (((uid_valid(tun->owner) && !uid_eq(cred->euid, tun->owner)) ||
-> -		     (gid_valid(tun->group) && !in_egroup_p(tun->group))) &&
-> -		    !capable(CAP_NET_ADMIN))
-> +		if (tun_not_capable(tun))
->  			return -EPERM;
->  		err = security_tun_dev_attach(tfile->socket.sk);
->  		if (err < 0)
-> @@ -1530,6 +1535,40 @@ static void tun_set_sndbuf(struct tun_struct *tun)
->  	}
->  }
->  
-> +static int tun_set_queue(struct file *file, struct ifreq *ifr)
-> +{
-> +	struct tun_file *tfile = file->private_data;
-> +	struct tun_struct *tun;
-> +	struct net_device *dev;
-> +	int ret = 0;
-> +
-> +	rtnl_lock();
-> +
-> +	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
-> +		dev = __dev_get_by_name(tfile->net, ifr->ifr_name);
-> +		if (!dev) {
-> +			ret = -EINVAL;
-> +			goto unlock;
-> +		}
-> +
-> +		tun = netdev_priv(dev);
-> +		if (dev->netdev_ops != &tap_netdev_ops &&
-> +			dev->netdev_ops != &tun_netdev_ops)
-> +			ret = -EINVAL;
-> +		else if (tun_not_capable(tun))
-> +			ret = -EPERM;
-> +		else
-> +			ret = tun_attach(tun, file);
+Bart Van Assche <bvanassche@acm.org> writes:
 
-looks like we need to check 
-security_tun_dev_attach here as well.
-As the patch is in net-next now we need a patch on top for that.
+> On 11/09/12 20:18, Jeff Moyer wrote:
+>> -	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
+>> +	cmd = kmem_cache_alloc_node(pool->cmd_slab,
+>> +				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
+>> +				    node);
+>
+> Hello Jeff,
+>
+> Is it necessary to add __GFP_ZERO here ? And if so, why ?
 
+Hi, Bart,
 
+The code used to do zeroing, so I just kept that aspect the same.  There
+is no kmem_cache_zalloc_node, and it didn't seem worth adding one.
 
-> +	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
-> +		__tun_detach(tfile, false);
-> +	else
-> +		ret = -EINVAL;
-> +
-> +unlock:
-> +	rtnl_unlock();
-> +	return ret;
-> +}
-> +
->  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  			    unsigned long arg, int ifreq_len)
->  {
-> @@ -1543,7 +1582,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  	int vnet_hdr_sz;
->  	int ret;
->  
-> -	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89) {
-> +	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
->  		if (copy_from_user(&ifr, argp, ifreq_len))
->  			return -EFAULT;
->  	} else {
-> @@ -1554,9 +1593,10 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  		 * This is needed because we never checked for invalid flags on
->  		 * TUNSETIFF. */
->  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
-> -				IFF_VNET_HDR,
-> +				IFF_VNET_HDR | IFF_MULTI_QUEUE,
->  				(unsigned int __user*)argp);
-> -	}
-> +	} else if (cmd == TUNSETQUEUE)
-> +		return tun_set_queue(file, &ifr);
->  
->  	ret = 0;
->  	rtnl_lock();
-> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-> index 8ef3a87..958497a 100644
-> --- a/include/uapi/linux/if_tun.h
-> +++ b/include/uapi/linux/if_tun.h
-> @@ -54,6 +54,7 @@
->  #define TUNDETACHFILTER _IOW('T', 214, struct sock_fprog)
->  #define TUNGETVNETHDRSZ _IOR('T', 215, int)
->  #define TUNSETVNETHDRSZ _IOW('T', 216, int)
-> +#define TUNSETQUEUE  _IOW('T', 217, int)
->  
->  /* TUNSETIFF ifr flags */
->  #define IFF_TUN		0x0001
-> @@ -63,6 +64,8 @@
->  #define IFF_VNET_HDR	0x4000
->  #define IFF_TUN_EXCL	0x8000
->  #define IFF_MULTI_QUEUE 0x0100
-> +#define IFF_ATTACH_QUEUE 0x0200
-> +#define IFF_DETACH_QUEUE 0x0400
->  
->  /* Features for GSO (TUNSETOFFLOAD). */
->  #define TUN_F_CSUM	0x01	/* You can hand me unchecksummed packets. */
-> -- 
-> 1.7.1
+Cheers,
+Jeff
