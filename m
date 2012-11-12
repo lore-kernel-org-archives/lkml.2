@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2KLV2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:28:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45199 "EHLO
+	id S1754408Ab2KLV2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:28:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45210 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab2KLV2j (ORCPT
+	with ESMTP id S1754176Ab2KLV2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:39 -0500
+	Mon, 12 Nov 2012 16:28:46 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Nikola Pajkovsky <npajkovs@redhat.com>
-Cc: Jan Kara <jack@suse.cz>,
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Subject: [ 3.5.yuz extended stable] Patch "udf: fix retun value on error path in udf_load_logicalvol" has been added to staging queue
-Date: Mon, 12 Nov 2012 19:28:31 -0200
-Message-Id: <1352755711-15762-1-git-send-email-herton.krzesinski@canonical.com>
+Subject: [ 3.5.yuz extended stable] Patch "sched: Fix migration thread runtime bogosity" has been added to staging queue
+Date: Mon, 12 Nov 2012 19:28:40 -0200
+Message-Id: <1352755720-15887-1-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,7 +24,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    udf: fix retun value on error path in udf_load_logicalvol
+    sched: Fix migration thread runtime bogosity
 
 to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
 which can be found at:
@@ -40,47 +41,90 @@ Thanks.
 
 ------
 
->From 4510a4ac40255b59496331c88971e9a8b63c704d Mon Sep 17 00:00:00 2001
-From: Nikola Pajkovsky <npajkovs@redhat.com>
-Date: Wed, 15 Aug 2012 00:38:08 +0200
-Subject: [PATCH] udf: fix retun value on error path in udf_load_logicalvol
+>From e1ad6614897d7b13cb5531d8cdc0e905bb0964d3 Mon Sep 17 00:00:00 2001
+From: Mike Galbraith <mgalbraith@suse.de>
+Date: Sat, 4 Aug 2012 05:44:14 +0200
+Subject: [PATCH] sched: Fix migration thread runtime bogosity
 
-commit 68766a2edcd5cd744262a70a2f67a320ac944760 upstream.
+commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
 
-In case we detect a problem and bail out, we fail to set "ret" to a
-nonzero value, and udf_load_logicalvol will mistakenly report success.
+Make stop scheduler class do the same accounting as other classes,
 
-Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Migration threads can be caught in the act while doing exec balancing,
+leading to the below due to use of unmaintained ->se.exec_start.  The
+load that triggered this particular instance was an apparently out of
+control heavily threaded application that does system monitoring in
+what equated to an exec bomb, with one of the VERY frequently migrated
+tasks being ps.
+
+%CPU   PID USER     CMD
+99.3    45 root     [migration/10]
+97.7    53 root     [migration/12]
+97.0    57 root     [migration/13]
+90.1    49 root     [migration/11]
+89.6    65 root     [migration/15]
+88.7    17 root     [migration/3]
+80.4    37 root     [migration/8]
+78.1    41 root     [migration/9]
+44.2    13 root     [migration/2]
+
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/udf/super.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index e660ffd..4988a8a 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1287,6 +1287,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 		udf_err(sb, "error loading logical volume descriptor: "
- 			"Partition table too long (%u > %lu)\n", table_len,
- 			sb->s_blocksize - sizeof(*lvd));
-+		ret = 1;
- 		goto out_bh;
- 	}
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 7b386e8..da5eb5b 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
+ {
+ 	struct task_struct *stop = rq->stop;
 
-@@ -1331,8 +1332,10 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 						UDF_ID_SPARABLE,
- 						strlen(UDF_ID_SPARABLE))) {
- 				if (udf_load_sparable_map(sb, map,
--				    (struct sparablePartitionMap *)gpm) < 0)
-+				    (struct sparablePartitionMap *)gpm) < 0) {
-+					ret = 1;
- 					goto out_bh;
-+				}
- 			} else if (!strncmp(upm2->partIdent.ident,
- 						UDF_ID_METADATA,
- 						strlen(UDF_ID_METADATA))) {
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+
+ 	return NULL;
+ }
+@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
+
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
+ }
+
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+
+ static void set_curr_task_stop(struct rq *rq)
+ {
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
+
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
 --
 1.7.9.5
 
