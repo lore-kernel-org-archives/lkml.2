@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab2KLV3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:29:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45224 "EHLO
+	id S1754457Ab2KLVaQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:30:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45228 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2KLV3C (ORCPT
+	with ESMTP id S932105Ab2KLV3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:29:02 -0500
+	Mon, 12 Nov 2012 16:29:06 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: Tyler Hicks <tyhicks@canonical.com>
-Cc: John Johansen <john.johansen@canonical.com>,
-        Colin Ian King <colin.king@canonical.com>,
+Cc: Artemy Tregubenko <me@arty.name>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Subject: [ 3.5.yuz extended stable] Patch "eCryptfs: Unlink lower inode when ecryptfs_create() fails" has been added to staging queue
-Date: Mon, 12 Nov 2012 19:28:57 -0200
-Message-Id: <1352755737-16123-1-git-send-email-herton.krzesinski@canonical.com>
+Subject: [ 3.5.yuz extended stable] Patch "eCryptfs: Write out all dirty pages just before releasing" has been added to staging queue
+Date: Mon, 12 Nov 2012 19:29:01 -0200
+Message-Id: <1352755741-16182-1-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,7 +23,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    eCryptfs: Unlink lower inode when ecryptfs_create() fails
+    eCryptfs: Write out all dirty pages just before releasing
 
 to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
 which can be found at:
@@ -41,124 +40,52 @@ Thanks.
 
 ------
 
->From 7dc1ae9699983fa11babe6a83933e2b58eb06e65 Mon Sep 17 00:00:00 2001
+>From 51b8150c74fb1071623215d80ee1560ab56057a4 Mon Sep 17 00:00:00 2001
 From: Tyler Hicks <tyhicks@canonical.com>
-Date: Tue, 22 May 2012 15:09:50 -0500
-Subject: [PATCH] eCryptfs: Unlink lower inode when ecryptfs_create() fails
+Date: Wed, 12 Sep 2012 18:02:46 -0700
+Subject: [PATCH] eCryptfs: Write out all dirty pages just before releasing
+ the lower file
 
-commit 8bc2d3cf612994a960c2e8eaea37f6676f67082a upstream.
+commit 7149f2558d5b5b988726662fe58b1c388337805b upstream.
 
-ecryptfs_create() creates a lower inode, allocates an eCryptfs inode,
-initializes the eCryptfs inode and cryptographic metadata attached to
-the inode, and then writes the metadata to the header of the file.
+Fixes a regression caused by:
 
-If an error was to occur after the lower inode was created, an empty
-lower file would be left in the lower filesystem. This is a problem
-because ecryptfs_open() refuses to open any lower files which do not
-have the appropriate metadata in the file header.
+821f749 eCryptfs: Revert to a writethrough cache model
 
-This patch properly unlinks the lower inode when an error occurs in the
-later stages of ecryptfs_create(), reducing the chance that an empty
-lower file will be left in the lower filesystem.
+That patch reverted some code (specifically, 32001d6f) that was
+necessary to properly handle open() -> mmap() -> close() -> dirty pages
+-> munmap(), because the lower file could be closed before the dirty
+pages are written out.
 
-https://launchpad.net/bugs/872905
+Rather than reapplying 32001d6f, this approach is a better way of
+ensuring that the lower file is still open in order to handle writing
+out the dirty pages. It is called from ecryptfs_release(), while we have
+a lock on the lower file pointer, just before the lower file gets the
+final fput() and we overwrite the pointer.
+
+https://launchpad.net/bugs/1047261
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Cc: John Johansen <john.johansen@canonical.com>
-Cc: Colin Ian King <colin.king@canonical.com>
+Reported-by: Artemy Tregubenko <me@arty.name>
+Tested-by: Artemy Tregubenko <me@arty.name>
+Tested-by: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ecryptfs/inode.c |   55 ++++++++++++++++++++++++++++++---------------------
- 1 file changed, 32 insertions(+), 23 deletions(-)
+ fs/ecryptfs/main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 68166ea..a14abba 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -143,6 +143,31 @@ static int ecryptfs_interpose(struct dentry *lower_dentry,
- 	return 0;
- }
-
-+static int ecryptfs_do_unlink(struct inode *dir, struct dentry *dentry,
-+			      struct inode *inode)
-+{
-+	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
-+	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
-+	struct dentry *lower_dir_dentry;
-+	int rc;
-+
-+	dget(lower_dentry);
-+	lower_dir_dentry = lock_parent(lower_dentry);
-+	rc = vfs_unlink(lower_dir_inode, lower_dentry);
-+	if (rc) {
-+		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
-+		goto out_unlock;
-+	}
-+	fsstack_copy_attr_times(dir, lower_dir_inode);
-+	set_nlink(inode, ecryptfs_inode_to_lower(inode)->i_nlink);
-+	inode->i_ctime = dir->i_ctime;
-+	d_drop(dentry);
-+out_unlock:
-+	unlock_dir(lower_dir_dentry);
-+	dput(lower_dentry);
-+	return rc;
-+}
-+
- /**
-  * ecryptfs_do_create
-  * @directory_inode: inode of the new file's dentry's parent in ecryptfs
-@@ -182,8 +207,10 @@ ecryptfs_do_create(struct inode *directory_inode,
- 	}
- 	inode = __ecryptfs_get_inode(lower_dentry->d_inode,
- 				     directory_inode->i_sb);
--	if (IS_ERR(inode))
-+	if (IS_ERR(inode)) {
-+		vfs_unlink(lower_dir_dentry->d_inode, lower_dentry);
- 		goto out_lock;
-+	}
- 	fsstack_copy_attr_times(directory_inode, lower_dir_dentry->d_inode);
- 	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
- out_lock:
-@@ -265,7 +292,9 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
- 	 * that this on disk file is prepared to be an ecryptfs file */
- 	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
- 	if (rc) {
--		drop_nlink(ecryptfs_inode);
-+		ecryptfs_do_unlink(directory_inode, ecryptfs_dentry,
-+				   ecryptfs_inode);
-+		make_bad_inode(ecryptfs_inode);
- 		unlock_new_inode(ecryptfs_inode);
- 		iput(ecryptfs_inode);
- 		goto out;
-@@ -477,27 +506,7 @@ out_lock:
-
- static int ecryptfs_unlink(struct inode *dir, struct dentry *dentry)
- {
--	int rc = 0;
--	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
--	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
--	struct dentry *lower_dir_dentry;
--
--	dget(lower_dentry);
--	lower_dir_dentry = lock_parent(lower_dentry);
--	rc = vfs_unlink(lower_dir_inode, lower_dentry);
--	if (rc) {
--		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
--		goto out_unlock;
--	}
--	fsstack_copy_attr_times(dir, lower_dir_inode);
--	set_nlink(dentry->d_inode,
--		  ecryptfs_inode_to_lower(dentry->d_inode)->i_nlink);
--	dentry->d_inode->i_ctime = dir->i_ctime;
--	d_drop(dentry);
--out_unlock:
--	unlock_dir(lower_dir_dentry);
--	dput(lower_dentry);
--	return rc;
-+	return ecryptfs_do_unlink(dir, dentry, dentry->d_inode);
- }
-
- static int ecryptfs_symlink(struct inode *dir, struct dentry *dentry,
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index df217dc..c2a9c39 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -162,6 +162,7 @@ void ecryptfs_put_lower_file(struct inode *inode)
+ 	inode_info = ecryptfs_inode_to_private(inode);
+ 	if (atomic_dec_and_mutex_lock(&inode_info->lower_file_count,
+ 				      &inode_info->lower_file_mutex)) {
++		filemap_write_and_wait(inode->i_mapping);
+ 		fput(inode_info->lower_file);
+ 		inode_info->lower_file = NULL;
+ 		mutex_unlock(&inode_info->lower_file_mutex);
 --
 1.7.9.5
 
