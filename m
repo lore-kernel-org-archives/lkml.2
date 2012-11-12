@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2KLORL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:17:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab2KLORK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:17:10 -0500
-Date: Mon, 12 Nov 2012 12:16:54 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au, mst@redhat.com,
-        yongjun_wei@trendmicro.com.cn,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] virtio: balloon: fix missing unlock on error in
- fill_balloon()
-Message-ID: <20121112141653.GA7228@optiplex.redhat.com>
-References: <CAPgLHd80RvvGdTKN3aR7dQ_b1S3_pAkMwmGjewc7zgf=4jafcg@mail.gmail.com>
+	id S1753377Ab2KLOSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:18:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50437 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab2KLOSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 09:18:12 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC PATCH 00/11] arch_gettimeoffset and ARM timer rework
+Date: Mon, 12 Nov 2012 14:17:58 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd80RvvGdTKN3aR7dQ_b1S3_pAkMwmGjewc7zgf=4jafcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211121417.58380.arnd@arndb.de>
+X-Provags-ID: V02:K0:no5SZ9t9oIvKWFIdmeno83zcvHctC/X+NEPgCoaIOT4
+ u9XH/87172RICtioNhEvwJ1EoIgX/7mKC2moAKD8biGaw1qRIV
+ EleGGG+4vnEj63CBOxvO72DMfSYOn/lm6lAY/ABBlbZwV3/0Ja
+ 7ZUpZGs9q8zffCma4yi+HfgOKm/ylYpY/QZDvj5+IIs/3fO0xW
+ XpYZxvjSWi2nNuNjOErs+YCjg/z4yxdxKaEcN9O99oZ8SAXSBt
+ QnG97I2+5R2Oc/FGxz1iutwKPgTPqj/C0F01d7l4TLIm/0npXf
+ xyZ1d++CUIRcTmAMFuGhklG3rRJqb+VqsQpTPFBLaen/GUwbXo
+ QLXNsD6dx2VEWqCUocgo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 09:50:40PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Add the missing unlock before return from function fill_balloon()
-> in the error handling case.
-> 
-> Introduced by 9864a8(virtio_balloon: introduce migration primitives
-> to balloon pages)
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/virtio/virtio_balloon.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index f70151b..72e8dcb 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -152,8 +152,10 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
->  	}
->  
->  	/* Didn't get any?  Oh well. */
-> -	if (vb->num_pfns == 0)
-> +	if (vb->num_pfns == 0) {
-> +		mutex_unlock(&vb->balloon_lock);
->  		return;
-> +	}
->  
->  	tell_host(vb, vb->inflate_vq);
->  	mutex_unlock(&vb->balloon_lock);
->
+On Thursday 08 November 2012, Stephen Warren wrote:
+> It would probably be easiest to merge this whole series through the
+> arm-soc tree. Anything else would require some co-ordination.
 
-I missed that one when rewriting v10 to v11. :(
+Fine with me. The patches all look good to me, so let's give people a
+little more time to weigh in with Acks and possible objections.
 
-Good catch, Wei! thanks!
+In particular, I hope Russell can comment if he has an opionion on these.
 
-Andrew, we need this pick for the virtio_balloon v12 patch, as well.
-
--- Rafael
+	Arnd
