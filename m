@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2KLXky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:40:54 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:37590 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754309Ab2KLXkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:40:52 -0500
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Zheng Li <zheng.x.li@oracle.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: rlb mode of bond should not alter ARP replies originating via bridge
-In-reply-to: <1352714143-28160-1-git-send-email-zheng.x.li@oracle.com>
-References: <1352714143-28160-1-git-send-email-zheng.x.li@oracle.com>
-Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
-   message dated "Mon, 12 Nov 2012 17:55:43 +0800."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-Date: Mon, 12 Nov 2012 15:40:45 -0800
-Message-ID: <29827.1352763645@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111223-3534-0000-0000-00000EE12803
+	id S1754258Ab2KLXno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:43:44 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:39717 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752301Ab2KLXnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 18:43:43 -0500
+Date: Mon, 12 Nov 2012 23:43:41 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/8] Announcement: Enhanced NUMA scheduling with adaptive
+ affinity
+In-Reply-To: <20121112160451.189715188@chello.nl>
+Message-ID: <0000013af701ca15-3acab23b-a16d-4e38-9dc0-efef05cbc5f2-000000@email.amazonses.com>
+References: <20121112160451.189715188@chello.nl>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zheng Li <zheng.x.li@oracle.com> wrote:
+On Mon, 12 Nov 2012, Peter Zijlstra wrote:
 
->ARP traffic passing through a bridge and out via the bond (when the bond is a 
->port of the bridge) should not have its source MAC address adjusted by the 
->receive load balance code in rlb_arp_xmit.
->
->Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->Cc: Jay Vosburgh <fubar@us.ibm.com>
->Cc: Andy Gospodarek <andy@greyhouse.net>
->Cc: "David S. Miller" <davem@davemloft.net>
->
->---
-> drivers/net/bonding/bond_alb.c |   21 ++++++++++++++++++++-
-> 1 files changed, 20 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->index e15cc11..a99e658 100644
->--- a/drivers/net/bonding/bond_alb.c
->+++ b/drivers/net/bonding/bond_alb.c
->@@ -685,6 +685,18 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
-> 	return assigned_slave;
-> }
->
->+struct slave *bond_slave_has_mac(struct bonding *bond, const u8 *mac)
->+{
->+	int i = 0;
->+	struct slave *tmp;
->+
->+	bond_for_each_slave(bond, tmp, i)
->+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
->+			return tmp;
->+
->+	return NULL;
->+}
+> The biggest conceptual addition, beyond the elimination of the home
+> node, is that the scheduler is now able to recognize 'private' versus
+> 'shared' pages, by carefully analyzing the pattern of how CPUs touch the
+> working set pages. The scheduler automatically recognizes tasks that
+> share memory with each other (and make dominant use of that memory) -
+> versus tasks that allocate and use their working set privately.
 
-	This should go in bonding.h as a static line, so that other
-parts of bonding can use it in the future.  I'll also point out that
-this function is one I suggested in a prior email, but did not test.
-Presumably you've tested this.
+That is a key distinction to make and if this really works then that is
+major progress.
 
-> /* chooses (and returns) transmit channel for arp reply
->  * does not choose channel for other arp types since they are
->  * sent on the curr_active_slave
->@@ -700,7 +712,14 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
-> 		*/
-> 		tx_slave = rlb_choose_channel(skb, bond);
-> 		if (tx_slave) {
->-			memcpy(arp->mac_src,tx_slave->dev->dev_addr, ETH_ALEN);
->+			struct slave *tmp_slave = NULL;
+> This new scheduler code is then able to group tasks that are "memory
+> related" via their memory access patterns together: in the NUMA context
+> moving them on the same node if possible, and spreading them amongst
+> nodes if they use private memory.
 
-	This does not need to be initialized, as the next line of code
-assigns a value to it.
+What happens if processes memory accesses  are related but the
+common set of data does not fit into the memory provided by a single node?
 
-	-J
-
->+			/* Only modify ARP's MAC if it originates locally;
->+			 * don't change ARPs arriving via a bridge.
->+			 */
->+			tmp_slave = bond_slave_has_mac(bond, arp->mac_src);
->+			if (tmp_slave)
->+				memcpy(arp->mac_src, tx_slave->dev->dev_addr,
->+				       ETH_ALEN);
-> 		}
-> 		pr_debug("Server sent ARP Reply packet\n");
-> 	} else if (arp->op_code == htons(ARPOP_REQUEST)) {
->-- 
->1.7.6.5
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+The correct resolution usually is in that case to interleasve the pages
+over both nodes in use.
 
