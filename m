@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab2KLVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:25:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60622 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2KLVZY (ORCPT
+	id S1754299Ab2KLV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:26:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45192 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab2KLV0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:25:24 -0500
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: cooloney@gmail.com, rpurdie@rpsys.net
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v3 2/2] Add documentation for tca6507 devicetree bindings.
-Date: Mon, 12 Nov 2012 22:25:11 +0100
-Message-Id: <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
+	Mon, 12 Nov 2012 16:26:14 -0500
+Date: Mon, 12 Nov 2012 19:26:08 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com
+Subject: Re: [ANNOUNCE] Extended stable support for Linux 3.5
+ (linux-3.5.y-ext.z)
+Message-ID: <20121112212607.GG3342@herton-Z68MA-D2H-B3>
+References: <1352470505-6097-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352470505-6097-1-git-send-email-herton.krzesinski@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- Documentation/devicetree/bindings/leds/tca6507.txt |   40 ++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
+On Fri, Nov 09, 2012 at 12:15:04PM -0200, Herton Ronaldo Krzesinski wrote:
+> I plan to do a similar workflow as to what is done today with current
+> stable releases. I'll send email notifications to everyone involved in
+> each patch when it's added to 3.5 queue, and post the patches for review
+> for each release cycle. Just versioning will be slightly different,
+> every version is planned to be tagged as v3.5.7-ext.<release number>,
+> ext meaning extended, 3.5.7 was the last stable kernel in 3.5 kernel and
+> should remain constant.
 
-diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-new file mode 100644
-index 0000000..a49eb0c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-@@ -0,0 +1,40 @@
-+LEDs conected to tca6507
-+
-+Required properties:
-+- compatible : should be : "ti,tca6507".
-+
-+Each led is represented as a sub-node of the ti,tca6507 device.
-+
-+LED sub-node properties:
-+- label : label for this LED
-+- reg : number of LED line (could be from 0 to 6)
-+- linux,default-trigger :  (optional) This parameter, if present, is a
-+  string defining the trigger assigned to the LED.  Current triggers are:
-+    "backlight" - LED will act as a back-light, controlled by the framebuffer
-+		  system
-+    "default-on" - LED will turn on
-+    "heartbeat" - LED "double" flashes at a load average based rate
-+    "ide-disk" - LED indicates disk activity
-+    "timer" - LED flashes at a fixed, configurable rate
-+
-+Examples:
-+
-+tca6507@45 {
-+	compatible = "ti,tca6507";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	reg = <0x45>;
-+
-+	led0: red_aux@0 {
-+		label = "red:aux";
-+		reg = <0x0>;
-+	};
-+
-+	led1: green_aux@1 {
-+		label = "green:aux";
-+		reg = <0x5>;
-+		linux,default-trigger = "default-on";
-+	};
-+
-+};
-+
+Just a note, the tagging probaly will be different from what I said here,
+in the format v3.5.7u<release number>, simpler format. Anything changing
+I'll keep updated in future announcements while releasing the patches.
+
 -- 
-1.7.9.5
-
+[]'s
+Herton
