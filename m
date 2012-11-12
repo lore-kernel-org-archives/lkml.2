@@ -1,171 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2KLVc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:32:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24591 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab2KLVTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:30 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 26/46] x86, mm, Xen: Remove mapping_pagetable_reserve()
-Date: Mon, 12 Nov 2012 13:18:22 -0800
-Message-Id: <1352755122-25660-27-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
- <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1754498Ab2KLVdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:33:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754035Ab2KLVdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:33:01 -0500
+Date: Mon, 12 Nov 2012 19:32:37 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Christian Ehrhardt <lk@c--e.de>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fix lapic time counter read for periodic mode
+Message-ID: <20121112213237.GA31377@amt.cnet>
+References: <20121111122528.GC19718@lisa.in-ulm.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121111122528.GC19718@lisa.in-ulm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page table area are pre-mapped now after
-	x86, mm: setup page table in top-down
-	x86, mm: Remove early_memremap workaround for page table accessing on 64bit
+On Sun, Nov 11, 2012 at 01:25:28PM +0100, Christian Ehrhardt wrote:
+> 
+> Hi,
+> 
+> there is a bug in the emulation of the lapic time counter. In particular
+> what we are seeing is that the time counter of a periodic lapic timer
+> in the guest reads as zero 99% of the time. The patch below fixes that.
+> 
+> The emulation of the lapic timer is done with the help of a hires
+> timer that expires with the same frequency as the lapic counter.
+> New expiration times for a periodic timer are calculated incrementally
+> based on the last scheduled expiration time. This ensures long term
+> accuracy of the emulated timer close to that of the underlying clock.
+> 
+> The actual value of the lapic time counter is calculated from the
+> real time difference between current time and scheduled expiration time
+> of the hires timer. If this difference is negative, the hires timer
+> expired. For oneshot mode this is correctly translated into a zero value
+> for the time counter. However, in periodic mode we must use the negative
+> difference unmodified.
+> 
+>      regards   Christian
+> 
+> Fix lapic time counter read for periodic mode.
 
-mapping_pagetable_reserve is not used anymore, so remove it.
+In periodic mode the hrtimer is rearmed once expired, see
+apic_timer_fn. So _get_remaining should return proper value
+even if the guest is not able to process timer interrupts. 
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/pgtable_types.h |    1 -
- arch/x86/include/asm/x86_init.h      |   12 ------------
- arch/x86/kernel/x86_init.c           |    4 ----
- arch/x86/mm/init.c                   |    4 ----
- arch/x86/xen/mmu.c                   |   28 ----------------------------
- 5 files changed, 0 insertions(+), 49 deletions(-)
+Can you describe your specific scenario in more detail?
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index ec8a1fc..79738f2 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -301,7 +301,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
- /* Install a pte for a particular vaddr in kernel space. */
- void set_pte_vaddr(unsigned long vaddr, pte_t pte);
- 
--extern void native_pagetable_reserve(u64 start, u64 end);
- #ifdef CONFIG_X86_32
- extern void native_pagetable_init(void);
- #else
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 5769349..3b2ce8f 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -69,17 +69,6 @@ struct x86_init_oem {
- };
- 
- /**
-- * struct x86_init_mapping - platform specific initial kernel pagetable setup
-- * @pagetable_reserve:	reserve a range of addresses for kernel pagetable usage
-- *
-- * For more details on the purpose of this hook, look in
-- * init_memory_mapping and the commit that added it.
-- */
--struct x86_init_mapping {
--	void (*pagetable_reserve)(u64 start, u64 end);
--};
--
--/**
-  * struct x86_init_paging - platform specific paging functions
-  * @pagetable_init:	platform specific paging initialization call to setup
-  *			the kernel pagetables and prepare accessors functions.
-@@ -136,7 +125,6 @@ struct x86_init_ops {
- 	struct x86_init_mpparse		mpparse;
- 	struct x86_init_irqs		irqs;
- 	struct x86_init_oem		oem;
--	struct x86_init_mapping		mapping;
- 	struct x86_init_paging		paging;
- 	struct x86_init_timers		timers;
- 	struct x86_init_iommu		iommu;
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 7a3d075..50cf83e 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -62,10 +62,6 @@ struct x86_init_ops x86_init __initdata = {
- 		.banner			= default_banner,
- 	},
- 
--	.mapping = {
--		.pagetable_reserve		= native_pagetable_reserve,
--	},
--
- 	.paging = {
- 		.pagetable_init		= native_pagetable_init,
- 	},
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 7a6669e..9d51af72 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -112,10 +112,6 @@ static void __init probe_page_size_mask(void)
- 		__supported_pte_mask |= _PAGE_GLOBAL;
- 	}
- }
--void __init native_pagetable_reserve(u64 start, u64 end)
--{
--	memblock_reserve(start, end - start);
--}
- 
- #ifdef CONFIG_X86_32
- #define NR_RANGE_MR 3
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index dcf5f2d..bbb883f 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1178,20 +1178,6 @@ static void xen_exit_mmap(struct mm_struct *mm)
- 
- static void xen_post_allocator_init(void);
- 
--static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
--{
--	/* reserve the range used */
--	native_pagetable_reserve(start, end);
--
--	/* set as RW the rest */
--	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
--			PFN_PHYS(pgt_buf_top));
--	while (end < PFN_PHYS(pgt_buf_top)) {
--		make_lowmem_page_readwrite(__va(end));
--		end += PAGE_SIZE;
--	}
--}
--
- #ifdef CONFIG_X86_64
- static void __init xen_cleanhighmap(unsigned long vaddr,
- 				    unsigned long vaddr_end)
-@@ -1503,19 +1489,6 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
- #else /* CONFIG_X86_64 */
- static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
- {
--	unsigned long pfn = pte_pfn(pte);
--
--	/*
--	 * If the new pfn is within the range of the newly allocated
--	 * kernel pagetable, and it isn't being mapped into an
--	 * early_ioremap fixmap slot as a freshly allocated page, make sure
--	 * it is RO.
--	 */
--	if (((!is_early_ioremap_ptep(ptep) &&
--			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
--			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
--		pte = pte_wrprotect(pte);
--
- 	return pte;
- }
- #endif /* CONFIG_X86_64 */
-@@ -2197,7 +2170,6 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
- 
- void __init xen_init_mmu_ops(void)
- {
--	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
- 	x86_init.paging.pagetable_init = xen_pagetable_init;
- 	pv_mmu_ops = xen_mmu_ops;
- 
--- 
-1.7.7
-
+> Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+> 
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 43e9fad..eff902d 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -810,8 +810,13 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+>  	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
+>  		return 0;
+>  
+> +	/*
+> +	 * hrtimer_get_remaining returns the signed difference between
+> +	 * timer expiration time and current time. Keep negative return
+> +	 * value iff the the timer is periodic.
+> +	 */
+>  	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+> -	if (ktime_to_ns(remaining) < 0)
+> +	if (ktime_to_ns(remaining) < 0 && !apic_lvtt_period(apic))
+>  		remaining = ktime_set(0, 0);
+>  
+>  	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
