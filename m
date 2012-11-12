@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2KLGIz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 01:08:55 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35750 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab2KLGIy (ORCPT
+	id S1752062Ab2KLGaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 01:30:20 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:52417 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab2KLGaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 01:08:54 -0500
-MIME-Version: 1.0
-From: Bryan Wu <cooloney@gmail.com>
-Date: Sun, 11 Nov 2012 22:08:32 -0800
-Message-ID: <CAK5ve-+a==5e6rGm-5zGLh4fvOHOKonv8r+htiS98=qh_mLi9A@mail.gmail.com>
-Subject: [GIT PULL] a LED fix for 3.7
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Nov 2012 01:30:18 -0500
+Message-ID: <1352701807.15066.1.camel@phoenix>
+Subject: [PATCH] ARM: select PINCTRL for ARCH_MMP
+From: Axel Lin <axel.lin@ingics.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 Nov 2012 14:30:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This makes PINCTRL related config options visible.
+Otherwise there is no way to build pinctrl drivers for MMP2, PXA168 and PXA910.
 
-Please consider the following changes since commit
-77b67063bb6bce6d475e910d3b886a606d0d91f7:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 48eea16..24e9339 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -581,6 +581,7 @@ config ARCH_MMP
+ 	select GPIO_PXA
+ 	select IRQ_DOMAIN
+ 	select NEED_MACH_GPIO_H
++	select PINCTRL
+ 	select PLAT_PXA
+ 	select SPARSE_IRQ
+ 	help
+-- 
+1.7.9.5
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-fixes-for-3.7
 
-for you to fetch changes up to 0b8728d6f140dc20690384286ade47c956edc999:
-
-  ledtrig-cpu: kill useless mutex to fix sleep in atomic context
-(2012-11-11 12:09:43 -0800)
-
-----------------------------------------------------------------
-Nathan Lynch (1):
-      ledtrig-cpu: kill useless mutex to fix sleep in atomic context
-
- drivers/leds/ledtrig-cpu.c |   21 ---------------------
- 1 file changed, 21 deletions(-)
