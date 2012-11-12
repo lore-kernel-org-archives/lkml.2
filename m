@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab2KLV0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:26:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29677 "EHLO
+	id S1754346Ab2KLV0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:26:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29681 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2KLVTc (ORCPT
+	with ESMTP id S1754069Ab2KLVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:32 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,59 +14,99 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/46] x86, mm: relocate initrd under all mem for 64bit
-Date: Mon, 12 Nov 2012 13:18:12 -0800
-Message-Id: <1352755122-25660-17-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 20/46] x86, mm: Break down init_all_memory_mapping
+Date: Mon, 12 Nov 2012 13:18:16 -0800
+Message-Id: <1352755122-25660-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-instead of under 4g.
-
-For 64bit, we can use any mapped mem instead of low mem.
+Will replace that with top-down page table initialization.
+New API need to take range: init_range_memory_mapping()
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/setup.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/mm/init.c |   41 +++++++++++++++++++----------------------
+ 1 files changed, 19 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 68dffec..94f922a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -324,7 +324,7 @@ static void __init relocate_initrd(void)
- 	char *p, *q;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index daea254..47a1ba2 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -399,40 +399,30 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+  * Depending on the alignment of E820 ranges, this may possibly result in using
+  * smaller size (i.e. 4K instead of 2M or 1G) page tables.
+  */
+-static void __init init_all_memory_mapping(void)
++static void __init init_range_memory_mapping(unsigned long range_start,
++					   unsigned long range_end)
+ {
+ 	unsigned long start_pfn, end_pfn;
+ 	int i;
  
- 	/* We need to move the initrd down into directly mapped mem */
--	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_low_pfn_mapped),
-+	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
- 						 area_size, PAGE_SIZE);
+-	/* the ISA range is always mapped regardless of memory holes */
+-	init_memory_mapping(0, ISA_END_ADDRESS);
+-
+ 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
+ 		u64 start = (u64)start_pfn << PAGE_SHIFT;
+ 		u64 end = (u64)end_pfn << PAGE_SHIFT;
  
- 	if (!ramdisk_here)
-@@ -392,7 +392,7 @@ static void __init reserve_initrd(void)
+-		if (end <= ISA_END_ADDRESS)
++		if (end <= range_start)
+ 			continue;
  
- 	initrd_start = 0;
+-		if (start < ISA_END_ADDRESS)
+-			start = ISA_END_ADDRESS;
+-#ifdef CONFIG_X86_32
+-		/* on 32 bit, we only map up to max_low_pfn */
+-		if ((start >> PAGE_SHIFT) >= max_low_pfn)
++		if (start < range_start)
++			start = range_start;
++
++		if (start >= range_end)
+ 			continue;
  
--	mapped_size = get_mem_size(max_low_pfn_mapped);
-+	mapped_size = get_mem_size(max_pfn_mapped);
- 	if (ramdisk_size >= (mapped_size>>1))
- 		panic("initrd too large to handle, "
- 		       "disabling initrd (%lld needed, %lld available)\n",
-@@ -401,8 +401,7 @@ static void __init reserve_initrd(void)
- 	printk(KERN_INFO "RAMDISK: [mem %#010llx-%#010llx]\n", ramdisk_image,
- 			ramdisk_end - 1);
+-		if ((end >> PAGE_SHIFT) > max_low_pfn)
+-			end = max_low_pfn << PAGE_SHIFT;
+-#endif
+-		init_memory_mapping(start, end);
+-	}
++		if (end > range_end)
++			end = range_end;
  
--	if (ramdisk_end <= (max_low_pfn_mapped<<PAGE_SHIFT) &&
--	    pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
-+	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
- 				PFN_DOWN(ramdisk_end))) {
- 		/* All are mapped, easy case */
- 		/*
+-#ifdef CONFIG_X86_64
+-	if (max_pfn > max_low_pfn) {
+-		/* can we preseve max_low_pfn ?*/
+-		max_low_pfn = max_pfn;
++		init_memory_mapping(start, end);
+ 	}
+-#endif
+ }
+ 
+ void __init init_mem_mapping(void)
+@@ -462,8 +452,15 @@ void __init init_mem_mapping(void)
+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+ 
+ 	max_pfn_mapped = 0; /* will get exact value next */
+-	init_all_memory_mapping();
+-
++	/* the ISA range is always mapped regardless of memory holes */
++	init_memory_mapping(0, ISA_END_ADDRESS);
++	init_range_memory_mapping(ISA_END_ADDRESS, end);
++#ifdef CONFIG_X86_64
++	if (max_pfn > max_low_pfn) {
++		/* can we preseve max_low_pfn ?*/
++		max_low_pfn = max_pfn;
++	}
++#endif
+ 	/*
+ 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
+ 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
 -- 
 1.7.7
 
