@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2KLNbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:31:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36316 "EHLO mx2.suse.de"
+	id S1752586Ab2KLNfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:35:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36512 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab2KLNbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:31:43 -0500
-Date: Mon, 12 Nov 2012 13:31:39 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: kswapd0: excessive CPU usage
-Message-ID: <20121112133139.GU8218@suse.de>
-References: <20121015110937.GE29125@suse.de>
- <5093A3F4.8090108@redhat.com>
- <5093A631.5020209@suse.cz>
- <509422C3.1000803@suse.cz>
- <509C84ED.8090605@linux.vnet.ibm.com>
- <509CB9D1.6060704@redhat.com>
- <20121109090635.GG8218@suse.de>
- <509F6C2A.9060502@redhat.com>
- <20121112121956.GT8218@suse.de>
- <50A0F5F0.6090400@redhat.com>
+	id S1751555Ab2KLNfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 08:35:14 -0500
+Message-ID: <50A0FB0B.4070400@suse.cz>
+Date: Mon, 12 Nov 2012 14:35:07 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50A0F5F0.6090400@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Willy Tarreau <w@1wt.eu>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
+        Benjamin Poirier <benjamin.poirier@gmail.com>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Davidlohr Bueso <dave@gnu.org>, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+Subject: Re: [PATCH v2] menuconfig: Replace CIRCLEQ by list_head-style lists.
+References: <1350754935-20014-1-git-send-email-benjamin.poirier@gmail.com> <201210222138.25805.yann.morin.1998@free.fr> <50893FCF.5030800@suse.cz> <201211111702.24556.yann.morin.1998@free.fr> <20121112122643.GA9351@1wt.eu>
+In-Reply-To: <20121112122643.GA9351@1wt.eu>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 02:13:20PM +0100, Zdenek Kabelac wrote:
-> Dne 12.11.2012 13:19, Mel Gorman napsal(a):
-> >On Sun, Nov 11, 2012 at 10:13:14AM +0100, Zdenek Kabelac wrote:
-> >>Hmm,  so it's just took longer to hit the problem and observe kswapd0
-> >>spinning on my CPU again - it's not as endless like before - but
-> >>still it easily eats minutes - it helps to  turn off  Firefox or TB
-> >>(memory hungry apps) so kswapd0 stops soon - and restart those apps
-> >>again.
-> >>(And I still have like >1GB of cached memory)
-> >>
-> >
-> >I posted a "safe" patch that I believe explains why you are seeing what
-> >you are seeing. It does mean that there will still be some stalls due to
-> >THP because kswapd is not helping and it's avoiding the problem rather
-> >than trying to deal with it.
-> >
-> >Hence, I'm also going to post this patch even though I have not tested
-> >it myself. If you find it fixes the problem then it would be a
-> >preferable patch to the revert. It still is the case that the
-> >balance_pgdat() logic is in sort need of a rethink as it's pretty
-> >twisted right now.
-> >
+Dne 12.11.2012 13:26, Willy Tarreau napsal(a):
+> On Sun, Nov 11, 2012 at 05:02:24PM +0100, Yann E. MORIN wrote:
+>> Michal, All,
+>>
+>> On Thursday 25 October 2012 Michal Marek wrote:
+>>> On 22.10.2012 21:38, Yann E. MORIN wrote:
+>>>> On Sunday 21 October 2012 Benjamin Poirier wrote:
+>>>>> Changes v1-v2:
+>>>>> * integrate the patch/suggestion from Yann to fix problems related to the
+>>>>>   usage of list.h with xconfig/c++
+>>>>> 	* "new" keyword
+>>>>> 	* offsetof redefinition
+>>>>> * silly #endif placement mistake
+>> [--SNIP--]
+>>> I pushed it to kbuild.git#rc-fixes now and will send it to Linus for 3.7
+>>> inclusion later.
+>>
+>> Not trying to sound like a nuisance, but this has still not been pushed
+>> to Linus yet... ;-)
 > 
-> 
-> Should I apply them all together for 3.7-rc5 ?
-> 
-> 1) https://lkml.org/lkml/2012/11/5/308
-> 2) https://lkml.org/lkml/2012/11/12/113
-> 3) https://lkml.org/lkml/2012/11/12/151
-> 
+> Would love the patch to be merged too, as I can't build Linux on my Linux
+> laptop right now, very frustrating :-(
 
-Not all together. Test either 1+2 or 1+3. 1+2 is the safer choice but
-does nothing about THP stalls. 1+3 is a riskier version but depends on
-me being correct on what the root cause of the problem you see it.
+I just sent the pull request, sorry guys. I thought I had sent it
+earlier, but apparently I hadn't.
 
-If both 1+2 and 1+3 work for you, I'd choose 1+3 for merging. If you only
-have the time to test one combination then it would be preferred that you
-test the safe option of 1+2.
+Michal
 
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
