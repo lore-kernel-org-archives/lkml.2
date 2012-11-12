@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab2KLXQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:16:29 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34096 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab2KLXQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:16:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206B258868B@AUSP01VMBX24.collaborationhost.net>
-References: <ADE657CA350FB648AAC2C43247A983F00206B25884B1@AUSP01VMBX24.collaborationhost.net>
- <CAErSpo6WG2R_8sa=rOmAOci-3iFpDs2NFzNkZYxDnD2oTiMQJg@mail.gmail.com> <ADE657CA350FB648AAC2C43247A983F00206B258868B@AUSP01VMBX24.collaborationhost.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Nov 2012 16:16:06 -0700
-Message-ID: <CAErSpo7Y+SSAbZ_eA9K6TqymvZ77YZ1kh9nstTDaW258wYUJ-Q@mail.gmail.com>
-Subject: Re: Q: Kconfig option VIRT_TO_BUS
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754163Ab2KLXTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:19:16 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58856 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752718Ab2KLXTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 18:19:15 -0500
+Message-ID: <1352762356.18715.23.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: warn about using CONFIG_EXPERIMENTAL
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 12 Nov 2012 15:19:16 -0800
+In-Reply-To: <CAGXu5jLyWv6jN_iQ+NvDMy5f2o_AN2eJTQGpOzshB3VSnL1pOg@mail.gmail.com>
+References: <20121112225019.GA23718@www.outflux.net>
+	 <1352761583.18715.16.camel@joe-AO722>
+	 <CAGXu5jLyWv6jN_iQ+NvDMy5f2o_AN2eJTQGpOzshB3VSnL1pOg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 4:13 PM, H Hartley Sweeten
-<hartleys@visionengravers.com> wrote:
-> On Monday, November 12, 2012 11:41 AM, Bjorn Helgaas wrote:
->> On Mon, Nov 12, 2012 at 9:18 AM, H Hartley Sweeten wrote:
->>> Does anyone know what the Kconfig option VIRT_TO_BUS does?
->>> There are a number of "depends on" that option but it does not
->>> seem to directly enable any code in the kernel.
->>
->> virt_to_bus() is a deprecated interface for converting a kernel
->> virtual address to a bus address.  It's deprecated because it's
->> impossible to implement correctly when there are multiple bus address
->> spaces, because you don't know which bus address space the caller has
->> in mind.
->
-> Thanks for the info.
->
-> So if a driver does not use virt_to_bus() then the "depends on VIRT_TO_BUS"
-> is not necessary. Correct?
+On Mon, 2012-11-12 at 15:11 -0800, Kees Cook wrote:
+> On Mon, Nov 12, 2012 at 3:06 PM, Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2012-11-12 at 14:50 -0800, Kees Cook wrote:
+> >> +                     WARN("CONFIG_EXPERIMENTAL",
+> >> +                          "Use of CONFIG_EXPERIMENTAL is deprecated. " +
+> >> +                          "For alternatives, see " +
+> >> +                          "https://lkml.org/lkml/2012/10/23/580\n");
+> >
+> > I'd much prefer this be on a single line and not using the +
+> > string operator as that style is not currently used in checkpatch.
+> 
+> Hah. Okay. We should exclude checkpatch.pl from the 80 character check
+> it warns about. ;)
 
-Yes, that's my understanding.
+;)
+
+checkpatch is for .[ch] files, it isn't for anything else really.
+
+
