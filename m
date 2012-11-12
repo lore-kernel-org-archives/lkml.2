@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab2KLIiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 03:38:09 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38674 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2KLIiH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 03:38:07 -0500
-Message-ID: <50A0B562.2090807@parallels.com>
-Date: Mon, 12 Nov 2012 12:37:54 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1752238Ab2KLIlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 03:41:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:32994 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab2KLIlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 03:41:15 -0500
+Message-ID: <50A0B618.70902@ti.com>
+Date: Mon, 12 Nov 2012 09:40:56 +0100
+From: =?ISO-8859-1?Q?P=E9ter_Ujfalusi?= <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting
- local transports
-References: <20121008105437.18668.99905.stgit@localhost.localdomain> <20121009193506.GA19680@fieldses.org> <5098E31A.5080801@parallels.com> <20121106120642.GA6718@fieldses.org> <20121106124035.GA20522@infradead.org> <20121106130705.GC6718@fieldses.org> <20121106131018.GA12211@infradead.org> <20121106133605.GD6718@fieldses.org> <20121107183355.GA7421@fieldses.org>
-In-Reply-To: <20121107183355.GA7421@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.29.152]
+To: Bryan Wu <cooloney@gmail.com>
+CC: Richard Purdie <rpurdie@rpsys.net>, Luotao Fu <l.fu@pengutronix.de>,
+        <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] leds: leds-pwm: Convert to use devm_get_pwm
+References: <1352288570-32565-1-git-send-email-peter.ujfalusi@ti.com> <CAK5ve-LdyKk-5-J+Fn67CXVoox8rw+=UH0Wbq443rmN-yEyv4w@mail.gmail.com>
+In-Reply-To: <CAK5ve-LdyKk-5-J+Fn67CXVoox8rw+=UH0Wbq443rmN-yEyv4w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07.11.2012 22:33, J. Bruce Fields пишет:
-> On Tue, Nov 06, 2012 at 08:36:05AM -0500, J. Bruce Fields wrote:
->> On Tue, Nov 06, 2012 at 08:10:18AM -0500, Christoph Hellwig wrote:
->>> On Tue, Nov 06, 2012 at 08:07:06AM -0500, J. Bruce Fields wrote:
->>>> So you're worried that a bug in the nfs code could modify the root and
->>>> then not restore it?
->>>
->>> At least the link you pointed to earlier never sets it back.
+On 11/10/2012 02:48 AM, Bryan Wu wrote:
+> On Wed, Nov 7, 2012 at 3:42 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+>> Update the driver to use the new API for requesting pwm so we can take
+>> advantage of the pwm_lookup table to find the correct pwm to be used for the
+>> LED functionality.
+>> If the devm_get_pwm fails we fall back to legacy mode to try to get the pwm.
 >>
->> This? http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  drivers/leds/leds-pwm.c | 16 ++++++++++++++--
+>>  1 file changed, 14 insertions(+), 2 deletions(-)
 >>
->> 	+	get_fs_root(current->fs, &root);
->> 	+	set_fs_root(current->fs, &transport->root);
->> 	+
->> 	 	status = xs_local_finish_connecting(xprt, sock);
->> 	+
->> 	+	set_fs_root(current->fs, &root);
->> 	+	path_put(&root);
+>> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+>> index f2e44c7..6bf9445 100644
+>> --- a/drivers/leds/leds-pwm.c
+>> +++ b/drivers/leds/leds-pwm.c
+>> @@ -47,6 +47,19 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+>>         }
+>>  }
 >>
->>> Instead
->>> of messing with it I'd rather have the sunrpc code use vfs_path_lookup
->>> and not care about current->fs->root at all.
+>> +static struct pwm_device *led_pwm_request_pwm(struct platform_device *pdev,
+>> +                                             struct led_pwm *cur_led)
+>> +{
+>> +       struct pwm_device *pwm;
+>> +
+>> +       pwm = devm_pwm_get(&pdev->dev, cur_led->name);
+>> +       if (IS_ERR(pwm)) {
+>> +               dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
+>> +               pwm = pwm_request(cur_led->pwm_id, cur_led->name);
+> 
+> Looks good, but why we still need to keep the old API pwm_request(),
+> if devm_pwm_get() is the right replacement. AFAIK, devm_***() API will
+> help to clean up if device probing fails.
+> 
+> So if it is good enough, we can just replace pwm_request() to the devm_pwm_get()
+
+I have greped for "leds_pwm" in arch/ and the only place it is used is the
+arch/arm/mach-omap2/board-sdp4430sdp.c and that is not working at all (using
+wrong ID for the PWM).
+I think I can remove the legacy way of requesting the pwm from the driver
+safely (I can also mark the pwm_id in struct led_pwm as deprecated at the same
+time).
+Will send the v2 soon.
+
+Thank you,
+P�ter
+
+> 
+> Thanks,
+> -Bryan
+> 
+>> +       }
+>> +       return pwm;
+>> +}
+>> +
+>>  static int led_pwm_probe(struct platform_device *pdev)
+>>  {
+>>         struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
+>> @@ -67,8 +80,7 @@ static int led_pwm_probe(struct platform_device *pdev)
+>>                 cur_led = &pdata->leds[i];
+>>                 led_dat = &leds_data[i];
 >>
->> The annoyance is that the lookup happens somewhere lower down in the
->> networking code (net/unix/af_unix.c:unix_find_other, I think).  So we'd
->> need some new (internal) API.  We'd likely be the only user of that new
->> API.
->
-> So, if the only drawback is really just the risk of introducing a bug
-> that leaves the fs_root changed--the above seems simple enough for that
-> not to be a great risk, right?
->
-
-If we unshare rpciod fs struct (which is exported already), then we won't affect 
-other kthreads by root swapping.
-But would be great to hear Trond's opinion about this approach.
-
-Trond, could you tell us your feeling about all this?
-
-> Is there any other hazard to doing this that people can think of?
->
-> --b.
->
+>> -               led_dat->pwm = pwm_request(cur_led->pwm_id,
+>> -                               cur_led->name);
+>> +               led_dat->pwm = led_pwm_request_pwm(pdev, cur_led);
+>>                 if (IS_ERR(led_dat->pwm)) {
+>>                         ret = PTR_ERR(led_dat->pwm);
+>>                         dev_err(&pdev->dev, "unable to request PWM %d\n",
+>> --
+>> 1.8.0
+>>
 
 
--- 
-Best regards,
-Stanislav Kinsbursky
