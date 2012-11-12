@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2KLV2v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:28:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45214 "EHLO
+	id S932097Ab2KLV26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:28:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45218 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab2KLV2t (ORCPT
+	with ESMTP id S932073Ab2KLV2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:49 -0500
+	Mon, 12 Nov 2012 16:28:53 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Stefan Beller <stefanbeller@googlemail.com>,
-        John Johansen <john.johansen@canonical.com>,
+Cc: Colin King <colin.king@canonical.com>, Thieu Le <thieule@google.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Subject: [ 3.5.yuz extended stable] Patch "eCryptfs: Copy up POSIX ACL and read-only flags from lower" has been added to staging queue
-Date: Mon, 12 Nov 2012 19:28:44 -0200
-Message-Id: <1352755724-15946-1-git-send-email-herton.krzesinski@canonical.com>
+Subject: [ 3.5.yuz extended stable] Patch "eCryptfs: Revert to a writethrough cache model" has been added to staging queue
+Date: Mon, 12 Nov 2012 19:28:48 -0200
+Message-Id: <1352755728-16005-1-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,7 +23,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    eCryptfs: Copy up POSIX ACL and read-only flags from lower
+    eCryptfs: Revert to a writethrough cache model
 
 to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
 which can be found at:
@@ -41,69 +40,195 @@ Thanks.
 
 ------
 
->From e6513e9a9c77188fa2def9b5f4400353cbb07739 Mon Sep 17 00:00:00 2001
+>From cbdc99d5ba731bc92d949c6ee48f8df156bec5b7 Mon Sep 17 00:00:00 2001
 From: Tyler Hicks <tyhicks@canonical.com>
-Date: Mon, 11 Jun 2012 15:42:32 -0700
-Subject: [PATCH] eCryptfs: Copy up POSIX ACL and read-only flags from lower
- mount
+Date: Tue, 3 Jul 2012 16:50:57 -0700
+Subject: [PATCH] eCryptfs: Revert to a writethrough cache model
 
-commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
+commit 821f7494a77627fb1ab539591c57b22cdca702d6 upstream.
 
-When the eCryptfs mount options do not include '-o acl', but the lower
-filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
-flipped on in the eCryptfs super block flags. This flag is what the VFS
-checks in do_last() when deciding if the current umask should be applied
-to a newly created inode's mode or not. When a default POSIX ACL mask is
-set on a directory, the current umask is incorrectly applied to new
-inodes created in the directory. This patch ignores the MS_POSIXACL flag
-passed into ecryptfs_mount() and sets the flag on the eCryptfs super
-block depending on the flag's presence on the lower super block.
+A change was made about a year ago to get eCryptfs to better utilize its
+page cache during writes. The idea was to do the page encryption
+operations during page writeback, rather than doing them when initially
+writing into the page cache, to reduce the number of page encryption
+operations during sequential writes. This meant that the encrypted page
+would only be written to the lower filesystem during page writeback,
+which was a change from how eCryptfs had previously wrote to the lower
+filesystem in ecryptfs_write_end().
 
-Additionally, it is incorrect to allow a writeable eCryptfs mount on top
-of a read-only lower mount. This missing check did not allow writes to
-the read-only lower mount because permissions checks are still performed
-on the lower filesystem's objects but it is best to simply not allow a
-rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
-mount is valid and still allowed.
+The change caused a few eCryptfs-internal bugs that were shook out.
+Unfortunately, more grave side effects have been identified that will
+force changes outside of eCryptfs. Because the lower filesystem isn't
+consulted until page writeback, eCryptfs has no way to pass lower write
+errors (ENOSPC, mainly) back to userspace. Additionaly, it was reported
+that quotas could be bypassed because of the way eCryptfs may sometimes
+open the lower filesystem using a privileged kthread.
 
-https://launchpad.net/bugs/1009207
+It would be nice to resolve the latest issues, but it is best if the
+eCryptfs commits be reverted to the old behavior in the meantime.
+
+This reverts:
+32001d6f "eCryptfs: Flush file in vma close"
+5be79de2 "eCryptfs: Flush dirty pages in setattr"
+57db4e8d "ecryptfs: modify write path to encrypt page in writepage"
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Stefan Beller <stefanbeller@googlemail.com>
-Cc: John Johansen <john.johansen@canonical.com>
+Tested-by: Colin King <colin.king@canonical.com>
+Cc: Colin King <colin.king@canonical.com>
+Cc: Thieu Le <thieule@google.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ecryptfs/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/ecryptfs/file.c  |   33 ++-------------------------------
+ fs/ecryptfs/inode.c |    6 ------
+ fs/ecryptfs/mmap.c  |   39 +++++++++++++--------------------------
+ 3 files changed, 15 insertions(+), 63 deletions(-)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 6895493..df217dc 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -505,7 +505,6 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 2b17f2f..49fc575 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -138,27 +138,6 @@ out:
+ 	return rc;
+ }
+
+-static void ecryptfs_vma_close(struct vm_area_struct *vma)
+-{
+-	filemap_write_and_wait(vma->vm_file->f_mapping);
+-}
+-
+-static const struct vm_operations_struct ecryptfs_file_vm_ops = {
+-	.close		= ecryptfs_vma_close,
+-	.fault		= filemap_fault,
+-};
+-
+-static int ecryptfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+-{
+-	int rc;
+-
+-	rc = generic_file_mmap(file, vma);
+-	if (!rc)
+-		vma->vm_ops = &ecryptfs_file_vm_ops;
+-
+-	return rc;
+-}
+-
+ struct kmem_cache *ecryptfs_file_info_cache;
+
+ /**
+@@ -292,15 +271,7 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+ {
+-	int rc = 0;
+-
+-	rc = generic_file_fsync(file, start, end, datasync);
+-	if (rc)
+-		goto out;
+-	rc = vfs_fsync_range(ecryptfs_file_to_lower(file), start, end,
+-			     datasync);
+-out:
+-	return rc;
++	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
+ }
+
+ static int ecryptfs_fasync(int fd, struct file *file, int flag)
+@@ -369,7 +340,7 @@ const struct file_operations ecryptfs_main_fops = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = ecryptfs_compat_ioctl,
+ #endif
+-	.mmap = ecryptfs_file_mmap,
++	.mmap = generic_file_mmap,
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+ 	.release = ecryptfs_release,
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 02e2fec..b01c7a9 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -977,12 +977,6 @@ static int ecryptfs_setattr(struct dentry *dentry, struct iattr *ia)
+ 			goto out;
+ 	}
+
+-	if (S_ISREG(inode->i_mode)) {
+-		rc = filemap_write_and_wait(inode->i_mapping);
+-		if (rc)
+-			goto out;
+-		fsstack_copy_attr_all(inode, lower_inode);
+-	}
+ 	memcpy(&lower_ia, ia, sizeof(lower_ia));
+ 	if (ia->ia_valid & ATTR_FILE)
+ 		lower_ia.ia_file = ecryptfs_file_to_lower(ia->ia_file);
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index a46b3a8..bd1d57f 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -66,18 +66,6 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int rc;
+
+-	/*
+-	 * Refuse to write the page out if we are called from reclaim context
+-	 * since our writepage() path may potentially allocate memory when
+-	 * calling into the lower fs vfs_write() which may in turn invoke
+-	 * us again.
+-	 */
+-	if (current->flags & PF_MEMALLOC) {
+-		redirty_page_for_writepage(wbc, page);
+-		rc = 0;
+-		goto out;
+-	}
+-
+ 	rc = ecryptfs_encrypt_page(page);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+@@ -498,7 +486,6 @@ static int ecryptfs_write_end(struct file *file,
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	int rc;
+-	int need_unlock_page = 1;
+
+ 	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
+ 			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
+@@ -519,26 +506,26 @@ static int ecryptfs_write_end(struct file *file,
+ 			"zeros in page with index = [0x%.16lx]\n", index);
  		goto out;
  	}
-
--	s->s_flags = flags;
- 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
- 	if (rc)
- 		goto out1;
-@@ -541,6 +540,15 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+-	set_page_dirty(page);
+-	unlock_page(page);
+-	need_unlock_page = 0;
++	rc = ecryptfs_encrypt_page(page);
++	if (rc) {
++		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
++				"index [0x%.16lx])\n", index);
++		goto out;
++	}
+ 	if (pos + copied > i_size_read(ecryptfs_inode)) {
+ 		i_size_write(ecryptfs_inode, pos + copied);
+ 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+ 			"[0x%.16llx]\n",
+ 			(unsigned long long)i_size_read(ecryptfs_inode));
+-		balance_dirty_pages_ratelimited(mapping);
+-		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+-		if (rc) {
+-			printk(KERN_ERR "Error writing inode size to metadata; "
+-			       "rc = [%d]\n", rc);
+-			goto out;
+-		}
  	}
-
- 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
-+
-+	/**
-+	 * Set the POSIX ACL flag based on whether they're enabled in the lower
-+	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
-+	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-+	 */
-+	s->s_flags = flags & ~MS_POSIXACL;
-+	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-+
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
+-	rc = copied;
++	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
++	if (rc)
++		printk(KERN_ERR "Error writing inode size to metadata; "
++		       "rc = [%d]\n", rc);
++	else
++		rc = copied;
+ out:
+-	if (need_unlock_page)
+-		unlock_page(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return rc;
+ }
 --
 1.7.9.5
 
