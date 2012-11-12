@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2KLVvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:51:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63369 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab2KLVvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:51:22 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        libseccomp-discuss@lists.sourceforge.net
-Subject: ANN: libseccomp 1.0.1 released
-Date: Mon, 12 Nov 2012 16:51:13 -0500
-Message-ID: <2742323.xTGOeEdtc5@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.9.3 (Linux/3.6.6-gentoo; KDE/4.9.3; x86_64; ; )
+	id S1753426Ab2KLVv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:51:26 -0500
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:46640
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751878Ab2KLVvZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:51:25 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1de0h1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h1155h)
+Date: Mon, 12 Nov 2012 15:51:06 -0600
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: Build regressions/improvements in v3.7-rc5
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <CAMuHMdXE0yJNivpirGgx08zqLH2086ydeOU6zswXj-+zn8OsWQ@mail.gmail.com>
+	(from geert@linux-m68k.org on Mon Nov 12 15:02:46 2012)
+X-Mailer: Balsa 2.4.11
+Message-ID: <1352757066.32153.5@snotra>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would like to announce a maintenance release for the libseccomp library, 
-libseccomp version 1.0.1.  The libseccomp library provides an easy to use, 
-platform independent, interface to Linux's enhanced syscall filtering 
-mechanism.
+On 11/12/2012 03:02:46 PM, Geert Uytterhoeven wrote:
+> On Mon, Nov 12, 2012 at 9:58 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > JFYI, when comparing v3.7-rc5 to v3.7-rc4[3], the summaries are:
+> >   - build errors: +14/-4
+> 
+> 14 regressions:
+>   + drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first
+> use in this function):  => 799:93
 
- * http://sourceforge.net/projects/libseccomp
- * http://sf.net/projects/libseccomp/files/libseccomp-1.0.1.tar.gz/download
+These reports would be more useful if the actual .config were provided,  
+rather than just saying "powerpc randconfig".
 
-All users of libseccomp are strongly encourage to update to this latest 
-release.  Changes in the 1.0.1 release include:
+I doubt this particular one is a regression; it looks like the  
+dependencies have always been too weak (patch sent) and you're just  
+comparing different randomly-generated configs.
 
- * Fixes for the following:
- ** memory leaks
- ** small filters, e.g. filtering only a single syscall
- ** filters with syscall arguments
- * Documentation corrections
- * Support for C++ in the header file
+> powerpc-randconfig
+> 
+>   + error: relocation truncated to fit: R_PPC64_REL24 against symbol
+> `._mcount' defined in .text section in arch/powerpc/kernel/entry_64.o:
+> (.text+0x1ff9eb8) => (.text+0x1ffa274), (.text+0x1ff7840)
+> 
+> powerpc-allyesconfig
 
-Finally, thank you to everyone who has submitted suggestions, provided testing 
-help, and contributed patches to the project.
+It's been over 3 years since powerpc-allyesconfig built (it's just too  
+big for the relocation model the kernel uses) -- how is this a  
+regression?
 
--- 
-paul moore
-security and virtualization @ redhat
-
+-Scott
