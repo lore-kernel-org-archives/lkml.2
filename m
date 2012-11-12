@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab2KLLu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:50:57 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:64707 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab2KLLux (ORCPT
+	id S1753084Ab2KLLvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:51:10 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:35813 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab2KLLvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:50:53 -0500
+	Mon, 12 Nov 2012 06:51:05 -0500
 From: <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tglx@linutronix.de>, <arnd@arndb.de>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC Patch v1 40/55] ARC: SMP support
-Date: Mon, 12 Nov 2012 17:18:58 +0530
-Message-ID: <1352720953-24321-10-git-send-email-vgupta@synopsys.com>
+Subject: [RFC Patch v1 41/55] ARC: dwarf2 stack unwinder
+Date: Mon, 12 Nov 2012 17:18:59 +0530
+Message-ID: <1352720953-24321-11-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
 References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
@@ -26,1355 +26,1758 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vineet Gupta <vgupta@synopsys.com>
 
-I would like to acknowledge people who have contributed to SMP port
--Rajeshwar Ranga <rajeshwar.ranga@gmail.com> for orig 2.6.19 SMP port
--Noam Camus <naomc@ezchip.com> for help with resurrecting 3.2 SMP port
+-Originally controbuted by Rajeshwar Range <rajeshwar.ranga>
+-Derived off of generic unwinder in 2.6.19 and adapted to ARC
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig                         |   39 ++++-
- arch/arc/Makefile                        |    3 +
- arch/arc/include/asm/entry.h             |   49 +++++
- arch/arc/include/asm/mmu_context.h       |    4 +
- arch/arc/include/asm/mutex.h             |    9 +
- arch/arc/include/asm/pgtable.h           |    4 +
- arch/arc/include/asm/processor.h         |    8 +
- arch/arc/include/asm/smp.h               |  108 +++++++++++
- arch/arc/kernel/Makefile                 |    1 +
- arch/arc/kernel/ctx_sw.c                 |   11 +
- arch/arc/kernel/entry.S                  |    4 +
- arch/arc/kernel/head.S                   |   33 ++++
- arch/arc/kernel/irq.c                    |    5 +
- arch/arc/kernel/setup.c                  |    4 +
- arch/arc/kernel/smp.c                    |  295 ++++++++++++++++++++++++++++++
- arch/arc/mm/tlb.c                        |    6 +
- arch/arc/mm/tlbex.S                      |   38 ++++
- arch/arc/plat-arcfpga/Kconfig            |   12 ++
- arch/arc/plat-arcfpga/Makefile           |    1 +
- arch/arc/plat-arcfpga/include/plat/irq.h |   10 +-
- arch/arc/plat-arcfpga/include/plat/smp.h |  115 ++++++++++++
- arch/arc/plat-arcfpga/irq.c              |   10 +
- arch/arc/plat-arcfpga/smp.c              |  192 +++++++++++++++++++
- 23 files changed, 959 insertions(+), 2 deletions(-)
- create mode 100644 arch/arc/kernel/smp.c
- create mode 100644 arch/arc/plat-arcfpga/include/plat/smp.h
- create mode 100644 arch/arc/plat-arcfpga/smp.c
+ arch/arc/Kconfig              |   15 +
+ arch/arc/include/asm/module.h |    7 +
+ arch/arc/include/asm/unwind.h |  163 +++++
+ arch/arc/kernel/Makefile      |    6 +
+ arch/arc/kernel/entry.S       |    9 +
+ arch/arc/kernel/module.c      |   42 ++
+ arch/arc/kernel/setup.c       |    3 +
+ arch/arc/kernel/unwind.c      | 1329 +++++++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/vmlinux.lds.S |   23 +-
+ 9 files changed, 1596 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arc/include/asm/unwind.h
+ create mode 100644 arch/arc/kernel/unwind.c
 
 diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 15d740c..8d72ada 100644
+index 8d72ada..26609d6 100644
 --- a/arch/arc/Kconfig
 +++ b/arch/arc/Kconfig
-@@ -118,9 +118,44 @@ config CPU_BIG_ENDIAN
- 	help
- 	  Build kernel for Big Endian Mode of ARC CPU
- 
-+# If a plat can do IPI, same core(s) can do minimal SMP
-+config ARC_HAS_IPI
-+	bool
-+
-+config SMP
-+	bool "Symmetric Multi-Processing (Incomplete)"
-+	default y
-+	depends on ARC_HAS_IPI
-+	select USE_GENERIC_SMP_HELPERS
-+	help
-+	  This enables support for systems with more than one CPU. If you have
-+	  a system with only one CPU, like most personal computers, say N. If
-+	  you have a system with more than one CPU, say Y.
-+
-+if SMP
-+
-+config ARC_HAS_COH_CACHES
-+	def_bool n
-+
-+config ARC_HAS_COH_LLSC
-+	def_bool n
-+
-+config ARC_HAS_REENTRANT_IRQ_LV2
-+	def_bool n
-+
-+endif
-+
-+config NR_CPUS
-+	int "Maximum number of CPUs (2-32)"
-+	range 2 32
-+	depends on SMP
-+	default "2"
-+
- menuconfig ARC_CACHE
- 	bool "Enable Cache Support"
+@@ -22,6 +22,7 @@ config ARC
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_GENERIC_HARDIRQS
++	select HAVE_MOD_ARCH_SPECIFIC if ARC_DW2_UNWIND
+ 	select HAVE_OPROFILE
+ 	select HOTPLUG if !INITRAMFS_SOURCE=""
+ 	select MODULES_USE_ELF_RELA
+@@ -355,6 +356,20 @@ menuconfig ARC_DBG
+ 	bool "ARC debugging"
  	default y
-+	# if SMP, cache enabled ONLY if ARC implementation has cache coherency
-+	depends on !SMP || ARC_HAS_COH_CACHES
  
- if ARC_CACHE
- 
-@@ -213,6 +248,8 @@ endchoice
- config ARC_COMPACT_IRQ_LEVELS
- 	bool "ARCompact IRQ Priorities: High(2)/Low(1)"
- 	default n
-+	# if SMP, LV2 enabled ONLY if ARC implementation has LV2 re-entrancy
-+	depends on !SMP || ARC_HAS_REENTRANT_IRQ_LV2
- 
- if ARC_COMPACT_IRQ_LEVELS
- 
-@@ -320,7 +357,7 @@ menuconfig ARC_DBG
- 
++config ARC_DW2_UNWIND
++	bool "Enable DWARF specific kernel stack unwind"
++	depends on ARC_DBG
++	default y
++	select KALLSYMS
++	help
++	  Compiles the kernel with DWARF unwind information and can be used
++	  to get stack backtraces.
++
++	  If you say Y here the resulting kernel image will be slightly larger
++	  but not slower, and it will give very useful debugging information.
++	  If you don't debug the kernel, you can say N, but we may not be able
++	  to solve problems without frame unwind information
++
  config ARC_DBG_TLB_PARANOIA
  	bool "Paranoia Checks in Low Level TLB Handlers"
--	depends on ARC_DBG
-+	depends on ARC_DBG && !SMP
- 	default n
+ 	depends on ARC_DBG && !SMP
+diff --git a/arch/arc/include/asm/module.h b/arch/arc/include/asm/module.h
+index 234b435..518222b 100644
+--- a/arch/arc/include/asm/module.h
++++ b/arch/arc/include/asm/module.h
+@@ -14,6 +14,13 @@
  
- config ARC_DBG_EVENT_TIMELINE
-diff --git a/arch/arc/Makefile b/arch/arc/Makefile
-index a533546..a86e284 100644
---- a/arch/arc/Makefile
-+++ b/arch/arc/Makefile
-@@ -127,3 +127,6 @@ archclean:
- # Thus forcing all exten calls in this file to be long calls
- export CFLAGS_decompress_inflate.o = -mmedium-calls
- export CFLAGS_initramfs.o = -mmedium-calls
-+ifdef CONFIG_SMP
-+export CFLAGS_core.o = -mmedium-calls
-+endif
-diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
-index 43dbf6f..a054e27 100644
---- a/arch/arc/include/asm/entry.h
-+++ b/arch/arc/include/asm/entry.h
-@@ -354,11 +354,19 @@
-  * to be saved again on kernel mode stack, as part of ptregs.
-  *-------------------------------------------------------------*/
- .macro EXCPN_PROLOG_FREEUP_REG	reg
-+#ifdef CONFIG_SMP
-+	sr  \reg, [ARC_REG_SCRATCH_DATA0]
-+#else
- 	st  \reg, [@ex_saved_reg1]
-+#endif
- .endm
+ #include <asm-generic/module.h>
  
- .macro EXCPN_PROLOG_RESTORE_REG	reg
-+#ifdef CONFIG_SMP
-+	lr  \reg, [ARC_REG_SCRATCH_DATA0]
-+#else
- 	ld  \reg, [@ex_saved_reg1]
-+#endif
- .endm
- 
- /*--------------------------------------------------------------
-@@ -468,7 +476,11 @@
- 	/* restore original r9 , saved in int1_saved_reg
- 	* It will be saved on stack in macro: SAVE_CALLER_SAVED
- 	*/
-+#ifdef CONFIG_SMP
-+	lr  r9, [ARC_REG_SCRATCH_DATA0]
-+#else
- 	ld  r9, [@int1_saved_reg]
-+#endif
- 
- 	/* now we are ready to save the remaining context :) */
- 	st     -1, [sp, 8]    /* orig_r8, -1 for interuppt level one */
-@@ -599,6 +611,41 @@
- 	bmsk \reg, \reg, 7
- .endm
- 
-+#ifdef CONFIG_SMP
-+
-+/*-------------------------------------------------
-+ * Retrieve the current running task on this CPU
-+ * 1. Determine curr CPU id.
-+ * 2. Use it to index into _current_task[ ]
-+ */
-+.macro  GET_CURR_TASK_ON_CPU   reg
-+	GET_CPU_ID  \reg
-+	ld.as  \reg, [@_current_task, \reg]
-+.endm
-+
-+/*-------------------------------------------------
-+ * Save a new task as the "current" task on this CPU
-+ * 1. Determine curr CPU id.
-+ * 2. Use it to index into _current_task[ ]
-+ *
-+ * Coded differently than GET_CURR_TASK_ON_CPU (which uses LD.AS)
-+ * because ST r0, [r1, offset] can ONLY have s9 @offset
-+ * while   LD can take s9 (4 byte insn) or LIMM (8 byte insn)
-+ */
-+
-+.macro  SET_CURR_TASK_ON_CPU    tsk, tmp
-+	GET_CPU_ID  \tmp
-+	add2 \tmp, @_current_task, \tmp
-+	st   \tsk, [\tmp]
-+#ifdef CONFIG_ARC_CURR_IN_REG
-+	mov r25, \tsk
++#ifdef CONFIG_ARC_DW2_UNWIND
++struct mod_arch_specific {
++	void *unw_info;
++	int unw_sec_idx;
++};
 +#endif
 +
-+.endm
-+
-+
-+#else   /* Uniprocessor implementation of macros */
-+
- .macro  GET_CURR_TASK_ON_CPU    reg
- 	ld  \reg, [@_current_task]
- .endm
-@@ -610,6 +657,8 @@
- #endif
- .endm
+ #define MODULE_PROC_FAMILY "ARC700"
  
-+#endif /* SMP / UNI */
-+
- /* ------------------------------------------------------------------
-  * Get the ptr to some field of Current Task at @off in task struct
-  *  -Uses r25 for Current task ptr if that is enabled
-diff --git a/arch/arc/include/asm/mmu_context.h b/arch/arc/include/asm/mmu_context.h
-index d12f3de..0d71fb1 100644
---- a/arch/arc/include/asm/mmu_context.h
-+++ b/arch/arc/include/asm/mmu_context.h
-@@ -147,8 +147,10 @@ init_new_context(struct task_struct *tsk, struct mm_struct *mm)
- static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 			     struct task_struct *tsk)
- {
-+#ifndef CONFIG_SMP
- 	/* PGD cached in MMU reg to avoid 3 mem lookups: task->mm->pgd */
- 	write_aux_reg(ARC_REG_SCRATCH_DATA0, next->pgd);
-+#endif
- 
- 	/*
- 	 * Get a new ASID if task doesn't have a valid one. Possible when
-@@ -197,7 +199,9 @@ static inline void destroy_context(struct mm_struct *mm)
- 
- static inline void activate_mm(struct mm_struct *prev, struct mm_struct *next)
- {
-+#ifndef CONFIG_SMP
- 	write_aux_reg(ARC_REG_SCRATCH_DATA0, next->pgd);
-+#endif
- 
- 	/* Unconditionally get a new ASID */
- 	get_new_mmu_context(next);
-diff --git a/arch/arc/include/asm/mutex.h b/arch/arc/include/asm/mutex.h
-index 3be5e64..a2f88ff 100644
---- a/arch/arc/include/asm/mutex.h
-+++ b/arch/arc/include/asm/mutex.h
-@@ -6,4 +6,13 @@
-  * published by the Free Software Foundation.
-  */
- 
-+/*
-+ * xchg() based mutex fast path maintains a state of 0 or 1, as opposed to
-+ * atomic dec based which can "count" any number of lock contenders.
-+ * This ideally needs to be fixed in core, but for now switching to dec ver.
-+ */
-+#if defined(CONFIG_SMP) && (CONFIG_NR_CPUS > 2)
-+#include <asm-generic/mutex-dec.h>
-+#else
- #include <asm-generic/mutex-xchg.h>
-+#endif
-diff --git a/arch/arc/include/asm/pgtable.h b/arch/arc/include/asm/pgtable.h
-index dcb07015..b7e3668 100644
---- a/arch/arc/include/asm/pgtable.h
-+++ b/arch/arc/include/asm/pgtable.h
-@@ -354,11 +354,15 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-  * Thus use this macro only when you are certain that "current" is current
-  * e.g. when dealing with signal frame setup code etc
-  */
-+#ifndef CONFIG_SMP
- #define pgd_offset_fast(mm, addr)	\
- ({					\
- 	pgd_t *pgd_base = (pgd_t *) read_aux_reg(ARC_REG_SCRATCH_DATA0);  \
- 	pgd_base + pgd_index(addr);	\
- })
-+#else
-+#define pgd_offset_fast(mm, addr)	pgd_offset(mm, addr)
-+#endif
- 
- extern void paging_init(void);
- extern pgd_t swapper_pg_dir[] __aligned(PAGE_SIZE);
-diff --git a/arch/arc/include/asm/processor.h b/arch/arc/include/asm/processor.h
-index 2fe9f22..dccef68 100644
---- a/arch/arc/include/asm/processor.h
-+++ b/arch/arc/include/asm/processor.h
-@@ -58,7 +58,15 @@ unsigned long thread_saved_pc(struct task_struct *t);
- /* Prepare to copy thread state - unlazy all lazy status */
- #define prepare_to_copy(tsk)    do { } while (0)
- 
-+/*
-+ * A lot of busy-wait loops in SMP are based off of non-volatile data otherwise
-+ * get optimised away by gcc
-+ */
-+#ifdef CONFIG_SMP
-+#define cpu_relax()	__asm__ __volatile__ ("" : : : "memory")
-+#else
- #define cpu_relax()	do { } while (0)
-+#endif
- 
- /*
-  * Create a new kernel thread
-diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
-index 4341f3b..6ea4c52 100644
---- a/arch/arc/include/asm/smp.h
-+++ b/arch/arc/include/asm/smp.h
-@@ -9,6 +9,70 @@
- #ifndef __ASM_ARC_SMP_H
- #define __ASM_ARC_SMP_H
- 
-+#ifdef CONFIG_SMP
-+
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/threads.h>
-+
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
-+
-+/* including cpumask.h leads to cyclic deps hence this Forward declaration */
-+struct cpumask;
-+
-+/*
-+ * APIs provided by arch SMP code to generic code
-+ */
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-+
-+/*
-+ * APIs provided by arch SMP code to rest of arch code
-+ */
-+extern void smp_ipi_init(void);
-+extern void __init smp_init_cpus(void);
-+extern void __init first_lines_of_secondary(void);
-+
-+/*
-+ * API expected BY platform smp code (FROM arch smp code)
-+ *
-+ * smp_ipi_irq_setup:
-+ *	Takes @cpu and @irq to which the arch-common ISR is hooked up
-+ */
-+extern int smp_ipi_irq_setup(int cpu, int irq);
-+
-+/*
-+ * APIs expected FROM platform smp code
-+ *
-+ * arc_platform_smp_cpuinfo:
-+ *	returns a string containing info for /proc/cpuinfo
-+ *
-+ * arc_platform_smp_init_cpu:
-+ *	Called from start_kernel_secondary to do any CPU local setup
-+ *	such as starting a timer, setting up IPI etc
-+ *
-+ * arc_platform_smp_wait_to_boot:
-+ *	Called from early bootup code for non-Master CPUs to "park" them
-+ *
-+ * arc_platform_smp_wakeup_cpu:
-+ *	Called from __cpu_up (Master CPU) to kick start another one
-+ *
-+ * arc_platform_ipi_send:
-+ *	Takes @cpumask to which IPI(s) would be sent.
-+ *	The actual msg-id/buffer is manager in arch-common code
-+ *
-+ * arc_platform_ipi_clear:
-+ *	Takes @cpu which got IPI at @irq to do any IPI clearing
-+ */
-+extern const char *arc_platform_smp_cpuinfo(void);
-+extern void arc_platform_smp_init_cpu(void);
-+extern void arc_platform_smp_wait_to_boot(int cpu);
-+extern void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc);
-+extern void arc_platform_ipi_send(const struct cpumask *callmap);
-+extern void arc_platform_ipi_clear(int cpu, int irq);
-+
-+#endif  /* CONFIG_SMP */
-+
- /*
-  * ARC700 doesn't support atomic Read-Modify-Write ops.
-  * Originally Interrupts had to be disabled around code to gaurantee atomicity.
-@@ -18,10 +82,52 @@
-  *
-  * (1) These insn were introduced only in 4.10 release. So for older released
-  *	support needed.
-+ *
-+ * (2) In a SMP setup, the LLOCK/SCOND atomiticity across CPUs needs to be
-+ *	gaurantted by the platform (not something which core handles).
-+ *	Assuming a platform won't, SMP Linux needs to use spinlocks + local IRQ
-+ *	disabling for atomicity.
-+ *
-+ *	However exported spinlock API is not usable due to cyclic hdr deps
-+ *	(even after system.h disintegration upstream)
-+ *	asm/bitops.h -> linux/spinlock.h -> linux/preempt.h
-+ *		-> linux/thread_info.h -> linux/bitops.h -> asm/bitops.h
-+ *
-+ *	So the workaround is to use the lowest level arch spinlock API.
-+ *	The exported spinlock API is smart enough to be NOP for !CONFIG_SMP,
-+ *	but same is not true for ARCH backend, hence the need for 2 variants
-  */
- #ifndef CONFIG_ARC_HAS_LLSC
- 
- #include <linux/irqflags.h>
-+#ifdef CONFIG_SMP
-+
-+#include <asm/spinlock.h>
-+
-+extern arch_spinlock_t smp_atomic_ops_lock;
-+extern arch_spinlock_t smp_bitops_lock;
-+
-+#define atomic_ops_lock(flags)	do {		\
-+	local_irq_save(flags);			\
-+	arch_spin_lock(&smp_atomic_ops_lock);	\
-+} while (0)
-+
-+#define atomic_ops_unlock(flags) do {		\
-+	arch_spin_unlock(&smp_atomic_ops_lock);	\
-+	local_irq_restore(flags);		\
-+} while (0)
-+
-+#define bitops_lock(flags)	do {		\
-+	local_irq_save(flags);			\
-+	arch_spin_lock(&smp_bitops_lock);	\
-+} while (0)
-+
-+#define bitops_unlock(flags) do {		\
-+	arch_spin_unlock(&smp_bitops_lock);	\
-+	local_irq_restore(flags);		\
-+} while (0)
-+
-+#else /* !CONFIG_SMP */
- 
- #define atomic_ops_lock(flags)		local_irq_save(flags)
- #define atomic_ops_unlock(flags)	local_irq_restore(flags)
-@@ -29,6 +135,8 @@
- #define bitops_lock(flags)		local_irq_save(flags)
- #define bitops_unlock(flags)		local_irq_restore(flags)
- 
-+#endif /* !CONFIG_SMP */
-+
- #endif	/* !CONFIG_ARC_HAS_LLSC */
- 
- #endif
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index ec1f130..b2cf444 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -13,6 +13,7 @@ obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
- 
- obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
- obj-$(CONFIG_ARC_DBG_EVENT_TIMELINE)	+= event-log.o
-+obj-$(CONFIG_SMP) 			+= smp.o
- obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
- CFLAGS_fpu.o   += -mdpfp
- 
-diff --git a/arch/arc/kernel/ctx_sw.c b/arch/arc/kernel/ctx_sw.c
-index fbf739c..60844da 100644
---- a/arch/arc/kernel/ctx_sw.c
-+++ b/arch/arc/kernel/ctx_sw.c
-@@ -58,7 +58,18 @@ __switch_to(struct task_struct *prev_task, struct task_struct *next_task)
- 		 * For SMP extra work to get to &_current_task[cpu]
- 		 * (open coded SET_CURR_TASK_ON_CPU)
- 		 */
-+#ifndef CONFIG_SMP
- 		"st  %2, [@_current_task]	\n\t"
-+#else
-+		"lr   r24, [identity]		\n\t"
-+		"lsr  r24, r24, 8		\n\t"
-+		"bmsk r24, r24, 7		\n\t"
-+		"add2 r24, @_current_task, r24	\n\t"
-+		"st   %2,  [r24]		\n\t"
-+#endif
-+#ifdef CONFIG_ARC_CURR_IN_REG
-+		"mov r25, %2   \n\t"
-+#endif
- 
- 		/* get ksp of incoming task from tsk->thread.ksp */
- 		"ld.as  sp, [%2, %1]   \n\t"
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 5babb8a..7b24a5a 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -240,7 +240,11 @@ ARC_EXIT handle_interrupt_level2
- ARC_ENTRY handle_interrupt_level1
- 
- 	/* free up r9 as scratchpad */
-+#ifdef CONFIG_SMP
-+	sr  r9, [ARC_REG_SCRATCH_DATA0]
-+#else
- 	st   r9, [@int1_saved_reg]
-+#endif
- 
- 	;Which mode (user/kernel) was the system in when intr occured
- 	lr  r9, [status32_l1]
-diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
-index e63f6a4..006dec3 100644
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -27,6 +27,15 @@ stext:
- 	; Don't clobber r0-r4 yet. It might have bootloader provided info
- 	;-------------------------------------------------------------------
- 
-+#ifdef CONFIG_SMP
-+	; Only Boot (Master) proceeds. Others wait in platform dependent way
-+	;	IDENTITY Reg [ 3  2  1  0 ]
-+	;	(cpu-id)             ^^^	=> Zero for UP ARC700
-+	;					=> #Core-ID if SMP (Master 0)
-+	GET_CPU_ID  r5
-+	cmp	r5, 0
-+	jnz	arc_platform_smp_wait_to_boot
-+#endif
- 	; Clear BSS before updating any globals
- 	; XXX: use ZOL here
- 	mov	r5, __bss_start
-@@ -76,3 +85,27 @@ stext:
- 	GET_TSK_STACK_BASE r9, sp	; r9 = tsk, sp = stack base(output)
- 
- 	j	start_kernel	; "C" entry point
-+
-+#ifdef CONFIG_SMP
-+;----------------------------------------------------------------
-+;     First lines of code run by secondary before jumping to 'C'
-+;----------------------------------------------------------------
-+	.section .init.text, "ax",@progbits
-+	.type first_lines_of_secondary, @function
-+	.globl first_lines_of_secondary
-+
-+first_lines_of_secondary:
-+
-+	; setup per-cpu idle task as "current" on this CPU
-+	ld	r0, [@secondary_idle_tsk]
-+	SET_CURR_TASK_ON_CPU  r0, r1
-+
-+	; setup stack (fp, sp)
-+	mov	fp, 0
-+
-+	; set it's stack base to tsk->thread_info bottom
-+	GET_TSK_STACK_BASE r0, sp
-+
-+	j	start_kernel_secondary
-+
-+#endif
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index afde5a7..32af2ee 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -73,6 +73,11 @@ void __init init_IRQ(void)
- 	irq_modify_status(irq, IRQ_NOAUTOEN, 0);
- 
- 	plat_init_IRQ();
-+
-+#ifdef CONFIG_SMP
-+	/* Master CPU to initialize the IPI framework */
-+	arc_platform_smp_init_cpu();
-+#endif
- }
- 
- /*
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index 82ac206..258b9ee 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -79,6 +79,10 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_processor();
- 
-+#ifdef CONFIG_SMP
-+	smp_init_cpus();
-+#endif
-+
- 	setup_arch_memory();
- 
- 	/* Can be issue if someone passes cmd line arg "ro"
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
+ #define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY
+diff --git a/arch/arc/include/asm/unwind.h b/arch/arc/include/asm/unwind.h
 new file mode 100644
-index 0000000..7a53bad
+index 0000000..7ca628b
 --- /dev/null
-+++ b/arch/arc/kernel/smp.c
-@@ -0,0 +1,295 @@
++++ b/arch/arc/include/asm/unwind.h
+@@ -0,0 +1,163 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * RajeshwarR: Dec 11, 2007
-+ *   -- Added support for Inter Processor Interrupts
-+ *
-+ * Vineetg: Nov 1st, 2007
-+ *    -- Initial Write (Borrowed heavily from ARM)
 + */
 +
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
++#ifndef _ASM_ARC_UNWIND_H
++#define _ASM_ARC_UNWIND_H
++
++#ifdef CONFIG_ARC_DW2_UNWIND
++
 +#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/profile.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/mm.h>
-+#include <linux/cpu.h>
-+#include <linux/smp.h>
-+#include <linux/irq.h>
-+#include <linux/delay.h>
-+#include <linux/atomic.h>
-+#include <linux/percpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/spinlock_types.h>
-+#include <asm/processor.h>
-+#include <asm/setup.h>
 +
-+arch_spinlock_t smp_atomic_ops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+arch_spinlock_t smp_bitops_lock = __ARCH_SPIN_LOCK_UNLOCKED;
++struct arc700_regs {
++	unsigned long r0;
++	unsigned long r1;
++	unsigned long r2;
++	unsigned long r3;
++	unsigned long r4;
++	unsigned long r5;
++	unsigned long r6;
++	unsigned long r7;
++	unsigned long r8;
++	unsigned long r9;
++	unsigned long r10;
++	unsigned long r11;
++	unsigned long r12;
++	unsigned long r13;
++	unsigned long r14;
++	unsigned long r15;
++	unsigned long r16;
++	unsigned long r17;
++	unsigned long r18;
++	unsigned long r19;
++	unsigned long r20;
++	unsigned long r21;
++	unsigned long r22;
++	unsigned long r23;
++	unsigned long r24;
++	unsigned long r25;
++	unsigned long r26;
++	unsigned long r27;	/* fp */
++	unsigned long r28;	/* sp */
++	unsigned long r29;
++	unsigned long r30;
++	unsigned long r31;	/* blink */
++	unsigned long r63;	/* pc */
++};
 +
-+/* XXX: per cpu ? Only needed once in early seconday boot */
-+struct task_struct *secondary_idle_tsk;
++struct unwind_frame_info {
++	struct arc700_regs regs;
++	struct task_struct *task;
++	unsigned call_frame:1;
++};
 +
-+/* Called from start_kernel */
-+void __init smp_prepare_boot_cpu(void)
++#define UNW_PC(frame)		((frame)->regs.r63)
++#define UNW_SP(frame)		((frame)->regs.r28)
++#define UNW_BLINK(frame)	((frame)->regs.r31)
++
++/* Rajesh FIXME */
++#ifdef CONFIG_FRAME_POINTER
++#define UNW_FP(frame)		((frame)->regs.r27)
++#define FRAME_RETADDR_OFFSET	4
++#define FRAME_LINK_OFFSET	0
++#define STACK_BOTTOM_UNW(tsk)	STACK_LIMIT((tsk)->thread.ksp)
++#define STACK_TOP_UNW(tsk)	((tsk)->thread.ksp)
++#else
++#define UNW_FP(frame)		((void)(frame), 0)
++#endif
++
++#define STACK_LIMIT(ptr)	(((ptr) - 1) & ~(THREAD_SIZE - 1))
++
++#define UNW_REGISTER_INFO \
++	PTREGS_INFO(r0), \
++	PTREGS_INFO(r1), \
++	PTREGS_INFO(r2), \
++	PTREGS_INFO(r3), \
++	PTREGS_INFO(r4), \
++	PTREGS_INFO(r5), \
++	PTREGS_INFO(r6), \
++	PTREGS_INFO(r7), \
++	PTREGS_INFO(r8), \
++	PTREGS_INFO(r9), \
++	PTREGS_INFO(r10), \
++	PTREGS_INFO(r11), \
++	PTREGS_INFO(r12), \
++	PTREGS_INFO(r13), \
++	PTREGS_INFO(r14), \
++	PTREGS_INFO(r15), \
++	PTREGS_INFO(r16), \
++	PTREGS_INFO(r17), \
++	PTREGS_INFO(r18), \
++	PTREGS_INFO(r19), \
++	PTREGS_INFO(r20), \
++	PTREGS_INFO(r21), \
++	PTREGS_INFO(r22), \
++	PTREGS_INFO(r23), \
++	PTREGS_INFO(r24), \
++	PTREGS_INFO(r25), \
++	PTREGS_INFO(r26), \
++	PTREGS_INFO(r27), \
++	PTREGS_INFO(r28), \
++	PTREGS_INFO(r29), \
++	PTREGS_INFO(r30), \
++	PTREGS_INFO(r31), \
++	PTREGS_INFO(r63)
++
++#define UNW_DEFAULT_RA(raItem, dataAlign) \
++	((raItem).where == Memory && !((raItem).value * (dataAlign) + 4))
++
++extern int arc_unwind(struct unwind_frame_info *frame);
++extern void arc_unwind_init(void);
++extern void arc_unwind_setup(void);
++extern void *unwind_add_table(struct module *module, const void *table_start,
++			      unsigned long table_size);
++extern void unwind_remove_table(void *handle, int init_only);
++
++static inline int
++arch_unwind_init_running(struct unwind_frame_info *info,
++			 int (*callback) (struct unwind_frame_info *info,
++					  void *arg),
++			 void *arg)
++{
++	return 0;
++}
++
++static inline int arch_unw_user_mode(const struct unwind_frame_info *info)
++{
++	return 0;
++}
++
++static inline void arch_unw_init_blocked(struct unwind_frame_info *info)
++{
++	return;
++}
++
++static inline void arch_unw_init_frame_info(struct unwind_frame_info *info,
++					    struct pt_regs *regs)
++{
++	return;
++}
++
++#else
++
++#define UNW_PC(frame) ((void)(frame), 0)
++#define UNW_SP(frame) ((void)(frame), 0)
++#define UNW_FP(frame) ((void)(frame), 0)
++
++static inline void arc_unwind_init(void)
 +{
 +}
 +
-+/*
-+ * Initialise the CPU possible map early - this describes the CPUs
-+ * which may be present or become present in the system.
++static inline void arc_unwind_setup(void)
++{
++}
++#define unwind_add_table(a, b, c)
++#define unwind_remove_table(a, b)
++
++#endif /* CONFIG_ARC_DW2_UNWIND */
++
++#endif /* _ASM_ARC_UNWIND_H */
+diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
+index b2cf444..86b159f 100644
+--- a/arch/arc/kernel/Makefile
++++ b/arch/arc/kernel/Makefile
+@@ -14,9 +14,15 @@ obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
+ obj-$(CONFIG_MODULES)			+= arcksyms.o module.o
+ obj-$(CONFIG_ARC_DBG_EVENT_TIMELINE)	+= event-log.o
+ obj-$(CONFIG_SMP) 			+= smp.o
++obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
+ obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
+ CFLAGS_fpu.o   += -mdpfp
+ 
++ifdef CONFIG_ARC_DW2_UNWIND
++CFLAGS_ctx_sw.o += -fno-omit-frame-pointer
++obj-y += ctx_sw.o
++else
+ obj-y += ctx_sw_asm.o
++endif
+ 
+ extra-y := vmlinux.lds head.o
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 7b24a5a..13d6feb 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -868,3 +868,12 @@ ARC_ENTRY sys_clone_wrapper
+ 
+ 	b ret_from_system_call
+ ARC_EXIT sys_clone_wrapper
++
++#ifdef CONFIG_ARC_DW2_UNWIND
++; Workaround for bug 94179 (STAR ):
++; Despite -fasynchronous-unwind-tables, linker is not making dwarf2 unwinder
++; section (.debug_frame) as loadable. So we force it here.
++; This also fixes STAR 9000487933 where the prev-workaround (objcopy --setflag)
++; would not work after a clean build due to kernel build system dependencies.
++.section .debug_frame, "wa",@progbits
++#endif
+diff --git a/arch/arc/kernel/module.c b/arch/arc/kernel/module.c
+index cc13df4..fd38132 100644
+--- a/arch/arc/kernel/module.c
++++ b/arch/arc/kernel/module.c
+@@ -14,6 +14,7 @@
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+ #include <linux/string.h>
++#include <asm/unwind.h>
+ 
+ static inline void arc_write_me(unsigned short *addr, unsigned long value)
+ {
+@@ -35,14 +36,40 @@ void module_free(struct module *module, void *region)
+ 	vfree(region);
+ }
+ 
++/* ARC specific section quirks - before relocation loop in generic loader
++ *
++ * For dwarf unwinding out of modules, this needs to
++ * 1. Ensure the .debug_frame is allocatable (ARC Linker bug: despite
++ *    -fasynchronous-unwind-tables it doesn't).
++ * 2. Since we are iterating thru sec hdr tbl anyways, make a note of
++ *    the exact section index, for later use.
 + */
-+void __init smp_init_cpus(void)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < NR_CPUS; i++)
-+		set_cpu_possible(i, true);
-+}
-+
-+/* called from init ( ) =>  process 1 */
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
+ int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
+ 			      char *secstr, struct module *mod)
+ {
++#ifdef CONFIG_ARC_DW2_UNWIND
 +	int i;
 +
-+	/*
-+	 * Initialise the present map, which describes the set of CPUs
-+	 * actually populated at the present time.
-+	 */
-+	for (i = 0; i < max_cpus; i++)
-+		set_cpu_present(i, true);
-+}
++	mod->arch.unw_sec_idx = 0;
++	mod->arch.unw_info = NULL;
 +
-+void __init smp_cpus_done(unsigned int max_cpus)
-+{
-+
-+}
-+
-+/*
-+ * The very first "C" code executed by secondary
-+ * Called from asm stub in head.S
-+ * "current"/R25 already setup by low level boot code
-+ */
-+void __cpuinit start_kernel_secondary(void)
-+{
-+	struct mm_struct *mm = &init_mm;
-+	unsigned int cpu = smp_processor_id();
-+
-+	/* MMU, Caches, Vector Table, Interrupts etc */
-+	setup_processor();
-+
-+	atomic_inc(&mm->mm_users);
-+	atomic_inc(&mm->mm_count);
-+	current->active_mm = mm;
-+
-+	set_cpu_online(cpu, true);
-+
-+	pr_info("## CPU%u LIVE ##: Executing Code...\n", cpu);
-+
-+	arc_platform_smp_init_cpu();
-+
-+	/*
-+	 * XXX: Note that TIMER1 based cpu-local counters will not be
-+	 * synchronized given the time lag between time_init (boot-cpu only)
-+	 * vs. the time we reach here. However assuming that any SMP Linux
-+	 * deployments will use a recent enough ARC700 with a perfectly
-+	 * synchronized 64-bit CPU cycle counter backing the RTSC insn.
-+	 */
-+	arc_clock_counter_setup();
-+
-+	arc_clockevent_init();
-+
-+	local_irq_enable();
-+	preempt_disable();
-+	cpu_idle();
-+}
-+
-+/*
-+ * Called from kernel_init( ) -> smp_init( ) - for each CPU
-+ *
-+ * At this point, Secondary Processor  is "HALT"ed:
-+ *  -It booted, but was halted in head.S
-+ *  -It was configured to halt-on-reset
-+ *  So need to wake it up.
-+ *
-+ * Essential requirements being where to run from (PC) and stack (SP)
-+*/
-+int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
-+{
-+	unsigned long wait_till;
-+
-+	secondary_idle_tsk = idle;
-+
-+	pr_info("Idle Task [%d] %p", cpu, idle);
-+	pr_info("Trying to bring up CPU%u ...\n", cpu);
-+
-+	arc_platform_smp_wakeup_cpu(cpu,
-+				(unsigned long)first_lines_of_secondary);
-+
-+	/* wait for 1 sec after kicking the secondary */
-+	wait_till = jiffies + HZ;
-+	while (time_before(jiffies, wait_till)) {
-+		if (cpu_online(cpu))
++	for (i = 1; i < hdr->e_shnum; i++) {
++		if (strcmp(secstr+sechdrs[i].sh_name, ".debug_frame") == 0) {
++			sechdrs[i].sh_flags |= SHF_ALLOC;
++			mod->arch.unw_sec_idx = i;
 +			break;
++		}
++	}
++#endif
+     return 0;
+ }
+ 
+ void module_arch_cleanup(struct module *mod)
+ {
++#ifdef CONFIG_ARC_DW2_UNWIND
++	if (mod->arch.unw_info)
++		unwind_remove_table(mod->arch.unw_info, 0);
++#endif
+ }
+ 
+ int apply_relocate_add(Elf32_Shdr *sechdrs,
+@@ -110,8 +137,23 @@ relo_err:
+ 
+ }
+ 
++/* Just before lift off: After sections have been relocated, we add the
++ * dwarf section to unwinder table pool
++ * This couldn't be done in module_frob_arch_sections() because
++ * relocations had not been applied by then
++ */
+ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
+ 		    struct module *mod)
+ {
++#ifdef CONFIG_ARC_DW2_UNWIND
++	void *unw;
++	int unwsec = mod->arch.unw_sec_idx;
++
++	if (unwsec) {
++		unw = unwind_add_table(mod, (void *)sechdrs[unwsec].sh_addr,
++				       sechdrs[unwsec].sh_size);
++		mod->arch.unw_info = unw;
++	}
++#endif
+     return 0;
+ }
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index 258b9ee..34a2ff5 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -20,6 +20,7 @@
+ #include <asm/page.h>
+ #include <asm/irq.h>
+ #include <asm/arcregs.h>
++#include <asm/unwind.h>
+ 
+ #define FIX_PTR(x)  __asm__ __volatile__(";" : "+r"(x))
+ 
+@@ -96,6 +97,8 @@ void __init setup_arch(char **cmdline_p)
+ 	conswitchp = &dummy_con;
+ #endif
+ 
++	arc_unwind_init();
++	arc_unwind_setup();
+ }
+ 
+ /*
+diff --git a/arch/arc/kernel/unwind.c b/arch/arc/kernel/unwind.c
+new file mode 100644
+index 0000000..a8d0222
+--- /dev/null
++++ b/arch/arc/kernel/unwind.c
+@@ -0,0 +1,1329 @@
++/*
++ * Copyright (C) 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ * Copyright (C) 2002-2006 Novell, Inc.
++ *	Jan Beulich <jbeulich@novell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * A simple API for unwinding kernel stacks.  This is used for
++ * debugging and error reporting purposes.  The kernel doesn't need
++ * full-blown stack unwinding with all the bells and whistles, so there
++ * is not much point in implementing the full Dwarf2 unwind API.
++ */
++
++#include <linux/sched.h>
++#include <linux/module.h>
++#include <linux/bootmem.h>
++#include <linux/sort.h>
++#include <linux/slab.h>
++#include <linux/stop_machine.h>
++#include <linux/uaccess.h>
++#include <linux/ptrace.h>
++#include <asm/sections.h>
++#include <asm/unaligned.h>
++#include <asm/unwind.h>
++
++extern char __start_unwind[], __end_unwind[];
++/* extern const u8 __start_unwind_hdr[], __end_unwind_hdr[];*/
++
++/* #define UNWIND_DEBUG */
++
++#ifdef UNWIND_DEBUG
++int dbg_unw;
++#define unw_debug(fmt, ...)			\
++do {						\
++	if (dbg_unw)				\
++		pr_info(fmt, ##__VA_ARGS__);	\
++} while (0);
++#else
++#define unw_debug(fmt, ...)
++#endif
++
++#define MAX_STACK_DEPTH 8
++
++#define EXTRA_INFO(f) { \
++		BUILD_BUG_ON_ZERO(offsetof(struct unwind_frame_info, f) \
++				% FIELD_SIZEOF(struct unwind_frame_info, f)) \
++				+ offsetof(struct unwind_frame_info, f) \
++				/ FIELD_SIZEOF(struct unwind_frame_info, f), \
++				FIELD_SIZEOF(struct unwind_frame_info, f) \
++	}
++#define PTREGS_INFO(f) EXTRA_INFO(regs.f)
++
++static const struct {
++	unsigned offs:BITS_PER_LONG / 2;
++	unsigned width:BITS_PER_LONG / 2;
++} reg_info[] = {
++UNW_REGISTER_INFO};
++
++#undef PTREGS_INFO
++#undef EXTRA_INFO
++
++#ifndef REG_INVALID
++#define REG_INVALID(r) (reg_info[r].width == 0)
++#endif
++
++#define DW_CFA_nop                          0x00
++#define DW_CFA_set_loc                      0x01
++#define DW_CFA_advance_loc1                 0x02
++#define DW_CFA_advance_loc2                 0x03
++#define DW_CFA_advance_loc4                 0x04
++#define DW_CFA_offset_extended              0x05
++#define DW_CFA_restore_extended             0x06
++#define DW_CFA_undefined                    0x07
++#define DW_CFA_same_value                   0x08
++#define DW_CFA_register                     0x09
++#define DW_CFA_remember_state               0x0a
++#define DW_CFA_restore_state                0x0b
++#define DW_CFA_def_cfa                      0x0c
++#define DW_CFA_def_cfa_register             0x0d
++#define DW_CFA_def_cfa_offset               0x0e
++#define DW_CFA_def_cfa_expression           0x0f
++#define DW_CFA_expression                   0x10
++#define DW_CFA_offset_extended_sf           0x11
++#define DW_CFA_def_cfa_sf                   0x12
++#define DW_CFA_def_cfa_offset_sf            0x13
++#define DW_CFA_val_offset                   0x14
++#define DW_CFA_val_offset_sf                0x15
++#define DW_CFA_val_expression               0x16
++#define DW_CFA_lo_user                      0x1c
++#define DW_CFA_GNU_window_save              0x2d
++#define DW_CFA_GNU_args_size                0x2e
++#define DW_CFA_GNU_negative_offset_extended 0x2f
++#define DW_CFA_hi_user                      0x3f
++
++#define DW_EH_PE_FORM     0x07
++#define DW_EH_PE_native   0x00
++#define DW_EH_PE_leb128   0x01
++#define DW_EH_PE_data2    0x02
++#define DW_EH_PE_data4    0x03
++#define DW_EH_PE_data8    0x04
++#define DW_EH_PE_signed   0x08
++#define DW_EH_PE_ADJUST   0x70
++#define DW_EH_PE_abs      0x00
++#define DW_EH_PE_pcrel    0x10
++#define DW_EH_PE_textrel  0x20
++#define DW_EH_PE_datarel  0x30
++#define DW_EH_PE_funcrel  0x40
++#define DW_EH_PE_aligned  0x50
++#define DW_EH_PE_indirect 0x80
++#define DW_EH_PE_omit     0xff
++
++typedef unsigned long uleb128_t;
++typedef signed long sleb128_t;
++
++static struct unwind_table {
++	struct {
++		unsigned long pc;
++		unsigned long range;
++	} core, init;
++	const void *address;
++	unsigned long size;
++	const unsigned char *header;
++	unsigned long hdrsz;
++	struct unwind_table *link;
++	const char *name;
++} root_table;
++
++struct unwind_item {
++	enum item_location {
++		Nowhere,
++		Memory,
++		Register,
++		Value
++	} where;
++	uleb128_t value;
++};
++
++struct unwind_state {
++	uleb128_t loc, org;
++	const u8 *cieStart, *cieEnd;
++	uleb128_t codeAlign;
++	sleb128_t dataAlign;
++	struct cfa {
++		uleb128_t reg, offs;
++	} cfa;
++	struct unwind_item regs[ARRAY_SIZE(reg_info)];
++	unsigned stackDepth:8;
++	unsigned version:8;
++	const u8 *label;
++	const u8 *stack[MAX_STACK_DEPTH];
++};
++
++static const struct cfa badCFA = { ARRAY_SIZE(reg_info), 1 };
++
++static struct unwind_table *find_table(unsigned long pc)
++{
++	struct unwind_table *table;
++
++	for (table = &root_table; table; table = table->link)
++		if ((pc >= table->core.pc
++		     && pc < table->core.pc + table->core.range)
++		    || (pc >= table->init.pc
++			&& pc < table->init.pc + table->init.range))
++			break;
++
++	return table;
++}
++
++static unsigned long read_pointer(const u8 **pLoc,
++				  const void *end, signed ptrType);
++
++static void init_unwind_table(struct unwind_table *table, const char *name,
++			      const void *core_start, unsigned long core_size,
++			      const void *init_start, unsigned long init_size,
++			      const void *table_start, unsigned long table_size,
++			      const u8 *header_start, unsigned long header_size)
++{
++	const u8 *ptr = header_start + 4;
++	const u8 *end = header_start + header_size;
++
++	table->core.pc = (unsigned long)core_start;
++	table->core.range = core_size;
++	table->init.pc = (unsigned long)init_start;
++	table->init.range = init_size;
++	table->address = table_start;
++	table->size = table_size;
++
++	/* See if the linker provided table looks valid. */
++	if (header_size <= 4
++	    || header_start[0] != 1
++	    || (void *)read_pointer(&ptr, end, header_start[1]) != table_start
++	    || header_start[2] == DW_EH_PE_omit
++	    || read_pointer(&ptr, end, header_start[2]) <= 0
++	    || header_start[3] == DW_EH_PE_omit)
++		header_start = NULL;
++
++	table->hdrsz = header_size;
++	smp_wmb();
++	table->header = header_start;
++	table->link = NULL;
++	table->name = name;
++}
++
++void __init arc_unwind_init(void)
++{
++	init_unwind_table(&root_table, "kernel", _text, _end - _text, NULL, 0,
++			  __start_unwind, __end_unwind - __start_unwind,
++			  NULL, 0);
++	  /*__start_unwind_hdr, __end_unwind_hdr - __start_unwind_hdr);*/
++}
++
++static const u32 bad_cie, not_fde;
++static const u32 *cie_for_fde(const u32 *fde, const struct unwind_table *);
++static signed fde_pointer_type(const u32 *cie);
++
++struct eh_frame_hdr_table_entry {
++	unsigned long start, fde;
++};
++
++static int cmp_eh_frame_hdr_table_entries(const void *p1, const void *p2)
++{
++	const struct eh_frame_hdr_table_entry *e1 = p1;
++	const struct eh_frame_hdr_table_entry *e2 = p2;
++
++	return (e1->start > e2->start) - (e1->start < e2->start);
++}
++
++static void swap_eh_frame_hdr_table_entries(void *p1, void *p2, int size)
++{
++	struct eh_frame_hdr_table_entry *e1 = p1;
++	struct eh_frame_hdr_table_entry *e2 = p2;
++	unsigned long v;
++
++	v = e1->start;
++	e1->start = e2->start;
++	e2->start = v;
++	v = e1->fde;
++	e1->fde = e2->fde;
++	e2->fde = v;
++}
++
++static void __init setup_unwind_table(struct unwind_table *table,
++				      void *(*alloc) (unsigned long))
++{
++	const u8 *ptr;
++	unsigned long tableSize = table->size, hdrSize;
++	unsigned n;
++	const u32 *fde;
++	struct {
++		u8 version;
++		u8 eh_frame_ptr_enc;
++		u8 fde_count_enc;
++		u8 table_enc;
++		unsigned long eh_frame_ptr;
++		unsigned int fde_count;
++		struct eh_frame_hdr_table_entry table[];
++	} __attribute__ ((__packed__)) *header;
++
++	if (table->header)
++		return;
++
++	if (table->hdrsz)
++		pr_warn(".eh_frame_hdr for '%s' present but unusable\n",
++			table->name);
++
++	if (tableSize & (sizeof(*fde) - 1))
++		return;
++
++	for (fde = table->address, n = 0;
++	     tableSize > sizeof(*fde) && tableSize - sizeof(*fde) >= *fde;
++	     tableSize -= sizeof(*fde) + *fde, fde += 1 + *fde / sizeof(*fde)) {
++		const u32 *cie = cie_for_fde(fde, table);
++		signed ptrType;
++
++		if (cie == &not_fde)
++			continue;
++		if (cie == NULL || cie == &bad_cie)
++			return;
++		ptrType = fde_pointer_type(cie);
++		if (ptrType < 0)
++			return;
++
++		ptr = (const u8 *)(fde + 2);
++		if (!read_pointer(&ptr, (const u8 *)(fde + 1) + *fde,
++								ptrType)) {
++			/* FIXME_Rajesh We have 4 instances of null addresses
++			 * instead of the initial loc addr
++			 * return;
++			 */
++		}
++		++n;
 +	}
 +
-+	if (!cpu_online(cpu)) {
-+		pr_info("Timeout: CPU%u FAILED to comeup !!!\n", cpu);
-+		return -1;
++	if (tableSize || !n)
++		return;
++
++	hdrSize = 4 + sizeof(unsigned long) + sizeof(unsigned int)
++	    + 2 * n * sizeof(unsigned long);
++	header = alloc(hdrSize);
++	if (!header)
++		return;
++	header->version = 1;
++	header->eh_frame_ptr_enc = DW_EH_PE_abs | DW_EH_PE_native;
++	header->fde_count_enc = DW_EH_PE_abs | DW_EH_PE_data4;
++	header->table_enc = DW_EH_PE_abs | DW_EH_PE_native;
++	put_unaligned((unsigned long)table->address, &header->eh_frame_ptr);
++	BUILD_BUG_ON(offsetof(typeof(*header), fde_count)
++		     % __alignof(typeof(header->fde_count)));
++	header->fde_count = n;
++
++	BUILD_BUG_ON(offsetof(typeof(*header), table)
++		     % __alignof(typeof(*header->table)));
++	for (fde = table->address, tableSize = table->size, n = 0;
++	     tableSize;
++	     tableSize -= sizeof(*fde) + *fde, fde += 1 + *fde / sizeof(*fde)) {
++		/* const u32 *cie = fde + 1 - fde[1] / sizeof(*fde); */
++		const u32 *cie = (const u32 *)(fde[1]);
++
++		if (fde[1] == 0xffffffff)
++			continue;	/* this is a CIE */
++		ptr = (const u8 *)(fde + 2);
++		header->table[n].start = read_pointer(&ptr,
++						      (const u8 *)(fde + 1) +
++						      *fde,
++						      fde_pointer_type(cie));
++		header->table[n].fde = (unsigned long)fde;
++		++n;
 +	}
++	WARN_ON(n != header->fde_count);
++
++	sort(header->table,
++	     n,
++	     sizeof(*header->table),
++	     cmp_eh_frame_hdr_table_entries, swap_eh_frame_hdr_table_entries);
++
++	table->hdrsz = hdrSize;
++	smp_wmb();
++	table->header = (const void *)header;
++}
++
++static void *__init balloc(unsigned long sz)
++{
++	return __alloc_bootmem_nopanic(sz,
++				       sizeof(unsigned int),
++				       __pa(MAX_DMA_ADDRESS));
++}
++
++void __init arc_unwind_setup(void)
++{
++	setup_unwind_table(&root_table, balloc);
++}
++
++#ifdef CONFIG_MODULES
++
++static struct unwind_table *last_table;
++
++/* Must be called with module_mutex held. */
++void *unwind_add_table(struct module *module, const void *table_start,
++		       unsigned long table_size)
++{
++	struct unwind_table *table;
++
++	if (table_size <= 0)
++		return NULL;
++
++	table = kmalloc(sizeof(*table), GFP_KERNEL);
++	if (!table)
++		return NULL;
++
++	init_unwind_table(table, module->name,
++			  module->module_core, module->core_size,
++			  module->module_init, module->init_size,
++			  table_start, table_size,
++			  NULL, 0);
++
++#ifdef UNWIND_DEBUG
++	unw_debug("Table added for [%s] %lx %lx\n",
++		module->name, table->core.pc, table->core.range);
++#endif
++	if (last_table)
++		last_table->link = table;
++	else
++		root_table.link = table;
++	last_table = table;
++
++	return table;
++}
++
++struct unlink_table_info {
++	struct unwind_table *table;
++	int init_only;
++};
++
++static int unlink_table(void *arg)
++{
++	struct unlink_table_info *info = arg;
++	struct unwind_table *table = info->table, *prev;
++
++	for (prev = &root_table; prev->link && prev->link != table;
++	     prev = prev->link)
++		;
++
++	if (prev->link) {
++		if (info->init_only) {
++			table->init.pc = 0;
++			table->init.range = 0;
++			info->table = NULL;
++		} else {
++			prev->link = table->link;
++			if (!prev->link)
++				last_table = prev;
++		}
++	} else
++		info->table = NULL;
 +
 +	return 0;
 +}
 +
-+/*
-+ * not supported here
-+ */
-+int __init setup_profiling_timer(unsigned int multiplier)
++/* Must be called with module_mutex held. */
++void unwind_remove_table(void *handle, int init_only)
 +{
-+	return -EINVAL;
-+}
++	struct unwind_table *table = handle;
++	struct unlink_table_info info;
 +
-+/*****************************************************************************/
-+/*              Inter Processor Interrupt Handling                           */
-+/*****************************************************************************/
++	if (!table || table == &root_table)
++		return;
 +
-+/*
-+ * structures for inter-processor calls
-+ * A Collection of single bit ipi messages
-+ *
-+ */
-+
-+/*
-+ * TODO_rajesh investigate tlb message types.
-+ * IPI Timer not needed because each ARC has an individual Interrupting Timer
-+ */
-+enum ipi_msg_type {
-+	IPI_NOP = 0,
-+	IPI_RESCHEDULE = 1,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP
-+};
-+
-+struct ipi_data {
-+	unsigned long bits;
-+};
-+
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data);
-+
-+static void ipi_send_msg(const struct cpumask *callmap, enum ipi_msg_type msg)
-+{
-+	unsigned long flags;
-+	unsigned int cpu;
-+
-+	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, callmap) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+		set_bit(msg, &ipi->bits);
++	if (init_only && table == last_table) {
++		table->init.pc = 0;
++		table->init.range = 0;
++		return;
 +	}
 +
-+	/* Call the platform specific cross-CPU call function  */
-+	arc_platform_ipi_send(callmap);
++	info.table = table;
++	info.init_only = init_only;
 +
-+	local_irq_restore(flags);
++	unlink_table(&info); /* XXX: SMP */
++	kfree(table);
 +}
 +
-+void smp_send_reschedule(int cpu)
++#endif /* CONFIG_MODULES */
++
++static uleb128_t get_uleb128(const u8 **pcur, const u8 *end)
 +{
-+	ipi_send_msg(cpumask_of(cpu), IPI_RESCHEDULE);
-+}
++	const u8 *cur = *pcur;
++	uleb128_t value;
++	unsigned shift;
 +
-+void smp_send_stop(void)
-+{
-+	struct cpumask targets;
-+	cpumask_copy(&targets, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &targets);
-+	ipi_send_msg(&targets, IPI_CPU_STOP);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	ipi_send_msg(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	ipi_send_msg(mask, IPI_CALL_FUNC);
-+}
-+
-+/*
-+ * ipi_cpu_stop - handle IPI from smp_send_stop()
-+ */
-+static void ipi_cpu_stop(unsigned int cpu)
-+{
-+	__asm__("flag 1");
-+}
-+
-+static inline void __do_IPI(unsigned long *ops, struct ipi_data *ipi, int cpu)
-+{
-+	unsigned long msg = 0;
-+
-+	do {
-+		msg = find_next_bit(ops, BITS_PER_LONG, msg+1);
-+
-+		switch (msg) {
-+		case IPI_RESCHEDULE:
-+			scheduler_ipi();
-+			break;
-+
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
-+			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		case IPI_CPU_STOP:
-+			ipi_cpu_stop(cpu);
++	for (shift = 0, value = 0; cur < end; shift += 7) {
++		if (shift + 7 > 8 * sizeof(value)
++		    && (*cur & 0x7fU) >= (1U << (8 * sizeof(value) - shift))) {
++			cur = end + 1;
 +			break;
 +		}
-+	} while (msg < BITS_PER_LONG);
++		value |= (uleb128_t) (*cur & 0x7f) << shift;
++		if (!(*cur++ & 0x80))
++			break;
++	}
++	*pcur = cur;
 +
++	return value;
 +}
 +
-+/*
-+ * arch-common ISR to handle for inter-processor interrupts
-+ * Has hooks for platform specific IPI
-+ */
-+irqreturn_t do_IPI(int irq, void *dev_id)
++static sleb128_t get_sleb128(const u8 **pcur, const u8 *end)
 +{
-+	int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	unsigned long ops;
++	const u8 *cur = *pcur;
++	sleb128_t value;
++	unsigned shift;
 +
-+	arc_platform_ipi_clear(cpu, irq);
++	for (shift = 0, value = 0; cur < end; shift += 7) {
++		if (shift + 7 > 8 * sizeof(value)
++		    && (*cur & 0x7fU) >= (1U << (8 * sizeof(value) - shift))) {
++			cur = end + 1;
++			break;
++		}
++		value |= (sleb128_t) (*cur & 0x7f) << shift;
++		if (!(*cur & 0x80)) {
++			value |= -(*cur++ & 0x40) << shift;
++			break;
++		}
++	}
++	*pcur = cur;
 +
-+	/*
-+	 * XXX: is this loop really needed
-+	 * And do we need to move ipi_clean inside
-+	 */
-+	while ((ops = xchg(&ipi->bits, 0)) != 0)
-+		__do_IPI(&ops, ipi, cpu);
-+
-+	return IRQ_HANDLED;
++	return value;
 +}
 +
-+/*
-+ * API called by platform code to hookup arch-common ISR to their IPI IRQ
-+ */
-+static DEFINE_PER_CPU(int, ipi_dev);
-+int smp_ipi_irq_setup(int cpu, int irq)
++static const u32 *cie_for_fde(const u32 *fde, const struct unwind_table *table)
 +{
-+	int *dev_id = &per_cpu(ipi_dev, smp_processor_id());
-+	return request_percpu_irq(irq, do_IPI, "IPI Interrupt", dev_id);
-+}
-diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
-index 0e5cb9f..defa0c0 100644
---- a/arch/arc/mm/tlb.c
-+++ b/arch/arc/mm/tlb.c
-@@ -462,6 +462,12 @@ void __init arc_mmu_init(void)
- 
- 	/* Enable the MMU */
- 	write_aux_reg(ARC_REG_PID, MMU_ENABLE);
++	const u32 *cie;
 +
-+	/* In smp we use this reg for interrupt 1 scratch */
-+#ifndef CONFIG_SMP
-+	/* swapper_pg_dir is the pgd for the kernel, used by vmalloc */
-+	write_aux_reg(ARC_REG_SCRATCH_DATA0, swapper_pg_dir);
++	if (!*fde || (*fde & (sizeof(*fde) - 1)))
++		return &bad_cie;
++
++	if (fde[1] == 0xffffffff)
++		return &not_fde;	/* this is a CIE */
++
++	if ((fde[1] & (sizeof(*fde) - 1)))
++/* || fde[1] > (unsigned long)(fde + 1) - (unsigned long)table->address) */
++		return NULL;	/* this is not a valid FDE */
++
++	/* cie = fde + 1 - fde[1] / sizeof(*fde); */
++	cie = (u32 *) fde[1];
++
++	if (*cie <= sizeof(*cie) + 4 || *cie >= fde[1] - sizeof(*fde)
++	    || (*cie & (sizeof(*cie) - 1))
++	    || (cie[1] != 0xffffffff))
++		return NULL;	/* this is not a (valid) CIE */
++	return cie;
++}
++
++static unsigned long read_pointer(const u8 **pLoc, const void *end,
++				  signed ptrType)
++{
++	unsigned long value = 0;
++	union {
++		const u8 *p8;
++		const u16 *p16u;
++		const s16 *p16s;
++		const u32 *p32u;
++		const s32 *p32s;
++		const unsigned long *pul;
++	} ptr;
++
++	if (ptrType < 0 || ptrType == DW_EH_PE_omit)
++		return 0;
++	ptr.p8 = *pLoc;
++	switch (ptrType & DW_EH_PE_FORM) {
++	case DW_EH_PE_data2:
++		if (end < (const void *)(ptr.p16u + 1))
++			return 0;
++		if (ptrType & DW_EH_PE_signed)
++			value = get_unaligned((u16 *) ptr.p16s++);
++		else
++			value = get_unaligned((u16 *) ptr.p16u++);
++		break;
++	case DW_EH_PE_data4:
++#ifdef CONFIG_64BIT
++		if (end < (const void *)(ptr.p32u + 1))
++			return 0;
++		if (ptrType & DW_EH_PE_signed)
++			value = get_unaligned(ptr.p32s++);
++		else
++			value = get_unaligned(ptr.p32u++);
++		break;
++	case DW_EH_PE_data8:
++		BUILD_BUG_ON(sizeof(u64) != sizeof(value));
++#else
++		BUILD_BUG_ON(sizeof(u32) != sizeof(value));
 +#endif
++	case DW_EH_PE_native:
++		if (end < (const void *)(ptr.pul + 1))
++			return 0;
++		value = get_unaligned((unsigned long *)ptr.pul++);
++		break;
++	case DW_EH_PE_leb128:
++		BUILD_BUG_ON(sizeof(uleb128_t) > sizeof(value));
++		value = ptrType & DW_EH_PE_signed ? get_sleb128(&ptr.p8, end)
++		    : get_uleb128(&ptr.p8, end);
++		if ((const void *)ptr.p8 > end)
++			return 0;
++		break;
++	default:
++		return 0;
++	}
++	switch (ptrType & DW_EH_PE_ADJUST) {
++	case DW_EH_PE_abs:
++		break;
++	case DW_EH_PE_pcrel:
++		value += (unsigned long)*pLoc;
++		break;
++	default:
++		return 0;
++	}
++	if ((ptrType & DW_EH_PE_indirect)
++	    && __get_user(value, (unsigned long __user *)value))
++		return 0;
++	*pLoc = ptr.p8;
++
++	return value;
++}
++
++static signed fde_pointer_type(const u32 *cie)
++{
++	const u8 *ptr = (const u8 *)(cie + 2);
++	unsigned version = *ptr;
++
++	if (version != 1)
++		return -1;	/* unsupported */
++
++	if (*++ptr) {
++		const char *aug;
++		const u8 *end = (const u8 *)(cie + 1) + *cie;
++		uleb128_t len;
++
++		/* check if augmentation size is first (and thus present) */
++		if (*ptr != 'z')
++			return -1;
++
++		/* check if augmentation string is nul-terminated */
++		aug = (const void *)ptr;
++		ptr = memchr(aug, 0, end - ptr);
++		if (ptr == NULL)
++			return -1;
++
++		++ptr;		/* skip terminator */
++		get_uleb128(&ptr, end);	/* skip code alignment */
++		get_sleb128(&ptr, end);	/* skip data alignment */
++		/* skip return address column */
++		version <= 1 ? (void) ++ptr : (void)get_uleb128(&ptr, end);
++		len = get_uleb128(&ptr, end);	/* augmentation length */
++
++		if (ptr + len < ptr || ptr + len > end)
++			return -1;
++
++		end = ptr + len;
++		while (*++aug) {
++			if (ptr >= end)
++				return -1;
++			switch (*aug) {
++			case 'L':
++				++ptr;
++				break;
++			case 'P':{
++					signed ptrType = *ptr++;
++
++					if (!read_pointer(&ptr, end, ptrType)
++					    || ptr > end)
++						return -1;
++				}
++				break;
++			case 'R':
++				return *ptr;
++			default:
++				return -1;
++			}
++		}
++	}
++	return DW_EH_PE_native | DW_EH_PE_abs;
++}
++
++static int advance_loc(unsigned long delta, struct unwind_state *state)
++{
++	state->loc += delta * state->codeAlign;
++
++	/* FIXME_Rajesh: Probably we are defining for the initial range as well;
++	   return delta > 0;
++	 */
++	unw_debug("delta %3lu => loc 0x%lx: ", delta, state->loc);
++	return 1;
++}
++
++static void set_rule(uleb128_t reg, enum item_location where, uleb128_t value,
++		     struct unwind_state *state)
++{
++	if (reg < ARRAY_SIZE(state->regs)) {
++		state->regs[reg].where = where;
++		state->regs[reg].value = value;
++
++#ifdef UNWIND_DEBUG
++		unw_debug("r%lu: ", reg);
++		switch (where) {
++		case Nowhere:
++			unw_debug("s ");
++			break;
++		case Memory:
++			unw_debug("c(%lu) ", value);
++			break;
++		case Register:
++			unw_debug("r(%lu) ", value);
++			break;
++		case Value:
++			unw_debug("v(%lu) ", value);
++			break;
++		default:
++			break;
++		}
++#endif
++	}
++}
++
++static int processCFI(const u8 *start, const u8 *end, unsigned long targetLoc,
++		      signed ptrType, struct unwind_state *state)
++{
++	union {
++		const u8 *p8;
++		const u16 *p16;
++		const u32 *p32;
++	} ptr;
++	int result = 1;
++	u8 opcode;
++
++	if (start != state->cieStart) {
++		state->loc = state->org;
++		result =
++		    processCFI(state->cieStart, state->cieEnd, 0, ptrType,
++			       state);
++		if (targetLoc == 0 && state->label == NULL)
++			return result;
++	}
++	for (ptr.p8 = start; result && ptr.p8 < end;) {
++		switch (*ptr.p8 >> 6) {
++			uleb128_t value;
++
++		case 0:
++			opcode = *ptr.p8++;
++
++			switch (opcode) {
++			case DW_CFA_nop:
++				unw_debug("cfa nop ");
++				break;
++			case DW_CFA_set_loc:
++				state->loc = read_pointer(&ptr.p8, end,
++							  ptrType);
++				if (state->loc == 0)
++					result = 0;
++				unw_debug("cfa_set_loc: 0x%lx ", state->loc);
++				break;
++			case DW_CFA_advance_loc1:
++				unw_debug("\ncfa advance loc1:");
++				result = ptr.p8 < end
++				    && advance_loc(*ptr.p8++, state);
++				break;
++			case DW_CFA_advance_loc2:
++				value = *ptr.p8++;
++				value += *ptr.p8++ << 8;
++				unw_debug("\ncfa advance loc2:");
++				result = ptr.p8 <= end + 2
++				    /* && advance_loc(*ptr.p16++, state); */
++				    && advance_loc(value, state);
++				break;
++			case DW_CFA_advance_loc4:
++				unw_debug("\ncfa advance loc4:");
++				result = ptr.p8 <= end + 4
++				    && advance_loc(*ptr.p32++, state);
++				break;
++			case DW_CFA_offset_extended:
++				value = get_uleb128(&ptr.p8, end);
++				unw_debug("cfa_offset_extended: ");
++				set_rule(value, Memory,
++					 get_uleb128(&ptr.p8, end), state);
++				break;
++			case DW_CFA_val_offset:
++				value = get_uleb128(&ptr.p8, end);
++				set_rule(value, Value,
++					 get_uleb128(&ptr.p8, end), state);
++				break;
++			case DW_CFA_offset_extended_sf:
++				value = get_uleb128(&ptr.p8, end);
++				set_rule(value, Memory,
++					 get_sleb128(&ptr.p8, end), state);
++				break;
++			case DW_CFA_val_offset_sf:
++				value = get_uleb128(&ptr.p8, end);
++				set_rule(value, Value,
++					 get_sleb128(&ptr.p8, end), state);
++				break;
++			case DW_CFA_restore_extended:
++				unw_debug("cfa_restore_extended: ");
++			case DW_CFA_undefined:
++				unw_debug("cfa_undefined: ");
++			case DW_CFA_same_value:
++				unw_debug("cfa_same_value: ");
++				set_rule(get_uleb128(&ptr.p8, end), Nowhere, 0,
++					 state);
++				break;
++			case DW_CFA_register:
++				unw_debug("cfa_register: ");
++				value = get_uleb128(&ptr.p8, end);
++				set_rule(value,
++					 Register,
++					 get_uleb128(&ptr.p8, end), state);
++				break;
++			case DW_CFA_remember_state:
++				unw_debug("cfa_remember_state: ");
++				if (ptr.p8 == state->label) {
++					state->label = NULL;
++					return 1;
++				}
++				if (state->stackDepth >= MAX_STACK_DEPTH)
++					return 0;
++				state->stack[state->stackDepth++] = ptr.p8;
++				break;
++			case DW_CFA_restore_state:
++				unw_debug("cfa_restore_state: ");
++				if (state->stackDepth) {
++					const uleb128_t loc = state->loc;
++					const u8 *label = state->label;
++
++					state->label =
++					    state->stack[state->stackDepth - 1];
++					memcpy(&state->cfa, &badCFA,
++					       sizeof(state->cfa));
++					memset(state->regs, 0,
++					       sizeof(state->regs));
++					state->stackDepth = 0;
++					result =
++					    processCFI(start, end, 0, ptrType,
++						       state);
++					state->loc = loc;
++					state->label = label;
++				} else
++					return 0;
++				break;
++			case DW_CFA_def_cfa:
++				state->cfa.reg = get_uleb128(&ptr.p8, end);
++				unw_debug("cfa_def_cfa: r%lu ", state->cfa.reg);
++				/*nobreak*/
++			case DW_CFA_def_cfa_offset:
++				state->cfa.offs = get_uleb128(&ptr.p8, end);
++				unw_debug("cfa_def_cfa_offset: 0x%lx ",
++					  state->cfa.offs);
++				break;
++			case DW_CFA_def_cfa_sf:
++				state->cfa.reg = get_uleb128(&ptr.p8, end);
++				/*nobreak */
++			case DW_CFA_def_cfa_offset_sf:
++				state->cfa.offs = get_sleb128(&ptr.p8, end)
++				    * state->dataAlign;
++				break;
++			case DW_CFA_def_cfa_register:
++				unw_debug("cfa_def_cfa_regsiter: ");
++				state->cfa.reg = get_uleb128(&ptr.p8, end);
++				break;
++				/*todo case DW_CFA_def_cfa_expression: */
++				/*todo case DW_CFA_expression: */
++				/*todo case DW_CFA_val_expression: */
++			case DW_CFA_GNU_args_size:
++				get_uleb128(&ptr.p8, end);
++				break;
++			case DW_CFA_GNU_negative_offset_extended:
++				value = get_uleb128(&ptr.p8, end);
++				set_rule(value,
++					 Memory,
++					 (uleb128_t) 0 - get_uleb128(&ptr.p8,
++								     end),
++					 state);
++				break;
++			case DW_CFA_GNU_window_save:
++			default:
++				unw_debug("UNKNOW OPCODE 0x%x\n", opcode);
++				result = 0;
++				break;
++			}
++			break;
++		case 1:
++			unw_debug("\ncfa_adv_loc: ");
++			result = advance_loc(*ptr.p8++ & 0x3f, state);
++			break;
++		case 2:
++			unw_debug("cfa_offset: ");
++			value = *ptr.p8++ & 0x3f;
++			set_rule(value, Memory, get_uleb128(&ptr.p8, end),
++				 state);
++			break;
++		case 3:
++			unw_debug("cfa_restore: ");
++			set_rule(*ptr.p8++ & 0x3f, Nowhere, 0, state);
++			break;
++		}
++
++		if (ptr.p8 > end)
++			result = 0;
++		if (result && targetLoc != 0 && targetLoc < state->loc)
++			return 1;
++	}
++
++	return result && ptr.p8 == end && (targetLoc == 0 || (
++		/*todo While in theory this should apply, gcc in practice omits
++		  everything past the function prolog, and hence the location
++		  never reaches the end of the function.
++		targetLoc < state->loc && */  state->label == NULL));
++}
++
++/* Unwind to previous to frame.  Returns 0 if successful, negative
++ * number in case of an error. */
++int arc_unwind(struct unwind_frame_info *frame)
++{
++#define FRAME_REG(r, t) (((t *)frame)[reg_info[r].offs])
++	const u32 *fde = NULL, *cie = NULL;
++	const u8 *ptr = NULL, *end = NULL;
++	unsigned long pc = UNW_PC(frame) - frame->call_frame;
++	unsigned long startLoc = 0, endLoc = 0, cfa;
++	unsigned i;
++	signed ptrType = -1;
++	uleb128_t retAddrReg = 0;
++	const struct unwind_table *table;
++	struct unwind_state state;
++	unsigned long *fptr;
++	unsigned long addr;
++
++	unw_debug("\n\nUNWIND FRAME:\n");
++	unw_debug("PC: 0x%lx BLINK: 0x%lx, SP: 0x%lx, FP: 0x%x\n",
++		  UNW_PC(frame), UNW_BLINK(frame), UNW_SP(frame),
++		  UNW_FP(frame));
++
++	if (UNW_PC(frame) == 0)
++		return -EINVAL;
++
++#ifdef UNWIND_DEBUG
++	{
++		unsigned long *sptr = (unsigned long *)UNW_SP(frame);
++		unw_debug("\nStack Dump:\n");
++		for (i = 0; i < 20; i++, sptr++)
++			unw_debug("0x%p:  0x%lx\n", sptr, *sptr);
++		unw_debug("\n");
++	}
++#endif
++
++	table = find_table(pc);
++	if (table != NULL
++	    && !(table->size & (sizeof(*fde) - 1))) {
++		const u8 *hdr = table->header;
++		unsigned long tableSize;
++
++		smp_rmb();
++		if (hdr && hdr[0] == 1) {
++			switch (hdr[3] & DW_EH_PE_FORM) {
++			case DW_EH_PE_native:
++				tableSize = sizeof(unsigned long);
++				break;
++			case DW_EH_PE_data2:
++				tableSize = 2;
++				break;
++			case DW_EH_PE_data4:
++				tableSize = 4;
++				break;
++			case DW_EH_PE_data8:
++				tableSize = 8;
++				break;
++			default:
++				tableSize = 0;
++				break;
++			}
++			ptr = hdr + 4;
++			end = hdr + table->hdrsz;
++			if (tableSize && read_pointer(&ptr, end, hdr[1])
++			    == (unsigned long)table->address
++			    && (i = read_pointer(&ptr, end, hdr[2])) > 0
++			    && i == (end - ptr) / (2 * tableSize)
++			    && !((end - ptr) % (2 * tableSize))) {
++				do {
++					const u8 *cur =
++					    ptr + (i / 2) * (2 * tableSize);
++
++					startLoc = read_pointer(&cur,
++								cur + tableSize,
++								hdr[3]);
++					if (pc < startLoc)
++						i /= 2;
++					else {
++						ptr = cur - tableSize;
++						i = (i + 1) / 2;
++					}
++				} while (startLoc && i > 1);
++				if (i == 1
++				    && (startLoc = read_pointer(&ptr,
++								ptr + tableSize,
++								hdr[3])) != 0
++				    && pc >= startLoc)
++					fde = (void *)read_pointer(&ptr,
++								   ptr +
++								   tableSize,
++								   hdr[3]);
++			}
++		}
++
++		if (fde != NULL) {
++			cie = cie_for_fde(fde, table);
++			ptr = (const u8 *)(fde + 2);
++			if (cie != NULL
++			    && cie != &bad_cie
++			    && cie != &not_fde
++			    && (ptrType = fde_pointer_type(cie)) >= 0
++			    && read_pointer(&ptr,
++					    (const u8 *)(fde + 1) + *fde,
++					    ptrType) == startLoc) {
++				if (!(ptrType & DW_EH_PE_indirect))
++					ptrType &=
++					    DW_EH_PE_FORM | DW_EH_PE_signed;
++				endLoc =
++				    startLoc + read_pointer(&ptr,
++							    (const u8 *)(fde +
++									 1) +
++							    *fde, ptrType);
++				if (pc >= endLoc)
++					fde = NULL;
++			} else
++				fde = NULL;
++		}
++		if (fde == NULL) {
++			for (fde = table->address, tableSize = table->size;
++			     cie = NULL, tableSize > sizeof(*fde)
++			     && tableSize - sizeof(*fde) >= *fde;
++			     tableSize -= sizeof(*fde) + *fde,
++			     fde += 1 + *fde / sizeof(*fde)) {
++				cie = cie_for_fde(fde, table);
++				if (cie == &bad_cie) {
++					cie = NULL;
++					break;
++				}
++				if (cie == NULL
++				    || cie == &not_fde
++				    || (ptrType = fde_pointer_type(cie)) < 0)
++					continue;
++				ptr = (const u8 *)(fde + 2);
++				startLoc = read_pointer(&ptr,
++							(const u8 *)(fde + 1) +
++							*fde, ptrType);
++				if (!startLoc)
++					continue;
++				if (!(ptrType & DW_EH_PE_indirect))
++					ptrType &=
++					    DW_EH_PE_FORM | DW_EH_PE_signed;
++				endLoc =
++				    startLoc + read_pointer(&ptr,
++							    (const u8 *)(fde +
++									 1) +
++							    *fde, ptrType);
++				if (pc >= startLoc && pc < endLoc)
++					break;
++			}
++		}
++	}
++	if (cie != NULL) {
++		memset(&state, 0, sizeof(state));
++		state.cieEnd = ptr;	/* keep here temporarily */
++		ptr = (const u8 *)(cie + 2);
++		end = (const u8 *)(cie + 1) + *cie;
++		frame->call_frame = 1;
++		if ((state.version = *ptr) != 1)
++			cie = NULL;	/* unsupported version */
++		else if (*++ptr) {
++			/* check if augmentation size is first (thus present) */
++			if (*ptr == 'z') {
++				while (++ptr < end && *ptr) {
++					switch (*ptr) {
++					/* chk for ignorable or already handled
++					 * nul-terminated augmentation string */
++					case 'L':
++					case 'P':
++					case 'R':
++						continue;
++					case 'S':
++						frame->call_frame = 0;
++						continue;
++					default:
++						break;
++					}
++					break;
++				}
++			}
++			if (ptr >= end || *ptr)
++				cie = NULL;
++		}
++		++ptr;
++	}
++	if (cie != NULL) {
++		/* get code aligment factor */
++		state.codeAlign = get_uleb128(&ptr, end);
++		/* get data aligment factor */
++		state.dataAlign = get_sleb128(&ptr, end);
++		if (state.codeAlign == 0 || state.dataAlign == 0 || ptr >= end)
++			cie = NULL;
++		else {
++			retAddrReg =
++			    state.version <= 1 ? *ptr++ : get_uleb128(&ptr,
++								      end);
++			unw_debug("CIE Frame Info:\n");
++			unw_debug("return Address register 0x%lx\n",
++				  retAddrReg);
++			unw_debug("data Align: %ld\n", state.dataAlign);
++			unw_debug("code Align: %lu\n", state.codeAlign);
++			/* skip augmentation */
++			if (((const char *)(cie + 2))[1] == 'z') {
++				uleb128_t augSize = get_uleb128(&ptr, end);
++
++				ptr += augSize;
++			}
++			if (ptr > end || retAddrReg >= ARRAY_SIZE(reg_info)
++			    || REG_INVALID(retAddrReg)
++			    || reg_info[retAddrReg].width !=
++			    sizeof(unsigned long))
++				cie = NULL;
++		}
++	}
++	if (cie != NULL) {
++		state.cieStart = ptr;
++		ptr = state.cieEnd;
++		state.cieEnd = end;
++		end = (const u8 *)(fde + 1) + *fde;
++		/* skip augmentation */
++		if (((const char *)(cie + 2))[1] == 'z') {
++			uleb128_t augSize = get_uleb128(&ptr, end);
++
++			if ((ptr += augSize) > end)
++				fde = NULL;
++		}
++	}
++	if (cie == NULL || fde == NULL) {
++#ifdef CONFIG_FRAME_POINTER
++		unsigned long top, bottom;
++
++		top = STACK_TOP_UNW(frame->task);
++		bottom = STACK_BOTTOM_UNW(frame->task);
++#if FRAME_RETADDR_OFFSET < 0
++		if (UNW_SP(frame) < top && UNW_FP(frame) <= UNW_SP(frame)
++		    && bottom < UNW_FP(frame)
++#else
++		if (UNW_SP(frame) > top && UNW_FP(frame) >= UNW_SP(frame)
++		    && bottom > UNW_FP(frame)
++#endif
++		    && !((UNW_SP(frame) | UNW_FP(frame))
++			 & (sizeof(unsigned long) - 1))) {
++			unsigned long link;
++
++			if (!__get_user(link, (unsigned long *)
++					(UNW_FP(frame) + FRAME_LINK_OFFSET))
++#if FRAME_RETADDR_OFFSET < 0
++			    && link > bottom && link < UNW_FP(frame)
++#else
++			    && link > UNW_FP(frame) && link < bottom
++#endif
++			    && !(link & (sizeof(link) - 1))
++			    && !__get_user(UNW_PC(frame),
++					   (unsigned long *)(UNW_FP(frame)
++						+ FRAME_RETADDR_OFFSET)))
++			{
++				UNW_SP(frame) =
++				    UNW_FP(frame) + FRAME_RETADDR_OFFSET
++#if FRAME_RETADDR_OFFSET < 0
++				    -
++#else
++				    +
++#endif
++				    sizeof(UNW_PC(frame));
++				UNW_FP(frame) = link;
++				return 0;
++			}
++		}
++#endif
++		return -ENXIO;
++	}
++	state.org = startLoc;
++	memcpy(&state.cfa, &badCFA, sizeof(state.cfa));
++
++	unw_debug("\nProcess instructions\n");
++
++	/* process instructions
++	 * For ARC, we optimize by having blink(retAddrReg) with
++	 * the sameValue in the leaf function, so we should not check
++	 * state.regs[retAddrReg].where == Nowhere
++	 */
++	if (!processCFI(ptr, end, pc, ptrType, &state)
++	    || state.loc > endLoc
++/*	   || state.regs[retAddrReg].where == Nowhere */
++	    || state.cfa.reg >= ARRAY_SIZE(reg_info)
++	    || reg_info[state.cfa.reg].width != sizeof(unsigned long)
++	    || state.cfa.offs % sizeof(unsigned long))
++		return -EIO;
++
++#ifdef UNWIND_DEBUG
++	unw_debug("\n");
++
++	unw_debug("\nRegister State Based on the rules parsed from FDE:\n");
++	for (i = 0; i < ARRAY_SIZE(state.regs); ++i) {
++
++		if (REG_INVALID(i))
++			continue;
++
++		switch (state.regs[i].where) {
++		case Nowhere:
++			break;
++		case Memory:
++			unw_debug(" r%d: c(%lu),", i, state.regs[i].value);
++			break;
++		case Register:
++			unw_debug(" r%d: r(%lu),", i, state.regs[i].value);
++			break;
++		case Value:
++			unw_debug(" r%d: v(%lu),", i, state.regs[i].value);
++			break;
++		}
++	}
++
++	unw_debug("\n");
++#endif
++
++	/* update frame */
++#ifndef CONFIG_AS_CFI_SIGNAL_FRAME
++	if (frame->call_frame
++	    && !UNW_DEFAULT_RA(state.regs[retAddrReg], state.dataAlign))
++		frame->call_frame = 0;
++#endif
++	cfa = FRAME_REG(state.cfa.reg, unsigned long) + state.cfa.offs;
++	startLoc = min_t(unsigned long, UNW_SP(frame), cfa);
++	endLoc = max_t(unsigned long, UNW_SP(frame), cfa);
++	if (STACK_LIMIT(startLoc) != STACK_LIMIT(endLoc)) {
++		startLoc = min(STACK_LIMIT(cfa), cfa);
++		endLoc = max(STACK_LIMIT(cfa), cfa);
++	}
++
++	unw_debug("\nCFA reg: 0x%lx, offset: 0x%lx =>  0x%lx\n",
++		  state.cfa.reg, state.cfa.offs, cfa);
++
++	for (i = 0; i < ARRAY_SIZE(state.regs); ++i) {
++		if (REG_INVALID(i)) {
++			if (state.regs[i].where == Nowhere)
++				continue;
++			return -EIO;
++		}
++		switch (state.regs[i].where) {
++		default:
++			break;
++		case Register:
++			if (state.regs[i].value >= ARRAY_SIZE(reg_info)
++			    || REG_INVALID(state.regs[i].value)
++			    || reg_info[i].width >
++			    reg_info[state.regs[i].value].width)
++				return -EIO;
++			switch (reg_info[state.regs[i].value].width) {
++			case sizeof(u8):
++				state.regs[i].value =
++				FRAME_REG(state.regs[i].value, const u8);
++				break;
++			case sizeof(u16):
++				state.regs[i].value =
++				FRAME_REG(state.regs[i].value, const u16);
++				break;
++			case sizeof(u32):
++				state.regs[i].value =
++				FRAME_REG(state.regs[i].value, const u32);
++				break;
++#ifdef CONFIG_64BIT
++			case sizeof(u64):
++				state.regs[i].value =
++				FRAME_REG(state.regs[i].value, const u64);
++				break;
++#endif
++			default:
++				return -EIO;
++			}
++			break;
++		}
++	}
++
++	unw_debug("\nRegister state after evaluation with realtime Stack:\n");
++	fptr = (unsigned long *)(&frame->regs);
++	for (i = 0; i < ARRAY_SIZE(state.regs); ++i, fptr++) {
++
++		if (REG_INVALID(i))
++			continue;
++		switch (state.regs[i].where) {
++		case Nowhere:
++			if (reg_info[i].width != sizeof(UNW_SP(frame))
++			    || &FRAME_REG(i, __typeof__(UNW_SP(frame)))
++			    != &UNW_SP(frame))
++				continue;
++			UNW_SP(frame) = cfa;
++			break;
++		case Register:
++			switch (reg_info[i].width) {
++			case sizeof(u8):
++				FRAME_REG(i, u8) = state.regs[i].value;
++				break;
++			case sizeof(u16):
++				FRAME_REG(i, u16) = state.regs[i].value;
++				break;
++			case sizeof(u32):
++				FRAME_REG(i, u32) = state.regs[i].value;
++				break;
++#ifdef CONFIG_64BIT
++			case sizeof(u64):
++				FRAME_REG(i, u64) = state.regs[i].value;
++				break;
++#endif
++			default:
++				return -EIO;
++			}
++			break;
++		case Value:
++			if (reg_info[i].width != sizeof(unsigned long))
++				return -EIO;
++			FRAME_REG(i, unsigned long) = cfa + state.regs[i].value
++			    * state.dataAlign;
++			break;
++		case Memory:
++			addr = cfa + state.regs[i].value * state.dataAlign;
++
++			if ((state.regs[i].value * state.dataAlign)
++			    % sizeof(unsigned long)
++			    || addr < startLoc
++			    || addr + sizeof(unsigned long) < addr
++			    || addr + sizeof(unsigned long) > endLoc)
++					return -EIO;
++
++			switch (reg_info[i].width) {
++			case sizeof(u8):
++				__get_user(FRAME_REG(i, u8),
++					   (u8 __user *)addr);
++				break;
++			case sizeof(u16):
++				__get_user(FRAME_REG(i, u16),
++					   (u16 __user *)addr);
++				break;
++			case sizeof(u32):
++				__get_user(FRAME_REG(i, u32),
++					   (u32 __user *)addr);
++				break;
++#ifdef CONFIG_64BIT
++			case sizeof(u64):
++				__get_user(FRAME_REG(i, u64),
++					   (u64 __user *)addr);
++				break;
++#endif
++			default:
++				return -EIO;
++			}
++
++			break;
++		}
++		unw_debug("r%d: 0x%lx ", i, *fptr);
++	}
++
++	return 0;
++#undef FRAME_REG
++}
++EXPORT_SYMBOL(arc_unwind);
+diff --git a/arch/arc/kernel/vmlinux.lds.S b/arch/arc/kernel/vmlinux.lds.S
+index 67c35bd..56c074e 100644
+--- a/arch/arc/kernel/vmlinux.lds.S
++++ b/arch/arc/kernel/vmlinux.lds.S
+@@ -101,17 +101,38 @@ SECTIONS
+ 
+ 	BSS_SECTION(0, 0, 0)
+ 
++#ifdef CONFIG_ARC_DW2_UNWIND
++	. = ALIGN(PAGE_SIZE);
++	.debug_frame  : {
++		__start_unwind = .;
++		*(.debug_frame)
++		__end_unwind = .;
++	}
++#else
++	/DISCARD/ : {	*(.debug_frame) }
++#endif
++
+ 	NOTES
+ 
+ 	. = ALIGN(PAGE_SIZE);
+ 	_end = . ;
+ 
+ 	STABS_DEBUG
+-	DWARF_DEBUG
+ 	DISCARDS
+ 
+ 	.arcextmap 0 : {
+ 		*(.gnu.linkonce.arcextmap.*)
+ 		*(.arcextmap.*)
+ 	}
++
++	/* open-coded because we need .debug_frame seperately for unwinding */
++	.debug_aranges 0 : { *(.debug_aranges) }
++	.debug_pubnames 0 : { *(.debug_pubnames) }
++	.debug_info 0 : { *(.debug_info) }
++	.debug_abbrev 0 : { *(.debug_abbrev) }
++	.debug_line 0 : { *(.debug_line) }
++	.debug_str 0 : { *(.debug_str) }
++	.debug_loc 0 : { *(.debug_loc) }
++	.debug_macinfo 0 : { *(.debug_macinfo) }
++
  }
- 
- /*
-diff --git a/arch/arc/mm/tlbex.S b/arch/arc/mm/tlbex.S
-index a95d0f7..e933e4c 100644
---- a/arch/arc/mm/tlbex.S
-+++ b/arch/arc/mm/tlbex.S
-@@ -58,9 +58,15 @@
- 	.global ex_saved_reg1
- 	.align 1 << L1_CACHE_SHIFT	; IMP: Must be Cache Line aligned
- 	.type   ex_saved_reg1, @object
-+#ifdef CONFIG_SMP
-+	.size   ex_saved_reg1, (CONFIG_NR_CPUS << L1_CACHE_SHIFT)
-+ex_saved_reg1:
-+	.zero (CONFIG_NR_CPUS << L1_CACHE_SHIFT)
-+#else
- 	.size   ex_saved_reg1, 16
- ex_saved_reg1:
- 	.zero 16
-+#endif
- 
- ;============================================================================
- ;  Troubleshooting Stuff
-@@ -117,7 +123,13 @@ ex_saved_reg1:
- 
- 	lr  r2, [efa]
- 
-+#ifndef CONFIG_SMP
- 	lr  r1, [ARC_REG_SCRATCH_DATA0] ; current pgd
-+#else
-+	GET_CURR_TASK_ON_CPU  r1
-+	ld  r1, [r1, TASK_ACT_MM]
-+	ld  r1, [r1, MM_PGD]
-+#endif
- 
- 	lsr     r0, r2, PGDIR_SHIFT     ; Bits for indexing into PGD
- 	ld.as   r1, [r1, r0]            ; PGD entry corresp to faulting addr
-@@ -193,12 +205,28 @@ ex_saved_reg1:
- ;	".size   ex_saved_reg1, 16"
- ; [All of this dance is to avoid stack switching for each TLB Miss, since we
- ; only need to save only a handful of regs, as opposed to complete reg file]
-+;
-+; For ARC700 SMP, the "global" obviously can't be used for free up the FIRST
-+; core reg as it will not be SMP safe.
-+; Thus scratch AUX reg is used (and no longer used to cache task PGD).
-+; To save the rest of 3 regs - per cpu, the global is made "per-cpu".
-+; Epilogue thus has to locate the "per-cpu" storage for regs.
-+; To avoid cache line bouncing the per-cpu global is aligned/sized per
-+; L1_CACHE_SHIFT, despite fundamentally needing to be 12 bytes only. Hence
-+;	".size   ex_saved_reg1, (CONFIG_NR_CPUS << L1_CACHE_SHIFT)"
- 
- ; As simple as that....
- 
- .macro TLBMISS_FREEUP_REGS
-+#ifdef CONFIG_SMP
-+	sr  r0, [ARC_REG_SCRATCH_DATA0]	; freeup r0 to code with
-+	GET_CPU_ID  r0			; get to per cpu scratch mem,
-+	lsl r0, r0, L1_CACHE_SHIFT	; cache line wide per cpu
-+	add r0, @ex_saved_reg1, r0
-+#else
- 	st    r0, [@ex_saved_reg1]
- 	mov_s r0, @ex_saved_reg1
-+#endif
- 	st_s  r1, [r0, 4]
- 	st_s  r2, [r0, 8]
- 	st_s  r3, [r0, 12]
-@@ -214,11 +242,21 @@ ex_saved_reg1:
- 
- ;-----------------------------------------------------------------
- .macro TLBMISS_RESTORE_REGS
-+#ifdef CONFIG_SMP
-+	GET_CPU_ID  r0			; get to per cpu scratch mem
-+	lsl r0, r0, L1_CACHE_SHIFT	; each is cache line wide
-+	add r0, @ex_saved_reg1, r0
-+	ld_s  r3, [r0,12]
-+	ld_s  r2, [r0, 8]
-+	ld_s  r1, [r0, 4]
-+	lr    r0, [ARC_REG_SCRATCH_DATA0]
-+#else
- 	mov_s r0, @ex_saved_reg1
- 	ld_s  r3, [r0,12]
- 	ld_s  r2, [r0, 8]
- 	ld_s  r1, [r0, 4]
- 	ld_s  r0, [r0]
-+#endif
- .endm
- 
- .section .text, "ax",@progbits	;Fast Path Code, candidate for ICCM
-diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
-index 3b399ca..1b65644 100644
---- a/arch/arc/plat-arcfpga/Kconfig
-+++ b/arch/arc/plat-arcfpga/Kconfig
-@@ -23,6 +23,18 @@ config ARC_BOARD_ML509
- 
- endchoice
- 
-+config ISS_SMP_EXTN
-+	bool "ARC SMP Extensions (ISS Models only)"
-+	default n
-+	select ARC_HAS_IPI
-+	help
-+	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
-+	  ARC ISS (Instruction Set Simulator).
-+	  The SMP extensions include:
-+	  -IDU (Interrupt Distribution Unit)
-+	  -XTL (To enable CPU start/stop/set-PC for another CPU)
-+	  It doesn't provide coherent Caches and/or Atomic Ops (LLOCK/SCOND)
-+
- config ARC_SERIAL_BAUD
- 	int "UART Baud rate"
- 	default "115200"
-diff --git a/arch/arc/plat-arcfpga/Makefile b/arch/arc/plat-arcfpga/Makefile
-index 385eb9d..7b97445 100644
---- a/arch/arc/plat-arcfpga/Makefile
-+++ b/arch/arc/plat-arcfpga/Makefile
-@@ -7,3 +7,4 @@
- #
- 
- obj-y := platform.o irq.o
-+obj-$(CONFIG_ISS_SMP_EXTN)		+= smp.o
-\ No newline at end of file
-diff --git a/arch/arc/plat-arcfpga/include/plat/irq.h b/arch/arc/plat-arcfpga/include/plat/irq.h
-index b34e087..255b90e 100644
---- a/arch/arc/plat-arcfpga/include/plat/irq.h
-+++ b/arch/arc/plat-arcfpga/include/plat/irq.h
-@@ -12,7 +12,11 @@
- #ifndef __PLAT_IRQ_H
- #define __PLAT_IRQ_H
- 
--#define NR_IRQS		16
-+#ifdef CONFIG_SMP
-+#define NR_IRQS 32
-+#else
-+#define NR_IRQS 16
-+#endif
- 
- #define UART0_IRQ	5
- #define UART1_IRQ	10
-@@ -24,4 +28,8 @@
- #define PCI_IRQ		14
- #define PS2_IRQ		15
- 
-+#ifdef CONFIG_SMP
-+#define IDU_INTERRUPT_0 16
-+#endif
-+
- #endif
-diff --git a/arch/arc/plat-arcfpga/include/plat/smp.h b/arch/arc/plat-arcfpga/include/plat/smp.h
-new file mode 100644
-index 0000000..8c5e46c
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/include/plat/smp.h
-@@ -0,0 +1,115 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  Rajeshwar Ranga: Interrupt Distribution Unit API's
-+ */
-+
-+#ifndef __PLAT_ARCFPGA_SMP_H
-+#define __PLAT_ARCFPGA_SMP_H
-+
-+#ifdef CONFIG_SMP
-+
-+#include <linux/types.h>
-+#include <asm/arcregs.h>
-+
-+#define ARC_AUX_IDU_REG_CMD		0x2000
-+#define ARC_AUX_IDU_REG_PARAM		0x2001
-+
-+#define ARC_AUX_XTL_REG_CMD		0x2002
-+#define ARC_AUX_XTL_REG_PARAM		0x2003
-+
-+#define ARC_REG_MP_BCR			0x2021
-+
-+#define ARC_XTL_CMD_WRITE_PC		0x04
-+#define ARC_XTL_CMD_CLEAR_HALT		0x02
-+
-+/*
-+ * Build Configuration Register which identifies the sub-components
-+ */
-+struct bcr_mp {
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	unsigned int mp_arch:16, pad:5, sdu:1, idu:1, scu:1, ver:8;
-+#else
-+	unsigned int ver:8, scu:1, idu:1, sdu:1, pad:5, mp_arch:16;
-+#endif
-+};
-+
-+/* IDU supports 256 common interrupts */
-+#define NR_IDU_IRQS			256
-+
-+/*
-+ * The Aux Regs layout is same bit-by-bit in both BE/LE modes.
-+ * However when casted as a bitfield encoded "C" struct, gcc treats it as
-+ * memory, generating different code for BE/LE, requiring strcture adj (see
-+ * include/asm/arcregs.h)
-+ *
-+ * However when manually "carving" the value for a Aux, no special handling
-+ * of BE is needed because of the property discribed above
-+ */
-+#define IDU_SET_COMMAND(irq, cmd)			\
-+do {							\
-+	uint32_t __val;					\
-+	__val = (((irq & 0xFF) << 8) | (cmd & 0xFF));	\
-+	write_aux_reg(ARC_AUX_IDU_REG_CMD, __val);	\
-+} while (0)
-+
-+#define IDU_SET_PARAM(par)  write_aux_reg(ARC_AUX_IDU_REG_PARAM, par)
-+#define IDU_GET_PARAM()     read_aux_reg(ARC_AUX_IDU_REG_PARAM)
-+
-+/* IDU Commands */
-+#define IDU_DISABLE			0x00
-+#define IDU_ENABLE			0x01
-+#define IDU_IRQ_CLEAR			0x02
-+#define IDU_IRQ_ASSERT			0x03
-+#define IDU_IRQ_WMODE			0x04
-+#define IDU_IRQ_STATUS			0x05
-+#define IDU_IRQ_ACK			0x06
-+#define IDU_IRQ_PEND			0x07
-+#define IDU_IRQ_RMODE			0x08
-+#define IDU_IRQ_WBITMASK		0x09
-+#define IDU_IRQ_RBITMASK		0x0A
-+
-+#define idu_enable()		IDU_SET_COMMAND(0, IDU_ENABLE)
-+#define idu_disable()		IDU_SET_COMMAND(0, IDU_DISABLE)
-+
-+#define idu_irq_assert(irq)	IDU_SET_COMMAND((irq), IDU_IRQ_ASSERT)
-+#define idu_irq_clear(irq)	IDU_SET_COMMAND((irq), IDU_IRQ_CLEAR)
-+
-+/* IDU Interrupt Mode - Destination Encoding */
-+#define IDU_IRQ_MOD_DISABLE		0x00
-+#define IDU_IRQ_MOD_ROUND_RECP		0x01
-+#define IDU_IRQ_MOD_TCPU_FIRSTRECP	0x02
-+#define IDU_IRQ_MOD_TCPU_ALLRECP	0x03
-+
-+/* IDU Interrupt Mode  - Triggering Mode */
-+#define IDU_IRQ_MODE_LEVEL_TRIG		0x00
-+#define IDU_IRQ_MODE_PULSE_TRIG		0x01
-+
-+#define IDU_IRQ_MODE_PARAM(dest_mode, trig_mode)   \
-+	(((trig_mode & 0x01) << 15) | (dest_mode & 0xFF))
-+
-+struct idu_irq_config {
-+	uint8_t irq;
-+	uint8_t dest_mode;
-+	uint8_t trig_mode;
-+};
-+
-+struct idu_irq_status {
-+	uint8_t irq;
-+	bool enabled;
-+	bool status;
-+	bool ack;
-+	bool pend;
-+	uint8_t next_rr;
-+};
-+
-+extern void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask);
-+extern void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode);
-+
-+#endif	/* CONFIG_SMP */
-+
-+#endif
-diff --git a/arch/arc/plat-arcfpga/irq.c b/arch/arc/plat-arcfpga/irq.c
-index a308057..ddb7d2a 100644
---- a/arch/arc/plat-arcfpga/irq.c
-+++ b/arch/arc/plat-arcfpga/irq.c
-@@ -38,4 +38,14 @@ void __init plat_init_IRQ(void)
- 
- 	for (i = 0; i < NR_IRQS; i++)
- 		irq_set_chip_and_handler(i, &fpga_chip, handle_level_irq);
-+
-+	/*
-+	 * SMP Hack because UART IRQ hardwired to cpu0 (boot-cpu) but if the
-+	 * request_irq() comes from any other CPU, the low level IRQ unamsking
-+	 * essential for getting Interrupts won't be enabled on cpu0, locking
-+	 * up the UART state machine.
-+	 */
-+#ifdef CONFIG_SMP
-+	arch_unmask_irq(UART0_IRQ);
-+#endif
- }
-diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
-new file mode 100644
-index 0000000..15cf889
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/smp.c
-@@ -0,0 +1,192 @@
-+/*
-+ * ARC700 Simulation-only Extensions for SMP
-+ *
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  Vineet Gupta    - 2012 : split off arch common and plat specific SMP
-+ *  Rajeshwar Ranga - 2007 : Interrupt Distribution Unit API's
-+ */
-+
-+#include <linux/smp.h>
-+#include <asm/irq.h>
-+#include <plat/smp.h>
-+
-+static char smp_cpuinfo_buf[128];
-+
-+/*
-+ *-------------------------------------------------------------------
-+ * Platform specific callbacks expected by arch SMP code
-+ *-------------------------------------------------------------------
-+ */
-+
-+const char *arc_platform_smp_cpuinfo(void)
-+{
-+#define IS_AVAIL1(var, str)    ((var) ? str : "")
-+
-+	struct bcr_mp mp;
-+
-+	READ_BCR(ARC_REG_MP_BCR, mp);
-+
-+	sprintf(smp_cpuinfo_buf, "Extn [700-SMP]: v%d, arch(%d) %s %s %s\n",
-+		mp.ver, mp.mp_arch, IS_AVAIL1(mp.scu, "SCU"),
-+		IS_AVAIL1(mp.idu, "IDU"), IS_AVAIL1(mp.sdu, "SDU"));
-+
-+	return smp_cpuinfo_buf;
-+}
-+
-+/*
-+ * After power-up, a non Master CPU needs to wait for Master to kick start it
-+ *
-+ * W/o hardware assist, it will busy-spin on a token which is eventually set
-+ * by Master, preferably from arc_platform_smp_wakeup_cpu(). Once token is
-+ * available it needs to jump to @first_lines_of_secondary (using inline asm).
-+ *
-+ * The XTL H/w module, however allows Master to directly set Other CPU's PC as
-+ * well as ability to start/stop them. This allows implementing this function
-+ * as a simple dead stop using "FLAG 1" insn.
-+ * As a hack for debugging (debugger will single-step over the FLAG insn), we
-+ * anyways wrap it in a self loop
-+ *
-+ * Alert: can NOT use stack here as it has not been determined/setup for CPU.
-+ *        If it turns out to be elaborate, it's better to code it in assembly
-+ */
-+void arc_platform_smp_wait_to_boot(int cpu)
-+{
-+	/* Secondary Halts self. Later master will set PC and clear halt bit */
-+	__asm__ __volatile__(
-+	"1:		\n"
-+	"	flag 1	\n"
-+	"	b 1b	\n");
-+}
-+
-+/*
-+ * Master kick starting another CPU
-+ */
-+void arc_platform_smp_wakeup_cpu(int cpu, unsigned long pc)
-+{
-+	/* setup the start PC */
-+	write_aux_reg(ARC_AUX_XTL_REG_PARAM, pc);
-+
-+	/* Trigger WRITE_PC cmd for this cpu */
-+	write_aux_reg(ARC_AUX_XTL_REG_CMD,
-+			(ARC_XTL_CMD_WRITE_PC | (cpu << 8)));
-+
-+	/* Take the cpu out of Halt */
-+	write_aux_reg(ARC_AUX_XTL_REG_CMD,
-+			(ARC_XTL_CMD_CLEAR_HALT | (cpu << 8)));
-+
-+}
-+
-+/*
-+ * Any SMP specific init any CPU does when it comes up.
-+ * Here we setup the CPU to enable Inter-Processor-Interrupts
-+ * Called for each CPU
-+ * -Master      : init_IRQ()
-+ * -Other(s)    : start_kernel_secondary()
-+ */
-+void arc_platform_smp_init_cpu(void)
-+{
-+	int cpu = smp_processor_id();
-+
-+	/* Check if CPU is configured for more than 16 interrupts */
-+	if (NR_IRQS <= 16 || get_hw_config_num_irq() <= 16)
-+		panic("[arcfpga] IRQ system can't support IDU IPI\n");
-+
-+	idu_disable();
-+
-+	/****************************************************************
-+	 * IDU provides a set of Common IRQs, each of which can be dynamically
-+	 * attached to (1|many|all) CPUs.
-+	 * The Common IRQs [0-15] are mapped as CPU pvt [16-31]
-+	 *
-+	 * Here we use a simple 1:1 mapping:
-+	 * A CPU 'x' is wired to Common IRQ 'x'.
-+	 * So an IDU ASSERT on IRQ 'x' will trigger Interupt on CPU 'x', which
-+	 * makes up for our simple IPI plumbing.
-+	 *
-+	 * TBD: Have a dedicated multicast IRQ for sending IPIs to all CPUs
-+	 *      w/o having to do one-at-a-time
-+	 ******************************************************************/
-+
-+	/*
-+	 * Claim an IRQ which would trigger IPI on this CPU.
-+	 * In IDU parlance it involves setting up a cpu bitmask for the IRQ
-+	 * The bitmap here contains only 1 CPU (self).
-+	 */
-+	idu_irq_set_tgtcpu(cpu, 0x1 << cpu);
-+
-+	/* Set the IRQ destination to use the bitmask above */
-+	idu_irq_set_mode(cpu, 7, /* XXX: IDU_IRQ_MOD_TCPU_ALLRECP: ISS bug */
-+			 IDU_IRQ_MODE_PULSE_TRIG);
-+
-+	idu_enable();
-+
-+	/* Attach the arch-common IPI ISR to our IDU IRQ */
-+	smp_ipi_irq_setup(cpu, IDU_INTERRUPT_0 + cpu);
-+}
-+
-+void arc_platform_ipi_send(const struct cpumask *callmap)
-+{
-+	unsigned int cpu;
-+
-+	for_each_cpu(cpu, callmap)
-+		idu_irq_assert(cpu);
-+}
-+
-+void arc_platform_ipi_clear(int cpu, int irq)
-+{
-+	idu_irq_clear(IDU_INTERRUPT_0 + cpu);
-+}
-+
-+/*
-+ *-------------------------------------------------------------------
-+ * Low level Platform IPI Providers
-+ *-------------------------------------------------------------------
-+ */
-+
-+/* Set the Mode for the Common IRQ */
-+void idu_irq_set_mode(uint8_t irq, uint8_t dest_mode, uint8_t trig_mode)
-+{
-+	uint32_t par = IDU_IRQ_MODE_PARAM(dest_mode, trig_mode);
-+
-+	IDU_SET_PARAM(par);
-+	IDU_SET_COMMAND(irq, IDU_IRQ_WMODE);
-+}
-+
-+/* Set the target cpu Bitmask for Common IRQ */
-+void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask)
-+{
-+	IDU_SET_PARAM(mask);
-+	IDU_SET_COMMAND(irq, IDU_IRQ_WBITMASK);
-+}
-+
-+/* Get the Interrupt Acknowledged status for IRQ (as CPU Bitmask) */
-+bool idu_irq_get_ack(uint8_t irq)
-+{
-+	uint32_t val;
-+
-+	IDU_SET_COMMAND(irq, IDU_IRQ_ACK);
-+	val = IDU_GET_PARAM();
-+
-+	return val & (1 << irq);
-+}
-+
-+/*
-+ * Get the Interrupt Pending status for IRQ (as CPU Bitmask)
-+ * -Pending means CPU has not yet noticed the IRQ (e.g. disabled)
-+ * -After Interrupt has been taken, the IPI expcitily needs to be
-+ *  cleared, to be acknowledged.
-+ */
-+bool idu_irq_get_pend(uint8_t irq)
-+{
-+	uint32_t val;
-+
-+	IDU_SET_COMMAND(irq, IDU_IRQ_PEND);
-+	val = IDU_GET_PARAM();
-+
-+	return val & (1 << irq);
-+}
 -- 
 1.7.4.1
 
