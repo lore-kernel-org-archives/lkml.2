@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab2KLVc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:32:56 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24592 "EHLO
+	id S1754070Ab2KLVcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:32:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24621 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab2KLVTa (ORCPT
+	with ESMTP id S1753851Ab2KLVTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:30 -0500
+	Mon, 12 Nov 2012 16:19:31 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,91 +14,80 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 35/46] x86, mm: use round_up/down in split_mem_range()
-Date: Mon, 12 Nov 2012 13:18:31 -0800
-Message-Id: <1352755122-25660-36-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 34/46] x86, mm: Add check before clear pte above max_low_pfn on 32bit
+Date: Mon, 12 Nov 2012 13:18:30 -0800
+Message-Id: <1352755122-25660-35-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to replace own inline version for those roundup and rounddown.
+During test patch that adjust page_size_mask to map small range ram with
+big page size, found page table is setup wrongly for 32bit. And
+native_pagetable_init wrong clear pte for pmd with large page support.
+
+1. add more comments about why we are expecting pte.
+
+2. add BUG checking, so next time we could find problem earlier
+   when we mess up page table setup again.
+
+3. max_low_pfn is not included boundary for low memory mapping.
+   We should check from max_low_pfn instead of +1.
+
+4. add print out when some pte really get cleared, or we should use
+   WARN() to find out why above max_low_pfn get mapped? so we could
+   fix it.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   30 ++++++++++++------------------
- 1 files changed, 12 insertions(+), 18 deletions(-)
+ arch/x86/mm/init_32.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 61734b4..ae3d642 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -214,13 +214,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * slowdowns.
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 322ee56..19ef9f0 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -480,9 +480,14 @@ void __init native_pagetable_init(void)
+ 
+ 	/*
+ 	 * Remove any mappings which extend past the end of physical
+-	 * memory from the boot time page table:
++	 * memory from the boot time page table.
++	 * In virtual address space, we should have at least two pages
++	 * from VMALLOC_END to pkmap or fixmap according to VMALLOC_END
++	 * definition. And max_low_pfn is set to VMALLOC_END physical
++	 * address. If initial memory mapping is doing right job, we
++	 * should have pte used near max_low_pfn or one pmd is not present.
  	 */
- 	if (pos == 0)
--		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
-+		end_pfn = PMD_SIZE >> PAGE_SHIFT;
- 	else
--		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--				 << (PMD_SHIFT - PAGE_SHIFT);
-+		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
--			<< (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #endif
- 	if (end_pfn > (end >> PAGE_SHIFT))
- 		end_pfn = end >> PAGE_SHIFT;
-@@ -230,15 +228,13 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+-	for (pfn = max_low_pfn + 1; pfn < 1<<(32-PAGE_SHIFT); pfn++) {
++	for (pfn = max_low_pfn; pfn < 1<<(32-PAGE_SHIFT); pfn++) {
+ 		va = PAGE_OFFSET + (pfn<<PAGE_SHIFT);
+ 		pgd = base + pgd_index(va);
+ 		if (!pgd_present(*pgd))
+@@ -493,10 +498,19 @@ void __init native_pagetable_init(void)
+ 		if (!pmd_present(*pmd))
+ 			break;
+ 
++		/* should not be large page here */
++		if (pmd_large(*pmd)) {
++			pr_warn("try to clear pte for ram above max_low_pfn: pfn: %lx pmd: %p pmd phys: %lx, but pmd is big page and is not using pte !\n",
++				pfn, pmd, __pa(pmd));
++			BUG_ON(1);
++		}
++
+ 		pte = pte_offset_kernel(pmd, va);
+ 		if (!pte_present(*pte))
+ 			break;
+ 
++		printk(KERN_DEBUG "clearing pte for ram above max_low_pfn: pfn: %lx pmd: %p pmd phys: %lx pte: %p pte phys: %lx\n",
++				pfn, pmd, __pa(pmd), pte, __pa(pte));
+ 		pte_clear(NULL, va, pte);
  	}
- 
- 	/* big page (2M) range */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #ifdef CONFIG_X86_32
--	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
--		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
-+	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
-+	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
-+		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- #endif
- 
- 	if (start_pfn < end_pfn) {
-@@ -249,9 +245,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
-@@ -260,9 +255,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	}
- 
- 	/* tail is not big page (1G) alignment */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
+ 	paravirt_alloc_pmd(&init_mm, __pa(base) >> PAGE_SHIFT);
 -- 
 1.7.7
 
