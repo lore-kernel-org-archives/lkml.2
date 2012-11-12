@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab2KLVcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:32:07 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24632 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054Ab2KLVTc (ORCPT
+	id S1754360Ab2KLVcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:32:06 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29674 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab2KLVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:32 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,133 +14,86 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 22/46] x86, mm: Remove early_memremap workaround for page table accessing on 64bit
-Date: Mon, 12 Nov 2012 13:18:18 -0800
-Message-Id: <1352755122-25660-23-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 18/46] x86, mm: Use big page size for small memory range
+Date: Mon, 12 Nov 2012 13:18:14 -0800
+Message-Id: <1352755122-25660-19-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We try to put page table high to make room for kdump, and at that time
-those ranges are not mapped yet, and have to use ioremap to access it.
+We could map small range in the middle of big range at first, so should use
+big page size at first to avoid using small page size to break down page table.
 
-Now after patch that pre-map page table top down.
-	x86, mm: setup page table in top-down
-We do not need that workaround anymore.
+Only can set big page bit when that range has ram area around it.
 
-Just use __va to return directly mapping address.
+-v2: fix 32bit boundary checking. We can not count ram above max_low_pfn
+	for 32 bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_64.c |   38 ++++----------------------------------
- 1 files changed, 4 insertions(+), 34 deletions(-)
+ arch/x86/mm/init.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index eefaea6..5ee9242 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -340,36 +340,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 	} else
- 		pfn = pgt_buf_end++;
- 
--	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
-+	adr = __va(pfn * PAGE_SIZE);
- 	clear_page(adr);
- 	*phys  = pfn * PAGE_SIZE;
- 	return adr;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 99d584c..daea254 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -88,6 +88,40 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
  }
  
--static __ref void *map_low_page(void *virt)
--{
--	void *adr;
--	unsigned long phys, left;
--
--	if (after_bootmem)
--		return virt;
--
--	phys = __pa(virt);
--	left = phys & (PAGE_SIZE - 1);
--	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
--	adr = (void *)(((unsigned long)adr) | left);
--
--	return adr;
--}
--
--static __ref void unmap_low_page(void *adr)
--{
--	if (after_bootmem)
--		return;
--
--	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-@@ -442,10 +418,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-+				pte = (pte_t *)pmd_page_vaddr(*pmd);
- 				last_map_addr = phys_pte_init(pte, address,
- 								end, prot);
--				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -483,7 +458,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
++/*
++ * adjust the page_size_mask for small range to go with
++ *	big page size instead small one if nearby are ram too.
++ */
++static void __init_refok adjust_range_page_size_mask(struct map_range *mr,
++							 int nr_range)
++{
++	int i;
++
++	for (i = 0; i < nr_range; i++) {
++		if ((page_size_mask & (1<<PG_LEVEL_2M)) &&
++		    !(mr[i].page_size_mask & (1<<PG_LEVEL_2M))) {
++			unsigned long start = round_down(mr[i].start, PMD_SIZE);
++			unsigned long end = round_up(mr[i].end, PMD_SIZE);
++
++#ifdef CONFIG_X86_32
++			if ((end >> PAGE_SHIFT) > max_low_pfn)
++				continue;
++#endif
++
++			if (memblock_is_region_memory(start, end - start))
++				mr[i].page_size_mask |= 1<<PG_LEVEL_2M;
++		}
++		if ((page_size_mask & (1<<PG_LEVEL_1G)) &&
++		    !(mr[i].page_size_mask & (1<<PG_LEVEL_1G))) {
++			unsigned long start = round_down(mr[i].start, PUD_SIZE);
++			unsigned long end = round_up(mr[i].end, PUD_SIZE);
++
++			if (memblock_is_region_memory(start, end - start))
++				mr[i].page_size_mask |= 1<<PG_LEVEL_1G;
++		}
++	}
++}
++
+ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 				     unsigned long start,
+ 				     unsigned long end)
+@@ -182,6 +216,9 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 		nr_range--;
+ 	}
  
- 		pte = alloc_low_page(&pte_phys);
- 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
--		unmap_low_page(pte);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-@@ -518,10 +492,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				pmd = map_low_page(pmd_offset(pud, 0));
-+				pmd = pmd_offset(pud, 0);
- 				last_map_addr = phys_pmd_init(pmd, addr, end,
- 							 page_size_mask, prot);
--				unmap_low_page(pmd);
- 				__flush_tlb_all();
- 				continue;
- 			}
-@@ -560,7 +533,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		pmd = alloc_low_page(&pmd_phys);
- 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
- 					      prot);
--		unmap_low_page(pmd);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pud_populate(&init_mm, pud, __va(pmd_phys));
-@@ -596,17 +568,15 @@ kernel_physical_mapping_init(unsigned long start,
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-+			pud = (pud_t *)pgd_page_vaddr(*pgd);
- 			last_map_addr = phys_pud_init(pud, __pa(start),
- 						 __pa(end), page_size_mask);
--			unmap_low_page(pud);
- 			continue;
- 		}
- 
- 		pud = alloc_low_page(&pud_phys);
- 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
- 						 page_size_mask);
--		unmap_low_page(pud);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pgd_populate(&init_mm, pgd, __va(pud_phys));
++	if (!after_bootmem)
++		adjust_range_page_size_mask(mr, nr_range);
++
+ 	for (i = 0; i < nr_range; i++)
+ 		printk(KERN_DEBUG " [mem %#010lx-%#010lx] page %s\n",
+ 				mr[i].start, mr[i].end - 1,
 -- 
 1.7.7
 
