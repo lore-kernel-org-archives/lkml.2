@@ -1,130 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2KLV2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:28:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45210 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab2KLV2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:46 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [ 3.5.yuz extended stable] Patch "sched: Fix migration thread runtime bogosity" has been added to staging queue
-Date: Mon, 12 Nov 2012 19:28:40 -0200
-Message-Id: <1352755720-15887-1-git-send-email-herton.krzesinski@canonical.com>
+	id S1754375Ab2KLV2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:28:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36153 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753807Ab2KLV2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:28:38 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-keystone@list.ti.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH] spi: davinci: add OF support for the spi controller
+Date: Mon, 12 Nov 2012 16:28:22 -0500
+Message-ID: <1352755702-21488-1-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+This adds OF support to DaVinci SPI controller to configure platform
+data through device bindings.
 
-    sched: Fix migration thread runtime bogosity
-
-to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
-which can be found at:
-
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
-
-If you, or anyone else, feels it should not be added to the 3.5
-Linux kernel, or for any feedback related to it, please reply to
-this email. For more information on extended stable, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Herton
-
-------
-
->From e1ad6614897d7b13cb5531d8cdc0e905bb0964d3 Mon Sep 17 00:00:00 2001
-From: Mike Galbraith <mgalbraith@suse.de>
-Date: Sat, 4 Aug 2012 05:44:14 +0200
-Subject: [PATCH] sched: Fix migration thread runtime bogosity
-
-commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
-
-Make stop scheduler class do the same accounting as other classes,
-
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
-
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/spi/spi-davinci.txt        |   50 ++++++++++++
+ drivers/spi/spi-davinci.c                          |   80 +++++++++++++++++++-
+ 2 files changed, 126 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
 
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 7b386e8..da5eb5b 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
- {
- 	struct task_struct *stop = rq->stop;
-
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
-+	}
-
- 	return NULL;
+diff --git a/Documentation/devicetree/bindings/spi/spi-davinci.txt b/Documentation/devicetree/bindings/spi/spi-davinci.txt
+new file mode 100644
+index 0000000..0369369
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-davinci.txt
+@@ -0,0 +1,50 @@
++Davinci SPI controller device bindings
++
++Required properties:
++- #address-cells: number of cells required to define a chip select
++	address on the SPI bus.
++- #size-cells: should be zero.
++- compatible:
++	- "ti,davinci-spi"
++- reg: Offset and length of SPI controller register space
++- ti,davinci-spi-version: SPI version :- "1.0" or "2.0"
++- ti,davinci-spi-num-cs: Number of chip selects
++- ti,davinci-spi-intr-line: interrupt line used to connect the SPI
++	IP to the ARM interrupt controller withn the SoC. Possible values
++	are 0 and 1.
++- interrupts: interrupt number offset at the irq parent
++- clocks: spi clk phandle
++
++Example of a NOR flash slave device (n25q032) connected to DaVinci
++SPI controller device over the SPI bus.
++
++spi:spi0@20BF0000 {
++	#address-cells			= <1>;
++	#size-cells			= <0>;
++	compatible			= "ti,davinci-spi";
++	reg				= <0x20BF0000 0x1000>;
++	ti,davinci-spi-version		= "1.0";
++	ti,davinci-spi-num-cs		= <4>;
++	ti,davinci-spi-intr-line	= <0>;
++	interrupts			= <338>;
++	clocks				= <&clkspi>;
++
++	flash: n25q032@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "st,m25p32";
++		spi-max-frequency = <25000000>;
++		reg = <0>;
++
++		partition@0 {
++			label = "u-boot-spl";
++			reg = <0x0 0x80000>;
++			read-only;
++		};
++
++		partition@1 {
++			label = "test";
++			reg = <0x80000 0x380000>;
++		};
++	};
++};
+diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
+index 71a6423..0f50319 100644
+--- a/drivers/spi/spi-davinci.c
++++ b/drivers/spi/spi-davinci.c
+@@ -26,6 +26,9 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_irq.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi_bitbang.h>
+ #include <linux/slab.h>
+@@ -788,6 +791,69 @@ rx_dma_failed:
+ 	return r;
  }
-@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
-
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id davinci_spi_of_match[] = {
++	{
++		.compatible = "ti,davinci-spi",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, davini_spi_of_match);
++
++/**
++ * spi_davinci_get_pdata - Get platform_data from DTS binding
++ * @pdev: ptr to platform data
++ *
++ * Parses and populate platform_data from device tree bindings.
++ *
++ * NOTE: Not all platform_data params are supported currently.
++ */
++static struct davinci_spi_platform_data
++	*spi_davinci_get_pdata(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct davinci_spi_platform_data *pdata;
++	unsigned int num_cs, intr_line = 0;
++	const char *version;
++
++	if (pdev->dev.platform_data)
++		return pdev->dev.platform_data;
++
++	if (!pdev->dev.of_node)
++		return NULL;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	pdev->dev.platform_data = pdata;
++	if (!pdata)
++		return NULL;
++
++	/* default version is 1.0 */
++	pdata->version = SPI_VERSION_1;
++	of_property_read_string(node, "ti,davinci-spi-version", &version);
++	if (!strcmp(version, "2.0"))
++		pdata->version = SPI_VERSION_2;
++
++	/*
++	 * default num_cs is 1 and all chipsel are internal to the chip
++	 * indicated by chip_sel being NULL. GPIO based CS is not
++	 * supported yet in DT bindings.
++	 */
++	num_cs = 1;
++	of_property_read_u32(node, "ti,davinci-spi-num-cs", &num_cs);
++	pdata->num_chipselect = num_cs;
++	of_property_read_u32(node, "ti,davinci-spi-intr-line", &intr_line);
++	pdata->intr_line = intr_line;
++	return pdev->dev.platform_data;
++}
++#else
++#define davinci_spi_of_match NULL
++static struct davinci_spi_platform_data
++	*spi_davinci_get_pdata(struct platform_device *pdev)
++{
++	return pdev->dev.platform_data;
++}
++#endif
++
+ /**
+  * davinci_spi_probe - probe function for SPI Master Controller
+  * @pdev: platform_device structure which contains plateform specific data
+@@ -801,16 +867,16 @@ rx_dma_failed:
+  */
+ static int __devinit davinci_spi_probe(struct platform_device *pdev)
  {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
++	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
++	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
++	struct davinci_spi_platform_data *pdata;
+ 	struct spi_master *master;
+ 	struct davinci_spi *dspi;
+-	struct davinci_spi_platform_data *pdata;
+ 	struct resource *r, *mem;
+-	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
+-	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
+ 	int i = 0, ret = 0;
+ 	u32 spipc0;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = spi_davinci_get_pdata(pdev);
+ 	if (pdata == NULL) {
+ 		ret = -ENODEV;
+ 		goto err;
+@@ -851,7 +917,11 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 		goto release_region;
+ 	}
+ 
++	/* first get irq through resource table, else try of irq method */
+ 	dspi->irq = platform_get_irq(pdev, 0);
++	if (dspi->irq <= 0)
++		dspi->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 +
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
-
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
-
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
---
+ 	if (dspi->irq <= 0) {
+ 		ret = -EINVAL;
+ 		goto unmap_io;
+@@ -875,6 +945,7 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(dspi->clk);
+ 
++	master->dev.of_node = pdev->dev.of_node;
+ 	master->bus_num = pdev->id;
+ 	master->num_chipselect = pdata->num_chipselect;
+ 	master->setup = davinci_spi_setup;
+@@ -1010,6 +1081,7 @@ static struct platform_driver davinci_spi_driver = {
+ 	.driver = {
+ 		.name = "spi_davinci",
+ 		.owner = THIS_MODULE,
++		.of_match_table = davinci_spi_of_match,
+ 	},
+ 	.probe = davinci_spi_probe,
+ 	.remove = __devexit_p(davinci_spi_remove),
+-- 
 1.7.9.5
 
