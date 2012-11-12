@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2KLPZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:25:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40952 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab2KLPZE (ORCPT
+	id S1753624Ab2KLP0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:26:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17620 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab2KLP0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:25:04 -0500
-Date: Mon, 12 Nov 2012 15:23:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+	Mon, 12 Nov 2012 10:26:48 -0500
+Message-ID: <50A11502.5060306@oracle.com>
+Date: Mon, 12 Nov 2012 10:25:54 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+MIME-Version: 1.0
 To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
+CC: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
 Subject: Re: [PATCH] ARM: EXYNOS: use BUG_ON where possible
-Message-ID: <20121112152349.GH28327@n2100.arm.linux.org.uk>
 References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-5-git-send-email-sasha.levin@oracle.com> <50A111DD.6080504@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <50A111DD.6080504@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 04:12:29PM +0100, Maarten Lankhorst wrote:
+On 11/12/2012 10:12 AM, Maarten Lankhorst wrote:
 > Op 08-11-12 21:23, Sasha Levin schreef:
-> > @@ -465,10 +465,8 @@ static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int i
-> >  	else
-> >  		max_nr = EXYNOS4_MAX_COMBINER_NR;
-> >  
-> > -	if (combiner_nr >= max_nr)
-> > -		BUG();
-> > -	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
-> > -		BUG();
-> > +	BUG_ON(combiner_nr >= max_nr);
-> > +	BUG_ON(irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0);
->
+>> Just use BUG_ON() instead of constructions such as:
+>>
+>> 	if (...)
+>> 		BUG()
+>>
+>> A simplified version of the semantic patch that makes this transformation
+>> is as follows: (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> expression e;
+>> @@
+>> - if (e) BUG();
+>> + BUG_ON(e);
+>> // </smpl>
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> ---
+>>  arch/arm/mach-exynos/common.c |    6 ++----
+>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+>> index 4e577f6..6a55a5a 100644
+>> --- a/arch/arm/mach-exynos/common.c
+>> +++ b/arch/arm/mach-exynos/common.c
+>> @@ -465,10 +465,8 @@ static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int i
+>>  	else
+>>  		max_nr = EXYNOS4_MAX_COMBINER_NR;
+>>  
+>> -	if (combiner_nr >= max_nr)
+>> -		BUG();
+>> -	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
+>> -		BUG();
+>> +	BUG_ON(combiner_nr >= max_nr);
+>> +	BUG_ON(irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0);
 > Is it really a good idea to put functions that perform work in a BUG_ON?
 > I don't know, but for some reason it just feels wrong. I'd expect code to
 > compile fine if BUG_ON was a noop, so doing verification calls only, not
 > actual work..
 
-Well, it is currently defined as:
+You can't modify the side-effects of a macro based on kernel configuration. If
+we're evaluating the expression when BUG_ON() is enabled, you must also evaluate
+the expression when BUG_ON() is not enabled (HAVE_ARCH_BUG_ON is not set).
 
-include/asm-generic/bug.h:#define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
-include/asm-generic/bug.h:#define BUG_ON(condition) do { if (condition) ; } while(0)
+The only reason I'd not include function calls in a BUG_ON() call is due to
+readability considerations. In this case it looked okay to me, but if someone
+thinks that getting the function call into the BUG_ON() complicated things I'm
+fine with skipping that.
 
-but as these can be overridden, I don't think relying on those
-implementations is a good idea; to do so would be fragile.  Eg, what if
-the BUG_ON() implementation becomes just:
 
-#define BUG_ON(x)
-
-then the function call itself vanishes.  So, only put the actual bug test
-inside a BUG_ON(), not the functional part which must always be executed.
+Thanks,
+Sasha
