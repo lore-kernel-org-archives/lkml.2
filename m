@@ -1,54 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab2KLRVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:21:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34461 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab2KLRVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:21:39 -0500
-Message-ID: <50A12FF1.4000800@infradead.org>
-Date: Mon, 12 Nov 2012 09:20:49 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1753944Ab2KLRXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:23:52 -0500
+Received: from pilot.jhuapl.edu ([128.244.251.36]:56551 "EHLO jhuapl.edu"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751682Ab2KLRXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 12:23:51 -0500
+Message-ID: <50A13039.2070909@jhuapl.edu>
+Date: Mon, 12 Nov 2012 12:22:01 -0500
+From: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Rabin Vincent <rabin.vincent@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
-References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
-In-Reply-To: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "key@linux.vnet.ibm.com" <key@linux.vnet.ibm.com>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "tpmdd@selhorst.net" <tpmdd@selhorst.net>,
+        "tpmdd@sirrix.com" <tpmdd@sirrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2] add xen-tpmfront.ko: Xen Virtual TPM frontend driver
+References: <1352730598-13904-1-git-send-email-matthew.fioravante@jhuapl.edu> <20121112163052.GA9575@phenom.dumpdata.com>
+In-Reply-To: <20121112163052.GA9575@phenom.dumpdata.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090603020802090608070101"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+This is a cryptographically signed message in MIME format.
 
-Fix build errors when CONFIG_OF is not enabled by including
-<linux/of.h> (needs to be added in any case).
-An alternative fix could be to make the driver depend on OF.
+--------------ms090603020802090608070101
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
-drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
-drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
+On 11/12/2012 11:30 AM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Nov 12, 2012 at 09:29:58AM -0500, Matthew Fioravante wrote:
+>> This patch ports the xen vtpm frontend driver for linux
+>> from the linux-2.6.18-xen.hg tree to linux-stable. This
+>> driver is designed be used with the mini-os tpmback driver
+>> in Xen as part of the new mini-os virtual tpm subsystem.
+>> See docs/misc/vtpm.txt in Xen and the xen-devel mailing list
+>> for details.
+> I didn't look in details but off the bat - you are missing
+> the Documentation/../sysfs file.
+It looks like Kent submitted a patch that documents sysfs generically
+for all of the TPM drivers.
+>
+> I still think you should include the full vtpm.txt in this
+> patch description and refer at the end to the docs/misc/vtpm.txt
+> in Xen as the source for the up-to-date version.
+The current docs/misc/vtpm.txt in Xen is still the old version. I've=20
+just written a new one and am reviewing it. It will come in the next=20
+resubmission of my vtpm patches to xen. I'll include the text here for=20
+the next resubmission of this patch as well.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/stmpe.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- linux-next-20121112.orig/drivers/mfd/stmpe.c
-+++ linux-next-20121112/drivers/mfd/stmpe.c
-@@ -13,6 +13,7 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/of.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
- #include <linux/mfd/core.h>
+
+--------------ms090603020802090608070101
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIDyjCC
+A8YwggMvoAMCAQICBD/xyf0wDQYJKoZIhvcNAQEFBQAwLzELMAkGA1UEBhMCVVMxDzANBgNV
+BAoTBkpIVUFQTDEPMA0GA1UECxMGQklTRENBMB4XDTEwMDYxMTE4MjIwNloXDTEzMDYxMTE4
+NTIwNlowZjELMAkGA1UEBhMCVVMxDzANBgNVBAoTBkpIVUFQTDEPMA0GA1UECxMGUGVvcGxl
+MTUwFgYDVQQLEw9WUE5Hcm91cC1CSVNEQ0EwGwYDVQQDExRNYXR0aGV3IEUgRmlvcmF2YW50
+ZTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAnpbwVSP6o1Nb5lcW7dd3yTo9iBJdi7qz
+4nANOMFPK7JOy5npKN1iiousl28U/scUJES55gPwAWYJK3uVyQAsA4adgDKi5DoD1UHDQEwp
+bY7iHLJeq0NPr4BqYNqnCFPbE6HC8zSJrr4qKn+gVUQT39SIFqdiIPJwZL8FYTRQ/zsCAwEA
+AaOCAbYwggGyMAsGA1UdDwQEAwIHgDArBgNVHRAEJDAigA8yMDEwMDYxMTE4MjIwNlqBDzIw
+MTIwNzE3MjI1MjA2WjAbBg0rBgEEAbMlCwMBAQEBBAoWCGZpb3JhbWUxMBsGDSsGAQQBsyUL
+AwEBAQIEChIIMDAxMDQyNjEwWAYJYIZIAYb6ax4BBEsMSVRoZSBwcml2YXRlIGtleSBjb3Jy
+ZXNwb25kaW5nIHRvIHRoaXMgY2VydGlmaWNhdGUgbWF5IGhhdmUgYmVlbiBleHBvcnRlZC4w
+KAYDVR0RBCEwH4EdTWF0dGhldy5GaW9yYXZhbnRlQGpodWFwbC5lZHUwUgYDVR0fBEswSTBH
+oEWgQ6RBMD8xCzAJBgNVBAYTAlVTMQ8wDQYDVQQKEwZKSFVBUEwxDzANBgNVBAsTBkJJU0RD
+QTEOMAwGA1UEAxMFQ1JMNTYwHwYDVR0jBBgwFoAUCDUpmxH52EU2CyWmF2EJMB1yqeswHQYD
+VR0OBBYEFO6LYxg6r9wHZ+zdQtBHn1dZ/YTNMAkGA1UdEwQCMAAwGQYJKoZIhvZ9B0EABAww
+ChsEVjcuMQMCBLAwDQYJKoZIhvcNAQEFBQADgYEAJO9HQh4YNChVLzuZqK5ARJARD8JoujGZ
+fdo75quvg2jXFQe2sEjvLnxJZgm/pv8fdZakq48CWwjYHKuvIp7sDjTEsQfo+y7SpN/N2NvJ
+WU5SqfK1VgYtNLRRoGJUB5Q1aZ+Dg95g3kqpyfpUMISJL8IKVLtJVfN4fggFVUYZ9wwxggGr
+MIIBpwIBATA3MC8xCzAJBgNVBAYTAlVTMQ8wDQYDVQQKEwZKSFVBUEwxDzANBgNVBAsTBkJJ
+U0RDQQIEP/HJ/TAJBgUrDgMCGgUAoIHLMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJ
+KoZIhvcNAQkFMQ8XDTEyMTExMjE3MjIwMVowIwYJKoZIhvcNAQkEMRYEFJPFWr9ZfnF3BcET
+68Yq5ttbLCTXMGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAK
+BggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYI
+KoZIhvcNAwICASgwDQYJKoZIhvcNAQEBBQAEgYAiOHtiOdqTXHNXAiT2HsZrKtOVBHbLCTYw
+BOTGpj5qE1z8YKYBDWVVIRe3arLR98f+lqSJLzcOBeZs9CTRqnv1lXr+3Bz2rNK7BfUgd22r
+P2zISikZD0++9X0goPilRbGw6UHL0N2wxF107d0PcowQ+SEvskqslkDFiPtwwv39pwAAAAAA
+AA==
+--------------ms090603020802090608070101--
