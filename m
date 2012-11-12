@@ -1,46 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2KLSgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 13:36:35 -0500
-Received: from cassarossa.samfundet.no ([129.241.93.19]:53467 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab2KLSge (ORCPT
+	id S1752361Ab2KLSiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 13:38:25 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57552 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab2KLSiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 13:36:34 -0500
-Date: Mon, 12 Nov 2012 19:36:31 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 2/4] avr32, kconfig: remove HAVE_ARCH_BOOTMEM
-Message-ID: <20121112183631.GA18118@samfundet.no>
-References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
- <1352737915-30906-2-git-send-email-js1304@gmail.com>
+	Mon, 12 Nov 2012 13:38:24 -0500
+Date: Mon, 12 Nov 2012 10:31:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm]
+ percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessari
+	ly.fix
+Message-ID: <20121112183128.GE2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <20121030184800.GA16129@redhat.com>
+ <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121108134805.GA23870@redhat.com>
+ <20121108134849.GB23870@redhat.com>
+ <20121108120700.42d438f2.akpm@linux-foundation.org>
+ <20121111182744.GA25282@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352737915-30906-2-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121111182744.GA25282@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111218-5406-0000-0000-000001FB7D0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Tue 13 Nov 2012 01:31:53 +0900 or thereabout, Joonsoo Kim wrote:
-> Now, there is no code for CONFIG_HAVE_ARCH_BOOTMEM.
-> So remove it.
+On Sun, Nov 11, 2012 at 07:27:44PM +0100, Oleg Nesterov wrote:
+> More include's and more comments, no changes in code.
+> 
+> To remind, once/if I am sure you agree with this patch I'll send 2 additional
+> and simple patches:
+> 
+> 	1. lockdep annotations
+> 
+> 	2. CONFIG_PERCPU_RWSEM
+> 
+> It seems that we can do much more improvements to a) speedup the writers and
+> b) make percpu_rw_semaphore more useful, but not right now.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Indeed, thanks for cleaning. In a not too distant future I'll re-establish
-the AVR32 tree on kernel.org, I'm just waiting for my account to be
-made/enabled again.
+Looks good to me!
 
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+							Thanx, Paul
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> ---
+>  lib/percpu-rwsem.c |   35 +++++++++++++++++++++++++++++++++--
+>  1 files changed, 33 insertions(+), 2 deletions(-)
+> 
+> diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
+> index 0e3bc0f..02bd157 100644
+> --- a/lib/percpu-rwsem.c
+> +++ b/lib/percpu-rwsem.c
+> @@ -1,6 +1,11 @@
+> +#include <linux/mutex.h>
+> +#include <linux/rwsem.h>
+> +#include <linux/percpu.h>
+> +#include <linux/wait.h>
+>  #include <linux/percpu-rwsem.h>
+>  #include <linux/rcupdate.h>
+>  #include <linux/sched.h>
+> +#include <linux/errno.h>
+> 
+>  int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+>  {
+> @@ -21,6 +26,29 @@ void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
+>  	brw->fast_read_ctr = NULL; /* catch use after free bugs */
+>  }
+> 
+> +/*
+> + * This is the fast-path for down_read/up_read, it only needs to ensure
+> + * there is no pending writer (!mutex_is_locked() check) and inc/dec the
+> + * fast per-cpu counter. The writer uses synchronize_sched() to serialize
+> + * with the preempt-disabled section below.
+> + *
+> + * The nontrivial part is that we should guarantee acquire/release semantics
+> + * in case when
+> + *
+> + *	R_W: down_write() comes after up_read(), the writer should see all
+> + *	     changes done by the reader
+> + * or
+> + *	W_R: down_read() comes after up_write(), the reader should see all
+> + *	     changes done by the writer
+> + *
+> + * If this helper fails the callers rely on the normal rw_semaphore and
+> + * atomic_dec_and_test(), so in this case we have the necessary barriers.
+> + *
+> + * But if it succeeds we do not have any barriers, mutex_is_locked() or
+> + * __this_cpu_add() below can be reordered with any LOAD/STORE done by the
+> + * reader inside the critical section. See the comments in down_write and
+> + * up_write below.
+> + */
+>  static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
+>  {
+>  	bool success = false;
+> @@ -98,6 +126,7 @@ void percpu_down_write(struct percpu_rw_semaphore *brw)
+>  	 *
+>  	 * 3. Ensures that if any reader has exited its critical section via
+>  	 *    fast-path, it executes a full memory barrier before we return.
+> +	 *    See R_W case in the comment above update_fast_ctr().
+>  	 */
+>  	synchronize_sched();
+> 
+> @@ -116,8 +145,10 @@ void percpu_up_write(struct percpu_rw_semaphore *brw)
+>  	/* allow the new readers, but only the slow-path */
+>  	up_write(&brw->rw_sem);
+> 
+> -	/* insert the barrier before the next fast-path in down_read */
+> +	/*
+> +	 * Insert the barrier before the next fast-path in down_read,
+> +	 * see W_R case in the comment above update_fast_ctr().
+> +	 */
+>  	synchronize_sched();
+> -
+>  	mutex_unlock(&brw->writer_mutex);
+>  }
+> -- 
+> 1.5.5.1
+> 
+> 
 
-<snipp diff>
-
--- 
-mvh
-Hans-Christian Egtvedt
