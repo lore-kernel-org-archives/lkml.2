@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab2KLOnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:43:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39699 "EHLO mx2.suse.de"
+	id S1753493Ab2KLOqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:46:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39806 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab2KLOnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:43:32 -0500
-Date: Mon, 12 Nov 2012 15:43:29 +0100 (CET)
+	id S1752026Ab2KLOqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 09:46:23 -0500
+Date: Mon, 12 Nov 2012 15:46:20 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] alpha: use BUG_ON where possible
-In-Reply-To: <509D2DF8.4030602@oracle.com>
-Message-ID: <alpine.LNX.2.00.1211121542550.15877@pobox.suse.cz>
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-2-git-send-email-sasha.levin@oracle.com> <alpine.LNX.2.00.1211082242130.27271@pobox.suse.cz> <509D2DF8.4030602@oracle.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH] HID: microsoft, do not use compound literal
+In-Reply-To: <50A0ED09.6010106@suse.cz>
+Message-ID: <alpine.LNX.2.00.1211121535370.15877@pobox.suse.cz>
+References: <1352711769-28911-1-git-send-email-jslaby@suse.cz> <CAMuHMdUEW9K6cfpcUNphte_VzBCL_Oa_od3892DQ3QbX5xMMnA@mail.gmail.com> <alpine.LNX.2.00.1211121314270.27271@pobox.suse.cz> <CAMuHMdWq9S9oO+2OH6oiAogFR+JJxnxrtGoMp+uMm-qXCLr55A@mail.gmail.com>
+ <50A0ED09.6010106@suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,34 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Nov 2012, Sasha Levin wrote:
+On Mon, 12 Nov 2012, Jiri Slaby wrote:
 
-> >> Just use BUG_ON() instead of constructions such as:
-> >>
-> >> 	if (...)
-> >> 		BUG()
-> >>
-> >> A simplified version of the semantic patch that makes this transformation
-> >> is as follows: (http://coccinelle.lip6.fr/)
-> >>
-> >> // <smpl>
-> >> @@
-> >> expression e;
-> >> @@
-> >> - if (e) BUG();
-> >> + BUG_ON(e);
-> > 
-> > Ok, I guess I am just going to apply this one. Thanks,
-> > 
+> > My comment was purely cosmetic, as it applies to the quoted compiler error
+> > messages only.
 > 
-> So I have about 80 more of these. I've sent out the first 10 to make sure
-> that they look fine and the only complaints I got about them are that they are
-> trivial :)
-> 
-> Can I send the rest directly to you to go through the trivial tree?
+> Ah, I see. When you are applying the patch Jiri, could you remove errors
+> about line 50 from the commit log? What I wanted to have there
+> apparently was only "hid-microsoft.c:51:18: error: macro "memcmp" passed
+> 6 arguments, but takes just 3".
 
-How many conflict can you see if you generate this patch on top of Linus' 
-tree and thn apply it to linux-next?
+Thanks. I have removed the misleading build failures from the changelog 
+and applied.
 
 -- 
 Jiri Kosina
