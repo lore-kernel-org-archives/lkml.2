@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2KLQeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:34:36 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47759 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab2KLQee (ORCPT
+	id S1753675Ab2KLQfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:35:36 -0500
+Received: from smtp129.dfw.emailsrvr.com ([67.192.241.129]:34107 "EHLO
+	smtp129.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab2KLQfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:34:34 -0500
-From: Joonsoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 4/4] bootmem: fix wrong call parameter for free_bootmem()
-Date: Tue, 13 Nov 2012 01:31:55 +0900
-Message-Id: <1352737915-30906-4-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352737915-30906-1-git-send-email-js1304@gmail.com>
-References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
+	Mon, 12 Nov 2012 11:35:34 -0500
+Message-ID: <50A12565.4070701@calxeda.com>
+Date: Mon, 12 Nov 2012 10:35:49 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: Re: [PATCH 3/6 v4] cpufreq: tolerate inexact values when collecting
+ stats
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1352313166-28980-1-git-send-email-mark.langsdorf@calxeda.com> <1352313166-28980-4-git-send-email-mark.langsdorf@calxeda.com> <20121111163821.GA21635@x1.osrc.amd.com>
+In-Reply-To: <20121111163821.GA21635@x1.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is somehow strange that alloc_bootmem return virtual address
-and free_bootmem require physical address.
-Anyway, free_bootmem()'s first parameter should be physical address.
+On 11/11/2012 10:38 AM, Borislav Petkov wrote:
+> On Wed, Nov 07, 2012 at 12:32:43PM -0600, Mark Langsdorf wrote:
+>> When collecting stats, if a frequency doesn't match the table, go through
+>> the table again with both the search frequency and table values shifted
+>> left by 10 bits.
+> 
+> Why would that second pass succeed?
 
-There are some call sites for free_bootmem() with virtual address.
-So fix them.
+It's effectively a divide by 1024 and minimizes any jitter in the
+measured frequency value.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> And why is this in generic code (I'm assuming this is a Calxeda-specific
+> case)?
 
-diff --git a/arch/powerpc/platforms/cell/celleb_pci.c b/arch/powerpc/platforms/cell/celleb_pci.c
-index abc8af4..1735681 100644
---- a/arch/powerpc/platforms/cell/celleb_pci.c
-+++ b/arch/powerpc/platforms/cell/celleb_pci.c
-@@ -401,11 +401,11 @@ error:
- 	} else {
- 		if (config && *config) {
- 			size = 256;
--			free_bootmem((unsigned long)(*config), size);
-+			free_bootmem(__pa(*config), size);
- 		}
- 		if (res && *res) {
- 			size = sizeof(struct celleb_pci_resource);
--			free_bootmem((unsigned long)(*res), size);
-+			free_bootmem(__pa(*res), size);
- 		}
- 	}
- 
-diff --git a/drivers/macintosh/smu.c b/drivers/macintosh/smu.c
-index 7d5a6b4..1963680 100644
---- a/drivers/macintosh/smu.c
-+++ b/drivers/macintosh/smu.c
-@@ -565,7 +565,7 @@ fail_msg_node:
- fail_db_node:
- 	of_node_put(smu->db_node);
- fail_bootmem:
--	free_bootmem((unsigned long)smu, sizeof(struct smu_device));
-+	free_bootmem(__pa(smu), sizeof(struct smu_device));
- 	smu = NULL;
- fail_np:
- 	of_node_put(np);
-diff --git a/lib/cpumask.c b/lib/cpumask.c
-index 402a54a..d327b87 100644
---- a/lib/cpumask.c
-+++ b/lib/cpumask.c
-@@ -161,6 +161,6 @@ EXPORT_SYMBOL(free_cpumask_var);
-  */
- void __init free_bootmem_cpumask_var(cpumask_var_t mask)
- {
--	free_bootmem((unsigned long)mask, cpumask_size());
-+	free_bootmem(__pa(mask), cpumask_size());
- }
- #endif
--- 
-1.7.9.5
+The function is buried pretty deep in the cpufreq_stat code. It didn't
+seem appropriate to make it a function pointer as part of struct
+cpufreq_driver.
 
+--Mark Langsdorf
+Calxeda, Inc.
