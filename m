@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab2KLTcD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 14:32:03 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48741 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab2KLTcB (ORCPT
+	id S1752732Ab2KLTnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 14:43:25 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:55452 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab2KLTnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 14:32:01 -0500
-Date: Mon, 12 Nov 2012 20:31:54 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after inserting/removing
- USB stick
-In-Reply-To: <201211121527.02007.Martin@lichtvoll.de>
-Message-ID: <alpine.LFD.2.02.1211122025490.10000@ionos>
-References: <201211071501.38288.Martin@lichtvoll.de> <201211101734.07084.Martin@lichtvoll.de> <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com> (sfid-20121111_105423_761739_F064F5AE) <201211121527.02007.Martin@lichtvoll.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 12 Nov 2012 14:43:24 -0500
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Puneet Kumar <puneetster@chromium.org>
+Subject: [PATCH] mm: Fix calculation of dirtyable memory
+Date: Mon, 12 Nov 2012 11:35:28 -0800
+Message-Id: <1352748928-738-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <20121109023638.GA11105@localhost>
+References: <20121109023638.GA11105@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012, Martin Steigerwald wrote:
-> Am Sonntag, 11. November 2012 schrieb Liu, Chuansheng:
-> > > The first bad commit is:
-> > > 
-> > > commit 73d4066055e0e2830533041f4b91df8e6e5976ff
-> > > Author: Chuansheng Liu <chuansheng.liu@intel.com>
-> > > Date:   Tue Sep 11 16:00:30 2012 +0800
-> > > 
-> > >     USB/host: Cleanup unneccessary irq disable code
-> > > 
-> > >     Because the IRQF_DISABLED as the flag is now a NOOP and has been
-> > >     deprecated and in hardirq context the interrupt is disabled.
-> > > 
-> > >     so in usb/host code:
-> > >     Removing the usage of flag IRQF_DISABLED;
-> > >     Removing the calling local_irq save/restore actions in irq
-> > >     handler usb_hcd_irq();
-> > > 
-> > >     Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > >     Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> > >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > 
-> > > 
-> > > But:
-> > > 
-> > > This ony happens with threadirqs option!
-> > > 
-> > > When I remove threadirqs from kernel command line and reboot with this
-> > > last bisect kernel USB sticks work.
-> > > 
-> > > That may explain why nobody else has seen this.
-> > > 
-> > > So I will try a 3.7-rc4 now, but without threadirqs enabled.
-> > > 
-> > Thanks your pointing out, the USB HCD irq handler is designed to
-> > execute in irq handler with irq disabled.  When threadirqs is in
-> > commandline, it will be executed in thread context with local irq
-> > enabling, which causes this hardlockup.
+The system uses global_dirtyable_memory() to calculate
+number of dirtyable pages/pages that can be allocated
+to the page cache.  A bug causes an underflow thus making
+the page count look like a big unsigned number.  This in turn
+confuses the dirty writeback throttling to aggressively write
+back pages as they become dirty (usually 1 page at a time).
 
-No. The problem is caused by the commit above. USB with threaded
-interrupt handlers worked perfectly fine in the past.
+Fix is to ensure there is no underflow while doing the math.
+
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Signed-off-by: Puneet Kumar <puneetster@chromium.org>
+---
+ v2: added apkm's suggestion to make the highmem calculation better
+ v3: added Fengguang Wu's suggestions fix zone_dirtyable_memory() and
+     (offlist mail) to use max() in global_dirtyable_memory()
+ mm/page-writeback.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 830893b..f9efbe8 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
+ 	}
+ 	/*
++	 * Unreclaimable memory (kernel memory or anonymous memory
++	 * without swap) can bring down the dirtyable pages below
++	 * the zone's dirty balance reserve and the above calculation
++	 * will underflow.  However we still want to add in nodes
++	 * which are below threshold (negative values) to get a more
++	 * accurate calculation but make sure that the total never
++	 * underflows.
++	 */
++	if ((long)x < 0)
++		x = 0;
++
++	/*
+ 	 * Make sure that the number of highmem pages is never larger
+ 	 * than the number of the total dirtyable memory. This can only
+ 	 * occur in very strange VM situations but we want to make sure
+@@ -222,8 +234,8 @@ static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
  
-> > --- a/drivers/usb/core/hcd.c
-> > +++ b/drivers/usb/core/hcd.c
-> > @@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
-> >         if (hcd->driver->irq) {
-> >                 snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-> >                                 hcd->driver->description, hcd->self.busnum);
-> > -               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-> > +               retval = request_irq(irqnum, &usb_hcd_irq, irqflags|IRQF_NO_THREAD,
-> >                                 hcd->irq_descr, hcd);
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+-	    dirty_balance_reserve;
++	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x -= max(x, dirty_balance_reserve);
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+@@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
+ 	 * highmem zone can hold its share of dirty pages, so we don't
+ 	 * care about vm_highmem_is_dirtyable here.
+ 	 */
+-	return zone_page_state(zone, NR_FREE_PAGES) +
+-	       zone_reclaimable_pages(zone) -
+-	       zone->dirty_balance_reserve;
++	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
++		zone_reclaimable_pages(zone);
++
++	/* don't allow this to underflow */
++	nr_pages -= max(nr_pages, zone->dirty_balance_reserve);
++	return nr_pages;
+ }
+ 
+ /**
+-- 
+1.7.7.3
 
-NAK. This is exactly the wrong thing to do.
-
-We want to be able to run that code in an handler thread. So you
-removed the local_irq_save/restore() in the driver code and with
-forced threaded irqs this breaks. Now setting IRQF_NO_THREAD is just
-working around the problem that the above commit broke it.
-
-There is no hard requirement to run USB interrupts in hard interrupt
-context. I'd rather see the above commit reverted and then a proper
-analysis done why removing local_irq_save/restore() breaks forced
-threaded interrupt handlers.
-
-Thanks,
-
-	tglx
