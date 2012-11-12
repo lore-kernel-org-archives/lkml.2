@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab2KLQ5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:57:12 -0500
-Received: from c62.cesmail.net ([216.154.195.54]:9530 "EHLO c62.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab2KLQ5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:57:10 -0500
-Message-ID: <20121112115707.r8h545480kg0cgkk-cebfxv@webmail.spamcop.net>
-Date: Mon, 12 Nov 2012 11:57:07 -0500
-From: Pavel Roskin <proski@gnu.org>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        SE-Linux <selinux@tycho.nsa.gov>
-Subject: Re: Bisected regression: iterate_fd() selinux change affects flash
-	plugin
-References: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
-	<20121111235001.a3gqhaijmec0gk0g-cebfxv@webmail.spamcop.net>
-	<CACLa4pu4FFwKdoA8ATfmviOj0e0mAQ3U2FNEiJHCv4RfDY4ZoQ@mail.gmail.com>
-In-Reply-To: <CACLa4pu4FFwKdoA8ATfmviOj0e0mAQ3U2FNEiJHCv4RfDY4ZoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+	id S1753747Ab2KLRAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:00:07 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:61205 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751530Ab2KLRAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 12:00:04 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>
+Cc: linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: [PATCH v2 1/2] i2c: i2c-ocores: Add irq support for sparc
+Date: Mon, 12 Nov 2012 17:59:50 +0100
+Message-Id: <1352739591-1317-2-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1352739591-1317-1-git-send-email-andreas@gaisler.com>
+References: <1352739591-1317-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris <eparis@parisplace.org>:
+Add sparc support by using platform_get_irq instead of platform_get_resource.
+There are no platform resources of type IORESOURCE_IRQ for sparc, but
+platform_get_irq works for sparc. In the non-sparc case platform_get_irq
+internally uses platform_get_resource.
 
-> OMG this +1 -1 stuff is nuts...
->
-> iterate_fd passes fd+1 instead of the fd for the file?  seriously?
-> ewwww.  I see how this patch fixes it, but still, wouldn't some magic
-> or negative value for no entries found be better than having to
-> understand the crazy logics?
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
+Changes since v1:
+ - platform_get_irq now works for sparc, so that is used for all platforms
+ - Acked by Peter Korsgaard <jacmet@sunsite.dk>
 
-I agree.  -ENOENT is both magic and negative :)
+ drivers/i2c/busses/i2c-ocores.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-I tend to think now that iterate_fd() should be rewritten before it's too
-late and all its current users should be cross-checked against the
-code prior to the introduction of iterate_fd().
-
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index bffd550..0b71dc6 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -267,7 +267,8 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct ocores_i2c *i2c;
+ 	struct ocores_i2c_platform_data *pdata;
+-	struct resource *res, *res2;
++	struct resource *res;
++	int irq;
+ 	int ret;
+ 	int i;
+ 
+@@ -275,8 +276,8 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -ENODEV;
+ 
+-	res2 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (!res2)
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
+ 		return -ENODEV;
+ 
+ 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
+@@ -313,7 +314,7 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 	ocores_init(i2c);
+ 
+ 	init_waitqueue_head(&i2c->wait);
+-	ret = devm_request_irq(&pdev->dev, res2->start, ocores_isr, 0,
++	ret = devm_request_irq(&pdev->dev, irq, ocores_isr, 0,
+ 			       pdev->name, i2c);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Cannot claim IRQ\n");
 -- 
-Regards,
-Pavel Roskin
+1.7.0.4
+
