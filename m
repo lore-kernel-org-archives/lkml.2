@@ -1,129 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab2KLTQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 14:16:38 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48691 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2KLTQh (ORCPT
+	id S1752776Ab2KLTS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 14:18:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50746 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2KLTS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 14:16:37 -0500
-Date: Mon, 12 Nov 2012 20:16:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] Futex fix for 3.7
-Message-ID: <alpine.LFD.2.02.1211122012530.10000@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 12 Nov 2012 14:18:27 -0500
+Date: Mon, 12 Nov 2012 11:18:13 -0800
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-04aa530ec04f61875b99c12721162e2964e3318c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        sankara.m@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sankara.m@gmail.com, tglx@linutronix.de
+In-Reply-To: <alpine.LFD.2.02.1209041738200.2754@ionos>
+References: <alpine.LFD.2.02.1209041738200.2754@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Always force thread affinity
+Git-Commit-ID: 04aa530ec04f61875b99c12721162e2964e3318c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 12 Nov 2012 11:18:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  04aa530ec04f61875b99c12721162e2964e3318c
+Gitweb:     http://git.kernel.org/tip/04aa530ec04f61875b99c12721162e2964e3318c
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 3 Nov 2012 11:52:09 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 12 Nov 2012 20:07:18 +0100
 
-please pull the latest core-urgent-for-linus git tree from:
+genirq: Always force thread affinity
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+Sankara reported that the genirq core code fails to adjust the
+affinity of an interrupt thread in several cases:
 
-Single fix for a long standing futex race when taking over a futex
-whose owner died. You can end up with two owners, which violates quite
-some rules.
+ 1) On request/setup_irq() the call to setup_affinity() happens before
+    the new action is registered, so the new thread is not notified.
 
-Thanks,
+ 2) For secondary shared interrupts nothing notifies the new thread to
+    change its affinity.
 
-	tglx
+ 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
+    the thread either.
 
------------------->
-Thomas Gleixner (1):
-      futex: Handle futex_pi OWNER_DIED take over correctly
+Fix this by setting the thread affinity flag right on thread creation
+time. This ensures that under all circumstances the thread moves to
+the right place. Requires a check in irq_thread_check_affinity for an
+existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
 
+Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
- kernel/futex.c |   41 ++++++++++++++++++++++-------------------
- 1 files changed, 22 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3717e7b..20ef219 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -716,7 +716,7 @@ static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
- 				struct futex_pi_state **ps,
- 				struct task_struct *task, int set_waiters)
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 1cbd572..35c70c9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -732,6 +732,7 @@ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
  {
--	int lock_taken, ret, ownerdied = 0;
-+	int lock_taken, ret, force_take = 0;
- 	u32 uval, newval, curval, vpid = task_pid_vnr(task);
+ 	cpumask_var_t mask;
++	bool valid = true;
  
- retry:
-@@ -755,17 +755,15 @@ retry:
- 	newval = curval | FUTEX_WAITERS;
- 
- 	/*
--	 * There are two cases, where a futex might have no owner (the
--	 * owner TID is 0): OWNER_DIED. We take over the futex in this
--	 * case. We also do an unconditional take over, when the owner
--	 * of the futex died.
--	 *
--	 * This is safe as we are protected by the hash bucket lock !
-+	 * Should we force take the futex? See below.
- 	 */
--	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
--		/* Keep the OWNER_DIED bit */
-+	if (unlikely(force_take)) {
-+		/*
-+		 * Keep the OWNER_DIED and the WAITERS bit and set the
-+		 * new TID value.
-+		 */
- 		newval = (curval & ~FUTEX_TID_MASK) | vpid;
--		ownerdied = 0;
-+		force_take = 0;
- 		lock_taken = 1;
+ 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
+ 		return;
+@@ -746,10 +747,18 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
  	}
  
-@@ -775,7 +773,7 @@ retry:
- 		goto retry;
+ 	raw_spin_lock_irq(&desc->lock);
+-	cpumask_copy(mask, desc->irq_data.affinity);
++	/*
++	 * This code is triggered unconditionally. Check the affinity
++	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
++	 */
++	if (desc->irq_data.affinity)
++		cpumask_copy(mask, desc->irq_data.affinity);
++	else
++		valid = false;
+ 	raw_spin_unlock_irq(&desc->lock);
  
- 	/*
--	 * We took the lock due to owner died take over.
-+	 * We took the lock due to forced take over.
- 	 */
- 	if (unlikely(lock_taken))
- 		return 1;
-@@ -790,20 +788,25 @@ retry:
- 		switch (ret) {
- 		case -ESRCH:
- 			/*
--			 * No owner found for this futex. Check if the
--			 * OWNER_DIED bit is set to figure out whether
--			 * this is a robust futex or not.
-+			 * We failed to find an owner for this
-+			 * futex. So we have no pi_state to block
-+			 * on. This can happen in two cases:
-+			 *
-+			 * 1) The owner died
-+			 * 2) A stale FUTEX_WAITERS bit
-+			 *
-+			 * Re-read the futex value.
- 			 */
- 			if (get_futex_value_locked(&curval, uaddr))
- 				return -EFAULT;
+-	set_cpus_allowed_ptr(current, mask);
++	if (valid)
++		set_cpus_allowed_ptr(current, mask);
+ 	free_cpumask_var(mask);
+ }
+ #else
+@@ -954,6 +963,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 		 */
+ 		get_task_struct(t);
+ 		new->thread = t;
++		/*
++		 * Tell the thread to set its affinity. This is
++		 * important for shared interrupt handlers as we do
++		 * not invoke setup_affinity() for the secondary
++		 * handlers as everything is already set up. Even for
++		 * interrupts marked with IRQF_NO_BALANCE this is
++		 * correct as we want the thread to move to the cpu(s)
++		 * on which the requesting code placed the interrupt.
++		 */
++		set_bit(IRQTF_AFFINITY, &new->thread_flags);
+ 	}
  
- 			/*
--			 * We simply start over in case of a robust
--			 * futex. The code above will take the futex
--			 * and return happy.
-+			 * If the owner died or we have a stale
-+			 * WAITERS bit the owner TID in the user space
-+			 * futex is 0.
- 			 */
--			if (curval & FUTEX_OWNER_DIED) {
--				ownerdied = 1;
-+			if (!(curval & FUTEX_TID_MASK)) {
-+				force_take = 1;
- 				goto retry;
- 			}
- 		default:
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
