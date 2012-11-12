@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2KLVxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:53:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8800 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2KLVw6 (ORCPT
+	id S1753546Ab2KLVxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:53:40 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51401 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab2KLVxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:52:58 -0500
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PLHWylJg1iEA:10 a=Q5l_aFOrfXHJa3uq024A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352757176.18025.11.camel@gandalf.local.home>
-Subject: Re: ftrace next tree request
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Date: Mon, 12 Nov 2012 16:52:56 -0500
-In-Reply-To: <20121113084749.a1c6f250556e28100f870e29@canb.auug.org.au>
-References: <1352745934.18025.8.camel@gandalf.local.home>
-	 <20121113084749.a1c6f250556e28100f870e29@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Nov 2012 16:53:39 -0500
+Date: Mon, 12 Nov 2012 13:53:36 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KY Srinivasan <kys@microsoft.com>
+cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>
+Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E35B45@SN2PRD0310MB382.namprd03.prod.outlook.com>
+Message-ID: <alpine.DEB.2.00.1211121349130.23347@chino.kir.corp.google.com>
+References: <1352600728-17766-1-git-send-email-kys@microsoft.com> <alpine.DEB.2.00.1211101830250.18494@chino.kir.corp.google.com> <426367E2313C2449837CD2DE46E7EAF930E35B45@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-13 at 08:47 +1100, Stephen Rothwell wrote:
+On Sun, 11 Nov 2012, KY Srinivasan wrote:
 
-> As this seems to be based on things in the tip tree, I have positioned it
-> after that tree.
+> Thanks for the prompt response. For the Linux balloon driver for Hyper-V, I need access
+> to the metric that reflects the system wide memory commitment made by the guest kernel. 
+> In the Hyper-V case, this information is one of the many metrics used to drive the policy engine
+> on the host. Granted, the interface name I have chosen here could be more generic; how about
+> read_mem_commit_info(void). I am open to suggestions here.
+> 
 
-Yes it is. Sorry I should have reported that. But as Ingo hasn't been
-seen since Oct 30th (I think he's on vacation), and my code is just
-sitting in limbo on LKML, I figured I start getting it tested for 3.8, 
-and not wait for Ingo to pull it into tip.
+I would suggest vm_memory_committed() and there shouldn't be a comment 
+describing that this is just a wrapper for modules to read 
+vm_committed_as, that's apparent from the implementation: it should be 
+describing exactly what this value represents and why it is a useful 
+metric (at least in the case that you're concerned about).
 
-I plan on doing this for other releases too.
+> With regards to making changes to the Xen self ballooning code, I would like to separate that patch
+> from the patch that implements the exported mechanism to access the memory commitment information.
 
-Thanks!
-
--- Steve
-
-
+Why?  Is xen using it for a different inference?
