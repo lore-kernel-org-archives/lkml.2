@@ -1,61 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2KLQES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:04:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56263 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2KLQER (ORCPT
+	id S1753697Ab2KLQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:10:57 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34433 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab2KLQK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:04:17 -0500
-Date: Mon, 12 Nov 2012 13:04:09 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 10/21] perf hists: Introduce hists__link
-Message-ID: <20121112160409.GD18978@ghostprotocols.net>
-References: <1352497390-17716-1-git-send-email-acme@infradead.org>
- <1352497390-17716-11-git-send-email-acme@infradead.org>
- <87y5i7mtl2.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5i7mtl2.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 12 Nov 2012 11:10:56 -0500
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: fuse-devel@lists.sourceforge.net
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH] cuse: do not register multiple devices with the same name
+Date: Mon, 12 Nov 2012 17:15:48 +0100
+Message-Id: <1352736948-18243-1-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 12, 2012 at 11:40:57AM +0900, Namhyung Kim escreveu:
-> On Fri,  9 Nov 2012 18:42:59 -0300, Arnaldo Carvalho de Melo wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+We do not check whether we already registered a CUSE device with a given
+name so we might end up with two devices with the same name. Sysfs will
+then complain as it cannot create suitable directories.
 
-> > That given two hists will find the hist_entries (buckets) in the second
-> > hists that are for the same bucket in the first and link them, then it
-> > will look for all buckets in the second that don't have a counterpart in
-> > the first and will create a dummy counterpart that will then be linked
-> > to the entry in the second.
+This patch makes the init-command fail if there is already a device with
+the given name. To avoid race-conditions during initialization, we
+actually need to add the device to the list while still holding the lock
+for the name-check.
+The new "ready" field guarantees that the device is still not opened until
+it is fully initialized.
 
-> > For multiple events this will be done pairing the leader with all the
-> > other events in the group, so that in the end the leader will have all
-> > the buckets in all the hists in a group, dummy or not while the other
-> > hists will be left untouched.
-> [snip]
-> > +	he = hist_entry__new(pair);
-> > +	if (he) {
-> > +		he->stat.nr_events = 0;
-> > +		he->stat.period    = 0;
-> 
-> What about other fields?
-> Why not use "memset(&he->stat, 0, sizeof(he->stat))" for this?
+Following the sysfs warnings when registering two devices with the same
+name:
 
-Right, will do.
+ ------------[ cut here ]------------
+ WARNING: at fs/sysfs/dir.c:529 sysfs_add_one+0xc8/0xf0()
+ Hardware name: N150P/N210P/N220P
+ sysfs: cannot create duplicate filename '/devices/virtual/cuse/ttyFseat0'
+ Modules linked in: btusb bluetooth
+ Pid: 14089, comm: lt-kmscon Tainted: G        W    3.5.3+ #60
+ Call Trace:
+  [<ffffffff81136400>] ? sysfs_add_one+0x60/0xf0
+  [<ffffffff8102f99d>] warn_slowpath_common+0x7d/0xc0
+  [<ffffffff8102fa83>] warn_slowpath_fmt+0x43/0x50
+  [<ffffffff81136468>] sysfs_add_one+0xc8/0xf0
+  [<ffffffff81136686>] create_dir+0x76/0xd0
+  [<ffffffff81136a14>] sysfs_create_dir+0x84/0xe0
+  [<ffffffff811fe67b>] kobject_add_internal+0x9b/0x200
+  [<ffffffff811feb38>] kobject_add+0x68/0xc0
+  [<ffffffff81310c73>] device_add+0xe3/0x680
+  [<ffffffff8130f5ae>] ? dev_set_name+0x3e/0x40
+  [<ffffffff811c6834>] cuse_process_init_reply+0x204/0x410
+  [<ffffffff811c6630>] ? cuse_open+0xe0/0xe0
+  [<ffffffff811bb23c>] request_end+0xfc/0x1a0
+  [<ffffffff811bc6e2>] fuse_dev_do_write+0xa32/0xd10
+  [<ffffffff811ba435>] ? fuse_copy_one+0x45/0x60
+  [<ffffffff8109cf06>] ? find_get_page+0x66/0xb0
+  [<ffffffff811bccc0>] ? fuse_dev_splice_write+0x300/0x300
+  [<ffffffff811bcd29>] fuse_dev_write+0x69/0x80
+  [<ffffffff810d569c>] do_sync_readv_writev+0xdc/0x120
+  [<ffffffff810d57db>] ? rw_copy_check_uvector+0x6b/0x130
+  [<ffffffff810b9c5e>] ? handle_mm_fault+0x12e/0x1f0
+  [<ffffffff810d5973>] do_readv_writev+0xd3/0x1e0
+  [<ffffffff810d5ab0>] vfs_writev+0x30/0x60
+  [<ffffffff810d5c38>] sys_writev+0x48/0xb0
+  [<ffffffff815846a2>] system_call_fastpath+0x16/0x1b
+ ---[ end trace 368eb04507b14c94 ]---
 
-- Arnaldo
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+---
+Hi
+
+I am not sure whether this qualifies for the stable-tree, so please CC
+stable@vger.kernel.org if you think so.
+
+The patch is against linux-next from today.
+
+Regards
+David
+
+ fs/fuse/cuse.c | 35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
+
+diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
+index 1326051..11fbc52 100644
+--- a/fs/fuse/cuse.c
++++ b/fs/fuse/cuse.c
+@@ -33,6 +33,7 @@
+  * closed.
+  */
+ 
++#include <linux/atomic.h>
+ #include <linux/fuse.h>
+ #include <linux/cdev.h>
+ #include <linux/device.h>
+@@ -45,6 +46,7 @@
+ #include <linux/miscdevice.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/smp.h>
+ #include <linux/spinlock.h>
+ #include <linux/stat.h>
+ #include <linux/module.h>
+@@ -54,6 +56,7 @@
+ #define CUSE_CONNTBL_LEN	64
+ 
+ struct cuse_conn {
++	atomic_t		ready;	/* device is ready for open() */
+ 	struct list_head	list;	/* linked on cuse_conntbl */
+ 	struct fuse_conn	fc;	/* fuse connection */
+ 	struct cdev		*cdev;	/* associated character device */
+@@ -120,6 +123,10 @@ static int cuse_open(struct inode *inode, struct file *file)
+ 	spin_lock(&cuse_lock);
+ 	list_for_each_entry(pos, cuse_conntbl_head(devt), list)
+ 		if (pos->dev->devt == devt) {
++			if (!atomic_read(&pos->ready))
++				break;
++			smp_rmb();
++
+ 			fuse_conn_get(&pos->fc);
+ 			cc = pos;
+ 			break;
+@@ -308,7 +315,7 @@ static void cuse_gendev_release(struct device *dev)
+  */
+ static void cuse_process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
+ {
+-	struct cuse_conn *cc = fc_to_cc(fc);
++	struct cuse_conn *cc = fc_to_cc(fc), *pos;
+ 	struct cuse_init_out *arg = req->out.args[0].value;
+ 	struct page *page = req->pages[0];
+ 	struct cuse_devinfo devinfo = { };
+@@ -357,17 +364,30 @@ static void cuse_process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
+ 	dev->devt = devt;
+ 	dev->release = cuse_gendev_release;
+ 	dev_set_drvdata(dev, cc);
++
++	/* make sure the device-name is unique */
++	spin_lock(&cuse_lock);
+ 	dev_set_name(dev, "%s", devinfo.name);
+ 
++	list_for_each_entry(pos, cuse_conntbl_head(devt), list) {
++		if (!strcmp(dev_name(pos->dev), dev_name(dev))) {
++			spin_unlock(&cuse_lock);
++			goto err_device;
++		}
++	}
++
++	list_add(&cc->list, cuse_conntbl_head(devt));
++	spin_unlock(&cuse_lock);
++
+ 	rc = device_add(dev);
+ 	if (rc)
+-		goto err_device;
++		goto err_list;
+ 
+ 	/* register cdev */
+ 	rc = -ENOMEM;
+ 	cdev = cdev_alloc();
+ 	if (!cdev)
+-		goto err_device;
++		goto err_list;
+ 
+ 	cdev->owner = THIS_MODULE;
+ 	cdev->ops = &cuse_frontend_fops;
+@@ -380,9 +400,8 @@ static void cuse_process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
+ 	cc->cdev = cdev;
+ 
+ 	/* make the device available */
+-	spin_lock(&cuse_lock);
+-	list_add(&cc->list, cuse_conntbl_head(devt));
+-	spin_unlock(&cuse_lock);
++	smp_wmb();
++	atomic_inc(&cc->ready);
+ 
+ 	/* announce device availability */
+ 	dev_set_uevent_suppress(dev, 0);
+@@ -394,6 +413,10 @@ out:
+ 
+ err_cdev:
+ 	cdev_del(cdev);
++err_list:
++	spin_lock(&cuse_lock);
++	list_del_init(&cc->list);
++	spin_unlock(&cuse_lock);
+ err_device:
+ 	put_device(dev);
+ err_region:
+-- 
+1.8.0
+
