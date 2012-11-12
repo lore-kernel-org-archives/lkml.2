@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2KLLDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:03:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49983 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab2KLLD2 convert rfc822-to-8bit (ORCPT
+	id S1752437Ab2KLLHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:07:53 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:36315 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2KLLHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:03:28 -0500
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
-Date: Mon, 12 Nov 2012 12:03:23 +0100
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@ti.com>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <11727BE5-7173-4383-BD0E-751EFD093706@dominion.thruhere.net>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1499)
+	Mon, 12 Nov 2012 06:07:52 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-ad-50a0d886ecf8
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH] mm: cma: WARN if freed memory is still in use
+Date: Mon, 12 Nov 2012 12:07:26 +0100
+Message-id: <1352718446-32313-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jAd22GwsCDBpumVlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9ZNnsRSsZ69YvjuzgbGFrYuRk0NCwERi9fcWZghbTOLCvfVA
+	cS4OIYFFjBLPG08xQzgrmCReHd3ACFLFJmAo0fW2C6xbRCBM4k/jNlaQImaQoot397GCJIQF
+	7CQeHegBa2ARUJXY+f0FE4jNK+Ahsf3Kf5YuRg6gdQoScybZTGDkXsDIsIpRNLUguaA4KT3X
+	SK84Mbe4NC9dLzk/dxMj2IPPpHcwrmqwOMQowMGoxMOrELEgQIg1say4MvcQowQHs5IIr+9O
+	oBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeZo+UACGB9MSS1OzU1ILUIpgsEwenVAMj6zLvK/J2
+	Edv+q6/Um1dnzPbKqfFImeKM5/IM00Ucri6dqZi0+05o4uatMhq/mBt/HytzWRM0a3GZQd+/
+	1ges7T1SxvZ7c7JY25Tzvkw9yPDv86LmjO3637ZFR222nper3/ViWs3cfUuaavSsLu997Ft3
+	pukcx+2lK562m6lpn1y0+eHphQ97lFiKMxINtZiLihMBkCRz99wBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Memory return to free_contig_range() must have no other references. Let
+kernel to complain loudly if page reference count is not equal to 1.
 
-Op 5 nov. 2012, om 21:40 heeft Grant Likely <grant.likely@secretlab.ca> het volgende geschreven:
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+---
+ mm/page_alloc.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-> Hey folks,
-> 
-> As promised, here is my early draft to try and capture what device
-> tree overlays need to do and how to get there. Comments and
-> suggestions greatly appreciated.
-> 
-> Device Tree Overlay Feature
-> 
-> Purpose
-> =======
-> Sometimes it is not convenient to describe an entire system with a
-> single FDT. For example, processor modules that are plugged into one or
-> more modules (a la the BeagleBone), or systems with an FPGA peripheral
-> that is programmed after the system is booted.
-> 
-> For these cases it is proposed to implement an overlay feature for the
-> so that the initial device tree data can be modified by userspace at
-> runtime by loading additional overlay FDTs that amend the original data.
-> 
-> User Stories
-> ============
-> Note - These are potential use cases, but just because it is listed here
-> doesn't mean it is important. I just want to thoroughly think through the
-> implications before making design decisions.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 022e4ed..290c2eb 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5888,8 +5888,13 @@ done:
+ 
+ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+ {
+-	for (; nr_pages--; ++pfn)
+-		__free_page(pfn_to_page(pfn));
++	struct page *page = pfn_to_page(pfn);
++	int refcount = nr_pages;
++	for (; nr_pages--; page++) {
++		refcount -= page_count(page) == 1;
++		__free_page(page);
++	}
++	WARN(refcount != 0, "some pages are still in use!\n");
+ }
+ #endif
+ 
+-- 
+1.7.9.5
 
-I think the beaglebone use cases cover it as well, but it deserves a seperate mention: SOMs. Gumstix is a good example of those, their website has a list of the different expansionboards they sell so we can see if we missed a use case somewhere.
-Their expansionboards have an EEPROM to ID them, just like the beagleboard classic/xM expansionboards, but I don't know if all 3rd party vendors honour that standard. I know the Ettus USRP E-100 on my desk has it.
-
-regards,
-
-Koen
