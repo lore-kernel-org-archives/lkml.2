@@ -1,147 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab2KLKqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 05:46:08 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49093 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab2KLKqG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 05:46:06 -0500
-Date: Mon, 12 Nov 2012 10:46:01 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Clark <rob.clark@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
+	id S1752080Ab2KLKqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 05:46:30 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:38986 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab2KLKq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 05:46:29 -0500
+Date: Mon, 12 Nov 2012 11:46:24 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Rob Clark <rob@ti.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
-Message-ID: <20121112104601.GB2346@mudshark.cambridge.arm.com>
-References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Mike Frysinger <vapier@gentoo.org>, Mikael Starvik <starvik@axis.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 02/11] time: convert arch_gettimeoffset to a pointer
+Message-ID: <20121112104624.GN2834@axis.com>
+References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
+ <1352408516-21988-4-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Nov 2012 10:46:02.0907 (UTC) FILETIME=[E902B6B0:01CDC0C2]
-X-MC-Unique: 112111210460311501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1352408516-21988-4-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 09:17:33PM +0000, Rob Clark wrote:
-> From: Rob Clark <rob@ti.com>
+On Thu, Nov 08, 2012 at 10:01:47PM +0100, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> A new atomic modeset/pageflip ioctl being developed in DRM requires
-> get_user() to work for 64bit types (in addition to just put_user()).
+> Currently, whenever CONFIG_ARCH_USES_GETTIMEOFFSET is enabled, each
+> arch core provides a single implementation of arch_gettimeoffset(). In
+> many cases, different sub-architectures, different machines, or
+> different timer providers exist, and so the arch ends up implementing
+> arch_gettimeoffset() as a call-through-pointer anyway. Examples are
+> ARM, Cris, M68K, and it's arguable that the remaining architectures,
+> M32R and Blackfin, should be doing this anyway.
 > 
-> Signed-off-by: Rob Clark <rob@ti.com>
+> Modify arch_gettimeoffset so that it itself is a function pointer, which
+> the arch initializes. This will allow later changes to move the
+> initialization of this function into individual machine support or timer
+> drivers. This is particularly useful for code in drivers/clocksource
+> which should rely on an arch-independant mechanism to register their
+> implementation of arch_gettimeoffset().
+> 
+> This patch also converts the Cris architecture to set arch_gettimeoffset
+> directly to the final implementation in time_init(), because Cris already
+> had separate time_init() functions per sub-architecture. M68K and ARM
+> are converted to set arch_gettimeoffset the final implementation in later
+> patches, because they already have function pointers in place for this
+> purpose.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Mikael Starvik <starvik@axis.com>
+
+For the cris parts:
+
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+> Cc: Hirokazu Takata <takata@linux-m32r.org>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > ---
->  arch/arm/include/asm/uaccess.h | 25 ++++++++++++++++++++-----
->  arch/arm/lib/getuser.S         | 17 ++++++++++++++++-
->  2 files changed, 36 insertions(+), 6 deletions(-)
+>  arch/arm/kernel/time.c           |    6 +++++-
+>  arch/blackfin/kernel/time.c      |    6 +++++-
+>  arch/cris/arch-v10/kernel/time.c |    6 ++++--
+>  arch/cris/kernel/time.c          |   11 -----------
+>  arch/m32r/kernel/time.c          |    4 +++-
+>  arch/m68k/kernel/time.c          |   16 ++++++++++------
+>  include/linux/time.h             |    4 +---
+>  kernel/time/timekeeping.c        |   20 +++++++++++++++++---
+>  8 files changed, 45 insertions(+), 28 deletions(-)
 > 
-> diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-> index 7e1f760..2e3fdb2 100644
-> --- a/arch/arm/include/asm/uaccess.h
-> +++ b/arch/arm/include/asm/uaccess.h
-> @@ -100,6 +100,7 @@ static inline void set_fs(mm_segment_t fs)
->  extern int __get_user_1(void *);
->  extern int __get_user_2(void *);
->  extern int __get_user_4(void *);
-> +extern int __get_user_8(void *);
->  
->  #define __GUP_CLOBBER_1	"lr", "cc"
->  #ifdef CONFIG_CPU_USE_DOMAINS
-> @@ -108,6 +109,7 @@ extern int __get_user_4(void *);
->  #define __GUP_CLOBBER_2 "lr", "cc"
+> diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+> index 09be0c3..b0190b4 100644
+> --- a/arch/arm/kernel/time.c
+> +++ b/arch/arm/kernel/time.c
+> @@ -70,7 +70,7 @@ EXPORT_SYMBOL(profile_pc);
 >  #endif
->  #define __GUP_CLOBBER_4	"lr", "cc"
-> +#define __GUP_CLOBBER_8	"lr", "cc"
 >  
->  #define __get_user_x(__r2,__p,__e,__l,__s)				\
->  	   __asm__ __volatile__ (					\
-> @@ -122,22 +124,35 @@ extern int __get_user_4(void *);
->  	({								\
->  		unsigned long __limit = current_thread_info()->addr_limit - 1; \
->  		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-> -		register unsigned long __r2 asm("r2");			\
->  		register unsigned long __l asm("r1") = __limit;		\
->  		register int __e asm("r0");				\
->  		switch (sizeof(*(__p))) {				\
-> -		case 1:							\
-> +		case 1: {						\
-> +			register unsigned long __r2 asm("r2");		\
->  			__get_user_x(__r2, __p, __e, __l, 1);		\
-> +			x = (typeof(*(p))) __r2;			\
->  			break;						\
-> -		case 2:							\
-> +		}							\
-> +		case 2: {						\
-> +			register unsigned long __r2 asm("r2");		\
->  			__get_user_x(__r2, __p, __e, __l, 2);		\
-> +			x = (typeof(*(p))) __r2;			\
->  			break;						\
-> -		case 4:							\
-> +		}							\
-> +		case 4: {						\
-> +			register unsigned long __r2 asm("r2");		\
->  			__get_user_x(__r2, __p, __e, __l, 4);		\
-> +			x = (typeof(*(p))) __r2;			\
-> +			break;						\
-> +		}							\
-> +		case 8: {						\
-> +			register unsigned long long __r2 asm("r2");	\
-
-Does this matter? For EABI, we'll pass in (r2, r3) and it's all handcrafted
-asm, so the compiler shouldn't care much. For OABI, I think you may have to
-do some more work to get the two words where you want them.
-
-> +			__get_user_x(__r2, __p, __e, __l, 8);		\
-> +			x = (typeof(*(p))) __r2;			\
->  			break;						\
-> +		}							\
->  		default: __e = __get_user_bad(); break;			\
->  		}							\
-> -		x = (typeof(*(p))) __r2;				\
->  		__e;							\
->  	})
+>  #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> -u32 arch_gettimeoffset(void)
+> +static u32 arm_gettimeoffset(void)
+>  {
+>  	if (system_timer->offset != NULL)
+>  		return system_timer->offset() * 1000;
+> @@ -164,6 +164,10 @@ device_initcall(timer_init_syscore_ops);
 >  
-> diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
-> index 9b06bb4..d05285c 100644
-> --- a/arch/arm/lib/getuser.S
-> +++ b/arch/arm/lib/getuser.S
-> @@ -18,7 +18,7 @@
->   * Inputs:	r0 contains the address
->   *		r1 contains the address limit, which must be preserved
->   * Outputs:	r0 is the error code
-> - *		r2 contains the zero-extended value
-> + *		r2, r3 contains the zero-extended value
->   *		lr corrupted
->   *
->   * No other registers must be altered.  (see <asm/uaccess.h>
-> @@ -66,6 +66,19 @@ ENTRY(__get_user_4)
->  	mov	pc, lr
->  ENDPROC(__get_user_4)
->  
-> +ENTRY(__get_user_8)
-> +	check_uaccess r0, 4, r1, r2, __get_user_bad
-
-Shouldn't you be passing 8 here, so that we validate the correct range?
-
-> +#ifdef CONFIG_THUMB2_KERNEL
-> +5: TUSER(ldr)	r2, [r0]
-> +6: TUSER(ldr)	r3, [r0, #4]
-> +#else
-> +5: TUSER(ldr)	r2, [r0], #4
-> +6: TUSER(ldr)	r3, [r0]
+>  void __init time_init(void)
+>  {
+> +#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> +	arch_gettimeoffset = arm_gettimeoffset;
 > +#endif
+> +
+>  	system_timer = machine_desc->timer;
+>  	system_timer->init();
+>  	sched_clock_postinit();
+> diff --git a/arch/blackfin/kernel/time.c b/arch/blackfin/kernel/time.c
+> index 2310b24..3126b92 100644
+> --- a/arch/blackfin/kernel/time.c
+> +++ b/arch/blackfin/kernel/time.c
+> @@ -85,7 +85,7 @@ time_sched_init(irqreturn_t(*timer_routine) (int, void *))
+>  /*
+>   * Should return useconds since last timer tick
+>   */
+> -u32 arch_gettimeoffset(void)
+> +static u32 blackfin_gettimeoffset(void)
+>  {
+>  	unsigned long offset;
+>  	unsigned long clocks_per_jiffy;
+> @@ -141,6 +141,10 @@ void read_persistent_clock(struct timespec *ts)
+>  
+>  void __init time_init(void)
+>  {
+> +#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> +	arch_gettimeoffset = blackfin_gettimeoffset;
+> +#endif
+> +
+>  #ifdef CONFIG_RTC_DRV_BFIN
+>  	/* [#2663] hack to filter junk RTC values that would cause
+>  	 * userspace to have to deal with time values greater than
+> diff --git a/arch/cris/arch-v10/kernel/time.c b/arch/cris/arch-v10/kernel/time.c
+> index 162892f..fce7c54 100644
+> --- a/arch/cris/arch-v10/kernel/time.c
+> +++ b/arch/cris/arch-v10/kernel/time.c
+> @@ -55,9 +55,9 @@ unsigned long get_ns_in_jiffie(void)
+>  	return ns;
+>  }
+>  
+> -unsigned long do_slow_gettimeoffset(void)
+> +static u32 cris_v10_gettimeoffset(void)
+>  {
+> -	unsigned long count;
+> +	u32 count;
+>  
+>  	/* The timer interrupt comes from Etrax timer 0. In order to get
+>  	 * better precision, we check the current value. It might have
+> @@ -191,6 +191,8 @@ static struct irqaction irq2  = {
+>  void __init
+>  time_init(void)
+>  {	
+> +	arch_gettimeoffset = cris_v10_gettimeoffset;
+> +
+>  	/* probe for the RTC and read it if it exists 
+>  	 * Before the RTC can be probed the loops_per_usec variable needs 
+>  	 * to be initialized to make usleep work. A better value for 
+> diff --git a/arch/cris/kernel/time.c b/arch/cris/kernel/time.c
+> index b063c92..fe6acda 100644
+> --- a/arch/cris/kernel/time.c
+> +++ b/arch/cris/kernel/time.c
+> @@ -39,17 +39,6 @@
+>  extern unsigned long loops_per_jiffy; /* init/main.c */
+>  unsigned long loops_per_usec;
+>  
+> -
+> -#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> -extern unsigned long do_slow_gettimeoffset(void);
+> -static unsigned long (*do_gettimeoffset)(void) = do_slow_gettimeoffset;
+> -
+> -u32 arch_gettimeoffset(void)
+> -{
+> -	return do_gettimeoffset();
+> -}
+> -#endif
+> -
+>  int set_rtc_mmss(unsigned long nowtime)
+>  {
+>  	D(printk(KERN_DEBUG "set_rtc_mmss(%lu)\n", nowtime));
+> diff --git a/arch/m32r/kernel/time.c b/arch/m32r/kernel/time.c
+> index 84dd040..1a15f81 100644
+> --- a/arch/m32r/kernel/time.c
+> +++ b/arch/m32r/kernel/time.c
+> @@ -57,7 +57,7 @@ extern void smp_local_timer_interrupt(void);
+>  
+>  static unsigned long latch;
+>  
+> -u32 arch_gettimeoffset(void)
+> +static u32 m32r_gettimeoffset(void)
+>  {
+>  	unsigned long  elapsed_time = 0;  /* [us] */
+>  
+> @@ -165,6 +165,8 @@ void read_persistent_clock(struct timespec *ts)
+>  
+>  void __init time_init(void)
+>  {
+> +	arch_gettimeoffset = m32r_gettimeoffset;
+> +
+>  #if defined(CONFIG_CHIP_M32102) || defined(CONFIG_CHIP_XNUX2) \
+>  	|| defined(CONFIG_CHIP_VDEC2) || defined(CONFIG_CHIP_M32700) \
+>  	|| defined(CONFIG_CHIP_OPSP) || defined(CONFIG_CHIP_M32104)
+> diff --git a/arch/m68k/kernel/time.c b/arch/m68k/kernel/time.c
+> index 5d0bcaa..c2994c8 100644
+> --- a/arch/m68k/kernel/time.c
+> +++ b/arch/m68k/kernel/time.c
+> @@ -80,14 +80,9 @@ void read_persistent_clock(struct timespec *ts)
+>  	}
+>  }
+>  
+> -void __init time_init(void)
+> -{
+> -	mach_sched_init(timer_interrupt);
+> -}
+> -
+>  #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+>  
+> -u32 arch_gettimeoffset(void)
+> +static u32 m68k_gettimeoffset(void)
+>  {
+>  	return mach_gettimeoffset() * 1000;
+>  }
+> @@ -106,3 +101,12 @@ static int __init rtc_init(void)
+>  module_init(rtc_init);
+>  
+>  #endif /* CONFIG_ARCH_USES_GETTIMEOFFSET */
+> +
+> +void __init time_init(void)
+> +{
+> +#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> +	arch_gettimeoffset = m68k_gettimeoffset;
+> +#endif
+> +
+> +	mach_sched_init(timer_interrupt);
+> +}
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index 4d358e9..05e32a7 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -142,9 +142,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta);
+>   * finer then tick granular time.
+>   */
+>  #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> -extern u32 arch_gettimeoffset(void);
+> -#else
+> -static inline u32 arch_gettimeoffset(void) { return 0; }
+> +extern u32 (*arch_gettimeoffset)(void);
+>  #endif
+>  
+>  extern void do_gettimeofday(struct timeval *tv);
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index e424970..9d00ace 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -140,6 +140,20 @@ static void tk_setup_internals(struct timekeeper *tk, struct clocksource *clock)
+>  }
+>  
+>  /* Timekeeper helper functions. */
+> +
+> +#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
+> +u32 (*arch_gettimeoffset)(void);
+> +
+> +u32 gettimeoffset(void)
+> +{
+> +	if (likely(arch_gettimeoffset))
+> +		return arch_gettimeoffset();
+> +	return 0;
+> +}
+> +#else
+> +static inline u32 gettimeoffset(void) { return 0; }
+> +#endif
+> +
+>  static inline s64 timekeeping_get_ns(struct timekeeper *tk)
+>  {
+>  	cycle_t cycle_now, cycle_delta;
+> @@ -157,7 +171,7 @@ static inline s64 timekeeping_get_ns(struct timekeeper *tk)
+>  	nsec >>= tk->shift;
+>  
+>  	/* If arch requires, add in gettimeoffset() */
+> -	return nsec + arch_gettimeoffset();
+> +	return nsec + gettimeoffset();
+>  }
+>  
+>  static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+> @@ -177,7 +191,7 @@ static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+>  	nsec = clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+>  
+>  	/* If arch requires, add in gettimeoffset() */
+> -	return nsec + arch_gettimeoffset();
+> +	return nsec + gettimeoffset();
+>  }
+>  
+>  /* must hold write on timekeeper.lock */
+> @@ -211,7 +225,7 @@ static void timekeeping_forward_now(struct timekeeper *tk)
+>  	tk->xtime_nsec += cycle_delta * tk->mult;
+>  
+>  	/* If arch requires, add in gettimeoffset() */
+> -	tk->xtime_nsec += (u64)arch_gettimeoffset() << tk->shift;
+> +	tk->xtime_nsec += (u64)gettimeoffset() << tk->shift;
+>  
+>  	tk_normalize_xtime(tk);
+>  
+> -- 
+> 1.7.0.4
 
-This doesn't work for EABI big-endian systems.
-
-Will
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
