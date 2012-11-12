@@ -1,230 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab2KLQZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:25:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37132 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2KLQX3 (ORCPT
+	id S1752603Ab2KLQam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:30:42 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33703 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2KLQal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:23:29 -0500
-Message-Id: <20121112161215.484615026@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Mon, 12 Nov 2012 17:04:53 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 2/8] sched, numa, mm: Implement THP migration
-References: <20121112160451.189715188@chello.nl>
-Content-Disposition: inline; filename=0002-sched-numa-mm-Implement-THP-migration.patch
+	Mon, 12 Nov 2012 11:30:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAAF_D9iuf3v-qCZbvvynJno8QYKSz0T2gyOmf1iW0=BicF6=Vw@mail.gmail.com>
+References: <CAAF_D9g6yVTjicJ+8hmumNkd1ko2eek9+OaskDeyjrKFwqzN_A@mail.gmail.com>
+	<CAAF_D9iBe2PKk4g86=8z9nB70orf836ubiT6XDqME0-jOaDN0Q@mail.gmail.com>
+	<CAAF_D9gQY9-WajgJh5TeR29Z+dorHHQQA1CY5RzASTJ71630eA@mail.gmail.com>
+	<CAAF_D9iuf3v-qCZbvvynJno8QYKSz0T2gyOmf1iW0=BicF6=Vw@mail.gmail.com>
+Date: Mon, 12 Nov 2012 11:30:40 -0500
+Message-ID: <CAKPrQY-xZ6migWJyFmir-9HCUz0MrsCwSj9WaSAnUHJ1TSpwfA@mail.gmail.com>
+Subject: Re: [PATCH] bcm_wimax.ko - Modified supported device list [Correction]
+From: Kevin McKinney <klmckinney1@gmail.com>
+To: Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add THP migration for the NUMA working set scanning fault case.
+On Mon, Nov 12, 2012 at 11:02 AM, Muhammad Minhazul Haque
+<mdminhazulhaque@gmail.com> wrote:
+> Hello Everyone,
+>
+> Is there any problem with the patch? Or should I resubmit them again?
+>
+> If there is any problem regarding the patch, let me know.
+>
+> Thanks.
 
-It uses the page lock to serialize. No migration pte dance is
-necessary because the pte is already unmapped when we decide
-to migrate.
+Hi Muhammad,
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-[ Significant fixes and changelog. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/huge_memory.c |  133 ++++++++++++++++++++++++++++++++++++++++++-------------
- mm/migrate.c     |    2 
- 2 files changed, 104 insertions(+), 31 deletions(-)
+Thanks for sending this patch.
 
-Index: linux/mm/huge_memory.c
-===================================================================
---- linux.orig/mm/huge_memory.c
-+++ linux/mm/huge_memory.c
-@@ -743,12 +743,13 @@ void do_huge_pmd_numa_page(struct mm_str
- 			   unsigned int flags, pmd_t entry)
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	struct page *new_page = NULL;
- 	struct page *page = NULL;
--	int node;
-+	int node, lru;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry)))
--		goto out_unlock;
-+		goto unlock;
- 
- 	if (unlikely(pmd_trans_splitting(entry))) {
- 		spin_unlock(&mm->page_table_lock);
-@@ -756,45 +757,117 @@ void do_huge_pmd_numa_page(struct mm_str
- 		return;
- 	}
- 
--#ifdef CONFIG_NUMA
- 	page = pmd_page(entry);
--	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-+	if (page) {
-+		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
- 
--	get_page(page);
-+		get_page(page);
-+		node = mpol_misplaced(page, vma, haddr);
-+		if (node != -1)
-+			goto migrate;
-+	}
-+
-+fixup:
-+	/* change back to regular protection */
-+	entry = pmd_modify(entry, vma->vm_page_prot);
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
-+
-+unlock:
- 	spin_unlock(&mm->page_table_lock);
-+	if (page)
-+		put_page(page);
- 
--	/*
--	 * XXX should we serialize against split_huge_page ?
--	 */
--
--	node = mpol_misplaced(page, vma, haddr);
--	if (node == -1)
--		goto do_fixup;
--
--	/*
--	 * Due to lacking code to migrate thp pages, we'll split
--	 * (which preserves the special PROT_NONE) and re-take the
--	 * fault on the normal pages.
--	 */
--	split_huge_page(page);
--	put_page(page);
- 	return;
- 
--do_fixup:
-+migrate:
-+	spin_unlock(&mm->page_table_lock);
-+
-+	lock_page(page);
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry)))
--		goto out_unlock;
--#endif
-+	if (unlikely(!pmd_same(*pmd, entry))) {
-+		spin_unlock(&mm->page_table_lock);
-+		unlock_page(page);
-+		put_page(page);
-+		return;
-+	}
-+	spin_unlock(&mm->page_table_lock);
- 
--	/* change back to regular protection */
--	entry = pmd_modify(entry, vma->vm_page_prot);
--	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
--		update_mmu_cache_pmd(vma, address, entry);
-+	new_page = alloc_pages_node(node,
-+	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
-+	    HPAGE_PMD_ORDER);
-+
-+	if (!new_page)
-+		goto alloc_fail;
-+
-+	lru = PageLRU(page);
-+
-+	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-+		goto alloc_fail;
-+
-+	if (!trylock_page(new_page))
-+		BUG();
-+
-+	/* anon mapping, we can simply copy page->mapping to the new page: */
-+	new_page->mapping = page->mapping;
-+	new_page->index = page->index;
- 
--out_unlock:
-+	migrate_page_copy(new_page, page);
-+
-+	WARN_ON(PageLRU(new_page));
-+
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry))) {
-+		spin_unlock(&mm->page_table_lock);
-+		if (lru)
-+			putback_lru_page(page);
-+
-+		unlock_page(new_page);
-+		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
-+		new_page->mapping = NULL;
-+		put_page(new_page);		/* Free it */
-+
-+		unlock_page(page);
-+		put_page(page);			/* Drop the local reference */
-+
-+		return;
-+	}
-+
-+	entry = mk_pmd(new_page, vma->vm_page_prot);
-+	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-+	entry = pmd_mkhuge(entry);
-+
-+	page_add_new_anon_rmap(new_page, vma, haddr);
-+
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
-+	page_remove_rmap(page);
- 	spin_unlock(&mm->page_table_lock);
--	if (page)
-+
-+	put_page(page);			/* Drop the rmap reference */
-+
-+	if (lru)
-+		put_page(page);		/* drop the LRU isolation reference */
-+
-+	unlock_page(new_page);
-+	unlock_page(page);
-+	put_page(page);			/* Drop the local reference */
-+
-+	return;
-+
-+alloc_fail:
-+	if (new_page)
-+		put_page(new_page);
-+
-+	unlock_page(page);
-+
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry))) {
- 		put_page(page);
-+		page = NULL;
-+		goto unlock;
-+	}
-+	goto fixup;
- }
- 
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-Index: linux/mm/migrate.c
-===================================================================
---- linux.orig/mm/migrate.c
-+++ linux/mm/migrate.c
-@@ -417,7 +417,7 @@ int migrate_huge_page_move_mapping(struc
-  */
- void migrate_page_copy(struct page *newpage, struct page *page)
- {
--	if (PageHuge(page))
-+	if (PageHuge(page) || PageTransHuge(page))
- 		copy_huge_page(newpage, page);
- 	else
- 		copy_highpage(newpage, page);
+I have successfully applied the patch you submitted, However we will
+need to format the subject and the comments so that it matches the
+kernel patch standards. I will submit this patch on your behave so you
+will see how it should be formatted.
 
+Are you testing the hardware on 32 or 64 bit machine?
 
+Thanks,
+Kevin
