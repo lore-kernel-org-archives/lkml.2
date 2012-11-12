@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2KLN0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:26:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36159 "EHLO mx2.suse.de"
+	id S1752701Ab2KLNbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:31:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36316 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab2KLN0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:26:22 -0500
-Date: Mon, 12 Nov 2012 14:26:20 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: bpoirier@suse.de, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] menuconfig portability fix
-Message-ID: <20121112132620.GA16743@sepie.suse.cz>
+	id S1751545Ab2KLNbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 08:31:43 -0500
+Date: Mon, 12 Nov 2012 13:31:39 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Zdenek Kabelac <zkabelac@redhat.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: kswapd0: excessive CPU usage
+Message-ID: <20121112133139.GU8218@suse.de>
+References: <20121015110937.GE29125@suse.de>
+ <5093A3F4.8090108@redhat.com>
+ <5093A631.5020209@suse.cz>
+ <509422C3.1000803@suse.cz>
+ <509C84ED.8090605@linux.vnet.ibm.com>
+ <509CB9D1.6060704@redhat.com>
+ <20121109090635.GG8218@suse.de>
+ <509F6C2A.9060502@redhat.com>
+ <20121112121956.GT8218@suse.de>
+ <50A0F5F0.6090400@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <50A0F5F0.6090400@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Nov 12, 2012 at 02:13:20PM +0100, Zdenek Kabelac wrote:
+> Dne 12.11.2012 13:19, Mel Gorman napsal(a):
+> >On Sun, Nov 11, 2012 at 10:13:14AM +0100, Zdenek Kabelac wrote:
+> >>Hmm,  so it's just took longer to hit the problem and observe kswapd0
+> >>spinning on my CPU again - it's not as endless like before - but
+> >>still it easily eats minutes - it helps to  turn off  Firefox or TB
+> >>(memory hungry apps) so kswapd0 stops soon - and restart those apps
+> >>again.
+> >>(And I still have like >1GB of cached memory)
+> >>
+> >
+> >I posted a "safe" patch that I believe explains why you are seeing what
+> >you are seeing. It does mean that there will still be some stalls due to
+> >THP because kswapd is not helping and it's avoiding the problem rather
+> >than trying to deal with it.
+> >
+> >Hence, I'm also going to post this patch even though I have not tested
+> >it myself. If you find it fixes the problem then it would be a
+> >preferable patch to the revert. It still is the case that the
+> >balance_pgdat() logic is in sort need of a rethink as it's pretty
+> >twisted right now.
+> >
+> 
+> 
+> Should I apply them all together for 3.7-rc5 ?
+> 
+> 1) https://lkml.org/lkml/2012/11/5/308
+> 2) https://lkml.org/lkml/2012/11/12/113
+> 3) https://lkml.org/lkml/2012/11/12/151
+> 
 
-Here is a fix for v3.7 that makes menuconfig compile again on systems
-whose C library is lacking CIRCLEQ_* macros. I thought I sent it
-earlier, but apparently I did not.
+Not all together. Test either 1+2 or 1+3. 1+2 is the safer choice but
+does nothing about THP stalls. 1+3 is a riskier version but depends on
+me being correct on what the root cause of the problem you see it.
 
-Michal
+If both 1+2 and 1+3 work for you, I'd choose 1+3 for merging. If you only
+have the time to test one combination then it would be preferred that you
+test the safe option of 1+2.
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+Thanks.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
-
-for you to fetch changes up to bad9955db1b73d7286f74a8136a0628a9b1ac017:
-
-  menuconfig: Replace CIRCLEQ by list_head-style lists. (2012-10-25 15:06:00 +0200)
-
-----------------------------------------------------------------
-Benjamin Poirier (1):
-      menuconfig: Replace CIRCLEQ by list_head-style lists.
-
- scripts/kconfig/expr.h      |    5 +--
- scripts/kconfig/list.h      |   91 +++++++++++++++++++++++++++++++++++++++++++
- scripts/kconfig/lkc_proto.h |    4 +-
- scripts/kconfig/mconf.c     |    6 +--
- scripts/kconfig/menu.c      |   14 ++++---
- 5 files changed, 106 insertions(+), 14 deletions(-)
- create mode 100644 scripts/kconfig/list.h
+-- 
+Mel Gorman
+SUSE Labs
