@@ -1,112 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2KLVgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:36:08 -0500
-Received: from mail-ea0-f202.google.com ([209.85.215.202]:57190 "EHLO
-	mail-ea0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab2KLVgC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:36:02 -0500
-From: Sonny Rao <sonnyrao@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
-        stable@vger.kernel.org, Sonny Rao <sonnyrao@chromium.org>,
-        Puneet Kumar <puneetster@chromium.org>
-Subject: [PATCHv4] mm: Fix calculation of dirtyable memory
-Date: Mon, 12 Nov 2012 13:35:46 -0800
-Message-Id: <1352756146-11837-1-git-send-email-sonnyrao@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <20121112203221.GB4511@redhat.com>
-References: <20121112203221.GB4511@redhat.com>
+	id S1752618Ab2KLVg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:36:27 -0500
+Received: from spam1.webland.se ([91.207.112.90]:61364 "EHLO spam1.webland.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751828Ab2KLVgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:36:22 -0500
+From: Arvid Brodin <Arvid.Brodin@xdin.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "David Rientjes" <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] fs/proc: Add process text segment md5-summing
+Thread-Topic: [PATCH] fs/proc: Add process text segment md5-summing
+Thread-Index: AQHNwR2/ztk+j5SgV0uxA9FSmTsHGA==
+Date: Mon, 12 Nov 2012 21:36:17 +0000
+Message-ID: <50A16BD0.7030600@xdin.com>
+Accept-Language: sv-SE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120410
+ Thunderbird/8.0
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <EE97B8B7FE132C4B91A38E3BA537DD27@redbull.xdin.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qACLaSDg011684
 
-The system uses global_dirtyable_memory() to calculate
-number of dirtyable pages/pages that can be allocated
-to the page cache.  A bug causes an underflow thus making
-the page count look like a big unsigned number.  This in turn
-confuses the dirty writeback throttling to aggressively write
-back pages as they become dirty (usually 1 page at a time).
-This generally only affects systems with highmem because the
-underflowed count gets subtracted from the global count of
-dirtyable memory.
+Adds /proc/<pid>/text_md5sum which, when read, calculates an md5sum over
+the process' text segment. This can detect some cases where the system RAM
+has been disturbed by e.g. ESD or cosmic radiation (on systems where ECC
+is not available). It might also detect some accidental or malicious
+modifications of executables, where the perpetrator has not bothered to
+cover up the tracks.
 
-The problem was introduced with v3.2-4896-gab8fabd
-
-Fix is to ensure we don't get an underflowed total of either highmem
-or global dirtyable memory.
-
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-CC: stable@vger.kernel.org
+Signed-off-by: Arvid Brodin <arvid.brodin@xdin.com>
 ---
- v2: added apkm's suggestion to make the highmem calculation better
- v3: added Fengguang Wu's suggestions fix zone_dirtyable_memory() and
-     (offlist mail) to use max() in global_dirtyable_memory()
- v4: Added suggestions to description clarifying the role of highmem
-      and the commit which originally caused the problem
- mm/page-writeback.c |   25 ++++++++++++++++++++-----
- 1 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..f9efbe8 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
- 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
- 	}
- 	/*
-+	 * Unreclaimable memory (kernel memory or anonymous memory
-+	 * without swap) can bring down the dirtyable pages below
-+	 * the zone's dirty balance reserve and the above calculation
-+	 * will underflow.  However we still want to add in nodes
-+	 * which are below threshold (negative values) to get a more
-+	 * accurate calculation but make sure that the total never
-+	 * underflows.
-+	 */
-+	if ((long)x < 0)
-+		x = 0;
+I'm not sure which tree this should go into. I made this patch against
+next-20121112.
+
+I had some questions and posted this patch before to get them answered. See
+http://www.spinics.net/lists/kernel/msg1428503.html for the comments I
+received and my responses.
+
+Changes since the post linked above:
+
+ * Fixed possible (probable!) crash due to not using get_task_mm()
+   to lock task->mm.
+ * Changed help text to clarify that this is not a security patch.
+   Thanks goes to the people commenting about this!
+
+ fs/proc/Kconfig |   14 +++++++
+ fs/proc/base.c  |  112 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 126 insertions(+), 0 deletions(-)
+
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 15af622..97fe118 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -67,3 +67,17 @@ config PROC_PAGE_MONITOR
+ 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+ 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+           interfaces will reduce the size of the kernel by approximately 4kb.
 +
-+	/*
- 	 * Make sure that the number of highmem pages is never larger
- 	 * than the number of the total dirtyable memory. This can only
- 	 * occur in very strange VM situations but we want to make sure
-@@ -222,8 +234,8 @@ static unsigned long global_dirtyable_memory(void)
- {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
--	    dirty_balance_reserve;
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x -= max(x, dirty_balance_reserve);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-@@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
- 	 * highmem zone can hold its share of dirty pages, so we don't
- 	 * care about vm_highmem_is_dirtyable here.
- 	 */
--	return zone_page_state(zone, NR_FREE_PAGES) +
--	       zone_reclaimable_pages(zone) -
--	       zone->dirty_balance_reserve;
-+	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-+		zone_reclaimable_pages(zone);
-+
-+	/* don't allow this to underflow */
-+	nr_pages -= max(nr_pages, zone->dirty_balance_reserve);
-+	return nr_pages;
++config PROC_TEXT_MD5SUM
++	bool "/proc/<pid>/text_md5sum support"
++	depends on PROC_FS
++	select CRYPTO
++	select CRYPTO_MD5
++	help
++	  Read /proc/<pid>/text_md5sum to get the kernel to perform an MD5
++	  checksum over the process' text segment and print the result. This
++	  can detect some cases where the system RAM has been disturbed by
++	  e.g. ESD or cosmic radiation (on systems where ECC is not available).
++	  It might also detect some accidental or malicious modifications of
++	  executables, where the perpetrator has not bothered to cover up the
++	  tracks.
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index b268bdf..b9c5fda 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -85,6 +85,10 @@
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
+ #include <linux/flex_array.h>
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++#include <linux/scatterlist.h>
++#include <linux/crypto.h>
++#endif
+ #ifdef CONFIG_HARDWALL
+ #include <asm/hardwall.h>
+ #endif
+@@ -2526,6 +2530,111 @@ static int proc_pid_personality(struct seq_file *m, struct
+pid_namespace *ns,
+ 	return err;
  }
- 
- /**
--- 
-1.7.7.3
 
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++#define MD5_DIGEST_SIZE 16
++static int proc_get_text_md5sum(struct seq_file *m, struct pid_namespace *ns,
++				struct pid *pid, struct task_struct *task)
++{
++	int retval;
++	int text_size;
++	int nr_pages, nr_pages_mapped;
++	int i;
++	struct mm_struct *mm;
++	struct page **pages;
++	struct scatterlist *sgl, *sg;
++	u8 result[MD5_DIGEST_SIZE + 2];
++	struct crypto_hash *tfm;
++	struct hash_desc desc;
++
++	retval = 0;
++
++	mm = get_task_mm(task);
++	if (!mm)
++		return -EINVAL;
++
++	text_size = mm->end_code - mm->start_code;
++	nr_pages = (text_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++
++
++	/**** User page code ****/
++
++	pages = kmalloc(nr_pages * sizeof(*pages), GFP_KERNEL);
++	if (!pages) {
++		retval = -ENOMEM;
++		goto err_pages;
++	}
++
++	down_read(&mm->mmap_sem);
++	nr_pages_mapped = get_user_pages(current, mm,
++				mm->start_code, nr_pages, 0, 0, pages, NULL);
++	up_read(&mm->mmap_sem);
++	if (nr_pages_mapped < 0) {
++		retval = nr_pages_mapped;
++		goto err_mapped;
++	}
++	if (nr_pages_mapped < nr_pages) {
++		retval = -EBUSY; /* Weird error code for this,
++				    but couldn't find any better */
++		goto err_not_all_pages;
++	}
++
++
++	/**** Scatterlist code ****/
++
++	sgl = kmalloc(nr_pages_mapped * sizeof(*sgl), GFP_KERNEL);
++	if (!sgl) {
++		retval = -ENOMEM;
++		goto err_sg;
++	}
++
++	sg_init_table(sgl, nr_pages_mapped);
++	for_each_sg(sgl, sg, nr_pages_mapped, i)
++		sg_set_page(sg, pages[i], (i < nr_pages_mapped) ? PAGE_SIZE :
++						text_size & ~PAGE_MASK, 0);
++
++
++	/**** Crypto code ****/
++
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		retval = -ENOMEM;
++		goto err_crypto;
++	}
++
++	desc.tfm = tfm;
++	desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	memset(result, 0, MD5_DIGEST_SIZE + 2);
++	retval = crypto_hash_digest(&desc, sgl, text_size, result);
++	if (retval)
++		goto err_digest;
++
++	for (i = 0; i < MD5_DIGEST_SIZE; i++)
++		seq_printf(m, "%02x", result[i]);
++	seq_printf(m, "\n");
++
++
++err_digest:
++	crypto_free_hash(tfm);
++
++err_crypto:
++	kfree(sgl);
++
++err_sg:
++err_not_all_pages:
++	for (i = 0; i < nr_pages_mapped; i++)
++		put_page(pages[i]);
++
++err_mapped:
++	kfree(pages);
++
++err_pages:
++	mmput(mm);
++
++	return retval;
++}
++#endif /* CONFIG_PROC_TEXT_MD5SUM */
++
+ /*
+  * Thread groups
+  */
+@@ -2621,6 +2730,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+ 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+ #endif
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++	ONE("text_md5sum", S_IRUGO, proc_get_text_md5sum),
++#endif
+ };
+
+ static int proc_tgid_base_readdir(struct file * filp,
+-- 
+1.7.3.4
+
+
+-- 
+Arvid Brodin | Consultant (Linux)
+XDIN AB | KnarrarnÃ¤sgatan 7 | SE-164 40 Kista | Sweden | xdin.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
