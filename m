@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab2KLVYC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:24:02 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24665 "EHLO
+	id S1754077Ab2KLVTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:19:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24493 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab2KLVTe (ORCPT
+	with ESMTP id S1753858Ab2KLVT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:19:34 -0500
+	Mon, 12 Nov 2012 16:19:27 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 11/46] x86, mm: Fixup code testing if a pfn is direct mapped
-Date: Mon, 12 Nov 2012 13:18:07 -0800
-Message-Id: <1352755122-25660-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 07/46] x86, mm: Find early page table buffer together
+Date: Mon, 12 Nov 2012 13:18:03 -0800
+Message-Id: <1352755122-25660-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
@@ -26,88 +26,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+We should not do that in every calling of init_memory_mapping.
 
-Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
-[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
-pfn_mapped ranges instead.
+At the same time need to move down early_memtest, and could remove after_bootmem
+checking.
 
--v2: change applying sequence to keep git bisecting working.
-     so add dummy pfn_range_is_mapped(). - Yinghai Lu
+-v2: fix one early_memtest with 32bit by passing max_pfn_mapped instead.
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/page_types.h |    8 ++++++++
- arch/x86/kernel/cpu/amd.c         |    8 +++-----
- arch/x86/platform/efi/efi.c       |    7 +++----
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c |   66 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 34 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index e21fdd1..45aae6e 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
- }
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 00089bf..c273edb 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -275,16 +275,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	nr_range = 0;
+ 	nr_range = split_mem_range(mr, nr_range, start, end);
  
-+static inline bool pfn_range_is_mapped(unsigned long start_pfn,
-+					unsigned long end_pfn)
-+{
-+	return end_pfn <= max_low_pfn_mapped ||
-+	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
-+		end_pfn <= max_pfn_mapped);
+-	/*
+-	 * Find space for the kernel direct mapping tables.
+-	 *
+-	 * Later we should allocate these tables in the local node of the
+-	 * memory mapped. Unfortunately this is done currently before the
+-	 * nodes are discovered.
+-	 */
+-	if (!after_bootmem)
+-		find_early_table_space(start, end);
+-
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+ 						   mr[i].page_size_mask);
+@@ -297,6 +287,36 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 
+ 	__flush_tlb_all();
+ 
++	return ret >> PAGE_SHIFT;
 +}
 +
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
- 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f7e98a2..9619ba6 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * benefit in doing so.
- 		 */
- 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
-+			unsigned long pfn = tseg >> PAGE_SHIFT;
++void __init init_mem_mapping(void)
++{
++	probe_page_size_mask();
 +
- 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
--			if ((tseg>>PMD_SHIFT) <
--				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
--				((tseg>>PMD_SHIFT) <
--				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
--				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
-+			if (pfn_range_is_mapped(pfn, pfn + 1))
- 				set_memory_4k((unsigned long)__va(tseg), 1);
- 		}
- 	}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index ad44391..36e53f0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -835,7 +835,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi_memory_desc_t *md, *prev_md = NULL;
- 	efi_status_t status;
- 	unsigned long size;
--	u64 end, systab, end_pfn;
-+	u64 end, systab, start_pfn, end_pfn;
- 	void *p, *va, *new_memmap = NULL;
- 	int count = 0;
++	/*
++	 * Find space for the kernel direct mapping tables.
++	 *
++	 * Later we should allocate these tables in the local node of the
++	 * memory mapped. Unfortunately this is done currently before the
++	 * nodes are discovered.
++	 */
++#ifdef CONFIG_X86_64
++	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
++#else
++	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
++#endif
++	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
++	max_pfn_mapped = max_low_pfn_mapped;
++
++#ifdef CONFIG_X86_64
++	if (max_pfn > max_low_pfn) {
++		max_pfn_mapped = init_memory_mapping(1UL<<32,
++						     max_pfn<<PAGE_SHIFT);
++		/* can we preseve max_low_pfn ?*/
++		max_low_pfn = max_pfn;
++	}
++#endif
+ 	/*
+ 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
+ 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
+@@ -312,32 +332,14 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	 * RO all the pagetable pages, including the ones that are beyond
+ 	 * pgt_buf_end at that time.
+ 	 */
+-	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
++	if (pgt_buf_end > pgt_buf_start)
+ 		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
+ 				PFN_PHYS(pgt_buf_end));
  
-@@ -888,10 +888,9 @@ void __init efi_enter_virtual_mode(void)
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
+-	if (!after_bootmem)
+-		early_memtest(start, end);
++	/* stop the wrong using */
++	pgt_buf_top = 0;
  
-+		start_pfn = PFN_DOWN(md->phys_addr);
- 		end_pfn = PFN_UP(end);
--		if (end_pfn <= max_low_pfn_mapped
--		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped)) {
-+		if (pfn_range_is_mapped(start_pfn, end_pfn)) {
- 			va = __va(md->phys_addr);
+-	return ret >> PAGE_SHIFT;
+-}
+-
+-void __init init_mem_mapping(void)
+-{
+-	probe_page_size_mask();
+-
+-	/* max_pfn_mapped is updated here */
+-	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+-	max_pfn_mapped = max_low_pfn_mapped;
+-
+-#ifdef CONFIG_X86_64
+-	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
+-		/* can we preseve max_low_pfn ?*/
+-		max_low_pfn = max_pfn;
+-	}
+-#endif
++	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+ }
  
- 			if (!(md->attribute & EFI_MEMORY_WB))
+ /*
 -- 
 1.7.7
 
