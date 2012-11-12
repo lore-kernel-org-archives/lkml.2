@@ -1,95 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab2KLGEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 01:04:16 -0500
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:33513 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750851Ab2KLGEP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 01:04:15 -0500
-Message-ID: <1352700243.2555.11.camel@slavad-ubuntu>
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Date: Mon, 12 Nov 2012 10:04:03 +0400
-In-Reply-To: <1352634168.1893.9.camel@kjgkr>
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-	 <201211021439.02797.Martin@lichtvoll.de>
-	 <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com>
-	 (sfid-20121105_204523_384093_CECB414C) <201211101933.38434.Martin@lichtvoll.de>
-	 <8A3372F6-6294-404E-909B-3FDE0C2368B7@dubeyko.com>
-	 <1352634168.1893.9.camel@kjgkr>
+	id S1752113Ab2KLGHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 01:07:13 -0500
+Received: from mga14.intel.com ([143.182.124.37]:63768 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab2KLGHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 01:07:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
+   d="scan'208";a="167080383"
+Message-ID: <1352700425.1834.11.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V5 2/2] Thermal: Add ST-Ericsson DB8500 thermal
+ properties and platform data.
+From: Zhang Rui <rui.zhang@intel.com>
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Date: Mon, 12 Nov 2012 14:07:05 +0800
+In-Reply-To: <1352460548-3494-3-git-send-email-hongbo.zhang@linaro.com>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+	 <1352460548-3494-3-git-send-email-hongbo.zhang@linaro.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 178.177.135.204 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-11-11 at 20:42 +0900, Jaegeuk Kim wrote:
-> 2012-11-11 (일), 00:55 +0300, Vyacheslav Dubeyko:
-> > Hi,
-> > 
-> > On Nov 10, 2012, at 9:33 PM, Martin Steigerwald wrote:
-> > 
-> > [snip]
-> > > 
-> > > merkaba:~> mkfs.f2fs /dev/sdb1
-> > > Info: sector size = 512
-> > > Info: total sectors = 4093951 (in 512bytes)
-> > > Info: zone aligned segment0 blkaddr: 256
-> > > Info: This device doesn't support TRIM
-> > > Info: format successful
-> > > merkaba:~> mount /dev/sdb1 /mnt/zeit
-> > > mount: you must specify the filesystem type
-> > > merkaba:~#32> mount -t f2fs /dev/sdb1 /mnt/zeit
-> > > merkaba:~> df -hT /mnt/zeit
-> > > Dateisystem    Typ  Größe Benutzt Verf. Verw% Eingehängt auf
-> > > /dev/sdb1      f2fs  2,0G    147M  1,8G    8% /mnt/zeit
-> > > 
-> > 
-> > Do you really have trouble with f2fs mount without definition of filesystem type? If so, it is a bug.
+On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 > 
-> Could you explain this bug in more detail?
-> Or, can anyone comment this?
+> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+> also adds the platform data to support the old fashion.
 > 
-> Actually, I've looking at the *mount* in linux-utils.
-> I suspect something does not support f2fs in linux-utils.
-> 
+> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Does this issue reproducible or not on last version of f2fs utilities?
-There are some probability that it can be an issue of previous version.
+hmmm,
 
-As I can understand, if Linux kernel has support of concrete file system
-then it should be mounted as with file system type definition as without
-it. From my point of understanding, the linux-utils has some
-universality and support of all possible file system than kernel can
-support. Or I misunderstand something? I think that it can be an issue
-on the kernel side. It needs to analyze system log in the case of issue
-reproducibility, I think.
+who should take this patch?
+I'd like to see ACK from the maintainer of these code before applying
+them to thermal tree.
 
-With the best regards,
-Vyacheslav Dubeyko.
-
-> > 
-> > Moreover, I think that it is really inconvenient that mkfs.f2fs doesn't output its version. I suggest to output version of f2fs utilities.
+thanks,
+rui
+> ---
+>  arch/arm/boot/dts/dbx5x0.dtsi      | 14 +++++++++
+>  arch/arm/boot/dts/snowball.dts     | 31 ++++++++++++++++++
+>  arch/arm/configs/u8500_defconfig   |  2 ++
+>  arch/arm/mach-ux500/board-mop500.c | 64 ++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 111 insertions(+)
 > 
-> Agreed.
-> But, I'd like to note that f2fs is not merged yet.
-> IMHO, it'd better give an initial version after f2fs is merged.
-> Thanks,
-> 
-> > 
-> > With the best regards,
-> > Vyacheslav Dubeyko.
-> > 
-> 
+> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+> index 4b0e0ca..731086b 100644
+> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> @@ -203,6 +203,14 @@
+>  				reg = <0x80157450 0xC>;
+>  			};
+>  
+> +			thermal@801573c0 {
+> +				compatible = "stericsson,db8500-thermal";
+> +				reg = <0x801573c0 0x40>;
+> +				interrupts = <21 0x4>, <22 0x4>;
+> +				interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
+> +				status = "disabled";
+> +			 };
+> +
+>  			db8500-prcmu-regulators {
+>  				compatible = "stericsson,db8500-prcmu-regulator";
+>  
+> @@ -660,5 +668,11 @@
+>  			ranges = <0 0x50000000 0x4000000>;
+>  			status = "disabled";
+>  		};
+> +
+> +		cpufreq-cooling {
+> +			compatible = "stericsson,db8500-cpufreq-cooling";
+> +			status = "disabled";
+> +		 };
+> +
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+> index 702c0ba..c6f85f0 100644
+> --- a/arch/arm/boot/dts/snowball.dts
+> +++ b/arch/arm/boot/dts/snowball.dts
+> @@ -99,6 +99,33 @@
+>  			status = "okay";
+>  		};
+>  
+> +		prcmu@80157000 {
+> +			thermal@801573c0 {
+> +				num-trips = <4>;
+> +
+> +				trip0-temp = <70000>;
+> +				trip0-type = "active";
+> +				trip0-cdev-num = <1>;
+> +				trip0-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +				trip1-temp = <75000>;
+> +				trip1-type = "active";
+> +				trip1-cdev-num = <1>;
+> +				trip1-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +				trip2-temp = <80000>;
+> +				trip2-type = "active";
+> +				trip2-cdev-num = <1>;
+> +				trip2-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +				trip3-temp = <85000>;
+> +				trip3-type = "critical";
+> +				trip3-cdev-num = <0>;
+> +
+> +				status = "okay";
+> +			 };
+> +		};
+> +
+>  		external-bus@50000000 {
+>  			status = "okay";
+>  
+> @@ -183,5 +210,9 @@
+>  				reg = <0x33>;
+>  			};
+>  		};
+> +
+> +		cpufreq-cooling {
+> +			status = "okay";
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
+> index da68454..250625d 100644
+> --- a/arch/arm/configs/u8500_defconfig
+> +++ b/arch/arm/configs/u8500_defconfig
+> @@ -69,6 +69,8 @@ CONFIG_GPIO_TC3589X=y
+>  CONFIG_POWER_SUPPLY=y
+>  CONFIG_AB8500_BM=y
+>  CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
+> +CONFIG_THERMAL=y
+> +CONFIG_CPU_THERMAL=y
+>  CONFIG_MFD_STMPE=y
+>  CONFIG_MFD_TC3589X=y
+>  CONFIG_AB5500_CORE=y
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 416d436..b03216b 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/io.h>
+>  #include <linux/i2c.h>
+>  #include <linux/platform_data/i2c-nomadik.h>
+> +#include <linux/platform_data/db8500_thermal.h>
+>  #include <linux/gpio.h>
+>  #include <linux/amba/bus.h>
+>  #include <linux/amba/pl022.h>
+> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
+>  };
+>  
+>  /*
+> + * Thermal Sensor
+> + */
+> +
+> +static struct resource db8500_thsens_resources[] = {
+> +	{
+> +		.name = "IRQ_HOTMON_LOW",
+> +		.start  = IRQ_PRCMU_HOTMON_LOW,
+> +		.end    = IRQ_PRCMU_HOTMON_LOW,
+> +		.flags  = IORESOURCE_IRQ,
+> +	},
+> +	{
+> +		.name = "IRQ_HOTMON_HIGH",
+> +		.start  = IRQ_PRCMU_HOTMON_HIGH,
+> +		.end    = IRQ_PRCMU_HOTMON_HIGH,
+> +		.flags  = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct db8500_thsens_platform_data db8500_thsens_data = {
+> +	.trip_points[0] = {
+> +		.temp = 70000,
+> +		.type = THERMAL_TRIP_ACTIVE,
+> +		.cdev_name = {
+> +			[0] = "thermal-cpufreq-0",
+> +		},
+> +	},
+> +	.trip_points[1] = {
+> +		.temp = 75000,
+> +		.type = THERMAL_TRIP_ACTIVE,
+> +		.cdev_name = {
+> +			[0] = "thermal-cpufreq-0",
+> +		},
+> +	},
+> +	.trip_points[2] = {
+> +		.temp = 80000,
+> +		.type = THERMAL_TRIP_ACTIVE,
+> +		.cdev_name = {
+> +			[0] = "thermal-cpufreq-0",
+> +		},
+> +	},
+> +	.trip_points[3] = {
+> +		.temp = 85000,
+> +		.type = THERMAL_TRIP_CRITICAL,
+> +	},
+> +	.num_trips = 4,
+> +};
+> +
+> +static struct platform_device u8500_thsens_device = {
+> +	.name           = "db8500-thermal",
+> +	.resource       = db8500_thsens_resources,
+> +	.num_resources  = ARRAY_SIZE(db8500_thsens_resources),
+> +	.dev	= {
+> +		.platform_data	= &db8500_thsens_data,
+> +	},
+> +};
+> +
+> +static struct platform_device u8500_cpufreq_cooling_device = {
+> +	.name           = "db8500-cpufreq-cooling",
+> +};
+> +
+> +/*
+>   * TPS61052
+>   */
+>  
+> @@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
+>  	&snowball_key_dev,
+>  	&snowball_sbnet_dev,
+>  	&snowball_gpio_en_3v3_regulator_dev,
+> +	&u8500_thsens_device,
+> +	&u8500_cpufreq_cooling_device,
+>  };
+>  
+>  static void __init mop500_init_machine(void)
 
 
