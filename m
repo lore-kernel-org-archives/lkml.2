@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab2KLKTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 05:19:38 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49320 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab2KLKS7 (ORCPT
+	id S1752191Ab2KLKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 05:19:59 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45898 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2KLKSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 05:18:59 -0500
-Message-Id: <20121112101846.063966116@openvz.org>
+	Mon, 12 Nov 2012 05:18:54 -0500
+Message-Id: <20121112101845.981494373@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Nov 2012 14:14:46 +0400
+Date: Mon, 12 Nov 2012 14:14:45 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -19,22 +19,20 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
         aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>
-Subject: [patch 6/7] fs, epoll: Add procfs fdinfo helper v2
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 5/7] fs, eventfd: Add procfs fdinfo helper
 References: <20121112101440.665694060@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventpoll-8
+Content-Disposition: inline; filename=seq-fdinfo-eventfd-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out eventpoll target file descriptor,
-events and data, the /proc/pid/fdinfo/fd consists of
+This allow us to print out raw counter value.
+The /proc/pid/fdinfo/fd output is
 
  | pos:	0
- | flags:	02
- | tfd:        5 events:       1d data: ffffffffffffffff enabled: 1
-
-[avagin@: fix for unitialized ret variable]
+ | flags:	04002
+ | eventfd-count:               5a
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
@@ -47,58 +45,47 @@ CC: Alexey Dobriyan <adobriyan@gmail.com>
 CC: Matthew Helsley <matt.helsley@gmail.com>
 CC: "J. Bruce Fields" <bfields@fieldses.org>
 CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Andrey Vagin <avagin@openvz.org>
 ---
- fs/eventpoll.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/eventfd.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Index: linux-2.6.git/fs/eventpoll.c
+Index: linux-2.6.git/fs/eventfd.c
 ===================================================================
---- linux-2.6.git.orig/fs/eventpoll.c
-+++ linux-2.6.git/fs/eventpoll.c
-@@ -38,6 +38,8 @@
- #include <asm/io.h>
- #include <asm/mman.h>
- #include <linux/atomic.h>
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -19,6 +19,8 @@
+ #include <linux/export.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
 +#include <linux/proc_fs.h>
 +#include <linux/seq_file.h>
  
- /*
-  * LOCKING:
-@@ -783,8 +785,35 @@ static unsigned int ep_eventpoll_poll(st
- 	return pollflags != -1 ? pollflags : 0;
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -284,7 +286,25 @@ static ssize_t eventfd_write(struct file
+ 	return res;
  }
  
 +#ifdef CONFIG_PROC_FS
-+static int ep_show_fdinfo(struct seq_file *m, struct file *f)
++static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
 +{
-+	struct eventpoll *ep = f->private_data;
-+	struct rb_node *rbp;
-+	int ret = 0;
++	struct eventfd_ctx *ctx = f->private_data;
++	int ret;
 +
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
-+
-+		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx enabled: %d\n",
-+				 epi->ffd.fd, epi->event.events,
-+				 (long long)epi->event.data,
-+				 ep_is_linked(&epi->rdllink));
-+		if (ret)
-+			break;
-+	}
-+	mutex_unlock(&ep->mtx);
++	spin_lock_irq(&ctx->wqh.lock);
++	ret = seq_printf(m, "eventfd-count: %16llx\n",
++			 (unsigned long long)ctx->count);
++	spin_unlock_irq(&ctx->wqh.lock);
 +
 +	return ret;
 +}
 +#endif
 +
- /* File callbacks that implement the eventpoll file behaviour */
- static const struct file_operations eventpoll_fops = {
+ static const struct file_operations eventfd_fops = {
 +#ifdef CONFIG_PROC_FS
-+	.show_fdinfo	= ep_show_fdinfo,
++	.show_fdinfo	= eventfd_show_fdinfo,
 +#endif
- 	.release	= ep_eventpoll_release,
- 	.poll		= ep_eventpoll_poll,
- 	.llseek		= noop_llseek,
+ 	.release	= eventfd_release,
+ 	.poll		= eventfd_poll,
+ 	.read		= eventfd_read,
 
