@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab2KLMZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:25:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33273 "EHLO mx2.suse.de"
+	id S1752850Ab2KLM12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:27:28 -0500
+Received: from 1wt.eu ([62.212.114.60]:35689 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386Ab2KLMZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:25:50 -0500
-Date: Mon, 12 Nov 2012 13:25:41 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <stefan_achatz@web.de>
-Cc: Rob Landley <rob@landley.net>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: roccat: Finishing cleanup and reset support
-In-Reply-To: <1352611246.2463.214.camel@neuromancer.tessier-ashpool>
-Message-ID: <alpine.LNX.2.00.1211121323590.27271@pobox.suse.cz>
-References: <1352611246.2463.214.camel@neuromancer.tessier-ashpool>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752462Ab2KLM10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 07:27:26 -0500
+Date: Mon, 12 Nov 2012 13:26:43 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Benjamin Poirier <benjamin.poirier@gmail.com>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Davidlohr Bueso <dave@gnu.org>, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+Subject: Re: [PATCH v2] menuconfig: Replace CIRCLEQ by list_head-style lists.
+Message-ID: <20121112122643.GA9351@1wt.eu>
+References: <1350754935-20014-1-git-send-email-benjamin.poirier@gmail.com> <201210222138.25805.yann.morin.1998@free.fr> <50893FCF.5030800@suse.cz> <201211111702.24556.yann.morin.1998@free.fr>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211111702.24556.yann.morin.1998@free.fr>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Nov 2012, Stefan Achatz wrote:
-
-> This patchset finishes current cleanups and unifications.
+On Sun, Nov 11, 2012 at 05:02:24PM +0100, Yann E. MORIN wrote:
+> Michal, All,
 > 
-> Device reset is now implemented for all devices that support that
-> feature.
+> On Thursday 25 October 2012 Michal Marek wrote:
+> > On 22.10.2012 21:38, Yann E. MORIN wrote:
+> > > On Sunday 21 October 2012 Benjamin Poirier wrote:
+> > >> Changes v1-v2:
+> > >> * integrate the patch/suggestion from Yann to fix problems related to the
+> > >>   usage of list.h with xconfig/c++
+> > >> 	* "new" keyword
+> > >> 	* offsetof redefinition
+> > >> * silly #endif placement mistake
+> [--SNIP--]
+> > I pushed it to kbuild.git#rc-fixes now and will send it to Linus for 3.7
+> > inclusion later.
 > 
-> A couple sysfs attributes have been deprecated and got replaced to unify
-> the ABI as good as it gets with design decisions made in the past.
-> 
-> The next release of userland tools will only use these obsolete
-> attributes as fallback. When that version is out, I will add all actual
-> sysfs attributes from ABI/obsolete/sysfs-driver-hid-roccat-* to
-> feature-removal-schedule.txt.
+> Not trying to sound like a nuisance, but this has still not been pushed
+> to Linus yet... ;-)
 
-That file doesn't exist any more. Documenting in ABI/obsolete is the best 
-we can get currently, I think. We are more-or-less safe to do that, as the 
-interfaces have been in testing/ and the only documented user is your 
-userspace program.
+Would love the patch to be merged too, as I can't build Linux on my Linux
+laptop right now, very frustrating :-(
 
--- 
-Jiri Kosina
-SUSE Labs
+Willy
+
