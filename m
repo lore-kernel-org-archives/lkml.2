@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab2KLNyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:54:51 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50604 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2KLNyu (ORCPT
+	id S1753127Ab2KLNze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:55:34 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49764 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab2KLNzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:54:50 -0500
+	Mon, 12 Nov 2012 08:55:32 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet.Gupta1@synopsys.com
+Subject: Re: [RFC Patch v1 38/55] ARC: Low level event capture/logging
+Date: Mon, 12 Nov 2012 13:55:23 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-8-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1352720953-24321-8-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-In-Reply-To: <1352719406-26405-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1352719406-26405-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Mon, 12 Nov 2012 19:24:49 +0530
-X-Google-Sender-Auth: -sFOqXPtv_CEJCv_t0Y67NBsNZM
-Message-ID: <CAOh2x=m9TyMOhh=nCD0nznEBy6jN7eUddp7hLT7TnCf0xM07dA@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: absence of pdata isn't critical when autocfg is set
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211121355.23947.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZEnBdvJ1QaiOibjVPPe2ByoMkshnAJmmFr3tvOwIWuv
+ rM/+Wj640h2K6FspmFygWYWgIg5obIpt5yHcq0gtZyfQKexkbH
+ EJCzyJ6zFzr8gyFKwUPzd3sZGBObZG5zlrIooFAjL/6mKF7acy
+ 9cZ5rgxEajBwYxFxmx8IHVylcx+yY9ZTykqc4adDpvjk6QEHI3
+ u3atNqqYKFuP2rZV7KVnFJ0iZqQEwT/ZpYQ9oRZ6FZ1gon2t38
+ HGqZJDrFGmbTZvhBTObXbKPs432M0NSWq4Q/Z/RIHkRDVyUALS
+ 38f/Lj6ciW3TLGOPB0GnFKu5GIvzm1uVBmyJ/C5GR/0g9/J32B
+ hV+Wi7D/8bLeNbkno5C0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 4:53 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+> +EXPORT_SYMBOL(take_snap);
+> +
+> ...
+> +EXPORT_SYMBOL(take_snap2);
 
->  static int __devinit dw_probe(struct platform_device *pdev)
->  {
->         struct dw_dma_platform_data *pdata;
-> @@ -1604,9 +1610,6 @@ static int __devinit dw_probe(struct platform_device *pdev)
->         if (!pdata)
->                 pdata = dw_dma_parse_dt(pdev);
->
-> -       if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
-> -               return -EINVAL;
-> -
->         io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->         if (!io)
->                 return -EINVAL;
-> @@ -1622,6 +1625,12 @@ static int __devinit dw_probe(struct platform_device *pdev)
->         dw_params = dma_read_byaddr(regs, DW_PARAMS);
->         autocfg = dw_params >> DW_PARAMS_EN & 0x1;
->
-> +       if (!pdata && autocfg)
-> +               pdata = &dw_dma_pdata;
+Where are these functions called?
 
-Allocate it dynamically to support multiple controllers with different
-configuration
-in a SoC.
+Shouldn't this all just be part of the perf module?
+
+If not, can you make the exports GPL-only?
+
+	Arnd
