@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2KLVPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:15:30 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54119 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab2KLVP3 convert rfc822-to-8bit (ORCPT
+	id S1753704Ab2KLVQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:16:36 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55622 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab2KLVQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:15:29 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: viresh kumar <viresh.kumar@linaro.org>, Axel Lin <axel.lin@ingics.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CAOh2x==ng3A66P=Vx+-C791LTGCS1fWVpMfUKDorU5G=ZXrjLQ@mail.gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1352169260.2625.4.camel@phoenix>
- <CAOh2x==ng3A66P=Vx+-C791LTGCS1fWVpMfUKDorU5G=ZXrjLQ@mail.gmail.com>
-Message-ID: <20121112211506.20034.67807@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH] clk: spear: Add stub functions for spear3[0|1|2]0_clk_init()
-Date: Mon, 12 Nov 2012 13:15:06 -0800
+	Mon, 12 Nov 2012 16:16:34 -0500
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 1/2] staging: et131x: Avoid unnecessary calculations in for loop
+Date: Mon, 12 Nov 2012 21:16:28 +0000
+Message-Id: <1352754989-15603-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting viresh kumar (2012-11-05 19:36:18)
-> On Tue, Nov 6, 2012 at 8:04 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> > This fixes compile error if one of SPEAr3xx implementations is not selected.
-> >
-> >   CC      drivers/clk/spear/spear3xx_clock.o
-> > drivers/clk/spear/spear3xx_clock.c: In function 'spear3xx_clk_init':
-> > drivers/clk/spear/spear3xx_clock.c:599:3: error: implicit declaration of function 'spear300_clk_init' [-Werror=implicit-function-declaration]
-> > drivers/clk/spear/spear3xx_clock.c:601:3: error: implicit declaration of function 'spear310_clk_init' [-Werror=implicit-function-declaration]
-> > drivers/clk/spear/spear3xx_clock.c:603:3: error: implicit declaration of function 'spear320_clk_init' [-Werror=implicit-function-declaration]
-> > cc1: some warnings being treated as errors
-> > make[3]: *** [drivers/clk/spear/spear3xx_clock.o] Error 1
-> > make[2]: *** [drivers/clk/spear] Error 2
-> > make[1]: *** [drivers/clk] Error 2
-> > make: *** [drivers] Error 2
-> >
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> 
-> Thanks..
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+In et131x_rx_dma_memory_alloc(), we loop over fbr_entries - the values of
+fbr_align and fbr_chunksize calculated in the loop do not depend on the
+loop counter and are the same for all loop iterations.
 
-Taken into clk-next.
+Take the calculations of these values out of the loop, as we only
+need to calculate them once per loop, not once per loop iteration.
 
-Thanks,
-Mike
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 69a0729..4f68646 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -2266,7 +2266,9 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 	u8 id;
+ 	u32 i, j;
+ 	u32 bufsize;
+-	u32 pktstat_ringsize, fbr_chunksize;
++	u32 pktstat_ringsize;
++	u32 fbr_chunksize;
++	u32 fbr_align;
+ 	struct rx_ring *rx_ring;
+ 
+ 	/* Setup some convenience pointers */
+@@ -2341,10 +2343,17 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 	}
+ 
+ 	for (id = 0; id < NUM_FBRS; id++) {
++		if (id == 0 && rx_ring->fbr[id]->buffsize > 4096)
++				fbr_align = 4096;
++		else
++				fbr_align = rx_ring->fbr[id]->buffsize;
++
++		fbr_chunksize = (FBR_CHUNKS *
++				 rx_ring->fbr[id]->buffsize) + fbr_align - 1;
++
+ 		for (i = 0; i < (rx_ring->fbr[id]->num_entries / FBR_CHUNKS); i++) {
+ 			dma_addr_t fbr_tmp_physaddr;
+ 			dma_addr_t fbr_offset;
+-			u32 fbr_align;
+ 
+ 			/* This code allocates an area of memory big enough for
+ 			 * N free buffers + (buffer_size - 1) so that the
+@@ -2353,13 +2362,6 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 			 * effect would be to double the size of FBR0. By
+ 			 * allocating N buffers at once, we reduce this overhead
+ 			 */
+-			if (id == 0 && rx_ring->fbr[id]->buffsize > 4096)
+-					fbr_align = 4096;
+-			else
+-					fbr_align = rx_ring->fbr[id]->buffsize;
+-
+-			fbr_chunksize = (FBR_CHUNKS *
+-				rx_ring->fbr[id]->buffsize) + fbr_align - 1;
+ 			rx_ring->fbr[id]->mem_virtaddrs[i] = dma_alloc_coherent(
+ 					&adapter->pdev->dev, fbr_chunksize,
+ 					&rx_ring->fbr[id]->mem_physaddrs[i],
+-- 
+1.7.9.5
+
