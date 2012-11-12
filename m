@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2KLJWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 04:22:15 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:59524 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2KLJWN (ORCPT
+	id S1752604Ab2KLJXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 04:23:47 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:61572 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab2KLJXp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 04:22:13 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH 2/3] fat: fix time updates for create and delete
-References: <1352642278-2730-1-git-send-email-linkinjeon@gmail.com>
-	<874nkw86jz.fsf@devron.myhome.or.jp>
-	<CAKYAXd_HBP1ToGunoPwut18v+hwdG=QdfeXyJVSrLUGEt6beSQ@mail.gmail.com>
-	<87sj8f5k4m.fsf@devron.myhome.or.jp>
-	<87obj35k3a.fsf@devron.myhome.or.jp>
-	<CAKYAXd_=wCLo5RZhOaur7Yjw+6MYk-DhRPTjy148Yo0z6z9BcQ@mail.gmail.com>
-	<87k3tr5g8v.fsf@devron.myhome.or.jp>
-Date: Mon, 12 Nov 2012 18:22:11 +0900
-In-Reply-To: <87k3tr5g8v.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Mon, 12 Nov 2012 18:21:04 +0900")
-Message-ID: <87fw4f5g70.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 12 Nov 2012 04:23:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1352711769-28911-1-git-send-email-jslaby@suse.cz>
+References: <1352711769-28911-1-git-send-email-jslaby@suse.cz>
+Date: Mon, 12 Nov 2012 10:23:44 +0100
+X-Google-Sender-Auth: Kl0Wru3we3_esYTU1BjIFtpSZPw
+Message-ID: <CAMuHMdUEW9K6cfpcUNphte_VzBCL_Oa_od3892DQ3QbX5xMMnA@mail.gmail.com>
+Subject: Re: [PATCH] HID: microsoft, do not use compound literal
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+On Mon, Nov 12, 2012 at 10:16 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> In patch "HID: microsoft: fix invalid rdesc for 3k kbd" I fixed
+> support for MS 3k keyboards. However the added check using memcmp and
+> a compound statement breaks build on architectures where memcmp is a
+> macro with parameters. The error looks there like (m68k-linux-gnu-gcc
+> 4.1.2):
+> hid-microsoft.c:51:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+> hid-microsoft.c: In function ‘ms_report_fixup’:
+> drivers/hid/hid-microsoft.c:50: error: ‘memcmp’ undeclared (first use in this function)
+> hid-microsoft.c:50: error: (Each undeclared identifier is reported only once
+> /hid-microsoft.c:50: error: for each function it appears in.)
 
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> What was difference with XFS, FAT, and MSDOS?
->> Okay, the description of patch was lacked, So I will resend patch with
->> specifical test reseult with other filesystem.
->>>
->>> BTW, I recall I checked this, and yes, it is strange. But it is historical.
->> "historical" means It is difficult to change ?
->
-> The timestamp handling was not same with unix fs from initial, and FAT
-> doesn't have inode change timestamp.  This historical reason it is not
-> better to change to same with unix fs, and never be possible to support
-> inode change timestamp cleanly.
+The above 3 lines were actually from a build with a different config
+--- which I didn't
+notice at that time --- where <linux/string.h> was not indirectly included.
 
-I.e. the user visible change without strong reason is the wrong.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> On x86_64, memcmp is a function, so I did not see the error.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  drivers/hid/hid-microsoft.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+> index f676c01..6fcd466 100644
+> --- a/drivers/hid/hid-microsoft.c
+> +++ b/drivers/hid/hid-microsoft.c
+> @@ -46,9 +46,9 @@ static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+>                 rdesc[559] = 0x45;
+>         }
+>         /* the same as above (s/usage/physical/) */
+> -       if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
+> -                       !memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
+> -                               &rdesc[94], 4)) {
+> +       if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
+> +                       rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
+> +                       rdesc[97] == 0xff) {
+>                 rdesc[94] = 0x35;
+>                 rdesc[96] = 0x45;
+>         }
+> --
+> 1.8.0
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
