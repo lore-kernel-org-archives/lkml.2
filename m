@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2KLOwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:52:24 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45107 "EHLO bear.ext.ti.com"
+	id S1752818Ab2KLOyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:54:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60800 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2KLOwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:52:23 -0500
-Message-ID: <50A10D22.9050103@ti.com>
-Date: Mon, 12 Nov 2012 15:52:18 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 0/6] MFD: twl6040: Conversion to use regmap_irq
-References: <1349956533-6374-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1349956533-6374-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1751459Ab2KLOyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 09:54:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,762,1344236400"; 
+   d="asc'?scan'208";a="218309460"
+Message-ID: <1352732095.15788.55.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: gpmi: remove unneccessary header
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <shijie8@gmail.com>
+Cc: Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 Nov 2012 16:54:55 +0200
+In-Reply-To: <CAMiH66E9WTtt=6EhX9XVv9afErGd5Ajfg9qN6dVQhE5FEJVrTw@mail.gmail.com>
+References: <1350147809-19616-1-git-send-email-shijie8@gmail.com>
+	 <1351258892.1823.20.camel@sauron.fi.intel.com>
+	 <508B4586.4090600@freescale.com>
+	 <1352473841.1814.35.camel@sauron.fi.intel.com>
+	 <CAMiH66E9WTtt=6EhX9XVv9afErGd5Ajfg9qN6dVQhE5FEJVrTw@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-PTDjR2B9QFAzimi3B/FP"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
 
-On 10/11/2012 01:55 PM, Peter Ujfalusi wrote:
-> Hello,
-> 
-> This series will convert the twl6040 MFD core driver to use regmap_irq instead
-> of the custom interrupt code it used. In this way considerable amount of code
-> can be removed and we are going to use common, well tested code for the interrupt
-> dispatch.
-> 
-> The series is for 3.8.
+--=-PTDjR2B9QFAzimi3B/FP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Did you had time to look at this series?
-I can resend it if it is better for you.
+On Fri, 2012-11-09 at 20:39 -0500, Huang Shijie wrote:
+> Could you re-create your mxs config with "make ARCH=3DARM
+> mxs_defconfig", and test this patch again?
 
-Regards,
-Péter
+Done, works now, pushed your patch to l2-mtd.git, thanks!
 
-> 
-> Regards,
-> Peter
-> ---
-> Peter Ujfalusi (6):
->   MFD: twl6040: Fix typo for power on failure
->   MFD: twl6040: Remove unused parameter for
->     twl6040_power_up_completion()
->   MFD: twl6040: Restructure power up and down code
->   MFD: twl6040: Correct Ready and Thermal interrupt handling
->   MFD: twl6040: Convert to use regmap_irq
->   MFD: twl6040: Rename the core driver
-> 
->  drivers/mfd/Kconfig                       |   4 +-
->  drivers/mfd/Makefile                      |   2 +-
->  drivers/mfd/twl6040-irq.c                 | 205 ------------------------------
->  drivers/mfd/{twl6040-core.c => twl6040.c} | 137 ++++++++++++--------
->  include/linux/mfd/twl6040.h               |  10 +-
->  5 files changed, 92 insertions(+), 266 deletions(-)
->  delete mode 100644 drivers/mfd/twl6040-irq.c
->  rename drivers/mfd/{twl6040-core.c => twl6040.c} (84%)
-> 
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-PTDjR2B9QFAzimi3B/FP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQoQ2/AAoJECmIfjd9wqK0pc0QAJrzmBGp6cz8IgVpb8AXgH3E
+XUXwMqvFi6rHKFYva5QvP6T319XRZ9dR4iquZwCoDkVUK3S9MJbeBceyIs3/z0Ce
+z2Tl5Bzo3+ZLKOnJGqTLwVWA21iEQEl7yWilTzrljus2T1hPRZFVUDzPw9Q97s7I
+LgP6ORkKYS4+kCQGgUcFULRyWkhhhON8P6/6kqDA8pNlkeqTCBtKUUMeQ5mvAUow
+dzUwWzyncz1GNjEU0cCwxAPHxciQtuvEvnWPfT9sZ92yY5bGsL0AkiczbW1dWsUr
+bmSN2oBUQaoE6EYtUV3SaCxCASEehjuVK0Wiot2i+o5Q9UwKJOzKKsnjBs9P1uhr
+He6is61Xw8MO0og9xHHGvapTmRXPZQSdjUkOkbMzX+ixOoGSk1eLu/jtALfSQSYA
+bbPARsnraOsTtgwaN+56uOaVPSoSlUKdMWaInqvzgUw/fEw433N3Xqr9a8+MhC3H
+MLdc+iWqGRpCNLUNsBVFk8DBJyuGv49xBzbMFytADPzvZulfhHMJMXCeOcXluGXj
+ICWVtjBaRH8mQLQ0UG4+4ioNJukn2ah7Ao/EdQZqy9n48GFT7CdJziJikmDu8nYf
+R5aRW+F4Bk6KTWqb/JvBcnoKU1sY7PGwv8RH/OuQOQSrUHawVSqzvUXi9JUPMOIV
+vj9xNsj5mPfeiQb4utZA
+=qlxV
+-----END PGP SIGNATURE-----
+
+--=-PTDjR2B9QFAzimi3B/FP--
+
