@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab2KLK6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 05:58:09 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42123 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab2KLK6H (ORCPT
+	id S1752275Ab2KLK6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 05:58:17 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:35561 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab2KLK6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 05:58:07 -0500
-Message-ID: <50A0D636.9060804@gmail.com>
-Date: Mon, 12 Nov 2012 20:57:58 +1000
-From: Cruz Julian Bishop <cruzjbishop@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 12 Nov 2012 05:58:14 -0500
+Message-ID: <50A0D634.20005@synopsys.com>
+Date: Mon, 12 Nov 2012 16:27:56 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: David Solda <dso@cypress.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Troy Abercrombia <ta@cypress.com>, Kamal Mostafa <kamal@canonical.com>,
-        =?ISO-8859-9?Q?Ozan_=C7a=F0layan?= <ozancag@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        customercare <customercare@cypress.com>,
-        "mario_limonciello@dell.com" <mario_limonciello@dell.com>
-Subject: Re: Why Cypress does not upstream its trackpad driver?
-References: <CAFub=KTf2dWxM9=saG2JaNJpEioJM8rM3UBG9BkyxRN-+j0psQ@mail.gmail.com> <C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net> <EE629F2C-DD83-403C-AD73-E9ED966EEA91@cypress.com> <2208882.BvOrfBvj6F@dtor-d630.eng.vmware.com> <C6B11F3154DB7242B32DD96C876EA7847BAFFAFA95@VMBX113.ihostexchange.net>
-In-Reply-To: <C6B11F3154DB7242B32DD96C876EA7847BAFFAFA95@VMBX113.ihostexchange.net>
-Content-Type: text/plain; charset=ISO-8859-9; format=flowed
-Content-Transfer-Encoding: 8bit
+To: <arc-linux-dev@synopsys.com>
+CC: David Howells <dhowells@redhat.com>, James Hogan <james@albanarts.com>,
+        "torvalds@osdl.org" <torvalds@osdl.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [arc-linux-dev] Re: UAPI for new arches (was Re: [GIT PULL] User
+ API Disintegrate: Preparatory patches)
+References: <C2D7FE5348E1B147BCA15975FBA230750D9832@in01wembx1.internal.synopsys.com> <509251CA.8050008@synopsys.com> <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>,<8419.1352387261@warthog.procyon.org.uk> <14356.1352416788@warthog.procyon.org.uk>
+In-Reply-To: <14356.1352416788@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/12 10:26, David Solda wrote:
-> Dmitry, all,
+On Friday 09 November 2012 04:49 AM, David Howells wrote:
+> Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
 >
-> To clarify my comment.  Our protocol utilizes 8 bytes which are needed in our driver.  In order for the Linux system to accept 8 bytes of data, the Linux psmouse system driver is required to be modified.  Without this modification, the driver that you are referring to will not work correctly.  The psmouse system driver change that would be required is the item that would be rejected.
+>> While I'd done some of the prep work in my code such as splitting __KERNEL__
+>> && __ASSEMBLY__ into two separate lines, majority of orig headers didn't
+>> have #ifdef __KERNEL__ guard despite the code not being meant for user-space
+>> ABI. Is that fundamental to UAPI split scripting
+> Yes.  My scripts work purely along __KERNEL__ lines.  If there are no
+> __KERNEL__ markers and the header is marked for export, it is simply moved.
 
-In this case, would a solution that involves submitting two separate 
-patches be suitable?
-
-For example, an initial patch set to psmouse that allows an arbitrary 
-number of bytes be
-  (accepted? used?), while keeping a default value to allow the other 
-old drivers to keep working,
-and then another patch set with the new driver utilizing the first patch 
-set?
-
-Sorry if this doesn't make any sense - I've been working with generics 
-and abstract class structure
-in Java for the last few weeks, and forget what parts are possible in C 
-and which parts are not.
-
-Keep up the good work. Even if it's a driver that needs a change, it's 
-still an open-source driver! Be happy :)
+Understood.
 
 >
-> I appreciate your comments and of course, if the driver could be upstreamed, it would (we already have I2C drivers updstreamed for Chrome systems), but there is a difference here.
+>> because it seems to be causing setup.h to be in uapi despite seemingly being
+>> kernel internal only.
+> Check also include/uapi/asm-generic/Kbuild.asm.  That exports setup.h, whether
+> you think it should be exported or not.
+
+Correct. And if there's nothing to export in there the script will not
+generate the empty uapi sibling.
+
+>> Per you email from last week, When I ran the disintergrate-one.pl script
+>> myself I saw a whole bunch of empty UAPI files being generated with
+>> references in orig header.  I'm not sure what I'm doing wrong.
+> Can you give an example of such a header?
+
+tlb.h - despite having __KERNEL__ guard in orig file. Here's how I did it.
+
+1. In my orig tree, I created arch/arc/include/uapi/asm/Kbuild, with
+following 2 lines
+
+# UAPI Header export list
+include include/uapi/asm-generic/Kbuild.asm
+
+2.  ./disintegrate-one.pl arch/arc/include/asm/tlb.h
+arch/arc/include/uapi/asm/tlb.h
+
+This generates a empty uapi/asm/tlb.h, a reference to it in asm/tlb.h
+and is also exported from Kbuild.asm - all 3 of which are wrong.
+
+But now that I think about it - I was wrong to call this script for
+all/any arch headers. It should be done only for the ones in
+include/uapi/asm-generic/Kbuild.asm or any specific ones that arch wants
+to export (cachectl.h for our case).
+
 >
-> I will again look into the possibility of what you are requesting, however, the changes are extremely low if not zero that it will be accepted.
+>> For any ABI changes to headers per review of the new port on list
+>> (e.g. don't export pt_regs) would mean moving the code manually from uapi to
+>> orig header - right. And if the file becomes empty just nuke it completely.
+> You can't necessarily remove a UAPI header completely.  Userspace may depend
+> on its existence, even if it gets no content from there.
 >
-> Dave
+>> How do you reckon we go about fixing these. I don't want to bother you
+>> multiple times hence it would be best if I could reproduce this at my end.
+> The best advice I can give you without more specific examples is to compare
+> what's in your arch's headers to those of, say, hexagon or arm64.  Those are
+> recent additions and should be pretty clean as to what they contain.
 >
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Wednesday, November 07, 2012 4:16 PM
-> To: David Solda
-> Cc: Troy Abercrombia; Kamal Mostafa; Ozan Çaðlayan; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; customercare; mario_limonciello@dell.com
-> Subject: Re: Why Cypress does not upstream its trackpad driver?
->
-> Hi David,
->
-> On Wednesday, November 07, 2012 06:30:11 PM David Solda wrote:
->> Kamal,
->>
->> My name is Dave Solda and I would be happy to answer any other
->> questions that you have. Troy's response is correct however as in
->> order to support the default Linux mouse class, our firmware would
->> also have to be modified to do so, which cannot be done in system. Our
->> packet protocol maxes out at an 8 byte packet, which requires a change
->> to the Linux standard in this case.
-> I am unable to parse this... I do not believe anyone asks you to change your firmware and if your protocol needs 8 bytes to transmit device state - that's fine.
->
->> Our goal in working with canonical was to provide something on Linux
->> that would support multi-touch and not only have default single finger
->> movement supported.
->> If I am mistaken and he Linux kernel would accept this, then we can
->> proceed to upstream, however all indications we have is that this
->> patch would be rejected.  If you (or others on from the locus alias)
->> have any inputs, I would be happy to receive them.
-> This really depends on whether the changes to the psmouse framework make sense or not. Please start submitting patches for review/discussion and we can go from there.
->
-> Thanks.
->
-> --
-> Dmitry
->
-> This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> David
 
