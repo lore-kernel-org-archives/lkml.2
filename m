@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853Ab2KLAkH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 19:40:07 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:41760 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab2KLAkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 19:40:04 -0500
-Message-ID: <50A0454B.8070102@interlog.com>
-Date: Sun, 11 Nov 2012 19:39:39 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1751606Ab2KLBUb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 20:20:31 -0500
+Received: from tx2outboundsmtppool1.messaging.microsoft.com ([65.55.83.131]:57410
+	"EHLO TX2EHSNDR002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750897Ab2KLBUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 20:20:30 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-BigFish: VS48(zz98dI1432Izz1de0h1202h1d1ah1d2ahzz8275bh8275dh179766kjz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh)
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: 48
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 12 Nov 2012 09:46:16 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Devendra Naga <devendra.aaru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] pinctrl: mxs: Make PINCTRL_MXS select PINMUX &&
+ PINCONF
+Message-ID: <20121112014615.GA415@S2100-06.ap.freescale.net>
+References: <1352600482.23129.1.camel@phoenix>
+ <1352600562.23129.3.camel@phoenix>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Andy Grover <agrover@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: Re: scsi target, likely GPL violation
-References: <509A915B.30105@redhat.com> <1352626456.6524.46.camel@dabdike>
-In-Reply-To: <1352626456.6524.46.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1352600562.23129.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: <shawn.guo@linaro.org>
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-11-11 04:34 AM, James Bottomley wrote:
-> On Wed, 2012-11-07 at 08:50 -0800, Andy Grover wrote:
->> Nick,
->>
->> Your company appears to be shipping kernel features in RTS OS that are
->> not made available under the GPL, specifically support for the
->> EXTENDED_COPY and COMPARE_AND_WRITE SCSI commands, in order to claim
->> full Vmware vSphere 5 VAAI support.
->>
->> http://www.risingtidesystems.com/storage.html
->> http://www.linux-iscsi.org/wiki/VAAI
->>
->> Private emails to you and RTS CEO Marc Fleischmann have not elicited a
->> useful response.
->>
->> You are subsystem maintainer for the in-kernel SCSI target support
->> (drivers/target/*), and your company appears to be violating the GPL.
->> Please explain.
->
-> Can we please cool it with the inflammatory accusations.  Please
-> remember that statements which damage or seek to damage the reputation
-> of a company amount to libel even under US law ... and using phrases
-> like "appears to" doesn't shield you from this.
->
-> I also note that whatever their website says RTS OS isn't in VMware's
-> certified compatibility list:
->
-> http://www.vmware.com/resources/compatibility/pdf/vi_io_guide.pdf
->
-> Plus it's a grey area what you actually have to support to make that
-> list (especially as XCOPY has now been removed from SBC-3 in favour of
-> token copy), so I'd say that the chain of reasoning you've used to come
-> up with this hearsay allegation of copyright violation is tenuous at
-> best.
+On Sun, Nov 11, 2012 at 10:22:42AM +0800, Axel Lin wrote:
+> Then we can remove "select PINMUX && PINCONF" from PINCTRL_IMX{23,28}.
+> This simplifies the dependency.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/pinctrl/Kconfig |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+> index fc0f49a..d5c9431 100644
+> --- a/drivers/pinctrl/Kconfig
+> +++ b/drivers/pinctrl/Kconfig
+> @@ -99,18 +99,16 @@ config PINCTRL_MMP2
+>  	select PINCONF
+>  
+>  config PINCTRL_MXS
+> +	select PINMUX
+> +	select PINCONF
 
-The SCSI EXTENDED COPY command (also known by the abbreviation "XCOPY")
-is specified in the SPC (SCSI Primary Commands) series of standards, not
-the SBC (SCSI Block Commands) series. Yes, it has been enhanced in the
-SPC-4 drafts (what you term as "token copy") but as far as I can
-determine, still allows for the original EXTENDED COPY command usage.
-EXTENDED COPY was first standardized in SPC-2 (ANSI INCITS 351-2001) in
-2001. The most recent SPC standard is SPC-3 (ANSI INCITS 408-2005) and
-if VMWare don't mention some other SCSI standard or draft, then the
-SPC-3 specification of the EXTENDED COPY command should be the
-reference. And that is prior to the addition of the "token copy"
-functionality.
+Better have them after 'bool' below, otherwise,
 
-The latest released version of my sg3_utils package (1.34) contains
-a contributed sg_xcopy utility that invokes the SCSI EXTENDED COPY
-command. At this time it does not support the recently added "token
-copy" functionality.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-> Anybody who does enforcement will tell you that you begin with first
-> hand proof of a violation.  That means obtain the product and make sure
-> it's been modified and that a request for corresponding source fails.
-> In this case, since I presume Red Hat, as a RTS partner, has a bona fide
-> copy of the RTS OS, please verify it does indeed implement or issue the
-> commands which are not in the public git repository and that whoever
-> owns the copy makes a request for the source code.
->
-> I would really appreciate it if the next email I see from you on this
-> subject is either
->
->       1. Yes, I've got first hand proof of a GPL violation (in which case
->          we'll then move to seeing how we can remedy this) or
->       2. A genuine public apology for the libel, which I'll do my best to
->          prevail on RTS to accept.
-
-Sorry to add another category.
-
-Doug Gilbert
-
-> Because any further discussion of unsubstantiated allegations of this
-> nature exposes us all to jeopardy of legal sanction.
->
-> James
+>  	bool
+>  
+>  config PINCTRL_IMX23
+>  	bool
+> -	select PINMUX
+> -	select PINCONF
+>  	select PINCTRL_MXS
+>  
+>  config PINCTRL_IMX28
+>  	bool
+> -	select PINMUX
+> -	select PINCONF
+>  	select PINCTRL_MXS
+>  
+>  config PINCTRL_NOMADIK
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
