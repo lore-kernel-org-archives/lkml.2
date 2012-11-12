@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab2KLJJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 04:09:03 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:14969
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751974Ab2KLJJB (ORCPT
+	id S1752331Ab2KLJKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 04:10:32 -0500
+Received: from claranet-outbound-smtp05.uk.clara.net ([195.8.89.38]:35851 "EHLO
+	claranet-outbound-smtp05.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751502Ab2KLJK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 04:09:01 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zcb8kzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h1155h)
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <shawn.guo@linaro.org>
-CC: <liu.y.victor@gmail.com>, <fabio.estevam@freescale.com>,
-        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Liu Ying <Ying.Liu@freescale.com>
-Subject: [PATCH 1/1] ARM: dts: imx6q-sabresd: add volume up/down gpio keys
-Date: Mon, 12 Nov 2012 16:26:18 +0800
-Message-ID: <1352708778-25570-1-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 12 Nov 2012 04:10:29 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>, Eric Paris <eparis@redhat.com>,
+        Nepomuk Mailing List <nepomuk@kde.org>,
+        Linux Filesystem Development Mailinglist 
+	<linux-fsdevel@vger.kernel.org>
+Subject: Re: Better support for (desktop) file search / indexing applications
+Date: Mon, 12 Nov 2012 09:10:15 +0000
+Message-ID: <10569573.iu1a6eiZCO@deuteros>
+User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <201211101753.46211.Martin@lichtvoll.de>
+References: <201211011352.42476.Martin@lichtvoll.de> <6898338.Kmf2pUBmi1@deuteros> <201211101753.46211.Martin@lichtvoll.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add volume up/down gpio keys support in imx6q-sabresd.dts.
+On Saturday 10 November 2012 17:53:45 Martin Steigerwald wrote:
+> Still fanotify needs root access and thus this would need a daemon running
+> as root and some policy kit stuff to access it and in case of mount point
+> watches robust and secure code so that each user may only see his/her own
+> results.
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
- arch/arm/boot/dts/imx6q-sabresd.dts |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+Perhaps then also extend fanotify to support user watches, from the top of my 
+head I can't think of a reason it would be very difficult to implement. But it 
+has been a few years since I actively worked with that code.
 
-diff --git a/arch/arm/boot/dts/imx6q-sabresd.dts b/arch/arm/boot/dts/imx6q-sabresd.dts
-index e596c28..a424025 100644
---- a/arch/arm/boot/dts/imx6q-sabresd.dts
-+++ b/arch/arm/boot/dts/imx6q-sabresd.dts
-@@ -38,6 +38,8 @@
- 				hog {
- 					pinctrl_hog: hoggrp {
- 						fsl,pins = <
-+							1004 0x80000000 /* MX6Q_PAD_GPIO_4__GPIO_1_4 */
-+							1012 0x80000000 /* MX6Q_PAD_GPIO_5__GPIO_1_5 */
- 							1402 0x80000000	/* MX6Q_PAD_NANDF_D0__GPIO_2_0 */
- 							1410 0x80000000	/* MX6Q_PAD_NANDF_D1__GPIO_2_1 */
- 							1418 0x80000000	/* MX6Q_PAD_NANDF_D2__GPIO_2_2 */
-@@ -73,4 +75,20 @@
- 			};
- 		};
- 	};
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		volume-up {
-+			label = "Volume Up";
-+			gpios = <&gpio1 4 0>;
-+			linux,code = <115>; /* KEY_VOLUMEUP */
-+		};
-+
-+		volume-down {
-+			label = "Volume Down";
-+			gpios = <&gpio1 5 0>;
-+			linux,code = <114>; /* KEY_VOLUMEDOWN */
-+		};
-+	};
- };
--- 
-1.7.1
+Since you are not the only group having issues with fanotify feature set I can 
+see this mini-project (together with extensions from me previous reply) being 
+useful. It is also better to evolve it than neglect due a few shortcomings and 
+then in a few years someone will come up with something completely new and 
+then we will have yet another notification system.
 
+Tvrtko
 
