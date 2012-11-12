@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab2KLMa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:30:28 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:39636 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab2KLMa0 convert rfc822-to-8bit (ORCPT
+	id S1751660Ab2KLMb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:31:29 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62971 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2KLMb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:30:26 -0500
+	Mon, 12 Nov 2012 07:31:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1211121314270.27271@pobox.suse.cz>
-References: <1352711769-28911-1-git-send-email-jslaby@suse.cz>
-	<CAMuHMdUEW9K6cfpcUNphte_VzBCL_Oa_od3892DQ3QbX5xMMnA@mail.gmail.com>
-	<alpine.LNX.2.00.1211121314270.27271@pobox.suse.cz>
-Date: Mon, 12 Nov 2012 13:30:25 +0100
-X-Google-Sender-Auth: g_Yzqtu9cdkNCiyCaijYLNWiMcA
-Message-ID: <CAMuHMdWq9S9oO+2OH6oiAogFR+JJxnxrtGoMp+uMm-qXCLr55A@mail.gmail.com>
-Subject: Re: [PATCH] HID: microsoft, do not use compound literal
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+In-Reply-To: <1352709418-28996-2-git-send-email-joseph.gasparakis@intel.com>
+References: <1352709418-28996-1-git-send-email-joseph.gasparakis@intel.com> <1352709418-28996-2-git-send-email-joseph.gasparakis@intel.com>
+From: saeed bishara <saeed.bishara@gmail.com>
+Date: Mon, 12 Nov 2012 14:31:05 +0200
+Message-ID: <CAMAG_ecK1eUEcCD49DxSzCEqEHwd8qzJPvs3uK+FBW2MMwkV8w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] net: Add support for hardware-offloaded encapsulation
+To: Joseph Gasparakis <joseph.gasparakis@intel.com>
+Cc: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry@broadcom.com,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 1:15 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 12 Nov 2012, Geert Uytterhoeven wrote:
->> On Mon, Nov 12, 2012 at 10:16 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->> > In patch "HID: microsoft: fix invalid rdesc for 3k kbd" I fixed
->> > support for MS 3k keyboards. However the added check using memcmp and
->> > a compound statement breaks build on architectures where memcmp is a
->> > macro with parameters. The error looks there like (m68k-linux-gnu-gcc
->> > 4.1.2):
->> > hid-microsoft.c:51:18: error: macro "memcmp" passed 6 arguments, but takes just 3
->> > hid-microsoft.c: In function ‘ms_report_fixup’:
->> > drivers/hid/hid-microsoft.c:50: error: ‘memcmp’ undeclared (first use in this function)
->> > hid-microsoft.c:50: error: (Each undeclared identifier is reported only once
->> > /hid-microsoft.c:50: error: for each function it appears in.)
->>
->> The above 3 lines were actually from a build with a different config
->> --- which I didn't
->> notice at that time --- where <linux/string.h> was not indirectly included.
->
-> Still the patch needs string.h include addition, otherwise you still are
-> able to come up with m68k config that doesn't build, do I understand it
-> correctly?
+> diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
+> index 5ac3212..6dd59a5 100644
+> --- a/include/linux/netdev_features.h
+> +++ b/include/linux/netdev_features.h
 
-No.
-
-My comment was purely cosmetic, as it applies to the quoted compiler error
-messages only.
-
-Your latest version doesn't use memcmp() anymore, so I think there's no need to
-include <linux/string.h> anymore.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>         NETIF_F_RXCSUM_BIT,             /* Receive checksumming offload */
+> +       NETIF_F_RXCSUM_ENC_BIT,         /* Receive checksuming offload */
+> +                                       /* for encapsulation */
+in the future more features will be needed for tunneled packets (tso,
+rxhash, etc..)
+so I think it would make sense to add a new features variable for
+tunneled packets, and the enum above will be used as is.
+for example, if the driver supports checksum offloading for
+encapsulated packets, then it will set the RXCSUM_BIT in that
+variable:
+netdev->encap_hw_features = NETIF_F_RXCSUM_BIT;
+saeed
