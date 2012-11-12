@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2KLQnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:43:13 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36002 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2KLQnJ (ORCPT
+	id S1753857Ab2KLQnW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:43:22 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59355 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab2KLQnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:43:09 -0500
-From: Joonsoo Kim <js1304@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH] powerpc: change free_bootmem() to kfree()
-Date: Tue, 13 Nov 2012 01:40:33 +0900
-Message-Id: <1352738433-31085-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 12 Nov 2012 11:43:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352734564.2262.7.camel@sauron.fi.intel.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-75-git-send-email-keescook@chromium.org>
+	<1352734564.2262.7.camel@sauron.fi.intel.com>
+Date: Mon, 12 Nov 2012 08:43:19 -0800
+X-Google-Sender-Auth: C-tV27AJmYg_Qmx6Bz8w4xHyoNo
+Message-ID: <CAGXu5jJ2XMB+hhzH0MFY3=tkF+iFY8srbKbvy6RMxdrnb0-FYA@mail.gmail.com>
+Subject: Re: [PATCH 074/193] drivers/mtd/devices: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: dedekind1@gmail.com
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Richard Weinberger <richard@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit ea96025a('Don't use alloc_bootmem() in init_IRQ() path')
-changed alloc_bootmem() to kzalloc(),
-but missed to change free_bootmem() to kfree().
-So correct it.
+On Mon, Nov 12, 2012 at 7:36 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Tue, 2012-10-23 at 13:02 -0700, Kees Cook wrote:
+>> This config item has not carried much meaning for a while now and is
+>> almost always enabled by default. As agreed during the Linux kernel
+>> summit, remove it.
+>>
+>> CC: David Woodhouse <dwmw2@infradead.org>
+>> CC: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+>> CC: Robert Jarzmik <robert.jarzmik@free.fr>
+>> CC: Fabio Estevam <fabio.estevam@freescale.com>
+>> CC: Richard Weinberger <richard@nod.at>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> Will this stuff be merged in one go or you want it to go via subsystems?
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Stephen Rothwell asked that subsystem maintainers carry the patches to
+make it easier to do merges, but in the cases where that's not
+possible or a maintainer would like me to carry it, I've been putting
+them into my linux-next tree. It's up to you; if you take it into your
+tree, I'll drop it from mine. Just let me know either way. :)
 
-diff --git a/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c b/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
-index 328d221..74861a7 100644
---- a/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
-+++ b/arch/powerpc/platforms/82xx/pq2ads-pci-pic.c
-@@ -16,7 +16,6 @@
- #include <linux/spinlock.h>
- #include <linux/irq.h>
- #include <linux/types.h>
--#include <linux/bootmem.h>
- #include <linux/slab.h>
- 
- #include <asm/io.h>
-@@ -149,7 +148,7 @@ int __init pq2ads_pci_init_irq(void)
- 	priv->regs = of_iomap(np, 0);
- 	if (!priv->regs) {
- 		printk(KERN_ERR "Cannot map PCI PIC registers.\n");
--		goto out_free_bootmem;
-+		goto out_free_kmalloc;
- 	}
- 
- 	/* mask all PCI interrupts */
-@@ -171,9 +170,8 @@ int __init pq2ads_pci_init_irq(void)
- 
- out_unmap_regs:
- 	iounmap(priv->regs);
--out_free_bootmem:
--	free_bootmem((unsigned long)priv,
--	             sizeof(struct pq2ads_pci_pic));
-+out_free_kmalloc:
-+	kfree(priv);
- 	of_node_put(np);
- out_unmap_irq:
- 	irq_dispose_mapping(irq);
+Thanks!
+
+-Kees
+
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
