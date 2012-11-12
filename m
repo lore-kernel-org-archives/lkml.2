@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab2KLOWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:22:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56495 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab2KLOV6 (ORCPT
+	id S1753370Ab2KLOWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:22:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48898 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab2KLOWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:21:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [RFC PATCH v1 31/31] ARC: [plat-arcfpga] defconfig
-Date: Mon, 12 Nov 2012 14:21:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <201211071406.58304.arnd@arndb.de> <50A10540.3080005@imgtec.com>
-In-Reply-To: <50A10540.3080005@imgtec.com>
+	Mon, 12 Nov 2012 09:22:48 -0500
+Date: Mon, 12 Nov 2012 15:22:33 +0100
+From: Robert Richter <rric@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH 0/4] perf, amd: Enable AMD family 15h northbridge counters
+Message-ID: <20121112142233.GA24433@rric.localhost>
+References: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
+ <20121110115027.GC2777@rric.localhost>
+ <20121111184426.GA5415@jshin-Toonie>
+ <CABPqkBQn82ga0vKOn8bZTQD6H_mk4zmA+LFgNVRb7BjAdHZjXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211121421.52020.arnd@arndb.de>
-X-Provags-ID: V02:K0:0fHzedtN5o2Zod5qqLj1Jvcic/MUFxWkgTyEtmKzTFG
- hhnqzdOZKc2/IijcrHyedPt4U6D5rw48kH7fW00gYnpDElyX1H
- AQ8bbt3WpWceopcvfw9rWekAotxCBFwWb35viJwXMdFP5KJiU1
- KpQawCW09g42mNE4TJHASo22h+r0j7A/gxg90lYWvdzhV0UUcs
- t9AqQk9N7P8yw5Uhg1GtUc27PfwU8Ln3dQz05I7oFO1LkTeecy
- MDbaxtalnu6ldtrIvqpykN82IjCUpzrmr+a8GdXnb4gIMtlrik
- xsvxjRd6GuHGTlOAeRGo71NUNVI/a0yV+OQVdnFc5EOI5rCQQn
- RbK9+ao9Bfr24WhLwGDk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQn82ga0vKOn8bZTQD6H_mk4zmA+LFgNVRb7BjAdHZjXg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 November 2012, James Hogan wrote:
-> > 
-> > Please use "make defconfig" to generate minimal defconfig files, instead of
-> > copying the entire file here.
+Stephane,
+
+On 12.11.12 13:24:38, Stephane Eranian wrote:
+> Anybody from AMD or formerly @ AMD care to submit a libpfm4 patch
+> to add the Fam15th NB events?
 > 
-> I think you mean "make savedefconfig"? (I think "make defconfig" loads
-> the default defconfig).
+> I'd like to avoid having to type them in manually.
 
-Yes, that's right. Sorry for the typo.
+Suravee may probably help you here.
 
-	Arnd
+HTH
+
+-Robert
