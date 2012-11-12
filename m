@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab2KLEuG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 23:50:06 -0500
-Received: from c62.cesmail.net ([216.154.195.54]:39303 "EHLO c62.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab2KLEuF convert rfc822-to-8bit (ORCPT
+	id S1751007Ab2KLFOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 00:14:19 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53752 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2KLFOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 23:50:05 -0500
-Message-ID: <20121111235001.a3gqhaijmec0gk0g-cebfxv@webmail.spamcop.net>
-Date: Sun, 11 Nov 2012 23:50:01 -0500
-From: Pavel Roskin <proski@gnu.org>
-To: Pavel Roskin <proski@gnu.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov
-Subject: Re: Bisected regression: iterate_fd() selinux change affects flash
-	plugin
-References: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
-In-Reply-To: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
+	Mon, 12 Nov 2012 00:14:18 -0500
+X-AuditID: 9c930197-b7b45ae000000e9e-74-50a085a87628
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Feng Tang <feng.tang@intel.com>
+Subject: [PATCH] perf tools: Fix compile error on NO_NEWT=1 build
+Date: Mon, 12 Nov 2012 14:14:00 +0900
+Message-Id: <1352697240-422-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Pavel Roskin <proski@gnu.org>:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> Hello, Al!
->
-> I have noticed that Mozilla Firefox gets stuck for seconds or minutes
-> on some sites, in particular on Facebook with Linux 3.7-rc1 and newer
-> mainline kernels.  Disabling flash plugin fixes the delays.
->
-> This is a Fedora 17 system with SELinux enabled, on x86_64
-> architecture, with all updates, with LXDE desktop.  It's not the Fedora
-> 16 system I mentioned before, it has never had LXDE login problems due
-> to replace_fd().
->
-> Bisecting lead me to the patch that introduced iterate_fd():
->
-> commit c3c073f808b22dfae15ef8412b6f7b998644139a
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Tue Aug 21 22:32:06 2012 -0400
->
->     new helper: iterate_fd()
->
->     iterates through the opened files in given descriptor table,
->     calling a supplied function; we stop once non-zero is returned.
->     Callback gets struct file *, descriptor number and const void *
->     argument passed to iterator.  It is called with files->file_lock
->     held, so it is not allowed to block.
->
->     tty_io, netprio_cgroup and selinux flush_unauthorized_files()
->     converted to its use.
->
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->
-> I have found that reverting the changes to security/selinux/hooks.c is
-> sufficient to restore the correct behavior.
->
-> -- 
-> Regards,
-> Pavel Roskin
+    CC builtin-annotate.o
+In file included from util/evsel.h:10:0,
+                 from util/evlist.h:8,
+                 from builtin-annotate.c:20:
+util/hist.h: In function ‘script_browse’:
+util/hist.h:198:45: error: unused parameter ‘script_opt’ [-Werror=unused-parameter]
+cc1: all warnings being treated as errors
+make: *** [builtin-annotate.o] Error 1
+make: *** Waiting for unfinished jobs....
 
-I've made a bugzilla entry for the bug and put a preliminary patch there.
-https://bugzilla.kernel.org/show_bug.cgi?id=50401
+Cc: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 1278c2c72a96..8b091a51e4a2 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -195,7 +195,7 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self
+ 	return 0;
+ }
+ 
+-static inline int script_browse(const char *script_opt)
++static inline int script_browse(const char *script_opt __maybe_unused)
+ {
+ 	return 0;
+ }
 -- 
-Regards,
-Pavel Roskin
+1.7.11.7
+
