@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab2KLNBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:01:49 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34096 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2KLNBr (ORCPT
+	id S1752620Ab2KLNFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:05:01 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:42458 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab2KLNE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:01:47 -0500
+	Mon, 12 Nov 2012 08:04:58 -0500
+Message-ID: <50A0F3F8.6040000@monom.org>
+Date: Mon, 12 Nov 2012 14:04:56 +0100
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <AEFB103E-C71E-4A3C-B946-19ABD9025A17@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
- <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
- <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com>
- <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
- <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com>
- <509A3595.7050600@ti.com> <A6697FB9-3614-4027-A71B-59C7556005BF@antoniou-consulting.com>
- <CACxGe6uXyTt_kr4=0ob+-ubgV9he+SfobLwux6X0m6y7yQU7EA@mail.gmail.com> <AEFB103E-C71E-4A3C-B946-19ABD9025A17@antoniou-consulting.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 12 Nov 2012 13:01:27 +0000
-X-Google-Sender-Auth: jwZD6yCAW9I66Ra1qD_ft3vTNtc
-Message-ID: <CACxGe6sXnhFpGWG3Ak431=dnu0p-kFPLVDMfWLeyWE-ETeykKQ@mail.gmail.com>
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Benoit Cousson <b-cousson@ti.com>, Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        fweisbec@gmail.com, Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 1/9 v3] cgroup: add cgroup_subsys->post_create()
+References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-2-git-send-email-tj@kernel.org> <20121108190715.GD9672@htj.dyndns.org> <509CE472.9040504@monom.org> <20121109172211.GB2711@htj.dyndns.org>
+In-Reply-To: <20121109172211.GB2711@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 11:34 AM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> Hi Grant,
+Hi Tejun,
+
+On 09.11.2012 18:22, Tejun Heo wrote:
+> Hey, Daniel.
 >
-> On Nov 9, 2012, at 10:33 PM, Grant Likely wrote:
->
->> On Wed, Nov 7, 2012 at 11:02 AM, Pantelis Antoniou
->> <panto@antoniou-consulting.com> wrote:
->>> On Nov 7, 2012, at 11:19 AM, Benoit Cousson wrote:
->>>> Maybe some extra version match table can just be passed during the board machine_init
->>>>
->>>>      of_platform_populate(NULL, omap_dt_match_table, NULL, NULL, panda_version_match_table);
->>>>
+> On Fri, Nov 09, 2012 at 12:09:38PM +0100, Daniel Wagner wrote:
+>> On 08.11.2012 20:07, Tejun Heo wrote:> Subject: cgroup: add
+>> cgroup_subsys->post_create()
 >>>
->>> Would we need explicit of_platform_populate calls if we have node modification notifiers?
->>> In that case the notifier would pick it up automatically, and can do the per
->>> version matching internally.
+>>> Currently, there's no way for a controller to find out whether a new
+>>> cgroup finished all ->create() allocatinos successfully and is
+>>> considered "live" by cgroup.
 >>
->> There still needs to be something to register "everything below this
->> node is interesting" which is exactly what of_platform_populate() does
->> now. I see the notifiers being used by the of_platform_populate
->> backend to know when nodes have been created (or destroyed).
->>
->> g.
+>> I'd like add hierarchy support to net_prio and the first thing to
+>> do is to get rid of get_prioidx(). It looks like it would be nice to
 >
-> I see. So of_platform_populate could just register the notifier and
-> not do the tree walk itself. Perhaps the name is a bit misleading then?
+> Ooh, I'm already working on it.  I *think* I should be able to post
+> the patches later today or early next week.
 
-Kind of, yes. of_platform_populate() would still have the same effect
-that it does now except that it would also pay attention to additions
-and removals from the DT nodes it is interested in. This would work
-cleanly enough for node additions/removals, but it wouldn't process
-changes to properties on existing nodes.
+No problem. I didn't spend too much time in writing the patch. Getting
+rid of get_prioidx() was simple. I just wanted to help out, but then
+I might to slow to keep up with you :)
 
-g.
+Though I have a question on the patch you are writing. When you disable
+broken_hierarchy for the networking controllers, are you also 
+considering to disable them on the root cgroup? Currently both
+net_prio and net_cls will do work on the root cgroup. I think for
+harmonizing the behavior or all controllers this should also be
+disabled.
+
+>> be able to use use_id and post_create() for this but as I read the
+>> code this might not work because the netdev might access resources
+>> allocated between create() and post_create(). So my question is
+>> would it make sense to move
+>>
+>> cgroup_create():
+>>
+>> 		if (ss->use_id) {
+>> 			err = alloc_css_id(ss, parent, cgrp);
+>> 			if (err)
+>> 				goto err_destroy;
+>> 		}
+>>
+>> part before create() or add some protection between create() and
+>> post_create() callback in net_prio. I have a patch but I see
+>> I could drop it completely if post_create() is there.
+>
+> Glauber had about similar question about css_id and I need to think
+> more about it but currently I think I want to phase out css IDs.  It's
+> an id of the wrong thing (CSSes don't need IDs, cgroups do) and
+> unnecessarily duplicates its own hierarchy when the hierarchy of
+> cgroups already exists.  Once memcontrol moves away from walking using
+> css_ids, I *think* I'll try to kill it.
+>
+> I'll add cgroup ID (no hierarchy funnies, just a single ida allocated
+> number) so that it can be used for cgroup indexing.  Glauber, that
+> should solve your problem too, right?
+
+net_prio doesn't have any particular requirements on the indexing, 
+unless there is one. So a global ida would work for net_prio.
+
+cheers,
+daniel
+
