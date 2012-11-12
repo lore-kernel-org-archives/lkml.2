@@ -1,228 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab2KLV2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:28:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36153 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807Ab2KLV2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:38 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-keystone@list.ti.com>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH] spi: davinci: add OF support for the spi controller
-Date: Mon, 12 Nov 2012 16:28:22 -0500
-Message-ID: <1352755702-21488-1-git-send-email-m-karicheri2@ti.com>
+	id S932074Ab2KLV2v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:28:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45214 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab2KLV2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 16:28:49 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: Stefan Beller <stefanbeller@googlemail.com>,
+        John Johansen <john.johansen@canonical.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [ 3.5.yuz extended stable] Patch "eCryptfs: Copy up POSIX ACL and read-only flags from lower" has been added to staging queue
+Date: Mon, 12 Nov 2012 19:28:44 -0200
+Message-Id: <1352755724-15946-1-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds OF support to DaVinci SPI controller to configure platform
-data through device bindings.
+This is a note to let you know that I have just added a patch titled
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+    eCryptfs: Copy up POSIX ACL and read-only flags from lower
+
+to the linux-3.5.y-queue branch of the 3.5.yuz extended stable tree 
+which can be found at:
+
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
+
+If you, or anyone else, feels it should not be added to the 3.5
+Linux kernel, or for any feedback related to it, please reply to
+this email. For more information on extended stable, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Herton
+
+------
+
+>From e6513e9a9c77188fa2def9b5f4400353cbb07739 Mon Sep 17 00:00:00 2001
+From: Tyler Hicks <tyhicks@canonical.com>
+Date: Mon, 11 Jun 2012 15:42:32 -0700
+Subject: [PATCH] eCryptfs: Copy up POSIX ACL and read-only flags from lower
+ mount
+
+commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
+
+When the eCryptfs mount options do not include '-o acl', but the lower
+filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
+flipped on in the eCryptfs super block flags. This flag is what the VFS
+checks in do_last() when deciding if the current umask should be applied
+to a newly created inode's mode or not. When a default POSIX ACL mask is
+set on a directory, the current umask is incorrectly applied to new
+inodes created in the directory. This patch ignores the MS_POSIXACL flag
+passed into ecryptfs_mount() and sets the flag on the eCryptfs super
+block depending on the flag's presence on the lower super block.
+
+Additionally, it is incorrect to allow a writeable eCryptfs mount on top
+of a read-only lower mount. This missing check did not allow writes to
+the read-only lower mount because permissions checks are still performed
+on the lower filesystem's objects but it is best to simply not allow a
+rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
+mount is valid and still allowed.
+
+https://launchpad.net/bugs/1009207
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Stefan Beller <stefanbeller@googlemail.com>
+Cc: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- .../devicetree/bindings/spi/spi-davinci.txt        |   50 ++++++++++++
- drivers/spi/spi-davinci.c                          |   80 +++++++++++++++++++-
- 2 files changed, 126 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
+ fs/ecryptfs/main.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-davinci.txt b/Documentation/devicetree/bindings/spi/spi-davinci.txt
-new file mode 100644
-index 0000000..0369369
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-davinci.txt
-@@ -0,0 +1,50 @@
-+Davinci SPI controller device bindings
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 6895493..df217dc 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -505,7 +505,6 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 		goto out;
+ 	}
+
+-	s->s_flags = flags;
+ 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
+ 	if (rc)
+ 		goto out1;
+@@ -541,6 +540,15 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 	}
+
+ 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
 +
-+Required properties:
-+- #address-cells: number of cells required to define a chip select
-+	address on the SPI bus.
-+- #size-cells: should be zero.
-+- compatible:
-+	- "ti,davinci-spi"
-+- reg: Offset and length of SPI controller register space
-+- ti,davinci-spi-version: SPI version :- "1.0" or "2.0"
-+- ti,davinci-spi-num-cs: Number of chip selects
-+- ti,davinci-spi-intr-line: interrupt line used to connect the SPI
-+	IP to the ARM interrupt controller withn the SoC. Possible values
-+	are 0 and 1.
-+- interrupts: interrupt number offset at the irq parent
-+- clocks: spi clk phandle
-+
-+Example of a NOR flash slave device (n25q032) connected to DaVinci
-+SPI controller device over the SPI bus.
-+
-+spi:spi0@20BF0000 {
-+	#address-cells			= <1>;
-+	#size-cells			= <0>;
-+	compatible			= "ti,davinci-spi";
-+	reg				= <0x20BF0000 0x1000>;
-+	ti,davinci-spi-version		= "1.0";
-+	ti,davinci-spi-num-cs		= <4>;
-+	ti,davinci-spi-intr-line	= <0>;
-+	interrupts			= <338>;
-+	clocks				= <&clkspi>;
-+
-+	flash: n25q032@0 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "st,m25p32";
-+		spi-max-frequency = <25000000>;
-+		reg = <0>;
-+
-+		partition@0 {
-+			label = "u-boot-spl";
-+			reg = <0x0 0x80000>;
-+			read-only;
-+		};
-+
-+		partition@1 {
-+			label = "test";
-+			reg = <0x80000 0x380000>;
-+		};
-+	};
-+};
-diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
-index 71a6423..0f50319 100644
---- a/drivers/spi/spi-davinci.c
-+++ b/drivers/spi/spi-davinci.c
-@@ -26,6 +26,9 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/spi_bitbang.h>
- #include <linux/slab.h>
-@@ -788,6 +791,69 @@ rx_dma_failed:
- 	return r;
- }
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id davinci_spi_of_match[] = {
-+	{
-+		.compatible = "ti,davinci-spi",
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, davini_spi_of_match);
-+
-+/**
-+ * spi_davinci_get_pdata - Get platform_data from DTS binding
-+ * @pdev: ptr to platform data
-+ *
-+ * Parses and populate platform_data from device tree bindings.
-+ *
-+ * NOTE: Not all platform_data params are supported currently.
-+ */
-+static struct davinci_spi_platform_data
-+	*spi_davinci_get_pdata(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct davinci_spi_platform_data *pdata;
-+	unsigned int num_cs, intr_line = 0;
-+	const char *version;
-+
-+	if (pdev->dev.platform_data)
-+		return pdev->dev.platform_data;
-+
-+	if (!pdev->dev.of_node)
-+		return NULL;
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	pdev->dev.platform_data = pdata;
-+	if (!pdata)
-+		return NULL;
-+
-+	/* default version is 1.0 */
-+	pdata->version = SPI_VERSION_1;
-+	of_property_read_string(node, "ti,davinci-spi-version", &version);
-+	if (!strcmp(version, "2.0"))
-+		pdata->version = SPI_VERSION_2;
-+
-+	/*
-+	 * default num_cs is 1 and all chipsel are internal to the chip
-+	 * indicated by chip_sel being NULL. GPIO based CS is not
-+	 * supported yet in DT bindings.
++	/**
++	 * Set the POSIX ACL flag based on whether they're enabled in the lower
++	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
++	 * Allow a ro eCryptfs mount even when the lower mount is rw.
 +	 */
-+	num_cs = 1;
-+	of_property_read_u32(node, "ti,davinci-spi-num-cs", &num_cs);
-+	pdata->num_chipselect = num_cs;
-+	of_property_read_u32(node, "ti,davinci-spi-intr-line", &intr_line);
-+	pdata->intr_line = intr_line;
-+	return pdev->dev.platform_data;
-+}
-+#else
-+#define davinci_spi_of_match NULL
-+static struct davinci_spi_platform_data
-+	*spi_davinci_get_pdata(struct platform_device *pdev)
-+{
-+	return pdev->dev.platform_data;
-+}
-+#endif
++	s->s_flags = flags & ~MS_POSIXACL;
++	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
 +
- /**
-  * davinci_spi_probe - probe function for SPI Master Controller
-  * @pdev: platform_device structure which contains plateform specific data
-@@ -801,16 +867,16 @@ rx_dma_failed:
-  */
- static int __devinit davinci_spi_probe(struct platform_device *pdev)
- {
-+	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
-+	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
-+	struct davinci_spi_platform_data *pdata;
- 	struct spi_master *master;
- 	struct davinci_spi *dspi;
--	struct davinci_spi_platform_data *pdata;
- 	struct resource *r, *mem;
--	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
--	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
- 	int i = 0, ret = 0;
- 	u32 spipc0;
- 
--	pdata = pdev->dev.platform_data;
-+	pdata = spi_davinci_get_pdata(pdev);
- 	if (pdata == NULL) {
- 		ret = -ENODEV;
- 		goto err;
-@@ -851,7 +917,11 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
- 		goto release_region;
- 	}
- 
-+	/* first get irq through resource table, else try of irq method */
- 	dspi->irq = platform_get_irq(pdev, 0);
-+	if (dspi->irq <= 0)
-+		dspi->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-+
- 	if (dspi->irq <= 0) {
- 		ret = -EINVAL;
- 		goto unmap_io;
-@@ -875,6 +945,7 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
- 	}
- 	clk_prepare_enable(dspi->clk);
- 
-+	master->dev.of_node = pdev->dev.of_node;
- 	master->bus_num = pdev->id;
- 	master->num_chipselect = pdata->num_chipselect;
- 	master->setup = davinci_spi_setup;
-@@ -1010,6 +1081,7 @@ static struct platform_driver davinci_spi_driver = {
- 	.driver = {
- 		.name = "spi_davinci",
- 		.owner = THIS_MODULE,
-+		.of_match_table = davinci_spi_of_match,
- 	},
- 	.probe = davinci_spi_probe,
- 	.remove = __devexit_p(davinci_spi_remove),
--- 
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
+--
 1.7.9.5
 
