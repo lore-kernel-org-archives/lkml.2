@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2KLRIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:08:42 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:51933 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab2KLRIj (ORCPT
+	id S1753263Ab2KLRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:10:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51601 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2KLRK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:08:39 -0500
-Date: Mon, 12 Nov 2012 14:08:33 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 01/12] perf tools: Keep group information
-Message-ID: <20121112170833.GE18978@ghostprotocols.net>
-References: <1352479414-2324-1-git-send-email-namhyung@kernel.org>
- <1352479414-2324-2-git-send-email-namhyung@kernel.org>
+	Mon, 12 Nov 2012 12:10:58 -0500
+Message-ID: <50A12D9D.5030300@wwwdotorg.org>
+Date: Mon, 12 Nov 2012 10:10:53 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352479414-2324-2-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com> <50A128AF.1010803@wwwdotorg.org> <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com>
+In-Reply-To: <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Nov 10, 2012 at 01:43:23AM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On 11/12/2012 10:00 AM, Pantelis Antoniou wrote:
+> Hi Stephen,
 > 
-> Add a few of group-related field in struct perf_{evlist,evsel} so that
-> the group information in a evlist can be known easily.  It only counts
-> groups which have more than 1 members since leader-only groups are
-> treated as non-group events.
+> On Nov 12, 2012, at 6:49 PM, Stephen Warren wrote:
+> 
+>> On 11/12/2012 04:23 AM, Pantelis Antoniou wrote:
+>>> Hi Grant,
+>>>
+>>> Sorry for the late comments, travelling...
+>>>
+>>> On Nov 9, 2012, at 6:28 PM, Grant Likely wrote:
+>> ...
+>>>> *with the caveat that not all types of changes are a good idea and we
+>>>> may disallow. For example, is changing properties in existing nodes a
+>>>> good idea?
+>>>
+>>> Yes, changing properties is something that we need. One such change is
+>>> the change of the bus controller 'status' properties to enabled upon
+>>> insertion of a child device node, and change back to 'on-demand' when
+>>> all the child device nodes are gone.
+>>
+>> Do we actually need to do that?
+>>
+>> From the base-board perspective, consider an SoC's I2C channel that is
+>> routed to the child board connector. The routing to the connector is
+>> always present on the base board. Only the presence (or lack thereof) of
+>> devices on that I2C bus is influenced by whether a child board is
+>> connected or not, and the design of the child board. Therefore, wouldn't
+>> it make sense for the base board to always enable the I2C controller?
+>>
+>> That would make it easier for someone to hook up a couple wires to the
+>> I2C pins and use utilities such as i2cget/set to communicate with it,
+>> without going through the whole process of creating a DT to represent
+>> the device. This could speed up simple hacking/prototyping and allow it
+>> to proceed in a less structured way.
+> 
+> Unfortunately that doesn't work for the beaglebone (am355x) and a large
+> number of general purpose SoCs.
+> 
+> What is different between general purpose SoCs and vertical market SoCs
+> (i.e. OMAP) is that the design of the the latter is for devices where
+> pretty much all the interfaces are expected to be active at the same time.
+> 
+> General purpose SoCs put more peripherals in the SoC, but due to packaging
+> considerations (and price), the peripheral pins are highly muxed.
+> 
+> So the i2c bus pins are shared with the LCD controller are shared with the
+> analog input and so on.
+> 
+> It is impossible (and on top of that really dangerous) to enable peripheral
+> blocks without knowing what's connected on the other side.
+> 
+> In a nutshell, for the bone and similar devices, probing with the devices
+> enabled doesn't work.
 
-We don't need to add a group_idx, we can get it using evsel->idx -
-evsel->leader->idx, interdiff of this patch to what I think is
-equivalent:
+I think this can be solved by deferring the pinmux to the .dts for the
+child board. Presumably the I2C controller node can be enabled just
+fine, but the I2C signals not actually routed out to any pins on the SoC
+until the specific pinmux configuration is loaded.
 
-diff -u b/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
---- b/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -111,18 +111,16 @@
- void __perf_evlist__set_leader(struct list_head *list)
- {
- 	struct perf_evsel *evsel, *leader;
--	int count = 0;
- 
- 	leader = list_entry(list->next, struct perf_evsel, node);
-+	evsel = list_entry(list->prev, struct perf_evsel, node);
- 	leader->leader = NULL;
-+	leader->nr_members = evsel->idx - leader->idx + 1;
- 
- 	list_for_each_entry(evsel, list, node) {
--		if (evsel != leader) {
-+		if (evsel != leader)
- 			evsel->leader = leader;
--			evsel->group_idx = count++;
--		}
- 	}
--	leader->nr_members = count;
- }
- 
- void perf_evlist__set_leader(struct perf_evlist *evlist)
-diff -u b/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
---- b/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -72,12 +72,9 @@
- 	bool 			needs_swap;
- 	/* parse modifier helper */
- 	int			exclude_GH;
-+	int			nr_members;
- 	struct perf_evsel	*leader;
- 	char			*group_name;
--	union {
--		int		nr_members;
--		int		group_idx;
--	};
- };
- 
- struct cpu_map;
-@@ -237,2 +234,11 @@
- }
-+
-+static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
-+{
-+	if (perf_evsel__is_group_leader(evsel)
-+		return 0;
-+
-+	return evsel->idx - evsel->leader->idx;
-+}
-+
- #endif /* __PERF_EVSEL_H */
+But your explanation still feels a little odd; is it really true on the
+BeagleBone, you can either use LCD for graphics /or/ you can use the I2C
+controller to communicate with a cape? I certainly fully understand that
+from a SoC's perspective (and soc.dtsi perspective) you can't just
+enable everything due to pinmux constraints, but it seems that once you
+get to the level of a particular board design, the designer has made
+those trade-offs and so you know which specific combination is to be
+selected.
