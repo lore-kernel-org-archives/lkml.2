@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab2KLTS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 14:18:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50746 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2KLTS1 (ORCPT
+	id S1752869Ab2KLT3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 14:29:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41120 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab2KLT3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 14:18:27 -0500
-Date: Mon, 12 Nov 2012 11:18:13 -0800
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-04aa530ec04f61875b99c12721162e2964e3318c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        sankara.m@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sankara.m@gmail.com, tglx@linutronix.de
-In-Reply-To: <alpine.LFD.2.02.1209041738200.2754@ionos>
-References: <alpine.LFD.2.02.1209041738200.2754@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Always force thread affinity
-Git-Commit-ID: 04aa530ec04f61875b99c12721162e2964e3318c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 12 Nov 2012 14:29:51 -0500
+Date: Mon, 12 Nov 2012 19:27:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Arnd Bergmann <arnd@arndb.de>,
+        Rob Clark <rob@ti.com>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Message-ID: <20121112192727.GB28341@n2100.arm.linux.org.uk>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 12 Nov 2012 11:18:19 -0800 (PST)
+In-Reply-To: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  04aa530ec04f61875b99c12721162e2964e3318c
-Gitweb:     http://git.kernel.org/tip/04aa530ec04f61875b99c12721162e2964e3318c
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 3 Nov 2012 11:52:09 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 12 Nov 2012 20:07:18 +0100
+On Fri, Nov 09, 2012 at 03:17:33PM -0600, Rob Clark wrote:
+> From: Rob Clark <rob@ti.com>
+> 
+> A new atomic modeset/pageflip ioctl being developed in DRM requires
+> get_user() to work for 64bit types (in addition to just put_user()).
 
-genirq: Always force thread affinity
+NAK.
 
-Sankara reported that the genirq core code fails to adjust the
-affinity of an interrupt thread in several cases:
+(I did write a better email explaining all the ins and outs of why this
+won't work and why 64-bit get_user isn't possible, but my editor crapped
+out and lost all that well written message; I don't fancy typing it all
+out again.)
 
- 1) On request/setup_irq() the call to setup_affinity() happens before
-    the new action is registered, so the new thread is not notified.
+Nevertheless,
+int test_ptr(unsigned int **v, unsigned int **p)
+{
+        return get_user(*v, p);
+}
 
- 2) For secondary shared interrupts nothing notifies the new thread to
-    change its affinity.
+produces a warning, and you can't get away from that if you stick 64-bit
+support into get_user().
 
- 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
-    the thread either.
-
-Fix this by setting the thread affinity flag right on thread creation
-time. This ensures that under all circumstances the thread moves to
-the right place. Requires a check in irq_thread_check_affinity for an
-existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
-
-Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c |   23 +++++++++++++++++++++--
- 1 files changed, 21 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 1cbd572..35c70c9 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -732,6 +732,7 @@ static void
- irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- {
- 	cpumask_var_t mask;
-+	bool valid = true;
- 
- 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
- 		return;
-@@ -746,10 +747,18 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- 	}
- 
- 	raw_spin_lock_irq(&desc->lock);
--	cpumask_copy(mask, desc->irq_data.affinity);
-+	/*
-+	 * This code is triggered unconditionally. Check the affinity
-+	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
-+	 */
-+	if (desc->irq_data.affinity)
-+		cpumask_copy(mask, desc->irq_data.affinity);
-+	else
-+		valid = false;
- 	raw_spin_unlock_irq(&desc->lock);
- 
--	set_cpus_allowed_ptr(current, mask);
-+	if (valid)
-+		set_cpus_allowed_ptr(current, mask);
- 	free_cpumask_var(mask);
- }
- #else
-@@ -954,6 +963,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		 */
- 		get_task_struct(t);
- 		new->thread = t;
-+		/*
-+		 * Tell the thread to set its affinity. This is
-+		 * important for shared interrupt handlers as we do
-+		 * not invoke setup_affinity() for the secondary
-+		 * handlers as everything is already set up. Even for
-+		 * interrupts marked with IRQF_NO_BALANCE this is
-+		 * correct as we want the thread to move to the cpu(s)
-+		 * on which the requesting code placed the interrupt.
-+		 */
-+		set_bit(IRQTF_AFFINITY, &new->thread_flags);
- 	}
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
+Sorry, 64-bit get_user() is a no-no.
