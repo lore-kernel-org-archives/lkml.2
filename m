@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab2KLOEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:04:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55496 "EHLO mx1.redhat.com"
+	id S1753252Ab2KLOET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:04:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039Ab2KLOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751628Ab2KLOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 09:04:18 -0500
-Message-ID: <50A0FC41.5020802@redhat.com>
-Date: Mon, 12 Nov 2012 08:40:17 -0500
+Message-ID: <50A0FC2F.9030207@redhat.com>
+Date: Mon, 12 Nov 2012 08:39:59 -0500
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
@@ -15,10 +15,10 @@ To: Michel Lespinasse <walken@google.com>
 CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
         Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: ensure safe rb_subtree_gap update when removing
- VMA
-References: <1352721091-27022-1-git-send-email-walken@google.com> <1352721091-27022-3-git-send-email-walken@google.com>
-In-Reply-To: <1352721091-27022-3-git-send-email-walken@google.com>
+Subject: Re: [PATCH 1/3] mm: ensure safe rb_subtree_gap update when inserting
+ new VMA
+References: <1352721091-27022-1-git-send-email-walken@google.com> <1352721091-27022-2-git-send-email-walken@google.com>
+In-Reply-To: <1352721091-27022-2-git-send-email-walken@google.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -44,14 +44,14 @@ On 11/12/2012 06:51 AM, Michel Lespinasse wrote:
 > before any rbtree insertion or erase, with the possible exception that
 > the node being erased doesn't need to have an up to date rb_subtree_gap.
 >
-> This change: during VMA removal, remove VMA from the rbtree before we
-> remove it from the linked list. The implication is the next vma's
-> rb_subtree_gap value becomes stale when next->vm_prev is updated,
-> and we want to make sure vma_rb_erase() runs before there are any
-> such stale rb_subtree_gap values in the rbtree.
+> This change: during vma insertion, make sure to update the rb_subtree_gap
+> values for both the current and next vmas prior to rebalancing the rbtree
+> to account for the just-inserted vma.
 >
-> (I don't know of a reproduceable test case for this particular issue)
+> (Thanks to Sasha Levin for uncovering the problem and to Hugh Dickins
+> for coming up with a simpler test case)
 >
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
 > Signed-off-by: Michel Lespinasse <walken@google.com>
 
 Reviewed-by: Rik van Riel <riel@redhat.com>
