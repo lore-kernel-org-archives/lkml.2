@@ -1,70 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab2KLMuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:50:54 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:57576 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751386Ab2KLMux convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:50:53 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1352666833.20434.5@driftwood>
-Date: Mon, 12 Nov 2012 14:50:47 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ABAD0875-A618-405D-954F-CD76F09DDF04@antoniou-consulting.com>
-References: <1352666833.20434.5@driftwood>
-To: Rob Landley <rob@landley.net>
-X-Mailer: Apple Mail (2.1085)
+	id S1752570Ab2KLNAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:00:12 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38015 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab2KLNAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 08:00:11 -0500
+Message-ID: <50A0F2D0.2050308@gmail.com>
+Date: Mon, 12 Nov 2012 21:00:00 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        Shan Wei <shanwei88@gmail.com>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH cleanup RFC] ftrace: kill unused and puzzled sample code
+ in ftrace.h
+References: <50949FC9.6050202@gmail.com>
+In-Reply-To: <50949FC9.6050202@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob.
 
-On Nov 11, 2012, at 10:47 PM, Rob Landley wrote:
+ping...................
 
->              On 11/09/2012 10:28:59 AM, Grant Likely wrote:
->> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> > On 11/05/2012 01:40 PM, Grant Likely wrote:
->> I'm not actually opposed to it, but it needs to be done in an elegant
->> way. The DT data model already imposes more of a conceptual learning
->> curve than I wish it did and I don't want to make that worse with a
->> versioning model that is difficult to get ones head around.
+Shan Wei said, at 2012/11/3 12:38:
+> From: Shan Wei <davidshan@tencent.com>
 > 
-> Speaking of which...
+> When doing per-cpu helper optimizing work, find that this code is so puzzled.
+> 1. It's mark as comment text, maybe a sample function for guidelines 
+>    or a todo work.
+> 2. But, this sample code is odd where struct perf_trace_buf is nonexistent.
+>    commit ce71b9 delete struct perf_trace_buf definition.
 > 
-> I want to poke at board emulation in qemu, from scratch. Specifically, I want to start with an unpopulated board (just the processor), add a block of physical memory and a serial device, and boot an initramfs in there with stdin/stdout. Then I want to incrementally add an RTC, network card, and three block devices.
+>    Author: Frederic Weisbecker <fweisbec@gmail.com>
+>    Date:   Sun Nov 22 05:26:55 2009 +0100
 > 
-> I'd like to define this board by giving qemu and the kernel the same device tree they can parse, and I'd like to _build_ this device tree so I understand what's in it. I'd like to repeat this exercize for arm, mips, ppc, x86, x86-64, sparc, sh4, and maybe other boards.
+>    tracing: Use the perf recursion protection from trace event
 > 
-> And I'd like to write up an article on doing it as a learning exercise.
-> 
-> Last time I checked, doing this wasn't possible. (qemu couldn't define a board by parsing a device tree, the kernel used the device tree as a guideline but it only really read data the drivers you linked in were expecting, the only documentation about what any of the nodes were was was read the other device trees as examples or read the source code of the drivers looking for data in the tree...)
-> 
-> Is it a more realistic project now? If so, where would I start? (Once upon a time I read the booting-without-of document, back when it lived in the ppc directory. It didn't really say what should go in any of the nodes.)
-> 
-> Rob
+> Is it necessary to keep there?
+> just compile test. 
 
-It should be possible when the stuff we're talking about is ready.
-
-I don't know what you'll find is broken during the exercise, but I guess
-your article is going to be entertaining at least :)
-
-Regards
-
--- Pantelis
+> 
+> 
+> 
+> Signed-off-by: Shan Wei <davidshan@tencent.com>
+> ---
+>  include/trace/ftrace.h |   73 ------------------------------------------------
+>  1 files changed, 0 insertions(+), 73 deletions(-)
+> 
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index a763888..4f993c2 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -620,79 +620,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+>  
+>  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+>  
+> -/*
+> - * Define the insertion callback to perf events
+> - *
+> - * The job is very similar to ftrace_raw_event_<call> except that we don't
+> - * insert in the ring buffer but in a perf counter.
+> - *
+> - * static void ftrace_perf_<call>(proto)
+> - * {
+> - *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
+> - *	struct ftrace_event_call *event_call = &event_<call>;
+> - *	extern void perf_tp_event(int, u64, u64, void *, int);
+> - *	struct ftrace_raw_##call *entry;
+> - *	struct perf_trace_buf *trace_buf;
+> - *	u64 __addr = 0, __count = 1;
+> - *	unsigned long irq_flags;
+> - *	struct trace_entry *ent;
+> - *	int __entry_size;
+> - *	int __data_size;
+> - *	int __cpu
+> - *	int pc;
+> - *
+> - *	pc = preempt_count();
+> - *
+> - *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
+> - *
+> - *	// Below we want to get the aligned size by taking into account
+> - *	// the u32 field that will later store the buffer size
+> - *	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),
+> - *			     sizeof(u64));
+> - *	__entry_size -= sizeof(u32);
+> - *
+> - *	// Protect the non nmi buffer
+> - *	// This also protects the rcu read side
+> - *	local_irq_save(irq_flags);
+> - *	__cpu = smp_processor_id();
+> - *
+> - *	if (in_nmi())
+> - *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
+> - *	else
+> - *		trace_buf = rcu_dereference_sched(perf_trace_buf);
+> - *
+> - *	if (!trace_buf)
+> - *		goto end;
+> - *
+> - *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
+> - *
+> - * 	// Avoid recursion from perf that could mess up the buffer
+> - * 	if (trace_buf->recursion++)
+> - *		goto end_recursion;
+> - *
+> - * 	raw_data = trace_buf->buf;
+> - *
+> - *	// Make recursion update visible before entering perf_tp_event
+> - *	// so that we protect from perf recursions.
+> - *
+> - *	barrier();
+> - *
+> - *	//zero dead bytes from alignment to avoid stack leak to userspace:
+> - *	*(u64 *)(&raw_data[__entry_size - sizeof(u64)]) = 0ULL;
+> - *	entry = (struct ftrace_raw_<call> *)raw_data;
+> - *	ent = &entry->ent;
+> - *	tracing_generic_entry_update(ent, irq_flags, pc);
+> - *	ent->type = event_call->id;
+> - *
+> - *	<tstruct> <- do some jobs with dynamic arrays
+> - *
+> - *	<assign>  <- affect our values
+> - *
+> - *	perf_tp_event(event_call->id, __addr, __count, entry,
+> - *		     __entry_size);  <- submit them to perf counter
+> - *
+> - * }
+> - */
+>  
+>  #ifdef CONFIG_PERF_EVENTS
+>  
+> 
 
