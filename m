@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab2KLQPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:15:54 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33746 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab2KLQPx (ORCPT
+	id S1752072Ab2KLQT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:19:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33032 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2KLQTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:15:53 -0500
-Message-ID: <50A12062.4070205@linux.vnet.ibm.com>
-Date: Mon, 12 Nov 2012 21:44:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 12 Nov 2012 11:19:25 -0500
+Message-ID: <50A12182.90305@kernel.dk>
+Date: Mon, 12 Nov 2012 09:19:14 -0700
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: SrinivasPandruvada <srinivas.pandruvada@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, mjg59@srcf.ucam.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, Arjan van de Ven <arjan@linux.intel.com>,
-        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-pm@vger.kernel.org, Ankita Garg <gargankita@gmail.com>,
-        amit.kachhap@linaro.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        thomas.abraham@linaro.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        andi@firstfloor.org
-Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
- support Memory Power Management
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <loom.20121109T172910-394@post.gmane.org>
-In-Reply-To: <loom.20121109T172910-394@post.gmane.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.8
+References: <20121109145529.GB23023@phenom.dumpdata.com>
+In-Reply-To: <20121109145529.GB23023@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12111216-3568-0000-0000-000002C052F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srinivas,
-
-It looks like your email did not get delivered to the mailing
-lists (and the people in the CC list) properly. So quoting your
-entire mail as-it-is here. And thanks a lot for taking a look
-at this patchset!
-
-Regards,
-Srivatsa S. Bhat
-
-On 11/09/2012 10:18 PM, SrinivasPandruvada wrote:
-> I did like this implementation and think it is valuable.
-> I am experimenting with one of our HW. This type of partition does help in
-> saving power. We believe we can save up-to 1W power per DIM with the help
-> of some HW/BIOS changes. We are only talking about content preserving memory,
-> so we don't have to be 100% correct.
-> In my experiments, I tried two methods:
-> - Similar to approach suggested by Mel Gorman. I have a special sticky
-> migrate type like CMA.
-> - Buddy buckets: Buddies are organized into memory region aware buckets.
-> During allocation it prefers higher order buckets. I made sure that there is
-> no affect of my change if there are no power saving memory DIMs. The advantage
-> of this bucket is that I can keep the memory in close proximity for a related
-> task groups by direct hashing to a bucket. The free list if organized as two
-> dimensional array with bucket and migrate type for each order.
+On 2012-11-09 07:55, Konrad Rzeszutek Wilk wrote:
+> Hey Jens,
 > 
-> In both methods, currently reclaim is targetted to be done by a sysfs interface
-> similar to memory compaction for a node allowing user space to initiate reclaim. 
+> Please git pull the following branch:
 > 
-> Thanks,
-> Srinivas Pandruvada
-> Open Source Technology Center,
-> Intel Corp.
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.8
 > 
+> which has a new feature of the blk[back|front] driver - it is called 'feature-persistent'.
+> Roger and Oliver patch says:
+> "  This patch implements persistent grants for the xen-blk{front,back}
+>     mechanism. The effect of this change is to reduce the number of unmap
+>     operations performed, since they cause a (costly) TLB shootdown. This
+>     allows the I/O performance to scale better when a large number of VMs
+>     are performing I/O.
+>     
+>     Previously, the blkfront driver was supplied a bvec[] from the request
+>     queue. This was granted to dom0; dom0 performed the I/O and wrote
+>     directly into the grant-mapped memory and unmapped it; blkfront then
+>     removed foreign access for that grant. The cost of unmapping scales
+>     badly with the number of CPUs in Dom0. An experiment showed that when
+>     Dom0 has 24 VCPUs, and guests are performing parallel I/O to a
+>     ramdisk, the IPIs from performing unmap's is a bottleneck at 5 guests
+>     (at which point 650,000 IOPS are being performed in total). If more
+>     than 5 guests are used, the performance declines. By 10 guests, only
+>     400,000 IOPS are being performed.
+>     
+>     This patch improves performance by only unmapping when the connection
+>     between blkfront and back is broken.
+> "
+> 
+> Note: You might get a conflict in the common.h file. It should
+> be fairly easy to fix it - it should end up looking as this:
+> 
+> 160         /* Cached size parameter. */
+> 161         sector_t                size;
+> 162         unsigned int            flush_support:1;
+> 163         unsigned int            discard_secure:1;
+> 164         unsigned int            feature_gnt_persistent:1;
+> 165         unsigned int            overflow_max_grants:1;
+> 166 };
+> 
+> Thanks!
+
+Thanks, pulled. No conflict observed, it merged cleanly.
+
+-- 
+Jens Axboe
 
