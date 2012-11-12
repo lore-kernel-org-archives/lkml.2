@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab2KLPMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:12:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16183 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2KLPMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:12:21 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [patch,v3 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
-References: <1352488687-19935-1-git-send-email-jmoyer@redhat.com>
-	<1352488687-19935-5-git-send-email-jmoyer@redhat.com>
-	<509E178B.6090601@acm.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 12 Nov 2012 09:25:05 -0500
-In-Reply-To: <509E178B.6090601@acm.org> (Bart Van Assche's message of "Sat, 10
-	Nov 2012 09:59:55 +0100")
-Message-ID: <x49zk2mkif2.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753648Ab2KLPMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:12:37 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51599 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab2KLPMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 10:12:35 -0500
+Message-ID: <50A111DD.6080504@gmail.com>
+Date: Mon, 12 Nov 2012 16:12:29 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH] ARM: EXYNOS: use BUG_ON where possible
+References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-5-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1352406191-14303-5-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bart Van Assche <bvanassche@acm.org> writes:
-
-> On 11/09/12 20:18, Jeff Moyer wrote:
->> -	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
->> +	cmd = kmem_cache_alloc_node(pool->cmd_slab,
->> +				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
->> +				    node);
+Op 08-11-12 21:23, Sasha Levin schreef:
+> Just use BUG_ON() instead of constructions such as:
 >
-> Hello Jeff,
+> 	if (...)
+> 		BUG()
 >
-> Is it necessary to add __GFP_ZERO here ? And if so, why ?
+> A simplified version of the semantic patch that makes this transformation
+> is as follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression e;
+> @@
+> - if (e) BUG();
+> + BUG_ON(e);
+> // </smpl>
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  arch/arm/mach-exynos/common.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+> index 4e577f6..6a55a5a 100644
+> --- a/arch/arm/mach-exynos/common.c
+> +++ b/arch/arm/mach-exynos/common.c
+> @@ -465,10 +465,8 @@ static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int i
+>  	else
+>  		max_nr = EXYNOS4_MAX_COMBINER_NR;
+>  
+> -	if (combiner_nr >= max_nr)
+> -		BUG();
+> -	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
+> -		BUG();
+> +	BUG_ON(combiner_nr >= max_nr);
+> +	BUG_ON(irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0);
+Is it really a good idea to put functions that perform work in a BUG_ON?
+I don't know, but for some reason it just feels wrong. I'd expect code to
+compile fine if BUG_ON was a noop, so doing verification calls only, not
+actual work..
 
-Hi, Bart,
-
-The code used to do zeroing, so I just kept that aspect the same.  There
-is no kmem_cache_zalloc_node, and it didn't seem worth adding one.
-
-Cheers,
-Jeff
+~Maarten
