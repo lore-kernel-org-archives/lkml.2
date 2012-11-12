@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2KLTnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 14:43:25 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:55452 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab2KLTnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 14:43:24 -0500
-From: Sonny Rao <sonnyrao@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Olof Johansson <olofj@chromium.org>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, Aaron Durbin <adurbin@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Puneet Kumar <puneetster@chromium.org>
-Subject: [PATCH] mm: Fix calculation of dirtyable memory
-Date: Mon, 12 Nov 2012 11:35:28 -0800
-Message-Id: <1352748928-738-1-git-send-email-sonnyrao@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <20121109023638.GA11105@localhost>
-References: <20121109023638.GA11105@localhost>
+	id S1753113Ab2KLTrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 14:47:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576Ab2KLTrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 14:47:13 -0500
+Message-ID: <50A15233.10007@redhat.com>
+Date: Mon, 12 Nov 2012 14:46:59 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jason Gao <pkill.2012@gmail.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources
+ for SR-IOV)
+References: <201211081915083774239@gmail.com> <509B962C.6070002@gmail.com> <C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com> <CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com> <CAErSpo4xn9t=4yXGLdPQMtUJF=n38tYrMutAoj7NCsLUzQEbcg@mail.gmail.com>
+In-Reply-To: <CAErSpo4xn9t=4yXGLdPQMtUJF=n38tYrMutAoj7NCsLUzQEbcg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The system uses global_dirtyable_memory() to calculate
-number of dirtyable pages/pages that can be allocated
-to the page cache.  A bug causes an underflow thus making
-the page count look like a big unsigned number.  This in turn
-confuses the dirty writeback throttling to aggressively write
-back pages as they become dirty (usually 1 page at a time).
+On 11/09/2012 10:26 AM, Bjorn Helgaas wrote:
+> [+ linux-pci, Yinghai]
+>
+> On Thu, Nov 8, 2012 at 8:59 PM, Jason Gao<pkill.2012@gmail.com>  wrote:
+>>> The BIOS in your machine doesn't support SR-IOV.  You'll need to ask the manufacturer for a BIOS upgrade, if in fact one is available.  Sometimes they're not.
+>>
+>> very thanks Greg,my server Dell R710 with latest BIOS version and
+>> option for SR-IOV(SR-IOV Global Enable->Enabled)  opened,I'm confused
+>> that Does R710 provide full support for SR-IOV, kernel or  ixgbe
+>> driver's bug? but I'm not sure where the problem lies,anyone has any
+>> experience about this?   .
+>
+> Linux normally uses the resource assignments done by the BIOS, but it
+> is possible for the kernel to reassign those.  We don't have good
+> automatic support for that yet, but on a recent upstream kernel, you
+> can try "pci=realloc".  I doubt this option is in CentOS 6.3, though.
+>
+Try moving the device into a different slot.
+You may be trying it in a non-ARI slot in the 710; that is a problem
+in RHEL6 (needing to realloc bus &/or mem-space).
+A non-ARI slot will want to use one bus number per VF.... which will
+be problematic.
+I know I've seen ixgbe's (& their vfs's) working on a dell 710;
+but they may also be one of those systems that has a slot off the ich10
+with no ARI support.
 
-Fix is to ensure there is no underflow while doing the math.
-
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
----
- v2: added apkm's suggestion to make the highmem calculation better
- v3: added Fengguang Wu's suggestions fix zone_dirtyable_memory() and
-     (offlist mail) to use max() in global_dirtyable_memory()
- mm/page-writeback.c |   25 ++++++++++++++++++++-----
- 1 files changed, 20 insertions(+), 5 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..f9efbe8 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
- 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
- 	}
- 	/*
-+	 * Unreclaimable memory (kernel memory or anonymous memory
-+	 * without swap) can bring down the dirtyable pages below
-+	 * the zone's dirty balance reserve and the above calculation
-+	 * will underflow.  However we still want to add in nodes
-+	 * which are below threshold (negative values) to get a more
-+	 * accurate calculation but make sure that the total never
-+	 * underflows.
-+	 */
-+	if ((long)x < 0)
-+		x = 0;
-+
-+	/*
- 	 * Make sure that the number of highmem pages is never larger
- 	 * than the number of the total dirtyable memory. This can only
- 	 * occur in very strange VM situations but we want to make sure
-@@ -222,8 +234,8 @@ static unsigned long global_dirtyable_memory(void)
- {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
--	    dirty_balance_reserve;
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x -= max(x, dirty_balance_reserve);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-@@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memory(struct zone *zone)
- 	 * highmem zone can hold its share of dirty pages, so we don't
- 	 * care about vm_highmem_is_dirtyable here.
- 	 */
--	return zone_page_state(zone, NR_FREE_PAGES) +
--	       zone_reclaimable_pages(zone) -
--	       zone->dirty_balance_reserve;
-+	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-+		zone_reclaimable_pages(zone);
-+
-+	/* don't allow this to underflow */
-+	nr_pages -= max(nr_pages, zone->dirty_balance_reserve);
-+	return nr_pages;
- }
- 
- /**
--- 
-1.7.7.3
+> If an upstream kernel with "pci=realloc" still doesn't work, please
+> post the entire dmesg log.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
