@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2KLN40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 08:56:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37841 "EHLO mx1.redhat.com"
+	id S1753124Ab2KLN6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 08:58:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:7004 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab2KLN4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 08:56:24 -0500
-Date: Mon, 12 Nov 2012 14:55:46 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Irina Tirdea <irina.tirdea@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Vinson Lee <vlee@twitter.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, acme@ghostprotocols.net,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-Message-ID: <20121112135545.GA4595@krava.brq.redhat.com>
-References: <1352497390-17716-1-git-send-email-acme@infradead.org>
- <87390fo9jn.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87390fo9jn.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751628Ab2KLN6m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 08:58:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,762,1344236400"; 
+   d="scan'208";a="247605502"
+Message-ID: <1352728712.11158.291.camel@smile>
+Subject: Re: [PATCH] dw_dmac: absence of pdata isn't critical when autocfg
+ is set
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Date: Mon, 12 Nov 2012 15:58:32 +0200
+In-Reply-To: <CAOh2x=m9TyMOhh=nCD0nznEBy6jN7eUddp7hLT7TnCf0xM07dA@mail.gmail.com>
+References: <1352719406-26405-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=m9TyMOhh=nCD0nznEBy6jN7eUddp7hLT7TnCf0xM07dA@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 11:10:52AM +0900, Namhyung Kim wrote:
-> Hi Arnaldo,
+On Mon, 2012-11-12 at 19:24 +0530, viresh kumar wrote: 
+> On Mon, Nov 12, 2012 at 4:53 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
 > 
-> On Fri,  9 Nov 2012 18:42:49 -0300, Arnaldo Carvalho de Melo wrote:
-> > Hi Ingo,
+> >  static int __devinit dw_probe(struct platform_device *pdev)
+> >  {
+> >         struct dw_dma_platform_data *pdata;
+> > @@ -1604,9 +1610,6 @@ static int __devinit dw_probe(struct platform_device *pdev)
+> >         if (!pdata)
+> >                 pdata = dw_dma_parse_dt(pdev);
 > >
-> > 	Please consider pulling.
+> > -       if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
+> > -               return -EINVAL;
+> > -
+> >         io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >         if (!io)
+> >                 return -EINVAL;
+> > @@ -1622,6 +1625,12 @@ static int __devinit dw_probe(struct platform_device *pdev)
+> >         dw_params = dma_read_byaddr(regs, DW_PARAMS);
+> >         autocfg = dw_params >> DW_PARAMS_EN & 0x1;
 > >
-> > - Arnaldo
-> >
-> > The following changes since commit 8dfec403e39b7c37fd6e8813bacc01da1e1210ab:
-> >
-> >   perf tests: Removing 'optional' field (2012-11-05 14:03:59 -0300)
-> >
-> > are available in the git repository at:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> >
-> > for you to fetch changes up to 27f94d52394003d444a383eaf8d4824daf32432e:
-> >
-> >   tools lib traceevent: Use 'const' in variables pointing to const strings (2012-11-09 17:42:47 -0300)
-> >
-> > ----------------------------------------------------------------
-> > perf/core improvements and fixes:
-> >
-> > . Add a 'link' method for hists, so that we can have the leader with
-> >   buckets for all the entries in all the hists.  This new method
-> >   is now used in the default 'diff' output, making the sum of the 'baseline'
-> >   column be 100%, eliminating blind spots. Now we need to use this
-> >   for 'diff' with > 2 perf.data files and for multi event 'report' and
-> >   'annotate'.
+> > +       if (!pdata && autocfg)
+> > +               pdata = &dw_dma_pdata;
 > 
-> I'm not sure it can be used for group report at least in its current
-> form.  IIUC it connects multiple hist entries using a list head and
-> create a dummy entry in the leader if need be.  But it didn't handle
-> non-leader entries so it's hard to tell which is which if less entries
-> are present only.  For example consider following case:
-> 
-> 	leader		member1		member2
-> 	A		A		A
-> 	B
-> 			C
-> 					D
-> 
-> where leader, member1 and member2 are evsel/hists and A, B, C and D are
-> hist entries.  After 'linking' the entries the leader will have
-> following linkage:
-> 
-> 	leader
-> 	A	->	A	->	A
-> 	B
-> 	C (dummy) ->	C
-> 	D (dummy)		->	D
-> 
-> In this case, for entry A the leader can determine which entry came from
-> which hists by looking its order in the list.  For entry B the leader
-> can use zero value for them since the list is empty.  However for
-> entries C and D, it cannot know which one is the right hists unless it
-> records a hist index or creates dummy entry and insert it in a correct
-> order (looks far from an optimal solution).  Am I missing something?
+> Allocate it dynamically to support multiple controllers with different
+> configuration
+> in a SoC.
 
-there's hists pointer in hist_entry if that's what you look for
+Like you did for device tree? No problem, but here is the question: what
+the default values should be and where we can get them?
 
-jirka
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
