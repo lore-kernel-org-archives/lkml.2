@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab2KLXyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:54:19 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48941 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab2KLXyS (ORCPT
+	id S1754136Ab2KLXzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:55:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41256 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab2KLXzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:54:18 -0500
-Message-ID: <50A18C0F.9000604@us.ibm.com>
-Date: Mon, 12 Nov 2012 15:53:51 -0800
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 12 Nov 2012 18:55:03 -0500
+Date: Mon, 12 Nov 2012 23:53:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Message-ID: <20121112235348.GD28341@n2100.arm.linux.org.uk>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <20121112192727.GB28341@n2100.arm.linux.org.uk> <CAF6AEGu4L+ukxhMBLYK3d2g4CBBXi6o5nN_wXvakZCT8qMfSEA@mail.gmail.com> <20121112230819.GC28341@n2100.arm.linux.org.uk> <CAF6AEGtLKjJ=BfBnOq+oE6cgneF5YqsbYqNnCPrz4sTFRzdibg@mail.gmail.com>
 MIME-Version: 1.0
-To: David Henningsson <david.henningsson@canonical.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        "Rostedt, Steven" <rostedt@goodmis.org>
-Subject: Re: getnstimeofday stuck for several milliseconds?
-References: <50977DF5.60703@canonical.com>
-In-Reply-To: <50977DF5.60703@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111223-7408-0000-0000-00000A31C5D1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF6AEGtLKjJ=BfBnOq+oE6cgneF5YqsbYqNnCPrz4sTFRzdibg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 12:51 AM, David Henningsson wrote:
-> Hi LKML,
->
-> I'm trying to make audio more useful in everyday low-latency scenarios 
-> such as gaming or VOIP.
->
-> While doing so, I ran the wakeup_rt tracer, to track the time from 
-> PulseAudio requesting wakeup (through hrtimers), to the thread 
-> actually running.
->
-> I'm not sure how much overhead added by the wakeup_rt tracer itself, 
-> but I got 9 ms on one machine and 20 ms on another, which I consider 
-> to be quite a lot even for a standard kernel (i e without RT or other 
-> special configuration).
->
-> The 9 ms example is pastebinned at [1], and here's where we get stuck 
-> for most of the time:
->
->   <idle>-0       3d... 1105us : ktime_get_real <-intel_idle
->   <idle>-0       3d... 1106us!: getnstimeofday <-ktime_get_real
->   <idle>-0       3d... 7823us : ktime_get_real <-intel_idle
->
->   <idle>-0       3d... 7890us : ktime_get_real <-intel_idle
->   <idle>-0       3d... 7891us!: getnstimeofday <-ktime_get_real
->   <idle>-0       3d... 9023us : ktime_get_real <-intel_idle
->
-Its been awhile since I looked at wakeup_rt trace output, but that looks 
-more like ~6.7ms and ~1.2ms latencies, not 9ms (are you adding these 
-together?).
+On Mon, Nov 12, 2012 at 05:33:41PM -0600, Rob Clark wrote:
+> I'm sort of thinking maybe we want to change 'switch (sizeof(*(__p)))'
+> with 'switch (sizeof(typeof(x)))' in case someone ignores the compiler
+> warning when they try something like:
 
-> It seems to me that sometimes we get stuck for several milliseconds 
-> inside the getnstimeofday function - this was seen on both the 9 ms 
-> and the 20 ms trace. This looks like a bug to me, and as I'm not sure 
-> on how to best debug it further, and therefore I'm asking for help (or 
-> a bug fix!) here.
->
-> For reference, the 9 ms trace was from a ~2 year old laptop (core i3 
-> cpu) running 3.7rc2 vanilla/mainline kernel, and the 20 ms trace was 
-> from an ~1 year old Atom-based machine running the 3.2-ubuntu kernel. 
-> While tracing was enabled, I was running a libSDL game for a minute or 
-> two.
->
-> Thanks in advance for looking into this, and let me know if you need 
-> further information, or anything else I can do to help sorting this 
-> one out.
+Definitely not.  Ttype of access is controlled by the pointer, not by the
+size of what it's being assigned to.  Switching that around is likely to
+break stuff hugely.  Consider this:
 
-Hrmm.. So 6.7ms is still a long time.
+	unsigned char __user *p;
+	int val;
 
-Looking at the trace you posted here: http://pastebin.se/6iMRdDfR
+	get_user(val, p);
 
-The trace also looks like its the cpuidle to interrupt transition where 
-you're seeing this.  I sort of wonder if its mis-attributing the idle 
-time to the getnstimeofday()? Mainly because you don't seem to spend 
-much time in intel_idle() otherwise.
+If the pointer type is used to determine the access size, a char will be
+accessed.  This is legal - because we end up assigning an unsigned character
+to an int.
 
-Or maybe we're both misreading it and its saying there's a delay between 
-the first ktime_get_real() from intel_idle() to the second call of 
-ktime_get_real(), between which we're in deep idle (which would make sense)?
+If the size of the destination was used, we'd access an int instead, which
+is larger than the pointer, and probably the wrong thing to do anyway.
 
-Because unless the timekeeping lock is getting held for a long time, I 
-don't know why else you'd see such long delays at getnstimeofday().
+Think of get_user(a, b) as being a special accessor having the ultimate
+semantics of: "a = *b;" but done in a safe way with error checking.
 
-Cc'ing Steven to see if he can't help understand whats going on here.
+>    uint32_t x;
+>    uint64_t *p = ...;
+>    get_user(x, p);
+> 
+> that was my one concern about 'register typeof(x) __r2 ...', but I
+> think just changing the switch condition is enough.  But maybe good to
+> have some eyes on in case there is something else I'm not thinking of.
 
-thanks
--john
+And what should happen in the above is exactly the same as what happens
+if you do:
 
+	x = *p;
 
+with those types.  For ARM, that would be a 64-bit access (if the
+compiler decides not to optimize away the upper 32-bit access) followed
+by a narrowing cast down to 32-bit.  With get_user() of course, there's
+no option not to optimize it away.
 
+However, this _does_ reveal a bug with your approach.  With sizeof(*p)
+being 8, and the type of __r2 being a 32-bit quantity, the compiler will
+choose the 64-bit accessor, which will corrupt r3 - and the compiler
+won't know that r3 has been corrupted.
+
+That's too unsafe.
+
+I just tried a variant of your approach, but got lots of warnings again:
+	register unsigned long long __r2 asm("r2");
+	__get_user_x(__r2, __p, __e, 8, "lr");
+	x = (typeof(*(__p))) ((typeof(x))__r2);
+because typeof(x) in the test_ptr() case ends up being a pointer itself.
+
+So, back to the drawing board, and I think back to the original position
+of "we don't support this".
