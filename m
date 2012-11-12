@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2KLVI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:08:58 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:36184 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab2KLVI4 (ORCPT
+	id S1753529Ab2KLVIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:08:55 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:33934 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab2KLVIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:08:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121112161348.GA7022@jshin-Toonie>
-References: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
-	<20121110115027.GC2777@rric.localhost>
-	<20121111184426.GA5415@jshin-Toonie>
-	<CABPqkBQn82ga0vKOn8bZTQD6H_mk4zmA+LFgNVRb7BjAdHZjXg@mail.gmail.com>
-	<20121112142233.GA24433@rric.localhost>
-	<20121112161348.GA7022@jshin-Toonie>
-Date: Mon, 12 Nov 2012 22:08:54 +0100
-Message-ID: <CABPqkBSEzAD00mFdxSMy-vPvMfuO=9-OBxMhwooF9-kebwu_YQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] perf, amd: Enable AMD family 15h northbridge counters
-From: Stephane Eranian <eranian@google.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 12 Nov 2012 16:08:53 -0500
+Message-ID: <1352754038.12509.16.camel@misato.fc.hp.com>
+Subject: Re: [Patch v4 1/7] acpi,memory-hotplug: introduce a mutex lock to
+ protect the list in acpi_memory_device
+From: Toshi Kani <toshi.kani@hp.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
+Date: Mon, 12 Nov 2012 14:00:38 -0700
+In-Reply-To: <1352372693-32411-2-git-send-email-wency@cn.fujitsu.com>
+References: <1352372693-32411-1-git-send-email-wency@cn.fujitsu.com>
+	 <1352372693-32411-2-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 5:13 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> On Mon, Nov 12, 2012 at 03:22:33PM +0100, Robert Richter wrote:
->> Stephane,
->>
->> On 12.11.12 13:24:38, Stephane Eranian wrote:
->> > Anybody from AMD or formerly @ AMD care to submit a libpfm4 patch
->> > to add the Fam15th NB events?
->> >
->> > I'd like to avoid having to type them in manually.
->>
->> Suravee may probably help you here.
->
-> Suravee is out of the office until the end of the month,
->
-> Is this necessary ASAP for this perf patchset to go upstream? If so,
-> I'll commit to getting a patch out for libpfm4 soon.
->
-> Otherwise, I'll ask Suravee to work on it when he gets back.
->
-Not critical for the kernel part. USeful for user level tools beyond
-perf.
+On Thu, 2012-11-08 at 19:04 +0800, Wen Congyang wrote:
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> 
+> This 2 events may happen at the same time, so we may touch
+> acpi_memory_device.res_list at the same time. This patch
+> introduce a lock to protect this list.
 
-> Thanks,
->
-> -Jacob
->
->>
->> HTH
->>
->> -Robert
->>
->
+Hi Wen,
+
+This race condition is not unique in memory hot-remove as the sysfs
+eject interface is created for all objects with _EJ0.  For CPU
+hot-remove, I addressed this race condition by making the notify handler
+to run the hot-remove operation on kacpi_hotplug_wq by calling
+acpi_os_hotplug_execute().  This serializes the hot-remove operations
+among the two events since the sysfs eject also runs on
+kacpi_hotplug_wq.  This way is much simpler and is easy to maintain,
+although it does not allow both operations to run simultaneously (which
+I do not think we need).  Can it be used for memory hot-remove as well?
+
+Thanks,
+-Toshi
+
