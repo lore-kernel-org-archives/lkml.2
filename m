@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab2KLHyh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 02:54:37 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40904 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750856Ab2KLHyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 02:54:36 -0500
-Message-ID: <1352706875.2015.10.camel@joe-AO722>
-Subject: Re: [PATCH 0/8] Fix coding style in sdhci.c
-From: Joe Perches <joe@perches.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, patches@linaro.org
-Date: Sun, 11 Nov 2012 23:54:35 -0800
-In-Reply-To: <87a9unnvl1.fsf@octavius.laptop.org>
-References: <1352461198-21941-1-git-send-email-tushar.behera@linaro.org>
-	 <50A05DE9.8070907@samsung.com> <50A07D30.4030705@linaro.org>
-	 <87a9unnvl1.fsf@octavius.laptop.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751896Ab2KLH5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 02:57:18 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:59488 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab2KLH5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 02:57:17 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH 2/3] fat: fix time updates for create and delete
+References: <1352642278-2730-1-git-send-email-linkinjeon@gmail.com>
+	<874nkw86jz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_HBP1ToGunoPwut18v+hwdG=QdfeXyJVSrLUGEt6beSQ@mail.gmail.com>
+Date: Mon, 12 Nov 2012 16:57:13 +0900
+In-Reply-To: <CAKYAXd_HBP1ToGunoPwut18v+hwdG=QdfeXyJVSrLUGEt6beSQ@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 12 Nov 2012 15:37:20 +0900")
+Message-ID: <87sj8f5k4m.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-12 at 02:12 -0500, Chris Ball wrote:
-> Hi,
-> 
-> On Sun, Nov 11 2012, Tushar Behera wrote:
-> > Yes, I can do that. I did split it specifically so that we could drop
-> > any patches if required.
-> >
-> > I will wait for a word from Chris regarding what he prefers.
-> 
-> I would want to merge one patch, but I'm afraid I don't generally want
-> to merge changes like these.  sdhci.c is one of the most modified files
-> in drivers/mmc, so a change like this can create merge conflicts that
-> require many people to update their work, and that's not worth it.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-I think brace style isn't important enough too.
+> 2012/11/12, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>
+>>> Correctly update modification and status change time in case of
+>>> file/directory removal and creation.
+>>
+>> This changelog just explain "what", and it doesn't explain "why". Please
+>> explain why we need this change.
+>>
+>> IIRC, timestamp handling in FAT driver is strange historically. Anyway,
+>> FAT doesn't have "inode change time". It is "creation time" in FAT.
+> Hi. OGAWA.
+> I made this patch after comparing timestamp handlings with MSDOS and XFS.
+> Should timestamp handling of FAT be same with MSDOS ?
+> Am I missing ?
 
-I suggested this awhile ago, but it went nowhere.
-
-https://lkml.org/lkml/2011/8/11/425
-
-
+What was difference with XFS, FAT, and MSDOS?
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
