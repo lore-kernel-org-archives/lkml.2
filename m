@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab2KLI3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 03:29:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47283 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab2KLI30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 03:29:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,761,1344236400"; 
-   d="scan'208";a="218174258"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry@broadcom.com,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH v2 2/3] vxlan: capture inner headers during encapsulation
-Date: Mon, 12 Nov 2012 00:36:57 -0800
-Message-Id: <1352709418-28996-3-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352709418-28996-1-git-send-email-joseph.gasparakis@intel.com>
-References: <1352709418-28996-1-git-send-email-joseph.gasparakis@intel.com>
+	id S1752371Ab2KLIaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 03:30:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:21087 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab2KLIaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 03:30:13 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-41-50a0b393a91b
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        SeongHwan Yoon <sunghwan.yun@samsung.com>
+Subject: [PATCH] mm: use migrate_prep() instead of migrate_prep_local()
+Date: Mon, 12 Nov 2012 09:29:49 +0100
+Message-id: <1352708989-25359-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jQd3JmxcEGJxq1LW4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZGz51MxX0c1SsPrufrYHxAVsXIyeHhICJxI7DM5ghbDGJC/fW
+	g8WFBKYzSnR1WHcxcgHZK5gkFn7bzQ6SYBMwlOh62wVWJCIQJvGncRsrSBGzwFUmiSs3H4JN
+	EhZwl2g72sUCYrMIqEp82tTHCGLzCnhIPH5xB6iZA2ibgsScSTYTGLkXMDKsYhRNLUguKE5K
+	zzXUK07MLS7NS9dLzs/dxAj24DOpHYwrGywOMQpwMCrx8EoGLggQYk0sK67MPcQowcGsJMI7
+	TQQoxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvEwSnVwGhfbfn8
+	9tlNdZ0n9j54unxdgvS1SYv0RTRYFQ881nh3+2TupgIzC64KiWNGnjUfFWtNpK+2XrfksTv+
+	cQLb0o1ZrZnHHb127VmxO2XehKq79/a4nAo8lZ72QO+M5pPExYyVrYt/iTn8Ti34uvq08MrD
+	f3NeXBfUqzDm3Pnd1k1hDY/mW2a5j6uUWIozEg21mIuKEwFD8gZJ3AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Populating the inner header pointers of skb for vxlan
+__alloc_contig_migrate_range() should use all possible ways to get all the
+pages migrated from the given memory range, so pruning per-cpu lru lists
+for all CPUs is required, regadless the cost of such operation. Otherwise
+some pages which got stuck at per-cpu lru list might get missed by
+migration procedure causing the contiguous allocation to fail.
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Reported-by: SeongHwan Yoon <sunghwan.yun@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/net/vxlan.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 030559d..14e6c8f 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -694,11 +694,23 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
- 	__be16 df = 0;
- 	__u8 tos, ttl;
- 	int err;
-+	unsigned int offset;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1bfe2b0..fcb9719 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5677,7 +5677,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
+ 	unsigned int tries = 0;
+ 	int ret = 0;
  
- 	dst = vxlan_find_dst(vxlan, skb);
- 	if (!dst)
- 		goto drop;
+-	migrate_prep_local();
++	migrate_prep();
  
-+	offset = skb->data - skb->head;
-+
-+	skb_reset_inner_mac_header(skb);
-+
-+	if (skb->network_header)
-+		skb_set_inner_network_header(skb, skb->network_header - offset);
-+
-+	if (skb->transport_header)
-+		skb_set_inner_transport_header(skb, skb->transport_header -
-+					      offset);
-+
- 	/* Need space for new headers (invalidates iph ptr) */
- 	if (skb_cow_head(skb, VXLAN_HEADROOM))
- 		goto drop;
+ 	while (pfn < end || !list_empty(&cc->migratepages)) {
+ 		if (fatal_signal_pending(current)) {
 -- 
-1.7.11.7
+1.7.9.5
 
