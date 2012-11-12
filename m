@@ -1,131 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab2KLJay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 04:30:54 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:43084 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752327Ab2KLJau (ORCPT
+	id S1752669Ab2KLJat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 04:30:49 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38475 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2KLJaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 04:30:50 -0500
-From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>
-Date: Mon, 12 Nov 2012 10:28:53 +0100
-Subject: RE: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Topic: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Index: Ac29EC4U84XKTFIYRrygJFKmhstcfwDp/Oua
-Message-ID: <35286B1AE75A7C47BFF0870081A31B4B38772D1928@SAFEX1MAIL4.st.com>
-References: <1352290509-14834-1-git-send-email-mathias.leblanc@st.com>
- <20121107150257.GD14628@ennui.austin.ibm.com>
- <35286B1AE75A7C47BFF0870081A31B4B387510DB14@SAFEX1MAIL4.st.com>,<20121107174558.GC31862@ennui.austin.ibm.com>
-In-Reply-To: <20121107174558.GC31862@ennui.austin.ibm.com>
-Accept-Language: en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 12 Nov 2012 04:30:46 -0500
 MIME-Version: 1.0
+In-Reply-To: <5093A63B.2070700@ti.com>
+References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org>
+	<1349595838-31274-4-git-send-email-vincent.guittot@linaro.org>
+	<50880750.4060809@ti.com>
+	<CAKfTPtC29LA15zkgi3gDcet2F841pnqza2_UBwEs6nYUpyKuOQ@mail.gmail.com>
+	<5093A63B.2070700@ti.com>
+Date: Mon, 12 Nov 2012 10:30:44 +0100
+Message-ID: <CAKfTPtAU3AxsNFsk43yK5GCkz-XYUy2083rCU8-A98zeHQxMFQ@mail.gmail.com>
+Subject: Re: [RFC 3/6] sched: pack small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@redhat.com,
+        pjt@google.com, linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAC9Uu4s008663
 
-So, yes, it can be and it will be removed :)
-________________________________________
-From: Kent Yoder [key@linux.vnet.ibm.com]
-Sent: 07 November 2012 18:45
-To: Mathias LEBLANC
-Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; Jean-Luc BLANC
-Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+On 2 November 2012 11:53, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> On Monday 29 October 2012 06:42 PM, Vincent Guittot wrote:
+>>
+>> On 24 October 2012 17:20, Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> wrote:
+>>>
+>>> Vincent,
+>>>
+>>> Few comments/questions.
+>>>
+>>>
+>>> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
+>>>>
+>>>>
+>>>> During sched_domain creation, we define a pack buddy CPU if available.
+>>>>
+>>>> On a system that share the powerline at all level, the buddy is set to
+>>>> -1
+>>>>
+>>>> On a dual clusters / dual cores system which can powergate each core and
+>>>> cluster independantly, the buddy configuration will be :
+>>>>         | CPU0 | CPU1 | CPU2 | CPU3 |
+>>>> -----------------------------------
+>>>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>>>
+>>>
+>>>                          ^
+>>> Is that a typo ? Should it be CPU2 instead of
+>>> CPU0 ?
+>>
+>>
+>> No it's not a typo.
+>> The system packs at each scheduling level. It starts to pack in
+>> cluster because each core can power gate independently so CPU1 tries
+>> to pack its tasks in CPU0 and CPU3 in CPU2. Then, it packs at CPU
+>> level so CPU2 tries to pack in the cluster of CPU0 and CPU0 packs in
+>> itself
+>>
+> I get it. Though in above example a task may migrate from say
+> CPU3->CPU2->CPU0 as part of packing. I was just thinking whether
+> moving such task from say CPU3 to CPU0 might be best instead.
 
-On Wed, Nov 07, 2012 at 04:23:14PM +0100, Mathias LEBLANC wrote:
-> Hi Kent,
->
-> Sorry for sending new driver, it was a mistake.
-> Today, I will upload the new version of the Linux driver without the errors that you have mentioned in your previous mail.
+We pack in the cluster then at CPU level. Tasks could sometimes
+migrate directly to CPU0 but we would miss the case where CPU0 is busy
+but CPU2 is not
 
-  Ok, np.
+Vincent
 
 >
-> About :
-> > +/*
-> > + * tpm_st33_i2c_ioctl provides 2 handles:
-> > + * - TPMIOC_CANCEL: allow to CANCEL a TPM commands execution.
-> > + *   See tpm_stm_i2c_cancel description above
-> > + * - TPMIOC_TRANSMIT: allow to transmit a TPM commands.
-> > + * - TPMIOC_HASH: allow to compute a locality 4 hash
-> > + * - TPMIOC_CHANGELOCALITY: allow to change the current locality
 >
->   Can we get rid of the ioctl path?  cancel and transmit are available
-> through read/write already, but I need help understanding what hash and
-> change locality would be useful for. If the kernel is running you can
-> just use the crypto api for a hash operation, right?
+>>>
+>>>> Small tasks tend to slip out of the periodic load balance.
+>>>> The best place to choose to migrate them is at their wake up.
+>>>>
+>>> I have tried this series since I was looking at some of these packing
+>>> bits. On Mobile workloads like OSIdle with Screen ON, MP3, gallary,
+>>> I did see some additional filtering of threads with this series
+>>> but its not making much difference in power. More on this below.
+>>
+>>
+>> Can I ask you which configuration you have used ? how many cores and
+>> cluster ?  Can they be power gated independently ?
+>>
+> I have been trying with couple of setups. Dual Core ARM machine and
+> Quad core X86 box with single package thought most of the mobile
+> workload analysis I was doing on ARM machine. On both setups
+> CPUs can be gated independently.
 >
->   As for changing locality, what's the idea there? If you can just
-> switch localities at any time with an ioctl and no DRTM, why have it?
 >
-> [cut]
-> > +static const struct file_operations tpm_st33_i2c_fops = {
-> > +     .owner = THIS_MODULE,
-> > +     .llseek = no_llseek,
-> > +     .read = tpm_read,
-> > +     .write = tpm_write,
-> > +     .open = tpm_open,
-> > +     .release = tpm_release,
-> > +};
+>>>
+>>>
+>>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>>> ---
+>>>>    kernel/sched/core.c  |    1 +
+>>>>    kernel/sched/fair.c  |  109
+>>>> ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>    kernel/sched/sched.h |    1 +
+>>>>    3 files changed, 111 insertions(+)
+>>>>
+>>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>>> index dab7908..70cadbe 100644
+>>>> --- a/kernel/sched/core.c
+>>>> +++ b/kernel/sched/core.c
+>>>> @@ -6131,6 +6131,7 @@ cpu_attach_domain(struct sched_domain *sd, struct
+>>>> root_domain *rd, int cpu)
+>>>>          rcu_assign_pointer(rq->sd, sd);
+>>>>          destroy_sched_domains(tmp, cpu);
+>>>>
+>>>> +       update_packing_domain(cpu);
+>>>>          update_top_cache_domain(cpu);
+>>>>    }
+>>>>
+>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>> index 4f4a4f6..8c9d3ed 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -157,6 +157,63 @@ void sched_init_granularity(void)
+>>>>          update_sysctl();
+>>>>    }
+>>>>
+>>>> +
+>>>> +/*
+>>>> + * Save the id of the optimal CPU that should be used to pack small
+>>>> tasks
+>>>> + * The value -1 is used when no buddy has been found
+>>>> + */
+>>>> +DEFINE_PER_CPU(int, sd_pack_buddy);
+>>>> +
+>>>> +/* Look for the best buddy CPU that can be used to pack small tasks
+>>>> + * We make the assumption that it doesn't wort to pack on CPU that
+>>>> share
+>>>> the
+>>>
+>>>
+>>> s/wort/worth
+>>
+>>
+>> yes
+>>
+>>>
+>>>> + * same powerline. We looks for the 1st sched_domain without the
+>>>> + * SD_SHARE_POWERLINE flag. Then We look for the sched_group witht the
+>>>> lowest
+>>>> + * power per core based on the assumption that their power efficiency
+>>>> is
+>>>> + * better */
+>>>
+>>>
+>>> Commenting style..
+>>> /*
+>>>   *
+>>>   */
+>>>
+>>
+>> yes
+>>
+>>> Can you please expand the why the assumption is right ?
+>>> "it doesn't wort to pack on CPU that share the same powerline"
+>>
+>>
+>> By "share the same power-line", I mean that the CPUs can't power off
+>> independently. So if some CPUs can't power off independently, it's
+>> worth to try to use most of them to race to idle.
+>>
+> In that case I suggest we use different word here. Power line can be
+> treated as voltage line, power domain.
+> May be SD_SHARE_CPU_POWERDOMAIN ?
 >
-> The TPM specification, specifies all four localities used for different levels
-> LOCALITY4_HASH by a CPU instruction to start
-> LOCALITY3 for BIOS
-> LOCALITY2 for MBR
-> LOCALITY1 for operation login
-> LOCALITY0 for common OS tasks.
 >
-> The use of these localities is agreement with the specifications and must always be down (4, 3, 2, 1, 0) to be sure that the verification steps lower levels will never be altered to ensure "sustainability".
-> If once the OS loaded, I am able to use the locality 4, I could potentially alter the values â€‹â€‹of the starting steps below ...
-> Access to these localities in the driver * Linux * has been given only for the purpose of validation.
+>>>
+>>> Think about a scenario where you have quad core, ducal cluster system
+>>>
+>>>          |Cluster1|                      |cluster 2|
+>>> | CPU0 | CPU1 | CPU2 | CPU3 |   | CPU0 | CPU1 | CPU2 | CPU3 |
+>>>
+>>>
+>>> Both clusters run from same voltage rail and have same PLL
+>>> clocking them. But the cluster have their own power domain
+>>> and all CPU's can power gate them-self to low power states.
+>>> Clusters also have their own level2 caches.
+>>>
+>>> In this case, you will still save power if you try to pack
+>>> load on one cluster. No ?
+>>
+>>
+>> yes, I need to update the description of SD_SHARE_POWERLINE because
+>> I'm afraid I was not clear enough. SD_SHARE_POWERLINE includes the
+>> power gating capacity of each core. For your example above, the
+>> SD_SHARE_POWERLINE shoud be cleared at both MC and CPU level.
+>>
+> Thanks for clarification.
+>
+>
+>>>
+>>>
+>>>> +void update_packing_domain(int cpu)
+>>>> +{
+>>>> +       struct sched_domain *sd;
+>>>> +       int id = -1;
+>>>> +
+>>>> +       sd = highest_flag_domain(cpu, SD_SHARE_POWERLINE);
+>>>> +       if (!sd)
+>>>> +               sd =
+>>>> rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+>>>> +       else
+>>>> +               sd = sd->parent;
+>>>> +
+>>>> +       while (sd) {
+>>>> +               struct sched_group *sg = sd->groups;
+>>>> +               struct sched_group *pack = sg;
+>>>> +               struct sched_group *tmp = sg->next;
+>>>> +
+>>>> +               /* 1st CPU of the sched domain is a good candidate */
+>>>> +               if (id == -1)
+>>>> +                       id = cpumask_first(sched_domain_span(sd));
+>>>> +
+>>>> +               /* loop the sched groups to find the best one */
+>>>> +               while (tmp != sg) {
+>>>> +                       if (tmp->sgp->power * sg->group_weight <
+>>>> +                                       sg->sgp->power *
+>>>> tmp->group_weight)
+>>>> +                               pack = tmp;
+>>>> +                       tmp = tmp->next;
+>>>> +               }
+>>>> +
+>>>> +               /* we have found a better group */
+>>>> +               if (pack != sg)
+>>>> +                       id = cpumask_first(sched_group_cpus(pack));
+>>>> +
+>>>> +               /* Look for another CPU than itself */
+>>>> +               if ((id != cpu)
+>>>> +                || ((sd->parent) && !(sd->parent->flags &&
+>>>> SD_LOAD_BALANCE)))
+>>>
+>>>
+>>> Is the condition "!(sd->parent->flags && SD_LOAD_BALANCE)" for
+>>> big.LITTLE kind of system where SD_LOAD_BALANCE may not be used ?
+>>
+>>
+>> No, packing small tasks is part of the load balance so if the
+>> LOAD_BALANCE flag is cleared, we will not try to pack which is a kind
+>> of load balance. There is no link with big.LITTLE
+>>
+> Now it make sense to me.
+>
+>
+>>>
+>>>
+>>>> +                       break;
+>>>> +
+>>>> +               sd = sd->parent;
+>>>> +       }
+>>>> +
+>>>> +       pr_info(KERN_INFO "CPU%d packing on CPU%d\n", cpu, id);
+>>>> +       per_cpu(sd_pack_buddy, cpu) = id;
+>>>> +}
+>>>> +
+>>>>    #if BITS_PER_LONG == 32
+>>>>    # define WMULT_CONST  (~0UL)
+>>>>    #else
+>>>> @@ -3073,6 +3130,55 @@ static int select_idle_sibling(struct task_struct
+>>>> *p, int target)
+>>>>          return target;
+>>>>    }
+>>>>
+>>>> +static inline bool is_buddy_busy(int cpu)
+>>>> +{
+>>>> +       struct rq *rq = cpu_rq(cpu);
+>>>> +
+>>>> +       /*
+>>>> +        * A busy buddy is a CPU with a high load or a small load with a
+>>>> lot of
+>>>> +        * running tasks.
+>>>> +        */
+>>>> +       return ((rq->avg.usage_avg_sum << rq->nr_running) >
+>>>> +                       rq->avg.runnable_avg_period);
+>>>
+>>>
+>>> I agree busy CPU is the one with high load, but many small threads may
+>>> not make CPU fully busy, right ? Should we just stick to the load
+>>> parameter alone here ?
+>>
+>>
+>> IMO, the busy state of a CPU isn't only the load but also how many
+>> threads are waiting for running on it. This formula tries to take into
+>> account both inputs. If you have dozen of small tasks on a CPU, the
+>> latency can be large even if the tasks are small.
+>>
+> Sure. Your point is to avoid throttling and probably use race for
+> idle.
+>
+>
+>>>
+>>>
+>>>> +}
+>>>> +
+>>>> +static inline bool is_light_task(struct task_struct *p)
+>>>> +{
+>>>> +       /* A light task runs less than 25% in average */
+>>>> +       return ((p->se.avg.usage_avg_sum << 2) <
+>>>> p->se.avg.runnable_avg_period);
+>>>> +}
+>>>
+>>>
+>>> Since the whole packing logic relies on the light threads only, the
+>>> overall effectiveness is not significant. Infact with multiple tries on
+>>> Dual core system, I didn't see any major improvement in power. I think
+>>> we need to be more aggressive here. From the cover letter, I noticed
+>>> that, you were concerned about any performance drop due to packing and
+>>> may be that is the reason you chose the conservative threshold. But the
+>>> fact is, if we want to save meaningful power, there will be slight
+>>> performance drop which is expected.
+>>
+>>
+>> I think that everybody agrees that packing small tasks will save power
+>> whereas it seems to be not so obvious for heavy task. But I may have
+>> set the threshold a bit too low
+>>
+> I agree on packing saves power part for sure.
+>
+>
+>> Up to which load, you would like to pack on 1 core of your dual core
+>> system ?
+>> Can you provide more details of your load ? Have you got a trace that
+>> you can share ?
+>>
+> More than how much load to pack, I was more looking from the power
+> savings delta we can achieve by doing it. Some of the usecases like
+> osidle, mp3, gallary are already very low power and that might be
+> the reason I didn't notice major mA delta. Though the perf
+> traces did show some filtering even at 25 % load. i tried upto
+> 50 % threshold to see the effectiveness and there was more
+> improvement and hence the suggestion about aggressiveness.
+>
+> May be you can try some of these use-cases on your setup instead of
+> synthetic workload and see the results.
 
-  Ok cool, so it can be removed? :-)
+Yes, I will do that. The main advantage of synthetic workload is the
+reproducibility and the interdependency against the framework that is
+used. But I'm going to use more realistic use-cases.
 
-Kent
+Regards,
+Vincent
 
-> ________________________________________
-> From: Kent Yoder [key@linux.vnet.ibm.com]
-> Sent: 07 November 2012 16:02
-> To: Mathias LEBLANC
-> Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; Jean-Luc BLANC
-> Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
 >
-> On Wed, Nov 07, 2012 at 01:15:09PM +0100, Mathias Leblanc wrote:
-> >  * STMicroelectronics version 1.2.0, Copyright (C) 2010
-> >  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
-> >  * This is free software, and you are welcome to redistribute it
-> >  * under certain conditions.
-> >
-> > This is the driver for TPM chip from ST Microelectronics.
-> >
-> > If you have a TPM security chip from STMicroelectronics working with
-> > an I2C, in menuconfig or .config choose the tpm driver on
-> > device --> tpm and activate the protocol of your choice before compiling
-> > the kernel.
-> > The driver will be accessible from within Linux.
-> >
-> > Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
-> >
-> > Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
+> Regards
+> Santosh
 >
-> Hi Mathias,
 >
->   I didn't see a reply to my mail from Oct 31, and very little has
-> changed here.  Did I miss something?
 >
-> Kent
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
