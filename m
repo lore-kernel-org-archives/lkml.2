@@ -1,357 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab2KLIfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 03:35:25 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46434 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab2KLIfV (ORCPT
+	id S1752722Ab2KLIfb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 03:35:31 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53187 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab2KLIf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 03:35:21 -0500
-From: Huacai Chen <chenhc@lemote.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: [PATCH V8 12/13] MIPS: Loongson 3: Add CPU hotplug support
-Date: Mon, 12 Nov 2012 16:32:48 +0800
-Message-Id: <1352709169-3481-13-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1352709169-3481-1-git-send-email-chenhc@lemote.com>
-References: <1352709169-3481-1-git-send-email-chenhc@lemote.com>
+	Mon, 12 Nov 2012 03:35:27 -0500
+Subject: Re: Network routing problem after upgrading to 3.6.2
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: multipart/signed; boundary="Apple-Mail=_4A61429C-0EAC-4787-8820-3120846CDFBA"; protocol="application/pkcs7-signature"; micalg=sha1
+From: Melby Sjamsuddin <melby.s@vulytrampolines.com>
+In-Reply-To: <CAFLxGvzN1m1V2RDndD2vM+peHuoomuTMhQXab5UzTnq6aX3tyg@mail.gmail.com>
+Date: Mon, 12 Nov 2012 18:35:20 +1000
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <F0384521-A1E3-4760-9DB3-05550A00C0E2@vulytrampolines.com>
+References: <E3FFC807-CA31-45EA-A8EF-1266A27F9A0D@vulytrampolines.com> <CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com> <0678A2A4-F1BE-4A18-B3F2-ECCCAEEB1093@vulytrampolines.com> <CAFLxGvzN1m1V2RDndD2vM+peHuoomuTMhQXab5UzTnq6aX3tyg@mail.gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tips of Loongson's CPU hotplug:
-1, To fully shutdown a core in Loongson 3, the target core should go to
-   CKSEG1 and flush all L2 cache entries at first. Then, another core
-   (usually Core 0) can safely disable the clock of the target core. So
-   play_dead() call loongson3_play_dead() via CKSEG1 (both uncached and
-   unmmaped).
-2, The default clocksource of Loongson is MIPS. Since clock source is a
-   global device, timekeeping need the CP0' Count registers of each core
-   be synchronous. Thus, when a core is up, we use a SMP_ASK_C0COUNT IPI
-   to ask Core-0's Count.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
----
- arch/mips/Kconfig                              |    1 +
- arch/mips/include/asm/mach-loongson/loongson.h |    6 +-
- arch/mips/include/asm/smp.h                    |    1 +
- arch/mips/loongson/loongson-3/irq.c            |   10 ++
- arch/mips/loongson/loongson-3/smp.c            |  178 +++++++++++++++++++++++-
- 5 files changed, 190 insertions(+), 6 deletions(-)
+--Apple-Mail=_4A61429C-0EAC-4787-8820-3120846CDFBA
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=iso-8859-1
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 2606c89..052374f 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -268,6 +268,7 @@ config LASAT
- config MACH_LOONGSON
- 	bool "Loongson family of machines"
- 	select SYS_SUPPORTS_ZBOOT
-+	select SYS_SUPPORTS_HOTPLUG_CPU
- 	help
- 	  This enables the support of Loongson family of machines.
- 
-diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
-index f573e47..573eed8 100644
---- a/arch/mips/include/asm/mach-loongson/loongson.h
-+++ b/arch/mips/include/asm/mach-loongson/loongson.h
-@@ -247,6 +247,9 @@ static inline void do_perfcnt_IRQ(void)
- #define LOONGSON_PXARB_CFG		LOONGSON_REG(LOONGSON_REGBASE + 0x68)
- #define LOONGSON_PXARB_STATUS		LOONGSON_REG(LOONGSON_REGBASE + 0x6c)
- 
-+/* Chip Config */
-+#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
-+
- /* pcimap */
- 
- #define LOONGSON_PCIMAP_PCIMAP_LO0	0x0000003f
-@@ -262,9 +265,6 @@ static inline void do_perfcnt_IRQ(void)
- #ifdef CONFIG_CPU_SUPPORTS_CPUFREQ
- #include <linux/cpufreq.h>
- extern struct cpufreq_frequency_table loongson2_clockmod_table[];
--
--/* Chip Config */
--#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
- #endif
- 
- /*
-diff --git a/arch/mips/include/asm/smp.h b/arch/mips/include/asm/smp.h
-index d4fb4d8..a6edbbf 100644
---- a/arch/mips/include/asm/smp.h
-+++ b/arch/mips/include/asm/smp.h
-@@ -40,6 +40,7 @@ extern int __cpu_logical_map[NR_CPUS];
- #define SMP_CALL_FUNCTION	0x2
- /* Octeon - Tell another core to flush its icache */
- #define SMP_ICACHE_FLUSH	0x4
-+#define SMP_ASK_C0COUNT		0x8
- 
- extern volatile cpumask_t cpu_callin_map;
- 
-diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
-index 27aef31..83f84e6 100644
---- a/arch/mips/loongson/loongson-3/irq.c
-+++ b/arch/mips/loongson/loongson-3/irq.c
-@@ -85,3 +85,13 @@ void __init mach_init_irq(void)
- 
- 	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
- }
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+void fixup_irqs(void)
-+{
-+	irq_cpu_offline();
-+	clear_c0_status(ST0_IM);
-+}
-+
-+#endif
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
-index 27c853f..71ecf7a 100644
---- a/arch/mips/loongson/loongson-3/smp.c
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -30,6 +30,9 @@
- 
- #include "smp.h"
- 
-+DEFINE_PER_CPU(int, cpu_state);
-+DEFINE_PER_CPU(uint32_t, core0_c0count);
-+
- /* write a 64bit value to ipi register */
- void loongson3_ipi_write64(uint64_t action, void * addr)
- {
-@@ -167,8 +170,8 @@ static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int act
- 
- void loongson3_ipi_interrupt(struct pt_regs *regs)
- {
--	int cpu = smp_processor_id();
--	unsigned int action;
-+	int i, cpu = smp_processor_id();
-+	unsigned int action, c0count;
- 
- 	/* Load the ipi register to figure out what we're supposed to do */
- 	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
-@@ -183,14 +186,24 @@ void loongson3_ipi_interrupt(struct pt_regs *regs)
- 	if (action & SMP_CALL_FUNCTION) {
- 		smp_call_function_interrupt();
- 	}
-+
-+	if (action & SMP_ASK_C0COUNT) {
-+		BUG_ON(cpu != 0);
-+		c0count = read_c0_count();
-+		for (i=1; i < nr_cpus_loongson; i++)
-+			per_cpu(core0_c0count, i) = c0count;
-+	}
- }
- 
-+#define MAX_LOOPS 1200
- /*
-  * SMP init and finish on secondary CPUs
-  */
- void __cpuinit loongson3_init_secondary(void)
- {
- 	int i;
-+	uint32_t initcount;
-+	unsigned int cpu = smp_processor_id();
- 	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 |
- 			     STATUSF_IP3 | STATUSF_IP2;
- 
-@@ -200,11 +213,24 @@ void __cpuinit loongson3_init_secondary(void)
- 	for (i = 0; i < nr_cpus_loongson; i++) {
- 		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
- 	}
-+
-+	per_cpu(cpu_state, cpu) = CPU_ONLINE;
-+
-+	i = 0;
-+	__get_cpu_var(core0_c0count) = 0;
-+	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
-+	while (!__get_cpu_var(core0_c0count))
-+		i++;
-+
-+	if (i > MAX_LOOPS)
-+		i = MAX_LOOPS;
-+	initcount = __get_cpu_var(core0_c0count) + i;
-+	write_c0_count(initcount);
-+	write_c0_compare(initcount + mips_hpt_frequency/HZ);
- }
- 
- void __cpuinit loongson3_smp_finish(void)
- {
--	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
- 	local_irq_enable();
- 	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
- 	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-@@ -233,6 +259,8 @@ void __init loongson3_smp_setup(void)
- 
- void __init loongson3_prepare_cpus(unsigned int max_cpus)
- {
-+	init_cpu_present(cpu_possible_mask);
-+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
- }
- 
- /*
-@@ -266,6 +294,146 @@ void __init loongson3_cpus_done(void)
- {
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+extern void fixup_irqs(void);
-+extern void (*flush_cache_all)(void);
-+
-+static int loongson3_cpu_disable(void)
-+{
-+	unsigned long flags;
-+	unsigned int cpu = smp_processor_id();
-+
-+	if (cpu == 0)
-+		return -EBUSY;
-+
-+	set_cpu_online(cpu, false);
-+	cpu_clear(cpu, cpu_callin_map);
-+	local_irq_save(flags);
-+	fixup_irqs();
-+	local_irq_restore(flags);
-+	flush_cache_all();
-+	local_flush_tlb_all();
-+
-+	return 0;
-+}
-+
-+
-+static void loongson3_cpu_die(unsigned int cpu)
-+{
-+	while (per_cpu(cpu_state, cpu) != CPU_DEAD)
-+		cpu_relax();
-+
-+	mb();
-+}
-+
-+/* To shutdown a core in Loongson 3, the target core should go to CKSEG1 and
-+ * flush all L2 entries at first. Then, another core (usually Core 0) can
-+ * safely disable the clock of the target core. loongson3_play_dead() is
-+ * called via CKSEG1 (uncached and unmmaped) */
-+void loongson3_play_dead(int *state_addr)
-+{
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      li $t0, 0x80000000                \n" /* KSEG0 */
-+		"      li $t1, 512                       \n" /* num of L2 entries */
-+		"flush_loop:                             \n" /* flush L2 */
-+		"      cache 0, 0($t0)                   \n" /* ICache */
-+		"      cache 0, 1($t0)                   \n"
-+		"      cache 0, 2($t0)                   \n"
-+		"      cache 0, 3($t0)                   \n"
-+		"      cache 1, 0($t0)                   \n" /* DCache */
-+		"      cache 1, 1($t0)                   \n"
-+		"      cache 1, 2($t0)                   \n"
-+		"      cache 1, 3($t0)                   \n"
-+		"      addiu $t0, $t0, 0x20              \n"
-+		"      bnez  $t1, flush_loop             \n"
-+		"      addiu $t1, $t1, -1                \n"
-+		"      li    $t0, 0x7                    \n" /* *state_addr = CPU_DEAD; */
-+		"      sw    $t0, 0($a0)                 \n"
-+		"      sync                              \n"
-+		"      cache 21, 0($a0)                  \n" /* flush entry of *state_addr */
-+		"      .set pop                          \n");
-+
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      .set mips64                       \n"
-+		"      mfc0  $t2, $15, 1                 \n"
-+		"      andi  $t2, 0x3ff                  \n"
-+		"      .set mips3                        \n"
-+		"      dli   $t0, 0x900000003ff01000     \n"
-+		"      andi  $t3, $t2, 0x3               \n"
-+		"      sll   $t3, 8                      \n"  /* get cpu id */
-+		"      or    $t0, $t0, $t3               \n"
-+		"      andi  $t1, $t2, 0xc               \n"
-+		"      dsll  $t1, 42                     \n"  /* get node id */
-+		"      or    $t0, $t0, $t1               \n"
-+		"wait_for_init:                          \n"
-+		"      li    $a0, 0x100                  \n"
-+		"idle_loop:                              \n"
-+		"      bnez  $a0, idle_loop              \n"
-+		"      addiu $a0, -1                     \n"
-+		"      lw    $v0, 0x20($t0)              \n"  /* get PC via mailbox */
-+		"      nop                               \n"
-+		"      beqz  $v0, wait_for_init          \n"
-+		"      nop                               \n"
-+		"      ld    $sp, 0x28($t0)              \n"  /* get SP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $gp, 0x30($t0)              \n"  /* get GP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $a1, 0x38($t0)              \n"
-+		"      nop                               \n"
-+		"      jr  $v0                           \n"  /* jump to initial PC */
-+		"      nop                               \n"
-+		"      .set pop                          \n");
-+}
-+
-+void play_dead(void)
-+{
-+	int *state_addr;
-+	unsigned int cpu = smp_processor_id();
-+	void (*play_dead_at_ckseg1)(int *);
-+
-+	idle_task_exit();
-+	play_dead_at_ckseg1 = (void *)CKSEG1ADDR((unsigned long)loongson3_play_dead);
-+	state_addr = &per_cpu(cpu_state, cpu);
-+	mb();
-+	play_dead_at_ckseg1(state_addr);
-+}
-+
-+#define CPU_POST_DEAD_FROZEN	(CPU_POST_DEAD | CPU_TASKS_FROZEN)
-+static int __cpuinit loongson3_cpu_callback(struct notifier_block *nfb,
-+	unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+
-+	switch (action) {
-+	case CPU_POST_DEAD:
-+	case CPU_POST_DEAD_FROZEN:
-+		printk(KERN_INFO "Disable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 &= ~(1 << (12 + cpu));
-+		break;
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_PREPARE_FROZEN:
-+		printk(KERN_INFO "Enable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 |= 1 << (12 + cpu);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int __cpuinit register_loongson3_notifier(void)
-+{
-+	hotcpu_notifier(loongson3_cpu_callback, 0);
-+	return 0;
-+}
-+early_initcall(register_loongson3_notifier);
-+
-+#endif
-+
- struct plat_smp_ops loongson3_smp_ops = {
- 	.send_ipi_single = loongson3_send_ipi_single,
- 	.send_ipi_mask = loongson3_send_ipi_mask,
-@@ -275,4 +443,8 @@ struct plat_smp_ops loongson3_smp_ops = {
- 	.boot_secondary = loongson3_boot_secondary,
- 	.smp_setup = loongson3_smp_setup,
- 	.prepare_cpus = loongson3_prepare_cpus,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_disable = loongson3_cpu_disable,
-+	.cpu_die = loongson3_cpu_die,
-+#endif
- };
--- 
-1.7.7.3
+Just want to let you know that I'm bisecting now. Took days to clone the =
+half gb tree (didn't know
+how to check out only the version that I need), especially when I have =
+to restart the process whenever
+the connection drops out.=20
 
+It says it'll take 13 steps, I can test one daily, so maybe I'll report =
+back in a fortnight.
+
+Cheers,
+
+
+On 07/11/2012, at 6:38 PM, richard -rw- weinberger wrote:
+
+> On Wed, Nov 7, 2012 at 9:18 AM, Melby Sjamsuddin
+> <melby.s@vulytrampolines.com> wrote:
+>> Hi Richard,
+>>=20
+>> I tested 3.5.7 and everything seems to be normal, so it must be 3.6.
+>> Let me know if there's anything I can help.
+>=20
+> Now you can do a git bisect between 3.5 and 3.6 to find the bad =
+commit.
+> And you can report the issue (in detail!) to netdev@vger.kernel.org
+>=20
+> --=20
+> Thanks,
+> //richard
+
+
+--Apple-Mail=_4A61429C-0EAC-4787-8820-3120846CDFBA
+Content-Disposition: attachment;
+	filename=smime.p7s
+Content-Type: application/pkcs7-signature;
+	name=smime.p7s
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5zCCBIow
+ggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UEBhMCU0Ux
+FDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5hbCBUVFAgTmV0
+d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0wNTA2MDcwODA5MTBa
+Fw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNh
+bHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0
+dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0
+aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmF
+pPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVNNRm5pELlzkniii8efNIxB8dOtINknS4p1aJk
+xIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQylbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2q
+L+usobNqqrcuZzWLeeEeaYji5kbNoKXqvgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAs
+vIKKjqQOpdeJQ/wWWq8dcdcRWdq6hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMe
+oYV+9Udly/hNVyh00jT/MLbu9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3
++sQmVO8DveAky1QaMB0GA1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMC
+AQYwDwYDVR0TAQH/BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2Nh
+LmNvbS9BZGRUcnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8u
+bmV0L0FkZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyis
+pgCi54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
+g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHdWTBK
+322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftzMizpm4Qk
+LdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsyXEFs/vVdoOr/
+0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFGjCCBAKgAwIBAgIQbRnqpxlPajMi5iIyeqpx3jANBgkq
+hkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExh
+a2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8v
+d3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRp
+Y2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1MzAxMDQ4MzhaMIGTMQswCQYD
+VQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRow
+GAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50
+aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
+AQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU4PkncQfFxmmkuTLE8UAakMwn
+VmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHffsReswtqCAtbUMmrUZ28gE49c
+NfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kABW0ho3cVKtODtJB86r3FfB+Os
+vxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJkJpFOpZIP/+CxYP0ab2hRmWON
+GoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IBSzCCAUcwHwYDVR0jBBgwFoAU
+iYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4Y2QnwS/ioFu8ecV7MA4GA1Ud
+DwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQKMAgwBgYEVR0gADBYBgNVHR8E
+UTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVROLVVTRVJGaXJzdC1DbGllbnRB
+dXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRoMGYwPQYIKwYBBQUHMAKGMWh0
+dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVudF9DQS5jcnQwJQYIKwYBBQUH
+MAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcNAQEFBQADggEBAIXWvnhXVW0z
+f0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjBMCjfy/tCPKElPgp11tA9OYZm
+0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T4ENyG+2P/WA5IEf7i686ZUg8
+mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8H+2b/5tJM75CKTmD7jNpLoKd
+RU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5OOu0M/qgOl0mWJ5hVRi0IdWZ
+1eBDQEIwvuql55TSsP7zdfl/bucwggU3MIIEH6ADAgECAhBqUIrac7KF3+wys6cyG9+SMA0GCSqG
+SIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
+DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
+T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMB4XDTEyMDkxMzAw
+MDAwMFoXDTEzMDkxMzIzNTk1OVowLDEqMCgGCSqGSIb3DQEJARYbbWVsYnkuc0B2dWx5dHJhbXBv
+bGluZXMuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmpFpF7UjME3G4fwKKyUI
+afTMn60d0Fqs7y4cMtqjbKGG+zCFpCMcrsgCBa7CDSBKTPcrb8eg/3JmVLfNZGJd+8gOiU/izr+E
+0NwBP3KpVDYSdRFAie8TunNI7v1wxLRGhVl3+rppNHjurt3KXyfSlNGWElj4sCt7VW9syGjizcxV
+Az2hrZrhOKTU95pcd6tRtzmK/9CjcEFkVkyaIqOUthXjyycBNKWjG4F1iziwkFM5CTOqucsGCrKT
+0Qepdb7znTt+n0EMFG9+P0xXAIb0BjXibFc6RC/JVbbsos4kBvf8KA/sDSPJ6CBXCaF/7B64e0m1
+mArW4jPKBXeiPuczvwIDAQABo4IB6zCCAecwHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfBL+KgW7x5
+xXswHQYDVR0OBBYEFAI8y4Ea2zyDlvbcpkwCYuh8YoCkMA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMB
+Af8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhCAQEEBAMC
+BSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1
+cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5j
+b20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCBiAYIKwYB
+BQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01PRE9DbGll
+bnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhhodHRwOi8v
+b2NzcC5jb21vZG9jYS5jb20wJgYDVR0RBB8wHYEbbWVsYnkuc0B2dWx5dHJhbXBvbGluZXMuY29t
+MA0GCSqGSIb3DQEBBQUAA4IBAQBA0ThKvqXaDulNCv7SiNT3vjgE2EciuU9uRGI2YZldutxaOnxT
+0UdLkXeU8KMaYJSbbx7RbpBERmgtMYGNdZd4V66vONRNfeqCRDvInyl1Lcg7Wmm9Z8jDo0n364wF
+ya89WkGgnvm+T9Fll7hscNB2RGYbNSplxopKIyC/aQEtwUTdNfk2BD/MOO6MCqNOEA/hRqYvqP/e
+VSX9nJiaxMGaK/+UKSCLy8awU5JcyQkTCYz4P+OZYVDraY49rPVvuS/zpF6kLX9C32Guid0+oHOw
+4FiDfGYSVAY//WIBKR1oE2sk5SHd4aSb0XksieBYmIXMnEDubMxM4dzHrNXptJjyMYIDqzCCA6cC
+AQEwgagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNV
+BAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8g
+Q2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb
+35IwCQYFKw4DAhoFAKCCAdcwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTIxMTEyMDgzNTIxWjAjBgkqhkiG9w0BCQQxFgQUnLvwqZgWtW8y1GHk+cbLYz37AiYwgbkG
+CSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hl
+c3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNV
+BAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQalCK
+2nOyhd/sMrOnMhvfkjCBuwYLKoZIhvcNAQkQAgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYD
+VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9E
+TyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBT
+ZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb35IwDQYJKoZIhvcNAQEBBQAEggEAbddooxWC
+YWzBqjCDMKeYC+UVSPfypvxpWI/BZarnuj3qoQaTHTw6a9FJb+2DLFtovmY3ooSGT+sc2bWYSnZW
+or+cPkfb2nD2fAfJ/L8if1ObOYRfdlfcOsn51yuzU1czPnikqx2o0YnPDDEGlpqJynIROt+DgRcb
+4WBwBn6vT7FEtkAQzdDXam2m2JvqIUPq/lYUc6zRzO9JJ2f16rFqepBoez3bJw8GJNLoC9A5dLBc
+M1maBmXQBIx3FzjWL2SUd3HqJOohxNVBT07hHy+AxQOBCNc5qoJT/gBjXENVBERXrgF+jdvcoQjY
+tuks719f/VO9JwCqDZXWgf0qpucragAAAAAAAA==
+
+--Apple-Mail=_4A61429C-0EAC-4787-8820-3120846CDFBA--
