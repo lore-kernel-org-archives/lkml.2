@@ -1,57 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2KLOgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 09:36:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51461 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab2KLOgk (ORCPT
+	id S1753440Ab2KLOiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 09:38:52 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36462 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab2KLOiv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 09:36:40 -0500
-Date: Mon, 12 Nov 2012 15:36:30 +0100
-From: Robert Richter <rric@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] perf, amd: Enable AMD family 15h northbridge counters
-Message-ID: <20121112143630.GB24433@rric.localhost>
-References: <1352509298-7319-1-git-send-email-jacob.shin@amd.com>
- <20121110115027.GC2777@rric.localhost>
- <CABPqkBSdEsKwzni2VQcedV9tOFWWCVVV4WhmkWHRp6nFTo9wDA@mail.gmail.com>
+	Mon, 12 Nov 2012 09:38:51 -0500
+Date: Mon, 12 Nov 2012 14:38:46 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Message-ID: <20121112143846.GI2346@mudshark.cambridge.arm.com>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+ <20121112104601.GB2346@mudshark.cambridge.arm.com>
+ <CAF6AEGtR0WBjoWbb2BF-hJa9sQi2Aa75dfrfb1u5EncaOB7Pyw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSdEsKwzni2VQcedV9tOFWWCVVV4WhmkWHRp6nFTo9wDA@mail.gmail.com>
+In-Reply-To: <CAF6AEGtR0WBjoWbb2BF-hJa9sQi2Aa75dfrfb1u5EncaOB7Pyw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Nov 2012 14:38:47.0587 (UTC) FILETIME=[6C9BC730:01CDC0E3]
+X-MC-Unique: 112111214384908401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.11.12 19:17:07, Stephane Eranian wrote:
-> On Sat, Nov 10, 2012 at 12:50 PM, Robert Richter <rric@kernel.org> wrote:
-> > Peter's main concerns were that my patch set is not in the
-> > Intel-uncore style. I started reworking this but was not able to
-> > finish my work. This concerns still exist.
+On Mon, Nov 12, 2012 at 01:46:57PM +0000, Rob Clark wrote:
+> On Mon, Nov 12, 2012 at 4:46 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Fri, Nov 09, 2012 at 09:17:33PM +0000, Rob Clark wrote:
+> >> @@ -122,22 +124,35 @@ extern int __get_user_4(void *);
+> >>       ({                                                              \
+> >>               unsigned long __limit = current_thread_info()->addr_limit - 1; \
+> >>               register const typeof(*(p)) __user *__p asm("r0") = (p);\
+> >> -             register unsigned long __r2 asm("r2");                  \
+> >>               register unsigned long __l asm("r1") = __limit;         \
+> >>               register int __e asm("r0");                             \
+> >>               switch (sizeof(*(__p))) {                               \
+> >> -             case 1:                                                 \
+> >> +             case 1: {                                               \
+> >> +                     register unsigned long __r2 asm("r2");          \
+> >>                       __get_user_x(__r2, __p, __e, __l, 1);           \
+> >> +                     x = (typeof(*(p))) __r2;                        \
+> >>                       break;                                          \
+> >> -             case 2:                                                 \
+> >> +             }                                                       \
+> >> +             case 2: {                                               \
+> >> +                     register unsigned long __r2 asm("r2");          \
+> >>                       __get_user_x(__r2, __p, __e, __l, 2);           \
+> >> +                     x = (typeof(*(p))) __r2;                        \
+> >>                       break;                                          \
+> >> -             case 4:                                                 \
+> >> +             }                                                       \
+> >> +             case 4: {                                               \
+> >> +                     register unsigned long __r2 asm("r2");          \
+> >>                       __get_user_x(__r2, __p, __e, __l, 4);           \
+> >> +                     x = (typeof(*(p))) __r2;                        \
+> >> +                     break;                                          \
+> >> +             }                                                       \
+> >> +             case 8: {                                               \
+> >> +                     register unsigned long long __r2 asm("r2");     \
 > >
-> That was my concern too. I don't recall exactly why it could not
-> be totally disconnected from the core PMU. I think hardware-wise,
-> it was possible. Could you refresh my memory?
+> > Does this matter? For EABI, we'll pass in (r2, r3) and it's all handcrafted
+> > asm, so the compiler shouldn't care much. For OABI, I think you may have to
+> > do some more work to get the two words where you want them.
+> 
+> Is the question whether the compiler is guaranteed to allocate r2 and
+> r3 in all cases?  I'm not quite sure, I confess to usually trying to
+> avoid inline asm.  But from looking at the disassembly (for little
+> endian EABI build) it seemed to do the right thing.
 
-Current implementation only allows the use of a single x86 pmu.
-Multiple instances of x86 pmus in a system like an additional pmu for
-nb counters requires a complete rework. You need to remove global
-variables and extend function interfaces by arguments pointing to a
-struct x86_pmu. All this without adding overhead (e.g. pointer
-chasing) compared to the existing code.
+I can't recall how OABI represents 64-bit values and particularly whether this
+differs between little and big-endian, so I wondered whether you may have to
+do some marshalling when you assign x. However, a few quick experiments with
+GCC suggest that the register representation matches EABI in regards to word
+ordering (it just doesn't require an even base register), although it would
+be good to find this written down somewhere...
 
-This is also the reason why the intel-uncore implemenation is
-basically a copy-and-paste of generic x86 pmu code plus uncore
-specific changes.
+> The only other idea I had was to explicitly declare two 'unsigned
+> long's and then shift them into a 64bit x, although I'm open to
+> suggestions if there is a better way.
 
-Avoiding code cuplication and a complex rework were the reasons for
-simply extending the family 10h implementation to also support family
-15h nb counters. This seemed to me the best approach that time.
+Can't you just use register unsigned long long for all cases? Even better,
+follow what put_user does and use typeof(*(p))?
 
--Robert
+> >> diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
+> >> index 9b06bb4..d05285c 100644
+> >> --- a/arch/arm/lib/getuser.S
+> >> +++ b/arch/arm/lib/getuser.S
+> >> @@ -18,7 +18,7 @@
+> >>   * Inputs:   r0 contains the address
+> >>   *           r1 contains the address limit, which must be preserved
+> >>   * Outputs:  r0 is the error code
+> >> - *           r2 contains the zero-extended value
+> >> + *           r2, r3 contains the zero-extended value
+> >>   *           lr corrupted
+> >>   *
+> >>   * No other registers must be altered.  (see <asm/uaccess.h>
+> >> @@ -66,6 +66,19 @@ ENTRY(__get_user_4)
+> >>       mov     pc, lr
+> >>  ENDPROC(__get_user_4)
+> >>
+> >> +ENTRY(__get_user_8)
+> >> +     check_uaccess r0, 4, r1, r2, __get_user_bad
+> >
+> > Shouldn't you be passing 8 here, so that we validate the correct range?
+> 
+> yes, sorry, I'll fix that
+> 
+> >> +#ifdef CONFIG_THUMB2_KERNEL
+> >> +5: TUSER(ldr)        r2, [r0]
+> >> +6: TUSER(ldr)        r3, [r0, #4]
+> >> +#else
+> >> +5: TUSER(ldr)        r2, [r0], #4
+> >> +6: TUSER(ldr)        r3, [r0]
+> >> +#endif
+> >
+> > This doesn't work for EABI big-endian systems.
+> 
+> Hmm, is that true?  Wouldn't put_user() then have the same problem?
+
+I dug up the PCS and it seems that we arrange the two halves of the
+doubleword to match the ldm/stm memory representation for EABI, so sorry
+for the confusion.
+
+> I guess __ARMEB__ is the flag for big-endian?
+
+That's the thing defined by the compiler, yes.
+
+Will
+
