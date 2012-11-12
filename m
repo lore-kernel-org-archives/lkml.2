@@ -1,183 +1,864 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab2KLFmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 00:42:11 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37578 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab2KLFmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 00:42:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
-   d="scan'208";a="216332895"
-Message-ID: <1352698922.1834.1.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
- quick cooling
-From: Zhang Rui <rui.zhang@intel.com>
-To: Amit Kachhap <amit.kachhap@linaro.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
-Date: Mon, 12 Nov 2012 13:42:02 +0800
-In-Reply-To: <CAK44p22hHVcL21B1iy1OnECMd5RCRF8DVh-cNj=6Bmvr5n0yyQ@mail.gmail.com>
-References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
-	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
-	 <1352354503.2190.7.camel@rzhang1-mobl4>
-	 <CAK44p22REJpaJiahX7sTofShNB-+OHVsULqHeuxFNu5msLk6vA@mail.gmail.com>
-	 <1352433060.2166.3.camel@rzhang1-mobl4>
-	 <CAK44p22hHVcL21B1iy1OnECMd5RCRF8DVh-cNj=6Bmvr5n0yyQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1751930Ab2KLFoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 00:44:44 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37686 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab2KLFok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 00:44:40 -0500
+Date: Mon, 12 Nov 2012 16:44:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <linux-next@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for Nov 12
+Message-Id: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Nov_2012_16_44_31_+1100_4dc6RXaq.j8HX6nD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 11:51 +0530, Amit Kachhap wrote:
-> On 9 November 2012 09:21, Zhang Rui <rui.zhang@intel.com> wrote:
-> > On Thu, 2012-11-08 at 11:56 +0530, Amit Kachhap wrote:
-> >> On 8 November 2012 11:31, Zhang Rui <rui.zhang@intel.com> wrote:
-> >> > On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
-> >> >> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
-> >> >> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
-> >> >> jump to the upper or lower cooling level instead of incremental increase
-> >> >> or decrease.
-> >> >
-> >> > IMO, what we need is a new more aggressive cooling governor which always
-> >> > uses upper limit when the temperature is raising and lower limit when
-> >> > the temperature is dropping.
-> >> Yes I agree that a new aggressive governor is the best approach but
-> >> then i thought adding a new trend type is a simple solution to achieve
-> >> this and since most of the governor logic might be same as the
-> >> step-wise governor. I have no objection in doing it through governor.
-> >> >
-> > hmmm,
-> > I think a more proper way is to set the cooling state to upper limit
-> > when it overheats and reduce the cooling state step by step when the
-> > temperature drops.
-> 
-> No actually I was thinking of having a  simple governor with a feature
-> like it only sets to upper level and lower level. Also since the
-> temperature sensor is capable of interrupting for both increase in
-> threshold(say 100C)  and fall in threshold (say 90C), so polling or
-> step increments is not needed at all.
-> Currently stepwise governor governor does that so we might change the
-> macro name as,
-> THERMAL_TREND_RAISE_STEP,
-> THERMAL_TREND_DROP_STEP,
-> THERMAL_TREND_RAISE_MAX,
-> THERMAL_TREND_DROP_MAX,
-> 
-> and file step_wise.c can be named as state_wise.c or trend_wise.c.
-> 
-> I am not sure if it is the best way . How do you feel ?
-> 
-this sounds good to me.
-I'd like to see Durga' comments on this as well.
+--Signature=_Mon__12_Nov_2012_16_44_31_+1100_4dc6RXaq.j8HX6nD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
-rui
-> > what do you think?
-> >
-> > thanks,
-> > rui
-> >
-> >> > I can write such a governor if you do not have time to.
-> >> ok. thanks
-> >> >
-> >> > thanks,
-> >> > rui
-> >> >>  This is needed for temperature sensors which support rising/falling
-> >> >> threshold interrupts and polling can be totally avoided.
-> >> >>
-> >> >
-> >> >
-> >> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> >> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> >> >> ---
-> >> >>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
-> >> >>  include/linux/thermal.h     |    2 ++
-> >> >>  2 files changed, 17 insertions(+), 4 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
-> >> >> index 1242cff..0d2d8d6 100644
-> >> >> --- a/drivers/thermal/step_wise.c
-> >> >> +++ b/drivers/thermal/step_wise.c
-> >> >> @@ -35,6 +35,10 @@
-> >> >>   *       state for this trip point
-> >> >>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
-> >> >>   *       state for this trip point
-> >> >> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
-> >> >> + *       state for this trip point
-> >> >> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
-> >> >> + *       state for this trip point
-> >> >>   */
-> >> >>  static unsigned long get_target_state(struct thermal_instance *instance,
-> >> >>                                       enum thermal_trend trend)
-> >> >> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
-> >> >>       } else if (trend == THERMAL_TREND_DROPPING) {
-> >> >>               cur_state = cur_state > instance->lower ?
-> >> >>                           (cur_state - 1) : instance->lower;
-> >> >> -     }
-> >> >> +     } else if (trend == THERMAL_TREND_RAISE_FULL)
-> >> >> +             cur_state = instance->upper;
-> >> >> +     else if (trend == THERMAL_TREND_DROP_FULL)
-> >> >> +             cur_state = instance->lower;
-> >> >>
-> >> >>       return cur_state;
-> >> >>  }
-> >> >> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
-> >> >>  }
-> >> >>
-> >> >>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
-> >> >> -                             int trip, enum thermal_trip_type trip_type)
-> >> >> +                             int trip, enum thermal_trip_type trip_type,
-> >> >> +                             enum thermal_trend trend)
-> >> >>  {
-> >> >>       struct thermal_instance *instance;
-> >> >>       struct thermal_cooling_device *cdev;
-> >> >> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
-> >> >>               cdev = instance->cdev;
-> >> >>               cdev->ops->get_cur_state(cdev, &cur_state);
-> >> >>
-> >> >> -             instance->target = cur_state > instance->lower ?
-> >> >> +             if (trend == THERMAL_TREND_DROP_FULL)
-> >> >> +                     instance->target = instance->lower;
-> >> >> +             else
-> >> >> +                     instance->target = cur_state > instance->lower ?
-> >> >>                           (cur_state - 1) : THERMAL_NO_TARGET;
-> >> >>
-> >> >>               /* Deactivate a passive thermal instance */
-> >> >> @@ -133,7 +144,7 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
-> >> >>       if (tz->temperature >= trip_temp)
-> >> >>               update_instance_for_throttle(tz, trip, trip_type, trend);
-> >> >>       else
-> >> >> -             update_instance_for_dethrottle(tz, trip, trip_type);
-> >> >> +             update_instance_for_dethrottle(tz, trip, trip_type, trend);
-> >> >>
-> >> >>       mutex_unlock(&tz->lock);
-> >> >>  }
-> >> >> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> >> >> index 807f214..8bce3ec 100644
-> >> >> --- a/include/linux/thermal.h
-> >> >> +++ b/include/linux/thermal.h
-> >> >> @@ -68,6 +68,8 @@ enum thermal_trend {
-> >> >>       THERMAL_TREND_STABLE, /* temperature is stable */
-> >> >>       THERMAL_TREND_RAISING, /* temperature is raising */
-> >> >>       THERMAL_TREND_DROPPING, /* temperature is dropping */
-> >> >> +     THERMAL_TREND_RAISE_FULL, /* Apply highest cooling action*/
-> >> >> +     THERMAL_TREND_DROP_FULL, /* Apply lowest cooling action*/
-> >> >>  };
-> >> >>
-> >> >>  /* Events supported by Thermal Netlink */
-> >> >
-> >> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi all,
 
+Changes since 20121109:
 
+The v4l-dvb tree lost its build failure but gained another so I used the
+version from next-20121026.
 
+The pinctrl tree gained a conflict against the slave-dma tree.
+
+The akpm tree lost most of its build failures but I have still reverted a
+few patches.  It also gained a conflict against the block tree for which
+I removed 4 patches.  It also lost a few patches that turned up elsewhere.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
+sparc64 and arm defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 209 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+Gortmaker for triage and bug fixes.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master (77b6706 Linux 3.7-rc5)
+Merging fixes/master (12250d8 Merge branch 'i2c-embedded/for-next' of git:/=
+/git.pengutronix.de/git/wsa/linux)
+Merging kbuild-current/rc-fixes (bad9955 menuconfig: Replace CIRCLEQ by lis=
+t_head-style lists.)
+Merging arm-current/fixes (6404f0b ARM: 7569/1: mm: uninitialized warning c=
+orrections)
+Merging m68k-current/for-linus (8a745ee m68k: Wire up kcmp)
+Merging powerpc-merge/merge (8c23f40 Merge git://git.kernel.org/pub/scm/vir=
+t/kvm/kvm)
+Merging sparc/master (b251f0f Merge git://git.kernel.org/pub/scm/linux/kern=
+el/git/davem/net)
+Merging net/master (b251f0f Merge git://git.kernel.org/pub/scm/linux/kernel=
+/git/davem/net)
+Merging sound-current/for-linus (8bb4d9c ALSA: Fix card refcount unbalance)
+Merging pci-current/for-linus (ff8e59b PCI/portdrv: Don't create hotplug sl=
+ots unless port supports hotplug)
+Merging wireless/master (6fe7cc7 ath9k: Test for TID only in BlockAcks whil=
+e checking tx status)
+Merging driver-core.current/driver-core-linus (8f0d816 Linux 3.7-rc3)
+Merging tty.current/tty-linus (8f0d816 Linux 3.7-rc3)
+Merging usb.current/usb-linus (d99e65b USB: fix build with XEN and EARLY_PR=
+INTK_DBGP enabled but USB_SUPPORT disabled)
+Merging staging.current/staging-linus (8f0d816 Linux 3.7-rc3)
+Merging char-misc.current/char-misc-linus (8f0d816 Linux 3.7-rc3)
+Merging input-current/for-linus (40a8120 Input: MT - document new 'flags' a=
+rgument of input_mt_init_slots())
+Merging md-current/for-linus (ed30be0 MD RAID10: Fix oops when creating RAI=
+D10 arrays via dm-raid.c)
+Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
+og_d_path prefix)
+Merging crypto-current/master (9efade1 crypto: cryptd - disable softirqs in=
+ cryptd_queue_worker to prevent data corruption)
+Merging ide/master (9974e43 ide: fix generic_ide_suspend/resume Oops)
+Merging dwmw2/master (244dc4e Merge git://git.infradead.org/users/dwmw2/ran=
+dom-2.6)
+Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
+to inline functions)
+Merging irqdomain-current/irqdomain/merge (15e06bf irqdomain: Fix debugfs f=
+ormatting)
+Merging devicetree-current/devicetree/merge (4e8383b of: release node fix f=
+or of_parse_phandle_with_args)
+Merging spi-current/spi/merge (d1c185b of/spi: Fix SPI module loading by us=
+ing proper "spi:" modalias prefixes.)
+Merging gpio-current/gpio/merge (96b7064 gpio/tca6424: merge I2C transactio=
+ns, remove cast)
+Merging rr-fixes/fixes (237242b virtio: Don't access index after unregister=
+.)
+Merging asm-generic/master (9b04ebd asm-generic/io.h: remove asm/cacheflush=
+.h include)
+Merging arm/for-next (ee05d61 Merge remote-tracking branch 'wildea/asids' i=
+nto for-next)
+Merging arm-perf/for-next/perf (ae0c7b2 Merge branch 'hw-breakpoint' into f=
+or-next/perf)
+Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
+Merging xilinx/arm-next (aaf5e0b ARM: zynq: Allow UART1 to be used as DEBUG=
+_LL console.)
+Merging arm64/upstream (42656f6 Merge branch 'execve' into upstream)
+Merging blackfin/for-linus (9d84601 Blackfin: dpmc: use module_platform_dri=
+ver macro)
+Merging c6x/for-linux-next (fbdd63d UAPI: (Scripted) Disintegrate arch/c6x/=
+include/asm)
+Merging cris/for-next (eacb25c UAPI: Fix up empty files in arch/cris/)
+Merging hexagon/linux-next (e1858b2 Hexagon: Copyright marking changes)
+Merging ia64/next (4fafc8c [IA64] Resolve name space collision for cache_sh=
+ow())
+Merging m68k/for-next (f82735d m68k: Use PTR_RET rather than if(IS_ERR(...)=
+) + PTR_ERR)
+Merging m68knommu/for-next (6762976 m68knommu: merge ColdFire 5249 and 525x=
+ definitions)
+Applying: m68k: fix up for UAPI changes
+Merging microblaze/next (f229605 microblaze: dma-mapping: Support debug_dma=
+_mapping_error)
+Merging mips/mips-for-linux-next (e950ae1 Merge branch 'current/for-linus' =
+into mips-for-linux-next)
+Merging openrisc/for-upstream (634bd40 openrisc: use kbuild.h instead of de=
+fining macros in asm-offset.c)
+Merging parisc/for-next (559fd14 Merge tag 'disintegrate-parisc-20121016' i=
+nto for-next)
+Merging powerpc/next (83dac59 cpuidle/powerpc: Fix snooze state problem in =
+the cpuidle design on pseries.)
+Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
+Merging mpc5xxx/next (fa9b24a powerpc/mpc5200: move lpbfifo node and fix it=
+s interrupt property)
+Merging galak/next (10bfa76 driver/mtd:IFC NAND:Initialise internal SRAM be=
+fore any write)
+Merging s390/features (3256ce0 s390/mm: move kernel_page_present/kernel_map=
+_pages to page_attr.c)
+Merging sh/sh-latest (0dd4d5c sh: Fix up more fallout from pointless ARM __=
+iomem churn.)
+Merging sparc-next/master (43c422e apparmor: fix apparmor OOPS in audit_log=
+_untrustedstring+0x1c/0x40)
+Merging tile/master (ddffeb8 Linux 3.7-rc1)
+Merging unicore32/unicore32 (7bf2799 arch/unicore32: remove CONFIG_EXPERIME=
+NTAL)
+Merging xtensa/for_next (d83ac75 xtensa: add xtavnet DTS)
+Merging btrfs/next (c37b2b6 Btrfs: do not bug when we fail to commit the tr=
+ansaction)
+Merging ceph/master (3515297 rbd: activate v2 image support)
+Merging cifs/for-next (5004f80 cifs: fix SID binary to string conversion)
+Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
+kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
+Merging ecryptfs/next (e4bc652 eCryptfs: Avoid unnecessary disk read and da=
+ta decryption during writing)
+Merging ext3/for_next (6c29c50 quota: Silence warning about PRJQUOTA not be=
+ing handled in need_print_warning())
+Merging ext4/dev (dffe9d8 ext4: do not use ext4_error() when there is no sp=
+ace in dir leaf for csum)
+Merging fuse/for-next (8888785 fuse: remove unused variable in fuse_try_mov=
+e_page())
+Merging gfs2/master (9dbe961 GFS2: Add Orlov allocator)
+Merging jfs/jfs-next (4e7a4b0 jfs: Fix FITRIM argument handling)
+Merging logfs/master (ab2ec19 logfs: fix possible memory leak in logfs_mtd_=
+can_write_buf())
+Merging nfs/linux-next (8ede994 Merge branch 'bugfixes' into linux-next)
+Merging nfsd/nfsd-next (a0af710 nfsd: remove unused argument to nfs4_has_re=
+claimed_state)
+Merging ocfs2/linux-next (4538df6 ocfs2: Don't spam on -EDQUOT.)
+Merging omfs/for-next (976d167 Linux 3.1-rc9)
+Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
+block_size and block_log match)
+Merging v9fs/for-next (552aad0 9P: Fix race between p9_write_work() and p9_=
+fd_request())
+Merging ubifs/linux-next (a28ad42 UBIFS: fix mounting problems after power =
+cuts)
+Merging xfs/for-next (579b62f xfs: add background scanning to clear eofbloc=
+ks inodes)
+Merging vfs/for-next (a736427 missing const in alpha callers of do_mount())
+Merging pci/next (0dcccc5 Merge branch 'pci/mike-x86-tra' into next)
+Applying: PCI: fixups for pci_resource_start conversion
+Merging hid/for-next (71bca10 Merge branch 'for-3.8/upstream' into for-next)
+Merging i2c/master (eb9d40f i2c: Mention functionality flags in SMBus proto=
+col documentation)
+Merging i2c-embedded/i2c-embedded/for-next (60f0a25 i2c: tegra: set irq nam=
+e as device name)
+Merging jdelvare-hwmon/master (0cae218 hwmon: (it87) Support PECI for addit=
+ional chips)
+Merging hwmon-staging/hwmon-next (d29d75d hwmon: (da9055) Fix chan_mux[DA90=
+55_ADC_ADCIN3] setting)
+Merging v4l-dvb/master (54db30f Merge /home/v4l/v4l/patchwork)
+$ git reset --hard HEAD^
+Merging refs/next/20121026/v4l-dvb
+Merging kbuild/for-next (c582d2a Merge branch 'kbuild/rc-fixes' into kbuild=
+/for-next)
+Merging kconfig/for-next (4eae518 localmodconfig: Fix localyesconfig to set=
+ to 'y' not 'm')
+Merging libata/NEXT (13b7408 sata_mv: Fix warnings when no PCI)
+Merging infiniband/for-next (1e3474d Merge branches 'cxgb4' and 'mlx4' into=
+ for-next)
+Merging pstore/master (80c9d03 pstore: Avoid recursive spinlocks in the oop=
+s_in_progress case)
+Merging acpi/next (afee985 tools/power turbostat: print Processor TDP in Wa=
+tts, when available)
+Merging cpuidle/cpuidle-next (3cf7997 acpi: intel_idle : break dependency b=
+etween modules)
+CONFLICT (content): Merge conflict in include/linux/cpuidle.h
+CONFLICT (add/add): Merge conflict in drivers/cpuidle/coupled.c
+Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
+ the debug tools' makefiles)
+Merging thermal/next (160b7d8 Thermal: Remove the cooling_cpufreq_list.)
+Merging ieee1394/for-next (790198f firewire: cdev: fix user memory corrupti=
+on (i386 userland on amd64 kernel))
+Merging ubi/linux-next (6a059ab UBI: use list_move_tail instead of list_del=
+/list_add_tail)
+Merging dlm/next (a3de56b fs/dlm: remove CONFIG_EXPERIMENTAL)
+Merging swiotlb/linux-next (af51a9f swiotlb: Do not export swiotlb_bounce s=
+ince there are no external consumers)
+Merging scsi/for-next (5c1b10a [SCSI] storvsc: Account for in-transit packe=
+ts in the RESET path)
+Merging target-updates/for-next (3735648 target: Update copyright informati=
+on to 2012)
+Merging target-merge/for-next-merge (6f0c058 Linux 3.7-rc2)
+Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
+Merging isci/all (6734092 isci: add a couple __iomem annotations)
+Merging slave-dma/next (8007644 async_tx: use memchr_inv)
+Merging dmaengine/next (a2bd114 netdma: adding alignment check for NETDMA o=
+ps)
+Merging net-next/master (d4185bb Merge git://git.kernel.org/pub/scm/linux/k=
+ernel/git/davem/net)
+Merging wireless-next/master (38141fc ar5523: make buffer size variable uns=
+igned)
+Merging bluetooth/master (5187464 Bluetooth: Fix updating advertising state=
+ flags and data)
+Merging mtd/master (5a6ea4a mtd: ofpart: Fix incorrect NULL check in parse_=
+ofoldpart_partitions())
+Merging l2-mtd/master (0560fdb mtd: gpio-nand: Ability to use driver for co=
+nfigurations without RDY-pin)
+Merging crypto/master (a465348 crypto: s5p-sss - Fix compilation error)
+Merging drm/drm-next (6380813 gma500: medfield: drop bogus NULL check in md=
+fld_dsi_output_init())
+Merging sound/for-next (34ca8d3 ALSA: hda - Removed unused non-standard nam=
+e "C/LFE")
+Merging sound-asoc/for-next (064153e Merge branches 'fix/core', 'fix/cs42l5=
+2', 'fix/mxs', 'fix/samsung', 'fix/wm8978', 'topic/ak4104', 'topic/atmel', =
+'topic/cs4271', 'topic/da9055', 'topic/davinci', 'topic/fsi', 'topic/fsl', =
+'topic/jack', 'topic/jz4740', 'topic/samsung', 'topic/si476x', 'topic/tlv32=
+0aic32x4', 'topic/ux500', 'topic/wm0010', 'topic/wm2200', 'topic/wm8750', '=
+topic/wm8770', 'topic/wm8971' and 'topic/wm8994' of git://git.kernel.org/pu=
+b/scm/linux/kernel/git/broonie/sound into asoc-next)
+Merging modules/modules-next (56713a2 MODSIGN: Add modules_sign make target)
+Merging virtio/virtio-next (41395df virtio: Convert dev_printk(KERN_<LEVEL>=
+ to dev_<level>()
+Merging input/next (544a46c Input: add Retu power button driver.)
+Merging input-mt/for-next (6f0c058 Linux 3.7-rc2)
+Merging cgroup/for-next (ef9fe98 cgroup_freezer: implement proper hierarchy=
+ support)
+Merging block/for-next (95678ef Merge branch 'for-3.8/core' into for-next)
+Merging device-mapper/master (cee3685 track_chunk is always called with int=
+errupts enabled. Consequently, we do not need to save and restore interrupt=
+ state in "flags" variable. This patch changes spin_lock_irqsave to spin_lo=
+ck_irq and spin_unlock_irqrestore to spin_unlock_irq.)
+Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
+ence)
+Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
+Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
+Merging mmc/mmc-next (ca41633 mmc: dw_mmc: fix more const pointer warnings)
+Merging kgdb/kgdb-next (58bcdf6 tty/console: fix warnings in drivers/tty/se=
+rial/kgdboc.c)
+Merging slab/for-next (31841eb Merge branch 'slab/next' into for-next)
+CONFLICT (content): Merge conflict in mm/slob.c
+Merging uclinux/for-next (ddffeb8 Linux 3.7-rc1)
+Merging md/for-next (79acf8a md:Avoid write invalid address if read_seqretr=
+y returned true.)
+Merging mfd/for-next (b851c06 mfd: Differentiate between u8500 and u9540 TC=
+DM address mapping)
+Merging battery/master (18766f0 Merge with upstream to accommodate with MFD=
+ changes)
+Merging fbdev/fbdev-next (cd9d6f1 gbefb: fix compile error)
+Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
+et_par)
+Merging omap_dss2/for-next (13b1ba7 OMAPDSS: add missing include for string=
+.h)
+Merging regulator/for-next (a9829f2 Merge remote-tracking branches 'regulat=
+or/fix/gpio', 'regulator/topic/gpio', 'regulator/topic/lp8788', 'regulator/=
+topic/max77686', 'regulator/topic/max8925', 'regulator/topic/tps51632', 're=
+gulator/topic/tps65910' and 'regulator/topic/vexpress' into regulator-next)
+Merging security/next (b566650 drivers/char/tpm: remove tasklet and cleanup)
+CONFLICT (content): Merge conflict in security/keys/process_keys.c
+CONFLICT (content): Merge conflict in security/keys/keyring.c
+CONFLICT (content): Merge conflict in security/keys/keyctl.c
+CONFLICT (content): Merge conflict in net/dns_resolver/dns_key.c
+CONFLICT (content): Merge conflict in fs/cifs/cifsacl.c
+Merging selinux/master (c2d7b24 Merge tag 'v3.4' into 20120409)
+Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
+Merging watchdog/master (58ddfed Merge branch 'master' of ../linux-watchdog)
+Merging dwmw2-iommu/master (c3b92c8 Linux 3.1)
+Merging iommu/next (f74b527 Merge branches 'iommu/fixes', 'dma-debug' and '=
+x86/amd' into next)
+Merging vfio/next (12250d8 Merge branch 'i2c-embedded/for-next' of git://gi=
+t.pengutronix.de/git/wsa/linux)
+Merging osd/linux-next (b6755ff osduld: Add osdname & systemid sysfs at scs=
+i_osd class)
+Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
+ument)
+Merging trivial/for-next (8166ea0 alpha: use BUG_ON where possible)
+Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
+Merging pm/linux-next (ea9c8e2 Merge branch 'acpi-enumeration-next' into li=
+nux-next)
+CONFLICT (content): Merge conflict in arch/x86/pci/acpi.c
+Merging apm/for-next (fb9d78a Merge branch 'for-linus' of git://git.kernel.=
+org/pub/scm/linux/kernel/git/jikos/apm)
+Merging fsnotify/for-next (1aec9c0 inotify: automatically restart syscalls)
+CONFLICT (content): Merge conflict in kernel/audit_tree.c
+Merging edac/linux_next (5e75cbb Merge branch 'devel' into next)
+Merging edac-amd/for-next (a8373ec EDAC: Handle error path in edac_mc_sysfs=
+_init() properly)
+Merging devicetree/devicetree/next (efd68e7 devicetree: add helper inline f=
+or retrieving a node's full name)
+Merging dt-rh/for-next (55020c8 of: Add vendor prefix for ON Semiconductor =
+Corp.)
+Merging spi/spi/next (d8e328b spi: Add "spi:" prefix to modalias attribute =
+of spi devices)
+Merging spi-mb/spi-next (19f15f0 Merge branches 'spi-core' and 'spi-tegra' =
+into spi-next)
+Merging tip/auto-latest (8a1d31c Merge branch 'x86/urgent')
+Merging rcu/rcu/next (870a511 rcu: Separate accounting of callbacks from ca=
+llback-free CPUs)
+Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
+_show)
+Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
+estep exceptions)
+Merging kvm/linux-next (f026399 Merge branch 'for-queue' of https://github.=
+com/agraf/linux-2.6 into queue)
+Merging kvm-ppc/kvm-ppc-next (f534a53 KVM: PPC: Book3S HV: Fix thinko in tr=
+y_lock_hpte())
+CONFLICT (add/add): Merge conflict in arch/powerpc/include/uapi/asm/epapr_h=
+calls.h
+CONFLICT (content): Merge conflict in arch/powerpc/include/uapi/asm/Kbuild
+CONFLICT (content): Merge conflict in arch/powerpc/include/asm/Kbuild
+Merging oprofile/for-next (4400910 oprofile, x86: Fix wrapping bug in op_x8=
+6_get_ctrl())
+Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
+kernel/git/steve/gfs2-3.0-fixes)
+Merging xen-two/linux-next (9e9b9e6 Merge branch 'stable/for-linus-3.7' int=
+o linux-next)
+Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
+Merging percpu/for-next (b4916cb percpu: make pcpu_free_chunk() use pcpu_me=
+m_free() instead of kfree())
+Merging workqueues/for-next (b401057 Merge branch 'for-3.8' into for-next)
+Merging drivers-x86/linux-next (455f38c eeepc-laptop: fix device reference =
+count leakage in eeepc_rfkill_hotplug())
+Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
+wpoison)
+Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
+o away)
+Merging regmap/for-next (516edb8 Merge remote-tracking branches 'regmap/top=
+ic/core', 'regmap/topic/domain', 'regmap/topic/lock', 'regmap/topic/range' =
+and 'regmap/topic/type' into regmap-next)
+Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
+Merging leds/for-next (b11339c leds: lm3642: Fix up world writable sysfs fi=
+les)
+Merging driver-core/driver-core-next (bb3215e Documentation: Fixes a term's=
+ translation in Documentation/zh_CN/arm64/memory.txt)
+Merging tty/tty-next (76cc438 tty: of_serial: fix return value check in of_=
+platform_serial_setup())
+CONFLICT (content): Merge conflict in drivers/tty/serial/omap-serial.c
+Merging usb/usb-next (cdb2fac USB: EHCI: fix build error in ChipIdea host d=
+river)
+CONFLICT (content): Merge conflict in drivers/usb/early/ehci-dbgp.c
+Merging staging/staging-next (fb7d2eb staging: csr: csr_wifi_hip_unifi_sign=
+al_names: Fix pointer position)
+CONFLICT (modify/delete): drivers/staging/telephony/Kconfig deleted in stag=
+ing/staging-next and modified in HEAD. Version HEAD of drivers/staging/tele=
+phony/Kconfig left in tree.
+$ git rm -f drivers/staging/telephony/Kconfig
+Merging char-misc/char-misc-next (ab5c4a5 mei: move amthif specific code fr=
+om mei_write to mei_amthif_write)
+Merging tmem/linux-next (8f0d816 Linux 3.7-rc3)
+Merging writeback/writeback-for-next (2f60d62 CPU hotplug, writeback: Don't=
+ call writeback_set_ratelimit() too often during hotplug)
+Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
+ boot interface)
+Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
+Merging pinctrl/for-next (e38d457 pinctrl: pinmux: Release all taken pins i=
+n pinmux_enable_setting error paths)
+CONFLICT (content): Merge conflict in arch/arm/boot/dts/spear1340.dtsi
+Merging vhost/linux-next (e0953c8 tun: experimental zero copy tx support)
+CONFLICT (content): Merge conflict in drivers/net/tun.c
+Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
+t memblock allocation using reverse free area iterator)
+Merging remoteproc/for-next (6f0c058 Linux 3.7-rc2)
+Merging irqdomain/irqdomain/next (f5a1ad0 irqdomain: Improve diagnostics wh=
+en a domain mapping fails)
+Merging gpio/gpio/next (ddf343f Merge branch 'for-linus' of git://git.kerne=
+l.org/pub/scm/linux/kernel/git/s390/linux)
+Merging gpio-lw/for-next (4b0ce207 Merge branch 'devel' into for-next)
+Merging arm-soc/for-next (9367622 Merge branch 'next/fixes-non-critical' in=
+to for-next)
+CONFLICT (content): Merge conflict in drivers/pinctrl/pinctrl-nomadik.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/cpu-db8500.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/board-mop500.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/board-mop500-audi=
+o.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/drm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-nomadik/board-nhk8815.c
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+Merging bcm2835/for-next (d7f292e Merge branch 'for-3.8/defconfig' into for=
+-next)
+Merging cortex/for-next (77a3018 Cortex-M3: Add support for exception handl=
+ing)
+Merging ep93xx/ep93xx-for-next (fab1f74 Merge branch 'ep93xx-fixes' into ep=
+93xx-for-next)
+Merging ixp4xx/next (b94740b IXP4xx: use __iomem for MMIO)
+Merging msm/for-next (a0d271c Linux 3.6)
+Merging renesas/next (07efb0c Merge branches 'heads/fixes', 'heads/defconfi=
+g' and 'heads/soc2' into next)
+Merging samsung/for-next (a9fe9f0 Merge branch 'next/cleanup-samsung-2' int=
+o for-next)
+Merging tegra/for-next (73bf078 Merge branch 'for-3.8/defconfig' into for-n=
+ext)
+Merging kvmtool/master (cfb8234 kvm tools: Fast A20 gate emulation)
+Merging dma-mapping/dma-mapping-next (8f0d816 Linux 3.7-rc3)
+Merging pwm/for-next (5bca7cc pwm: spear: Staticize spear_pwm_config())
+Merging dma-buf/for-next (ba42051 dma-buf: might_sleep() in dma_buf_unmap_a=
+ttachment())
+Merging userns/for-next (e9069f4 btrfs: Fix compilation with user namespace=
+ support enabled)
+Merging ktest/for-next (95f5783 ktest: Fix ELSE IF statements)
+Merging signal/for-next (fae4535 frv: switch to generic fork/vfork/clone)
+CONFLICT (content): Merge conflict in arch/sparc/kernel/sys_sparc_64.c
+CONFLICT (content): Merge conflict in arch/arm/kernel/process.c
+Merging clk/clk-next (749a267 clk: ux500: Register nomadik keypad clock loo=
+kups for u8500)
+Merging random/dev (ec8f02da random: prime last_data value per fips require=
+ments)
+Merging lzo-update/lzo-update (ba32bf9 lib/lzo: Do not leak implementation =
+details in lzo1x_1_compress())
+Merging drop-experimental/linux-next (f5c93a1 tools/lguest: remove depends =
+on CONFIG_EXPERIMENTAL)
+CONFLICT (content): Merge conflict in drivers/ptp/Kconfig
+CONFLICT (content): Merge conflict in drivers/net/ethernet/intel/Kconfig
+Merging scsi-post-merge/merge-base:master ()
+Merging akpm-current/current (d715ab1 h8300: add missing L1_CACHE_SHIFT)
+$ git checkout akpm
+Applying: tmpfs: fix shmem_getpage_gfp VM_BUG_ON
+Applying: tmpfs: change final i_blocks BUG to WARNING
+Applying: mm: add anon_vma_lock to validate_mm()
+Applying: mm: fix build warning for uninitialized value
+Applying: memcg: oom: fix totalpages calculation for memory.swappiness=3D=
+=3D0
+Applying: doc: describe memcg swappiness more precisely
+Applying: mm: fix a regression with HIGHMEM
+Applying: mm: vmscan: scale number of pages reclaimed by reclaim/compaction=
+ only in direct reclaim
+Applying: proc: check vma->vm_file before dereferencing
+Applying: CRIS: Fix I/O macros
+Applying: selinux: fix sel_netnode_insert() suspicious rcu dereference
+Applying: vfs: d_obtain_alias() needs to use "/" as default name.
+Applying: fs/block_dev.c: page cache wrongly left invalidated after revalid=
+ate_disk()
+Applying: x86 cpu_hotplug: unmap cpu2node when the cpu is hotremoved
+Applying: cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix
+Applying: arch/x86/platform/iris/iris.c: register a platform device and a p=
+latform driver
+Applying: x86 numa: don't check if node is NUMA_NO_NODE
+Applying: arch/x86/tools/insn_sanity.c: identify source of messages
+Applying: arch/x86/platform/uv: fix incorrect tlb flush all issue
+Applying: olpc: fix olpc-xo1-sci.c build errors
+Applying: fs/debugsfs: remove unnecessary inode->i_private initialization
+Applying: pcmcia: move unbind/rebind into dev_pm_ops.complete
+Applying: drm/i915: optimize DIV_ROUND_CLOSEST() call
+Applying: irq: tsk->comm is an array
+Applying: irq-tsk-comm-is-an-array-fix
+Applying: timeconst.pl: remove deprecated defined(@array)
+Applying: time: don't inline EXPORT_SYMBOL functions
+Applying: fs/pstore/ram.c: fix up section annotations
+Applying: h8300: select generic atomic64_t support
+Applying: drivers/tty/serial/serial_core.c: fix uart_get_attr_port() shift
+Applying: tasklet: ignore disabled tasklet in tasklet_action()
+Applying: tasklet: ignore disabled tasklet in tasklet_action v2
+Applying: drivers/message/fusion/mptscsih.c: missing break
+Applying: drivers/scsi/hptiop: support HighPoint RR4520/RR4522 HBA
+Applying: vfs: increment iversion when a file is truncated
+Applying: fs: change return values from -EACCES to -EPERM
+Applying: fs/block_dev.c: no need to check inode->i_bdev in bd_forget()
+Applying: mm/page_alloc.c: remove duplicate check
+Applying: writeback: remove nr_pages_dirtied arg from balance_dirty_pages_r=
+atelimited_nr()
+Applying: mm: show migration types in show_mem
+Applying: mm, memcg: make mem_cgroup_out_of_memory() static
+Applying: mm: use IS_ENABLED(CONFIG_NUMA) instead of NUMA_BUILD
+Applying: mm: use IS_ENABLED(CONFIG_COMPACTION) instead of COMPACTION_BUILD
+Applying: thp: clean up __collapse_huge_page_isolate
+Applying: thp-clean-up-__collapse_huge_page_isolate v2
+Applying: mm: introduce mm_find_pmd()
+Applying: mm-introduce-mm_find_pmd-fix
+Applying: thp: introduce hugepage_vma_check()
+Applying: thp: cleanup: introduce mk_huge_pmd()
+Applying: memory hotplug: suppress "Device memoryX does not have a release(=
+) function" warning
+Applying: memory-hotplug: skip HWPoisoned page when offlining pages
+Applying: memory-hotplug: update mce_bad_pages when removing the memory
+Applying: memory-hotplug-update-mce_bad_pages-when-removing-the-memory-fix
+Applying: memory-hotplug: auto offline page_cgroup when onlining memory blo=
+ck failed
+Applying: memory-hotplug: fix NR_FREE_PAGES mismatch
+Applying: memory-hotplug: fix NR_FREE_PAGES mismatch's fix
+Applying: numa: convert static memory to dynamically allocated memory for p=
+er node device
+Applying: memory-hotplug: suppress "Device nodeX does not have a release() =
+function" warning
+Applying: memory-hotplug, mm/sparse.c: clear the memory to store struct page
+Applying: memory-hotplug: allocate zone's pcp before onlining pages
+Applying: mm: make zone_pcp_reset independent of MEMORY_HOTREMOVE
+Applying: memory-hotplug: build zonelist if a zone is populated after onlin=
+ing pages
+Applying: memory_hotplug: fix possible incorrect node_states[N_NORMAL_MEMOR=
+Y]
+Applying: slub, hotplug: ignore unrelated node's hot-adding and hot-removing
+Applying: mm/memory_hotplug.c: update start_pfn in zone and pg_data when sp=
+anned_pages =3D=3D 0.
+Applying: mm: add comment on storage key dirty bit semantics
+Applying: mm,vmscan: only evict file pages when we have plenty
+Applying: mmvmscan-only-evict-file-pages-when-we-have-plenty-fix
+Applying: mm: refactor reinsert of swap_info in sys_swapoff()
+Applying: mm: do not call frontswap_init() during swapoff
+Applying: mm, highmem: use PKMAP_NR() to calculate an index of pkmap
+Applying: mm, highmem: remove useless pool_lock
+Applying: mm, highmem: remove page_address_pool list
+Applying: mm-highmem-remove-page_address_pool-list-v2
+Applying: mm, highmem: makes flush_all_zero_pkmaps() return index of last f=
+lushed entry
+Applying: mm-highmem-makes-flush_all_zero_pkmaps-return-index-of-last-flush=
+ed-entry-v2
+Applying: mm, highmem: get virtual address of the page using PKMAP_ADDR()
+Applying: mm: thp: set the accessed flag for old pages on access fault
+Applying: mm: memmap_init_zone() performance improvement
+Applying: Documentation/cgroups/memory.txt: s/mem_cgroup_charge/mem_cgroup_=
+change_common/
+Applying: mm, oom: allow exiting threads to have access to memory reserves
+Applying: memcg: make it possible to use the stock for more than one page
+Applying: memcg: reclaim when more than one page needed
+Applying: memcg: change defines to an enum
+Applying: memcg: kmem accounting basic infrastructure
+Applying: mm: add a __GFP_KMEMCG flag
+Applying: memcg: kmem controller infrastructure
+Applying: mm: allocate kernel pages to the right memcg
+Applying: res_counter: return amount of charges after res_counter_uncharge()
+Applying: memcg: kmem accounting lifecycle management
+Applying: memcg: use static branches when code not in use
+Applying: memcg: allow a memcg with kmem charges to be destructed
+Applying: memcg: execute the whole memcg freeing in free_worker()
+Applying: fork: protect architectures where THREAD_SIZE >=3D PAGE_SIZE agai=
+nst fork bombs
+Applying: memcg: add documentation about the kmem controller
+Applying: slab/slub: struct memcg_params
+Applying: slab: annotate on-slab caches nodelist locks
+Applying: slab/slub: consider a memcg parameter in kmem_create_cache
+Applying: memcg: allocate memory for memcg caches whenever a new memcg appe=
+ars
+Applying: memcg: infrastructure to match an allocation to the right cache
+Applying: memcg: skip memcg kmem allocations in specified code regions
+Applying: sl[au]b: always get the cache from its page in kmem_cache_free()
+Applying: sl[au]b: allocate objects from memcg cache
+Applying: memcg: destroy memcg caches
+Applying: memcg/sl[au]b: track all the memcg children of a kmem_cache
+Applying: memcg/sl[au]b: shrink dead caches
+Applying: memcg: aggregate memcg cache values in slabinfo
+Applying: slab: propagate tunable values
+Applying: slub: slub-specific propagation changes
+Applying: slub-slub-specific-propagation-changes-fix
+Applying: kmem: add slab-specific documentation about the kmem controller
+Applying: dmapool: make DMAPOOL_DEBUG detect corruption of free marker
+Applying: dmapool-make-dmapool_debug-detect-corruption-of-free-marker-fix
+Applying: mm: hwpoison: fix action_result() to print out dirty/clean
+Applying: mm: print out information of file affected by memory error
+Applying: mm: support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
+Applying: mm-support-more-pagesizes-for-map_hugetlb-shm_hugetlb-v7-fix
+Applying: mm-support-more-pagesizes-for-map_hugetlb-shm_hugetlb-v7-fix-fix
+Applying: selftests: add a test program for variable huge page sizes in mma=
+p/shmget
+Applying: mm: augment vma rbtree with rb_subtree_gap
+Applying: mm: check rb_subtree_gap correctness
+Applying: mm-check-rb_subtree_gap-correctness-fix
+Applying: mm: rearrange vm_area_struct for fewer cache misses
+Applying: mm-rearrange-vm_area_struct-for-fewer-cache-misses-checkpatch-fix=
+es
+Applying: mm: vm_unmapped_area() lookup function
+Applying: mm-vm_unmapped_area-lookup-function-checkpatch-fixes
+Applying: mm: use vm_unmapped_area() on x86_64 architecture
+Applying: mm: fix cache coloring on x86_64 architecture
+Applying: mm: use vm_unmapped_area() in hugetlbfs
+Applying: mm: use vm_unmapped_area() in hugetlbfs on i386 architecture
+Applying: mm: use vm_unmapped_area() on mips architecture
+Applying: mm-use-vm_unmapped_area-on-mips-architecture-fix
+Applying: mm: use vm_unmapped_area() on arm architecture
+Applying: mm-use-vm_unmapped_area-on-arm-architecture-fix
+Applying: mm: use vm_unmapped_area() on sh architecture
+Applying: mm-use-vm_unmapped_area-on-sh-architecture-fix
+Applying: mm: use vm_unmapped_area() on sparc64 architecture
+Applying: mm-use-vm_unmapped_area-on-sparc64-architecture-fix
+Applying: mm: use vm_unmapped_area() in hugetlbfs on sparc64 architecture
+Applying: mm: use vm_unmapped_area() on sparc32 architecture
+Applying: mm: use vm_unmapped_area() in hugetlbfs on tile architecture
+Applying: mm/vmscan.c: try_to_freeze() returns boolean
+Applying: mm, mempolicy: remove duplicate code
+Applying: mm: adjust address_space_operations.migratepage() return code
+Applying: mm-adjust-address_space_operationsmigratepage-return-code-fix
+Applying: mm: redefine address_space.assoc_mapping
+Applying: mm: introduce a common interface for balloon pages mobility
+Applying: mm-introduce-a-common-interface-for-balloon-pages-mobility-fix
+Applying: mm-introduce-a-common-interface-for-balloon-pages-mobility-fix-fix
+Applying: mm: introduce compaction and migration for ballooned pages
+Applying: virtio_balloon: introduce migration primitives to balloon pages
+Applying: mm: introduce putback_movable_pages()
+Applying: mm: add vm event counters for balloon pages compaction
+Applying: mm: fix slab.c kernel-doc warnings
+Applying: mm: cleanup register_node()
+Applying: mm, oom: change type of oom_score_adj to short
+Applying: mm, oom: fix race when specifying a thread as the oom origin
+Applying: mm: cma: skip watermarks check for already isolated blocks in spl=
+it_free_page()
+Applying: mm: cma: remove watermark hacks
+Applying: drop_caches: add some documentation and info message
+Applying: drop_caches-add-some-documentation-and-info-messsge-checkpatch-fi=
+xes
+Applying: swap: add a simple detector for inappropriate swapin readahead
+Applying: swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix
+Applying: mm/memblock: reduce overhead in binary search
+Applying: scripts/pnmtologo: fix for plain PBM
+Applying: scripts-pnmtologo-fix-for-plain-pbm-checkpatch-fixes
+Applying: Documentation/kernel-parameters.txt: update mem=3D option's spec =
+according to its implementation
+Applying: include/linux/init.h: use the stringify operator for the __define=
+_initcall macro
+Applying: scripts/tags.sh: add magic for declarations of popular kernel type
+Applying: Documentation: remove reference to feature-removal-schedule.txt
+Applying: kernel: remove reference to feature-removal-schedule.txt
+Applying: sound: remove reference to feature-removal-schedule.txt
+Applying: drivers: remove reference to feature-removal-schedule.txt
+Applying: backlight: da903x_bl: use dev_get_drvdata() instead of platform_g=
+et_drvdata()
+Applying: backlight: 88pm860x_bl: fix checkpatch warning
+Applying: backlight: atmel-pwm-bl: fix checkpatch warning
+Applying: backlight: corgi_lcd: fix checkpatch error and warning
+Applying: backlight: da903x_bl: fix checkpatch warning
+Applying: backlight: generic_bl: fix checkpatch warning
+Applying: backlight: hp680_bl: fix checkpatch error and warning
+Applying: backlight: ili9320: fix checkpatch error and warning
+Applying: backlight: jornada720: fix checkpatch error and warning
+Applying: backlight: l4f00242t03: fix checkpatch warning
+Applying: backlight: lm3630: fix checkpatch warning
+Applying: backlight: locomolcd: fix checkpatch error and warning
+Applying: backlight: omap1: fix checkpatch warning
+Applying: backlight: pcf50633: fix checkpatch warning
+Applying: backlight: platform_lcd: fix checkpatch error
+Applying: backlight: tdo24m: fix checkpatch warning
+Applying: backlight: tosa: fix checkpatch error and warning
+Applying: backlight: vgg2432a4: fix checkpatch warning
+Applying: backlight: lms283gf05: use devm_gpio_request_one
+Applying: backlight: tosa: use devm_gpio_request_one
+Applying: drivers/video/backlight/lp855x_bl.c: use generic PWM functions
+Applying: drivers-video-backlight-lp855x_blc-use-generic-pwm-functions-fix
+Applying: drivers/video/backlight/lp855x_bl.c: remove unnecessary mutex code
+Applying: drivers/video/backlight/da9052_bl.c: add missing const
+Applying: drivers/video/backlight/lms283gf05.c: add missing const
+Applying: drivers/video/backlight/tdo24m.c: add missing const
+Applying: drivers/video/backlight/vgg2432a4.c: add missing const
+Applying: drivers/video/backlight/s6e63m0.c: remove unnecessary cast of voi=
+d pointer
+Applying: drivers/video/backlight/88pm860x_bl.c: drop devm_kfree of devm_kz=
+alloc'd data
+Applying: drivers/video/backlight/max8925_bl.c: drop devm_kfree of devm_kza=
+lloc'd data
+Applying: drivers/video/backlight/lm3639_bl.c: fix up world writable sysfs =
+file
+Applying: drivers/video/backlight/ep93xx_bl.c: fix section mismatch
+Applying: drivers/video/backlight/hp680_bl.c: add missing __devexit macros =
+for remove
+Applying: drivers/video/backlight/ili9320.c: add missing __devexit macros f=
+or remove
+Applying: string: introduce helper to get base file name from given path
+Applying: lib: dynamic_debug: use kbasename()
+Applying: mm: use kbasename()
+Applying: procfs: use kbasename()
+Applying: proc_devtree: remove duplicated include from proc_devtree.c
+Applying: trace: use kbasename()
+Applying: drivers/of/fdt.c: re-use kernel's kbasename()
+Applying: sscanf: don't ignore field widths for numeric conversions
+Applying: percpu_rw_semaphore: reimplement to not block the readers unneces=
+sarily
+Applying: compat: generic compat_sys_sched_rr_get_interval() implementation
+Applying: drivers/firmware/dmi_scan.c: check dmi version when get system uu=
+id
+Applying: drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid=
+-fix
+Applying: drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it =
+exists
+Applying: drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-ex=
+ists-checkpatch-fixes
+Applying: checkpatch: warn on unnecessary line continuations
+Applying: epoll: support for disabling items, and a self-test app
+Applying: binfmt_elf: fix corner case kfree of uninitialized data
+Applying: binfmt_elf-fix-corner-case-kfree-of-uninitialized-data-checkpatch=
+-fixes
+Applying: rtc: omap: kicker mechanism support
+Applying: ARM: davinci: remove rtc kicker release
+Applying: rtc: omap: dt support
+Applying: rtc: omap: depend on am33xx
+Applying: rtc: omap: add runtime pm support
+Applying: drivers/rtc/rtc-imxdi: support for i.MX53
+Applying: drivers/rtc/rtc-imxdi.c: add devicetree support
+Applying: ARM: mach-imx: support for DryIce RTC in i.MX53
+Applying: drivers/rtc/rtc-vt8500.c: convert to use devm_kzalloc
+Applying: drivers/rtc/rtc-test.c: avoid calling platform_device_put() twice
+Applying: rtc-avoid-calling-platform_device_put-twice-in-test_init-fix
+Applying: rtc: rtc-spear: use devm_*() routines
+Applying: rtc: rtc-spear: Add clk_{un}prepare() support
+Applying: rtc: rtc-spear: Provide flag for no support of UIE mode
+Applying: hfsplus: add on-disk layout declarations related to attributes tr=
+ee
+Applying: hfsplus: add functionality of manipulating by records in attribut=
+es tree
+Applying: hfsplus: rework functionality of getting, setting and deleting of=
+ extended attributes
+Applying: hfsplus: add support of manipulation by attributes file
+Applying: hfsplus-add-support-of-manipulation-by-attributes-file-checkpatch=
+-fixes
+Applying: hfsplus: code style fixes - reworked support of extended attribut=
+es
+Applying: Documentation/DMA-API-HOWTO.txt: minor grammar corrections
+Applying: Documentation: fix Documentation/security/00-INDEX
+Applying: kstrto*: add documentation
+Applying: simple_strto*: annotate function as obsolete
+Applying: proc: don't show nonexistent capabilities
+Applying: procfs: add VmFlags field in smaps output
+Applying: procfs-add-vmflags-field-in-smaps-output-v4-fix
+Applying: /proc/pid/status: add "Seccomp" field
+Applying: fork: unshare: remove dead code
+Applying: ipc: remove forced assignment of selected message
+Applying: ipc: add sysctl to specify desired next object id
+Applying: ipc-add-sysctl-to-specify-desired-next-object-id-checkpatch-fixes
+Applying: ipc: wrap new sysctls for CRIU inside CONFIG_CHECKPOINT_RESTORE
+Applying: Documentation: update sysctl/kernel.txt
+Applying: ipc: message queue receive cleanup
+Applying: ipc-message-queue-receive-cleanup-checkpatch-fixes
+Applying: ipc: introduce message queue copy feature
+Applying: ipc: remove redundant MSG_COPY check
+Applying: ipc: cleanup do_msgrcv() around MSG_COPY feature
+Applying: selftests: IPC message queue copy feature test
+Applying: test: IPC message queue copy feature test update
+Applying: ipc: simplify free_copy() call
+Applying: ipc: convert prepare_copy() from macro to function
+Applying: ipc-convert-prepare_copy-from-macro-to-function-fix
+Applying: ipc: simplify message copying
+Applying: ipc: add more comments to message copying related code
+Applying: ipc/sem.c: alternatives to preempt_disable()
+Applying: binfmt_elf.c: use get_random_int() to fix entropy depleting
+Applying: binfmt_elfc-use-get_random_int-to-fix-entropy-depleting-fix
+Applying: linux/compiler.h: add __must_hold macro for functions called with=
+ a lock held
+Applying: Documentation/sparse.txt: document context annotations for lock c=
+hecking
+Applying: aoe: describe the behavior of the "err" character device
+Applying: aoe: print warning regarding a common reason for dropped transmits
+Applying: aoe-print-warning-regarding-a-common-reason-for-dropped-transmits=
+-v2
+Applying: aoe: avoid using skb member after dev_queue_xmit
+Applying: aoe: update cap on outstanding commands based on config query res=
+ponse
+Applying: aoe: support the forgetting (flushing) of a user-specified AoE ta=
+rget
+Applying: aoe: support larger I/O requests via aoe_maxsectors module param
+Applying: aoe: "payload" sysfs file exports per-AoE-command data transfer s=
+ize
+Applying: aoe: cleanup: remove unused ata_scnt function
+Applying: aoe: whitespace cleanup
+Applying: aoe: update driver-internal version number to 60
+Applying: aoe: provide ATA identify device content to user on request
+Applying: aoe: improve network congestion handling
+Applying: aoe: err device: include MAC addresses for unexpected responses
+Applying: aoe: manipulate aoedev network stats under lock
+Applying: aoe: use high-resolution RTTs with fallback to low-res
+Applying: aoe: commands in retransmit queue use new destination on failure
+Applying: aoe: update driver-internal version to 64+
+Applying: Documentation/DMA-API-HOWTO.txt: fix typo
+Applying: tools/testing/selftests/kcmp/kcmp_test.c: print reason for failur=
+e in kcmp_test
+Applying: fix mm: augment vma rbtree with rb_subtree_gap
+Applying: fix mm: use vm_unmapped_area() in hugetlbfs on tile architecture
+Applying: fix mm: use vm_unmapped_area() in hugetlbfs on sparc64 architectu=
+re
+Applying: mm-use-vm_unmapped_area-on-sparc64-architecture-fix2
+Applying: mm-use-vm_unmapped_area-on-arm-architecture-fix2
+Applying: mm: fix for use vm_unmapped_area() in hugetlbfs on i386 architect=
+ure
+Merging akpm/master (d688e7c mm: fix for use vm_unmapped_area() in hugetlbf=
+s on i386 architecture)
+[master 81fba35] Revert "mm-support-more-pagesizes-for-map_hugetlb-shm_huge=
+tlb-v7-fix-fix"
+[master a6ca6cc] Revert "mm-support-more-pagesizes-for-map_hugetlb-shm_huge=
+tlb-v7-fix"
+[master 359078d] Revert "mm: support more pagesizes for MAP_HUGETLB/SHM_HUG=
+ETLB"
+Applying: fix mm: use vm_unmapped_area() on sparc32 architecture
+
+--Signature=_Mon__12_Nov_2012_16_44_31_+1100_4dc6RXaq.j8HX6nD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQoIy/AAoJEECxmPOUX5FExKYP/iDXTpIi/4JvZ8a4ZPV6sUw7
+S4YAjOD1w0MrNa22Z4p0dzyqCYqic17P6ika9Tjlo1ipSlmcdLvvGSCGsVE/DlpW
+qMj71y66dWvAz9wa+oFZyuuRkan/yzmNInnknkASU+9XQf3cSL+9CVMRWR/kc5AN
+FUe+ie1l/urLxVHW/z+XSbf0P99i40uzKgA0Oqv5ZK94DbR8bzLTh4qLFkaOuOQ6
+X2wAc2mhyToea0Arow8znWOgrcRlNUDEKRTXR3JJhyRcVcomtwLchj8fWScwuWIb
+QNhbtR3NNFi3sERoojHzZWk5rKujHpXGDxFN1/cxhsGecqYCbtbxKgBF9A5RfPVo
+aXyHvyiAFevfIAkVjCFJyEsnq9StydIX7DgHOKIalIjDXShNtmDQb+ThHdC8LSCh
+l8JnTO9KqRtw4id7Uz8z893rrR4H2Bjas3BNpYUiUrHW5nJGBZj8VUW6p5jO5R5t
+0EE+Z04jr0v8r4lVc+GMpx7kfxWv3dtp1r9G5fYcva/shCm0z8oc9Utk/3Oe1+ZK
+NbDf92dVfudKgRCY2i7QPQytUUEilEPeaIYjJ5qzbg31CJF0qDbd2/xjv7JUfO33
+hUXnHzQjBj1IwS7Gheibb8s5tO+G+KQf3v4ERnS0PkGZSZKjEBszcQVNAJxq/kqA
+8aQU8y3Ba4G/eJvRO16n
+=2OXI
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__12_Nov_2012_16_44_31_+1100_4dc6RXaq.j8HX6nD--
