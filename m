@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab2KLVWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:22:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41839 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab2KLVWl convert rfc822-to-8bit (ORCPT
+	id S1754186Ab2KLVV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:21:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36299 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab2KLVTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:22:41 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <CAPub148Bq=uwTuky25WzXn4yfCukJ+WacxkBvuyV5yTzGasGOQ@mail.gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-References: <CAPub14-CPS48gQ1h8vvAYBpO_=egjheG_rMoZ894Y4XZ2CinUQ@mail.gmail.com>
- <CAPub148Bq=uwTuky25WzXn4yfCukJ+WacxkBvuyV5yTzGasGOQ@mail.gmail.com>
-Message-ID: <20121112212212.20034.78522@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: possibility of parent clock selection through DT
-Date: Mon, 12 Nov 2012 13:22:12 -0800
-X-Originating-IP: [10.188.36.112]
+	Mon, 12 Nov 2012 16:19:40 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 13/46] x86, mm: use pfn_range_is_mapped() with gart
+Date: Mon, 12 Nov 2012 13:18:09 -0800
+Message-Id: <1352755122-25660-14-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+ <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Shiraz Hashim (2012-11-06 22:36:10)
-> On Wed, Nov 7, 2012 at 11:42 AM, Shiraz Hashim
-> <shiraz.linux.kernel@gmail.com> wrote:
-> > Hi Mike, Rob,
-> >
-> > Devices in a SoC can have multiple possible clock sources which is
-> > perfectly captured through clk framework.
-> >
-> > But the device itself may not be aware of the complex hierarchy above it.
-> > In this case how do you suggest a board (through DT) should select its
-> > preference.
-> >
-> > Is there some work already going on in this direction ?
-> 
-> Just to make it clear, I already have referred the clock DT bindings and
-> Shawn Guo patch on removing clk look up registration from kernel code.
-> 
-> Here I am talking about possibility of selecting desired clock hierarchy
-> by the boards about which device nodes are not aware.
-> 
+We are going to map ram only, so under max_low_pfn_mapped,
+between 4g and max_pfn_mapped does not mean mapped at all.
 
-One way to achieve this is to use clk_set_rate as a way to switch
-parents at run-time.  The OMAP CCF code currently does this when
-relocking PLLs and makes use of __clk_reparent to update the clock
-framework's representation of the hierarchy dynamically.
+Use pfn_range_is_mapped() directly.
 
-Maybe something like the following is helpful to you:
-http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=blob;f=arch/arm/mach-omap2/dpll3xxx.c;h=f72dedb4eee892ce4cd5bdf22cc8c22510f3d526;hb=clk-omap-3.8#l542
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/kernel/amd_gart_64.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Regards,
-Mike
+diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
+index e663112..b574b29 100644
+--- a/arch/x86/kernel/amd_gart_64.c
++++ b/arch/x86/kernel/amd_gart_64.c
+@@ -768,10 +768,9 @@ int __init gart_iommu_init(void)
+ 	aper_base	= info.aper_base;
+ 	end_pfn		= (aper_base>>PAGE_SHIFT) + (aper_size>>PAGE_SHIFT);
+ 
+-	if (end_pfn > max_low_pfn_mapped) {
+-		start_pfn = (aper_base>>PAGE_SHIFT);
++	start_pfn = PFN_DOWN(aper_base);
++	if (!pfn_range_is_mapped(start_pfn, end_pfn))
+ 		init_memory_mapping(start_pfn<<PAGE_SHIFT, end_pfn<<PAGE_SHIFT);
+-	}
+ 
+ 	pr_info("PCI-DMA: using GART IOMMU.\n");
+ 	iommu_size = check_iommu_size(info.aper_base, aper_size);
+-- 
+1.7.7
 
-> -- 
-> regards
-> Shiraz Hashim
