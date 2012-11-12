@@ -1,79 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab2KLWFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 17:05:12 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51152 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2KLWFK (ORCPT
+	id S1753690Ab2KLWI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 17:08:27 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60385 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab2KLWIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 17:05:10 -0500
-Date: Tue, 13 Nov 2012 09:05:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: Build regressions/improvements in v3.7-rc5
-Message-Id: <20121113090501.8a93b5bb08518f897acddf41@canb.auug.org.au>
-In-Reply-To: <CAMuHMdXE0yJNivpirGgx08zqLH2086ydeOU6zswXj-+zn8OsWQ@mail.gmail.com>
-References: <1352753886-3402-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdXE0yJNivpirGgx08zqLH2086ydeOU6zswXj-+zn8OsWQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Nov_2012_09_05_01_+1100_XhYe/dgMqqEhzt9x"
+	Mon, 12 Nov 2012 17:08:25 -0500
+Message-ID: <50A17353.8010604@linaro.org>
+Date: Mon, 12 Nov 2012 23:08:19 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Julius Werner <jwerner@chromium.org>
+CC: linux-pm@vger.kernel.org, khilman@ti.com, len.brown@intel.com,
+        Trinabh Gupta <g.trinabh@gmail.com>, deepthi@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl, akpm@linux-foundation.org,
+        Sameer Nanda <snanda@chromium.org>,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>
+Subject: Re: [RFC] cpuidle - remove the power_specified field in the driver
+References: <50831CA3.2020602@linaro.org> <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org> <CAODwPW-yjzrAFRA4Bv-MZETFEfq+cpaLvHaYX5K5HBtQtJKZQA@mail.gmail.com>
+In-Reply-To: <CAODwPW-yjzrAFRA4Bv-MZETFEfq+cpaLvHaYX5K5HBtQtJKZQA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Nov_2012_09_05_01_+1100_XhYe/dgMqqEhzt9x
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/12/2012 10:09 PM, Julius Werner wrote:
+> Thanks for moving this along, Daniel. I think this is the right
+> approach... the cpuidle driver shouldn't be more complex than
+> necessary.
+> 
+> Note that you are starting your loop too high in cpuidle_play_dead...
+> states[state_count] is not an actual state anymore, it should start at
+> state_count - 1. 
 
-Hi Geert,
+Yep. Thanks for catching this.
 
-Thanks for these reports!
+> Also, I think you can go ahead and do the same
+> last-to-first loop transformation with immediate return in the menu
+> governor, for an extra tiny bit of performance.
 
-On Mon, 12 Nov 2012 22:02:46 +0100 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
->
->   + error: relocation truncated to fit: R_PPC64_REL24 against symbol
-> `._mcount' defined in .text section in arch/powerpc/kernel/entry_64.o:
-> (.text+0x1ff9eb8) =3D> (.text+0x1ffa274), (.text+0x1ff7840)
->=20
-> powerpc-allyesconfig
+Yes, that makes sense.
 
-Yeah, as Scott said, these are not worth reporting.  However, they are
-being worked on in various ways, but will probably not be solved very
-soon (it means we have to change how we link the kernel and that will
-probably require some discussion).
+Thanks for the review.
 
-I just keep the powerpc allyesconfig build there to catch other stuff
-(like drivers that assume too much).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  -- Daniel
 
---Signature=_Tue__13_Nov_2012_09_05_01_+1100_XhYe/dgMqqEhzt9x
-Content-Type: application/pgp-signature
+> On Mon, Nov 12, 2012 at 12:26 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> This patch follows the discussion about reinitializing the power usage
+>> when a C-state is added/removed.
+>>
+>>  https://lkml.org/lkml/2012/10/16/518
+>>
+>> We realized the power usage field is never filled and when it is
+>> filled for tegra, the power_specified flag is not set making all these
+>> values to be resetted when the driver is initialized with the set_power_state
+>> function.
+>>
+>> Julius and I feel this is over-engineered and the power_specified
+>> flag could be simply removed and continue assuming the states are
+>> backward sorted.
+>>
+>> The menu governor select function is simplified as the power is ordered.
+>> Actually the condition is always true with the current code.
+>>
+>> The cpuidle_play_dead function is also simplified by doing a reverse lookup
+>> on the array.
+>>
+>> The set_power_states function is removed as it does no make sense anymore.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>  drivers/cpuidle/cpuidle.c        |   17 ++++-------------
+>>  drivers/cpuidle/driver.c         |   25 -------------------------
+>>  drivers/cpuidle/governors/menu.c |    8 ++------
+>>  include/linux/cpuidle.h          |    2 +-
+>>  4 files changed, 7 insertions(+), 45 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> index 711dd83..f983262 100644
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
+>>  {
+>>         struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>>         struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>> -       int i, dead_state = -1;
+>> -       int power_usage = -1;
+>> +       int i;
+>>
+>>         if (!drv)
+>>                 return -ENODEV;
+>>
+>>         /* Find lowest-power state that supports long-term idle */
+>> -       for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+>> -               struct cpuidle_state *s = &drv->states[i];
+>> -
+>> -               if (s->power_usage < power_usage && s->enter_dead) {
+>> -                       power_usage = s->power_usage;
+>> -                       dead_state = i;
+>> -               }
+>> -       }
+>> -
+>> -       if (dead_state != -1)
+>> -               return drv->states[dead_state].enter_dead(dev, dead_state);
+>> +       for (i = drv->state_count; i >= CPUIDLE_DRIVER_STATE_START; i--)
+>> +               if (drv->states[i].play_dead)
+>> +                       return drv->states[i].enter_dead(dev, i);
+>>
+>>         return -ENODEV;
+>>  }
+>> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+>> index 3af841f..bb045f1 100644
+>> --- a/drivers/cpuidle/driver.c
+>> +++ b/drivers/cpuidle/driver.c
+>> @@ -19,34 +19,9 @@ DEFINE_SPINLOCK(cpuidle_driver_lock);
+>>  static void __cpuidle_set_cpu_driver(struct cpuidle_driver *drv, int cpu);
+>>  static struct cpuidle_driver * __cpuidle_get_cpu_driver(int cpu);
+>>
+>> -static void set_power_states(struct cpuidle_driver *drv)
+>> -{
+>> -       int i;
+>> -
+>> -       /*
+>> -        * cpuidle driver should set the drv->power_specified bit
+>> -        * before registering if the driver provides
+>> -        * power_usage numbers.
+>> -        *
+>> -        * If power_specified is not set,
+>> -        * we fill in power_usage with decreasing values as the
+>> -        * cpuidle code has an implicit assumption that state Cn
+>> -        * uses less power than C(n-1).
+>> -        *
+>> -        * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
+>> -        * an power value of -1.  So we use -2, -3, etc, for other
+>> -        * c-states.
+>> -        */
+>> -       for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
+>> -               drv->states[i].power_usage = -1 - i;
+>> -}
+>> -
+>>  static void __cpuidle_driver_init(struct cpuidle_driver *drv)
+>>  {
+>>         drv->refcnt = 0;
+>> -
+>> -       if (!drv->power_specified)
+>> -               set_power_states(drv);
+>>  }
+>>
+>>  static int __cpuidle_register_driver(struct cpuidle_driver *drv, int cpu)
+>> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+>> index 2efee27..14eb11f 100644
+>> --- a/drivers/cpuidle/governors/menu.c
+>> +++ b/drivers/cpuidle/governors/menu.c
+>> @@ -312,7 +312,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>>  {
+>>         struct menu_device *data = &__get_cpu_var(menu_devices);
+>>         int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+>> -       int power_usage = -1;
+>>         int i;
+>>         int multiplier;
+>>         struct timespec t;
+>> @@ -383,11 +382,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>>                 if (s->exit_latency * multiplier > data->predicted_us)
+>>                         continue;
+>>
+>> -               if (s->power_usage < power_usage) {
+>> -                       power_usage = s->power_usage;
+>> -                       data->last_state_idx = i;
+>> -                       data->exit_us = s->exit_latency;
+>> -               }
+>> +               data->last_state_idx = i;
+>> +               data->exit_us = s->exit_latency;
+>>         }
+>>
+>>         /* not deepest C-state chosen for low predicted residency */
+>> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+>> index 3711b34..24cd103 100644
+>> --- a/include/linux/cpuidle.h
+>> +++ b/include/linux/cpuidle.h
+>> @@ -126,9 +126,9 @@ struct cpuidle_driver {
+>>         struct module           *owner;
+>>         int                     refcnt;
+>>
+>> -       unsigned int            power_specified:1;
+>>         /* set to 1 to use the core cpuidle time keeping (for all states). */
+>>         unsigned int            en_core_tk_irqen:1;
+>> +       /* states array must be ordered in decreasing power consumption */
+>>         struct cpuidle_state    states[CPUIDLE_STATE_MAX];
+>>         int                     state_count;
+>>         int                     safe_state_index;
+>> --
+>> 1.7.5.4
+>>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQoXKNAAoJEECxmPOUX5FESKIP/3rgywvl5XY0vw+U594qGnZO
-kp3eZssyk7EQEb38VOVSeIvlI+Ya5P+1i8Dw8z+zlDYcDsOA1h/+hjERLZH9ynAa
-sT5s8lqupY2s4RZ4hmZlZUlrl0rhqrtUFT3PDxQRxoWju/VVJn8c+7d3Qthx6oHF
-if+yy1IgGPcB+PRVC2urUR+TiDXAL7Qiumpn2vF1b+yRMN6dLrhRuRZP86O7yPLA
-/T+6AILoUsUbwew+8RWAKiWm7PRmQa9Sc/14+gjRg+VFxIZF3izt6n8qYQiYDP3u
-jgZZXbSLFDpC8MkIogMJYymXN7aAM+Qt/246NuL/ztPkbdkTeLhwbNqOGHQsvxMk
-XzDR8Udrj8/s3dQoRc4Zpo+nSeBScvPMVrnvGJgdUGVXXJc116uOzK4jUL8LJQaE
-DHCqmJYKBIzpI6L08b4McKPCcF1lrvQyuesT2ESjN0DIRPSJK0XIDdm0HsboUPNj
-IzqU7sNkmhP2ldOsjh/pisGK2ww/RTEOj+hFUCM51YLxRgDFCts4+b6q6+Kgf2GS
-CwtwEJVzWRqgBJnI8TbVIMTZoPVdEDxf2zrmEXYJgQhuf79e8zxIUEYfXJ4d2tLg
-fvb9MWuRubQa9qb+zrsFDVuriNBA9TtszoTKG6trnYOK7MbHAaPm5BEYQIJkjrIk
-DzPboLfTLVuXrFvn+Er9
-=oZaS
------END PGP SIGNATURE-----
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---Signature=_Tue__13_Nov_2012_09_05_01_+1100_XhYe/dgMqqEhzt9x--
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
