@@ -1,62 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab2KLPD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:03:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48511 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab2KLPD2 (ORCPT
+	id S1753419Ab2KLPJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 10:09:22 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39889 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab2KLPJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:03:28 -0500
-Message-ID: <50A10FA4.9070703@oracle.com>
-Date: Mon, 12 Nov 2012 10:03:00 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	Mon, 12 Nov 2012 10:09:20 -0500
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] alpha: use BUG_ON where possible
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-2-git-send-email-sasha.levin@oracle.com> <alpine.LNX.2.00.1211082242130.27271@pobox.suse.cz> <509D2DF8.4030602@oracle.com> <alpine.LNX.2.00.1211121542550.15877@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1211121542550.15877@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20121112143846.GI2346@mudshark.cambridge.arm.com>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+	<20121112104601.GB2346@mudshark.cambridge.arm.com>
+	<CAF6AEGtR0WBjoWbb2BF-hJa9sQi2Aa75dfrfb1u5EncaOB7Pyw@mail.gmail.com>
+	<20121112143846.GI2346@mudshark.cambridge.arm.com>
+Date: Mon, 12 Nov 2012 09:09:19 -0600
+X-Google-Sender-Auth: X1NG4DG0QxS4f-RWR4XXoH_zkYo
+Message-ID: <CAF6AEGsSng_Ma_0Q6PXTRHOVYRtC5RRBA65=fpBCM8O2QThQWg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+From: Rob Clark <rob.clark@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 09:43 AM, Jiri Kosina wrote:
-> On Fri, 9 Nov 2012, Sasha Levin wrote:
-> 
->>>> Just use BUG_ON() instead of constructions such as:
->>>>
->>>> 	if (...)
->>>> 		BUG()
->>>>
->>>> A simplified version of the semantic patch that makes this transformation
->>>> is as follows: (http://coccinelle.lip6.fr/)
->>>>
->>>> // <smpl>
->>>> @@
->>>> expression e;
->>>> @@
->>>> - if (e) BUG();
->>>> + BUG_ON(e);
->>>
->>> Ok, I guess I am just going to apply this one. Thanks,
->>>
+On Mon, Nov 12, 2012 at 8:38 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Nov 12, 2012 at 01:46:57PM +0000, Rob Clark wrote:
+>> On Mon, Nov 12, 2012 at 4:46 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Fri, Nov 09, 2012 at 09:17:33PM +0000, Rob Clark wrote:
+>> >> @@ -122,22 +124,35 @@ extern int __get_user_4(void *);
+>> >>       ({                                                              \
+>> >>               unsigned long __limit = current_thread_info()->addr_limit - 1; \
+>> >>               register const typeof(*(p)) __user *__p asm("r0") = (p);\
+>> >> -             register unsigned long __r2 asm("r2");                  \
+>> >>               register unsigned long __l asm("r1") = __limit;         \
+>> >>               register int __e asm("r0");                             \
+>> >>               switch (sizeof(*(__p))) {                               \
+>> >> -             case 1:                                                 \
+>> >> +             case 1: {                                               \
+>> >> +                     register unsigned long __r2 asm("r2");          \
+>> >>                       __get_user_x(__r2, __p, __e, __l, 1);           \
+>> >> +                     x = (typeof(*(p))) __r2;                        \
+>> >>                       break;                                          \
+>> >> -             case 2:                                                 \
+>> >> +             }                                                       \
+>> >> +             case 2: {                                               \
+>> >> +                     register unsigned long __r2 asm("r2");          \
+>> >>                       __get_user_x(__r2, __p, __e, __l, 2);           \
+>> >> +                     x = (typeof(*(p))) __r2;                        \
+>> >>                       break;                                          \
+>> >> -             case 4:                                                 \
+>> >> +             }                                                       \
+>> >> +             case 4: {                                               \
+>> >> +                     register unsigned long __r2 asm("r2");          \
+>> >>                       __get_user_x(__r2, __p, __e, __l, 4);           \
+>> >> +                     x = (typeof(*(p))) __r2;                        \
+>> >> +                     break;                                          \
+>> >> +             }                                                       \
+>> >> +             case 8: {                                               \
+>> >> +                     register unsigned long long __r2 asm("r2");     \
+>> >
+>> > Does this matter? For EABI, we'll pass in (r2, r3) and it's all handcrafted
+>> > asm, so the compiler shouldn't care much. For OABI, I think you may have to
+>> > do some more work to get the two words where you want them.
 >>
->> So I have about 80 more of these. I've sent out the first 10 to make sure
->> that they look fine and the only complaints I got about them are that they are
->> trivial :)
+>> Is the question whether the compiler is guaranteed to allocate r2 and
+>> r3 in all cases?  I'm not quite sure, I confess to usually trying to
+>> avoid inline asm.  But from looking at the disassembly (for little
+>> endian EABI build) it seemed to do the right thing.
+>
+> I can't recall how OABI represents 64-bit values and particularly whether this
+> differs between little and big-endian, so I wondered whether you may have to
+> do some marshalling when you assign x. However, a few quick experiments with
+> GCC suggest that the register representation matches EABI in regards to word
+> ordering (it just doesn't require an even base register), although it would
+> be good to find this written down somewhere...
+
+yeah, I was kinda hoping that someone a bit closer to the compiler
+would speak up here :-)
+
+>> The only other idea I had was to explicitly declare two 'unsigned
+>> long's and then shift them into a 64bit x, although I'm open to
+>> suggestions if there is a better way.
+>
+> Can't you just use register unsigned long long for all cases? Even better,
+> follow what put_user does and use typeof(*(p))?
+
+typeof(*(p) was my first try but:
+
+  register typeof(*(p)) __r2 asm("r2");
+
+gives me the error:
+
+  error: read-only variable ‘__r2’ used as ‘asm’ output
+
+I guess because 'const' ends up being part of the typeof *p?  I
+suppose I could do typeof(x) instead
+
+BR,
+-R
+
+>> >> diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
+>> >> index 9b06bb4..d05285c 100644
+>> >> --- a/arch/arm/lib/getuser.S
+>> >> +++ b/arch/arm/lib/getuser.S
+>> >> @@ -18,7 +18,7 @@
+>> >>   * Inputs:   r0 contains the address
+>> >>   *           r1 contains the address limit, which must be preserved
+>> >>   * Outputs:  r0 is the error code
+>> >> - *           r2 contains the zero-extended value
+>> >> + *           r2, r3 contains the zero-extended value
+>> >>   *           lr corrupted
+>> >>   *
+>> >>   * No other registers must be altered.  (see <asm/uaccess.h>
+>> >> @@ -66,6 +66,19 @@ ENTRY(__get_user_4)
+>> >>       mov     pc, lr
+>> >>  ENDPROC(__get_user_4)
+>> >>
+>> >> +ENTRY(__get_user_8)
+>> >> +     check_uaccess r0, 4, r1, r2, __get_user_bad
+>> >
+>> > Shouldn't you be passing 8 here, so that we validate the correct range?
 >>
->> Can I send the rest directly to you to go through the trivial tree?
-> 
-> How many conflict can you see if you generate this patch on top of Linus' 
-> tree and thn apply it to linux-next?
-> 
-
-One context conflict.
-
-
-Thanks,
-Sasha
+>> yes, sorry, I'll fix that
+>>
+>> >> +#ifdef CONFIG_THUMB2_KERNEL
+>> >> +5: TUSER(ldr)        r2, [r0]
+>> >> +6: TUSER(ldr)        r3, [r0, #4]
+>> >> +#else
+>> >> +5: TUSER(ldr)        r2, [r0], #4
+>> >> +6: TUSER(ldr)        r3, [r0]
+>> >> +#endif
+>> >
+>> > This doesn't work for EABI big-endian systems.
+>>
+>> Hmm, is that true?  Wouldn't put_user() then have the same problem?
+>
+> I dug up the PCS and it seems that we arrange the two halves of the
+> doubleword to match the ldm/stm memory representation for EABI, so sorry
+> for the confusion.
+>
+>> I guess __ARMEB__ is the flag for big-endian?
+>
+> That's the thing defined by the compiler, yes.
+>
+> Will
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
