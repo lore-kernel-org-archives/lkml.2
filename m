@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab2KLPxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 10:53:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30571 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab2KLPxG (ORCPT
+	id S1752979Ab2KLQCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:02:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56205 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab2KLQCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 10:53:06 -0500
-Message-ID: <50A11B3B.1080600@oracle.com>
-Date: Mon, 12 Nov 2012 10:52:27 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	Mon, 12 Nov 2012 11:02:04 -0500
+Date: Mon, 12 Nov 2012 13:01:39 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Vinson Lee <vlee@twitter.com>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20121112160139.GC18978@ghostprotocols.net>
+References: <1352497390-17716-1-git-send-email-acme@infradead.org>
+ <87390fo9jn.fsf@sejong.aot.lge.com>
+ <20121112135545.GA4595@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH] ARM: EXYNOS: use BUG_ON where possible
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com> <1352406191-14303-5-git-send-email-sasha.levin@oracle.com> <50A111DD.6080504@gmail.com> <20121112152349.GH28327@n2100.arm.linux.org.uk>
-In-Reply-To: <20121112152349.GH28327@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121112135545.GA4595@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 10:23 AM, Russell King - ARM Linux wrote:
-> On Mon, Nov 12, 2012 at 04:12:29PM +0100, Maarten Lankhorst wrote:
->> Op 08-11-12 21:23, Sasha Levin schreef:
->>> @@ -465,10 +465,8 @@ static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int i
->>>  	else
->>>  		max_nr = EXYNOS4_MAX_COMBINER_NR;
->>>  
->>> -	if (combiner_nr >= max_nr)
->>> -		BUG();
->>> -	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
->>> -		BUG();
->>> +	BUG_ON(combiner_nr >= max_nr);
->>> +	BUG_ON(irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0);
->>
->> Is it really a good idea to put functions that perform work in a BUG_ON?
->> I don't know, but for some reason it just feels wrong. I'd expect code to
->> compile fine if BUG_ON was a noop, so doing verification calls only, not
->> actual work..
-> 
-> Well, it is currently defined as:
-> 
-> include/asm-generic/bug.h:#define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
-> include/asm-generic/bug.h:#define BUG_ON(condition) do { if (condition) ; } while(0)
-> 
-> but as these can be overridden, I don't think relying on those
-> implementations is a good idea; to do so would be fragile.  Eg, what if
-> the BUG_ON() implementation becomes just:
-> 
-> #define BUG_ON(x)
-> 
-> then the function call itself vanishes.  So, only put the actual bug test
-> inside a BUG_ON(), not the functional part which must always be executed.
+Em Mon, Nov 12, 2012 at 02:55:46PM +0100, Jiri Olsa escreveu:
+> On Mon, Nov 12, 2012 at 11:10:52AM +0900, Namhyung Kim wrote:
+> > On Fri,  9 Nov 2012 18:42:49 -0300, Arnaldo Carvalho de Melo wrote:
+> > > . Add a 'link' method for hists, so that we can have the leader with
+> > >   buckets for all the entries in all the hists.  This new method
+> > >   is now used in the default 'diff' output, making the sum of the 'baseline'
+> > >   column be 100%, eliminating blind spots. Now we need to use this
+> > >   for 'diff' with > 2 perf.data files and for multi event 'report' and
+> > >   'annotate'.
 
-Even if we ignore that modifying the side-effects is wrong, there's already
-more than enough code in the kernel (both in kernel/ / mm/, and in arch/) to
-cause breakage if for some reason the expression is not evaluated.
+> > I'm not sure it can be used for group report at least in its current
+> > form.  IIUC it connects multiple hist entries using a list head and
+> > create a dummy entry in the leader if need be.  But it didn't handle
+> > non-leader entries so it's hard to tell which is which if less entries
+> > are present only.  For example consider following case:
 
-If some arch decides to not evaluate the expression there it's going to be
-inherently broken.
+> > 	leader		member1		member2
+> > 	A		A		A
+> > 	B
+> > 			C
+> > 					D
 
+> > where leader, member1 and member2 are evsel/hists and A, B, C and D are
+> > hist entries.  After 'linking' the entries the leader will have
+> > following linkage:
 
-Thanks,
-Sasha
+> > 	leader
+> > 	A	->	A	->	A
+> > 	B
+> > 	C (dummy) ->	C
+> > 	D (dummy)		->	D
 
+> > In this case, for entry A the leader can determine which entry came from
+> > which hists by looking its order in the list.  For entry B the leader
+> > can use zero value for them since the list is empty.  However for
+> > entries C and D, it cannot know which one is the right hists unless it
+> > records a hist index or creates dummy entry and insert it in a correct
+> > order (looks far from an optimal solution).  Am I missing something?
 
+> there's hists pointer in hist_entry if that's what you look for
+
+And from there to evsel->idx. In your patchset you even introduce
+hists_2_evsel(), right?
+
+- Arnaldo
