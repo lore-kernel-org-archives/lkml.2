@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2KLLwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:52:37 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:64719 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab2KLLwc (ORCPT
+	id S1753345Ab2KLLwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:52:44 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:57589 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2KLLwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:52:32 -0500
+	Mon, 12 Nov 2012 06:52:40 -0500
 From: <Vineet.Gupta1@synopsys.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tglx@linutronix.de>, <arnd@arndb.de>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC Patch v1 52/55] ARC: Support for single cycle Close Coupled Mem (CCM)
-Date: Mon, 12 Nov 2012 17:19:10 +0530
-Message-ID: <1352720953-24321-22-git-send-email-vgupta@synopsys.com>
+Subject: [RFC Patch v1 53/55] ARC: Hostlink Pseudo-Driver for Metaware Debugger
+Date: Mon, 12 Nov 2012 17:19:11 +0530
+Message-ID: <1352720953-24321-23-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
 References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
@@ -26,270 +26,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vineet Gupta <vgupta@synopsys.com>
 
-* Includes mapping of CCMs in address space
-* Annotations to move arbitrary code/data into CCM
-* Moving some of the critical code/data into CCM
-* Runtime detection/reporting
+This allows ARC Target to do I/O to host in absence of any peripherals
+whatsoever, assisted by Metaware Hostlink facility.
+
+Further we have a FUSE based filesystem which makes us mount/access host
+filesystem on target and do fops.
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig               |   27 ++++++++++++++++++++
- arch/arc/include/asm/linkage.h |   33 +++++++++++++++++++++++++
- arch/arc/kernel/entry.S        |    4 +-
- arch/arc/kernel/setup.c        |   53 +++++++++++++++++++++++++++++++++++++++-
- arch/arc/kernel/vmlinux.lds.S  |   21 ++++++++++++++++
- arch/arc/mm/tlbex.S            |    5 +--
- 6 files changed, 137 insertions(+), 6 deletions(-)
+ arch/arc/Kconfig               |    9 +++
+ arch/arc/kernel/Makefile       |    1 +
+ arch/arc/kernel/arc_hostlink.c |  114 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/kernel/arc_hostlink.c
 
 diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 9882ce0c..79e8f2f 100644
+index 79e8f2f..4653070 100644
 --- a/arch/arc/Kconfig
 +++ b/arch/arc/Kconfig
-@@ -198,6 +198,33 @@ config ARC_CACHE_PAGES
+@@ -394,6 +394,15 @@ config HZ
+ 	int "Timer Frequency"
+ 	default 100
  
- endif	#ARC_CACHE
- 
-+config ARC_HAS_ICCM
-+	bool "Use ICCM"
-+	help
-+	  Single Cycle RAMS to store Fast Path Code
++config ARC_METAWARE_HLINK
++	bool "Support for Metaware debugger assisted Host access"
 +	default n
-+
-+config ARC_ICCM_SZ
-+	int "ICCM Size in KB"
-+	default "64"
-+	depends on ARC_HAS_ICCM
-+
-+config ARC_HAS_DCCM
-+	bool "Use DCCM"
 +	help
-+	  Single Cycle RAMS to store Fast Path Data
-+	default n
++	  This options allows a Linux userland apps to directly access
++	  host file system (open/creat/read/write etc) with help from
++	  Metaware Debugger. This can come in handy for Linux-host communication
++	  when there is no real usable peripheral such as EMAC.
 +
-+config ARC_DCCM_SZ
-+	int "DCCM Size in KB"
-+	default "64"
-+	depends on ARC_HAS_DCCM
-+
-+config ARC_DCCM_BASE
-+	hex "DCCM map address"
-+	default "0xA0000000"
-+	depends on ARC_HAS_DCCM
-+
- config ARC_HAS_HW_MPY
- 	bool "Use Hardware Multiplier (Normal or Faster XMAC)"
+ menuconfig ARC_DBG
+ 	bool "ARC debugging"
  	default y
-diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
-index a45d1bb..0283e9e 100644
---- a/arch/arc/include/asm/linkage.h
-+++ b/arch/arc/include/asm/linkage.h
-@@ -25,6 +25,39 @@
- 	.size \ name, ASM_PREV_SYM_ADDR(\name)
- .endm
+diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
+index a2b7493..ce14b45 100644
+--- a/arch/arc/kernel/Makefile
++++ b/arch/arc/kernel/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_ARC_DW2_UNWIND)		+= unwind.o
+ obj-$(CONFIG_KPROBES)      		+= kprobes.o
+ obj-$(CONFIG_ARC_MISALIGN_ACCESS) 	+= unaligned.o
+ obj-$(CONFIG_KGDB)			+= kgdb.o
++obj-$(CONFIG_ARC_METAWARE_HLINK)	+= arc_hostlink.o
  
-+/* annotation for data we want in DCCM - if enabled in .config */
-+.macro ARCFP_DATA nm
-+#ifdef CONFIG_ARC_HAS_DCCM
-+	.section .data.arcfp
-+#else
-+	.section .data
-+#endif
-+	.global \nm
-+.endm
+ obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
+ CFLAGS_fpu.o   += -mdpfp
+diff --git a/arch/arc/kernel/arc_hostlink.c b/arch/arc/kernel/arc_hostlink.c
+new file mode 100644
+index 0000000..de3bc42
+--- /dev/null
++++ b/arch/arc/kernel/arc_hostlink.c
+@@ -0,0 +1,114 @@
++/*
++ * arc_hostlink.c: Pseudo-driver for Metaware provided "hostlink" facility
++ *
++ * Allows Linux userland access to host in absence of any peripherals.
++ *
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+/* annotation for data we want in DCCM - if enabled in .config */
-+.macro ARCFP_CODE
-+#ifdef CONFIG_ARC_HAS_ICCM
-+	.section .text.arcfp, "ax",@progbits
-+#else
-+	.section .text, "ax",@progbits
-+#endif
-+.endm
++#include <linux/fs.h>		/* file_operations */
++#include <linux/device.h>	/* class_create */
++#include <linux/cdev.h>		/* cdev */
++#include <linux/mm.h>		/* VM_IO */
++#include <linux/module.h>
++#include <linux/uaccess.h>
 +
-+#else	/* !__ASSEMBLY__ */
++static unsigned char __HOSTLINK__[4 * PAGE_SIZE] __aligned(PAGE_SIZE);
 +
-+#ifdef CONFIG_ARC_HAS_ICCM
-+#define __arcfp_code __attribute__((__section__(".text.arcfp")))
-+#else
-+#define __arcfp_code __attribute__((__section__(".text")))
-+#endif
++static int arc_hl_mmap(struct file *fp, struct vm_area_struct *vma);
++static long arc_hl_ioctl(struct file *file, unsigned int cmd,
++			unsigned long arg);
 +
-+#ifdef CONFIG_ARC_HAS_DCCM
-+#define __arcfp_data __attribute__((__section__(".data.arcfp")))
-+#else
-+#define __arcfp_data __attribute__((__section__(".data")))
-+#endif
++static const struct file_operations arc_hl_fops = {
++	.owner		= THIS_MODULE,
++	.unlocked_ioctl	= arc_hl_ioctl,
++	.mmap		= arc_hl_mmap,
++};
 +
- #endif /* __ASSEMBLY__ */
- 
- #endif
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 2ff15e0..873588e 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -155,7 +155,7 @@ VECTOR   reserved                ; Reserved Exceptions
- 
- ;##################### Scratch Mem for IRQ stack switching #############
- 
--	.section .data		; NOT .global
-+ARCFP_DATA int1_saved_reg
- 	.align 32
- 	.type   int1_saved_reg, @object
- 	.size   int1_saved_reg, 4
-@@ -165,7 +165,7 @@ int1_saved_reg:
- /* Each Interrupt level needs it's own scratch */
- #ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
- 
--	.section .data		; NOT .global
-+ARCFP_DATA int2_saved_reg
- 	.type   int2_saved_reg, @object
- 	.size   int2_saved_reg, 4
- int2_saved_reg:
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index d470aa1..0deec55 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -61,6 +61,33 @@ void __init read_arc_build_cfg_regs(void)
- 	cpu->extn.ext_arith = read_aux_reg(ARC_REG_EXTARITH_BCR);
- 	cpu->extn.crc = read_aux_reg(ARC_REG_CRC_BCR);
- 
-+	/* Note that we read the CCM BCRs independent of kernel config
-+	 * This is to catch the cases where user doesn't know that
-+	 * CCMs are present in hardware build
-+	 */
-+	{
-+		struct bcr_iccm iccm;
-+		struct bcr_dccm dccm;
-+		struct bcr_dccm_base dccm_base;
-+		unsigned int bcr_32bit_val;
++static int arc_hl_major;
++static int arc_hl_minor;
++static int arc_hl_nr_devs = 1;
++static const char arc_hl_devnm[] = "hostlink";
++static struct cdev arc_hl_cdev;
++static struct class *arc_hl_class;
 +
-+		bcr_32bit_val = read_aux_reg(ARC_REG_ICCM_BCR);
-+		if (bcr_32bit_val) {
-+			iccm = *((struct bcr_iccm *)&bcr_32bit_val);
-+			cpu->iccm.base_addr = iccm.base << 16;
-+			cpu->iccm.sz = 0x2000 << (iccm.sz - 1);
-+		}
++static int __init arc_hl_linux_glue(void)
++{
++	dev_t arc_hl_dev;
++	int i;
 +
-+		bcr_32bit_val = read_aux_reg(ARC_REG_DCCM_BCR);
-+		if (bcr_32bit_val) {
-+			dccm = *((struct bcr_dccm *)&bcr_32bit_val);
-+			cpu->dccm.sz = 0x800 << (dccm.sz);
++	if (arc_hl_major) {	/* Preallocated MAJOR */
 +
-+			READ_BCR(ARC_REG_DCCMBASE_BCR, dccm_base);
-+			cpu->dccm.base_addr = dccm_base.addr << 8;
-+		}
++		arc_hl_dev = MKDEV(arc_hl_major, arc_hl_minor);
++		register_chrdev_region(arc_hl_dev, arc_hl_nr_devs,
++				       arc_hl_devnm);
++	} else {		/* allocates Major to devices */
++		alloc_chrdev_region(&arc_hl_dev, 0, arc_hl_nr_devs,
++				    arc_hl_devnm);
++		arc_hl_major = MAJOR(arc_hl_dev);
 +	}
 +
- 	READ_BCR(ARC_REG_XY_MEM_BCR, cpu->extn_xymem);
- 
- 	read_decode_mmu_bcr();
-@@ -208,6 +235,30 @@ char *arc_extn_mumbojumbo(int cpu_id, char *buf, int len)
- 	return buf;
- }
- 
-+void __init arc_chk_ccms(void)
-+{
-+#if defined(CONFIG_ARC_HAS_DCCM) || defined(CONFIG_ARC_HAS_ICCM)
-+	struct cpuinfo_arc *cpu = &cpuinfo_arc700[smp_processor_id()];
++	/* Populate sysfs entries: creates /sys/class/ sub-node for device */
 +
-+#ifdef CONFIG_ARC_HAS_DCCM
-+	/*
-+	 * DCCM can be arbit placed in hardware.
-+	 * Make sure it's placement/sz matches what Linux is built with
++	arc_hl_class = class_create(THIS_MODULE, arc_hl_devnm);
++
++	/* connect file ops with cdev */
++
++	cdev_init(&arc_hl_cdev, &arc_hl_fops);
++	arc_hl_cdev.owner = THIS_MODULE;
++
++	/* Connect major/minor number to cdev
++	 * makes device available.
++	 *  device nodes created with 'mknod` are probably already active.
 +	 */
-+	if ((unsigned int)__arc_dccm_base != cpu->dccm.base_addr)
-+		panic("Linux built with incorrect DCCM Base address\n");
 +
-+	if (DCCM_COMPILE_SZ != cpu->dccm.sz)
-+		panic("Linux built with incorrect DCCM Size\n");
-+#endif
++	cdev_add(&arc_hl_cdev, arc_hl_dev, arc_hl_nr_devs);
 +
-+#ifdef CONFIG_ARC_HAS_ICCM
-+	if (ICCM_COMPILE_SZ != cpu->iccm.sz)
-+		panic("Linux built with incorrect ICCM Size\n");
-+#endif
-+#endif
++	/* creates /sys/devices/virtual/<dev_name>/<names[i]> node with
++	 *      link from/sys/class/<dev_name>, needed by mdev.
++	 */
++
++	for (i = 0; i < arc_hl_nr_devs; i++)
++		device_create(arc_hl_class, NULL, MKDEV(MAJOR(arc_hl_dev), i),
++			      NULL, arc_hl_devnm);
++
++	pr_info("Hostlink dev to mknod is %d:%d\n",
++		arc_hl_major, arc_hl_minor);
++	return 0;
 +}
 +
- /*
-  * Ensure that FP hardware and kernel config match
-  * -If hardware contains DPFP, kernel needs to save/restore FPU state
-@@ -252,7 +303,7 @@ void __init setup_processor(void)
- 
- 	arc_mmu_init();
- 	arc_cache_init();
--
-+	arc_chk_ccms();
- 
- 	printk(arc_extn_mumbojumbo(cpu_id, str, sizeof(str)));
- 
-diff --git a/arch/arc/kernel/vmlinux.lds.S b/arch/arc/kernel/vmlinux.lds.S
-index 56c074e..3b6a21a 100644
---- a/arch/arc/kernel/vmlinux.lds.S
-+++ b/arch/arc/kernel/vmlinux.lds.S
-@@ -24,6 +24,12 @@ jiffies = jiffies_64;
- 
- SECTIONS
- {
-+	/*
-+	 * ICCM starts at 0x8000_0000. So if kernel is relocated to some other
-+	 * address, make sure peripheral at 0x8z doesn't clash with ICCM
-+	 * Essentially vector is also in ICCM.
-+	 */
++static int __init arc_hl_init(void)
++{
++	arc_hl_linux_glue();
 +
- 	. = CONFIG_LINUX_LINK_BASE;
- 
- 	_int_vec_base_lds = .;
-@@ -32,6 +38,13 @@ SECTIONS
- 		. = ALIGN(PAGE_SIZE);
- 	}
- 
-+#ifdef CONFIG_ARC_HAS_ICCM
-+	.text.arcfp : {
-+		*(.text.arcfp)
-+		. = ALIGN(CONFIG_ARC_ICCM_SZ * 1024);
-+	}
-+#endif
++	pr_info("Hlink buffer mmap @ 0x%p\n", __HOSTLINK__);
 +
- 	/*
- 	 * The reason for having a seperate subsection .init.ramfs is to
- 	 * prevent objump from including it in kernel dumps
-@@ -135,4 +148,12 @@ SECTIONS
- 	.debug_loc 0 : { *(.debug_loc) }
- 	.debug_macinfo 0 : { *(.debug_macinfo) }
- 
-+#ifdef CONFIG_ARC_HAS_DCCM
-+	. = CONFIG_ARC_DCCM_BASE;
-+	__arc_dccm_base = .;
-+	.data.arcfp : {
-+		*(.data.arcfp)
++	return 0;
++}
++
++static int arc_hl_mmap(struct file *fp, struct vm_area_struct *vma)
++{
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	if (io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
++			       vma->vm_end - vma->vm_start,
++			       vma->vm_page_prot)) {
++		pr_warn("Hostlink buffer mmap ERROR\n");
++		return -EAGAIN;
 +	}
-+	. = ALIGN(CONFIG_ARC_DCCM_SZ * 1024);
-+#endif
- }
-diff --git a/arch/arc/mm/tlbex.S b/arch/arc/mm/tlbex.S
-index e933e4c..d7631d2 100644
---- a/arch/arc/mm/tlbex.S
-+++ b/arch/arc/mm/tlbex.S
-@@ -54,8 +54,7 @@
- ; For details refer to comments before TLBMISS_FREEUP_REGS below
- ;--------------------------------------------------------------------------
- 
--	.section .data
--	.global ex_saved_reg1
-+ARCFP_DATA ex_saved_reg1
- 	.align 1 << L1_CACHE_SHIFT	; IMP: Must be Cache Line aligned
- 	.type   ex_saved_reg1, @object
- #ifdef CONFIG_SMP
-@@ -259,7 +258,7 @@ ex_saved_reg1:
- #endif
- .endm
- 
--.section .text, "ax",@progbits	;Fast Path Code, candidate for ICCM
-+ARCFP_CODE	;Fast Path Code, candidate for ICCM
- 
- ;-----------------------------------------------------------------------------
- ; I-TLB Miss Exception Handler
++	return 0;
++}
++
++static long arc_hl_ioctl(struct file *file, unsigned int cmd,
++			unsigned long arg)
++{
++	/* we only support, returning the physical addr to mmap in user space */
++	put_user((unsigned int)__HOSTLINK__, (int __user *)arg);
++	return 0;
++}
++
++module_init(arc_hl_init);
 -- 
 1.7.4.1
 
