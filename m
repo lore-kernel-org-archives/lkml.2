@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2KLVXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:23:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36279 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab2KLVTj (ORCPT
+	id S1754173Ab2KLVXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:23:14 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24726 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2KLVTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:39 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,67 +13,86 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 46/46] x86, mm: Let "memmap=" take more entries one time
-Date: Mon, 12 Nov 2012 13:18:42 -0800
-Message-Id: <1352755122-25660-47-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 44/46] sparc, mm: Remove calling of free_all_bootmem_node()
+Date: Mon, 12 Nov 2012 13:18:40 -0800
+Message-Id: <1352755122-25660-45-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current "memmap=" only can take one entry every time.
-when we have more entries, we have to use memmap= for each of them.
+Now NO_BOOTMEM version free_all_bootmem_node() does not really
+do free_bootmem at all, and it only call
+register_page_bootmem_info_node instead.
 
-For pxe booting, we have command line length limitation, those extra
-"memmap=" would waste too much space.
+That is confusing, try to kill that free_all_bootmem_node().
 
-This patch make memmap= could take several entries one time,
-and those entries will be split with ','
+Before that, this patch will remove calling of free_all_bootmem_node()
+
+We add register_page_bootmem_info() to call register_page_bootmem_info_node
+directly.
+
+Also could use free_all_bootmem() for numa case, and it is just
+the same as free_low_memory_core_early().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: sparclinux@vger.kernel.org
+Acked-by: "David S. Miller" <davem@davemloft.net>
 ---
- arch/x86/kernel/e820.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+ arch/sparc/mm/init_64.c |   24 +++++++++++-------------
+ 1 files changed, 11 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index df06ade..d32abea 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -835,7 +835,7 @@ static int __init parse_memopt(char *p)
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 9e28a11..b24bac2 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2021,6 +2021,16 @@ static void __init patch_tlb_miss_handler_bitmap(void)
+ 	flushi(&valid_addr_bitmap_insn[0]);
  }
- early_param("mem", parse_memopt);
  
--static int __init parse_memmap_opt(char *p)
-+static int __init parse_memmap_one(char *p)
- {
- 	char *oldp;
- 	u64 start_at, mem_size;
-@@ -877,6 +877,20 @@ static int __init parse_memmap_opt(char *p)
- 
- 	return *p == '\0' ? 0 : -EINVAL;
- }
-+static int __init parse_memmap_opt(char *str)
++static void __init register_page_bootmem_info(void)
 +{
-+	while (str) {
-+		char *k = strchr(str, ',');
++#ifdef CONFIG_NEED_MULTIPLE_NODES
++	int i;
 +
-+		if (k)
-+			*k++ = 0;
-+
-+		parse_memmap_one(str);
-+		str = k;
-+	}
-+
-+	return 0;
++	for_each_online_node(i)
++		if (NODE_DATA(i)->node_spanned_pages)
++			register_page_bootmem_info_node(NODE_DATA(i));
++#endif
 +}
- early_param("memmap", parse_memmap_opt);
+ void __init mem_init(void)
+ {
+ 	unsigned long codepages, datapages, initpages;
+@@ -2038,20 +2048,8 @@ void __init mem_init(void)
  
- void __init finish_e820_parsing(void)
+ 	high_memory = __va(last_valid_pfn << PAGE_SHIFT);
+ 
+-#ifdef CONFIG_NEED_MULTIPLE_NODES
+-	{
+-		int i;
+-		for_each_online_node(i) {
+-			if (NODE_DATA(i)->node_spanned_pages != 0) {
+-				totalram_pages +=
+-					free_all_bootmem_node(NODE_DATA(i));
+-			}
+-		}
+-		totalram_pages += free_low_memory_core_early(MAX_NUMNODES);
+-	}
+-#else
++	register_page_bootmem_info();
+ 	totalram_pages = free_all_bootmem();
+-#endif
+ 
+ 	/* We subtract one to account for the mem_map_zero page
+ 	 * allocated below.
 -- 
 1.7.7
 
