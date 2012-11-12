@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab2KLMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 07:05:57 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:54046 "EHLO
+	id S1752690Ab2KLMKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 07:10:24 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:58298 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751358Ab2KLMFz convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1751715Ab2KLMKX convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 07:05:55 -0500
+	Mon, 12 Nov 2012 07:10:23 -0500
 Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
 Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <509D8A62.1080102@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 14:05:47 +0200
-Cc: David Gibson <david@gibson.dropbear.id.au>,
-        Grant Likely <grant.likely@secretlab.ca>,
+In-Reply-To: <509D9089.7020407@wwwdotorg.org>
+Date: Mon, 12 Nov 2012 14:10:16 +0200
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
         Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
         Koen Kooi <koen@dominion.thruhere.net>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
         linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <D212FBB3-B434-4B9F-9237-95C4117834DB@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <20121109022624.GI23553@truffula.fritz.box> <509D8A62.1080102@wwwdotorg.org>
+Message-Id: <5B124797-6DFD-4C5E-90D7-665AFD4A7873@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <509D9089.7020407@wwwdotorg.org>
 To: Stephen Warren <swarren@wwwdotorg.org>
 X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,112 +34,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Stephen,
 
-On Nov 10, 2012, at 12:57 AM, Stephen Warren wrote:
+On Nov 10, 2012, at 1:23 AM, Stephen Warren wrote:
 
-> On 11/08/2012 07:26 PM, David Gibson wrote:
+> On 11/09/2012 09:28 AM, Grant Likely wrote:
+>> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > ...
->> I also think graft will handle most of your use cases, although as I
->> said I don't fully understand the implications of some of them, so I
->> could be wrong.  So, the actual insertion of the subtree is pretty
->> trivial to implement.  phandles are the obvious other matter to be
->> dealt with.  I haven't found the right thread where what you've
->> envisaged so far is discussed, so here are things I can see:
+>>> I do rather suspect this use-case is quite common. NVIDIA certainly has
+>>> a bunch of development boards with pluggable
+>>> PMIC/audio/WiFi/display/..., and I believe there's some ability to
+>>> re-use the pluggable components with a variety of base-boards.
+>>> 
+>>> Given people within NVIDIA started talking about this recently, I asked
+>>> them to enumerate all the boards we have that support pluggable
+>>> components, and how common it is that some boards support being plugged
+>>> into different main boards. I don't know when that enumeration will
+>>> complete (or even start) but hopefully I can provide some feedback on
+>>> how common the use-case is for us once it's done.
 >> 
->> 1) Avoiding phandle collisions between main tree and subtree (or
->>   between subtrees).
->> 
->> I'm hopeful that this can be resolved just by establishing some
->> conventions about the ranges of phandles to be used for various
->> components.  I'd certainly be happy to add a directive to dtc which
->> enforces allocation of phandles within a specified range.
+>> From your perspective, is it important to use the exact same .dtb
+>> overlays for those add-on boards, or is it okay to have a separate
+>> build of the overlay for each base tree?
 > 
-> One case I wonder about is:
-> 
-> Base board A that's split into two .dts files e.g. due to there being
-> two versions of the base board which are 90% identical, yet there being
-> a few differences between them.
-> 
-> Base board B that's just a single .dts file.
-> 
-> We might allocate phandle range 0..999 for the base board.
-> 
-> Child board X plugs into either, so the two base boards need to "export"
-> the same set of phandle IDs to the child board to allow it to reference
-> them.
-> 
-> If base board A version 2 comes along after the phandle IDs that the
-> child board uses are defined, then how do we handle assigning a specific
-> phandle ID range to each of base board A's two version-specific
-> overlays, when the version-specific changes might affect arbitrary
-> phandle IDs within the range, and require some to be moved into the base
-> board version-specific overlays and some to stay in the common base
-> board .dts?
+> I certainly think it'd be extremely beneficial to use the exact same
+> child board .dtb with arbitrary base boards.
 > 
 
-Static phandle allocation, could work, but not without considerable trouble.
+Oh yes. In fact if one was to use a single kernel image for beagleboard
+and beaglebone, for the cape to work for both, it is required for it's
+dtb to be compatible. 
 
-Maybe we're over-engineering things. Perhaps having the kernel use the
-phandle values generated by dtc is not required.
+We're not there yet, but people would like to have an upgrade path.
 
-What about the following simple scheme:
+beaglebone -> beagleboard -> pandaboard -> future-boards
 
-1) Have dtc create local phandle values the same way, as it is today.
-   Generate the flat tree normally, but keep in a table the locations
-   of all phandle references. Keep track of non resolvable phandle references
-   in a different table. One could use the fixup mechanism I described in
-   a previous email, if you don't care about keeping a big table.
-2) Upon loading the base DT or the overlay, the kernel makes sure the phandles
-   don't overlap; simply add a per DT fragment constant offset.
-3) Resolve phandle references that were unresolved at compile time.
- 
+It is not possible yet, but perhaps newer boards could have that.
 
->> 2) Resolving phandle references within a subtree
->> 
->> If we can handle (1) by convention, we don't need anything here, the
->> references are fine as is.
->> 
->> (3) Resolving phandle references from the subtree to the main tree.
->> 
->> So, I think this can actually be avoided, at least in cases where what
->> physical connections are available to the expansion module is well
->> defined.  The main causes to have external references are interrupts
->> and gpios.  Interrupts we handle by defining an interrupt specifier
->> space for the interrupts available on the expansion
->> socket/connector/bus/whatever.  In the master tree we then have
->> something like:
->> 
->> ...
->> 	expansion-socket@XXXX {
->> 		expansion-id = "SlotA";
->> 		interrupt-map = < /* map expansion irq specs to
->> 				     board interrupt controllers */ >;
->> 		interrupt-map-mask = < ... >;
->> 		ranges = < /* map expansion local addresses to global
->> 		              mmio */ >;
->> 	};
+> Consider something like the Arduino shield connector format, which I
+> /believe/ has been re-used across a wide variety of Arduino boards and
+> other compatible or imitation boards. Now consider a vendor of an
+> Arduino shield. The shield vendor probably wants to publish a single
+> .dtb file that works for users irrespective of which board they're using
+> it with.
 > 
-> We would end up needing an interrupt-map or ranges type of property for
-> basically any resource type.
+> (Well, I'm not sure that Arduino can run Linux; perhaps that's why you
+> picked BeagleBone capes for your document!)
 > 
-> For example, what about an I2C bus that's routed to the daughter board,
-> and the daughter board contains an I2C bus mux, whose control path isn't
-> through I2C but rather GPIOs? In this case, the I2C bus mux isn't a
-> child of the I2C bus, but a separate entity that indicates its parent
-> I2C bus using a phandle. I presume a similar argument applies to almost
-> any kind of resource. This is probably do-able, but certainly something
-> to consider with the socket approach. I do like the socket approach though.
 
-Capebus has taken this approach.
+Arduino can't possible do it. Using arduino shields with an adapter could
+be possible though.
 
-You see, perhaps from the standpoint of the standard platform devices that
-a cape provides, a bus is not a very fitting construct.
+> I suppose it would be acceptable for the shield vendor to ship the .dts
+> file rather than the .dtb, and hence need to build the shield .dtb for a
+> specific base board.
+> 
+> However, I think the process for an end-user needs to be as simple as
+> "drop this .dts/.dtb file into some standard directory", and I imagine
+> it'll be much easier for distros/... to make that process work if
+> they're dealing with a .dtb that they can just blast into the kernel's
+> firmware loader interface, rather than having to also locate the
+> base-board .dts/.dtb file, and run dtc and/or other tools on both .dts
+> files together.
 
-But from a hardware engineer/user perspective, a cape is an expansion board,
-and virtual slots are used. This is similar to what you're saying
-with socket approach, right? 
+Yes. A single supported dtb is the way to go ideally.
 
 Regards
 
 -- Pantelis
-
 
