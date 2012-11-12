@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab2KLL7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:59:12 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:38653 "EHLO ogre.sisk.pl"
+	id S1753276Ab2KLL7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:59:42 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:38673 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab2KLL7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:59:08 -0500
+	id S1752770Ab2KLL7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 06:59:10 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 2/3] ACPI / platform: Use common ACPI device resource parsing routines
-Date: Mon, 12 Nov 2012 13:01:19 +0100
-Message-ID: <2040360.XsGXMDOcxg@vostro.rjw.lan>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 0/3] Centralized parsing of ACPI device resources (was: Re: [PATCH 0/3] ACPI 5 support for GPIO, SPI and I2C)
+Date: Mon, 12 Nov 2012 12:51:32 +0100
+Message-ID: <2429141.J1r7BIpiiT@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <2429141.J1r7BIpiiT@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2429141.J1r7BIpiiT@vostro.rjw.lan>
+In-Reply-To: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,150 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Saturday, November 03, 2012 09:46:30 AM Mika Westerberg wrote:
+> Hi,
+> 
+> With ACPI 5 we can now describe how devices are connected to their bus
+> using new resources: SPISerialBus and I2CSerialBus. Also it is now possible
+> to add GPIO connections for the devices with the help of GpioIO and GpioInt
+> resources.
+> 
+> This series adds support for these new resources.
+> 
+> The series based on the ACPI 5 enumeration support patches that are available
+> on Rafael's linux-next branch:
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next	
+> 
+> Specifically patches from this thread:
+> 
+> 	https://lkml.org/lkml/2012/10/31/154
+> 
+> Since these patches depend on the above patches on Rafael's linux-next branch
+> I suggest that these be merged via that branch, if there are no objections.
+> 
+> The series follows the Device Tree way so that it would be easy to add ACPI
+> support for the existing SPI and I2C drivers if one is familiar how the
+> corresponding DT support is done.
+> 
+> For GPIO we introduce a function that maps between ACPI GPIO numbers and Linux
+> ones - acpi_get_gpio().
+> 
+> SPI slave devices gets enumerated automatically if the master device has
+> master->dev.acpi_handle set (this is analogous to master->dev.of_mode). The
+> platform bus code in Rafael's branch assigns the ACPI handle to the master
+> device.
+> 
+> I2C slave devices can be enumerated by calling acpi_i2c_register_devices() in
+> the adapter driver.
 
-Use common routines in drivers/acpi/resource.c to parse ACPI device
-resources while creating platform device objects.
+Following the previous discussion, the patches below move some ACPI resources
+parsing code from drivers/pnp/pnpacpi/rsparser.c to a new file
+drivers/acpi/resource.c and reformat it so that it can be used by other
+subsystems (patch [1/3]), convert the new ACPI platform devices creation
+code to use the routines in drivers/acpi/resource.c instead of doing its
+own resource parsing (patch [2/3]) and make the ACPI namespace scan attach
+a list of _CRS resources to each struct acpi_device it creates, where
+applicable (patch [3/3] - the ACPI platform device code is converted to use
+that instead of executing _CRS by itself via acpi_walk_resources()).
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/acpi_platform.c |   89 +++++++++----------------------------------
- 1 file changed, 20 insertions(+), 69 deletions(-)
+The patchset is on top of the current linux-pm.git/linux-next branch and
+has been tested somewhat.  Please let me know if you find any problems in it.
 
-Index: linux/drivers/acpi/acpi_platform.c
-===================================================================
---- linux.orig/drivers/acpi/acpi_platform.c
-+++ linux/drivers/acpi/acpi_platform.c
-@@ -29,21 +29,20 @@ static acpi_status acpi_platform_count_r
- 						 void *data)
- {
- 	struct acpi_resource_extended_irq *acpi_xirq;
-+	struct acpi_resource_irq *acpi_irq;
- 	struct resource_info *ri = data;
- 
- 	switch (res->type) {
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 	case ACPI_RESOURCE_TYPE_IRQ:
--		ri->n++;
-+		acpi_irq = &res->data.irq;
-+		ri->n += acpi_irq->interrupt_count;
- 		break;
- 	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
- 		acpi_xirq = &res->data.extended_irq;
- 		ri->n += acpi_xirq->interrupt_count;
- 		break;
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--		if (res->data.address32.resource_type == ACPI_IO_RANGE)
--			ri->n++;
--		break;
-+	default:
-+		ri->n++;
- 	}
- 
- 	return AE_OK;
-@@ -52,71 +51,26 @@ static acpi_status acpi_platform_count_r
- static acpi_status acpi_platform_add_resources(struct acpi_resource *res,
- 					       void *data)
- {
--	struct acpi_resource_fixed_memory32 *acpi_mem;
--	struct acpi_resource_address32 *acpi_add32;
--	struct acpi_resource_extended_irq *acpi_xirq;
--	struct acpi_resource_irq *acpi_irq;
- 	struct resource_info *ri = data;
- 	struct resource *r;
--	int irq, i;
--
--	switch (res->type) {
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		acpi_mem = &res->data.fixed_memory32;
--		r = &ri->res[ri->cur++];
--
--		r->start = acpi_mem->address;
--		r->end = r->start + acpi_mem->address_length - 1;
--		r->flags = IORESOURCE_MEM;
--
--		dev_dbg(ri->dev, "Memory32Fixed %pR\n", r);
--		break;
--
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--		acpi_add32 = &res->data.address32;
- 
--		if (acpi_add32->resource_type == ACPI_IO_RANGE) {
--			r = &ri->res[ri->cur++];
--			r->start = acpi_add32->minimum;
--			r->end = r->start + acpi_add32->address_length - 1;
--			r->flags = IORESOURCE_IO;
--			dev_dbg(ri->dev, "Address32 %pR\n", r);
--		}
--		break;
--
--	case ACPI_RESOURCE_TYPE_IRQ:
--		acpi_irq = &res->data.irq;
--		r = &ri->res[ri->cur++];
--
--		irq = acpi_register_gsi(ri->dev,
--					acpi_irq->interrupts[0],
--					acpi_irq->triggering,
--					acpi_irq->polarity);
--
--		r->start = r->end = irq;
--		r->flags = IORESOURCE_IRQ;
--
--		dev_dbg(ri->dev, "IRQ %pR\n", r);
--		break;
--
--	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
--		acpi_xirq = &res->data.extended_irq;
--
--		for (i = 0; i < acpi_xirq->interrupt_count; i++, ri->cur++) {
--			r = &ri->res[ri->cur];
--			irq = acpi_register_gsi(ri->dev,
--						acpi_xirq->interrupts[i],
--						acpi_xirq->triggering,
--						acpi_xirq->polarity);
-+	r = ri->res + ri->cur;
-+	if (acpi_dev_resource_memory(res, r)
-+	    || acpi_dev_resource_io(res, r)
-+	    || acpi_dev_resource_address_space(res, r)
-+	    || acpi_dev_resource_ext_address_space(res, r)) {
-+		ri->cur++;
-+		return AE_OK;
-+	}
-+	if (acpi_dev_resource_interrupt(res, 0, r)) {
-+		int i;
- 
--			r->start = r->end = irq;
--			r->flags = IORESOURCE_IRQ;
-+		r++;
-+		for (i = 1; acpi_dev_resource_interrupt(res, i, r); i++)
-+			r++;
- 
--			dev_dbg(ri->dev, "Interrupt %pR\n", r);
--		}
--		break;
-+		ri->cur += i;
- 	}
--
- 	return AE_OK;
- }
- 
-@@ -165,9 +119,6 @@ struct platform_device *acpi_create_plat
- 		goto out;
- 	}
- 
--	if (WARN_ON(ri.n != ri.cur))
--		goto out;
--
- 	/*
- 	 * If the ACPI node has a parent and that parent has a physical device
- 	 * attached to it, that physical device should be the parent of the
-@@ -189,7 +140,7 @@ struct platform_device *acpi_create_plat
- 		mutex_unlock(&acpi_parent->physical_node_lock);
- 	}
- 	pdev = platform_device_register_resndata(parent, dev_name(&adev->dev),
--						 -1, ri.res, ri.n, NULL, 0);
-+						 -1, ri.res, ri.cur, NULL, 0);
- 	if (IS_ERR(pdev)) {
- 		dev_err(&adev->dev, "platform device creation failed: %ld\n",
- 			PTR_ERR(pdev));
+Thanks,
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
