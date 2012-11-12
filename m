@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2KLVhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:37:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24496 "EHLO
+	id S1753139Ab2KLVhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:37:54 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24494 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab2KLVT1 (ORCPT
+	with ESMTP id S1753859Ab2KLVT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:27 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,138 +14,161 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/46] x86, mm: Move init_memory_mapping calling out of setup.c
-Date: Mon, 12 Nov 2012 13:18:00 -0800
-Message-Id: <1352755122-25660-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 03/46] x86, mm: Move down find_early_table_space()
+Date: Mon, 12 Nov 2012 13:17:59 -0800
+Message-Id: <1352755122-25660-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now init_memory_mapping is called two times, later will be called for every
-ram ranges.
-
-Could put all related init_mem calling together and out of setup.c.
-
-Actually, it reverts commit 1bbbbe7
-    x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
-will address that later with complete solution include handling hole under 4g.
+It will need to call split_mem_range().
+Move it down after that to avoid extra declaration.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/init.h    |    1 -
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |   27 +--------------------------
- arch/x86/mm/init.c             |   19 ++++++++++++++++++-
- 4 files changed, 20 insertions(+), 29 deletions(-)
+ arch/x86/mm/init.c |  117 ++++++++++++++++++++++++++--------------------------
+ 1 files changed, 59 insertions(+), 58 deletions(-)
 
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index adcc0ae..4f13998 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask);
- 
--
- extern unsigned long __initdata pgt_buf_start;
- extern unsigned long __meminitdata pgt_buf_end;
- extern unsigned long __meminitdata pgt_buf_top;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 98ac76d..dd1a888 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -602,7 +602,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void probe_page_size_mask(void);
-+void init_mem_mapping(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 01fb5f9..23b079f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -913,34 +913,9 @@ void __init setup_arch(char **cmdline_p)
- 	setup_real_mode();
- 
- 	init_gbpages();
--	probe_page_size_mask();
- 
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	init_mem_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		int i;
--		unsigned long start, end;
--		unsigned long start_pfn, end_pfn;
--
--		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
--							 NULL) {
--
--			end = PFN_PHYS(end_pfn);
--			if (end <= (1UL<<32))
--				continue;
--
--			start = PFN_PHYS(start_pfn);
--			max_pfn_mapped = init_memory_mapping(
--						max((1UL<<32), start), end);
--		}
--
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 4a372d7..8927276 100644
+index 6d8e102..4a372d7 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -37,7 +37,7 @@ struct map_range {
+@@ -36,64 +36,6 @@ struct map_range {
+ };
  
  static int page_size_mask;
+-/*
+- * First calculate space needed for kernel direct mapping page tables to cover
+- * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
+- * pages. Then find enough contiguous space for those page tables.
+- */
+-static void __init find_early_table_space(struct map_range *mr, int nr_range)
+-{
+-	int i;
+-	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+-	unsigned long start = 0, good_end;
+-	phys_addr_t base;
+-
+-	for (i = 0; i < nr_range; i++) {
+-		unsigned long range, extra;
+-
+-		range = mr[i].end - mr[i].start;
+-		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+-
+-		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
+-			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
+-			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-		} else {
+-			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
+-		}
+-
+-		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
+-			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+-#ifdef CONFIG_X86_32
+-			extra += PMD_SIZE;
+-#endif
+-			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		} else {
+-			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		}
+-	}
+-
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+-	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+-
+-#ifdef CONFIG_X86_32
+-	/* for fixmap */
+-	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+-#endif
+-	good_end = max_pfn_mapped << PAGE_SHIFT;
+-
+-	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+-	if (!base)
+-		panic("Cannot find space for the kernel page tables");
+-
+-	pgt_buf_start = base >> PAGE_SHIFT;
+-	pgt_buf_end = pgt_buf_start;
+-	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+-
+-	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
+-		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
+-		(pgt_buf_top << PAGE_SHIFT) - 1);
+-}
  
--void probe_page_size_mask(void)
-+static void __init probe_page_size_mask(void)
+ void probe_page_size_mask(void)
  {
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
-@@ -316,6 +316,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	return ret >> PAGE_SHIFT;
+@@ -250,6 +192,65 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
  }
  
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/* max_pfn_mapped is updated here */
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
-+}
- 
  /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
++{
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
++	phys_addr_t base;
++
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
++
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
++
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
++
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
++#ifdef CONFIG_X86_32
++			extra += PMD_SIZE;
++#endif
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
++	}
++
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++
++#ifdef CONFIG_X86_32
++	/* for fixmap */
++	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
++#endif
++	good_end = max_pfn_mapped << PAGE_SHIFT;
++
++	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
++	if (!base)
++		panic("Cannot find space for the kernel page tables");
++
++	pgt_buf_start = base >> PAGE_SHIFT;
++	pgt_buf_end = pgt_buf_start;
++	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
++
++	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
++		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
++		(pgt_buf_top << PAGE_SHIFT) - 1);
++}
++
++/*
+  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+  * This runs before bootmem is initialized and gets pages directly from
+  * the physical memory. To access them they are temporarily mapped.
 -- 
 1.7.7
 
