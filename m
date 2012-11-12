@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab2KLV06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:26:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29675 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab2KLVTc (ORCPT
+	id S1754413Ab2KLV07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:26:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24633 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2KLVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:32 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,62 +14,96 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 05/46] x86, mm: Revert back good_end setting for 64bit
-Date: Mon, 12 Nov 2012 13:18:01 -0800
-Message-Id: <1352755122-25660-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 38/46] x86, mm: use limit_pfn for end pfn
+Date: Mon, 12 Nov 2012 13:18:34 -0800
+Message-Id: <1352755122-25660-39-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After
-
-| commit 8548c84da2f47e71bbbe300f55edb768492575f7
-| Author: Takashi Iwai <tiwai@suse.de>
-| Date:   Sun Oct 23 23:19:12 2011 +0200
-|
-|    x86: Fix S4 regression
-|
-|    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
-|    regression since 2.6.39, namely the machine reboots occasionally at S4
-|    resume.  It doesn't happen always, overall rate is about 1/20.  But,
-|    like other bugs, once when this happens, it continues to happen.
-|
-|    This patch fixes the problem by essentially reverting the memory
-|    assignment in the older way.
-
-Have some page table around 512M again, that will prevent kdump to find 512M
-under 768M.
-
-We need revert that reverting, so we could put page table high again for 64bit.
-
-Takashi agreed that S4 regression could be something else.
-
-	https://lkml.org/lkml/2012/6/15/182
+instead of shifting end to get that.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/mm/init.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 8927276..8f57b12 100644
+index e430f1e..a0f579a 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -234,8 +234,8 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
- 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
--#endif
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
-+#endif
+@@ -199,10 +199,12 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 				     unsigned long start,
+ 				     unsigned long end)
+ {
+-	unsigned long start_pfn, end_pfn;
++	unsigned long start_pfn, end_pfn, limit_pfn;
+ 	unsigned long pfn;
+ 	int i;
  
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (!base)
++	limit_pfn = PFN_DOWN(end);
++
+ 	/* head if not big page alignment ? */
+ 	pfn = start_pfn = PFN_DOWN(start);
+ #ifdef CONFIG_X86_32
+@@ -219,8 +221,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ #else /* CONFIG_X86_64 */
+ 	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+ #endif
+-	if (end_pfn > PFN_DOWN(end))
+-		end_pfn = PFN_DOWN(end);
++	if (end_pfn > limit_pfn)
++		end_pfn = limit_pfn;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 		pfn = end_pfn;
+@@ -229,11 +231,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	/* big page (2M) range */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+ #ifdef CONFIG_X86_32
+-	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ #else /* CONFIG_X86_64 */
+ 	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
+-	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
+-		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	if (end_pfn > round_down(limit_pfn, PFN_DOWN(PMD_SIZE)))
++		end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ #endif
+ 
+ 	if (start_pfn < end_pfn) {
+@@ -245,7 +247,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
+-	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PUD_SIZE));
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -255,7 +257,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ 	/* tail is not big page (1G) alignment */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+-	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
+@@ -265,7 +267,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ 	/* tail is not big page (2M) alignment */
+ 	start_pfn = pfn;
+-	end_pfn = PFN_DOWN(end);
++	end_pfn = limit_pfn;
+ 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 
+ 	/* try to merge same page size and continuous */
 -- 
 1.7.7
 
