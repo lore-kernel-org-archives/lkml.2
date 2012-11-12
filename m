@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2KLWnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 17:43:19 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58295 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab2KLWnR (ORCPT
+	id S1753921Ab2KLWrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 17:47:10 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56064 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752198Ab2KLWrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 17:43:17 -0500
+	Mon, 12 Nov 2012 17:47:08 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+3zc+4rnEiU23akmJIsVYr
+Date: Mon, 12 Nov 2012 14:47:03 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RESEND PATCH v3 1/6] watchdog: omap_wdt: convert to new
+ watchdog core
+Message-ID: <20121112224703.GT6801@atomide.com>
+References: <1352746025-1669-1-git-send-email-aaro.koskinen@iki.fi>
+ <1352746025-1669-2-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-In-Reply-To: <1352175520.16194.14.camel@joe-AO722>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-	<1352156701-4038-2-git-send-email-keescook@chromium.org>
-	<1352175520.16194.14.camel@joe-AO722>
-Date: Mon, 12 Nov 2012 14:43:16 -0800
-X-Google-Sender-Auth: MP4zeOf5bIAf-rHnskSs7DOYcIc
-Message-ID: <CAGXu5jL4-nKUdcY0qSivA0a4iG3ZguNr0yuF18kNTba6PsW-eA@mail.gmail.com>
-Subject: Re: [PATCH 001/104] checkpatch: warn about using CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352746025-1669-2-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 8:18 PM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2012-11-05 at 15:03 -0800, Kees Cook wrote:
->> This config item has not carried much meaning for a while now and is
->> almost always enabled by default. As agreed during the Linux kernel
->> summit, it is being removed.  This will discourage future addition of
->> CONFIG_EXPERIMENTAL while it is being phased out.
->>
->> Cc: Andy Whitcroft <apw@canonical.com>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  scripts/checkpatch.pl |    7 +++++++
->>  1 file changed, 7 insertions(+)
->>
->> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
->> index 21a9f5d..f8b33ed 100755
->> --- a/scripts/checkpatch.pl
->> +++ b/scripts/checkpatch.pl
->> @@ -1757,6 +1757,13 @@ sub process {
->>                       #print "is_start<$is_start> is_end<$is_end> length<$length>\n";
->>               }
->>
->> +# Discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
->> +             if ($realfile =~ /Kconfig/ &&
->> +                 $line =~ /.\s*depends on\s+.*\bEXPERIMENTAL\b/) {
->> +                     WARN("CONFIG_EXPERIMENTAL",
->> +                          "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see:\nhttps://lkml.org/lkml/2012/10/23/580\n");
->> +             }
->> +
->>               if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
->>                   ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
->>                       my $flag = $1;
->
-> Couple bits of trivia:
->
-> Perhaps this would be better if it didn't just check Kconfig
-> files and simply looked for any use of CONFIG_EXPERIMENTAL
->
->         $line =~ /^\+.*\bCONFIG_EXPERIMENTAL\b/
->
-> I think the output WARN would be better on single line.
->
-> "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives see https://lkml.org/lkml/2012/10/23/580\n"
+* Aaro Koskinen <aaro.koskinen@iki.fi> [121112 10:49]:
+> Convert omap_wdt to new watchdog core. On OMAP boards, there are usually
+> multiple watchdogs. Since the new watchdog core supports multiple
+> watchdogs, all watchdog drivers used on OMAP should be converted.
+> 
+> The legacy watchdog device node is still created, so this should not
+> break existing users.
+> 
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Tested-by: Jarkko Nikula <jarkko.nikula@jollamobile.com>
+> Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
 
-Good idea! I've added a check for this now too. I made it look for
-/^\+\s*\#if\s*.*\bCONFIG_EXPERIMENTAL\b/ just to limit it a bit more.
+Wim, looks like these will cause merge conflicts with what we
+have already queued in omap-for-v3.8/cleanup-prcm as patch
+"watchdog: OMAP: use standard GETBOOTSTATUS interface; use
+platform_data fn ptr" along with other ARM multiplatform
+related clean up. If these look ackable to you, I can queue
+these that's OK to you.
 
--Kees
+Regards,
 
--- 
-Kees Cook
-Chrome OS Security
+Tony
