@@ -1,107 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2KLLvx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:51:53 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54766 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab2KLLvr (ORCPT
+	id S1753289Ab2KLLwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:52:06 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:57574 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2KLLwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:51:47 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 1/3] mm: ensure safe rb_subtree_gap update when inserting new VMA
-Date: Mon, 12 Nov 2012 03:51:29 -0800
-Message-Id: <1352721091-27022-2-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1352721091-27022-1-git-send-email-walken@google.com>
-References: <1352721091-27022-1-git-send-email-walken@google.com>
+	Mon, 12 Nov 2012 06:52:02 -0500
+From: <Vineet.Gupta1@synopsys.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <tglx@linutronix.de>, <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [RFC Patch v1 48/55] ARC: [plat-arfpga] BVCI Latency Unit setup
+Date: Mon, 12 Nov 2012 17:19:06 +0530
+Message-ID: <1352720953-24321-18-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the trinity fuzzer, Sasha Levin uncovered a case where
-rb_subtree_gap wasn't correctly updated.
+From: Vineet Gupta <vgupta@synopsys.com>
 
-Digging into this, the root cause was that vma insertions and removals
-require both an rbtree insert or erase operation (which may trigger
-tree rotations), and an update of the next vma's gap (which does not
-change the tree topology, but may require iterating on the node's
-ancestors to propagate the update). The rbtree rotations caused the
-rb_subtree_gap values to be updated in some of the internal nodes, but
-without upstream propagation. Then the subsequent update on the next
-vma didn't iterate as high up the tree as it should have, as it
-stopped as soon as it hit one of the internal nodes that had been
-updated as part of a tree rotation.
-
-The fix is to impose that all rb_subtree_gap values must be up to date
-before any rbtree insertion or erase, with the possible exception that
-the node being erased doesn't need to have an up to date rb_subtree_gap.
-
-This change: during vma insertion, make sure to update the rb_subtree_gap
-values for both the current and next vmas prior to rebalancing the rbtree
-to account for the just-inserted vma.
-
-(Thanks to Sasha Levin for uncovering the problem and to Hugh Dickins
-for coming up with a simpler test case)
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Michel Lespinasse <walken@google.com>
-
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- mm/mmap.c |   27 +++++++++++++++------------
- 1 files changed, 15 insertions(+), 12 deletions(-)
+ arch/arc/plat-arcfpga/Kconfig    |   32 +++++++++++++++++++++
+ arch/arc/plat-arcfpga/platform.c |   56 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+), 0 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 619b280505fe..14859b999a9f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -339,17 +339,7 @@ static void vma_gap_update(struct vm_area_struct *vma)
- static inline void vma_rb_insert(struct vm_area_struct *vma,
- 				 struct rb_root *root)
- {
--	/*
--	 * vma->vm_prev wasn't known when we followed the rbtree to find the
--	 * correct insertion point for that vma. As a result, we could not
--	 * update the vma vm_rb parents rb_subtree_gap values on the way down.
--	 * So, we first insert the vma with a zero rb_subtree_gap value
--	 * (to be consistent with what we did on the way down), and then
--	 * immediately update the gap to the correct value.
--	 */
--	vma->rb_subtree_gap = 0;
- 	rb_insert_augmented(&vma->vm_rb, root, &vma_gap_callbacks);
--	vma_gap_update(vma);
- }
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 1b65644..6bc1149 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -55,4 +55,36 @@ config ARC_SERIAL_LV2
+ 	depends on ARC_COMPACT_IRQ_LEVELS
+ 	select ARC_IRQ5_LV2
  
- static void vma_rb_erase(struct vm_area_struct *vma, struct rb_root *root)
-@@ -494,12 +484,25 @@ static int find_vma_links(struct mm_struct *mm, unsigned long addr,
- void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct rb_node **rb_link, struct rb_node *rb_parent)
- {
--	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
--	vma_rb_insert(vma, &mm->mm_rb);
-+	/* Update tracking information for the gap following the new vma. */
- 	if (vma->vm_next)
- 		vma_gap_update(vma->vm_next);
- 	else
- 		mm->highest_vm_end = vma->vm_end;
++menuconfig ARC_HAS_BVCI_LAT_UNIT
++	bool "BVCI Bus Latency Unit"
++	depends on ARC_BOARD_ML509 || ARC_BOARD_ANGEL4
++	help
++	  IP to add artifical latency to BVCI Bus Based FPGA builds.
++	  The default latency (even worst case) for FPGA is non-realistic
++	  (~10 SDRAM, ~5 SSRAM).
++
++config BVCI_LAT_UNITS
++	hex "Latency Unit(s) Bitmap"
++	default "0x0"
++	depends on ARC_HAS_BVCI_LAT_UNIT
++	help
++	  There are multiple Latency Units corresponding to the many
++	  interfaces of the system bus arbiter (both CPU side as well as
++	  the peripheral side).
++	  To add latency to ALL memory transaction, choose Unit 0, otherwise
++	  for finer grainer - interface wise latency, specify a bitmap (1 bit
++	  per unit) of all units. e.g. 1,2,12 will be 0x1003
++
++	  Unit  0 - System Arb and Mem Controller
++	  Unit  1 - I$ and System Bus
++	  Unit  2 - D$ and System Bus
++	  ..
++	  Unit 12 - IDE Disk controller and System Bus
++
++config BVCI_LAT_CYCLES
++	int "Latency Value in cycles"
++	range 0 63
++	default "30"
++	depends on ARC_HAS_BVCI_LAT_UNIT
++
+ endif
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+index 3243091..d5d4a10 100644
+--- a/arch/arc/plat-arcfpga/platform.c
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -17,6 +17,60 @@
+ #include <asm/irq.h>
+ #include <plat/memmap.h>
+ 
++/*-----------------------BVCI Latency Unit -----------------------------*/
++
++#ifdef CONFIG_ARC_HAS_BVCI_LAT_UNIT
++
++int lat_cycles = CONFIG_BVCI_LAT_CYCLES;
++
++/* BVCI Bus Profiler: Latency Unit */
++static void __init setup_bvci_lat_unit(void)
++{
++#define MAX_BVCI_UNITS 12
++
++	/* TBD: rewrite this using I/O macros */
++	volatile unsigned int *base = (unsigned int *)BVCI_LAT_UNIT_BASE;
++	volatile unsigned int *lat_unit = (unsigned int *)base + 21;
++	volatile unsigned int *lat_val = (unsigned int *)base + 22;
++	unsigned int unit;
++	const unsigned long units_req = CONFIG_BVCI_LAT_UNITS;
 +
 +	/*
-+	 * vma->vm_prev wasn't known when we followed the rbtree to find the
-+	 * correct insertion point for that vma. As a result, we could not
-+	 * update the vma vm_rb parents rb_subtree_gap values on the way down.
-+	 * So, we first insert the vma with a zero rb_subtree_gap value
-+	 * (to be consistent with what we did on the way down), and then
-+	 * immediately update the gap to the correct value. Finally we
-+	 * rebalance the rbtree after all augmented values have been set.
++	 * There are multiple Latency Units corresponding to the many
++	 * interfaces of the system bus arbiter (both CPU side as well as
++	 * the peripheral side).
++	 *
++	 * Unit  0 - System Arb and Mem Controller - adds latency to all
++	 *	    memory trasactions
++	 * Unit  1 - I$ and System Bus
++	 * Unit  2 - D$ and System Bus
++	 * ..
++	 * Unit 12 - IDE Disk controller and System Bus
++	 *
++	 * The programmers model requires writing to lat_unit reg first
++	 * and then the latency value (cycles) to lat_value reg
 +	 */
-+	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
-+	vma->rb_subtree_gap = 0;
-+	vma_gap_update(vma);
-+	vma_rb_insert(vma, &mm->mm_rb);
++
++	if (CONFIG_BVCI_LAT_UNITS == 0) {
++		*lat_unit = 0;
++		*lat_val = lat_cycles;
++		pr_info("BVCI Latency for all Memory Transactions %d cycles\n",
++			lat_cycles);
++	} else {
++		for_each_set_bit(unit, &units_req, MAX_BVCI_UNITS) {
++			*lat_unit = unit + 1;  /* above returns 0 based */
++			*lat_val = lat_cycles;
++			pr_info("BVCI Latency for Unit[%d] = %d cycles\n",
++				(unit + 1), lat_cycles);
++		}
++	}
++}
++#else
++static void __init setup_bvci_lat_unit(void)
++{
++}
++#endif
++
+ /*----------------------- Platform Devices -----------------------------*/
+ 
+ #if defined(CONFIG_SERIAL_ARC) || defined(CONFIG_SERIAL_ARC_MODULE)
+@@ -111,6 +165,8 @@ void __init arc_platform_early_init(void)
+ {
+ 	pr_info("[plat-arcfpga]: registering early dev resources\n");
+ 
++	setup_bvci_lat_unit();
++
+ 	arc_fpga_serial_init();
  }
  
- static void __vma_link_file(struct vm_area_struct *vma)
 -- 
-1.7.7.3
+1.7.4.1
+
