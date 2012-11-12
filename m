@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab2KLIpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 03:45:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52796 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab2KLIpN (ORCPT
+	id S1751704Ab2KLIsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 03:48:01 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39250 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab2KLIr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 03:45:13 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: Remove unused variable in alloc_contig_range()
-Date: Mon, 12 Nov 2012 09:45:06 +0100
-Message-Id: <1352709906-10749-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.0
-X-Provags-ID: V02:K0:orgR9LFihJDY7oPG0BR3ROb63g/kGPf3H3xzleHl3cG
- iFYICKtEWikgurIWb+cuR/dmZhHZltBCK2I7dIWJORN5jcPWsB
- LZw0kuUK3ZhUwK/zzDZ07bOpnZksm6bmYkbqv9t3sGvuFXbrVN
- KmNuujVMquCHTk5oWr1Wi33MC4qvnjZG8R4YEolNrQ/YItjv8e
- zlXIRY/IoWKES4gxRRsxi8tm7CBFOdgx5a/vzE8Vq7cKpovx8d
- 1wunFDNFYmCG3CytcLF23akfO6lOg2iLyWH8Af9BDbbVmXAZ4I
- Ns4B7Ff+mc2O+WuWBcJO3s0dvYvoF3T4RiobrLrntxykfda7QO
- ryRCcZU14RxY2y1kcn5zy1IJl1dNKN1gGeJMWi50c5NSw6sZlT
- 6aHnXiRj+xOgRfeB2TthkA8dr8EY+yglNLe31VGxwknCQl0DI2
- 8wdUv
+	Mon, 12 Nov 2012 03:47:59 -0500
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+To: Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>
+Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Abhijit Pawar <abhi.c.pawar@gmail.com>
+Subject: [PATCH 1/2] fs:ecryptfs basic code optimization
+Date: Mon, 12 Nov 2012 14:17:27 +0530
+Message-Id: <1352710047-3663-1-git-send-email-abhi.c.pawar@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 872ca38f7afd9566bf2f88b95616f7ab71b50064 removed the last
-reference to this variable but not the variable itself.
+debug.c: ecryptfs_dump_auth_tok () : salt and sig arrays initialized so as to avoid adding null terminator explicitly.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
 ---
- mm/page_alloc.c | 1 -
- 1 file changed, 1 deletion(-)
+ fs/ecryptfs/debug.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6b990cb..71933dd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5822,7 +5822,6 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
- int alloc_contig_range(unsigned long start, unsigned long end,
- 		       unsigned migratetype)
+diff --git a/fs/ecryptfs/debug.c b/fs/ecryptfs/debug.c
+index 3d2bdf5..480e3b5 100644
+--- a/fs/ecryptfs/debug.c
++++ b/fs/ecryptfs/debug.c
+@@ -31,8 +31,8 @@
+  */
+ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
  {
--	struct zone *zone = page_zone(pfn_to_page(start));
- 	unsigned long outer_start, outer_end;
- 	int ret = 0, order;
+-	char salt[ECRYPTFS_SALT_SIZE * 2 + 1];
+-	char sig[ECRYPTFS_SIG_SIZE_HEX + 1];
++	char salt[ECRYPTFS_SALT_SIZE * 2 + 1] = {'\0'};
++	char sig[ECRYPTFS_SIG_SIZE_HEX + 1] = {'\0'};
  
+ 	ecryptfs_printk(KERN_DEBUG, "Auth tok at mem loc [%p]:\n",
+ 			auth_tok);
+@@ -42,7 +42,6 @@ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
+ 		ecryptfs_printk(KERN_DEBUG, " * passphrase type\n");
+ 		ecryptfs_to_hex(salt, auth_tok->token.password.salt,
+ 				ECRYPTFS_SALT_SIZE);
+-		salt[ECRYPTFS_SALT_SIZE * 2] = '\0';
+ 		ecryptfs_printk(KERN_DEBUG, " * salt = [%s]\n", salt);
+ 		if (auth_tok->token.password.flags &
+ 		    ECRYPTFS_PERSISTENT_PASSWORD) {
+@@ -50,7 +49,6 @@ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
+ 		}
+ 		memcpy(sig, auth_tok->token.password.signature,
+ 		       ECRYPTFS_SIG_SIZE_HEX);
+-		sig[ECRYPTFS_SIG_SIZE_HEX] = '\0';
+ 		ecryptfs_printk(KERN_DEBUG, " * signature = [%s]\n", sig);
+ 	}
+ 	ecryptfs_printk(KERN_DEBUG, " * session_key.flags = [0x%x]\n",
 -- 
-1.8.0
+1.7.7.6
 
