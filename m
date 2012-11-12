@@ -1,181 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2KLLhh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 06:37:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59076 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab2KLLhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 06:37:36 -0500
-Date: Mon, 12 Nov 2012 11:37:31 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
-Message-ID: <20121112113731.GS8218@suse.de>
-References: <20121012135726.GY29125@suse.de>
- <507BDD45.1070705@suse.cz>
- <20121015110937.GE29125@suse.de>
- <5093A3F4.8090108@redhat.com>
- <5093A631.5020209@suse.cz>
- <509422C3.1000803@suse.cz>
- <509C84ED.8090605@linux.vnet.ibm.com>
- <509CB9D1.6060704@redhat.com>
- <20121109090635.GG8218@suse.de>
- <509F6C2A.9060502@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <509F6C2A.9060502@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752779Ab2KLLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 06:48:09 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:50257 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752738Ab2KLLsH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 06:48:07 -0500
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CACxGe6vL9gbAKyDWcZWWAQ4WO=nTgdAioXS-h2e1jtJK9pmZUg@mail.gmail.com>
+Date: Mon, 12 Nov 2012 13:47:59 +0200
+Cc: Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <14968148-872C-441A-B162-0FF93A70E489@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <CAD=GYpbeKtW37Cj9cXr8F7F83d9Fgs-moqu9p6cOaPE1VxwbSg@mail.gmail.com> <CACxGe6vL9gbAKyDWcZWWAQ4WO=nTgdAioXS-h2e1jtJK9pmZUg@mail.gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With "mm: vmscan: scale number of pages reclaimed by reclaim/compaction
-based on failures" reverted, Zdenek Kabelac reported the following
+Hi Grant,
 
-	Hmm,  so it's just took longer to hit the problem and observe
-	kswapd0 spinning on my CPU again - it's not as endless like before -
-	but still it easily eats minutes - it helps to	turn off  Firefox
-	or TB  (memory hungry apps) so kswapd0 stops soon - and restart
-	those apps again.  (And I still have like >1GB of cached memory)
+On Nov 9, 2012, at 11:22 PM, Grant Likely wrote:
 
-	kswapd0         R  running task        0    30      2 0x00000000
-	 ffff8801331efae8 0000000000000082 0000000000000018 0000000000000246
-	 ffff880135b9a340 ffff8801331effd8 ffff8801331effd8 ffff8801331effd8
-	 ffff880055dfa340 ffff880135b9a340 00000000331efad8 ffff8801331ee000
-	Call Trace:
-	 [<ffffffff81555bf2>] preempt_schedule+0x42/0x60
-	 [<ffffffff81557a95>] _raw_spin_unlock+0x55/0x60
-	 [<ffffffff81192971>] put_super+0x31/0x40
-	 [<ffffffff81192a42>] drop_super+0x22/0x30
-	 [<ffffffff81193b89>] prune_super+0x149/0x1b0
-	 [<ffffffff81141e2a>] shrink_slab+0xba/0x510
+> On Fri, Nov 9, 2012 at 5:32 AM, Joel A Fernandes <agnel.joel@gmail.com> wrote:
+>> Hi Pantelis,
+>> 
+>> I hope I'm not too late to reply as I'm traveling.
+>> 
+>> On Nov 6, 2012, at 5:30 AM, Pantelis Antoniou
+>> <panto@antoniou-consulting.com> wrote:
+>> 
+>>> 
+>>>> 
+>>>> Joanne has purchased one of Jane's capes and packaged it into a rugged
+>>>> case for data logging. As far as Joanne is concerned, the BeagleBone and
+>>>> cape together are a single unit and she'd prefer a single monolithic FDT
+>>>> instead of using an FDT overlay.
+>>>> Option A: Using dtc, she uses the BeagleBone and cape .dts source files
+>>>>       to generate a single .dtb for the entire system which is
+>>>>       loaded by U-Boot. -or-
+>>> 
+>>> Unlikely.
+>>>> Option B: Joanne uses a tool to merge the BeagleBone and cape .dtb files
+>>>>       (instead of .dts files), -or-
+>>> Possible but low probability.
+>>> 
+>>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
+>>>>       and passes the resolved tree to the kernel.
+>>>> 
+>>> 
+>>> Could be made to work. Only really required if Joanne wants the
+>>> cape interface to work for u-boot too. For example if the cape has some
+>>> kind of network interface that u-boot will use to boot from.
+>>> 
+>> 
+>> I love Grant's hashing idea a lot keeping the phandle problem for
+>> compile time and not requiring fixups.
+>> 
+>> IMO it is still a cleaner approach if u-boot does the simple tree merging for
+>> all cases, and not the kernel reasons mentioned below.
+> 
+> I'm more than sufficiently convinced that making changes at runtime
+> from userspace is pretty much required.
+> 
+> Also consider: it is order of magnitudes easier to modify the kernel
+> than it is to change the firmware for end users.
+> 
 
-The sysrq+m indicates the system has no swap so it'll never reclaim
-anonymous pages as part of reclaim/compaction. That is one part of the
-problem but not the root cause as file-backed pages could also be reclaimed.
+Complete agreement here.
 
-The likely underlying problem is that kswapd is woken up or kept awake
-for each THP allocation request in the page allocator slow path.
+>> (1)
+>> From a development standpoint, very little or nothing will
+>> have to be changed in kernel (except for scripts/dtc) considering we
+>> are moving forward with hashing.
+>> 
+>> (2)
+>> Also this discussed a while back but at some point is going to brought
+>> up again-  loading of dt fragment directly from EEPROM and merging at
+>> run time. If we were to implement this in kernel, we would have to add
+>> cape specific EEPROM reading code, merge the tree before it is
+>> unflattened and parse.
+> 
+> Unless it is required for boot to userspace I'm not considering
+> merging before userspace starts. That's well after the tree is
+> unflattened into the live form. If it is require to boot then I agree
+> that is should be done in firmware. I see zero problem with having a
+> beaglebone specific cape driver that knows to read the eeprom and
+> request a specific configuration file. Heck, the kernel doesn't even
+> need to parse the eeprom data. It can be read from userspace and
+> userspace decides which overlay to provide. There's nothing stopping
+> userspace from reading the eeprom, looking up the correct dts for the
+> board, downloading the file from the Internet, compiling it with dtc
+> and installing it.... and yes that is getting a little extreme.
+> 
 
-If compaction fails for the requesting process then compaction will be
-deferred for a time and direct reclaim is avoided. However, if there
-are a storm of THP requests that are simply rejected, it will still
-be the the case that kswapd is awake for a prolonged period of time
-as pgdat->kswapd_max_order is updated each time. This is noticed by
-the main kswapd() loop and it will not call kswapd_try_to_sleep().
-Instead it will loopp, shrinking a small number of pages and calling
-shrink_slab() on each iteration.
+We're trying to come up with the method that will work best for us.
 
-The temptation is to supply a patch that checks if kswapd was woken for
-THP and if so ignore pgdat->kswapd_max_order but it'll be a hack and not
-backed up by proper testing. As 3.7 is very close to release and this is
-not a bug we should release with, a safer path is to revert "mm: remove
-__GFP_NO_KSWAPD" for now and revisit it with the view to ironing out the
-balance_pgdat() logic in general.
+>From an ease of use perspective, having a kernel driver doing the 
+probing and performing the DT fragment insertion looks the best.
+It's especially nice for the manufacturer, since he can make sure
+that when he ships a board a single kernel image will contain everything
+with no possibility of RMAs. 
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- drivers/mtd/mtdcore.c           |    6 ++++--
- include/linux/gfp.h             |    5 ++++-
- include/trace/events/gfpflags.h |    1 +
- mm/page_alloc.c                 |    7 ++++---
- 4 files changed, 13 insertions(+), 6 deletions(-)
+For h/w prototyping, where the user is tinkering around with his
+own design, the user space approach would be best.
 
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index 374c46d..ec794a7 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -1077,7 +1077,8 @@ EXPORT_SYMBOL_GPL(mtd_writev);
-  * until the request succeeds or until the allocation size falls below
-  * the system page size. This attempts to make sure it does not adversely
-  * impact system performance, so when allocating more than one page, we
-- * ask the memory allocator to avoid re-trying.
-+ * ask the memory allocator to avoid re-trying, swapping, writing back
-+ * or performing I/O.
-  *
-  * Note, this function also makes sure that the allocated buffer is aligned to
-  * the MTD device's min. I/O unit, i.e. the "mtd->writesize" value.
-@@ -1091,7 +1092,8 @@ EXPORT_SYMBOL_GPL(mtd_writev);
-  */
- void *mtd_kmalloc_up_to(const struct mtd_info *mtd, size_t *size)
- {
--	gfp_t flags = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
-+	gfp_t flags = __GFP_NOWARN | __GFP_WAIT |
-+		       __GFP_NORETRY | __GFP_NO_KSWAPD;
- 	size_t min_alloc = max_t(size_t, mtd->writesize, PAGE_SIZE);
- 	void *kbuf;
- 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 02c1c971..d0a7967 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -31,6 +31,7 @@ struct vm_area_struct;
- #define ___GFP_THISNODE		0x40000u
- #define ___GFP_RECLAIMABLE	0x80000u
- #define ___GFP_NOTRACK		0x200000u
-+#define ___GFP_NO_KSWAPD	0x400000u
- #define ___GFP_OTHER_NODE	0x800000u
- #define ___GFP_WRITE		0x1000000u
- 
-@@ -85,6 +86,7 @@ struct vm_area_struct;
- #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
- #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
- 
-+#define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
- #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
- #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
- 
-@@ -114,7 +116,8 @@ struct vm_area_struct;
- 				 __GFP_MOVABLE)
- #define GFP_IOFS	(__GFP_IO | __GFP_FS)
- #define GFP_TRANSHUGE	(GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
--			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN)
-+			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN | \
-+			 __GFP_NO_KSWAPD)
- 
- #ifdef CONFIG_NUMA
- #define GFP_THISNODE	(__GFP_THISNODE | __GFP_NOWARN | __GFP_NORETRY)
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index 9391706..d6fd8e5 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -36,6 +36,7 @@
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
- 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
- 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
-+	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
- 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
- 	) : "GFP_NOWAIT"
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bb90971..7228260 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2416,8 +2416,9 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 		goto nopage;
- 
- restart:
--	wake_all_kswapd(order, zonelist, high_zoneidx,
--					zone_idx(preferred_zone));
-+	if (!(gfp_mask & __GFP_NO_KSWAPD))
-+		wake_all_kswapd(order, zonelist, high_zoneidx,
-+						zone_idx(preferred_zone));
- 
- 	/*
- 	 * OK, we're below the kswapd watermark and have kicked background
-@@ -2494,7 +2495,7 @@ rebalance:
- 	 * system then fail the allocation instead of entering direct reclaim.
- 	 */
- 	if ((deferred_compaction || contended_compaction) &&
--	    (gfp_mask & (__GFP_MOVABLE|__GFP_REPEAT)) == __GFP_MOVABLE)
-+						(gfp_mask & __GFP_NO_KSWAPD))
- 		goto nopage;
- 
- 	/* Try direct reclaim and then allocating */
+The downloading over the internet DTS file, is a bit extreme for now :)
+
+>> I think doing tree merging in kernel is messy
+>> and we should do it in uboot considering we might have to read EEPROM for
+>> this use case. Ideally reading the fragment from the EEPROM for all capes
+>> and merging without worrying about version detection, Doing the merge and
+>> passing the merged blob to the kernel which (kernel) works the same way
+>> it does today.
+>> 
+>>>> It may be sufficient to solve it by making the phandle values less
+>>>> volatile. Right now dtc generates phandles linearly. Generated phandles
+>>>> could be overridden with explicit phandle properties, but it isn't a
+>>>> fantastic solution. Perhaps generating the phandle from a hash of the
+>>>> node name would be sufficient.
+>>>> 
+>>> 
+>>> I doubt the hash method will work reliably. We only have 32 bits to work with,
+>>> nothing like the SHA hashes of git.
+>>> 
+>> 
+>> I was wondering I have worked with kernel's crypto code in the past to
+>> generate 32 bit md5sums of 1000s of dataitems, from what I've seen,
+>> collisions are rare and since we are talking about just a few nodes
+>> that are being referenced in the base dt. I think the probability is
+>> even less (ofcourse such an analysis strongly depends on dataset).
+>> this method also takes away a lot of complexity with having it to do
+>> runtime fixups and will help us get off the ground quickly.
+> 
+> It wouldn't be hard to put together a test and run it on all the .dts
+> files in the kernel; generating md5 sums for all the full_name paths
+> and seeing if we've got any collisions yet.
+> 
+>> We can also put in a collision handling mechanism if needed.
+>> I think it is worthy doing a sample hash of all nodes in all dts we
+>> have in a script and see for once if we have collisions and what it
+>> looks like.
+> 
+> Collision handling is a must, but again this is all internal to dtc. I
+> don't foresee any problems with it.
+> 
+>> Alternatively to hashing, reading David Gibson's paper I followed,
+>> phandle is supposed to 'uniquely' identity node. I wonder why the node
+>> name itself is not sufficient to uniquely identify.
+> 
+> Simply because the FDT draws upon the existing OFW bindings which use
+> a 32bit value to reference other nodes.
+> 
+>> The code that does
+>> the tree walking can then just strcmp the node name while it walks the
+>> tree instead of having to find a node with a phandle number. I guess
+>> the reason is phandles are small to store as data values. Another
+>> approach can be to arrange the string block in alphabetical order
+>> (unless it already is), and store phandle as index of the node name
+>> referenced relative to the starting of the strong block. This will not
+>> affect nodes in dtb being moved around since they will still have the
+>> same index value. the problem being adding or removing nodes Changes
+>> the index of all other nodes in the string block as well.. Hmm.
+> 
+> And that still doesn't help find all the phandle locations in the tree
+> for doing fixups. It would need to be a table of
+> nodes+properties+offsets that contain phandles for fixup to work, but
+> I shy away from that approach because I think it will be fragile.
+> 
+> g.
+
+Maybe, but IMHO it will work. I don't know, we're at the point where
+we have to start coding and see what come out.
+
+Regards
+
+-- Pantelis
+
