@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2KLAht (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Nov 2012 19:37:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1543 "EHLO mga09.intel.com"
+	id S1751853Ab2KLAkH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Nov 2012 19:40:07 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:41760 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab2KLAhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Nov 2012 19:37:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,759,1344236400"; 
-   d="scan'208";a="218056656"
-Message-ID: <1352680649.7176.140.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Mon, 12 Nov 2012 08:37:29 +0800
-In-Reply-To: <Pine.LNX.4.44L0.1211091131190.1702-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211091131190.1702-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1751091Ab2KLAkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Nov 2012 19:40:04 -0500
+Message-ID: <50A0454B.8070102@interlog.com>
+Date: Sun, 11 Nov 2012 19:39:39 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marc Fleischmann <mwf@risingtidesystems.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: Re: scsi target, likely GPL violation
+References: <509A915B.30105@redhat.com> <1352626456.6524.46.camel@dabdike>
+In-Reply-To: <1352626456.6524.46.camel@dabdike>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 11:41 -0500, Alan Stern wrote:
-> On Fri, 9 Nov 2012, Huang Ying wrote:
-> 
-> > On Thu, 2012-11-08 at 12:07 -0500, Alan Stern wrote:
-> > > On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
-> > > 
-> > > > > > > is it a good idea to allow to set device state to SUSPENDED if the device
-> > > > > > > is disabled?
-> > > > > > 
-> > > > > > No, it is not.  The status should always be ACTIVE as long as usage_count > 0.
-> > > 
-> > > That isn't strictly true, because pm_runtime_get_noresume violates this
-> > > rule.  What the PM core actually does is prevent a transition from the
-> > > ACTIVE state to the SUSPENDING/SUSPENDED state if usage_count > 0,
-> > > _provided_ runtime PM is enabled.  There's no such restriction when it
-> > > is disabled.
-> > 
-> > Usage count may be not a issue for the end user.  But "on" in "control"
-> > sysfs file + SUSPENDED can be confusing for the end user.  Maybe we need
-> > to check dev->power.runtime_auto in pm_runtime_set_suspended().
-> 
-> You are confusing the issue by raising two separate (though related)
-> questions.
+On 12-11-11 04:34 AM, James Bottomley wrote:
+> On Wed, 2012-11-07 at 08:50 -0800, Andy Grover wrote:
+>> Nick,
+>>
+>> Your company appears to be shipping kernel features in RTS OS that are
+>> not made available under the GPL, specifically support for the
+>> EXTENDED_COPY and COMPARE_AND_WRITE SCSI commands, in order to claim
+>> full Vmware vSphere 5 VAAI support.
+>>
+>> http://www.risingtidesystems.com/storage.html
+>> http://www.linux-iscsi.org/wiki/VAAI
+>>
+>> Private emails to you and RTS CEO Marc Fleischmann have not elicited a
+>> useful response.
+>>
+>> You are subsystem maintainer for the in-kernel SCSI target support
+>> (drivers/target/*), and your company appears to be violating the GPL.
+>> Please explain.
+>
+> Can we please cool it with the inflammatory accusations.  Please
+> remember that statements which damage or seek to damage the reputation
+> of a company amount to libel even under US law ... and using phrases
+> like "appears to" doesn't shield you from this.
+>
+> I also note that whatever their website says RTS OS isn't in VMware's
+> certified compatibility list:
+>
+> http://www.vmware.com/resources/compatibility/pdf/vi_io_guide.pdf
+>
+> Plus it's a grey area what you actually have to support to make that
+> list (especially as XCOPY has now been removed from SBC-3 in favour of
+> token copy), so I'd say that the chain of reasoning you've used to come
+> up with this hearsay allegation of copyright violation is tenuous at
+> best.
 
-Thanks for clarify.
+The SCSI EXTENDED COPY command (also known by the abbreviation "XCOPY")
+is specified in the SPC (SCSI Primary Commands) series of standards, not
+the SBC (SCSI Block Commands) series. Yes, it has been enhanced in the
+SPC-4 drafts (what you term as "token copy") but as far as I can
+determine, still allows for the original EXTENDED COPY command usage.
+EXTENDED COPY was first standardized in SPC-2 (ANSI INCITS 351-2001) in
+2001. The most recent SPC standard is SPC-3 (ANSI INCITS 408-2005) and
+if VMWare don't mention some other SCSI standard or draft, then the
+SPC-3 specification of the EXTENDED COPY command should be the
+reference. And that is prior to the addition of the "token copy"
+functionality.
 
-> The first question: How should the PCI subsystem prevent the parents of 
-> driverless VGA devices from being runtime suspended while userspace is 
-> accessing them?
+The latest released version of my sg3_utils package (1.34) contains
+a contributed sg_xcopy utility that invokes the SCSI EXTENDED COPY
+command. At this time it does not support the recently added "token
+copy" functionality.
 
-I think Rafael's patch is good for that.
+> Anybody who does enforcement will tell you that you begin with first
+> hand proof of a violation.  That means obtain the product and make sure
+> it's been modified and that a request for corresponding source fails.
+> In this case, since I presume Red Hat, as a RTS partner, has a bona fide
+> copy of the RTS OS, please verify it does indeed implement or issue the
+> commands which are not in the public git repository and that whoever
+> owns the copy makes a request for the source code.
+>
+> I would really appreciate it if the next email I see from you on this
+> subject is either
+>
+>       1. Yes, I've got first hand proof of a GPL violation (in which case
+>          we'll then move to seeing how we can remedy this) or
+>       2. A genuine public apology for the libel, which I'll do my best to
+>          prevail on RTS to accept.
 
-> The second question: Should the PM core allow devices that are disabled
-> for runtime PM to be in the SUSPENDED state when
-> dev->power.runtime_auto is clear?
+Sorry to add another category.
 
-I think that should not be allowed.
+Doug Gilbert
 
-> Assuming we don't want to allow this, there's a third question: Should
-> pm_runtime_allow call pm_runtime_set_suspended if the device is
-> disabled?
-
-Is it absolute necessary to call pm_runtime_set_suspended?  If the
-device is disabled, the transition to SUSPENDED state will not be
-triggered even if the device is ACTIVE.
-
-Best Regards,
-Huang Ying
-
+> Because any further discussion of unsubstantiated allegations of this
+> nature exposes us all to jeopardy of legal sanction.
+>
+> James
 
