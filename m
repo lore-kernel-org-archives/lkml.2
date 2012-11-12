@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2KLQwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 11:52:23 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57009 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab2KLQwU (ORCPT
+	id S1753904Ab2KLQwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 11:52:38 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59201 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab2KLQwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 11:52:20 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        SeongHwan Yoon <sunghwan.yun@samsung.com>
-Subject: Re: [PATCH] mm: use migrate_prep() instead of migrate_prep_local()
-In-Reply-To: <1352708989-25359-1-git-send-email-m.szyprowski@samsung.com>
-Organization: http://mina86.com/
-References: <1352708989-25359-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Mon, 12 Nov 2012 17:52:11 +0100
-Message-ID: <xa1t625azrus.fsf@mina86.com>
+	Mon, 12 Nov 2012 11:52:36 -0500
+Message-ID: <50A12950.6090808@wwwdotorg.org>
+Date: Mon, 12 Nov 2012 09:52:32 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <509D9089.7020407@wwwdotorg.org> <5B124797-6DFD-4C5E-90D7-665AFD4A7873@antoniou-consulting.com>
+In-Reply-To: <5B124797-6DFD-4C5E-90D7-665AFD4A7873@antoniou-consulting.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On 11/12/2012 05:10 AM, Pantelis Antoniou wrote:
+> Hi Stephen,
+> 
+> On Nov 10, 2012, at 1:23 AM, Stephen Warren wrote:
+> 
+>> On 11/09/2012 09:28 AM, Grant Likely wrote:
+>>> On Tue, Nov 6, 2012 at 10:37 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> ...
+>>>> I do rather suspect this use-case is quite common. NVIDIA certainly has
+>>>> a bunch of development boards with pluggable
+>>>> PMIC/audio/WiFi/display/..., and I believe there's some ability to
+>>>> re-use the pluggable components with a variety of base-boards.
+>>>>
+>>>> Given people within NVIDIA started talking about this recently, I asked
+>>>> them to enumerate all the boards we have that support pluggable
+>>>> components, and how common it is that some boards support being plugged
+>>>> into different main boards. I don't know when that enumeration will
+>>>> complete (or even start) but hopefully I can provide some feedback on
+>>>> how common the use-case is for us once it's done.
+>>>
+>>> From your perspective, is it important to use the exact same .dtb
+>>> overlays for those add-on boards, or is it okay to have a separate
+>>> build of the overlay for each base tree?
+>>
+>> I certainly think it'd be extremely beneficial to use the exact same
+>> child board .dtb with arbitrary base boards.
+>>
+> 
+> Oh yes. In fact if one was to use a single kernel image for beagleboard
+> and beaglebone, for the cape to work for both, it is required for it's
+> dtb to be compatible. 
 
-On Mon, Nov 12 2012, Marek Szyprowski wrote:
-> __alloc_contig_migrate_range() should use all possible ways to get all the
-> pages migrated from the given memory range, so pruning per-cpu lru lists
-> for all CPUs is required, regadless the cost of such operation. Otherwise
-> some pages which got stuck at per-cpu lru list might get missed by
-> migration procedure causing the contiguous allocation to fail.
->
-> Reported-by: SeongHwan Yoon <sunghwan.yun@samsung.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Well, as Grant pointed out, it's not actually strictly necessary for the
+.dtb to be compatible; only the .dts /need/ be compatible, and the .dtb
+can be generated at run-time using dtc for example.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Of course, relying on .dts compatibility rather than .dtb compatibility
+might negatively impact the complexity of an initrd environment if we
+end up loading overlays from there...
 
-> ---
->  mm/page_alloc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1bfe2b0..fcb9719 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5677,7 +5677,7 @@ static int __alloc_contig_migrate_range(struct comp=
-act_control *cc,
->  	unsigned int tries =3D 0;
->  	int ret =3D 0;
->=20=20
-> -	migrate_prep_local();
-> +	migrate_prep();
->=20=20
->  	while (pfn < end || !list_empty(&cc->migratepages)) {
->  		if (fatal_signal_pending(current)) {
+> We're not there yet, but people would like to have an upgrade path.
+> 
+> beaglebone -> beagleboard -> pandaboard -> future-boards
+> 
+> It is not possible yet, but perhaps newer boards could have that.
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQoSk7AAoJECBgQBJQdR/09NcP/15Ve5P9jOlCH3LpZZkRAjRD
-e24MCnmkrj/SGaped1F2rW3nZr/Qb2lZtKHwYXcrU+qj2O3Ndj/Iz80eW4ywVnVi
-QOqzDKwfBi0lapCtZjyCsiyrmsR/eKJ8aH1wNtQzMBUEqkqHKniBXyeJ5+ARlVFV
-WHKljHOPAlH8XIOdggumWAEKWuJGnJg9uRIRrAWSB0dWsjLCTLOypB83QeqRzC2g
-ACSuVnSk1fHmeaM7moFCahw5+nTta5HC99FAboSRLTVO3cfaew+Wxqzsy6Ld32ob
-zzrvMTB/yV92v9FztgG6qpyEIfIxtcnx93AyrFEs2xcKIpL2lf/rzmBBQmB2rMX9
-2b2oJWqRyqZ2I4iOfxfvG+xcXmRCry7mN4j/6cdDV8/KR/NXFkm8kC4PgjGguqs7
-wRXKeSGLjssOkU1Zo4Yvx2RW/TY4txav6Jl3nWRvmwhY47z9YkZrm8K4J+yvC71h
-n1+u2TIT2dpkJSCInNICICwTsid4b8WgnKZK47rgNtPK1reUJlkVJSjizhRwOs/o
-feLi+xYOzNLQ794MT+EgmykUMVSZoPzZ5gBQn8/YIz8ByQPUbkX0NjM0fq2ab+rM
-PuEilIxWoyQonKhSx5Dh7gK7Kd/duv9+pkZ2KUsr69SXTL3qrABbImYUPSez9hxw
-firzZ5iyjnv6zdXHEMLS
-=s8Xa
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
