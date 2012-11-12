@@ -1,101 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab2KLV2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:28:13 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49190 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab2KLV2K (ORCPT
+	id S1754332Ab2KLV0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:26:50 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29682 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab2KLVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 16:28:10 -0500
-Date: Mon, 12 Nov 2012 22:28:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.6.6-rt17
-Message-ID: <alpine.LFD.2.02.1211122223300.10000@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 12 Nov 2012 16:19:32 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 14/46] x86, mm: use pfn_range_is_mapped() with reserve_initrd
+Date: Mon, 12 Nov 2012 13:18:10 -0800
+Message-Id: <1352755122-25660-15-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+ <1352755122-25660-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+We are going to map ram only, so under max_low_pfn_mapped,
+between 4g and max_pfn_mapped does not mean mapped at all.
 
-I'm pleased to announce the 3.6.6-rt17 release. 3.6.6-rt16 is just a
-not announced update release to 3.6.6.
+Use pfn_range_is_mapped() to find out if range is mapped for initrd.
 
-Changes since 3.6.6-rt16:
+That could happen bootloader put initrd in range but user could
+use memmap to carve some of range out.
 
-   * Finally make the NOHZ softirq pending detection work with the new
-     softirq scheme.
+Also during copying need to use early_memmap to map original initrd
+for accessing.
 
-   * Remove the WARN_ON from __raise_softirq_irqoff(). I got the
-     information I want for now.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/kernel/setup.c |   52 +++++++++++++++++++++++++---------------------
+ 1 files changed, 28 insertions(+), 24 deletions(-)
 
-The delta patch against 3.6.6-rt16 is appended below and can be found
-here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.6-rt16-rt17.patch.xz
-
-The RT patch against 3.6.6 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.6-rt17.patch.xz
-
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.6-rt17.tar.xz
-
-Enjoy,
-
-	tglx
-
-------------->
-Index: linux-stable/kernel/softirq.c
-===================================================================
---- linux-stable.orig/kernel/softirq.c
-+++ linux-stable/kernel/softirq.c
-@@ -100,20 +100,15 @@ void softirq_check_pending_idle(void)
- {
- 	static int rate_limit;
- 	struct softirq_runner *sr = &__get_cpu_var(softirq_runners);
--	u32 warnpending, pending = local_softirq_pending();
-+	u32 warnpending = local_softirq_pending();
-+	int i;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d85cbd9..bd52f9d 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -317,20 +317,19 @@ static void __init relocate_initrd(void)
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
  
- 	if (rate_limit >= 10)
- 		return;
+-	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = memblock_find_in_range(0, end_of_lowmem, area_size,
+-					 PAGE_SIZE);
++	/* We need to move the initrd down into directly mapped mem */
++	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_low_pfn_mapped),
++						 area_size, PAGE_SIZE);
  
--	warnpending = pending;
+ 	if (!ramdisk_here)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+ 			 ramdisk_size);
+ 
+-	/* Note: this includes all the lowmem currently occupied by
++	/* Note: this includes all the mem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+ 	memblock_reserve(ramdisk_here, area_size);
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+@@ -340,17 +339,7 @@ static void __init relocate_initrd(void)
+ 
+ 	q = (char *)initrd_start;
+ 
+-	/* Copy any lowmem portion of the initrd */
+-	if (ramdisk_image < end_of_lowmem) {
+-		clen = end_of_lowmem - ramdisk_image;
+-		p = (char *)__va(ramdisk_image);
+-		memcpy(q, p, clen);
+-		q += clen;
+-		ramdisk_image += clen;
+-		ramdisk_size  -= clen;
+-	}
 -
--	while (pending) {
--		struct task_struct *tsk;
--		int i = __ffs(pending);
--
--		pending &= ~(1 << i);
-+	for (i = 0; i < NR_SOFTIRQS; i++) {
-+		struct task_struct *tsk = sr->runner[i];
- 
--		tsk = sr->runner[i];
- 		/*
- 		 * The wakeup code in rtmutex.c wakes up the task
- 		 * _before_ it sets pi_blocked_on to NULL under
-@@ -638,7 +633,7 @@ static void do_raise_softirq_irqoff(unsi
- void __raise_softirq_irqoff(unsigned int nr)
- {
- 	do_raise_softirq_irqoff(nr);
--	if (WARN_ON_ONCE(!in_irq() && !current->softirq_nestcnt))
-+	if (!in_irq() && !current->softirq_nestcnt)
- 		wakeup_softirqd();
+-	/* Copy the highmem portion of the initrd */
++	/* Copy the initrd */
+ 	while (ramdisk_size) {
+ 		slop = ramdisk_image & ~PAGE_MASK;
+ 		clen = ramdisk_size;
+@@ -364,7 +353,7 @@ static void __init relocate_initrd(void)
+ 		ramdisk_image += clen;
+ 		ramdisk_size  -= clen;
+ 	}
+-	/* high pages is not converted by early_res_to_bootmem */
++
+ 	ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+@@ -373,13 +362,27 @@ static void __init relocate_initrd(void)
+ 		ramdisk_here, ramdisk_here + ramdisk_size - 1);
  }
  
-Index: linux-stable/localversion-rt
-===================================================================
---- linux-stable.orig/localversion-rt
-+++ linux-stable/localversion-rt
-@@ -1 +1 @@
---rt16
-+-rt17
++static u64 __init get_mem_size(unsigned long limit_pfn)
++{
++	int i;
++	u64 mapped_pages = 0;
++	unsigned long start_pfn, end_pfn;
++
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
++		start_pfn = min_t(unsigned long, start_pfn, limit_pfn);
++		end_pfn = min_t(unsigned long, end_pfn, limit_pfn);
++		mapped_pages += end_pfn - start_pfn;
++	}
++
++	return mapped_pages << PAGE_SHIFT;
++}
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
++	u64 mapped_size;
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+ 	    !ramdisk_image || !ramdisk_size)
+@@ -387,18 +390,19 @@ static void __init reserve_initrd(void)
+ 
+ 	initrd_start = 0;
+ 
+-	if (ramdisk_size >= (end_of_lowmem>>1)) {
++	mapped_size = get_mem_size(max_low_pfn_mapped);
++	if (ramdisk_size >= (mapped_size>>1))
+ 		panic("initrd too large to handle, "
+ 		       "disabling initrd (%lld needed, %lld available)\n",
+-		       ramdisk_size, end_of_lowmem>>1);
+-	}
++		       ramdisk_size, mapped_size>>1);
+ 
+ 	printk(KERN_INFO "RAMDISK: [mem %#010llx-%#010llx]\n", ramdisk_image,
+ 			ramdisk_end - 1);
+ 
+-
+-	if (ramdisk_end <= end_of_lowmem) {
+-		/* All in lowmem, easy case */
++	if (ramdisk_end <= (max_low_pfn_mapped<<PAGE_SHIFT) &&
++	    pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
++				PFN_DOWN(ramdisk_end))) {
++		/* All are mapped, easy case */
+ 		/*
+ 		 * don't need to reserve again, already reserved early
+ 		 * in i386_start_kernel
+-- 
+1.7.7
+
