@@ -1,148 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2KLR3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:29:08 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53983 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab2KLR3G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:29:06 -0500
-Message-ID: <50A131DD.8020201@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 10:29:01 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
- to mach-omap2)
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com> <50A128AF.1010803@wwwdotorg.org> <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com> <50A12D9D.5030300@wwwdotorg.org> <F7FF2B16-6880-4D64-A630-6D22DCC695BD@antoniou-consulting.com>
-In-Reply-To: <F7FF2B16-6880-4D64-A630-6D22DCC695BD@antoniou-consulting.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753964Ab2KLReh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:34:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753891Ab2KLRef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 12:34:35 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/5] perf tool: Fix attributes for '{}' defined event groups
+Date: Mon, 12 Nov 2012 18:34:00 +0100
+Message-Id: <1352741644-16809-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1352741644-16809-1-git-send-email-jolsa@redhat.com>
+References: <1352741644-16809-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 10:19 AM, Pantelis Antoniou wrote:
-> Hi Stephen,
-> 
-> On Nov 12, 2012, at 7:10 PM, Stephen Warren wrote:
-> 
->> On 11/12/2012 10:00 AM, Pantelis Antoniou wrote:
->>> Hi Stephen,
->>>
->>> On Nov 12, 2012, at 6:49 PM, Stephen Warren wrote:
->>>
->>>> On 11/12/2012 04:23 AM, Pantelis Antoniou wrote:
->>>>> Hi Grant,
->>>>>
->>>>> Sorry for the late comments, travelling...
->>>>>
->>>>> On Nov 9, 2012, at 6:28 PM, Grant Likely wrote:
->>>> ...
->>>>>> *with the caveat that not all types of changes are a good idea and we
->>>>>> may disallow. For example, is changing properties in existing nodes a
->>>>>> good idea?
->>>>>
->>>>> Yes, changing properties is something that we need. One such change is
->>>>> the change of the bus controller 'status' properties to enabled upon
->>>>> insertion of a child device node, and change back to 'on-demand' when
->>>>> all the child device nodes are gone.
->>>>
->>>> Do we actually need to do that?
->>>>
->>>> From the base-board perspective, consider an SoC's I2C channel that is
->>>> routed to the child board connector. The routing to the connector is
->>>> always present on the base board. Only the presence (or lack thereof) of
->>>> devices on that I2C bus is influenced by whether a child board is
->>>> connected or not, and the design of the child board. Therefore, wouldn't
->>>> it make sense for the base board to always enable the I2C controller?
->>>>
->>>> That would make it easier for someone to hook up a couple wires to the
->>>> I2C pins and use utilities such as i2cget/set to communicate with it,
->>>> without going through the whole process of creating a DT to represent
->>>> the device. This could speed up simple hacking/prototyping and allow it
->>>> to proceed in a less structured way.
->>>
->>> Unfortunately that doesn't work for the beaglebone (am355x) and a large
->>> number of general purpose SoCs.
->>>
->>> What is different between general purpose SoCs and vertical market SoCs
->>> (i.e. OMAP) is that the design of the the latter is for devices where
->>> pretty much all the interfaces are expected to be active at the same time.
->>>
->>> General purpose SoCs put more peripherals in the SoC, but due to packaging
->>> considerations (and price), the peripheral pins are highly muxed.
->>>
->>> So the i2c bus pins are shared with the LCD controller are shared with the
->>> analog input and so on.
->>>
->>> It is impossible (and on top of that really dangerous) to enable peripheral
->>> blocks without knowing what's connected on the other side.
->>>
->>> In a nutshell, for the bone and similar devices, probing with the devices
->>> enabled doesn't work.
->>
->> I think this can be solved by deferring the pinmux to the .dts for the
->> child board. Presumably the I2C controller node can be enabled just
->> fine, but the I2C signals not actually routed out to any pins on the SoC
->> until the specific pinmux configuration is loaded.
->>
-> 
-> Well, I2C is just an example; same thing happens with SPI, LCD, audio, etc.
-> 
-> So you'll end up hacking the device drivers to handle a weird state that
-> basically means 'don't activate until I tell you to go'. It is simpler
-> just not to create the device.
-> 
->> But your explanation still feels a little odd; is it really true on the
->> BeagleBone, you can either use LCD for graphics /or/ you can use the I2C
->> controller to communicate with a cape? I certainly fully understand that
->> from a SoC's perspective (and soc.dtsi perspective) you can't just
->> enable everything due to pinmux constraints, but it seems that once you
->> get to the level of a particular board design, the designer has made
->> those trade-offs and so you know which specific combination is to be
->> selected.
-> 
-> There are multiple I2C busses, multiple SPI buses, multiple options to
-> connect something that produces audio, and so on. It is not odd at the least
-> for the kind of market these chips are for.
-> 
-> Even TI doesn't know exactly the kind of applications these devices will be 
-> used for. The chip is there to provide connection option at a (cheap) price
-> point.
-> 
-> Think of a swiss-army knife with some tools that can be used at the
-> same time, and some that can't.
+Fixing events attributes for groups defined via '{}'.
 
-Yes, I fully understand the flexibility of the SoC; the NVIDIA Tegra SoC
-I maintain has exactly the same kind of flexibility.
+Currently 'enable_on_exec' attribute in record command and both
+'disabled ' and 'enable_on_exec' attributes in stat command are
+set based on the 'group' option. This eliminates proper setup
+for '{}' defined groups as they don't set 'group' option.
 
-However, I'm still thining that presumably the pins that could be used
-for hypothetical example as any of (a) LCD, (b) I2C controller 2, (c)
-UART 3 have been routed to the cape-bus connector specifically for the
-purpose of e.g. I2C controller 2, and hence their usage has been locked in.
+Making above attributes values based on the 'evsel->leader' as
+this is common to both group definition.
 
-Is that not the case? Is it instead true that some SoC pins are routed
-to both an LCD connector /and/ the cape-bus connector so the board
-itself has a usage conflict, or is it true that the cape-bus connector
-is in fact just a set of 100 "random" pins each with no specific
-pre-defined purpose, and it's up to the cape designer to pick the SoC's
-pinmux configuration rather than the base board designer? That would
-make the cape-bus pinout specific to the BeagleBone or the specific SoC
-on the board, which if IIUC is something very different to the Arduino
-shield pinout design, where each pin on the connector is designated for
-a specific purpose, and hence arbitrary different SoCs could (and do)
-host the same connector design without needing the same pinmux HW
-design, which would obviously be impossible.
+Moving perf_evlist__set_leader call within builtin-record ahead
+perf_evlist__config_attrs call, because the latter needs possible
+group leader links in place.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c               |  8 ++++++--
+ tools/perf/builtin-stat.c                 | 11 ++++-------
+ tools/perf/tests/attr/test-record-group1  |  4 +---
+ tools/perf/tests/attr/test-stat-group1    |  6 ++----
+ tools/perf/tests/open-syscall-tp-fields.c |  2 +-
+ tools/perf/util/evlist.c                  |  6 ++----
+ tools/perf/util/evsel.c                   |  8 +++-----
+ tools/perf/util/evsel.h                   |  3 +--
+ 8 files changed, 20 insertions(+), 28 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 5783c32..3717027 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -230,11 +230,15 @@ static int perf_record__open(struct perf_record *rec)
+ 	struct perf_record_opts *opts = &rec->opts;
+ 	int rc = 0;
+ 
+-	perf_evlist__config_attrs(evlist, opts);
+-
++	/*
++	 * Set the evsel leader links before we configure attributes,
++	 * since some might depend on this info.
++	 */
+ 	if (opts->group)
+ 		perf_evlist__set_leader(evlist);
+ 
++	perf_evlist__config_attrs(evlist, opts);
++
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
+ 		/*
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 6888960..557081e 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -129,8 +129,7 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
+ 
+-static int create_perf_stat_counter(struct perf_evsel *evsel,
+-				    struct perf_evsel *first)
++static int create_perf_stat_counter(struct perf_evsel *evsel)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	bool exclude_guest_missing = false;
+@@ -153,7 +152,7 @@ retry:
+ 		return 0;
+ 	}
+ 
+-	if (!perf_target__has_task(&target) && (!group || evsel == first)) {
++	if (!perf_target__has_task(&target) && (!evsel->leader)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+@@ -272,7 +271,7 @@ static int read_counter(struct perf_evsel *counter)
+ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ {
+ 	unsigned long long t0, t1;
+-	struct perf_evsel *counter, *first;
++	struct perf_evsel *counter;
+ 	int status = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = (argc > 0);
+@@ -332,10 +331,8 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ 	if (group)
+ 		perf_evlist__set_leader(evsel_list);
+ 
+-	first = perf_evlist__first(evsel_list);
+-
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+-		if (create_perf_stat_counter(counter, first) < 0) {
++		if (create_perf_stat_counter(counter) < 0) {
+ 			/*
+ 			 * PPC returns ENXIO for HW counters until 2.6.37
+ 			 * (behavior changed with commit b0a873e).
+diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
+index 39bf860..013572f 100644
+--- a/tools/perf/tests/attr/test-record-group1
++++ b/tools/perf/tests/attr/test-record-group1
+@@ -15,6 +15,4 @@ config=1
+ sample_type=327
+ mmap=0
+ comm=0
+-# TODO this is disabled for --group option, enabled otherwise
+-#      check why..
+-enable_on_exec=1
++enable_on_exec=0
+diff --git a/tools/perf/tests/attr/test-stat-group1 b/tools/perf/tests/attr/test-stat-group1
+index 5ae2718..2a1f86e 100644
+--- a/tools/perf/tests/attr/test-stat-group1
++++ b/tools/perf/tests/attr/test-stat-group1
+@@ -11,7 +11,5 @@ group_fd=-1
+ fd=2
+ group_fd=1
+ config=1
+-# TODO both disabled and enable_on_exec are disabled for --group option,
+-#      enabled otherwise, check why..
+-disabled=1
+-enable_on_exec=1
++disabled=0
++enable_on_exec=0
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index b05b6a6..1c52fdc 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -41,7 +41,7 @@ int test__syscall_open_tp_fields(void)
+ 		goto out_delete_evlist;
+ 	}
+ 
+-	perf_evsel__config(evsel, &opts, evsel);
++	perf_evsel__config(evsel, &opts);
+ 
+ 	evlist->threads->map[0] = getpid();
+ 
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index a41dc4a..04acae0 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -52,15 +52,13 @@ struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
+ void perf_evlist__config_attrs(struct perf_evlist *evlist,
+ 			       struct perf_record_opts *opts)
+ {
+-	struct perf_evsel *evsel, *first;
++	struct perf_evsel *evsel;
+ 
+ 	if (evlist->cpus->map[0] < 0)
+ 		opts->no_inherit = true;
+ 
+-	first = perf_evlist__first(evlist);
+-
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+-		perf_evsel__config(evsel, opts, first);
++		perf_evsel__config(evsel, opts);
+ 
+ 		if (evlist->nr_entries > 1)
+ 			evsel->attr.sample_type |= PERF_SAMPLE_ID;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 618d411..6d4a5f6 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -404,8 +404,8 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 	return evsel->name ?: "unknown";
+ }
+ 
+-void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+-			struct perf_evsel *first)
++void perf_evsel__config(struct perf_evsel *evsel,
++			struct perf_record_opts *opts)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
+@@ -486,10 +486,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (perf_target__none(&opts->target) &&
+-	    (!opts->group || evsel == first)) {
++	if (perf_target__none(&opts->target) && (!evsel->leader))
+ 		attr->enable_on_exec = 1;
+-	}
+ }
+ 
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 6f94d6d..32d7ec7 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -92,8 +92,7 @@ void perf_evsel__exit(struct perf_evsel *evsel);
+ void perf_evsel__delete(struct perf_evsel *evsel);
+ 
+ void perf_evsel__config(struct perf_evsel *evsel,
+-			struct perf_record_opts *opts,
+-			struct perf_evsel *first);
++			struct perf_record_opts *opts);
+ 
+ bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
+ 
+-- 
+1.7.11.7
+
