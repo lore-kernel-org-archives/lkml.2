@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2KLRK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 12:10:59 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51601 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab2KLRK6 (ORCPT
+	id S1753878Ab2KLROo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 12:14:44 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:34764 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab2KLROn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 12:10:58 -0500
-Message-ID: <50A12D9D.5030300@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 10:10:53 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Mon, 12 Nov 2012 12:14:43 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkPYAJEtoVBV5h1yPGdsb2JhbABEilS3fwEBAYECGQEBAQEfAhcNJ4IeAQEEATocIwULCAMYLhQlChoTiAQKugIUjAF9VYEdgnphA5V7hXuDTolr
+X-IronPort-AV: E=Sophos;i="4.80,763,1344204000"; 
+   d="scan'208";a="228286745"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 12 Nov 2012 18:20:56 +0100
+To: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: Re: [PATCH v5] staging: ste_rmi4: Convert to Type-B support
+Message-ID: <20121112172056.GA1400@polaris.bitmath.org>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
+ <20121108150529.b16707c1c84e6fd862e58b6a@tw.synaptics.com>
+ <20121109192604.GA16972@polaris.bitmath.org>
+ <CC51EC7B5B7F984AA566DC102237848896F622A3@hkdcw-mail1.synaptics-inc.local>
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
- to mach-omap2)
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <C3971D11-2BAC-4B58-AF8D-987FF8FFF678@antoniou-consulting.com> <50A128AF.1010803@wwwdotorg.org> <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com>
-In-Reply-To: <7C181180-2FE7-4EE4-BB5A-D7A1ACEC4244@antoniou-consulting.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CC51EC7B5B7F984AA566DC102237848896F622A3@hkdcw-mail1.synaptics-inc.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 10:00 AM, Pantelis Antoniou wrote:
-> Hi Stephen,
+On Mon, Nov 12, 2012 at 04:40:34PM +0000, Alexandra Chin wrote:
+> Hi Henrik,
 > 
-> On Nov 12, 2012, at 6:49 PM, Stephen Warren wrote:
+> >> Convert to MT-B because Synaptics touch devices are capable
+> >> of tracking identifiable fingers.
+> >>
+> >> Signed-off-by: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+> >> ---
+> >> Changes from v5:
+> >>         - Incorporated Henrik's review comments
+> >>           *rollback to v3 from v4
+> >>           *fix odd line break in v3
+> >>         - Include Alexandra in the list of authors
+> >
+> > I am seeing _new_ irrelevant changes in this version... There is no
+> > need to revert to v3. Just remove the synaptics_rmi4_query_function()
+> > changes and other uneeded cruft from the v4 patch. No new changes,
+> > please, and make sure the final patch is tested.
 > 
->> On 11/12/2012 04:23 AM, Pantelis Antoniou wrote:
->>> Hi Grant,
->>>
->>> Sorry for the late comments, travelling...
->>>
->>> On Nov 9, 2012, at 6:28 PM, Grant Likely wrote:
->> ...
->>>> *with the caveat that not all types of changes are a good idea and we
->>>> may disallow. For example, is changing properties in existing nodes a
->>>> good idea?
->>>
->>> Yes, changing properties is something that we need. One such change is
->>> the change of the bus controller 'status' properties to enabled upon
->>> insertion of a child device node, and change back to 'on-demand' when
->>> all the child device nodes are gone.
->>
->> Do we actually need to do that?
->>
->> From the base-board perspective, consider an SoC's I2C channel that is
->> routed to the child board connector. The routing to the connector is
->> always present on the base board. Only the presence (or lack thereof) of
->> devices on that I2C bus is influenced by whether a child board is
->> connected or not, and the design of the child board. Therefore, wouldn't
->> it make sense for the base board to always enable the I2C controller?
->>
->> That would make it easier for someone to hook up a couple wires to the
->> I2C pins and use utilities such as i2cget/set to communicate with it,
->> without going through the whole process of creating a DT to represent
->> the device. This could speed up simple hacking/prototyping and allow it
->> to proceed in a less structured way.
-> 
-> Unfortunately that doesn't work for the beaglebone (am355x) and a large
-> number of general purpose SoCs.
-> 
-> What is different between general purpose SoCs and vertical market SoCs
-> (i.e. OMAP) is that the design of the the latter is for devices where
-> pretty much all the interfaces are expected to be active at the same time.
-> 
-> General purpose SoCs put more peripherals in the SoC, but due to packaging
-> considerations (and price), the peripheral pins are highly muxed.
-> 
-> So the i2c bus pins are shared with the LCD controller are shared with the
-> analog input and so on.
-> 
-> It is impossible (and on top of that really dangerous) to enable peripheral
-> blocks without knowing what's connected on the other side.
-> 
-> In a nutshell, for the bone and similar devices, probing with the devices
-> enabled doesn't work.
+> Those changes are intended to fix line over 80 characters in v3.
+> The code has been optimized and the logic does not change.
 
-I think this can be solved by deferring the pinmux to the .dts for the
-child board. Presumably the I2C controller node can be enabled just
-fine, but the I2C signals not actually routed out to any pins on the SoC
-until the specific pinmux configuration is loaded.
+I would still prefer if the trivial non-functional changes were
+deferred to later patches. I realize that the change from 'TOUCHPAD'
+to 'TOUCHSCREEN' created some problems, but those changes were not
+called for in the first place. How about leaving those lines be for
+now, and then change to something more generic in a later patch? The
+code will obviously work equally well for both touchpad and
+touchscreen settings, so the defines could be better named anyways.
 
-But your explanation still feels a little odd; is it really true on the
-BeagleBone, you can either use LCD for graphics /or/ you can use the I2C
-controller to communicate with a cape? I certainly fully understand that
-from a SoC's perspective (and soc.dtsi perspective) you can't just
-enable everything due to pinmux constraints, but it seems that once you
-get to the level of a particular board design, the designer has made
-those trade-offs and so you know which specific combination is to be
-selected.
+> Patch v5 has been verified with pandaboard.
+
+Thank you.
+
+Henrik
