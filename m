@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2KLKUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 05:20:51 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:45898 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab2KLKSv (ORCPT
+	id S1752034Ab2KLKV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 05:21:58 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:57921 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750918Ab2KLKV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 05:18:51 -0500
-Message-Id: <20121112101845.678229459@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 12 Nov 2012 14:14:41 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 1/7] procfs: Add ability to plug in auxiliary fdinfo providers
-References: <20121112101440.665694060@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-helpers-12
+	Mon, 12 Nov 2012 05:21:56 -0500
+Subject: Re: [PATCH] pwm-backlight: Pinctrl-fy
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CACRpkdY_sXu12k455XcEBOj3_3syxromdCWObE4didKiU_F2cA@mail.gmail.com>
+Date: Mon, 12 Nov 2012 11:21:39 +0100
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <29FD452C-C0A0-4D22-BB52-823ACCD0D479@antoniou-consulting.com>
+References: <1351699047-4487-1-git-send-email-panto@antoniou-consulting.com> <20121109080604.GA25611@avionic-0098.mockup.avionic-design.de> <CACRpkdY_sXu12k455XcEBOj3_3syxromdCWObE4didKiU_F2cA@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch brings ability to print out auxiliary data associated
-with file in procfs interface /proc/pid/fdinfo/fd.
+Hi Linus,
 
-In particular further patches make eventfd, evenpoll, signalfd
-and fsnotify to print additional information complete enough
-to restore these objects after checkpoint.
+On Nov 11, 2012, at 7:26 PM, Linus Walleij wrote:
 
-To simplify the code we add show_fdinfo callback inside
-struct file_operations (as Al and Pavel are proposing).
+> On Fri, Nov 9, 2012 at 9:06 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+>> On Wed, Oct 31, 2012 at 05:57:27PM +0200, Pantelis Antoniou wrote:
+> 
+>>> +     pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+>>> +     if (IS_ERR(pinctrl))
+>>> +             dev_warn(&pdev->dev, "unable to select pin group\n");
+>>> +
+>> 
+>> I just saw this done in a similar way in some other driver and then
+>> remembered your patch. When I reviewed this I wasn't sure if a warning
+>> was good enough in this case. I've checked the kernel tree and it seems
+>> like a majority handled this as failure instead of a warning. I took a
+>> look at the pinctrl core and it seems like indeed if neither pinctrl is
+>> enabled or if there isn't actually a pinmux configuration for a device,
+>> then devm_pinctrl_get_select_default() will actually not return an
+>> error, so in those cases where an error is returned it should actually
+>> be handled as a fatal error.
+> 
+> So it depends.
+> 
+> One good reason to just error out and return the error code is
+> if the error returned is -EPROBE_DEFER, right?
+> 
+> Because then you're pinctrl driver is not up yet, and you
+> need to bail out and be revisited later.
+> 
+> On a related key we have this debate going on with some
+> subsystem maintainers as to whether we should try do
+> centralize boilerplate like this, the lates suggestion is:
+> http://marc.info/?l=linux-kernel&m=135263661110528&w=2
+> 
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Matthew Helsley <matt.helsley@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/proc/fd.c       |    2 ++
- include/linux/fs.h |    3 +++
- 2 files changed, 5 insertions(+)
+Interesting... This is certainly much nicer than peppering all the
+devices with pinctrl calls.
 
-Index: linux-2.6.git/fs/proc/fd.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/fd.c
-+++ linux-2.6.git/fs/proc/fd.c
-@@ -50,6 +50,8 @@ static int seq_show(struct seq_file *m,
- 	if (!ret) {
-                 seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
- 			   (long long)file->f_pos, f_flags);
-+		if (file->f_op->show_fdinfo)
-+			ret = file->f_op->show_fdinfo(m, file);
- 		fput(file);
- 	}
- 
-Index: linux-2.6.git/include/linux/fs.h
-===================================================================
---- linux-2.6.git.orig/include/linux/fs.h
-+++ linux-2.6.git/include/linux/fs.h
-@@ -1517,6 +1517,8 @@ struct block_device_operations;
- #define HAVE_COMPAT_IOCTL 1
- #define HAVE_UNLOCKED_IOCTL 1
- 
-+struct seq_file;
-+
- struct file_operations {
- 	struct module *owner;
- 	loff_t (*llseek) (struct file *, loff_t, int);
-@@ -1545,6 +1547,7 @@ struct file_operations {
- 	int (*setlease)(struct file *, long, struct file_lock **);
- 	long (*fallocate)(struct file *file, int mode, loff_t offset,
- 			  loff_t len);
-+	int (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
- struct inode_operations {
+> The fun never ends...
+> 
+
+Indeed.
+
+> Yours,
+> Linus Walleij
+
+Regards
+
+-- Pantelis
 
