@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab2KLKEW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 05:04:22 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63299 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab2KLKEV (ORCPT
+	id S1751819Ab2KLKSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 05:18:52 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:62798 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2KLKSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 05:04:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com>
-References: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com>
-From: Jonas Gorski <jonas.gorski@gmail.com>
-Date: Mon, 12 Nov 2012 11:03:56 +0100
-Message-ID: <CAOiHx=nEmd9dQ297Oho=gmZTYfYgJ3o_+J2OFK=sRuRYNqzPxg@mail.gmail.com>
-Subject: Re: [PATCH] spi: make sure all transfer has bits_per_word set
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        spi-devel-general@lists.sourceforge.net, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 12 Nov 2012 05:18:50 -0500
+Message-Id: <20121112101845.753952377@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 Nov 2012 14:14:42 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 2/7] fs, exportfs: Escape nil dereference if no s_export_op present
+References: <20121112101440.665694060@openvz.org>
+Content-Disposition: inline; filename=fs-exportfs-add-null-check
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This routine will be used to generate a file handle in fdinfo
+output for inotify subsystem, where if no s_export_op present
+the general export_encode_fh should be used. Thus add
+a test if s_export_op present inside exportfs_encode_fh itself.
 
-On 9 November 2012 10:06, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> When spi client does the spi transfer and does not sets
-> the bits_per_word for each transfer then set it as default
-> of spi device in spi core before calling low level transfer.
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/exportfs/expfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I like that (not that it counts ... )!
+Index: linux-2.6.git/fs/exportfs/expfs.c
+===================================================================
+--- linux-2.6.git.orig/fs/exportfs/expfs.c
++++ linux-2.6.git/fs/exportfs/expfs.c
+@@ -357,7 +357,7 @@ int exportfs_encode_fh(struct dentry *de
+ 		 */
+ 		parent = p->d_inode;
+ 	}
+-	if (nop->encode_fh)
++	if (nop && nop->encode_fh)
+ 		error = nop->encode_fh(inode, fid->raw, max_len, parent);
+ 	else
+ 		error = export_encode_fh(inode, fid, max_len, parent);
 
-> Removing the similar code from spi-tegra20-slink driver as
-> it is not required.
-
-Not sure if this should be part of *this* patch.
-Also spi-tegra20-slink isn't the only one fixing up the bits_per_word
-for transfers, so it would be nice if you could remove it from the
-other drivers, too.
-
-In a future patch, maybe even do the same with speed_hz?
-
-Regards
-Jonas
