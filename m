@@ -1,932 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2KLUVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 15:21:22 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:39289 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab2KLUVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 15:21:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [Update][PATCH 1/3] ACPI: Move device resources interpretation code from PNP to ACPI core
-Date: Mon, 12 Nov 2012 21:25:38 +0100
-Message-ID: <2939328.dDXi2dY8bx@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121112132739.GD31759@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <1370133.TuantNmiU4@vostro.rjw.lan> <20121112132739.GD31759@intel.com>
+	id S1753306Ab2KLUVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 15:21:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46695 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2KLUVr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 15:21:47 -0500
+Message-ID: <50A15A54.3090803@wwwdotorg.org>
+Date: Mon, 12 Nov 2012 13:21:40 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] RFC: pinctrl: grab default handler with bus notifiers
+References: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 12, 2012 03:27:39 PM Mika Westerberg wrote:
-> On Mon, Nov 12, 2012 at 01:00:26PM +0100, Rafael J. Wysocki wrote:
-> > +/**
-> > + * acpi_dev_irq_flags - Determine IRQ resource flags.
-> > + * @triggering: Triggering type as provided by ACPI.
-> > + * @polarity: Interrupt polarity as provided by ACPI.
-> > + * @shareable: Whether or not the interrupt is shareable.
-> > + */
-> > +unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable)
-> > +{
-> > +	unsigned long flags = IORESOURCE_IRQ;
-> > +
-> > +	if (triggering == ACPI_LEVEL_SENSITIVE)
-> > +		flags = polarity == ACPI_ACTIVE_LOW ?
-> > +			IORESOURCE_IRQ_LOWLEVEL : IORESOURCE_IRQ_HIGHLEVEL;
+On 11/11/2012 05:22 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> This wants to have '|=' instead of '='.
-> 
-> > +	else
-> > +		flags = polarity == ACPI_ACTIVE_LOW ?
-> > +			IORESOURCE_IRQ_LOWEDGE : IORESOURCE_IRQ_HIGHEDGE;
-> 
-> Ditto.
+> This makes the pinctrl subsystem auto-grab the pinctrl handle and
+> set the "default" (PINCTRL_STATE_DEFAULT) state for every device
+> that is present on the platform or AMBA (PrimeCell) bus right
+> before probe. This will account for the lion's share of embedded
+> silicon devcies. The behaviour is achieved using bus notifiers
+> on the platform and AMBA (PrimeCell) busses.
 
-It definitely does, but I fixed it slightly differently.  Updated patch follows.
+Doing this seems reasonable.
 
-Thanks,
-Rafael
+> Notice that the patch disregards deferral as per above:
+...
+> Another solution that was discussed was whether to move
+> the default pinctrl handle and state grab to the device
+> core as an optional field in struct device itself, but
+> I'd like to first propose this less intrusive mechanism.
 
+I think doing that approach makes a lot more sense; wouldn't it
+completely avoid the issues with deferred probe that this notifier-based
+method can't solve? It would also be very much in line with e.g.
+dev_get_regmap() - if every resource that a driver required were handled
+like that, then deferred probe could be significantly isolated into the
+driver core rather than in every driver...
 
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI: Move device resources interpretation code from PNP to ACPI core
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index da40efb..b6c27b1 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -972,6 +972,19 @@ pinmux core.
+>  Pin control requests from drivers
+>  =================================
+>  
+> +When a device driver is about to probe on the platform or AMBA (PrimeCell)
+> +bus,
 
-Move some code used for parsing ACPI device resources from the PNP
-subsystem to the ACPI core, so that other bus types (platform, SPI,
-I2C) can use the same routines for parsing resources in a consistent
-way, without duplicating code.
+Why not make this apply to every device? I don't think the specific bus
+type impacts whether pinctrl would be useful?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/Makefile          |    1 
- drivers/acpi/resource.c        |  393 +++++++++++++++++++++++++++++++++++++++++
- drivers/pnp/base.h             |    2 
- drivers/pnp/pnpacpi/rsparser.c |  296 +++---------------------------
- drivers/pnp/resource.c         |   16 +
- include/linux/acpi.h           |   10 +
- 6 files changed, 454 insertions(+), 264 deletions(-)
+> @@ -1097,8 +1110,8 @@ situations that can be electrically unpleasant, you will certainly want to
+> -The above can be hidden: using pinctrl hogs, the pin control driver may be
+> -setting up the config and muxing for the pins when it is probing,
+> +The above can be hidden: using device notifiers, the pinctrl core may be
+> +setting up the config and muxing for the pins when the device is probing,
+>  nevertheless orthogonal to the GPIO subsystem.
 
-Index: linux/drivers/acpi/resource.c
-===================================================================
---- /dev/null
-+++ linux/drivers/acpi/resource.c
-@@ -0,0 +1,393 @@
-+/*
-+ * drivers/acpi/resource.c - ACPI device resources interpretation.
-+ *
-+ * Copyright (C) 2012, Intel Corp.
-+ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as published
-+ *  by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/device.h>
-+#include <linux/export.h>
-+#include <linux/ioport.h>
-+
-+#ifdef CONFIG_X86
-+#define valid_IRQ(i) (((i) != 0) && ((i) != 2))
-+#else
-+#define valid_IRQ(i) (true)
-+#endif
-+
-+static unsigned long acpi_dev_memresource_flags(u64 len, u8 write_protect,
-+						bool window)
-+{
-+	unsigned long flags = IORESOURCE_MEM;
-+
-+	if (len == 0)
-+		flags |= IORESOURCE_DISABLED;
-+
-+	if (write_protect == ACPI_READ_WRITE_MEMORY)
-+		flags |= IORESOURCE_MEM_WRITEABLE;
-+
-+	if (window)
-+		flags |= IORESOURCE_WINDOW;
-+
-+	return flags;
-+}
-+
-+static void acpi_dev_get_memresource(struct resource *res, u64 start, u64 len,
-+				     u8 write_protect)
-+{
-+	res->start = start;
-+	res->end = start + len - 1;
-+	res->flags = acpi_dev_memresource_flags(len, write_protect, false);
-+}
-+
-+/**
-+ * acpi_dev_resource_memory - Extract ACPI memory resource information.
-+ * @ares: Input ACPI resource object.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents a memory resource and
-+ * if that's the case, use the information in it to populate the generic
-+ * resource object pointed to by @res.
-+ */
-+bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
-+{
-+	struct acpi_resource_memory24 *memory24;
-+	struct acpi_resource_memory32 *memory32;
-+	struct acpi_resource_fixed_memory32 *fixed_memory32;
-+
-+	switch (ares->type) {
-+	case ACPI_RESOURCE_TYPE_MEMORY24:
-+		memory24 = &ares->data.memory24;
-+		acpi_dev_get_memresource(res, memory24->minimum,
-+					 memory24->address_length,
-+					 memory24->write_protect);
-+		break;
-+	case ACPI_RESOURCE_TYPE_MEMORY32:
-+		memory32 = &ares->data.memory32;
-+		acpi_dev_get_memresource(res, memory32->minimum,
-+					 memory32->address_length,
-+					 memory32->write_protect);
-+		break;
-+	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-+		fixed_memory32 = &ares->data.fixed_memory32;
-+		acpi_dev_get_memresource(res, fixed_memory32->address,
-+					 fixed_memory32->address_length,
-+					 fixed_memory32->write_protect);
-+		break;
-+	default:
-+		return false;
-+	}
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_memory);
-+
-+static unsigned int acpi_dev_ioresource_flags(u64 start, u64 end, u8 io_decode,
-+					      bool window)
-+{
-+	int flags = IORESOURCE_IO;
-+
-+	if (io_decode == ACPI_DECODE_16)
-+		flags |= IORESOURCE_IO_16BIT_ADDR;
-+
-+	if (start > end || end >= 0x10003)
-+		flags |= IORESOURCE_DISABLED;
-+
-+	if (window)
-+		flags |= IORESOURCE_WINDOW;
-+
-+	return flags;
-+}
-+
-+static void acpi_dev_get_ioresource(struct resource *res, u64 start, u64 len,
-+				    u8 io_decode)
-+{
-+	u64 end = start + len - 1;
-+
-+	res->start = start;
-+	res->end = end;
-+	res->flags = acpi_dev_ioresource_flags(start, end, io_decode, false);
-+}
-+
-+/**
-+ * acpi_dev_resource_io - Extract ACPI I/O resource information.
-+ * @ares: Input ACPI resource object.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents an I/O resource and
-+ * if that's the case, use the information in it to populate the generic
-+ * resource object pointed to by @res.
-+ */
-+bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
-+{
-+	struct acpi_resource_io *io;
-+	struct acpi_resource_fixed_io *fixed_io;
-+
-+	switch (ares->type) {
-+	case ACPI_RESOURCE_TYPE_IO:
-+		io = &ares->data.io;
-+		acpi_dev_get_ioresource(res, io->minimum,
-+					io->address_length,
-+					io->io_decode);
-+		break;
-+	case ACPI_RESOURCE_TYPE_FIXED_IO:
-+		fixed_io = &ares->data.fixed_io;
-+		acpi_dev_get_ioresource(res, fixed_io->address,
-+					fixed_io->address_length,
-+					ACPI_DECODE_10);
-+		break;
-+	default:
-+		return false;
-+	}
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_io);
-+
-+/**
-+ * acpi_dev_resource_address_space - Extract ACPI address space information.
-+ * @ares: Input ACPI resource object.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents an address space resource
-+ * and if that's the case, use the information in it to populate the generic
-+ * resource object pointed to by @res.
-+ */
-+bool acpi_dev_resource_address_space(struct acpi_resource *ares,
-+				     struct resource *res)
-+{
-+	acpi_status status;
-+	struct acpi_resource_address64 addr;
-+	bool window;
-+	u64 len;
-+	u8 io_decode;
-+
-+	switch (ares->type) {
-+	case ACPI_RESOURCE_TYPE_ADDRESS16:
-+	case ACPI_RESOURCE_TYPE_ADDRESS32:
-+	case ACPI_RESOURCE_TYPE_ADDRESS64:
-+		break;
-+	default:
-+		return false;
-+	}
-+
-+	status = acpi_resource_to_address64(ares, &addr);
-+	if (ACPI_FAILURE(status))
-+		return true;
-+
-+	res->start = addr.minimum;
-+	res->end = addr.maximum;
-+	window = addr.producer_consumer == ACPI_PRODUCER;
-+
-+	switch(addr.resource_type) {
-+	case ACPI_MEMORY_RANGE:
-+		len = addr.maximum - addr.minimum + 1;
-+		res->flags = acpi_dev_memresource_flags(len,
-+						addr.info.mem.write_protect,
-+						window);
-+		break;
-+	case ACPI_IO_RANGE:
-+		io_decode = addr.granularity == 0xfff ?
-+				ACPI_DECODE_10 : ACPI_DECODE_16;
-+		res->flags = acpi_dev_ioresource_flags(addr.minimum,
-+						       addr.maximum,
-+						       io_decode, window);
-+		break;
-+	case ACPI_BUS_NUMBER_RANGE:
-+		res->flags = IORESOURCE_BUS;
-+		break;
-+	default:
-+		res->flags = 0;
-+	}
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space);
-+
-+/**
-+ * acpi_dev_resource_ext_address_space - Extract ACPI address space information.
-+ * @ares: Input ACPI resource object.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents an extended address space
-+ * resource and if that's the case, use the information in it to populate the
-+ * generic resource object pointed to by @res.
-+ */
-+bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
-+					 struct resource *res)
-+{
-+	struct acpi_resource_extended_address64 *ext_addr;
-+	bool window;
-+	u64 len;
-+	u8 io_decode;
-+
-+	if (ares->type != ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64)
-+		return false;
-+
-+	ext_addr = &ares->data.ext_address64;
-+
-+	res->start = ext_addr->minimum;
-+	res->end = ext_addr->maximum;
-+	window = ext_addr->producer_consumer == ACPI_PRODUCER;
-+
-+	switch(ext_addr->resource_type) {
-+	case ACPI_MEMORY_RANGE:
-+		len = ext_addr->maximum - ext_addr->minimum + 1;
-+		res->flags = acpi_dev_memresource_flags(len,
-+					ext_addr->info.mem.write_protect,
-+					window);
-+		break;
-+	case ACPI_IO_RANGE:
-+		io_decode = ext_addr->granularity == 0xfff ?
-+				ACPI_DECODE_10 : ACPI_DECODE_16;
-+		res->flags = acpi_dev_ioresource_flags(ext_addr->minimum,
-+						       ext_addr->maximum,
-+						       io_decode, window);
-+		break;
-+	case ACPI_BUS_NUMBER_RANGE:
-+		res->flags = IORESOURCE_BUS;
-+		break;
-+	default:
-+		res->flags = 0;
-+	}
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_ext_address_space);
-+
-+/**
-+ * acpi_dev_irq_flags - Determine IRQ resource flags.
-+ * @triggering: Triggering type as provided by ACPI.
-+ * @polarity: Interrupt polarity as provided by ACPI.
-+ * @shareable: Whether or not the interrupt is shareable.
-+ */
-+unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable)
-+{
-+	unsigned long flags;
-+
-+	if (triggering == ACPI_LEVEL_SENSITIVE)
-+		flags = polarity == ACPI_ACTIVE_LOW ?
-+			IORESOURCE_IRQ_LOWLEVEL : IORESOURCE_IRQ_HIGHLEVEL;
-+	else
-+		flags = polarity == ACPI_ACTIVE_LOW ?
-+			IORESOURCE_IRQ_LOWEDGE : IORESOURCE_IRQ_HIGHEDGE;
-+
-+	if (shareable == ACPI_SHARED)
-+		flags |= IORESOURCE_IRQ_SHAREABLE;
-+
-+	return flags | IORESOURCE_IRQ;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_irq_flags);
-+
-+static void acpi_dev_irqresource_disabled(struct resource *res, u32 gsi)
-+{
-+	res->start = gsi;
-+	res->end = gsi;
-+	res->flags = IORESOURCE_IRQ | IORESOURCE_DISABLED;
-+}
-+
-+static void acpi_dev_get_irqresource(struct resource *res, u32 gsi,
-+				     u8 triggering, u8 polarity, u8 shareable)
-+{
-+	int irq, p, t;
-+
-+	if (!valid_IRQ(gsi)) {
-+		acpi_dev_irqresource_disabled(res, gsi);
-+		return;
-+	}
-+
-+	/*
-+	 * In IO-APIC mode, use overrided attribute. Two reasons:
-+	 * 1. BIOS bug in DSDT
-+	 * 2. BIOS uses IO-APIC mode Interrupt Source Override
-+	 */
-+	if (!acpi_get_override_irq(gsi, &t, &p)) {
-+		u8 trig = t ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
-+		u8 pol = p ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
-+
-+		if (triggering != trig || polarity != pol) {
-+			pr_warning("ACPI: IRQ %d override to %s, %s\n", gsi,
-+				   t ? "edge" : "level", p ? "low" : "high");
-+			triggering = trig;
-+			polarity = pol;
-+		}
-+	}
-+
-+	res->flags = acpi_dev_irq_flags(triggering, polarity, shareable);
-+	irq = acpi_register_gsi(NULL, gsi, triggering, polarity);
-+	if (irq >= 0) {
-+		res->start = irq;
-+		res->end = irq;
-+	} else {
-+		acpi_dev_irqresource_disabled(res, gsi);
-+	}
-+}
-+
-+/**
-+ * acpi_dev_resource_interrupt - Extract ACPI interrupt resource information.
-+ * @ares: Input ACPI resource object.
-+ * @index: Index into the array of GSIs represented by the resource.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents an interrupt resource
-+ * and @index does not exceed the resource's interrupt count (true is returned
-+ * in that case regardless of the results of the other checks)).  If that's the
-+ * case, register the GSI corresponding to @index from the array of interrupts
-+ * represented by the resource and populate the generic resource object pointed
-+ * to by @res accordingly.  If the registration of the GSI is not successful,
-+ * IORESOURCE_DISABLED will be set it that object's flags.
-+ */
-+bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
-+				 struct resource *res)
-+{
-+	struct acpi_resource_irq *irq;
-+	struct acpi_resource_extended_irq *ext_irq;
-+
-+	switch (ares->type) {
-+	case ACPI_RESOURCE_TYPE_IRQ:
-+		/*
-+		 * Per spec, only one interrupt per descriptor is allowed in
-+		 * _CRS, but some firmware violates this, so parse them all.
-+		 */
-+		irq = &ares->data.irq;
-+		if (index >= irq->interrupt_count) {
-+			acpi_dev_irqresource_disabled(res, 0);
-+			return false;
-+		}
-+		acpi_dev_get_irqresource(res, irq->interrupts[index],
-+					 irq->triggering, irq->polarity,
-+					 irq->sharable);
-+		break;
-+	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-+		ext_irq = &ares->data.extended_irq;
-+		if (index >= ext_irq->interrupt_count) {
-+			acpi_dev_irqresource_disabled(res, 0);
-+			return false;
-+		}
-+		acpi_dev_get_irqresource(res, ext_irq->interrupts[index],
-+					 ext_irq->triggering, ext_irq->polarity,
-+					 ext_irq->sharable);
-+		break;
-+	default:
-+		return false;
-+	}
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_interrupt);
-Index: linux/drivers/acpi/Makefile
-===================================================================
---- linux.orig/drivers/acpi/Makefile
-+++ linux/drivers/acpi/Makefile
-@@ -33,6 +33,7 @@ acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
- #
- acpi-y				+= bus.o glue.o
- acpi-y				+= scan.o
-+acpi-y				+= resource.o
- acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
-Index: linux/drivers/pnp/pnpacpi/rsparser.c
-===================================================================
---- linux.orig/drivers/pnp/pnpacpi/rsparser.c
-+++ linux/drivers/pnp/pnpacpi/rsparser.c
-@@ -28,37 +28,6 @@
- #include "../base.h"
- #include "pnpacpi.h"
- 
--#ifdef CONFIG_IA64
--#define valid_IRQ(i) (1)
--#else
--#define valid_IRQ(i) (((i) != 0) && ((i) != 2))
--#endif
--
--/*
-- * Allocated Resources
-- */
--static int irq_flags(int triggering, int polarity, int shareable)
--{
--	int flags;
--
--	if (triggering == ACPI_LEVEL_SENSITIVE) {
--		if (polarity == ACPI_ACTIVE_LOW)
--			flags = IORESOURCE_IRQ_LOWLEVEL;
--		else
--			flags = IORESOURCE_IRQ_HIGHLEVEL;
--	} else {
--		if (polarity == ACPI_ACTIVE_LOW)
--			flags = IORESOURCE_IRQ_LOWEDGE;
--		else
--			flags = IORESOURCE_IRQ_HIGHEDGE;
--	}
--
--	if (shareable == ACPI_SHARED)
--		flags |= IORESOURCE_IRQ_SHAREABLE;
--
--	return flags;
--}
--
- static void decode_irq_flags(struct pnp_dev *dev, int flags, int *triggering,
- 			     int *polarity, int *shareable)
- {
-@@ -94,45 +63,6 @@ static void decode_irq_flags(struct pnp_
- 		*shareable = ACPI_EXCLUSIVE;
- }
- 
--static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
--						u32 gsi, int triggering,
--						int polarity, int shareable)
--{
--	int irq, flags;
--	int p, t;
--
--	if (!valid_IRQ(gsi)) {
--		pnp_add_irq_resource(dev, gsi, IORESOURCE_DISABLED);
--		return;
--	}
--
--	/*
--	 * in IO-APIC mode, use overrided attribute. Two reasons:
--	 * 1. BIOS bug in DSDT
--	 * 2. BIOS uses IO-APIC mode Interrupt Source Override
--	 */
--	if (!acpi_get_override_irq(gsi, &t, &p)) {
--		t = t ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
--		p = p ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
--
--		if (triggering != t || polarity != p) {
--			dev_warn(&dev->dev, "IRQ %d override to %s, %s\n",
--				gsi, t ? "edge":"level", p ? "low":"high");
--			triggering = t;
--			polarity = p;
--		}
--	}
--
--	flags = irq_flags(triggering, polarity, shareable);
--	irq = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
--	if (irq >= 0)
--		pcibios_penalize_isa_irq(irq, 1);
--	else
--		flags |= IORESOURCE_DISABLED;
--
--	pnp_add_irq_resource(dev, irq, flags);
--}
--
- static int dma_flags(struct pnp_dev *dev, int type, int bus_master,
- 		     int transfer)
- {
-@@ -177,21 +107,16 @@ static int dma_flags(struct pnp_dev *dev
- 	return flags;
- }
- 
--static void pnpacpi_parse_allocated_ioresource(struct pnp_dev *dev, u64 start,
--					       u64 len, int io_decode,
--					       int window)
--{
--	int flags = 0;
--	u64 end = start + len - 1;
-+/*
-+ * Allocated Resources
-+ */
- 
--	if (io_decode == ACPI_DECODE_16)
--		flags |= IORESOURCE_IO_16BIT_ADDR;
--	if (len == 0 || end >= 0x10003)
--		flags |= IORESOURCE_DISABLED;
--	if (window)
--		flags |= IORESOURCE_WINDOW;
-+static void pnpacpi_add_irqresource(struct pnp_dev *dev, struct resource *r)
-+{
-+	if (!(r->flags & IORESOURCE_DISABLED))
-+		pcibios_penalize_isa_irq(r->start, 1);
- 
--	pnp_add_io_resource(dev, start, end, flags);
-+	pnp_add_resource(dev, r);
- }
- 
- /*
-@@ -249,130 +174,49 @@ static void pnpacpi_parse_allocated_vend
- 	}
- }
- 
--static void pnpacpi_parse_allocated_memresource(struct pnp_dev *dev,
--						u64 start, u64 len,
--						int write_protect, int window)
--{
--	int flags = 0;
--	u64 end = start + len - 1;
--
--	if (len == 0)
--		flags |= IORESOURCE_DISABLED;
--	if (write_protect == ACPI_READ_WRITE_MEMORY)
--		flags |= IORESOURCE_MEM_WRITEABLE;
--	if (window)
--		flags |= IORESOURCE_WINDOW;
--
--	pnp_add_mem_resource(dev, start, end, flags);
--}
--
--static void pnpacpi_parse_allocated_busresource(struct pnp_dev *dev,
--						u64 start, u64 len)
--{
--	u64 end = start + len - 1;
--
--	pnp_add_bus_resource(dev, start, end);
--}
--
--static void pnpacpi_parse_allocated_address_space(struct pnp_dev *dev,
--						  struct acpi_resource *res)
--{
--	struct acpi_resource_address64 addr, *p = &addr;
--	acpi_status status;
--	int window;
--	u64 len;
--
--	status = acpi_resource_to_address64(res, p);
--	if (!ACPI_SUCCESS(status)) {
--		dev_warn(&dev->dev, "failed to convert resource type %d\n",
--			 res->type);
--		return;
--	}
--
--	/* Windows apparently computes length rather than using _LEN */
--	len = p->maximum - p->minimum + 1;
--	window = (p->producer_consumer == ACPI_PRODUCER) ? 1 : 0;
--
--	if (p->resource_type == ACPI_MEMORY_RANGE)
--		pnpacpi_parse_allocated_memresource(dev, p->minimum, len,
--			p->info.mem.write_protect, window);
--	else if (p->resource_type == ACPI_IO_RANGE)
--		pnpacpi_parse_allocated_ioresource(dev, p->minimum, len,
--			p->granularity == 0xfff ? ACPI_DECODE_10 :
--				ACPI_DECODE_16, window);
--	else if (p->resource_type == ACPI_BUS_NUMBER_RANGE)
--		pnpacpi_parse_allocated_busresource(dev, p->minimum, len);
--}
--
--static void pnpacpi_parse_allocated_ext_address_space(struct pnp_dev *dev,
--						      struct acpi_resource *res)
--{
--	struct acpi_resource_extended_address64 *p = &res->data.ext_address64;
--	int window;
--	u64 len;
--
--	/* Windows apparently computes length rather than using _LEN */
--	len = p->maximum - p->minimum + 1;
--	window = (p->producer_consumer == ACPI_PRODUCER) ? 1 : 0;
--
--	if (p->resource_type == ACPI_MEMORY_RANGE)
--		pnpacpi_parse_allocated_memresource(dev, p->minimum, len,
--			p->info.mem.write_protect, window);
--	else if (p->resource_type == ACPI_IO_RANGE)
--		pnpacpi_parse_allocated_ioresource(dev, p->minimum, len,
--			p->granularity == 0xfff ? ACPI_DECODE_10 :
--				ACPI_DECODE_16, window);
--	else if (p->resource_type == ACPI_BUS_NUMBER_RANGE)
--		pnpacpi_parse_allocated_busresource(dev, p->minimum, len);
--}
--
- static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
- 					      void *data)
- {
- 	struct pnp_dev *dev = data;
--	struct acpi_resource_irq *irq;
- 	struct acpi_resource_dma *dma;
--	struct acpi_resource_io *io;
--	struct acpi_resource_fixed_io *fixed_io;
- 	struct acpi_resource_vendor_typed *vendor_typed;
--	struct acpi_resource_memory24 *memory24;
--	struct acpi_resource_memory32 *memory32;
--	struct acpi_resource_fixed_memory32 *fixed_memory32;
--	struct acpi_resource_extended_irq *extended_irq;
-+	struct resource r;
- 	int i, flags;
- 
--	switch (res->type) {
--	case ACPI_RESOURCE_TYPE_IRQ:
--		/*
--		 * Per spec, only one interrupt per descriptor is allowed in
--		 * _CRS, but some firmware violates this, so parse them all.
--		 */
--		irq = &res->data.irq;
--		if (irq->interrupt_count == 0)
--			pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
--		else {
--			for (i = 0; i < irq->interrupt_count; i++) {
--				pnpacpi_parse_allocated_irqresource(dev,
--					irq->interrupts[i],
--					irq->triggering,
--					irq->polarity,
--				    irq->sharable);
--			}
-+	if (acpi_dev_resource_memory(res, &r)
-+	    || acpi_dev_resource_io(res, &r)
-+	    || acpi_dev_resource_address_space(res, &r)
-+	    || acpi_dev_resource_ext_address_space(res, &r)) {
-+		pnp_add_resource(dev, &r);
-+		return AE_OK;
-+	}
-+
-+	r.flags = 0;
-+	if (acpi_dev_resource_interrupt(res, 0, &r)) {
-+		pnpacpi_add_irqresource(dev, &r);
-+		for (i = 1; acpi_dev_resource_interrupt(res, i, &r); i++)
-+			pnpacpi_add_irqresource(dev, &r);
- 
-+		if (i > 1) {
- 			/*
- 			 * The IRQ encoder puts a single interrupt in each
- 			 * descriptor, so if a _CRS descriptor has more than
- 			 * one interrupt, we won't be able to re-encode it.
- 			 */
--			if (pnp_can_write(dev) && irq->interrupt_count > 1) {
-+			if (pnp_can_write(dev)) {
- 				dev_warn(&dev->dev, "multiple interrupts in "
- 					 "_CRS descriptor; configuration can't "
- 					 "be changed\n");
- 				dev->capabilities &= ~PNP_WRITE;
- 			}
- 		}
--		break;
-+		return AE_OK;
-+	} else if (r.flags & IORESOURCE_DISABLED) {
-+		pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
-+		return AE_OK;
-+	}
- 
-+	switch (res->type) {
- 	case ACPI_RESOURCE_TYPE_DMA:
- 		dma = &res->data.dma;
- 		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
-@@ -383,26 +227,10 @@ static acpi_status pnpacpi_allocated_res
- 		pnp_add_dma_resource(dev, dma->channels[0], flags);
- 		break;
- 
--	case ACPI_RESOURCE_TYPE_IO:
--		io = &res->data.io;
--		pnpacpi_parse_allocated_ioresource(dev,
--			io->minimum,
--			io->address_length,
--			io->io_decode, 0);
--		break;
--
- 	case ACPI_RESOURCE_TYPE_START_DEPENDENT:
- 	case ACPI_RESOURCE_TYPE_END_DEPENDENT:
- 		break;
- 
--	case ACPI_RESOURCE_TYPE_FIXED_IO:
--		fixed_io = &res->data.fixed_io;
--		pnpacpi_parse_allocated_ioresource(dev,
--			fixed_io->address,
--			fixed_io->address_length,
--			ACPI_DECODE_10, 0);
--		break;
--
- 	case ACPI_RESOURCE_TYPE_VENDOR:
- 		vendor_typed = &res->data.vendor_typed;
- 		pnpacpi_parse_allocated_vendor(dev, vendor_typed);
-@@ -411,66 +239,6 @@ static acpi_status pnpacpi_allocated_res
- 	case ACPI_RESOURCE_TYPE_END_TAG:
- 		break;
- 
--	case ACPI_RESOURCE_TYPE_MEMORY24:
--		memory24 = &res->data.memory24;
--		pnpacpi_parse_allocated_memresource(dev,
--			memory24->minimum,
--			memory24->address_length,
--			memory24->write_protect, 0);
--		break;
--	case ACPI_RESOURCE_TYPE_MEMORY32:
--		memory32 = &res->data.memory32;
--		pnpacpi_parse_allocated_memresource(dev,
--			memory32->minimum,
--			memory32->address_length,
--			memory32->write_protect, 0);
--		break;
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		fixed_memory32 = &res->data.fixed_memory32;
--		pnpacpi_parse_allocated_memresource(dev,
--			fixed_memory32->address,
--			fixed_memory32->address_length,
--			fixed_memory32->write_protect, 0);
--		break;
--	case ACPI_RESOURCE_TYPE_ADDRESS16:
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--	case ACPI_RESOURCE_TYPE_ADDRESS64:
--		pnpacpi_parse_allocated_address_space(dev, res);
--		break;
--
--	case ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64:
--		pnpacpi_parse_allocated_ext_address_space(dev, res);
--		break;
--
--	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
--		extended_irq = &res->data.extended_irq;
--
--		if (extended_irq->interrupt_count == 0)
--			pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
--		else {
--			for (i = 0; i < extended_irq->interrupt_count; i++) {
--				pnpacpi_parse_allocated_irqresource(dev,
--					extended_irq->interrupts[i],
--					extended_irq->triggering,
--					extended_irq->polarity,
--					extended_irq->sharable);
--			}
--
--			/*
--			 * The IRQ encoder puts a single interrupt in each
--			 * descriptor, so if a _CRS descriptor has more than
--			 * one interrupt, we won't be able to re-encode it.
--			 */
--			if (pnp_can_write(dev) &&
--			    extended_irq->interrupt_count > 1) {
--				dev_warn(&dev->dev, "multiple interrupts in "
--					 "_CRS descriptor; configuration can't "
--					 "be changed\n");
--				dev->capabilities &= ~PNP_WRITE;
--			}
--		}
--		break;
--
- 	case ACPI_RESOURCE_TYPE_GENERIC_REGISTER:
- 		break;
- 
-@@ -531,7 +299,7 @@ static __init void pnpacpi_parse_irq_opt
- 		if (p->interrupts[i])
- 			__set_bit(p->interrupts[i], map.bits);
- 
--	flags = irq_flags(p->triggering, p->polarity, p->sharable);
-+	flags = acpi_dev_irq_flags(p->triggering, p->polarity, p->sharable);
- 	pnp_register_irq_resource(dev, option_flags, &map, flags);
- }
- 
-@@ -555,7 +323,7 @@ static __init void pnpacpi_parse_ext_irq
- 		}
- 	}
- 
--	flags = irq_flags(p->triggering, p->polarity, p->sharable);
-+	flags = acpi_dev_irq_flags(p->triggering, p->polarity, p->sharable);
- 	pnp_register_irq_resource(dev, option_flags, &map, flags);
- }
- 
-Index: linux/drivers/pnp/base.h
-===================================================================
---- linux.orig/drivers/pnp/base.h
-+++ linux/drivers/pnp/base.h
-@@ -159,6 +159,8 @@ struct pnp_resource {
- 
- void pnp_free_resource(struct pnp_resource *pnp_res);
- 
-+struct pnp_resource *pnp_add_resource(struct pnp_dev *dev,
-+				      struct resource *res);
- struct pnp_resource *pnp_add_irq_resource(struct pnp_dev *dev, int irq,
- 					  int flags);
- struct pnp_resource *pnp_add_dma_resource(struct pnp_dev *dev, int dma,
-Index: linux/drivers/pnp/resource.c
-===================================================================
---- linux.orig/drivers/pnp/resource.c
-+++ linux/drivers/pnp/resource.c
-@@ -503,6 +503,22 @@ static struct pnp_resource *pnp_new_reso
- 	return pnp_res;
- }
- 
-+struct pnp_resource *pnp_add_resource(struct pnp_dev *dev,
-+				      struct resource *res)
-+{
-+	struct pnp_resource *pnp_res;
-+
-+	pnp_res = pnp_new_resource(dev);
-+	if (!pnp_res) {
-+		dev_err(&dev->dev, "can't add resource %pR\n", res);
-+		return NULL;
-+	}
-+
-+	pnp_res->res = *res;
-+	dev_dbg(&dev->dev, "%pR\n", res);
-+	return pnp_res;
-+}
-+
- struct pnp_resource *pnp_add_irq_resource(struct pnp_dev *dev, int irq,
- 					  int flags)
- {
-Index: linux/include/linux/acpi.h
-===================================================================
---- linux.orig/include/linux/acpi.h
-+++ linux/include/linux/acpi.h
-@@ -251,6 +251,16 @@ extern int pnpacpi_disabled;
- 
- #define PXM_INVAL	(-1)
- 
-+bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res);
-+bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res);
-+bool acpi_dev_resource_address_space(struct acpi_resource *ares,
-+				     struct resource *res);
-+bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
-+					 struct resource *res);
-+unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
-+bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
-+				 struct resource *res);
-+
- int acpi_check_resource_conflict(const struct resource *res);
- 
- int acpi_check_region(resource_size_t start, resource_size_t n,
+Why removing "using pinctrl hogs"; can't "it" (although I didn't check
+what "it" is...) be hidden using either pinctrl hogs or device notifiers?
 
+>  But there are also situations where it makes sense for the GPIO subsystem
+> @@ -1144,6 +1157,13 @@ PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-foo", NULL /* group */, "power_func")
+>  
+>  This gives the exact same result as the above construction.
+>  
+> +This should not be used for any kind of device which is represented in
+> +the device model. For platform and AMBA (PrimeCell) devices, such as found
+> +in many SoC:s, the pinctrl core will listen to notifications from these
+> +buses and attempt to do pinctrl_get_select_default() for these devices
+> +right before their device drivers are probed, so hogging these will just
+> +make the model look strange.
+
+(re: the first sentence:) Why not? For the device tree case, that's
+forcing DT authors to sprinkle the device tree across all devices
+throughout the tree, rather than having a simple single "hog" table in
+the pin controller itself. At least where there's no dynamic muxing
+required, I don't think it makes any semantic difference whether the
+pinctrl configuration is represented as a single "pinmux HW"
+configuration, or split up per-device, and writing the single
+centralized configuration is easier.
+
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+
+> @@ -684,9 +687,16 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev)
+>  	if (WARN_ON(!dev))
+>  		return ERR_PTR(-EINVAL);
+>  
+> +	/*
+> +	 * See if somebody else (such as the pinctrl core, using the
+> +	 * notifiers) has already obtained a handle to the pinctrl for
+> +	 * this device. In that case, return another pointer to it.
+> +	 */
+>  	p = find_pinctrl(dev);
+> -	if (p != NULL)
+> -		return ERR_PTR(-EBUSY);
+> +	if (p != NULL) {
+> +		dev_dbg(dev, "obtain a copy of previously claimed pinctrl\n");
+> +		return p;
+
+You'd want to implement full reference-counting then; IIRC, that's why I
+banned pinctrl_get() running twice in the original code.
