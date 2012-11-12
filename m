@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab2KLVXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 16:23:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36278 "EHLO
+	id S1754217Ab2KLVXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 16:23:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36279 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2KLVTj (ORCPT
+	with ESMTP id S1754105Ab2KLVTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Nov 2012 16:19:39 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,102 +14,66 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 42/46] x86, mm: kill numa_free_all_bootmem()
-Date: Mon, 12 Nov 2012 13:18:38 -0800
-Message-Id: <1352755122-25660-43-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 46/46] x86, mm: Let "memmap=" take more entries one time
+Date: Mon, 12 Nov 2012 13:18:42 -0800
+Message-Id: <1352755122-25660-47-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1352755122-25660-1-git-send-email-yinghai@kernel.org>
 References: <20121112193044.GA11615@phenom.dumpdata.com>
  <1352755122-25660-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now NO_BOOTMEM version free_all_bootmem_node() does not really
-do free_bootmem at all, and it only call register_page_bootmem_info_node
-instead.
+Current "memmap=" only can take one entry every time.
+when we have more entries, we have to use memmap= for each of them.
 
-That is confusing, try to kill that free_all_bootmem_node().
+For pxe booting, we have command line length limitation, those extra
+"memmap=" would waste too much space.
 
-Before that, this patch will remove numa_free_all_bootmem().
-
-That function could be replaced with register_page_bootmem_info() and
-free_all_bootmem();
+This patch make memmap= could take several entries one time,
+and those entries will be split with ','
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/numa_64.h |    2 --
- arch/x86/mm/init_64.c          |   15 +++++++++++----
- arch/x86/mm/numa_64.c          |   13 -------------
- 3 files changed, 11 insertions(+), 19 deletions(-)
+ arch/x86/kernel/e820.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 0c05f7a..fe4d2d4 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -1,6 +1,4 @@
- #ifndef _ASM_X86_NUMA_64_H
- #define _ASM_X86_NUMA_64_H
- 
--extern unsigned long numa_free_all_bootmem(void);
--
- #endif /* _ASM_X86_NUMA_64_H */
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 1d53def..4178530 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -629,6 +629,16 @@ EXPORT_SYMBOL_GPL(arch_add_memory);
- 
- static struct kcore_list kcore_vsyscall;
- 
-+static void __init register_page_bootmem_info(void)
-+{
-+#ifdef CONFIG_NUMA
-+	int i;
-+
-+	for_each_online_node(i)
-+		register_page_bootmem_info_node(NODE_DATA(i));
-+#endif
-+}
-+
- void __init mem_init(void)
- {
- 	long codesize, reservedpages, datasize, initsize;
-@@ -641,11 +651,8 @@ void __init mem_init(void)
- 	reservedpages = 0;
- 
- 	/* this will put all low memory onto the freelists */
--#ifdef CONFIG_NUMA
--	totalram_pages = numa_free_all_bootmem();
--#else
-+	register_page_bootmem_info();
- 	totalram_pages = free_all_bootmem();
--#endif
- 
- 	absent_pages = absent_pages_in_range(0, max_pfn);
- 	reservedpages = max_pfn - totalram_pages - absent_pages;
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 92e2711..9405ffc 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -10,16 +10,3 @@ void __init initmem_init(void)
- {
- 	x86_numa_init();
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index df06ade..d32abea 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -835,7 +835,7 @@ static int __init parse_memopt(char *p)
  }
--
--unsigned long __init numa_free_all_bootmem(void)
--{
--	unsigned long pages = 0;
--	int i;
--
--	for_each_online_node(i)
--		pages += free_all_bootmem_node(NODE_DATA(i));
--
--	pages += free_low_memory_core_early(MAX_NUMNODES);
--
--	return pages;
--}
+ early_param("mem", parse_memopt);
+ 
+-static int __init parse_memmap_opt(char *p)
++static int __init parse_memmap_one(char *p)
+ {
+ 	char *oldp;
+ 	u64 start_at, mem_size;
+@@ -877,6 +877,20 @@ static int __init parse_memmap_opt(char *p)
+ 
+ 	return *p == '\0' ? 0 : -EINVAL;
+ }
++static int __init parse_memmap_opt(char *str)
++{
++	while (str) {
++		char *k = strchr(str, ',');
++
++		if (k)
++			*k++ = 0;
++
++		parse_memmap_one(str);
++		str = k;
++	}
++
++	return 0;
++}
+ early_param("memmap", parse_memmap_opt);
+ 
+ void __init finish_e820_parsing(void)
 -- 
 1.7.7
 
