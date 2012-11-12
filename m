@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab2KLXcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 18:32:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39697 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab2KLXco convert rfc822-to-8bit (ORCPT
+	id S1754281Ab2KLXdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 18:33:44 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63275 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab2KLXdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 18:32:44 -0500
+	Mon, 12 Nov 2012 18:33:42 -0500
 MIME-Version: 1.0
-Message-ID: <c04bb062-bbce-4980-b2b3-fbbb18e64b66@default>
-Date: Mon, 12 Nov 2012 15:32:11 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>, David Rientjes <rientjes@google.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com
-Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
-References: <1352600728-17766-1-git-send-email-kys@microsoft.com>
- <alpine.DEB.2.00.1211101830250.18494@chino.kir.corp.google.com>
- <426367E2313C2449837CD2DE46E7EAF930E35B45@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <alpine.DEB.2.00.1211121349130.23347@chino.kir.corp.google.com>
- <426367E2313C2449837CD2DE46E7EAF930E39FBC@SN2PRD0310MB382.namprd03.prod.outlook.com>
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E39FBC@SN2PRD0310MB382.namprd03.prod.outlook.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20121112230819.GC28341@n2100.arm.linux.org.uk>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+	<20121112192727.GB28341@n2100.arm.linux.org.uk>
+	<CAF6AEGu4L+ukxhMBLYK3d2g4CBBXi6o5nN_wXvakZCT8qMfSEA@mail.gmail.com>
+	<20121112230819.GC28341@n2100.arm.linux.org.uk>
+Date: Mon, 12 Nov 2012 17:33:41 -0600
+X-Google-Sender-Auth: -yl5ak2bblMW5HXHq9qCZx4eimY
+Message-ID: <CAF6AEGtLKjJ=BfBnOq+oE6cgneF5YqsbYqNnCPrz4sTFRzdibg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+From: Rob Clark <rob.clark@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KY Srinivasan [mailto:kys@microsoft.com]
-> Sent: Monday, November 12, 2012 3:58 PM
-> To: David Rientjes
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> olaf@aepfle.de; apw@canonical.com; andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
-> kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org; yinghan@google.com; Dan Magenheimer
-> Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
-> 
-> > -----Original Message-----
-> > From: David Rientjes [mailto:rientjes@google.com]
-> > Sent: Monday, November 12, 2012 4:54 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
-> > kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org;
-> > yinghan@google.com
-> > Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
-> >
-> > On Sun, 11 Nov 2012, KY Srinivasan wrote:
-> >
-> > > Thanks for the prompt response. For the Linux balloon driver for Hyper-V, I
-> > need access
-> > > to the metric that reflects the system wide memory commitment made by the
-> > guest kernel.
-> > > In the Hyper-V case, this information is one of the many metrics used to drive
-> > the policy engine
-> > > on the host. Granted, the interface name I have chosen here could be more
-> > generic; how about
-> > > read_mem_commit_info(void). I am open to suggestions here.
-> > >
-> >
-> > I would suggest vm_memory_committed() and there shouldn't be a comment
-> > describing that this is just a wrapper for modules to read
-> > vm_committed_as, that's apparent from the implementation: it should be
-> > describing exactly what this value represents and why it is a useful
-> > metric (at least in the case that you're concerned about).
-> 
-> Will do; thanks.
-> >
-> > > With regards to making changes to the Xen self ballooning code, I would like to
-> > separate that patch
-> > > from the patch that implements the exported mechanism to access the
-> > memory commitment information.
-> >
-> > Why?  Is xen using it for a different inference?
-> 
-> I think it is good to separate these patches. Dan (copied here) wrote the code for the
-> Xen self balloon driver. If it is ok with him I can submit the patch for Xen as well.
+On Mon, Nov 12, 2012 at 5:08 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Nov 12, 2012 at 01:58:32PM -0600, Rob Clark wrote:
+>> On Mon, Nov 12, 2012 at 1:27 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Fri, Nov 09, 2012 at 03:17:33PM -0600, Rob Clark wrote:
+>> >> From: Rob Clark <rob@ti.com>
+>> >>
+>> >> A new atomic modeset/pageflip ioctl being developed in DRM requires
+>> >> get_user() to work for 64bit types (in addition to just put_user()).
+>> >
+>> > NAK.
+>> >
+>> > (I did write a better email explaining all the ins and outs of why this
+>> > won't work and why 64-bit get_user isn't possible, but my editor crapped
+>> > out and lost all that well written message; I don't fancy typing it all
+>> > out again.)
+>> >
+>> > Nevertheless,
+>> > int test_ptr(unsigned int **v, unsigned int **p)
+>> > {
+>> >         return get_user(*v, p);
+>> > }
+>> >
+>> > produces a warning, and you can't get away from that if you stick 64-bit
+>> > support into get_user().
+>>
+>> Actually, it seems like using 'register typeof(x) __r2 asm("r2");'
+>> does avoid that warning..
+>
+> That seems to pass the checks I've done on it so far, and seems rather
+> obvious (there's been a number of people looking at this, none of whom
+> have come up with that solution).  Provided the final cast is kept
+> (which is there to ensure proper typechecking), it seems like it might
+> be a solution.
 
-Hi KY --
+I'm sort of thinking maybe we want to change 'switch (sizeof(*(__p)))'
+with 'switch (sizeof(typeof(x)))' in case someone ignores the compiler
+warning when they try something like:
 
-If I understand correctly, this would be only a cosmetic (function renaming) change
-to the Xen selfballooning code.  If so, then I will be happy to Ack when I
-see the patch.  However, Konrad (konrad.wilk@oracle.com) is the maintainer
-for all Xen code so you should ask him... and (from previous painful experience)
-it can be difficult to sync even very simple interdependent changes going through
-different maintainers without breaking linux-next.  So I can't offer any
-help with that process, only commiseration. :-(
+   uint32_t x;
+   uint64_t *p = ...;
+   get_user(x, p);
 
-Dan
+that was my one concern about 'register typeof(x) __r2 ...', but I
+think just changing the switch condition is enough.  But maybe good to
+have some eyes on in case there is something else I'm not thinking of.
+
+BR,
+-R
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
