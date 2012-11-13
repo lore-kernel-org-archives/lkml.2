@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2KMI3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:29:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60106 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab2KMI3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:29:08 -0500
+	id S1754610Ab2KMI3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:29:38 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60744 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab2KMI3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:29:35 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/13] mfd: twl: Convert module id definitions to enums
-Date: Tue, 13 Nov 2012 09:28:48 +0100
-Message-ID: <1352795334-7406-8-git-send-email-peter.ujfalusi@ti.com>
+        <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 04/13] MFD/rtc/gpio: twl: No need to allocate bigger buffer for write
+Date: Tue, 13 Nov 2012 09:28:45 +0100
+Message-ID: <1352795334-7406-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
@@ -22,145 +26,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use enum list for the module definitions (TWL4030_MODULE_*) which will ease
-up future work with the IDs.
-At the same time group the IDs in block of five so it is easier to find the
-ID we are looking for (to count the number they stand for).
+Since the twl-core has been converted to use regmap it is no longer needed
+to allocate bigger buffer for data when writing to twl.
 
-At the same time define TWL_MODULE_LED so client drivers can switch to use
-it as soon as it is possible.
-
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl-core.c  |  9 +++----
- include/linux/i2c/twl.h | 65 +++++++++++++++++++++++++------------------------
- 2 files changed, 36 insertions(+), 38 deletions(-)
+ drivers/gpio/gpio-twl4030.c | 12 ++++++------
+ drivers/mfd/twl-core.c      |  9 ++-------
+ drivers/mfd/twl4030-irq.c   |  6 +++---
+ drivers/mfd/twl6030-irq.c   |  4 ++--
+ drivers/rtc/rtc-twl.c       | 32 ++++++++++++++++----------------
+ 5 files changed, 29 insertions(+), 34 deletions(-)
 
+diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+index c5f8ca2..88829c3 100644
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -354,13 +354,13 @@ static struct gpio_chip twl_gpiochip = {
+ 
+ static int __devinit gpio_twl4030_pulls(u32 ups, u32 downs)
+ {
+-	u8		message[6];
++	u8		message[5];
+ 	unsigned	i, gpio_bit;
+ 
+ 	/* For most pins, a pulldown was enabled by default.
+ 	 * We should have data that's specific to this board.
+ 	 */
+-	for (gpio_bit = 1, i = 1; i < 6; i++) {
++	for (gpio_bit = 1, i = 0; i < 5; i++) {
+ 		u8		bit_mask;
+ 		unsigned	j;
+ 
+@@ -379,16 +379,16 @@ static int __devinit gpio_twl4030_pulls(u32 ups, u32 downs)
+ 
+ static int __devinit gpio_twl4030_debounce(u32 debounce, u8 mmc_cd)
+ {
+-	u8		message[4];
++	u8		message[3];
+ 
+ 	/* 30 msec of debouncing is always used for MMC card detect,
+ 	 * and is optional for everything else.
+ 	 */
+-	message[1] = (debounce & 0xff) | (mmc_cd & 0x03);
++	message[0] = (debounce & 0xff) | (mmc_cd & 0x03);
+ 	debounce >>= 8;
+-	message[2] = (debounce & 0xff);
++	message[1] = (debounce & 0xff);
+ 	debounce >>= 8;
+-	message[3] = (debounce & 0x03);
++	message[2] = (debounce & 0x03);
+ 
+ 	return twl_i2c_write(TWL4030_MODULE_GPIO, message,
+ 				REG_GPIO_DEBEN1, 3);
 diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index d666c9d..bb33b52 100644
+index 5043f505a..a55ab15 100644
 --- a/drivers/mfd/twl-core.c
 +++ b/drivers/mfd/twl-core.c
-@@ -66,9 +66,6 @@
+@@ -344,7 +344,7 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 	twl = &twl_modules[sid];
  
- /* Triton Core internal information (BEGIN) */
+ 	ret = regmap_bulk_write(twl->regmap, twl_map[mod_no].base + reg,
+-				&value[1], num_bytes);
++				value, num_bytes);
  
--/* Last - for index max*/
--#define TWL4030_MODULE_LAST		TWL4030_MODULE_SECURED_REG
--
- #define TWL_NUM_SLAVES		4
- 
- #define SUB_CHIP_ID0 0
-@@ -184,7 +181,7 @@ struct twl_mapping {
- };
- static struct twl_mapping *twl_map;
- 
--static struct twl_mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
-+static struct twl_mapping twl4030_map[] = {
- 	/*
- 	 * NOTE:  don't change this table without updating the
- 	 * <linux/i2c/twl.h> defines for TWL4030_MODULE_*
-@@ -327,7 +324,7 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- 	int sid;
- 	struct twl_client *twl;
- 
--	if (unlikely(mod_no > TWL_MODULE_LAST)) {
-+	if (unlikely(mod_no >= TWL_MODULE_LAST)) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
- 	}
-@@ -369,7 +366,7 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- 	int sid;
- 	struct twl_client *twl;
- 
--	if (unlikely(mod_no > TWL_MODULE_LAST)) {
-+	if (unlikely(mod_no >= TWL_MODULE_LAST)) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
- 	}
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 7278c72..b1c44cc 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -39,39 +39,39 @@
-  * address each module uses within a given i2c slave.
+ 	if (ret)
+ 		pr_err("%s: Write failed (mod %d, reg 0x%02x count %d)\n",
+@@ -406,12 +406,7 @@ EXPORT_SYMBOL(twl_i2c_read);
   */
+ int twl_i2c_write_u8(u8 mod_no, u8 value, u8 reg)
+ {
+-
+-	/* 2 bytes offset 1 contains the data offset 0 is used by i2c_write */
+-	u8 temp_buffer[2] = { 0 };
+-	/* offset 1 contains the data */
+-	temp_buffer[1] = value;
+-	return twl_i2c_write(mod_no, temp_buffer, reg, 1);
++	return twl_i2c_write(mod_no, &value, reg, 1);
+ }
+ EXPORT_SYMBOL(twl_i2c_write_u8);
  
--/* Slave 0 (i2c address 0x48) */
--#define TWL4030_MODULE_USB		0x00
--
--/* Slave 1 (i2c address 0x49) */
--#define TWL4030_MODULE_AUDIO_VOICE	0x01
--#define TWL4030_MODULE_GPIO		0x02
--#define TWL4030_MODULE_INTBR		0x03
--#define TWL4030_MODULE_PIH		0x04
--#define TWL4030_MODULE_TEST		0x05
--
--/* Slave 2 (i2c address 0x4a) */
--#define TWL4030_MODULE_KEYPAD		0x06
--#define TWL4030_MODULE_MADC		0x07
--#define TWL4030_MODULE_INTERRUPTS	0x08
--#define TWL4030_MODULE_LED		0x09
--#define TWL4030_MODULE_MAIN_CHARGE	0x0A
--#define TWL4030_MODULE_PRECHARGE	0x0B
--#define TWL4030_MODULE_PWM0		0x0C
--#define TWL4030_MODULE_PWM1		0x0D
--#define TWL4030_MODULE_PWMA		0x0E
--#define TWL4030_MODULE_PWMB		0x0F
--
--#define TWL5031_MODULE_ACCESSORY	0x10
--#define TWL5031_MODULE_INTERRUPTS	0x11
--
--/* Slave 3 (i2c address 0x4b) */
--#define TWL4030_MODULE_BACKUP		0x12
--#define TWL4030_MODULE_INT		0x13
--#define TWL4030_MODULE_PM_MASTER	0x14
--#define TWL4030_MODULE_PM_RECEIVER	0x15
--#define TWL4030_MODULE_RTC		0x16
--#define TWL4030_MODULE_SECURED_REG	0x17
-+enum twl4030_module_ids {
-+	TWL4030_MODULE_USB = 0,		/* Slave 0 (i2c address 0x48) */
-+	TWL4030_MODULE_AUDIO_VOICE,	/* Slave 1 (i2c address 0x49) */
-+	TWL4030_MODULE_GPIO,
-+	TWL4030_MODULE_INTBR,
-+	TWL4030_MODULE_PIH,
-+
-+	TWL4030_MODULE_TEST,
-+	TWL4030_MODULE_KEYPAD,		/* Slave 2 (i2c address 0x4a) */
-+	TWL4030_MODULE_MADC,
-+	TWL4030_MODULE_INTERRUPTS,
-+	TWL4030_MODULE_LED,
-+
-+	TWL4030_MODULE_MAIN_CHARGE,
-+	TWL4030_MODULE_PRECHARGE,
-+	TWL4030_MODULE_PWM0,
-+	TWL4030_MODULE_PWM1,
-+	TWL4030_MODULE_PWMA,
-+
-+	TWL4030_MODULE_PWMB,
-+	TWL5031_MODULE_ACCESSORY,
-+	TWL5031_MODULE_INTERRUPTS,
-+	TWL4030_MODULE_BACKUP,		/* Slave 3 (i2c address 0x4b) */
-+	TWL4030_MODULE_INT,
-+
-+	TWL4030_MODULE_PM_MASTER,
-+	TWL4030_MODULE_PM_RECEIVER,
-+	TWL4030_MODULE_RTC,
-+	TWL4030_MODULE_SECURED_REG,
-+	TWL4030_MODULE_LAST,
-+};
+diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
+index ad733d7..e900402 100644
+--- a/drivers/mfd/twl4030-irq.c
++++ b/drivers/mfd/twl4030-irq.c
+@@ -501,7 +501,7 @@ static void twl4030_sih_bus_sync_unlock(struct irq_data *data)
+ 		} imr;
  
-+/* Similar functionalities implemented in TWL4030/6030 */
- #define TWL_MODULE_USB		TWL4030_MODULE_USB
- #define TWL_MODULE_PIH		TWL4030_MODULE_PIH
- #define TWL_MODULE_MAIN_CHARGE	TWL4030_MODULE_MAIN_CHARGE
-@@ -79,6 +79,7 @@
- #define TWL_MODULE_PM_RECEIVER	TWL4030_MODULE_PM_RECEIVER
- #define TWL_MODULE_RTC		TWL4030_MODULE_RTC
- #define TWL_MODULE_PWM		TWL4030_MODULE_PWM0
-+#define TWL_MODULE_LED		TWL4030_MODULE_LED
+ 		/* byte[0] gets overwritten as we write ... */
+-		imr.word = cpu_to_le32(agent->imr << 8);
++		imr.word = cpu_to_le32(agent->imr);
+ 		agent->imr_change_pending = false;
  
- #define TWL6030_MODULE_ID0	0x0D
- #define TWL6030_MODULE_ID1	0x0E
+ 		/* write the whole mask ... simpler than subsetting it */
+@@ -526,7 +526,7 @@ static void twl4030_sih_bus_sync_unlock(struct irq_data *data)
+ 		 * any processor on the other IRQ line, EDR registers are
+ 		 * shared.
+ 		 */
+-		status = twl_i2c_read(sih->module, bytes + 1,
++		status = twl_i2c_read(sih->module, bytes,
+ 				sih->edr_offset, sih->bytes_edr);
+ 		if (status) {
+ 			pr_err("twl4030: %s, %s --> %d\n", __func__,
+@@ -538,7 +538,7 @@ static void twl4030_sih_bus_sync_unlock(struct irq_data *data)
+ 		while (edge_change) {
+ 			int		i = fls(edge_change) - 1;
+ 			struct irq_data	*idata;
+-			int		byte = 1 + (i >> 2);
++			int		byte = i >> 2;
+ 			int		off = (i & 0x3) * 2;
+ 			unsigned int	type;
+ 
+diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+index b76902f..277a8db 100644
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -355,7 +355,7 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+ 	static struct irq_chip  twl6030_irq_chip;
+ 	int			status = 0;
+ 	int			i;
+-	u8			mask[4];
++	u8			mask[3];
+ 
+ 	nr_irqs = TWL6030_NR_IRQS;
+ 
+@@ -370,9 +370,9 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+ 
+ 	irq_end = irq_base + nr_irqs;
+ 
++	mask[0] = 0xFF;
+ 	mask[1] = 0xFF;
+ 	mask[2] = 0xFF;
+-	mask[3] = 0xFF;
+ 
+ 	/* mask all int lines */
+ 	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_LINE_A, 3);
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index 9277d94..8b7464c 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -233,7 +233,7 @@ static int twl_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
+  */
+ static int twl_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ {
+-	unsigned char rtc_data[ALL_TIME_REGS + 1];
++	unsigned char rtc_data[ALL_TIME_REGS];
+ 	int ret;
+ 	u8 save_control;
+ 	u8 rtc_control;
+@@ -300,15 +300,15 @@ static int twl_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ static int twl_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	unsigned char save_control;
+-	unsigned char rtc_data[ALL_TIME_REGS + 1];
++	unsigned char rtc_data[ALL_TIME_REGS];
+ 	int ret;
+ 
+-	rtc_data[1] = bin2bcd(tm->tm_sec);
+-	rtc_data[2] = bin2bcd(tm->tm_min);
+-	rtc_data[3] = bin2bcd(tm->tm_hour);
+-	rtc_data[4] = bin2bcd(tm->tm_mday);
+-	rtc_data[5] = bin2bcd(tm->tm_mon + 1);
+-	rtc_data[6] = bin2bcd(tm->tm_year - 100);
++	rtc_data[0] = bin2bcd(tm->tm_sec);
++	rtc_data[1] = bin2bcd(tm->tm_min);
++	rtc_data[2] = bin2bcd(tm->tm_hour);
++	rtc_data[3] = bin2bcd(tm->tm_mday);
++	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
++	rtc_data[5] = bin2bcd(tm->tm_year - 100);
+ 
+ 	/* Stop RTC while updating the TC registers */
+ 	ret = twl_rtc_read_u8(&save_control, REG_RTC_CTRL_REG);
+@@ -341,7 +341,7 @@ out:
+  */
+ static int twl_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ {
+-	unsigned char rtc_data[ALL_TIME_REGS + 1];
++	unsigned char rtc_data[ALL_TIME_REGS];
+ 	int ret;
+ 
+ 	ret = twl_i2c_read(TWL_MODULE_RTC, rtc_data,
+@@ -368,19 +368,19 @@ static int twl_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 
+ static int twl_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ {
+-	unsigned char alarm_data[ALL_TIME_REGS + 1];
++	unsigned char alarm_data[ALL_TIME_REGS];
+ 	int ret;
+ 
+ 	ret = twl_rtc_alarm_irq_enable(dev, 0);
+ 	if (ret)
+ 		goto out;
+ 
+-	alarm_data[1] = bin2bcd(alm->time.tm_sec);
+-	alarm_data[2] = bin2bcd(alm->time.tm_min);
+-	alarm_data[3] = bin2bcd(alm->time.tm_hour);
+-	alarm_data[4] = bin2bcd(alm->time.tm_mday);
+-	alarm_data[5] = bin2bcd(alm->time.tm_mon + 1);
+-	alarm_data[6] = bin2bcd(alm->time.tm_year - 100);
++	alarm_data[0] = bin2bcd(alm->time.tm_sec);
++	alarm_data[1] = bin2bcd(alm->time.tm_min);
++	alarm_data[2] = bin2bcd(alm->time.tm_hour);
++	alarm_data[3] = bin2bcd(alm->time.tm_mday);
++	alarm_data[4] = bin2bcd(alm->time.tm_mon + 1);
++	alarm_data[5] = bin2bcd(alm->time.tm_year - 100);
+ 
+ 	/* update all the alarm registers in one shot */
+ 	ret = twl_i2c_write(TWL_MODULE_RTC, alarm_data,
 -- 
 1.8.0
 
