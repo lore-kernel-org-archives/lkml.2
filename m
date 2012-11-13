@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2KMGsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:48:18 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44586 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752564Ab2KMGsQ (ORCPT
+	id S1753217Ab2KMGsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:48:40 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:28309 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab2KMGsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:48:16 -0500
-Date: Tue, 13 Nov 2012 15:48:09 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, philipspatches@gmail.com, patches@linaro.org
-Subject: Re: [PATCH] regulator: core: Update regulator_is_supported_voltage
- for fixed voltages
-Message-ID: <20121113064808.GH18224@opensource.wolfsonmicro.com>
-References: <1352458309-18141-1-git-send-email-tushar.behera@linaro.org>
- <20121109170918.GW23807@opensource.wolfsonmicro.com>
- <50A07E8B.20902@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="64j1qyTOoGvYcHb1"
-Content-Disposition: inline
-In-Reply-To: <50A07E8B.20902@linaro.org>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Nov 2012 01:48:39 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-54-50a1ed463f65
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH v2] mm: cma: WARN if freed memory is still in use
+Date: Tue, 13 Nov 2012 07:47:51 +0100
+Message-id: <1352789271-18461-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <xa1t8va6zsad.fsf@mina86.com>
+References: <xa1t8va6zsad.fsf@mina86.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t9jQV23twsDDC7NlrC4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZzz4vZClYxl6x+tpt5gbGX6xdjBwcEgImEncbmLsYOYFMMYkL
+	99azgdhCAtMZJXY91ehi5AKyVzBJ7NrzmRUkwSZgKNH1tgusSEQgTOJP4zZWkCJmkKKLd/eB
+	FQkLOErMO/qaCcRmEVCVeH11JyOIzSvgIfH58Fk2iMUKEnMm2YCEOQW0JO5MesIOsVhTYnHH
+	ZbYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgT7+5n0DsZVDRaHGAU4GJV4eBUt
+	FwYIsSaWFVfmHmKU4GBWEuE1rwcK8aYkVlalFuXHF5XmpBYfYpTmYFES5232SAkQEkhPLEnN
+	Tk0tSC2CyTJxcEo1MEof5bEv8BRb/dv28Db3eQbHdrE8XKzLzdLuXvAw+gS/smHJjJZyfUv5
+	Fa6L/ty+tLTF5QznlCDLquYv8h2Xbzae/Kj2UkjojZ5d+ONNN9K07ZSXR+9cuUzxZEjVpmXb
+	ecV3Pau4srVG1USwToo/IPyyaF7cyb5iq7lZFxNarUPtWf893H+ZSYmlOCPRUIu5qDgRABbO
+	GsLzAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Memory returned to free_contig_range() must have no other references. Let
+kernel to complain loudly if page reference count is not equal to 1.
 
---64j1qyTOoGvYcHb1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+---
+ mm/page_alloc.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-On Mon, Nov 12, 2012 at 10:13:55AM +0530, Tushar Behera wrote:
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 022e4ed..290c2eb 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5888,8 +5888,13 @@ done:
+ 
+ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+ {
+-	for (; nr_pages--; ++pfn)
+-		__free_page(pfn_to_page(pfn));
++	struct page *page = pfn_to_page(pfn);
++	int count = 0;
++	for (; nr_pages--; page++) {
++		count += page_count(page) != 1;
++		__free_page(page);
++	}
++	WARN(count != 0, "%d pages are still in use!\n", count);
+ }
+ #endif
+ 
+-- 
+1.7.9.5
 
-> In that case, we should modify the test condition as following.
-> Currently it passes success when the regulator voltage is less than both
-> min_uV and max_uV. If ok, I will send another patch for this.
-
-Documentation/SubmittingPatches...
-
---64j1qyTOoGvYcHb1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQoe0fAAoJELSic+t+oim9olIP/iI0fGZWiBsRYx3k8j1VsCQD
-gS6rrvckneVY8h2Q/Nuk/yL3tRb1CU+8/m1IR06ruuk6ulFuOn/vU6JlHJwlN1Y7
-DyGUf0ogHFQH+ddAmxSzLxgjvY+ZWEwc9fZpGQN5Yaxe/9s3nfC+zK7v3byZu744
-BsAF1hjlS1fQ99ya1u/WDPfSO+yPffB88k+Y91+ncc4Ju3s6XlBtCuHIPjA7CpN1
-9VosxnpmQnkhGnwgWKtIa4Fce8eNh74AGH09jZsGXKiMME1sS/PDJEVEoHCSEBcM
-a0G7BxQBmJCw1eMV69Qd8PY/UcFzI15pDoV3Pi1uQSUggV2m+WmEJxxWEBg9zvWQ
-juFA61ey5ESUtSyhdLUsO1UROD5zWiu9ygVO5Y/UZVLMKZF2C5+VcazVBG6DM1NY
-zElmZX/CMAQ8TEWWtUTILJGhu1t8x6O43+FK5gyMcHyWNP9awwn2DYD/LircdqKA
-9Bbr+V9Ayz58MdK2uTvohxRJGZL8d/ZONVKg6jDj0HV41F56b1KmEqrvhMxbHkWd
-/Wswg13MMo7vAOiGGCLoKhRrmQ1GMabGAKWz32xVR24dmKMH8gTvawk2rZSWFzV0
-m0+wjXAnoYdA5h+aDNLDSDOYqHEFisLP51RaBUzrOsM1sTglk41fTBnVd2Rq6xvF
-shvgsN1rbQjH9Y2zTOkY
-=KBn3
------END PGP SIGNATURE-----
-
---64j1qyTOoGvYcHb1--
