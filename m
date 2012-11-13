@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2KMR5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:57:04 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45803 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab2KMR5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:57:01 -0500
-Message-ID: <50A289E8.4030407@gmail.com>
-Date: Tue, 13 Nov 2012 09:56:56 -0800
-From: David Daney <ddaney.cavm@gmail.com>
+	id S1755400Ab2KMR46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:56:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34796 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab2KMR45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 12:56:57 -0500
+Message-ID: <50A289BB.5030009@zytor.com>
+Date: Tue, 13 Nov 2012 09:56:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Jonas Gorski <jonas.gorski@gmail.com>, linux-mips@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Kevin Cernekee <cernekee@gmail.com>, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, Maxime Bizon <mbizon@freebox.fr>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: Re: [RFC] MIPS: BCM63XX: add simple Device Tree includes for all
- SoCs
-References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com> <1352638249-29298-3-git-send-email-jonas.gorski@gmail.com> <50A1D290.3050409@wwwdotorg.org>
-In-Reply-To: <50A1D290.3050409@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 28/46] x86, mm: Add pointer about Xen mmu requirement
+ for alloc_low_pages
+References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-29-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1211131638060.28049@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1211131638060.28049@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 08:54 PM, Stephen Warren wrote:
-> On 11/11/2012 05:50 AM, Jonas Gorski wrote:
->> Add simple Device Tree include files for all currently supported SoCs.
->> These will be populated with device definitions as driver support
->> gets added.
+On 11/13/2012 08:38 AM, Stefano Stabellini wrote:
+> On Mon, 12 Nov 2012, Yinghai Lu wrote:
+>> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>
+>> Add link to commit 279b706 for more information
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 >
->>   arch/mips/bcm63xx/dts/bcm6328.dtsi |   30 ++++++++++++++++++++++++++++++
->>   arch/mips/bcm63xx/dts/bcm6338.dtsi |   30 ++++++++++++++++++++++++++++++
->>   arch/mips/bcm63xx/dts/bcm6345.dtsi |   30 ++++++++++++++++++++++++++++++
->>   arch/mips/bcm63xx/dts/bcm6348.dtsi |   30 ++++++++++++++++++++++++++++++
->>   arch/mips/bcm63xx/dts/bcm6358.dtsi |   33 +++++++++++++++++++++++++++++++++
->>   arch/mips/bcm63xx/dts/bcm6368.dtsi |   33 +++++++++++++++++++++++++++++++++
+> ah, here it is, OK then
 >
-> All of ARM, c6x, microblaze, openrisc, powerpc put device tree files
-> into arch/${arch}/boot/dts/ - should MIPS follow the same layout?
+>>   arch/x86/mm/init.c |    5 +++++
+>>   1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+>> index f5e0120..a7939ed 100644
+>> --- a/arch/x86/mm/init.c
+>> +++ b/arch/x86/mm/init.c
+>> @@ -25,6 +25,11 @@ unsigned long __meminitdata pgt_buf_top;
+>>
+>>   static unsigned long min_pfn_mapped;
+>>
+>> +/*
+>> + * Pages returned are already directly mapped.
+>> + *
+>> + * Changing that is likely to break Xen, see commit 279b706 for detail info.
+>                                                                      ^detailed
+>
 
-At this point, I don't see what the benefit of centralizing all of these 
-would be.  Currently there is no concept of a single kernel image that 
-would work across multiple MIPS system implementations.  So keeping the 
-DTS files with their users makes some organizational sense.
+When making references to git commits, please include the title of the 
+commit:
 
-Similar arguments could be made for moving all the files in `find . 
--name \*.dts\*` to a top level dts/ directory.
+  *
+  * Changing that is likely to break Xen, see commit:
+  *
+  *    279b706 x86,xen: introduce x86_init.mapping.pagetable_reserve
+  *
+  * for detailed information.
 
-David Daney
+Otherwise it might be very confusing if we have an abbreviated hash 
+collision or end up having to change git to use another hash system.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
