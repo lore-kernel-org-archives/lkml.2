@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab2KMB6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:58:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:27057 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab2KMB6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:58:52 -0500
-X-IronPort-AV: E=Sophos;i="4.80,765,1344182400"; 
-   d="scan'208";a="6185866"
-Message-ID: <50A1AAC5.8000506@cn.fujitsu.com>
-Date: Tue, 13 Nov 2012 10:04:53 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752414Ab2KMCCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:02:17 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38385 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2KMCCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 21:02:16 -0500
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v4 1/7] acpi,memory-hotplug: introduce a mutex lock to
- protect the list in acpi_memory_device
-References: <1352372693-32411-1-git-send-email-wency@cn.fujitsu.com>	 <1352372693-32411-2-git-send-email-wency@cn.fujitsu.com> <1352754038.12509.16.camel@misato.fc.hp.com>
-In-Reply-To: <1352754038.12509.16.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/13 09:58:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/13 09:58:44,
-	Serialize complete at 2012/11/13 09:58:44
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121113015318.GD25039@dastard>
+References: <CACnwZYd2kPaK1urLYc8BBuuqD7_Oo1oF+KvqWYj7DAEGy6grHQ@mail.gmail.com>
+	<20121113015318.GD25039@dastard>
+Date: Tue, 13 Nov 2012 00:02:14 -0200
+Message-ID: <CACnwZYeutkdb+=yYx8XcXHSDhaP6QBjgn1BEnGAMYDO7biAtFw@mail.gmail.com>
+Subject: Re: xfs: Remove boolean_t typedef completely.
+From: Thiago Farina <tfransosi@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux list <linux-kernel@vger.kernel.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/13/2012 05:00 AM, Toshi Kani Wrote:
-> On Thu, 2012-11-08 at 19:04 +0800, Wen Congyang wrote:
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+On Mon, Nov 12, 2012 at 11:53 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Nov 12, 2012 at 10:36:47PM -0200, Thiago Farina wrote:
+>> On Mon, Nov 12, 2012 at 10:24 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Mon, Nov 12, 2012 at 09:36:17PM -0200, Thiago Farina wrote:
+>> >> Hi,
+>> >>
+>> >> Please, take a look.
+>> >>
+>> >> Patch attached.
+>> >
+>> > It's a good start for a cleanup, but there's no point in removing
+>> > the boolean_t from one file and then not removing it from the rest
+>> > of the XFS code.  It's only used in a handful of places, so just
+>> > remove it completely.
+>> >
+>> Done.
 >>
->> This 2 events may happen at the same time, so we may touch
->> acpi_memory_device.res_list at the same time. This patch
->> introduce a lock to protect this list.
-> 
-> Hi Wen,
-> 
-> This race condition is not unique in memory hot-remove as the sysfs
-> eject interface is created for all objects with _EJ0.  For CPU
-> hot-remove, I addressed this race condition by making the notify handler
-> to run the hot-remove operation on kacpi_hotplug_wq by calling
-> acpi_os_hotplug_execute().  This serializes the hot-remove operations
-> among the two events since the sysfs eject also runs on
-> kacpi_hotplug_wq.  This way is much simpler and is easy to maintain,
-> although it does not allow both operations to run simultaneously (which
-> I do not think we need).  Can it be used for memory hot-remove as well?
-
-Good idea. I will update it.
-
-Thanks
-Wen Congyang
-
-> 
-> Thanks,
-> -Toshi
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+>> Please, take another look.
+>>
+>> > Also, can you please place patches in line rather than attaching
+>> > them. Attaching them means they cannot be quoted in reply. See
+>> > Documentation/SubmittingPatches and Documentation/email-clients.txt
+>> > for guidelines.
+>> >
+>> Sorry, patch attached.
+>
+> It's still attached as a base64 encoded attachment, not as inline
+> text....
+>
+Yep, sorry about that. Is just a text file from $(git format-patch master);
