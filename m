@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2KMRPE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:15:04 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65052 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab2KMRPA (ORCPT
+	id S1755418Ab2KMRPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:15:10 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33061 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2KMRPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:15:00 -0500
+	Tue, 13 Nov 2012 12:15:06 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -17,9 +17,9 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 08/31] mm: Only flush the TLB when clearing an accessible pte
-Date: Tue, 13 Nov 2012 18:13:31 +0100
-Message-Id: <1352826834-11774-9-git-send-email-mingo@kernel.org>
+Subject: [PATCH 11/31] mm/mpol: Make MPOL_LOCAL a real policy
+Date: Tue, 13 Nov 2012 18:13:34 +0100
+Message-Id: <1352826834-11774-12-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
@@ -27,36 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-If ptep_clear_flush() is called to clear a page table entry that is
-accessible anyway by the CPU, eg. a _PAGE_PROTNONE page table entry,
-there is no need to flush the TLB on remote CPUs.
+Make MPOL_LOCAL a real and exposed policy such that applications that
+relied on the previous default behaviour can explicitly request it.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Requested-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-vm3rkzevahelwhejx5uwm8ex@git.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/pgtable-generic.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/uapi/linux/mempolicy.h | 1 +
+ mm/mempolicy.c                 | 9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index d8397da..0c8323f 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -88,7 +88,8 @@ pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 23e62e0..3e835c9 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
++	MPOL_LOCAL,
+ 	MPOL_MAX,	/* always last member of enum */
+ };
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d04a8a5..72f50ba 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 			     (flags & MPOL_F_RELATIVE_NODES)))
+ 				return ERR_PTR(-EINVAL);
+ 		}
++	} else if (mode == MPOL_LOCAL) {
++		if (!nodes_empty(*nodes))
++			return ERR_PTR(-EINVAL);
++		mode = MPOL_PREFERRED;
+ 	} else if (nodes_empty(*nodes))
+ 		return ERR_PTR(-EINVAL);
+ 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
+@@ -2397,7 +2401,6 @@ void numa_default_policy(void)
+  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+  * Used only for mpol_parse_str() and mpol_to_str()
+  */
+-#define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
  {
- 	pte_t pte;
- 	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
--	flush_tlb_page(vma, address);
-+	if (pte_accessible(pte))
-+		flush_tlb_page(vma, address);
- 	return pte;
- }
- #endif
+ 	[MPOL_DEFAULT]    = "default",
+@@ -2450,12 +2453,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (flags)
+ 		*flags++ = '\0';	/* terminate mode string */
+ 
+-	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
++	for (mode = 0; mode < MPOL_MAX; mode++) {
+ 		if (!strcmp(str, policy_modes[mode])) {
+ 			break;
+ 		}
+ 	}
+-	if (mode > MPOL_LOCAL)
++	if (mode >= MPOL_MAX)
+ 		goto out;
+ 
+ 	switch (mode) {
 -- 
 1.7.11.7
 
