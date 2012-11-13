@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2KMQnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:43:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49047 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab2KMQnM (ORCPT
+	id S1755267Ab2KMQpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:45:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60452 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754095Ab2KMQp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:43:12 -0500
-Message-ID: <50A27892.1030800@kernel.dk>
-Date: Tue, 13 Nov 2012 09:42:58 -0700
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Lukas Czerner <lczerner@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jmoyer@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
-References: <1352824065-6734-1-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1352824065-6734-1-git-send-email-lczerner@redhat.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 11:45:29 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] ASoC: arizona: Add support for multiplexer with no associated mixer
+Date: Tue, 13 Nov 2012 16:40:32 +0000
+Message-Id: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -489,6 +491,12 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
->  		goto out;
->  	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
->  		goto out;
-> +	if (lo->lo_bio_count >= q->nr_congestion_on) {
-> +		spin_unlock_irq(&lo->lo_lock);
-> +		wait_event(lo->lo_req_wait, lo->lo_bio_count <
-> +			   q->nr_congestion_off);
-> +		spin_lock_irq(&lo->lo_lock);
-> +	}
+The Asynchronous Sample Rate Converters on the wm5102/wm5110 have no
+mixer attached to their input, but they do allow the input to be
+selected from a number of sources via a multiplexer. Currently the
+platform assumes the presence of 4 multiplexers and a mixer for each
+block.
 
-This makes me nervous. You are reading lo_bio_count outside the lock. If
-you race with the prepare_to_wait() and condition check in
-__wait_event(), then you will sleep forever.
+This patch adds support multiplexed single input blocks into the Arizona
+platform.
 
-md has private helpers for this, seems it would be a good idea to move
-these into the regular wait includes and use them here too.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/arizona.h |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
+diff --git a/sound/soc/codecs/arizona.h b/sound/soc/codecs/arizona.h
+index 5a09127..f1c0ec9 100644
+--- a/sound/soc/codecs/arizona.h
++++ b/sound/soc/codecs/arizona.h
+@@ -94,33 +94,30 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
+ 	const struct snd_kcontrol_new name##_mux =	\
+ 		SOC_DAPM_VALUE_ENUM("Route", name##_enum)
+ 
++#define ARIZONA_MUX_ENUMS(name, base_reg) \
++	static ARIZONA_MUX_ENUM_DECL(name##_enum, base_reg);      \
++	static ARIZONA_MUX_CTL_DECL(name)
++
+ #define ARIZONA_MIXER_ENUMS(name, base_reg) \
+-	static ARIZONA_MUX_ENUM_DECL(name##_in1_enum, base_reg);      \
+-	static ARIZONA_MUX_ENUM_DECL(name##_in2_enum, base_reg + 2);  \
+-	static ARIZONA_MUX_ENUM_DECL(name##_in3_enum, base_reg + 4);  \
+-	static ARIZONA_MUX_ENUM_DECL(name##_in4_enum, base_reg + 6);  \
+-	static ARIZONA_MUX_CTL_DECL(name##_in1); \
+-	static ARIZONA_MUX_CTL_DECL(name##_in2); \
+-	static ARIZONA_MUX_CTL_DECL(name##_in3); \
+-	static ARIZONA_MUX_CTL_DECL(name##_in4)
++	ARIZONA_MUX_ENUMS(name##_in1, base_reg);     \
++	ARIZONA_MUX_ENUMS(name##_in2, base_reg + 2); \
++	ARIZONA_MUX_ENUMS(name##_in3, base_reg + 4); \
++	ARIZONA_MUX_ENUMS(name##_in4, base_reg + 6)
+ 
+ #define ARIZONA_DSP_AUX_ENUMS(name, base_reg) \
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux1_enum, base_reg);	\
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux2_enum, base_reg + 8);	\
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux3_enum, base_reg + 16);	\
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux4_enum, base_reg + 24);	\
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux5_enum, base_reg + 32);	\
+-	static ARIZONA_MUX_ENUM_DECL(name##_aux6_enum, base_reg + 40);	\
+-	static ARIZONA_MUX_CTL_DECL(name##_aux1); \
+-	static ARIZONA_MUX_CTL_DECL(name##_aux2); \
+-	static ARIZONA_MUX_CTL_DECL(name##_aux3); \
+-	static ARIZONA_MUX_CTL_DECL(name##_aux4); \
+-	static ARIZONA_MUX_CTL_DECL(name##_aux5); \
+-	static ARIZONA_MUX_CTL_DECL(name##_aux6)
++	ARIZONA_MUX_ENUMS(name##_aux1, base_reg);	\
++	ARIZONA_MUX_ENUMS(name##_aux2, base_reg + 8);	\
++	ARIZONA_MUX_ENUMS(name##_aux3, base_reg + 16);	\
++	ARIZONA_MUX_ENUMS(name##_aux4, base_reg + 24);	\
++	ARIZONA_MUX_ENUMS(name##_aux5, base_reg + 32);	\
++	ARIZONA_MUX_ENUMS(name##_aux6, base_reg + 40)
+ 
+ #define ARIZONA_MUX(name, ctrl) \
+ 	SND_SOC_DAPM_VALUE_MUX(name, SND_SOC_NOPM, 0, 0, ctrl)
+ 
++#define ARIZONA_MUX_WIDGETS(name, name_str) \
++	ARIZONA_MUX(name_str " Input", &name##_mux)
++
+ #define ARIZONA_MIXER_WIDGETS(name, name_str)	\
+ 	ARIZONA_MUX(name_str " Input 1", &name##_in1_mux), \
+ 	ARIZONA_MUX(name_str " Input 2", &name##_in2_mux), \
+@@ -138,6 +135,9 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
+ 	ARIZONA_MUX(name_str " Aux 5", &name##_aux5_mux), \
+ 	ARIZONA_MUX(name_str " Aux 6", &name##_aux6_mux)
+ 
++#define ARIZONA_MUX_ROUTES(name) \
++	ARIZONA_MIXER_INPUT_ROUTES(name " Input")
++
+ #define ARIZONA_MIXER_ROUTES(widget, name) \
+ 	{ widget, NULL, name " Mixer" },         \
+ 	{ name " Mixer", NULL, name " Input 1" }, \
 -- 
-Jens Axboe
+1.7.2.5
 
