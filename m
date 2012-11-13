@@ -1,88 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2KMBw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:52:56 -0500
+	id S1754582Ab2KMBxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:53:09 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:64882 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab2KMBwx (ORCPT
+	with ESMTP id S1752751Ab2KMBxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:52:53 -0500
-Message-ID: <50A1A7D9.2040506@gmail.com>
-Date: Tue, 13 Nov 2012 09:52:25 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 12 Nov 2012 20:53:07 -0500
+Date: Mon, 12 Nov 2012 17:53:04 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <dave@gnu.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch for-3.7] mm, oom: reintroduce /proc/pid/oom_adj
+In-Reply-To: <CA+55aFwSxwjqK8CScNBWvzk=ExDqREAGAyRoZLW4zjOu4dyxqw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1211121747490.8225@chino.kir.corp.google.com>
+References: <545706980.41498.1352739027798.JavaMail.mail@webmail19> <alpine.DEB.2.00.1211121339000.23347@chino.kir.corp.google.com> <CA+55aFz2Kgn0mVV4ozH0g1QGKw1VE6NpgCz9taxxfbCUz2a8VA@mail.gmail.com> <alpine.DEB.2.00.1211121717060.8225@chino.kir.corp.google.com>
+ <CA+55aFwSxwjqK8CScNBWvzk=ExDqREAGAyRoZLW4zjOu4dyxqw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, cl@linux-foundation.org,
-        Shan Wei <shanwei88@gmail.com>
-Subject: [PATCH v4 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shan Wei <davidshan@tencent.com>
+This is mostly a revert of 01dc52ebdf47 ("oom: remove deprecated oom_adj") 
+from Davidlohr Bueso.
 
-just use more faster this_cpu_ptr instead of per_cpu_ptr(p, smp_processor_id());
+It reintroduces /proc/pid/oom_adj for backwards compatibility with earlier 
+kernels.  It simply scales the value linearly when /proc/pid/oom_score_adj 
+is written.
 
+The major difference is that its scheduled removal is no longer included 
+in Documentation/feature-removal-schedule.txt.  We do warn users with a 
+single printk, though, to suggest the more powerful and supported 
+/proc/pid/oom_score_adj interface.
 
-Signed-off-by: Shan Wei <davidshan@tencent.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
+Reported-by: Artem S. Tashkinov <t.artem@lycos.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
-no changes vs v3,v2.
----
- net/openvswitch/datapath.c |    4 ++--
- net/openvswitch/vport.c    |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ Documentation/filesystems/proc.txt |   16 ++++--
+ fs/proc/base.c                     |  109 ++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/oom.h           |    9 +++
+ 3 files changed, 130 insertions(+), 4 deletions(-)
 
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index 4c4b62c..77d16a5 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -208,7 +208,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
- 	int error;
- 	int key_len;
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -33,7 +33,7 @@ Table of Contents
+   2	Modifying System Parameters
  
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
+   3	Per-Process Parameters
+-  3.1	/proc/<pid>/oom_score_adj - Adjust the oom-killer
++  3.1	/proc/<pid>/oom_adj & /proc/<pid>/oom_score_adj - Adjust the oom-killer
+ 								score
+   3.2	/proc/<pid>/oom_score - Display current oom-killer score
+   3.3	/proc/<pid>/io - Display the IO accounting fields
+@@ -1320,10 +1320,10 @@ of the kernel.
+ CHAPTER 3: PER-PROCESS PARAMETERS
+ ------------------------------------------------------------------------------
  
- 	/* Extract flow from 'skb' into 'key'. */
- 	error = ovs_flow_extract(skb, p->port_no, &key, &key_len);
-@@ -282,7 +282,7 @@ int ovs_dp_upcall(struct datapath *dp, struct sk_buff *skb,
- 	return 0;
+-3.1 /proc/<pid>/oom_score_adj- Adjust the oom-killer score
++3.1 /proc/<pid>/oom_adj & /proc/<pid>/oom_score_adj- Adjust the oom-killer score
+ --------------------------------------------------------------------------------
  
- err:
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
+-This file can be used to adjust the badness heuristic used to select which
++These file can be used to adjust the badness heuristic used to select which
+ process gets killed in out of memory conditions.
  
- 	u64_stats_update_begin(&stats->sync);
- 	stats->n_lost++;
-diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
-index 03779e8..70af0be 100644
---- a/net/openvswitch/vport.c
-+++ b/net/openvswitch/vport.c
-@@ -333,8 +333,7 @@ void ovs_vport_receive(struct vport *vport, struct sk_buff *skb)
+ The badness heuristic assigns a value to each candidate task ranging from 0
+@@ -1361,6 +1361,12 @@ same system, cpuset, mempolicy, or memory controller resources to use at least
+ equivalent to discounting 50% of the task's allowed memory from being considered
+ as scoring against the task.
+ 
++For backwards compatibility with previous kernels, /proc/<pid>/oom_adj may also
++be used to tune the badness score.  Its acceptable values range from -16
++(OOM_ADJUST_MIN) to +15 (OOM_ADJUST_MAX) and a special value of -17
++(OOM_DISABLE) to disable oom killing entirely for that task.  Its value is
++scaled linearly with /proc/<pid>/oom_score_adj.
++
+ The value of /proc/<pid>/oom_score_adj may be reduced no lower than the last
+ value set by a CAP_SYS_RESOURCE process. To reduce the value any lower
+ requires CAP_SYS_RESOURCE.
+@@ -1375,7 +1381,9 @@ minimal amount of work.
+ -------------------------------------------------------------
+ 
+ This file can be used to check the current score used by the oom-killer is for
+-any given <pid>.
++any given <pid>. Use it together with /proc/<pid>/oom_score_adj to tune which
++process should be killed in an out-of-memory situation.
++
+ 
+ 3.3  /proc/<pid>/io - Display the IO accounting fields
+ -------------------------------------------------------
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -873,6 +873,113 @@ static const struct file_operations proc_environ_operations = {
+ 	.release	= mem_release,
+ };
+ 
++static ssize_t oom_adj_read(struct file *file, char __user *buf, size_t count,
++			    loff_t *ppos)
++{
++	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	char buffer[PROC_NUMBUF];
++	int oom_adj = OOM_ADJUST_MIN;
++	size_t len;
++	unsigned long flags;
++
++	if (!task)
++		return -ESRCH;
++	if (lock_task_sighand(task, &flags)) {
++		if (task->signal->oom_score_adj == OOM_SCORE_ADJ_MAX)
++			oom_adj = OOM_ADJUST_MAX;
++		else
++			oom_adj = (task->signal->oom_score_adj * -OOM_DISABLE) /
++				  OOM_SCORE_ADJ_MAX;
++		unlock_task_sighand(task, &flags);
++	}
++	put_task_struct(task);
++	len = snprintf(buffer, sizeof(buffer), "%d\n", oom_adj);
++	return simple_read_from_buffer(buf, count, ppos, buffer, len);
++}
++
++static ssize_t oom_adj_write(struct file *file, const char __user *buf,
++			     size_t count, loff_t *ppos)
++{
++	struct task_struct *task;
++	char buffer[PROC_NUMBUF];
++	int oom_adj;
++	unsigned long flags;
++	int err;
++
++	memset(buffer, 0, sizeof(buffer));
++	if (count > sizeof(buffer) - 1)
++		count = sizeof(buffer) - 1;
++	if (copy_from_user(buffer, buf, count)) {
++		err = -EFAULT;
++		goto out;
++	}
++
++	err = kstrtoint(strstrip(buffer), 0, &oom_adj);
++	if (err)
++		goto out;
++	if ((oom_adj < OOM_ADJUST_MIN || oom_adj > OOM_ADJUST_MAX) &&
++	     oom_adj != OOM_DISABLE) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	task = get_proc_task(file->f_path.dentry->d_inode);
++	if (!task) {
++		err = -ESRCH;
++		goto out;
++	}
++
++	task_lock(task);
++	if (!task->mm) {
++		err = -EINVAL;
++		goto err_task_lock;
++	}
++
++	if (!lock_task_sighand(task, &flags)) {
++		err = -ESRCH;
++		goto err_task_lock;
++	}
++
++	/*
++	 * Scale /proc/pid/oom_score_adj appropriately ensuring that a maximum
++	 * value is always attainable.
++	 */
++	if (oom_adj == OOM_ADJUST_MAX)
++		oom_adj = OOM_SCORE_ADJ_MAX;
++	else
++		oom_adj = (oom_adj * OOM_SCORE_ADJ_MAX) / -OOM_DISABLE;
++
++	if (oom_adj < task->signal->oom_score_adj &&
++	    !capable(CAP_SYS_RESOURCE)) {
++		err = -EACCES;
++		goto err_sighand;
++	}
++
++	/*
++	 * /proc/pid/oom_adj is provided for legacy purposes, ask users to use
++	 * /proc/pid/oom_score_adj instead.
++	 */
++	printk_once(KERN_WARNING "%s (%d): /proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead.\n",
++		  current->comm, task_pid_nr(current), task_pid_nr(task),
++		  task_pid_nr(task));
++
++	task->signal->oom_score_adj = oom_adj;
++	trace_oom_score_adj_update(task);
++err_sighand:
++	unlock_task_sighand(task, &flags);
++err_task_lock:
++	task_unlock(task);
++	put_task_struct(task);
++out:
++	return err < 0 ? err : count;
++}
++
++static const struct file_operations proc_oom_adj_operations = {
++	.read		= oom_adj_read,
++	.write		= oom_adj_write,
++	.llseek		= generic_file_llseek,
++};
++
+ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
+ 					size_t count, loff_t *ppos)
  {
- 	struct vport_percpu_stats *stats;
+@@ -2598,6 +2705,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
+ #endif
+ 	INF("oom_score",  S_IRUGO, proc_oom_score),
++	REG("oom_adj",    S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+ 	REG("oom_score_adj", S_IRUGO|S_IWUSR, proc_oom_score_adj_operations),
+ #ifdef CONFIG_AUDITSYSCALL
+ 	REG("loginuid",   S_IWUSR|S_IRUGO, proc_loginuid_operations),
+@@ -2964,6 +3072,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
+ #endif
+ 	INF("oom_score", S_IRUGO, proc_oom_score),
++	REG("oom_adj",   S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+ 	REG("oom_score_adj", S_IRUGO|S_IWUSR, proc_oom_score_adj_operations),
+ #ifdef CONFIG_AUDITSYSCALL
+ 	REG("loginuid",  S_IWUSR|S_IRUGO, proc_loginuid_operations),
+diff --git a/include/uapi/linux/oom.h b/include/uapi/linux/oom.h
+--- a/include/uapi/linux/oom.h
++++ b/include/uapi/linux/oom.h
+@@ -8,4 +8,13 @@
+ #define OOM_SCORE_ADJ_MIN	(-1000)
+ #define OOM_SCORE_ADJ_MAX	1000
  
--	stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
--
-+	stats = this_cpu_ptr(vport->percpu_stats);
- 	u64_stats_update_begin(&stats->sync);
- 	stats->rx_packets++;
- 	stats->rx_bytes += skb->len;
-@@ -359,7 +358,7 @@ int ovs_vport_send(struct vport *vport, struct sk_buff *skb)
- 	if (likely(sent)) {
- 		struct vport_percpu_stats *stats;
- 
--		stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
-+		stats = this_cpu_ptr(vport->percpu_stats);
- 
- 		u64_stats_update_begin(&stats->sync);
- 		stats->tx_packets++;
--- 
-1.7.1
-
-
++/*
++ * /proc/<pid>/oom_adj set to -17 protects from the oom killer for legacy
++ * purposes.
++ */
++#define OOM_DISABLE (-17)
++/* inclusive */
++#define OOM_ADJUST_MIN (-16)
++#define OOM_ADJUST_MAX 15
++
+ #endif /* _UAPI__INCLUDE_LINUX_OOM_H */
