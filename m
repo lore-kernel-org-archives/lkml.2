@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2KMBUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:20:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32871 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab2KMBT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:19:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
-   d="scan'208";a="241058220"
-Message-ID: <1352769596.7176.194.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Tue, 13 Nov 2012 09:19:56 +0800
-In-Reply-To: <Pine.LNX.4.44L0.1211121110520.26926-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1211121110520.26926-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754247Ab2KMBUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:20:36 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57868 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab2KMBUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 20:20:34 -0500
+X-AuditID: 9c93016f-b7b42ae000004383-dc-50a1a05e6ac5
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Vinson Lee <vlee@twitter.com>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+References: <1352497390-17716-1-git-send-email-acme@infradead.org>
+	<87390fo9jn.fsf@sejong.aot.lge.com>
+	<20121112135545.GA4595@krava.brq.redhat.com>
+	<20121112160139.GC18978@ghostprotocols.net>
+Date: Tue, 13 Nov 2012 10:20:30 +0900
+In-Reply-To: <20121112160139.GC18978@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Mon, 12 Nov 2012 13:01:39 -0300")
+Message-ID: <87txsumh7l.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-12 at 11:32 -0500, Alan Stern wrote:
-> On Mon, 12 Nov 2012, Huang Ying wrote:
-> 
-> > > > Is it absolute necessary to call pm_runtime_set_suspended?  If the
-> > > > device is disabled, the transition to SUSPENDED state will not be
-> > > > triggered even if the device is ACTIVE.
-> > > 
-> > > It's not absolutely necessary to do this, but we ought to because it 
-> > > will allow the device's parent to be suspended.  If we leave the device 
-> > > in the ACTIVE state then the parent can't be suspended, even when the 
-> > > device is disabled.
-> > 
-> > I think this is the hard part of the issue.  Now "disabled" and
-> > SUSPENDED state is managed by hand.  IMHO, if we changed
-> > pm_runtime_allow() as you said, we need to change the rule too.  Maybe
-> > something as follow:
-> > 
-> > - remove pm_runtime_set_suspended/pm_runtime_set_active
-> 
-> We can't remove them entirely.  They are needed for situations where 
-> the device's physical state is different from what the PM core thinks; 
-> they tell the PM core what the actual state is.
-> 
-> > - in pm_runtime_disable/pm_runtime_allow, put device into SUSPENDED
-> > state if runtime PM is not forbidden.
-> 
-> That doesn't make sense.  Runtime PM is never forbidden after 
-> pm_runtime_allow is called; that's its purpose.
+On Mon, 12 Nov 2012 13:01:39 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Nov 12, 2012 at 02:55:46PM +0100, Jiri Olsa escreveu:
+>> On Mon, Nov 12, 2012 at 11:10:52AM +0900, Namhyung Kim wrote:
+>> > On Fri,  9 Nov 2012 18:42:49 -0300, Arnaldo Carvalho de Melo wrote:
+>> > > . Add a 'link' method for hists, so that we can have the leader with
+>> > >   buckets for all the entries in all the hists.  This new method
+>> > >   is now used in the default 'diff' output, making the sum of the 'baseline'
+>> > >   column be 100%, eliminating blind spots. Now we need to use this
+>> > >   for 'diff' with > 2 perf.data files and for multi event 'report' and
+>> > >   'annotate'.
+>
+>> > I'm not sure it can be used for group report at least in its current
+>> > form.  IIUC it connects multiple hist entries using a list head and
+>> > create a dummy entry in the leader if need be.  But it didn't handle
+>> > non-leader entries so it's hard to tell which is which if less entries
+>> > are present only.  For example consider following case:
+>
+>> > 	leader		member1		member2
+>> > 	A		A		A
+>> > 	B
+>> > 			C
+>> > 					D
+>
+>> > where leader, member1 and member2 are evsel/hists and A, B, C and D are
+>> > hist entries.  After 'linking' the entries the leader will have
+>> > following linkage:
+>
+>> > 	leader
+>> > 	A	->	A	->	A
+>> > 	B
+>> > 	C (dummy) ->	C
+>> > 	D (dummy)		->	D
+>
+>> > In this case, for entry A the leader can determine which entry came from
+>> > which hists by looking its order in the list.  For entry B the leader
+>> > can use zero value for them since the list is empty.  However for
+>> > entries C and D, it cannot know which one is the right hists unless it
+>> > records a hist index or creates dummy entry and insert it in a correct
+>> > order (looks far from an optimal solution).  Am I missing something?
+>
+>> there's hists pointer in hist_entry if that's what you look for
+>
+> And from there to evsel->idx. In your patchset you even introduce
+> hists_2_evsel(), right?
 
-Sorry, my original idea is:
+Ah, okay.  I worried about a possiblity of non-consecutive event groups
+for some reason, but that's not gonna happen in the future?
 
-	pm_runtime_disable will put device into SUSPENDED state if
-	dev->power.runtime_auto is clear.  pm_runtime_allow will put
-	device into SUSPENDED state if dev->power.disable_depth > 0.
-
-So in general, my original idea is to manage device runtime power state
-automatically instead of manually, especially when device is in disabled
-state.
-
-	disabled + forbidden	-> ACTIVE
-	disabled + !forbidden	-> SUSPENDED
-	enabled + forbidden	-> ACTIVE
-	enabled + !forbidden	-> auto
-
-Why we can not do that?
-
-> > - in pm_runtime_forbid/pm_runtime_enable, put device into ACTIVE state.
-> 
-> Why should pm_runtime_enable put the device into the ACTIVE state?
-> 
-> No, I think a better approach is simply to say that the device will
-> never be allowed to be in the SUSPENDED state if runtime PM is
-> forbidden.  We already enforce this when the device is enabled for 
-> runtime PM, so we would have to start enforcing it when the device is 
-> disabled.
-> 
-> This means:
-> 
-> 	pm_runtime_set_suspended should fail if dev->power.runtime_auto
-> 	is clear.
-
-I think we can WARN_ON() here.  Because the caller should responsible
-for state consistence if they decide to manage runtime power state
-manually.
-
-> 	pm_runtime_forbid should call pm_runtime_set_active if
-> 	dev->power.disable_depth > 0.  (This would run into a problem
-> 	if the parent is suspended and disabled.  Maybe 
-> 	pm_runtime_forbid should fail when this happens.)
-
-pm_runtime_forbid() may be called via echo "on" > .../power/control.  I
-think it is hard to refuse the request from user space to forbid runtime
-PM.  Device can always work with full power.
-
-> Finally, we probably should make a third change even though it isn't
-> strictly necessary:
-> 
-> 	pm_runtime_allow should call pm_runtime_set_suspended if
-> 	dev->power.disable_depth > 0.
-
-I think this is something similar to manage device power state
-automatically if disabled.
-
-Best Regards,
-Huang Ying
-
-> Rafael, what do you think?
-> 
-> Alan Stern
-> 
-
-
+Thanks,
+Namhyung
