@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2KMCcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:32:43 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:48972 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752237Ab2KMCcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:32:41 -0500
-Date: Mon, 12 Nov 2012 21:32:40 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1352769596.7176.194.camel@yhuang-dev>
-Message-ID: <Pine.LNX.4.44L0.1211122120140.6961-100000@netrider.rowland.org>
+	id S1753087Ab2KMCga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:36:30 -0500
+Received: from ozlabs.org ([203.10.76.45]:43203 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab2KMCg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 21:36:29 -0500
+Date: Tue, 13 Nov 2012 13:28:08 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+Message-ID: <20121113022808.GS4696@truffula.fritz.box>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <-4237940489086529028@unknownmsgid>
+ <559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com>
+ <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012, Huang Ying wrote:
-
-> Sorry, my original idea is:
+On Fri, Nov 09, 2012 at 09:36:26PM -0600, Joel A Fernandes wrote:
+> Hi Pantelis,
 > 
-> 	pm_runtime_disable will put device into SUSPENDED state if
-> 	dev->power.runtime_auto is clear.  pm_runtime_allow will put
-> 	device into SUSPENDED state if dev->power.disable_depth > 0.
-
-That's close to what I suggested.
-
-> So in general, my original idea is to manage device runtime power state
-> automatically instead of manually, especially when device is in disabled
-> state.
+> On Fri, Nov 9, 2012 at 2:13 AM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
 > 
-> 	disabled + forbidden	-> ACTIVE
-> 	disabled + !forbidden	-> SUSPENDED
-
-This is not quite right.  Consider a device that is in runtime suspend 
-when a system sleep starts.  When the system sleep ends, the device 
-will be resumed but the PM core will still think its state is 
-SUSPENDED.  The subsystem has to tell the PM core that the device is 
-now ACTIVE.  Currently, subsystems do this by calling 
-pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
-your scheme this wouldn't work; the pm_runtime_set_active call would 
-fail because the device was !forbidden.
-
-> 	enabled + forbidden	-> ACTIVE
-> 	enabled + !forbidden	-> auto
+> >>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
+> >>>>       and passes the resolved tree to the kernel.
+> >>>>
+> >>>
+> >>> Could be made to work. Only really required if Joanne wants the
+> >>> cape interface to work for u-boot too. For example if the cape has some
+> >>> kind of network interface that u-boot will use to boot from.
+> >>>
+> >>
+> >> I love Grant's hashing idea a lot keeping the phandle problem for
+> >> compile time and not requiring fixups.
+> >>
+> >> IMO it is still a cleaner approach if u-boot does the tree merging for
+> >> all cases, and not the kernel.
+> >>
+> >> That way from a development standpoint, very little or nothing will
+> >> have to be changed in kernel (except for scripts/dtc) considering we
+> >> are moving forward with hashing.
+> >>
+> >> Also this discussed a while back but at some point is going to brought
+> >> up again-  loading of dt fragment directly from EEPROM and merging at
+> >> run time. If we were to implement this in kernel, we would have to add
+> >> cape specific EEPROM reading code, merge the tree before it is
+> >> unflattened and parse. I think doing tree merging in kernel is messy
+> >> and we should do it in uboot. Ideally reading the fragment from the
+> >> EEPROM for all capes and merging without worrying about version
+> >> detection, Doing the merge and passing the merged blob to the kernel
+> >> which (kernel) works the same way it does today.
+> >
+> > Not going to work, for a lot of cases. Doing it in the kernel seems to be
+> > the cleaner option. There are valid use cases for doing in u-boot too.
 > 
-> Why we can not do that?
-
-See above.  What we can do instead is:
-
-	disabled + forbidden	-> ACTIVE
-	disabled + !forbidden	-> anything
-
-which is basically what I proposed.
-
-> > This means:
-> > 
-> > 	pm_runtime_set_suspended should fail if dev->power.runtime_auto
-> > 	is clear.
+> True, if dynamic runtime stuff from userspace is what we're talking
+> about, then yeah I see the important need for kernel to do the merge.
 > 
-> I think we can WARN_ON() here.  Because the caller should responsible
-> for state consistence if they decide to manage runtime power state
-> manually.
-
-No.  Drivers should not have to worry about whether runtime PM is 
-forbidden.  Worrying about that is the PM core's job.
-
-> > 	pm_runtime_forbid should call pm_runtime_set_active if
-> > 	dev->power.disable_depth > 0.  (This would run into a problem
-> > 	if the parent is suspended and disabled.  Maybe 
-> > 	pm_runtime_forbid should fail when this happens.)
+> >> Alternatively to hashing, reading david gibsons paper I followed,
+> >> phandle is supposed to 'uniquely' identity node. I wonder why the node
+> >> name itself is not sufficient to unquiely identify. The code that does
+> >> the tree walking can then just strcmp the node name while it walks the
+> >> tree instead of having to find a node with a phandle number. I guess
+> >> the reason is phandles are small to store as data values. Another
+> >> approach can be to arrange the string block in alphabetical order
+> >> (unless it already is), and store phandle as index of the node name
+> >> referenced relative to the starting of the strong block. This will not
+> >> affect nodes in dtb being moved around since they will still have the
+> >> same index value. the problem being adding or removing nodes Changes
+> >> the offsets of all other nodes in the string block as well.. Hmm.
+> >>
+> >
+> > This is pretty radical change to the DT format, no?
 > 
-> pm_runtime_forbid() may be called via echo "on" > .../power/control.  I
-> think it is hard to refuse the request from user space to forbid runtime
-> PM.  Device can always work with full power.
+> Yes, true and the only way hypothetically to replace the phandle
+> tree-walking mechanism is to store node paths instead of phandle which
+> David pointed is too long to store, so I guess this wont work after
+> all. Anyway this was an interesting exercise, thanks.
 
-It can't if the parent is in SUSPEND.  If necessary, the user can write 
-"on" to the parent's power/control attribute first.
+They're not too long to store, but changing to paths would break years
+of existing OF practice.
 
-> > Finally, we probably should make a third change even though it isn't
-> > strictly necessary:
-> > 
-> > 	pm_runtime_allow should call pm_runtime_set_suspended if
-> > 	dev->power.disable_depth > 0.
-> 
-> I think this is something similar to manage device power state
-> automatically if disabled.
-
-Yes, it is similar but not exactly the same as your proposal.
-
-Alan Stern
-
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
