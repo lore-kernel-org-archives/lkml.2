@@ -1,189 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab2KMU1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:27:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57097 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab2KMU1U (ORCPT
+	id S932167Ab2KMU1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:27:48 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55466 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab2KMU1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:27:20 -0500
-Date: Tue, 13 Nov 2012 12:27:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] cgroup: s/CGRP_CLONE_CHILDREN/CGRP_CPUSET_CLONE_CHILDREN/
-Message-ID: <20121113202714.GA21185@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Nov 2012 15:27:45 -0500
+Message-Id: <20121113202738.875148296@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 14 Nov 2012 00:20:25 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
+        rientjes@google.com, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 2/7] fs, eventfd: Add procfs fdinfo helper
+References: <20121113202023.748833257@openvz.org>
+Content-Disposition: inline; filename=seq-fdinfo-eventfd-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6e405c1ae4018d813e8ed9e0bd463d6976aebfa8 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 13 Nov 2012 12:21:50 -0800
+This allow us to print out raw counter value.
+The /proc/pid/fdinfo/fd output is
 
-clone_children is only meaningful for cpuset and will stay that way.
-Rename the flag to reflect that and update documentation.  Also, drop
-clone_children() wrapper in cgroup.c.  The thin wrapper is used only a
-few times and one of them will go away soon.
+ | pos:	0
+ | flags:	04002
+ | eventfd-count:               5a
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 ---
-These two patches are based on top of "cgroup: allow->post_create() to
-fail" patchset.
+ fs/eventfd.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
- http://thread.gmane.org/gmane.linux.kernel.cgroups/5047
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-online-may-fail
-
-and availalbe in the following branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-remove-post_clone
-
-Thanks.
-
- Documentation/cgroups/cgroups.txt |  8 +++-----
- include/linux/cgroup.h            |  6 ++++--
- kernel/cgroup.c                   | 28 ++++++++++++----------------
- 3 files changed, 19 insertions(+), 23 deletions(-)
-
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index b06eea2..24cdf76 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -299,11 +299,9 @@ a cgroup hierarchy's release_agent path is empty.
- 1.5 What does clone_children do ?
- ---------------------------------
+Index: linux-2.6.git/fs/eventfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -19,6 +19,8 @@
+ #include <linux/export.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
  
--If the clone_children flag is enabled (1) in a cgroup, then all
--cgroups created beneath will call the post_clone callbacks for each
--subsystem of the newly created cgroup. Usually when this callback is
--implemented for a subsystem, it copies the values of the parent
--subsystem, this is the case for the cpuset.
-+This flag only affects the cpuset controller. If the clone_children
-+flag is enabled (1) in a cgroup, a new cpuset cgroup will copy its
-+configuration from the parent during initialization.
- 
- 1.6 How do I use cgroups ?
- --------------------------
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 89c631d..926d8d1 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -143,9 +143,11 @@ enum {
- 	/* Control Group requires release notifications to userspace */
- 	CGRP_NOTIFY_ON_RELEASE,
- 	/*
--	 * Clone cgroup values when creating a new child cgroup
-+	 * Clone the parent's configuration when creating a new child
-+	 * cpuset cgroup.  For historical reasons, this option can be
-+	 * specified at mount time and thus is implemented here.
- 	 */
--	CGRP_CLONE_CHILDREN,
-+	CGRP_CPUSET_CLONE_CHILDREN,
- };
- 
- struct cgroup {
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 46c5119..a49572e 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -296,11 +296,6 @@ static int notify_on_release(const struct cgroup *cgrp)
- 	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -284,7 +286,25 @@ static ssize_t eventfd_write(struct file
+ 	return res;
  }
  
--static int clone_children(const struct cgroup *cgrp)
--{
--	return test_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
--}
--
- /*
-  * for_each_subsys() allows you to iterate on each subsystem attached to
-  * an active hierarchy
-@@ -1101,7 +1096,7 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
- 		seq_puts(seq, ",xattr");
- 	if (strlen(root->release_agent_path))
- 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
--	if (clone_children(&root->top_cgroup))
-+	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &root->top_cgroup.flags))
- 		seq_puts(seq, ",clone_children");
- 	if (strlen(root->name))
- 		seq_printf(seq, ",name=%s", root->name);
-@@ -1113,7 +1108,7 @@ struct cgroup_sb_opts {
- 	unsigned long subsys_mask;
- 	unsigned long flags;
- 	char *release_agent;
--	bool clone_children;
-+	bool cpuset_clone_children;
- 	char *name;
- 	/* User explicitly requested empty subsystem */
- 	bool none;
-@@ -1164,7 +1159,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			continue;
- 		}
- 		if (!strcmp(token, "clone_children")) {
--			opts->clone_children = true;
-+			opts->cpuset_clone_children = true;
- 			continue;
- 		}
- 		if (!strcmp(token, "xattr")) {
-@@ -1474,8 +1469,8 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
- 		strcpy(root->release_agent_path, opts->release_agent);
- 	if (opts->name)
- 		strcpy(root->name, opts->name);
--	if (opts->clone_children)
--		set_bit(CGRP_CLONE_CHILDREN, &root->top_cgroup.flags);
-+	if (opts->cpuset_clone_children)
-+		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &root->top_cgroup.flags);
- 	return root;
- }
- 
-@@ -3905,7 +3900,7 @@ fail:
- static u64 cgroup_clone_children_read(struct cgroup *cgrp,
- 				    struct cftype *cft)
- {
--	return clone_children(cgrp);
-+	return test_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
- }
- 
- static int cgroup_clone_children_write(struct cgroup *cgrp,
-@@ -3913,9 +3908,9 @@ static int cgroup_clone_children_write(struct cgroup *cgrp,
- 				     u64 val)
- {
- 	if (val)
--		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
-+		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
- 	else
--		clear_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
-+		clear_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
- 	return 0;
- }
- 
-@@ -4130,8 +4125,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	if (notify_on_release(parent))
- 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
- 
--	if (clone_children(parent))
--		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
-+	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags))
-+		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
- 
- 	for_each_subsys(root, ss) {
- 		struct cgroup_subsys_state *css;
-@@ -4148,7 +4143,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 				goto err_free_all;
- 		}
- 		/* At error, ->css_free() callback has to free assigned ID. */
--		if (clone_children(parent) && ss->post_clone)
-+		if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags) &&
-+		    ss->post_clone)
- 			ss->post_clone(cgrp);
- 
- 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
--- 
-1.7.11.7
++#ifdef CONFIG_PROC_FS
++static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
++{
++	struct eventfd_ctx *ctx = f->private_data;
++	int ret;
++
++	spin_lock_irq(&ctx->wqh.lock);
++	ret = seq_printf(m, "eventfd-count: %16llx\n",
++			 (unsigned long long)ctx->count);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return ret;
++}
++#endif
++
+ static const struct file_operations eventfd_fops = {
++#ifdef CONFIG_PROC_FS
++	.show_fdinfo	= eventfd_show_fdinfo,
++#endif
+ 	.release	= eventfd_release,
+ 	.poll		= eventfd_poll,
+ 	.read		= eventfd_read,
 
