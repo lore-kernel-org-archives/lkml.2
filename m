@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab2KMLTW (ORCPT <rfc822;w@1wt.eu>);
+	id S1755061Ab2KMLTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:19:33 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58056 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2KMLTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Nov 2012 06:19:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49075 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754839Ab2KMLNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:13 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/31] mm: mempolicy: Make MPOL_LOCAL a real policy
-Date: Tue, 13 Nov 2012 11:12:38 +0000
-Message-Id: <1352805180-1607-10-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
-References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
+Date: Tue, 13 Nov 2012 12:19:12 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: i2c-ocores: Use devm_request_and_ioremap()
+Message-ID: <20121113111912.GH23119@pengutronix.de>
+References: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6b3yLyRKT1M6kiA0"
+Content-Disposition: inline
+In-Reply-To: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Make MPOL_LOCAL a real and exposed policy such that applications that
-relied on the previous default behaviour can explicitly request it.
+--6b3yLyRKT1M6kiA0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Requested-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |    9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+On Wed, Aug 08, 2012 at 08:54:32AM +0200, Thierry Reding wrote:
+> Replacing the devm_request_mem_region() and devm_ioremap_nocache() calls
+> by a single call to devm_request_and_ioremap() simplifies the code.
+>=20
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 23e62e0..3e835c9 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -20,6 +20,7 @@ enum {
- 	MPOL_PREFERRED,
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
-+	MPOL_LOCAL,
- 	MPOL_MAX,	/* always last member of enum */
- };
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 66e90ec..54bd3e5 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 			     (flags & MPOL_F_RELATIVE_NODES)))
- 				return ERR_PTR(-EINVAL);
- 		}
-+	} else if (mode == MPOL_LOCAL) {
-+		if (!nodes_empty(*nodes))
-+			return ERR_PTR(-EINVAL);
-+		mode = MPOL_PREFERRED;
- 	} else if (nodes_empty(*nodes))
- 		return ERR_PTR(-EINVAL);
- 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
-@@ -2399,7 +2403,6 @@ void numa_default_policy(void)
-  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
-  * Used only for mpol_parse_str() and mpol_to_str()
-  */
--#define MPOL_LOCAL MPOL_MAX
- static const char * const policy_modes[] =
- {
- 	[MPOL_DEFAULT]    = "default",
-@@ -2452,12 +2455,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 	if (flags)
- 		*flags++ = '\0';	/* terminate mode string */
- 
--	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
-+	for (mode = 0; mode < MPOL_MAX; mode++) {
- 		if (!strcmp(str, policy_modes[mode])) {
- 			break;
- 		}
- 	}
--	if (mode > MPOL_LOCAL)
-+	if (mode >= MPOL_MAX)
- 		goto out;
- 
- 	switch (mode) {
--- 
-1.7.9.2
+Applied to for-next, thanks.
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--6b3yLyRKT1M6kiA0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlCiLLAACgkQD27XaX1/VRuFNwCfXDSB8lTXZnfX4ylXOku7u1qW
+k8gAn3UG0vIkAzG52PJjS1E49UtSrX7p
+=horz
+-----END PGP SIGNATURE-----
+
+--6b3yLyRKT1M6kiA0--
