@@ -1,243 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab2KMWGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:06:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:60948 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab2KMWGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:06:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,768,1352102400"; 
-   d="scan'208";a="168001262"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
-Subject: RE: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
- objects
-Thread-Topic: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
- objects
-Thread-Index: AQHNwRiioOP9jIS+5UWx2cJd20NobJfn4E6AgAAVKMCAAM23gP//j3Mw
-Date: Tue, 13 Nov 2012 22:06:03 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <20121113071208.GF31759@intel.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E346BC0694@ORSMSX101.amr.corp.intel.com>
- <2586712.Jsv1H95qXQ@vostro.rjw.lan>
-In-Reply-To: <2586712.Jsv1H95qXQ@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1753618Ab2KMWIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:08:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35304 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2KMWIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:08:16 -0500
+From: Dimitar Popov <dimitar.georgiev.popov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: DMA Errors from SATA Controller with 4G Memory Remapping Enabled
+Date: Tue, 13 Nov 2012 23:08:07 +0100
+Message-ID: <1871872.oE0GX69FUF@darkstar>
+User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qADM6LvC018139
 
-I may not quite understand what you are asking for, but I will try. It seems like we already have much of what you want/need, so maybe I'm missing something.
+Hi all,
 
+I have an old computer with motherboard ASUS SK8N with AMD Opteron 148 and 4 
+GiB of DDR400. There is an onboard SATA Promise RAID controller working in IDE 
+mode (i.e. not as RAID controller) with 2 SATA disks. In order to use all 4 
+GiB RAM I need to enable the "4G Memory Remapping" option from the BIOS. 
+However, if I do that I receive the following errors:
 
+ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
+ata2.00: failed command: WRITE DMA
+[136B blob data]
+ata2.00: status: { DRDY }
+ata2: hard resetting link
+ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+ata2.00: configured for UDMA/133
+ata2.00: device reported invalid CHS sector 0
+sd 1:0:0:0: [sdb]  
+Result: hostbyte=0x00 driverbyte=0x08
+sd 1:0:0:0: [sdb]  
+Sense Key : 0xb [current] [descriptor]
+Descriptor sense data with sense descriptors (in hex):
+        72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00 
+        00 00 00 00 
+sd 1:0:0:0: [sdb]  
+ASC=0x0 ASCQ=0x0
+sd 1:0:0:0: [sdb] CDB: 
+cdb[0]=0x2a: 2a 00 00 2a 63 f0 00 00 08 00
+end_request: I/O error, dev sdb, sector 2778096
+btrfs: bdev /dev/sdb6 errs: wr 1, rd 0, flush 0, corrupt 0, gen 0
+ata2: EH complete
 
-> So what I would like to have, in general terms, is something like
-> acpi_walk_resources() split into three parts:
-> 
->  (1) One that processes the _CRS output and creates a list of
->      struct acpi_resource objects for us to play with.  I suppose
->      it's OK if that's just a buffer filled with resource objects,
->      but a linked list might be more convenient.
-> 
+I don't know if it is a bug in the BIOS or a kernel bug. Here some info (I'll 
+provide further info, if needed):
 
-This sounds like AcpiGetCurrentResources. It executes _CRS and formats the data into acpi_resource objects.
+$ uname -a
+Linux darkstar 3.6.6-1-ARCH #1 SMP PREEMPT Mon Nov 5 11:57:22 CET 2012 x86_64 
+GNU/Linux
 
+01:08.0 RAID bus controller: Promise Technology, Inc. PDC20378 (FastTrak 
+378/SATA 378) (rev 02)
+        Subsystem: ASUSTeK Computer Inc. K8V Deluxe/PC-DL Deluxe motherboard
+        Flags: bus master, 66MHz, medium devsel, latency 96, IRQ 19
+        I/O ports at dc00 [size=64]
+        I/O ports at d800 [size=16]
+        I/O ports at d400 [size=128]
+        Memory at fa9ff000 (32-bit, non-prefetchable) [size=4K]
+        Memory at fa9c0000 (32-bit, non-prefetchable) [size=128K]
+        Capabilities: [60] Power Management version 2
+        Kernel driver in use: sata_promise
 
+Thank you in advance!
 
->  (2) One that allows us to access (read/write) resources in the
->      list returned by (1).  We don't need to open code walking
->      the list and I probably wouldn't event want to do that.  What
->      we need is to be able to walk the same list for a number of
->      times and possibly to modify values in the resource objects
->      if there are conflicts.
-
-This sounds like AcpiWalkResources. I suppose a possible issue is that currently, AcpiWalkResources actually invokes the _CRS, _PRS, or _AEI method on behalf of the caller. It might make more sense to allow the caller to pass in the resource buffer returned from a call to _CRS, etc.
-
-
-> 
->  (3) One allowing us to free the list returned by (1) if not needed
->      any more.
-> 
-
-AcpiGetCurrentResources: Currently, everything is returned in a single buffer to minimize the number of allocations. A buffer you can free when you are done with it.
-
-I think I saw where you mentioned that you cannot copy this buffer because of internal pointers to other areas of the buffer. Yes. However, we can build linked lists all day if you really want them :-)
-
-
-> And it would be great if we could take the list returned by (1), modify
-> the resources in it and feed it back to _SRS (after conversion back to the
-> format that _SRS understands).
-> 
-
-AcpiSetCurrentResources.
-
-The AML debugger already has a command that illustrates the use of the various resource interfaces, see dbcmds.c
-
-> Thanks,
-> Rafael
-
-Bob
-
-
-
-
-
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Tuesday, November 13, 2012 12:44 PM
-> To: Moore, Robert
-> Cc: Mika Westerberg; mathias.nyman@linux.intel.com; linux-
-> acpi@vger.kernel.org; linux-kernel@vger.kernel.org; lenb@kernel.org;
-> Wysocki, Rafael J; broonie@opensource.wolfsonmicro.com;
-> grant.likely@secretlab.ca; linus.walleij@linaro.org; khali@linux-fr.org;
-> Bjorn Helgaas; Zheng, Lv
-> Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
-> objects
-> 
-> On Tuesday, November 13, 2012 04:34:07 PM Moore, Robert wrote:
-> > > I suppose we can just do acpi_get_current_resources() and play with
-> > > the buffer returned by it.  That won't be nice, but still better
-> > > than what we have.
-> >
-> > A couple of the reasons we created the ACPICA resource manager was to:
-> > 1) Simplify host access to the various resource fields, especially
-> packed flags.
-> > 2) Avoid alignment issues, especially on machines that don't support
-> misaligned transfers.
-> 
-> That's fine.
-> 
-> > If there are issues with the current resource manager, we can discuss
-> them.
-> > But I would hope that you really don't want to be fussing around with
-> > the raw data coming back from the AML.
-> 
-> No, I don't. :-)
-> 
-> I'd like to be able to do more things with struct acpi_resource objects.
-> 
-> Pretty much the output of acpi_get_current_resources() is what I'm
-> interested in, but there doesn't seem to be any convenient way to access
-> things in the return buffer from the outside of ACPICA now.
-> 
-> > It is not pretty and we have gone to some lengths to make the entire
-> > conversion table-driven to minimize bugs and simplify maintenance.
-> 
-> OK
-> 
-> So what I would like to have, in general terms, is something like
-> acpi_walk_resources() split into three parts:
-> 
->  (1) One that processes the _CRS output and creates a list of
->      struct acpi_resource objects for us to play with.  I suppose
->      it's OK if that's just a buffer filled with resource objects,
->      but a linked list might be more convenient.
-> 
->  (2) One that allows us to access (read/write) resources in the
->      list returned by (1).  We don't need to open code walking
->      the list and I probably wouldn't event want to do that.  What
->      we need is to be able to walk the same list for a number of
->      times and possibly to modify values in the resource objects
->      if there are conflicts.
-> 
->  (3) One allowing us to free the list returned by (1) if not needed
->      any more.
-> 
-> And it would be great if we could take the list returned by (1), modify
-> the resources in it and feed it back to _SRS (after conversion back to the
-> format that _SRS understands).
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > > -----Original Message-----
-> > > From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> > > Sent: Monday, November 12, 2012 11:12 PM
-> > > To: Rafael J. Wysocki
-> > > Cc: mathias.nyman@linux.intel.com; linux-acpi@vger.kernel.org;
-> > > linux- kernel@vger.kernel.org; lenb@kernel.org; Wysocki, Rafael J;
-> > > broonie@opensource.wolfsonmicro.com; grant.likely@secretlab.ca;
-> > > linus.walleij@linaro.org; khali@linux-fr.org; Bjorn Helgaas; Moore,
-> > > Robert
-> > > Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device
-> > > node objects
-> > >
-> > > On Mon, Nov 12, 2012 at 10:03:56PM +0100, Rafael J. Wysocki wrote:
-> > > > > > +static acpi_status acpi_bus_add_resource(struct acpi_resource
-> *res,
-> > > > > > +					 void *context)
-> > > > > > +{
-> > > > > > +	struct list_head *list = context;
-> > > > > > +	struct acpi_resource_list_entry *entry;
-> > > > > > +
-> > > > > > +	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-> > > > > > +	if (!entry)
-> > > > > > +		return AE_NO_MEMORY;
-> > > > > > +
-> > > > > > +	entry->resource = *res;
-> > > > >
-> > > > > This does not work well with all resource types - specifically
-> > > > > those that contain pointers, like acpi_resource_gpio and
-> > > acpi_resource_source.
-> > > >
-> > > > Good point.
-> > > >
-> > > > Well, this pretty much means we can't copy those things.
-> > >
-> > > Yeah. I only noticed this yesterday when I tested the GPIO
-> > > translation in a custom driver (since it uses the acpi_resource_gpio).
-> > >
-> > > > > The memory for the resources gets freed once
-> > > > > acpi_walk_resources() is
-> > > done.
-> > > >
-> > > > I know that.
-> > > >
-> > > > Having to evaluate _CRS and creating a buffer, converting the
-> > > > output into ACPI resources and so on every time we need to look
-> > > > into the device's current resources is totally inefficient.  We
-> > > > _need_ to cache
-> > > the _CRS output.
-> > >
-> > > I agree and besides having adev->resources is much easier to use
-> > > than calling acpi_walk_resources() everytime.
-> > >
-> > > > Now, because of the pointers in certain types of resources, we
-> > > > can't make copies of the resource objects used by
-> > > > acpi_walk_resources() which makes that function totally unuseful to
-> us.
-> > > >
-> > > > I suppose we can just do acpi_get_current_resources() and play
-> > > > with the buffer returned by it.  That won't be nice, but still
-> > > > better than what we have.
-> > >
-> > > I don't know any better option.
-> > >
-> > > Thanks.
-> >
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+Dimitar
