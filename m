@@ -1,139 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab2KMROX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:14:23 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab2KMROW (ORCPT
+	id S1755382Ab2KMROb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:14:31 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49028 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907Ab2KMRO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:14:22 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
+	Tue, 13 Nov 2012 12:14:27 -0500
+Date: Tue, 13 Nov 2012 21:14:22 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 00/31] Latest numa/core patches, v15
-Date: Tue, 13 Nov 2012 18:13:23 +0100
-Message-Id: <1352826834-11774-1-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
+        linux-kernel@vger.kernel.org
+Subject: Re: + fs-epoll-add-procfs-fdinfo-helper.patch added to -mm tree
+Message-ID: <20121113171422.GM7808@moon>
+References: <20121113145050.GA13691@redhat.com>
+ <20121113155313.GU6511@moon>
+ <20121113162056.GK7808@moon>
+ <20121113164951.GA18665@redhat.com>
+ <20121113170159.GW6511@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113170159.GW6511@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Nov 13, 2012 at 09:01:59PM +0400, Cyrill Gorcunov wrote:
+> 
+> As from c/r patch I think we can read it lockless (since we do stop
+> tasks anyway before doing checkpoint). So I would prefer to provide
+> it without locks at all.
 
-This is the latest iteration of our numa/core tree, which
-implements adaptive NUMA affinity balancing.
-
-Changes in this version:
-
-    https://lkml.org/lkml/2012/11/12/315
-
-Performance figures:
-
-    https://lkml.org/lkml/2012/11/12/330
-
-Any review feedback, comments and test results are welcome!
-
-For testing purposes I'd suggest using the latest tip:master
-integration tree, which has the latest numa/core tree merged:
-
-   git pull git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
-
-(But you can also directly use the tip:numa/core tree as well.)
-
-Thanks,
-
-    Ingo
-
------------------------>
-Andrea Arcangeli (1):
-  numa, mm: Support NUMA hinting page faults from gup/gup_fast
-
-Gerald Schaefer (1):
-  sched, numa, mm, s390/thp: Implement pmd_pgprot() for s390
-
-Ingo Molnar (3):
-  mm/pgprot: Move the pgprot_modify() fallback definition to mm.h
-  sched, mm, x86: Add the ARCH_SUPPORTS_NUMA_BALANCING flag
-  mm: Allow the migration of shared pages
-
-Lee Schermerhorn (3):
-  mm/mpol: Add MPOL_MF_NOOP
-  mm/mpol: Check for misplaced page
-  mm/mpol: Add MPOL_MF_LAZY
-
-Peter Zijlstra (16):
-  sched, numa, mm: Make find_busiest_queue() a method
-  sched, numa, mm: Describe the NUMA scheduling problem formally
-  mm/thp: Preserve pgprot across huge page split
-  mm/mpol: Make MPOL_LOCAL a real policy
-  mm/mpol: Create special PROT_NONE infrastructure
-  mm/migrate: Introduce migrate_misplaced_page()
-  mm/mpol: Use special PROT_NONE to migrate pages
-  sched, numa, mm: Introduce sched_feat_numa()
-  sched, numa, mm: Implement THP migration
-  sched, numa, mm: Add last_cpu to page flags
-  sched, numa, mm, arch: Add variable locality exception
-  sched, numa, mm: Add the scanning page fault machinery
-  sched, numa, mm: Add adaptive NUMA affinity support
-  sched, numa, mm: Implement constant, per task Working Set Sampling (WSS) rate
-  sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
-  sched, numa, mm: Implement slow start for working set sampling
-
-Ralf Baechle (1):
-  sched, numa, mm, MIPS/thp: Add pmd_pgprot() implementation
-
-Rik van Riel (6):
-  mm/generic: Only flush the local TLB in ptep_set_access_flags()
-  x86/mm: Only do a local tlb flush in ptep_set_access_flags()
-  x86/mm: Introduce pte_accessible()
-  mm: Only flush the TLB when clearing an accessible pte
-  x86/mm: Completely drop the TLB flush from ptep_set_access_flags()
-  sched, numa, mm: Add credits for NUMA placement
-
+Something like this. (Also I wonder where the documentation about
+fdinfo should go?)
 ---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: fdinfo: Show sigmask for signalfd fd v3
 
- CREDITS                                  |    1 +
- Documentation/scheduler/numa-problem.txt |  236 +++++++++++
- arch/mips/include/asm/pgtable.h          |    2 +
- arch/s390/include/asm/pgtable.h          |   13 +
- arch/sh/mm/Kconfig                       |    1 +
- arch/x86/Kconfig                         |    1 +
- arch/x86/include/asm/pgtable.h           |    7 +
- arch/x86/mm/pgtable.c                    |    8 +-
- include/asm-generic/pgtable.h            |    4 +
- include/linux/huge_mm.h                  |   19 +
- include/linux/hugetlb.h                  |    8 +-
- include/linux/init_task.h                |    8 +
- include/linux/mempolicy.h                |    8 +
- include/linux/migrate.h                  |    7 +
- include/linux/migrate_mode.h             |    3 +
- include/linux/mm.h                       |  122 ++++--
- include/linux/mm_types.h                 |   10 +
- include/linux/mmzone.h                   |   14 +-
- include/linux/page-flags-layout.h        |   83 ++++
- include/linux/sched.h                    |   46 ++-
- include/uapi/linux/mempolicy.h           |   16 +-
- init/Kconfig                             |   23 ++
- kernel/bounds.c                          |    2 +
- kernel/sched/core.c                      |   68 +++-
- kernel/sched/fair.c                      | 1032 ++++++++++++++++++++++++++++++++++++++++---------
- kernel/sched/features.h                  |    8 +
- kernel/sched/sched.h                     |   38 +-
- kernel/sysctl.c                          |   45 ++-
- mm/huge_memory.c                         |  253 +++++++++---
- mm/hugetlb.c                             |   10 +-
- mm/memory.c                              |  129 ++++++-
- mm/mempolicy.c                           |  206 ++++++++--
- mm/migrate.c                             |   81 +++-
- mm/mprotect.c                            |   64 ++-
- mm/pgtable-generic.c                     |    9 +-
- 35 files changed, 2200 insertions(+), 385 deletions(-)
- create mode 100644 Documentation/scheduler/numa-problem.txt
- create mode 100644 include/linux/page-flags-layout.h
+The sigmask is read in lockless manner for a sake of
+code simplicity, thus if precise data needed here
+the tasks which refer to the signalfd should be
+stopped before read.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/proc/array.c         |    2 +-
+ fs/signalfd.c           |   18 ++++++++++++++++++
+ include/linux/proc_fs.h |    3 +++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -220,7 +220,7 @@ static inline void task_state(struct seq
+ 	seq_putc(m, '\n');
+ }
+ 
+-static void render_sigset_t(struct seq_file *m, const char *header,
++void render_sigset_t(struct seq_file *m, const char *header,
+ 				sigset_t *set)
+ {
+ 	int i;
+Index: linux-2.6.git/fs/signalfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/signalfd.c
++++ linux-2.6.git/fs/signalfd.c
+@@ -29,6 +29,7 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
++#include <linux/proc_fs.h>
+ 
+ void signalfd_cleanup(struct sighand_struct *sighand)
+ {
+@@ -227,7 +228,24 @@ static ssize_t signalfd_read(struct file
+ 	return total ? total: ret;
+ }
+ 
++#ifdef CONFIG_PROC_FS
++static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
++{
++	struct signalfd_ctx *ctx = f->private_data;
++	sigset_t sigmask;
++
++	sigmask = ctx->sigmask;
++	signotset(&sigmask);
++	render_sigset_t(m, "sigmask:\t", &sigmask);
++
++	return 0;
++}
++#endif
++
+ static const struct file_operations signalfd_fops = {
++#ifdef CONFIG_PROC_FS
++	.show_fdinfo	= signalfd_show_fdinfo,
++#endif
+ 	.release	= signalfd_release,
+ 	.poll		= signalfd_poll,
+ 	.read		= signalfd_read,
+Index: linux-2.6.git/include/linux/proc_fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/proc_fs.h
++++ linux-2.6.git/include/linux/proc_fs.h
+@@ -290,4 +290,7 @@ static inline struct net *PDE_NET(struct
+ 	return pde->parent->data;
+ }
+ 
++#include <linux/signal.h>
++
++void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
+ #endif /* _LINUX_PROC_FS_H */
