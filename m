@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2KMItZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:49:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:59638 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2KMItV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:49:21 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-86-50a2099024ce
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 2/3] regulator: threat regulators with constant volatage as
- fixed
-Date: Tue, 13 Nov 2012 09:48:52 +0100
-Message-id: <1352796533-12350-3-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1352796533-12350-1-git-send-email-m.szyprowski@samsung.com>
-References: <1352796533-12350-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jQd0JnIsCDFr3Slpc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ2/ZrDXPCRreL9z8wGxqesXYwcHBICJhKv/up2MXIC
-	mWISF+6tZ+ti5OIQEpjOKNH4cT8rhNPOJNG/5gMTSBWbgKFE19suNpBmEQFrib0LfUFqmAVO
-	M0pMmrWdDaRGWCBY4sPnf+wgNSwCqhLfZrCChHkFPCSOLjnHCLFXQWLOJBuQMKeAp8Sq/kvM
-	ILYQUMm65a+ZJjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kR7PVn0jsYVzVYHGIU
-	4GBU4uFVtFwYIMSaWFZcmXuIUYKDWUmE17weKMSbklhZlVqUH19UmpNafIhRmoNFSZy32SMl
-	QEggPbEkNTs1tSC1CCbLxMEp1cDozZwu3BTInn+24/oDW9X5+nNeS4Yad/OcZnIJdetk+FF1
-	onhKBhvnUsa1W+Xfxy3K2GDlcvNCzHNZOb6OdTlLjMX2nF7Bct6xuP7Bgj1WB/+brJ1h7Ngm
-	t3Zun2JD4+Fpu/oDzjRkc97aXjlN11NHa1uI+LPsN72Vx+ImsnNIPJrx5lL5tklKLMUZiYZa
-	zEXFiQCcSRKy9gEAAA==
+	id S1754098Ab2KMItl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:49:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754339Ab2KMIti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:49:38 -0500
+Date: Tue, 13 Nov 2012 09:49:32 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@localhost
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Lukas Czerner <lczerner@redhat.com>, axboe@kernel.dk, dchinner@redhat.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
+In-Reply-To: <20121108111418.bcaad11d.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1211130944560.3577@localhost>
+References: <1350379305-13858-1-git-send-email-lczerner@redhat.com> <20121108111418.bcaad11d.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers has additional logic for fixed regulators. Let regulator core
-to threat regulators which cannot change their voltage due to applied
-constraints as fixed.
+On Thu, 8 Nov 2012, Andrew Morton wrote:
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/regulator/core.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> Date: Thu, 8 Nov 2012 11:14:18 -0800
+> From: Andrew Morton <akpm@linux-foundation.org>
+> To: Lukas Czerner <lczerner@redhat.com>
+> Cc: axboe@kernel.dk, dchinner@redhat.com, jmoyer@redhat.com,
+>     linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
+> 
+> On Tue, 16 Oct 2012 11:21:45 +0200
+> Lukas Czerner <lczerner@redhat.com> wrote:
+> 
+> > Currently there is not limitation of number of requests in the loop bio
+> > list. This can lead into some nasty situations when the caller spawns
+> > tons of bio requests taking huge amount of memory. This is even more
+> > obvious with discard where blkdev_issue_discard() will submit all bios
+> > for the range and wait for them to finish afterwards. On really big loop
+> > devices and slow backing file system this can lead to OOM situation as
+> > reported by Dave Chinner.
+> > 
+> > With this patch we will wait in loop_make_request() if the number of
+> > bios in the loop bio list would exceed 'nr_requests' number of requests.
+> > We'll wake up the process as we process the bios form the list. Some
+> > threshold hysteresis is in place to avoid high frequency oscillation.
+> > 
+> 
+> What's happening with this?
+> 
+> > --- a/drivers/block/loop.c
+> > +++ b/drivers/block/loop.c
+> > @@ -463,6 +463,7 @@ out:
+> >   */
+> >  static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+> >  {
+> > +	lo->lo_bio_count++;
+> >  	bio_list_add(&lo->lo_bio_list, bio);
+> >  }
+> >  
+> > @@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+> >   */
+> >  static struct bio *loop_get_bio(struct loop_device *lo)
+> >  {
+> > +	lo->lo_bio_count--;
+> >  	return bio_list_pop(&lo->lo_bio_list);
+> >  }
+> >  
+> > @@ -489,6 +491,14 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+> >  		goto out;
+> >  	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+> >  		goto out;
+> > +	if (lo->lo_bio_count >= lo->lo_queue->nr_requests) {
+> > +		unsigned int nr;
+> > +		spin_unlock_irq(&lo->lo_lock);
+> > +		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
+> > +		wait_event_interruptible(lo->lo_req_wait,
+> > +					 lo->lo_bio_count < nr);
+> > +		spin_lock_irq(&lo->lo_lock);
+> > +	}
+> 
+> Two things.
+> 
+> a) wait_event_interruptible() will return immediately if a signal is
+>    pending (eg, someone hit ^C).  This is not the behaviour you want. 
+>    If the calling process is always a kernel thread then
+>    wait_event_interruptible() is OK and is the correct thing to use. 
+>    Otherwise, it will need to be an uninterruptible sleep.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 042c1ff..271182e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1872,7 +1872,10 @@ int regulator_count_voltages(struct regulator *regulator)
- {
- 	struct regulator_dev	*rdev = regulator->rdev;
- 
--	return rdev->desc->n_voltages ? : -EINVAL;
-+	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)
-+		return rdev->desc->n_voltages ? : -EINVAL;
-+	else
-+		return 1;
- }
- EXPORT_SYMBOL_GPL(regulator_count_voltages);
- 
--- 
-1.7.9.5
+Understood, I'll fix that.
 
+> 
+> b) Why is it safe to drop lo_lock here?  What data is that lock protecting?
+> 
+
+It is protecting the bio list, lo state, backing file so I think it
+is perfectly safe to drop the lock there.
+
+Thanks!
+-Lukas
