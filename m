@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab2KMGUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:20:24 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63032 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab2KMGUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:20:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <50A1DFE1.3070809@jp.fujitsu.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
-	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
-	<1352755122-25660-3-git-send-email-yinghai@kernel.org>
-	<50A1DFE1.3070809@jp.fujitsu.com>
-Date: Mon, 12 Nov 2012 22:20:20 -0800
-X-Google-Sender-Auth: zstzkyn1lwCDogHnmdZLl7lQ788
-Message-ID: <CAE9FiQXx6p58T9B3df6waBUsywDd9NkZ5FsxMt5kjJ8hQmZqbw@mail.gmail.com>
-Subject: Re: [PATCH 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
-From: Yinghai Lu <yinghai@kernel.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751584Ab2KMGdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:33:36 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47382 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750779Ab2KMGdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 01:33:35 -0500
+Message-ID: <1352788416.24230.6.camel@joe-AO722>
+Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
+From: Joe Perches <joe@perches.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Mon, 12 Nov 2012 22:33:36 -0800
+In-Reply-To: <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 9:51 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> 2012/11/13 6:17, Yinghai Lu wrote:
->> +     nr_range = 0;
->
-> This is unnecessary since it is set in the below.
->
->> +     nr_range = split_mem_range(mr, nr_range, start, end);
-                                                             ^^^^^^^^
+On Mon, 2012-11-12 at 14:03 -0800, Jacob Pan wrote:
+> Intel PowerClamp driver performs synchronized idle injection across
+> all online CPUs. The goal is to maintain a given package level C-state
+> ratio.
+
+style trivia:
+
+[]
+
+> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+[]
+> +
+> +/* #define DEBUG */
+> +
+
+Adding this #define before any #include
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+
+[]
+
+> +static int window_size_set(const char *arg, const struct kernel_param *kp)
+> +{
+[]
+> +	if (new_window_size >= 10 || new_window_size < 2) {
+> +		pr_err("PowerClamp: invalid window size %lu, between 2-10\n",
+> +			new_window_size);
+
+Means there's no need for "PowerClamp: " prefixes with pr_fmt
+
+		pr_err("invalid window size %lu...
+
+and all the other pr_<level> uses get prefixed too.
+
+> +static u64 pkg_state_counter(void)
+> +{
+> +	u64 val;
+> +	u64 count = 0;
+> +
+> +	static int skip_c2;
+> +	static int skip_c3;
+> +	static int skip_c6;
+> +	static int skip_c7;
+
+bool?
+
+
