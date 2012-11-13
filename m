@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab2KMShJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:37:09 -0500
-Received: from tex.lwn.net ([70.33.254.29]:44368 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab2KMShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:37:07 -0500
-Date: Tue, 13 Nov 2012 11:38:53 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 1/3] mm: Add VM pressure notifications
-Message-ID: <20121113113853.56d71f27@lwn.net>
-In-Reply-To: <20121107110128.GA30462@lizard>
-References: <20121107105348.GA25549@lizard>
-	<20121107110128.GA30462@lizard>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1755566Ab2KMShm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:37:42 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:38094 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413Ab2KMShl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:37:41 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjmxAGGRolBV5h1yPGdsb2JhbABEhTEjhQC4JgIBfhkBAQEBHxkNJ4IeAQEEATocIwULCANGFCUKGogXCqolkDAUjQ+BfoJ8YQOVe4V7g06Jaw
+X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
+   d="scan'208";a="445286468"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 13 Nov 2012 19:43:57 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 13/13] HID: hid-multitouch: forwards ABS_SCAN_TIME
+Message-ID: <20121113184357.GA3635@polaris.bitmath.org>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-14-git-send-email-benjamin.tissoires@gmail.com>
+ <50A25990.6040302@gmail.com>
+ <20121113172711.GA856@polaris.bitmath.org>
+ <CAN+gG=HdOqVu1M2pycMZUBd4Z7wK9Bx=NLkCaaFwFie1-E3tdQ@mail.gmail.com>
+ <20121113182825.GA3627@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113182825.GA3627@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012 03:01:28 -0800
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+> To conclude, we obviously have devices with a rather short wrap-around
+> time. However, since the normal inter-frame time is in the millisecond
+> range, it should not be overly restrictive to change the definition of
+> the minimum wraparound time from hours to seconds.
 
-> This patch introduces vmpressure_fd() system call. The system call creates
-> a new file descriptor that can be used to monitor Linux' virtual memory
-> management pressure.
+Sorry, Benjamin, you are right about the counter. To be useful, we do
+need to know the number of bits of the counter, so that differences
+can be computed properly. In other words, either ABS_SCAN_TIME is
+be the better choice, or we need to make sure that the counter wraps
+on the full 32 bit boundary.
 
-I noticed a couple of quick things as I was looking this over...
-
-> +static ssize_t vmpressure_read(struct file *file, char __user *buf,
-> +			       size_t count, loff_t *ppos)
-> +{
-> +	struct vmpressure_watch *watch = file->private_data;
-> +	struct vmpressure_event event;
-> +	int ret;
-> +
-> +	if (count < sizeof(event))
-> +		return -EINVAL;
-> +
-> +	ret = wait_event_interruptible(watch->waitq,
-> +				       atomic_read(&watch->pending));
-
-Would it make sense to support non-blocking reads?  Perhaps a process would
-like to simply know that current pressure level?
-
-> +SYSCALL_DEFINE1(vmpressure_fd, struct vmpressure_config __user *, config)
-> +{
-> +	struct vmpressure_watch *watch;
-> +	struct file *file;
-> +	int ret;
-> +	int fd;
-> +
-> +	watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-> +	if (!watch)
-> +		return -ENOMEM;
-> +
-> +	ret = copy_from_user(&watch->config, config, sizeof(*config));
-> +	if (ret)
-> +		goto err_free;
-
-This is wrong - you'll return the number of uncopied bytes to user space.
-You'll need a "ret = -EFAULT;" in there somewhere.
-
-jon
+Henrik
