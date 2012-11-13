@@ -1,52 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab2KMRSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:18:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19516 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932226Ab2KMRSt (ORCPT
+	id S932251Ab2KMRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:15:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54588 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab2KMRPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:18:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 13 Nov 2012 09:18:47 -0800
-Message-ID: <50A28055.7040606@nvidia.com>
-Date: Tue, 13 Nov 2012 22:46:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: core: Add locked version of regulator_put
- to	avoid deadlock
-References: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com> <20121106111256.GA2512@opensource.wolfsonmicro.com> <20121106113138.GB10080@opensource.wolfsonmicro.com> <20121113163040.GA19089@opensource.wolfsonmicro.com>
-In-Reply-To: <20121113163040.GA19089@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 12:15:20 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 18/31] mm/mpol: Use special PROT_NONE to migrate pages
+Date: Tue, 13 Nov 2012 18:13:41 +0100
+Message-Id: <1352826834-11774-19-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012 10:00 PM, Charles Keepax wrote:
-> When regulator_register fails and exits through the scrub path the
-> regulator_put function was called whilst holding the
-> regulator_list_mutex, which is also locked from regulator_put, causing
-> deadlock.
->
-> This patch adds a locked version of the regulator_put function which can
-> be safely called whilst holding the mutex, replacing the aforementioned
-> call.
->
-> Signed-off-by: Charles Keepax<ckeepax@opensource.wolfsonmicro.com>
-> Cc: Laxman Dewangan<ldewangan@nvidia.com>
-> ---
->
-> I hope this isn't bad etiquette but I took the liberaty of fixing up
-> the patch as per the comments and taking into account the removal of
-> my original patch. Apologies if this is not the done thing, do let
-> me know if you would rather submit a version yourself but I
-> thought best to address the issue and get a fix in.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-This looks fine.
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Combine our previous PROT_NONE, mpol_misplaced and
+migrate_misplaced_page() pieces into an effective migrate on fault
+scheme.
+
+Note that (on x86) we rely on PROT_NONE pages being !present and avoid
+the TLB flush from try_to_unmap(TTU_MIGRATION). This greatly improves
+the page-migration performance.
+
+Suggested-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Paul Turner <pjt@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Link: http://lkml.kernel.org/n/tip-e98gyl8kr9jzooh2s4piuils@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c | 41 +++++++++++++++++++++++++++++++++++-
+ mm/memory.c      | 63 ++++++++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 85 insertions(+), 19 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 6924edf..c4c0a57 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -18,6 +18,7 @@
+ #include <linux/freezer.h>
+ #include <linux/mman.h>
+ #include <linux/pagemap.h>
++#include <linux/migrate.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -741,12 +742,48 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			   unsigned int flags, pmd_t entry)
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct page *page = NULL;
++	int node;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, entry)))
+ 		goto out_unlock;
+ 
+-	/* do fancy stuff */
++	if (unlikely(pmd_trans_splitting(entry))) {
++		spin_unlock(&mm->page_table_lock);
++		wait_split_huge_page(vma->anon_vma, pmd);
++		return;
++	}
++
++#ifdef CONFIG_NUMA
++	page = pmd_page(entry);
++	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
++
++	get_page(page);
++	spin_unlock(&mm->page_table_lock);
++
++	/*
++	 * XXX should we serialize against split_huge_page ?
++	 */
++
++	node = mpol_misplaced(page, vma, haddr);
++	if (node == -1)
++		goto do_fixup;
++
++	/*
++	 * Due to lacking code to migrate thp pages, we'll split
++	 * (which preserves the special PROT_NONE) and re-take the
++	 * fault on the normal pages.
++	 */
++	split_huge_page(page);
++	put_page(page);
++	return;
++
++do_fixup:
++	spin_lock(&mm->page_table_lock);
++	if (unlikely(!pmd_same(*pmd, entry)))
++		goto out_unlock;
++#endif
+ 
+ 	/* change back to regular protection */
+ 	entry = pmd_modify(entry, vma->vm_page_prot);
+@@ -755,6 +792,8 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
++	if (page)
++		put_page(page);
+ }
+ 
+ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+diff --git a/mm/memory.c b/mm/memory.c
+index a660fd0..0d26a28 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -57,6 +57,7 @@
+ #include <linux/swapops.h>
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
++#include <linux/migrate.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -1467,8 +1468,10 @@ EXPORT_SYMBOL_GPL(zap_vma_ptes);
+ static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
+ {
+ 	/*
+-	 * If we have the normal vma->vm_page_prot protections we're not a
+-	 * 'special' PROT_NONE page.
++	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
++	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
++	 * VMAs should never get here, because the fault handling code
++	 * will notice that the VMA has no read or write permissions.
+ 	 *
+ 	 * This means we cannot get 'special' PROT_NONE faults from genuine
+ 	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
+@@ -3473,35 +3476,59 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pte_t *ptep, pmd_t *pmd,
+ 			unsigned int flags, pte_t entry)
+ {
++	struct page *page = NULL;
++	int node, page_nid = -1;
+ 	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	if (!pte_unmap_same(mm, pmd, ptep, entry))
+-		goto out;
+ 
+-	/*
+-	 * Do fancy stuff...
+-	 */
+-
+-	/*
+-	 * OK, nothing to do,.. change the protection back to what it
+-	 * ought to be.
+-	 */
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
+ 	if (unlikely(!pte_same(*ptep, entry)))
+-		goto unlock;
++		goto out_unlock;
+ 
++	page = vm_normal_page(vma, address, entry);
++	if (page) {
++		get_page(page);
++		page_nid = page_to_nid(page);
++		node = mpol_misplaced(page, vma, address);
++		if (node != -1)
++			goto migrate;
++	}
++
++out_pte_upgrade_unlock:
+ 	flush_cache_page(vma, address, pte_pfn(entry));
+ 
+ 	ptep_modify_prot_start(mm, address, ptep);
+ 	entry = pte_modify(entry, vma->vm_page_prot);
+ 	ptep_modify_prot_commit(mm, address, ptep, entry);
+ 
++	/* No TLB flush needed because we upgraded the PTE */
++
+ 	update_mmu_cache(vma, address, ptep);
+-unlock:
++
++out_unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+ out:
+-	return ret;
++	if (page)
++		put_page(page);
++
++	return 0;
++
++migrate:
++	pte_unmap_unlock(ptep, ptl);
++
++	if (!migrate_misplaced_page(page, node)) {
++		page_nid = node;
++		goto out;
++	}
++
++	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	if (!pte_same(*ptep, entry)) {
++		put_page(page);
++		page = NULL;
++		goto out_unlock;
++	}
++
++	goto out_pte_upgrade_unlock;
+ }
+ 
+ /*
+-- 
+1.7.11.7
+
