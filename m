@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab2KMIan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:30:43 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:56398 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab2KMIaN (ORCPT
+	id S932176Ab2KMIal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:30:41 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17574 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab2KMIaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Nov 2012 03:30:13 -0500
-Message-ID: <50A20512.10805@suse.cz>
-Date: Tue, 13 Nov 2012 09:30:10 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Nov 2012 00:30:07 -0800
+Message-ID: <50A204FD.9030602@nvidia.com>
+Date: Tue, 13 Nov 2012 16:29:49 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Sound+USB: deadlock problem
-References: <50A20429.3020109@suse.cz> <s5ha9ulx5xe.wl%tiwai@suse.de>
-In-Reply-To: <s5ha9ulx5xe.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A1FA7C.4010507@nvidia.com> <20121113075247.GB8409@avionic-0098.mockup.avionic-design.de> <50A1FE2F.8000107@nvidia.com> <20121113080456.GB15983@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121113080456.GB15983@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 09:28 AM, Takashi Iwai wrote:
-> At Tue, 13 Nov 2012 09:26:17 +0100,
-> Jiri Slaby wrote:
->>
->> Hello,
->>
->> I've just plugged+unplugged+plugged my USB audio card and the audio
->> subsystem got stuck:
+On 11/13/2012 04:04 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 > 
-> Which kernel?  If it's older than 3.7-rc5, could you try 3.7-rc5?
+> On Tue, Nov 13, 2012 at 04:00:47PM +0800, Mark Zhang wrote:
+>> On 11/13/2012 03:52 PM, Thierry Reding wrote:
+>>>> Old Signed by an unknown key
+>>>
+>>> On Tue, Nov 13, 2012 at 03:45:00PM +0800, Mark Zhang wrote:
+>>>> On 11/09/2012 09:20 PM, Thierry Reding wrote:
+>>>>> @@ -116,6 +122,9 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+>>>>>         { "sbc2",       "pll_p",        100000000,      false },
+>>>>>         { "sbc3",       "pll_p",        100000000,      false },
+>>>>>         { "sbc4",       "pll_p",        100000000,      false },
+>>>>> +       { "host1x",     "pll_c",        144000000,      false },
+>>>>> +       { "disp1",      "pll_p",        600000000,      false },
+>>>>> +       { "disp2",      "pll_p",        600000000,      false },
+>>>>
+>>>> I think here the parent of disp2 should be "pll_d_out0", not "pll_p".
+>>>> Right now pll_p has not a proper clock setting to make 148.5MHz 1080p
+>>>> HDMI happy. In addition, you add the 297MHz in pll_d frequency table
+>>>> next and I think this is for disp2 has a proper clock rate to support HDMI.
+>>> [...]
+>>>>> @@ -1051,6 +1053,9 @@ static struct clk_duplicate tegra_clk_duplicates[] = {
+>>>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.1", "fast-clk"),
+>>>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
+>>>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
+>>>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
+>>>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
+>>>>> +       CLK_DUPLICATE("pll_d_out0", "tegra-hdmi", "parent"),
+>>>>>  };
+>>>>
+>>>> The same with my above comments, the tegra-dc.1's parent should be
+>>>> pll_d_out0.
+>>>
+>>> The way this works is that for HDMI it is required that the DC and HDMI
+>>> blocks have the same parent. So what really happens is that once you
+>>> setup one of the DCs to work with HDMI, its clock will automatically be
+>>> reparented to the HDMI parent clock, which in this case is "pll_d_out0".
+>>>
+>>
+>> Are you sure about this? Is this a hardware feature? I know the dc and
+>> hdmi controller should have the same clock parent but I think this
+>> should be ensured by device driver...
+> 
+> It's implemented in tegra_output_hdmi_setup_clock().
+> 
 
-Oh, forgot to mention:
-3.7.0-rc5-next-20121112_64+
+I see. Okay, thanks a lot.
 
-thanks,
--- 
-js
-suse labs
+> Thierry
+> 
+> * Unknown Key
+> * 0x7F3EB3A1
+> 
