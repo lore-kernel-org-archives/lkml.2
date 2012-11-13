@@ -1,136 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2KMAgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:36:24 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:36630 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab2KMAgX (ORCPT
+	id S1753373Ab2KMAgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:36:50 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51290 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab2KMAgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:36:23 -0500
+	Mon, 12 Nov 2012 19:36:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121112152342.ce90052a.akpm@linux-foundation.org>
-References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
-	<1352737915-30906-4-git-send-email-js1304@gmail.com>
-	<20121112152342.ce90052a.akpm@linux-foundation.org>
-Date: Tue, 13 Nov 2012 09:36:22 +0900
-Message-ID: <CAAmzW4NbwztA_bGoJ9y11n9BiznW6hX-dnHt3MrCfiWnDYZ9UQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] bootmem: fix wrong call parameter for free_bootmem()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Mon, 12 Nov 2012 22:36:47 -0200
+Message-ID: <CACnwZYd2kPaK1urLYc8BBuuqD7_Oo1oF+KvqWYj7DAEGy6grHQ@mail.gmail.com>
+Subject: xfs: Remove boolean_t typedef completely.
+From: Thiago Farina <tfransosi@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux list <linux-kernel@vger.kernel.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Content-Type: multipart/mixed; boundary=f46d04016d4df49e3204ce559c45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andrew.
+--f46d04016d4df49e3204ce559c45
+Content-Type: text/plain; charset=UTF-8
 
-2012/11/13 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue, 13 Nov 2012 01:31:55 +0900
-> Joonsoo Kim <js1304@gmail.com> wrote:
->
->> It is somehow strange that alloc_bootmem return virtual address
->> and free_bootmem require physical address.
->> Anyway, free_bootmem()'s first parameter should be physical address.
+On Mon, Nov 12, 2012 at 10:24 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Nov 12, 2012 at 09:36:17PM -0200, Thiago Farina wrote:
+>> Hi,
 >>
->> There are some call sites for free_bootmem() with virtual address.
->> So fix them.
+>> Please, take a look.
+>>
+>> Patch attached.
 >
-> Well gee, I wonder how that happened :(
+> It's a good start for a cleanup, but there's no point in removing
+> the boolean_t from one file and then not removing it from the rest
+> of the XFS code.  It's only used in a handful of places, so just
+> remove it completely.
 >
->
-> How does this look?
->
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: bootmem-fix-wrong-call-parameter-for-free_bootmem-fix
->
-> improve free_bootmem() and free_bootmem_pate() documentation
->
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Joonsoo Kim <js1304@gmail.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->  include/linux/bootmem.h |    4 ++--
->  mm/bootmem.c            |   20 ++++++++++----------
->  2 files changed, 12 insertions(+), 12 deletions(-)
->
-> --- a/mm/bootmem.c~bootmem-fix-wrong-call-parameter-for-free_bootmem-fix
-> +++ a/mm/bootmem.c
-> @@ -147,21 +147,21 @@ unsigned long __init init_bootmem(unsign
->
->  /*
->   * free_bootmem_late - free bootmem pages directly to page allocator
-> - * @addr: starting address of the range
-> + * @addr: starting physical address of the range
->   * @size: size of the range in bytes
->   *
->   * This is only useful when the bootmem allocator has already been torn
->   * down, but we are still initializing the system.  Pages are given directly
->   * to the page allocator, no bootmem metadata is updated because it is gone.
->   */
-> -void __init free_bootmem_late(unsigned long addr, unsigned long size)
-> +void __init free_bootmem_late(unsigned long physaddr, unsigned long size)
->  {
->         unsigned long cursor, end;
->
-> -       kmemleak_free_part(__va(addr), size);
-> +       kmemleak_free_part(__va(physaddr), size);
->
-> -       cursor = PFN_UP(addr);
-> -       end = PFN_DOWN(addr + size);
-> +       cursor = PFN_UP(physaddr);
-> +       end = PFN_DOWN(physaddr + size);
->
->         for (; cursor < end; cursor++) {
->                 __free_pages_bootmem(pfn_to_page(cursor), 0);
-> @@ -385,21 +385,21 @@ void __init free_bootmem_node(pg_data_t
->
->  /**
->   * free_bootmem - mark a page range as usable
-> - * @addr: starting address of the range
-> + * @addr: starting physical address of the range
->   * @size: size of the range in bytes
->   *
->   * Partial pages will be considered reserved and left as they are.
->   *
->   * The range must be contiguous but may span node boundaries.
->   */
-> -void __init free_bootmem(unsigned long addr, unsigned long size)
-> +void __init free_bootmem(unsigned long physaddr, unsigned long size)
->  {
->         unsigned long start, end;
->
-> -       kmemleak_free_part(__va(addr), size);
-> +       kmemleak_free_part(__va(physaddr), size);
->
-> -       start = PFN_UP(addr);
-> -       end = PFN_DOWN(addr + size);
-> +       start = PFN_UP(physaddr);
-> +       end = PFN_DOWN(physaddr + size);
->
->         mark_bootmem(start, end, 0, 0);
->  }
-> --- a/include/linux/bootmem.h~bootmem-fix-wrong-call-parameter-for-free_bootmem-fix
-> +++ a/include/linux/bootmem.h
-> @@ -51,8 +51,8 @@ extern unsigned long free_all_bootmem(vo
->  extern void free_bootmem_node(pg_data_t *pgdat,
->                               unsigned long addr,
->                               unsigned long size);
-> -extern void free_bootmem(unsigned long addr, unsigned long size);
-> -extern void free_bootmem_late(unsigned long addr, unsigned long size);
-> +extern void free_bootmem(unsigned long physaddr, unsigned long size);
-> +extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
->
->  /*
->   * Flags for reserve_bootmem (also if CONFIG_HAVE_ARCH_BOOTMEM_NODE,
-> _
+Done.
 
-Looks good to me :)
+Please, take another look.
+
+> Also, can you please place patches in line rather than attaching
+> them. Attaching them means they cannot be quoted in reply. See
+> Documentation/SubmittingPatches and Documentation/email-clients.txt
+> for guidelines.
+>
+Sorry, patch attached.
+
+Thanks,
+
+--f46d04016d4df49e3204ce559c45
+Content-Type: application/octet-stream; 
+	name="0001-xfs-Remove-boolean_t-typedef-completely.patch"
+Content-Disposition: attachment; 
+	filename="0001-xfs-Remove-boolean_t-typedef-completely.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h9gaj30w0
+
+RnJvbSAzODUyYWYwZmY4ZDY4NGRjMDQ5NDNjZmI3YjI4Njk2NGRjODMwNjQwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBUaGlhZ28gRmFyaW5hIDx0ZmFyaW5hQGNocm9taXVtLm9yZz4K
+RGF0ZTogTW9uLCAxMiBOb3YgMjAxMiAyMTozMjo1OSAtMDIwMApTdWJqZWN0OiBbUEFUQ0hdIHhm
+czogUmVtb3ZlIGJvb2xlYW5fdCB0eXBlZGVmIGNvbXBsZXRlbHkuCgpTaW5jZSB3ZSBhcmUgdXNp
+bmcgQzk5IHdlIGhhdmUgb25lIGJ1aWx0aW4gZGVmaW5lZCBpbiBpbmNsdWRlL2xpbnV4L3R5cGVz
+LmgsCnVzZSB0aGF0IGluc3RlYWQuCgpTaWduZWQtb2ZmLWJ5OiBUaGlhZ28gRmFyaW5hIDx0ZmFy
+aW5hQGNocm9taXVtLm9yZz4KLS0tCiBmcy94ZnMveGZzX2xvZy5jICAgICAgICAgfCAgOCArKysr
+LS0tLQogZnMveGZzL3hmc19xbV9zeXNjYWxscy5jIHwgIDggKysrKy0tLS0KIGZzL3hmcy94ZnNf
+dHJhbnNfZHF1b3QuYyB8IDEwICsrKysrLS0tLS0KIGZzL3hmcy94ZnNfdHlwZXMuaCAgICAgICB8
+ICAxIC0KIGZzL3hmcy94ZnNfdm5vZGVvcHMuYyAgICB8IDEyICsrKysrKy0tLS0tLQogNSBmaWxl
+cyBjaGFuZ2VkLCAxOSBpbnNlcnRpb25zKCspLCAyMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQg
+YS9mcy94ZnMveGZzX2xvZy5jIGIvZnMveGZzL3hmc19sb2cuYwppbmRleCA0ZGFkNzU2Li40ZTdl
+Yjc2IDEwMDY0NAotLS0gYS9mcy94ZnMveGZzX2xvZy5jCisrKyBiL2ZzL3hmcy94ZnNfbG9nLmMK
+QEAgLTExOCw3ICsxMTgsNyBAQCB4bG9nX3ZlcmlmeV9pY2xvZygKIAlzdHJ1Y3QgeGxvZwkJKmxv
+ZywKIAlzdHJ1Y3QgeGxvZ19pbl9jb3JlCSppY2xvZywKIAlpbnQJCQljb3VudCwKLQlib29sZWFu
+X3QJCXN5bmNpbmcpOworCWJvb2wgICAgICAgICAgICAgICAgICAgIHN5bmNpbmcpOwogU1RBVElD
+IHZvaWQKIHhsb2dfdmVyaWZ5X3RhaWxfbHNuKAogCXN0cnVjdCB4bG9nCQkqbG9nLApAQCAtMzQ1
+MSw3ICszNDUxLDcgQEAgeGxvZ192ZXJpZnlfaWNsb2coCiAJc3RydWN0IHhsb2cJCSpsb2csCiAJ
+c3RydWN0IHhsb2dfaW5fY29yZQkqaWNsb2csCiAJaW50CQkJY291bnQsCi0JYm9vbGVhbl90CQlz
+eW5jaW5nKQorCWJvb2wgICAgICAgICAgICAgICAgICAgIHN5bmNpbmcpCiB7CiAJeGxvZ19vcF9o
+ZWFkZXJfdAkqb3BoZWFkOwogCXhsb2dfaW5fY29yZV90CQkqaWNwdHI7CkBAIC0zNDk5LDcgKzM0
+OTksNyBAQCB4bG9nX3ZlcmlmeV9pY2xvZygKIAkJLyogY2xpZW50aWQgaXMgb25seSAxIGJ5dGUg
+Ki8KIAkJZmllbGRfb2Zmc2V0ID0gKF9fcHNpbnRfdCkKIAkJCSAgICAgICAoKHhmc19jYWRkcl90
+KSYob3BoZWFkLT5vaF9jbGllbnRpZCkgLSBiYXNlX3B0cik7Ci0JCWlmIChzeW5jaW5nID09IEJf
+RkFMU0UgfHwgKGZpZWxkX29mZnNldCAmIDB4MWZmKSkgeworCQlpZiAoIXN5bmNpbmcgfHwgKGZp
+ZWxkX29mZnNldCAmIDB4MWZmKSkgewogCQkJY2xpZW50aWQgPSBvcGhlYWQtPm9oX2NsaWVudGlk
+OwogCQl9IGVsc2UgewogCQkJaWR4ID0gQlRPQkJUKCh4ZnNfY2FkZHJfdCkmKG9waGVhZC0+b2hf
+Y2xpZW50aWQpIC0gaWNsb2ctPmljX2RhdGFwKTsKQEAgLTM1MjIsNyArMzUyMiw3IEBAIHhsb2df
+dmVyaWZ5X2ljbG9nKAogCQkvKiBjaGVjayBsZW5ndGggKi8KIAkJZmllbGRfb2Zmc2V0ID0gKF9f
+cHNpbnRfdCkKIAkJCSAgICAgICAoKHhmc19jYWRkcl90KSYob3BoZWFkLT5vaF9sZW4pIC0gYmFz
+ZV9wdHIpOwotCQlpZiAoc3luY2luZyA9PSBCX0ZBTFNFIHx8IChmaWVsZF9vZmZzZXQgJiAweDFm
+ZikpIHsKKwkJaWYgKCFzeW5jaW5nIHx8IChmaWVsZF9vZmZzZXQgJiAweDFmZikpIHsKIAkJCW9w
+X2xlbiA9IGJlMzJfdG9fY3B1KG9waGVhZC0+b2hfbGVuKTsKIAkJfSBlbHNlIHsKIAkJCWlkeCA9
+IEJUT0JCVCgoX19wc2ludF90KSZvcGhlYWQtPm9oX2xlbiAtCmRpZmYgLS1naXQgYS9mcy94ZnMv
+eGZzX3FtX3N5c2NhbGxzLmMgYi9mcy94ZnMveGZzX3FtX3N5c2NhbGxzLmMKaW5kZXggODU4YTNi
+MS4uMDdiMTE1NiAxMDA2NDQKLS0tIGEvZnMveGZzL3hmc19xbV9zeXNjYWxscy5jCisrKyBiL2Zz
+L3hmcy94ZnNfcW1fc3lzY2FsbHMuYwpAQCAtNDA3LDEwICs0MDcsMTAgQEAgeGZzX3FtX3NjYWxs
+X2dldHFzdGF0KAogewogCXN0cnVjdCB4ZnNfcXVvdGFpbmZvCSpxID0gbXAtPm1fcXVvdGFpbmZv
+OwogCXN0cnVjdCB4ZnNfaW5vZGUJKnVpcCwgKmdpcDsKLQlib29sZWFuX3QJCXRlbXB1cWlwLCB0
+ZW1wZ3FpcDsKKwlib29sICAgICAgICAgICAgICAgICAgICB0ZW1wdXFpcCwgdGVtcGdxaXA7CiAK
+IAl1aXAgPSBnaXAgPSBOVUxMOwotCXRlbXB1cWlwID0gdGVtcGdxaXAgPSBCX0ZBTFNFOworCXRl
+bXB1cWlwID0gdGVtcGdxaXAgPSBmYWxzZTsKIAltZW1zZXQob3V0LCAwLCBzaXplb2YoZnNfcXVv
+dGFfc3RhdF90KSk7CiAKIAlvdXQtPnFzX3ZlcnNpb24gPSBGU19RU1RBVF9WRVJTSU9OOwpAQCAt
+NDMzLDEyICs0MzMsMTIgQEAgeGZzX3FtX3NjYWxsX2dldHFzdGF0KAogCWlmICghdWlwICYmIG1w
+LT5tX3NiLnNiX3VxdW90aW5vICE9IE5VTExGU0lOTykgewogCQlpZiAoeGZzX2lnZXQobXAsIE5V
+TEwsIG1wLT5tX3NiLnNiX3VxdW90aW5vLAogCQkJCQkwLCAwLCAmdWlwKSA9PSAwKQotCQkJdGVt
+cHVxaXAgPSBCX1RSVUU7CisJCQl0ZW1wdXFpcCA9IHRydWU7CiAJfQogCWlmICghZ2lwICYmIG1w
+LT5tX3NiLnNiX2dxdW90aW5vICE9IE5VTExGU0lOTykgewogCQlpZiAoeGZzX2lnZXQobXAsIE5V
+TEwsIG1wLT5tX3NiLnNiX2dxdW90aW5vLAogCQkJCQkwLCAwLCAmZ2lwKSA9PSAwKQotCQkJdGVt
+cGdxaXAgPSBCX1RSVUU7CisJCQl0ZW1wZ3FpcCA9IHRydWU7CiAJfQogCWlmICh1aXApIHsKIAkJ
+b3V0LT5xc191cXVvdGEucWZzX25ibGtzID0gdWlwLT5pX2QuZGlfbmJsb2NrczsKZGlmZiAtLWdp
+dCBhL2ZzL3hmcy94ZnNfdHJhbnNfZHF1b3QuYyBiL2ZzL3hmcy94ZnNfdHJhbnNfZHF1b3QuYwpp
+bmRleCAwYzdmYTU0Li42NDJjMmQ2IDEwMDY0NAotLS0gYS9mcy94ZnMveGZzX3RyYW5zX2RxdW90
+LmMKKysrIGIvZnMveGZzL3hmc190cmFuc19kcXVvdC5jCkBAIC01MTYsNyArNTE2LDcgQEAgeGZz
+X3RyYW5zX3VucmVzZXJ2ZV9hbmRfbW9kX2RxdW90cygKIAlpbnQJCQlpLCBqOwogCXhmc19kcXVv
+dF90CQkqZHFwOwogCXhmc19kcXRyeF90CQkqcXRyeCwgKnFhOwotCWJvb2xlYW5fdAkJbG9ja2Vk
+OworCWJvb2wgICAgICAgICAgICAgICAgICAgIGxvY2tlZDsKIAogCWlmICghdHAtPnRfZHFpbmZv
+IHx8ICEodHAtPnRfZmxhZ3MgJiBYRlNfVFJBTlNfRFFfRElSVFkpKQogCQlyZXR1cm47CkBAIC01
+MzcsMTcgKzUzNywxNyBAQCB4ZnNfdHJhbnNfdW5yZXNlcnZlX2FuZF9tb2RfZHF1b3RzKAogCQkJ
+ICogYWJvdXQgdGhlIG51bWJlciBvZiBibG9ja3MgdXNlZCBmaWVsZCwgb3IgZGVsdGFzLgogCQkJ
+ICogQWxzbyB3ZSBkb24ndCBib3RoZXIgdG8gemVybyB0aGUgZmllbGRzLgogCQkJICovCi0JCQls
+b2NrZWQgPSBCX0ZBTFNFOworCQkJbG9ja2VkID0gZmFsc2U7CiAJCQlpZiAocXRyeC0+cXRfYmxr
+X3JlcykgewogCQkJCXhmc19kcWxvY2soZHFwKTsKLQkJCQlsb2NrZWQgPSBCX1RSVUU7CisJCQkJ
+bG9ja2VkID0gdHJ1ZTsKIAkJCQlkcXAtPnFfcmVzX2Jjb3VudCAtPQogCQkJCQkoeGZzX3FjbnRf
+dClxdHJ4LT5xdF9ibGtfcmVzOwogCQkJfQogCQkJaWYgKHF0cngtPnF0X2lub19yZXMpIHsKIAkJ
+CQlpZiAoIWxvY2tlZCkgewogCQkJCQl4ZnNfZHFsb2NrKGRxcCk7Ci0JCQkJCWxvY2tlZCA9IEJf
+VFJVRTsKKwkJCQkJbG9ja2VkID0gdHJ1ZTsKIAkJCQl9CiAJCQkJZHFwLT5xX3Jlc19pY291bnQg
+LT0KIAkJCQkJKHhmc19xY250X3QpcXRyeC0+cXRfaW5vX3JlczsKQEAgLTU1Niw3ICs1NTYsNyBA
+QCB4ZnNfdHJhbnNfdW5yZXNlcnZlX2FuZF9tb2RfZHF1b3RzKAogCQkJaWYgKHF0cngtPnF0X3J0
+YmxrX3JlcykgewogCQkJCWlmICghbG9ja2VkKSB7CiAJCQkJCXhmc19kcWxvY2soZHFwKTsKLQkJ
+CQkJbG9ja2VkID0gQl9UUlVFOworCQkJCQlsb2NrZWQgPSB0cnVlOwogCQkJCX0KIAkJCQlkcXAt
+PnFfcmVzX3J0YmNvdW50IC09CiAJCQkJCSh4ZnNfcWNudF90KXF0cngtPnF0X3J0YmxrX3JlczsK
+ZGlmZiAtLWdpdCBhL2ZzL3hmcy94ZnNfdHlwZXMuaCBiL2ZzL3hmcy94ZnNfdHlwZXMuaAppbmRl
+eCA3YTQxODc0Li42MWJhMWNmIDEwMDY0NAotLS0gYS9mcy94ZnMveGZzX3R5cGVzLmgKKysrIGIv
+ZnMveGZzL3hmc190eXBlcy5oCkBAIC0zMiw3ICszMiw2IEBAIHR5cGVkZWYgdW5zaWduZWQgaW50
+CQlfX3VpbnQzMl90OwogdHlwZWRlZiBzaWduZWQgbG9uZyBsb25nIGludAlfX2ludDY0X3Q7CiB0
+eXBlZGVmIHVuc2lnbmVkIGxvbmcgbG9uZyBpbnQJX191aW50NjRfdDsKIAotdHlwZWRlZiBlbnVt
+IHsgQl9GQUxTRSxCX1RSVUUgfQlib29sZWFuX3Q7CiB0eXBlZGVmIF9fdWludDMyX3QJCXByaWRf
+dDsJCS8qIHByb2plY3QgSUQgKi8KIHR5cGVkZWYgX191aW50MzJfdAkJaW5zdF90OwkJLyogYW4g
+aW5zdHJ1Y3Rpb24gKi8KIApkaWZmIC0tZ2l0IGEvZnMveGZzL3hmc192bm9kZW9wcy5jIGIvZnMv
+eGZzL3hmc192bm9kZW9wcy5jCmluZGV4IDJhNWM2MzczLi43M2Q1MGI3IDEwMDY0NAotLS0gYS9m
+cy94ZnMveGZzX3Zub2Rlb3BzLmMKKysrIGIvZnMveGZzL3hmc192bm9kZW9wcy5jCkBAIC03MjQs
+NyArNzI0LDcgQEAgeGZzX2NyZWF0ZSgKIAlpbnQJCQllcnJvcjsKIAl4ZnNfYm1hcF9mcmVlX3QJ
+CWZyZWVfbGlzdDsKIAl4ZnNfZnNibG9ja190CQlmaXJzdF9ibG9jazsKLQlib29sZWFuX3QJCXVu
+bG9ja19kcF9vbl9lcnJvciA9IEJfRkFMU0U7CisJYm9vbCAgICAgICAgICAgICAgICAgICAgdW5s
+b2NrX2RwX29uX2Vycm9yID0gZmFsc2U7CiAJdWludAkJCWNhbmNlbF9mbGFnczsKIAlpbnQJCQlj
+b21taXR0ZWQ7CiAJcHJpZF90CQkJcHJpZDsKQEAgLTc5Myw3ICs3OTMsNyBAQCB4ZnNfY3JlYXRl
+KAogCX0KIAogCXhmc19pbG9jayhkcCwgWEZTX0lMT0NLX0VYQ0wgfCBYRlNfSUxPQ0tfUEFSRU5U
+KTsKLQl1bmxvY2tfZHBfb25fZXJyb3IgPSBCX1RSVUU7CisJdW5sb2NrX2RwX29uX2Vycm9yID0g
+dHJ1ZTsKIAogCXhmc19ibWFwX2luaXQoJmZyZWVfbGlzdCwgJmZpcnN0X2Jsb2NrKTsKIApAQCAt
+ODI5LDcgKzgyOSw3IEBAIHhmc19jcmVhdGUoCiAJICogZXJyb3IgcGF0aC4KIAkgKi8KIAl4ZnNf
+dHJhbnNfaWpvaW4odHAsIGRwLCBYRlNfSUxPQ0tfRVhDTCk7Ci0JdW5sb2NrX2RwX29uX2Vycm9y
+ID0gQl9GQUxTRTsKKwl1bmxvY2tfZHBfb25fZXJyb3IgPSBmYWxzZTsKIAogCWVycm9yID0geGZz
+X2Rpcl9jcmVhdGVuYW1lKHRwLCBkcCwgbmFtZSwgaXAtPmlfaW5vLAogCQkJCQkmZmlyc3RfYmxv
+Y2ssICZmcmVlX2xpc3QsIHJlc2Jsa3MgPwpAQCAtMTM2Niw3ICsxMzY2LDcgQEAgeGZzX3N5bWxp
+bmsoCiAJaW50CQkJcGF0aGxlbjsKIAl4ZnNfYm1hcF9mcmVlX3QJCWZyZWVfbGlzdDsKIAl4ZnNf
+ZnNibG9ja190CQlmaXJzdF9ibG9jazsKLQlib29sZWFuX3QJCXVubG9ja19kcF9vbl9lcnJvciA9
+IEJfRkFMU0U7CisJYm9vbCAgICAgICAgICAgICAgICAgICAgdW5sb2NrX2RwX29uX2Vycm9yID0g
+ZmFsc2U7CiAJdWludAkJCWNhbmNlbF9mbGFnczsKIAlpbnQJCQljb21taXR0ZWQ7CiAJeGZzX2Zp
+bGVvZmZfdAkJZmlyc3RfZnNiOwpAQCAtMTQzNyw3ICsxNDM3LDcgQEAgeGZzX3N5bWxpbmsoCiAJ
+fQogCiAJeGZzX2lsb2NrKGRwLCBYRlNfSUxPQ0tfRVhDTCB8IFhGU19JTE9DS19QQVJFTlQpOwot
+CXVubG9ja19kcF9vbl9lcnJvciA9IEJfVFJVRTsKKwl1bmxvY2tfZHBfb25fZXJyb3IgPSB0cnVl
+OwogCiAJLyoKIAkgKiBDaGVjayB3aGV0aGVyIHRoZSBkaXJlY3RvcnkgYWxsb3dzIG5ldyBzeW1s
+aW5rcyBvciBub3QuCkBAIC0xNDgzLDcgKzE0ODMsNyBAQCB4ZnNfc3ltbGluaygKIAkgKiBlcnJv
+ciBwYXRoLgogCSAqLwogCXhmc190cmFuc19pam9pbih0cCwgZHAsIFhGU19JTE9DS19FWENMKTsK
+LQl1bmxvY2tfZHBfb25fZXJyb3IgPSBCX0ZBTFNFOworCXVubG9ja19kcF9vbl9lcnJvciA9IGZh
+bHNlOwogCiAJLyoKIAkgKiBBbHNvIGF0dGFjaCB0aGUgZHF1b3QocykgdG8gaXQsIGlmIGFwcGxp
+Y2FibGUuCi0tIAoxLjguMC5yYzIKCg==
+--f46d04016d4df49e3204ce559c45--
