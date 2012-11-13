@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab2KMVuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:50:16 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:60768 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab2KMVuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:50:13 -0500
-From: Vinson Lee <vlee@twitter.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Vinson Lee <vlee@twitter.com>
-Subject: [PATCH] perf tools: Fix build with older versions of bison.
-Date: Tue, 13 Nov 2012 13:50:07 -0800
-Message-Id: <1352843407-30618-1-git-send-email-vlee@twitter.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752998Ab2KMVvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:51:21 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:39835 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798Ab2KMVvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 16:51:20 -0500
+Date: Tue, 13 Nov 2012 13:50:16 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Simon Marchi <simon.marchi@polymtl.ca>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tilegx: request_irq with a non-null device name
+Message-ID: <20121113135016.229e2571@nehalam.linuxnetplumber.net>
+In-Reply-To: <50A2BD87.3060202@tilera.com>
+References: <1352840300-27814-1-git-send-email-simon.marchi@polymtl.ca>
+	<50A2BD87.3060202@tilera.com>
+Organization: Vyatta
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes this build error with older versions of bison.
+On Tue, 13 Nov 2012 16:37:11 -0500
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-    CC util/sysfs.o
-    BISON util/pmu-bison.c
-util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
-make: *** [util/pmu-bison.c] Error 1
+> On 11/13/2012 3:58 PM, Simon Marchi wrote:
+> > This patch simply makes the tilegx net driver call request_irq with a
+> > non-null name. It makes the output in /proc/interrupts more obvious, but
+> > also helps tools that don't expect to find null there.
+> >
+> > Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+> > ---
+> >  drivers/net/ethernet/tile/tilegx.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+> > index 4e98100..66e025a 100644
+> > --- a/drivers/net/ethernet/tile/tilegx.c
+> > +++ b/drivers/net/ethernet/tile/tilegx.c
+> > @@ -917,7 +917,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+> >  	ingress_irq = rc;
+> >  	tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
+> >  	rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
+> > -			 0, NULL, NULL);
+> > +			 0, "tile_net", NULL);
+> 
+> Good catch.  If you can change it to dev->name instead of "tile_net", feel
+> free to add my:
+> 
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> 
 
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Cc: stable@vger.kernel.org # 3.4+
----
- tools/perf/Makefile            |    4 ++--
- tools/perf/util/parse-events.y |    1 -
- tools/perf/util/pmu.y          |    1 -
- 3 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 00deed4..c2fb5bc 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -241,13 +241,13 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-event
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
- 
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
- 
- $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
- 
- $(OUTPUT)util/pmu-bison.c: util/pmu.y
--	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-+	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
- 
- $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
- $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index cd88209..85cdaed 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,5 +1,4 @@
- %pure-parser
--%name-prefix "parse_events_"
- %parse-param {void *_data}
- %parse-param {void *scanner}
- %lex-param {void* scanner}
-diff --git a/tools/perf/util/pmu.y b/tools/perf/util/pmu.y
-index ec89804..bfd7e85 100644
---- a/tools/perf/util/pmu.y
-+++ b/tools/perf/util/pmu.y
-@@ -1,5 +1,4 @@
- 
--%name-prefix "perf_pmu_"
- %parse-param {struct list_head *format}
- %parse-param {char *name}
- 
--- 
-1.5.4.3
-
+It really should be using dev->name since that helps out some
+applications like irqbalance that read /proc/interrupts
