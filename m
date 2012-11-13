@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab2KMV7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:59:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37859 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab2KMV7A (ORCPT
+	id S1753250Ab2KMV7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:59:45 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:60664 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2KMV7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:59:00 -0500
-Date: Tue, 13 Nov 2012 13:58:45 -0800
-From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
-Message-ID: <tip-193f3fcb3ab769bab4a2b9fa181eef3e5699a352@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20121019085813.GD26718@alberich>
-References: <20121019085813.GD26718@alberich>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Add cpu_has_topoext
-Git-Commit-ID: 193f3fcb3ab769bab4a2b9fa181eef3e5699a352
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 13 Nov 2012 16:59:43 -0500
+Message-ID: <50A2C2CD.9090308@tilera.com>
+Date: Tue, 13 Nov 2012 16:59:41 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 13:58:50 -0800 (PST)
+To: Simon Marchi <simon.marchi@polymtl.ca>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tilegx: request_irq with a non-null device name
+References: <1352840300-27814-1-git-send-email-simon.marchi@polymtl.ca> <50A2BD87.3060202@tilera.com> <CAFXXi0kcGCqr-Ss5-Li9vXKCWyTh6Nvx+aAzVUZ1PZbZ=YZ2Pg@mail.gmail.com>
+In-Reply-To: <CAFXXi0kcGCqr-Ss5-Li9vXKCWyTh6Nvx+aAzVUZ1PZbZ=YZ2Pg@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  193f3fcb3ab769bab4a2b9fa181eef3e5699a352
-Gitweb:     http://git.kernel.org/tip/193f3fcb3ab769bab4a2b9fa181eef3e5699a352
-Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
-AuthorDate: Fri, 19 Oct 2012 10:58:13 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 13 Nov 2012 11:22:28 -0800
+On 11/13/2012 4:54 PM, Simon Marchi wrote:
+> On Tue, Nov 13, 2012 at 1:37 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> On 11/13/2012 3:58 PM, Simon Marchi wrote:
+>>> This patch simply makes the tilegx net driver call request_irq with a
+>>> non-null name. It makes the output in /proc/interrupts more obvious, but
+>>> also helps tools that don't expect to find null there.
+>>>
+>>> Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+>>> ---
+>>>  drivers/net/ethernet/tile/tilegx.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+>>> index 4e98100..66e025a 100644
+>>> --- a/drivers/net/ethernet/tile/tilegx.c
+>>> +++ b/drivers/net/ethernet/tile/tilegx.c
+>>> @@ -917,7 +917,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+>>>       ingress_irq = rc;
+>>>       tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
+>>>       rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
+>>> -                      0, NULL, NULL);
+>>> +                      0, "tile_net", NULL);
+>> Good catch.  If you can change it to dev->name instead of "tile_net", feel
+>> free to add my:
+> I thought about that first, but it wouldn't be very logical. This
+> module is loaded once and for all when the first network device is
+> brought up, so this request_irq is for all the tile network
+> interfaces. Suppose you "up" gbe0, "up" gbe1 and "down" gbe0, the
+> device name would still be gbe0, even though it's down. That's why I
+> opted for a generic name instead.
+>
+> If you still want to go with dev->name I have no problem with that.
 
-x86: Add cpu_has_topoext
+No, you're right, that's a good point.  It does probably make more sense to
+use "tile_net".  So apply my Acked-by to your patch as-is.  Thanks!
 
-Introduce cpu_has_topoext to check for AMD's CPUID topology extensions
-support. It indicates support for
-CPUID Fn8000_001D_EAX_x[N:0]-CPUID Fn8000_001E_EDX
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-See AMD's CPUID Specification, Publication # 25481
-(as of Rev. 2.34 September 2010)
-
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/r/20121019085813.GD26718@alberich
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/amd.c         |    2 +-
- arch/x86/kernel/smpboot.c         |    2 +-
- 3 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 8c297aa..c22a492 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -311,6 +311,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
-+#define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
- 
- #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
- # define cpu_has_invlpg		1
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f7e98a2..64e9ad4 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -304,7 +304,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- 	int cpu = smp_processor_id();
- 
- 	/* get information required for multi-node processors */
--	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+	if (cpu_has_topoext) {
- 		u32 eax, ebx, ecx, edx;
- 
- 		cpuid(0x8000001e, &eax, &ebx, &ecx, &edx);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c80a33b..732bf5c 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -313,7 +313,7 @@ do {									\
- 
- static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- {
--	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+	if (cpu_has_topoext) {
- 		int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
- 
- 		if (c->phys_proc_id == o->phys_proc_id &&
