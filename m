@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2KMUq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:46:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2738 "EHLO mx1.redhat.com"
+	id S1755825Ab2KMUsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:48:33 -0500
+Received: from void.printf.net ([89.145.121.20]:44681 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755830Ab2KMUq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:46:57 -0500
-Date: Tue, 13 Nov 2012 18:40:39 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Christian Ehrhardt <lk@c--e.de>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fix lapic time counter read for periodic mode
-Message-ID: <20121113204039.GA22112@amt.cnet>
-References: <20121111122528.GC19718@lisa.in-ulm.de>
- <20121112213237.GA31377@amt.cnet>
- <20121113075254.GA15071@lisa.in-ulm.de>
+	id S1755680Ab2KMUsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:48:32 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Trey Ramsay <tramsay@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Rich Rattanni <rattanni@gmail.com>,
+        Radovan Lekanovic <lekanovic@gmail.com>
+Subject: Re: drivers/mmc/card/block.c infinite loop in mmc_blk_err_check waiting on R1_READY_FOR_DATA
+References: <50917DB7.6040503@linux.vnet.ibm.com>
+	<87k3u6id1j.fsf@octavius.laptop.org>
+	<50A2A08D.5000601@linux.vnet.ibm.com>
+Date: Tue, 13 Nov 2012 15:48:24 -0500
+In-Reply-To: <50A2A08D.5000601@linux.vnet.ibm.com> (Trey Ramsay's message of
+	"Tue, 13 Nov 2012 13:33:33 -0600")
+Message-ID: <87k3tpkz53.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113075254.GA15071@lisa.in-ulm.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 08:52:54AM +0100, Christian Ehrhardt wrote:
-> 
-> Hi,
-> 
-> thanks for your reply.
-> 
-> On Mon, Nov 12, 2012 at 07:32:37PM -0200, Marcelo Tosatti wrote:
-> > > there is a bug in the emulation of the lapic time counter. In particular
-> > > what we are seeing is that the time counter of a periodic lapic timer
-> > > in the guest reads as zero 99% of the time. The patch below fixes that.
-> > > 
-> > > The emulation of the lapic timer is done with the help of a hires
-> > > timer that expires with the same frequency as the lapic counter.
-> > > New expiration times for a periodic timer are calculated incrementally
-> > > based on the last scheduled expiration time. This ensures long term
-> > > accuracy of the emulated timer close to that of the underlying clock.
-> > > 
-> > > The actual value of the lapic time counter is calculated from the
-> > > real time difference between current time and scheduled expiration time
-> > > of the hires timer. If this difference is negative, the hires timer
-> > > expired. For oneshot mode this is correctly translated into a zero value
-> > > for the time counter. However, in periodic mode we must use the negative
-> > > difference unmodified.
-> > > 
-> > >      regards   Christian
-> > > 
-> > > Fix lapic time counter read for periodic mode.
-> > 
-> > In periodic mode the hrtimer is rearmed once expired, see
-> > apic_timer_fn. So _get_remaining should return proper value
-> > even if the guest is not able to process timer interrupts. 
-> > 
-> > Can you describe your specific scenario in more detail?
-> 
-> In my specific case, the host is admittedly somewhat special as it
-> already is a rehosted version of linux, i.e. not running directly on
-> native hardware. It is still unclear if the host has sufficiently accurate
-> timer interrupts. This is most likely part of the problems we are seeing.
-> 
-> However, AFAICS apic_timer_fn is only called once per jiffy (at least in
-> some configurations). In particular, it is not called by
-> hrtimer_get_remaining. Thus depending on the frequency of the LAPIC timer
-> in the guest there might _several_ iterations that are missed. This can
-> probably be mitigated by a hires timer interrupts. However, I think
-> the problem is still there even in that case.
-> 
-> Additionally, the behaviour that I want to establish matches that of the
-> PIT timer (in a not completely obvious way, though).
-> 
-> Having said that the proposed patch in my first mail is incomplete, as
-> the mod_64 does not work correctly for negative values. A fixed version
-> is below.
-> 
->      regards     Christian
-> 
-> Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+Hi Trey,
 
-Alright. Please add a comment from the LAPIC documentation describing
-this behaviour (and a nice changelog). Thanks.
+On Tue, Nov 13 2012, Trey Ramsay wrote:
+> Thanks Chris. Any idea how long the timeout should be? It could
+> cause problems if we timeout to early. This what I have so far with a
+> 10 minute timeout. The code is based off of v3.7-rc3
 
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index 43e9fad..ec7242c 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -810,11 +810,22 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
->  	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
->  		return 0;
->  
-> +	/*
-> +	 * hrtimer_get_remaining returns the signed difference between
-> +	 * timer expiration time and current time. Keep negative return
-> +	 * values iff the the timer is periodic.
-> +	 */
->  	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
-> -	if (ktime_to_ns(remaining) < 0)
-> -		remaining = ktime_set(0, 0);
-> +	ns = ktime_to_ns(remaining);
-> +	if (unlikely(ns < 0)) {
-> +		if (apic_lvtt_period(apic))
-> +			ns = apic->lapic_timer.period -
-> +				mod_64(-ns, apic->lapic_timer.period);
-> +		else
-> +			ns = 0;
-> +	}
->  
-> -	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
-> +	ns = mod_64(ns, apic->lapic_timer.period);
->  	tmcct = div64_u64(ns,
->  			 (APIC_BUS_CYCLE_NS * apic->divide_count));
->  
+Ten minutes sounds excessive, which is actually fine for our purpose; I
+don't think we need to make the value tunable.  Thanks!  Please can you:
+
+* resend in plain text instead of HTML, with no line-wrapping corrupting
+  the patch
+
+* include a commit message and "Signed-off-by" (see SubmittingPatches
+  in the Documentation/ directory)
+
+* change the pr_err()s to include the MMC hostname, and give an English
+  description of the error instead of the line number -- most users
+  don't have their kernel source available to find line numbers in.
+  Something like "Card stuck in programming state!" sounds good.
+
+After that, I'll merge the patch for testing.
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
