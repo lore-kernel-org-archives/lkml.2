@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2KMQfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:35:09 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:58781 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab2KMQfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:35:06 -0500
-Date: Tue, 13 Nov 2012 13:34:58 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, xiaoguangrong@linux.vnet.ibm.com,
-        mingo@kernel.org, haodong@linux.vnet.ibm.com,
-        runzhen@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de,
-        bp@alien8.de, namhyung@gmail.com, torvalds@linux-foundation.org,
-        paulus@samba.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [GIT PULL] UAPI: perf fixes
-Message-ID: <20121113163458.GA1023@ghostprotocols.net>
-References: <1378.1352379110@warthog.procyon.org.uk>
- <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com>
- <18065.1352820271@warthog.procyon.org.uk>
- <CA+5PVA6qaxCzr8RBV616D3kEXyj9XjS3okeZXhJJL1R4+-Yv_A@mail.gmail.com>
+	id S1755316Ab2KMQfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:35:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754783Ab2KMQfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 11:35:20 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
+References: <1352824065-6734-1-git-send-email-lczerner@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 13 Nov 2012 11:35:07 -0500
+In-Reply-To: <1352824065-6734-1-git-send-email-lczerner@redhat.com> (Lukas
+	Czerner's message of "Tue, 13 Nov 2012 17:27:45 +0100")
+Message-ID: <x49y5i5cvgk.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA6qaxCzr8RBV616D3kEXyj9XjS3okeZXhJJL1R4+-Yv_A@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 13, 2012 at 10:42:02AM -0500, Josh Boyer escreveu:
-> On Tue, Nov 13, 2012 at 10:24 AM, David Howells <dhowells@redhat.com> wrote:
-> > Josh Boyer <jwboyer@gmail.com> wrote:
-> > tools/perf/builtin-kvm.c became x86-only with the following commit:
-> >
-> >         commit bcf6edcd6fdb8965290f0b635a530fa3c6c212e1
-> >         Author: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >         Date:   Mon Sep 17 16:31:15 2012 +0800
-> >         Subject: perf kvm: Events analysis tool
-> >
-> > when it added:
-> >
-> >         +#include "../../arch/x86/include/asm/svm.h"
-> >         +#include "../../arch/x86/include/asm/vmx.h"
-> >         +#include "../../arch/x86/include/asm/kvm.h"
-> >
-> > and my changing these to <asm/foo.h> doesn't matter because of this in the
-> > same file:
-> >
-> >         +struct exit_reasons_table vmx_exit_reasons[] = {
-> >         +       VMX_EXIT_REASONS
-> >         +};
-> >         +
-> >         +struct exit_reasons_table svm_exit_reasons[] = {
-> >         +       SVM_EXIT_REASONS
-> >         +};
-> >
-> > which use macros only x86 defines.
-> 
-> Ah.  You are quite right.  So your patches actually fix the unistd.h
-> error we were seeing early and just got us far enough to hit this other
-> unrelated problem.  My mistake.
-> 
-> > Should the exported parts of these files be moved to asm-generic?
-> 
-> Good question.
+Lukas Czerner <lczerner@redhat.com> writes:
 
-Probably we should do Makefile changes to build 'perf kvm' only on the
-platforms where it makes sense.
+> Currently there is not limitation of number of requests in the loop bio
+> list. This can lead into some nasty situations when the caller spawns
+> tons of bio requests taking huge amount of memory. This is even more
+> obvious with discard where blkdev_issue_discard() will submit all bios
+> for the range and wait for them to finish afterwards. On really big loop
+> devices and slow backing file system this can lead to OOM situation as
+> reported by Dave Chinner.
+>
+> With this patch we will wait in loop_make_request() if the number of
+> bios in the loop bio list would exceed 'nr_congestion_on'.
+> We'll wake up the process as we process the bios form the list. Some
+> threshold hysteresis is in place to avoid high frequency oscillation.
+>
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> Reported-by: Dave Chinner <dchinner@redhat.com>
 
-- Arnaldo
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
