@@ -1,149 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2KMAav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:30:51 -0500
-Received: from ozlabs.org ([203.10.76.45]:42858 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366Ab2KMAat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:30:49 -0500
-Date: Tue, 13 Nov 2012 11:03:41 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-Message-ID: <20121113000341.GO4696@truffula.fritz.box>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <20121109022624.GI23553@truffula.fritz.box>
- <A97699E9-6C57-4A56-BC45-86A57CF2496F@antoniou-consulting.com>
+	id S1754128Ab2KMAbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:31:53 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41485 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab2KMAbv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 19:31:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A97699E9-6C57-4A56-BC45-86A57CF2496F@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121112235348.GD28341@n2100.arm.linux.org.uk>
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org>
+	<20121112192727.GB28341@n2100.arm.linux.org.uk>
+	<CAF6AEGu4L+ukxhMBLYK3d2g4CBBXi6o5nN_wXvakZCT8qMfSEA@mail.gmail.com>
+	<20121112230819.GC28341@n2100.arm.linux.org.uk>
+	<CAF6AEGtLKjJ=BfBnOq+oE6cgneF5YqsbYqNnCPrz4sTFRzdibg@mail.gmail.com>
+	<20121112235348.GD28341@n2100.arm.linux.org.uk>
+Date: Mon, 12 Nov 2012 18:31:50 -0600
+X-Google-Sender-Auth: Cf6GAhnLAiBK-irv2l7AdJXkuwg
+Message-ID: <CAF6AEGvoXR3YJomjV1YOeNvjr46aYJ2mVxS+jZfH+41+v1nAvw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+From: Rob Clark <rob.clark@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 04:40:15PM +0100, Pantelis Antoniou wrote:
-> Hi David,
+On Mon, Nov 12, 2012 at 5:53 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Nov 12, 2012 at 05:33:41PM -0600, Rob Clark wrote:
+>> I'm sort of thinking maybe we want to change 'switch (sizeof(*(__p)))'
+>> with 'switch (sizeof(typeof(x)))' in case someone ignores the compiler
+>> warning when they try something like:
+>
+> Definitely not.  Ttype of access is controlled by the pointer, not by the
+> size of what it's being assigned to.  Switching that around is likely to
+> break stuff hugely.  Consider this:
+>
+>         unsigned char __user *p;
+>         int val;
+>
+>         get_user(val, p);
+>
+> If the pointer type is used to determine the access size, a char will be
+> accessed.  This is legal - because we end up assigning an unsigned character
+> to an int.
+>
+> If the size of the destination was used, we'd access an int instead, which
+> is larger than the pointer, and probably the wrong thing to do anyway.
+>
+> Think of get_user(a, b) as being a special accessor having the ultimate
+> semantics of: "a = *b;" but done in a safe way with error checking.
+>
+>>    uint32_t x;
+>>    uint64_t *p = ...;
+>>    get_user(x, p);
+>>
+>> that was my one concern about 'register typeof(x) __r2 ...', but I
+>> think just changing the switch condition is enough.  But maybe good to
+>> have some eyes on in case there is something else I'm not thinking of.
+>
+> And what should happen in the above is exactly the same as what happens
+> if you do:
+>
+>         x = *p;
+>
+> with those types.  For ARM, that would be a 64-bit access (if the
+> compiler decides not to optimize away the upper 32-bit access) followed
+> by a narrowing cast down to 32-bit.  With get_user() of course, there's
+> no option not to optimize it away.
+>
+> However, this _does_ reveal a bug with your approach.  With sizeof(*p)
+> being 8, and the type of __r2 being a 32-bit quantity, the compiler will
+> choose the 64-bit accessor, which will corrupt r3 - and the compiler
+> won't know that r3 has been corrupted.
 
-[snip]
-> > I think graft is basically a safer operation, particular if we're
-> > doing this at runtime with userspace passing in these fdt fragments.
-> > In fact I'd go so far as to say if you really need the full overlay
-> > functionality, then you really ought to be working at the bootloader
-> > or early kernel load level to assemble the correct full device tree.
-> > And as Mitch says, an existing programming language (C, OFW Forth or
-> > whatever as you please) will serve you better for this sort of general
-> > manipulation than a limited template system.
-> > 
-> > I also think graft will handle most of your use cases, although as I
-> > said I don't fully understand the implications of some of them, so I
-> > could be wrong.  So, the actual insertion of the subtree is pretty
-> > trivial to implement.  phandles are the obvious other matter to be
-> > dealt with.  I haven't found the right thread where what you've
-> > envisaged so far is discussed, so here are things I can see:
-> > 
-> 
-> An overlay is more generic and can handle more complex cases.
-> For our use case, a graft should work - with a few caveats.
+right, that is what I was worried about..  but what about something
+along the lines of:
 
-Obviously an overlay is more generic.  But the ability to arbitrarily
-modify existing tree nodes, without any obvious way to enforce rules
-about what can be altered and what can't frankly gives me the
-heebie-jeebies.
+		case 8: {						\
+			if (sizeof(x) < 8)				\
+				__get_user_x(__r2, __p, __e, __l, 4);	\
+			else						\
+				__get_user_x(__r2, __p, __e, __l, 8);	\
+			break;						\
+		}							\
 
-> Due to the insertion/removal of the DT fragments other node's state
-> change from 'disabled' <-> 'okay' and platform devices created or
-> removed. This can be handled either via overlays, or via special
-> casing it.
+maybe we need a special variant of __get_user_8() instead to get the
+right 32bits on big vs little endian systems, but I think something
+roughly along these lines could work.
 
-Ah, yes, the status transition is a good point.
+Or maybe in sizeof(x)<8 case, we just __get_user_bad()..  I'm not 100%
+sure on whether this is supposed to be treated as an error case at
+compile time or not.
 
-[snip]
-> > 1) Avoiding phandle collisions between main tree and subtree (or
-> >   between subtrees).
-> > 
-> > I'm hopeful that this can be resolved just by establishing some
-> > conventions about the ranges of phandles to be used for various
-> > components.  I'd certainly be happy to add a directive to dtc which
-> > enforces allocation of phandles within a specified range.
-> > 
-> 
-> Really doubtful IMHO. That will impose yet more structure on the DT
-> syntax, and it will make it even more difficult for users.
+BR,
+-R
 
-Um.. I really don't see what's so hard about adding an incantation
-like:
-	/phandle-range/ 1-0xffff;
-at the top of your base dts.  Then
-	/phandle-range/ 0x10000-0x1ffff;
-to the plugin dts.
-
-Especially if we made the most common base range the default.
-
-> We're talking about users that do understand the hardware, but can't
-> really grok linux kernel development.
-> 
-> DT is used a structured h/w definition and seems to work just
-> fine for these kind of users.
-> 
-> > 2) Resolving phandle references within a subtree
-> > 
-> > If we can handle (1) by convention, we don't need anything here, the
-> > references are fine as is.
-> > 
-> > (3) Resolving phandle references from the subtree to the main tree.
-> > 
-> > So, I think this can actually be avoided, at least in cases where what
-> > physical connections are available to the expansion module is well
-> > defined.  The main causes to have external references are interrupts
-> > and gpios.  Interrupts we handle by defining an interrupt specifier
-> > space for the interrupts available on the expansion
-> > socket/connector/bus/whatever.  In the master tree we then have
-> > something like:
-> > 
-> > ...
-> > 	expansion-socket@XXXX {
-> > 		expansion-id = "SlotA";
-> > 		interrupt-map = < /* map expansion irq specs to
-> > 				     board interrupt controllers */ >;
-> > 		interrupt-map-mask = < ... >;
-> > 		ranges = < /* map expansion local addresses to global
-> > 		              mmio */ >;
-> > 	};
-> > 
-> > The subtree for the expansion module gets attached as a subnode of
-> > this one.  It doesn't use explicit interrupt-parents but instead just
-> > uses the expansion local irq specifiers, letting the parent be the
-> > default which will bubble up to this socket node where the
-> > interrupt-map will send them to the right places.
-> > 
-> > I don't recall the gpio bindings off hand, but as I recall we based
-> > them off the irq tree bindings so we ought to be able to do the same
-> > thing for them.
-> 
-> Please, don't try to do it this way. It is very debatable that we'll 
-> identify all the types that will need special handling.
-> For example for our cape use, we already have references that do not
-> follow this example.
-> 
-> A generic way to resolve references is what we need.
-
-Hrm... *mutters dubiously*.
-
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+> That's too unsafe.
+>
+> I just tried a variant of your approach, but got lots of warnings again:
+>         register unsigned long long __r2 asm("r2");
+>         __get_user_x(__r2, __p, __e, 8, "lr");
+>         x = (typeof(*(__p))) ((typeof(x))__r2);
+> because typeof(x) in the test_ptr() case ends up being a pointer itself.
+>
+> So, back to the drawing board, and I think back to the original position
+> of "we don't support this".
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
