@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab2KMIaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:30:15 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41578 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932146Ab2KMI3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:29:13 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/13] mfd: twl-core: Change TWL4030_MODULE_* ids to TWL_MODULE_*
-Date: Tue, 13 Nov 2012 09:28:54 +0100
-Message-ID: <1352795334-7406-14-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
+	id S932191Ab2KMIan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:30:43 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56398 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab2KMIaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:30:13 -0500
+Message-ID: <50A20512.10805@suse.cz>
+Date: Tue, 13 Nov 2012 09:30:10 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: Sound+USB: deadlock problem
+References: <50A20429.3020109@suse.cz> <s5ha9ulx5xe.wl%tiwai@suse.de>
+In-Reply-To: <s5ha9ulx5xe.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To facilitate upcoming cleanup in twl stack.
-No functional changes.
+On 11/13/2012 09:28 AM, Takashi Iwai wrote:
+> At Tue, 13 Nov 2012 09:26:17 +0100,
+> Jiri Slaby wrote:
+>>
+>> Hello,
+>>
+>> I've just plugged+unplugged+plugged my USB audio card and the audio
+>> subsystem got stuck:
+> 
+> Which kernel?  If it's older than 3.7-rc5, could you try 3.7-rc5?
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl-core.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+Oh, forgot to mention:
+3.7.0-rc5-next-20121112_64+
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index f857097..43c7b4c 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -1077,8 +1077,8 @@ static inline int __init protect_pm_master(void)
- {
- 	int e = 0;
- 
--	e = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
--			TWL4030_PM_MASTER_PROTECT_KEY);
-+	e = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
-+			     TWL4030_PM_MASTER_PROTECT_KEY);
- 	return e;
- }
- 
-@@ -1086,12 +1086,10 @@ static inline int __init unprotect_pm_master(void)
- {
- 	int e = 0;
- 
--	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
--			TWL4030_PM_MASTER_KEY_CFG1,
--			TWL4030_PM_MASTER_PROTECT_KEY);
--	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
--			TWL4030_PM_MASTER_KEY_CFG2,
--			TWL4030_PM_MASTER_PROTECT_KEY);
-+	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
-+			      TWL4030_PM_MASTER_PROTECT_KEY);
-+	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG2,
-+			      TWL4030_PM_MASTER_PROTECT_KEY);
- 
- 	return e;
- }
+thanks,
 -- 
-1.8.0
-
+js
+suse labs
