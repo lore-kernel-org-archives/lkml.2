@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2KMSsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:48:18 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58031 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754821Ab2KMSsQ (ORCPT
+	id S1755586Ab2KMSsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:48:46 -0500
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:44760 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab2KMSso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:48:16 -0500
-X-Sasl-enc: +32Z3Jgl8h0uQSjBtmZSxxF/wUgDPHfchODS+Jy2Vuy5 1352832495
-Date: Tue, 13 Nov 2012 10:48:14 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20121113184814.GA24793@kroah.com>
-References: <20121113165106.e592e23693663de49e9d78d0@canb.auug.org.au>
+	Tue, 13 Nov 2012 13:48:44 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjmxANuUolBV5h1yPGdsb2JhbABEhTEjhQC4JgIBfhkBAQEBHxkNJ4IeAQEEATocIwULCANGFCUKGogXCqorkDIUjQ+BfoJ8YQOVe4V7jTk
+X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
+   d="scan'208";a="151440620"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 13 Nov 2012 19:55:05 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 11/13] HID: hid-multitouch: support for hovering
+ devices
+Message-ID: <20121113185505.GA3641@polaris.bitmath.org>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-12-git-send-email-benjamin.tissoires@gmail.com>
+ <20121113164239.GA712@polaris.bitmath.org>
+ <CAN+gG=EbAdfOG_vwt2uamV+JcAKLFqM=zTo9oRQ9RLayrpdsoA@mail.gmail.com>
+ <20121113180453.GA3622@polaris.bitmath.org>
+ <CAN+gG=HyDrr7mWsYGFue_xuzX0xm45n1EDpsDgU1RKJ8SkuP9Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121113165106.e592e23693663de49e9d78d0@canb.auug.org.au>
+In-Reply-To: <CAN+gG=HyDrr7mWsYGFue_xuzX0xm45n1EDpsDgU1RKJ8SkuP9Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 04:51:06PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> In file included from drivers/power/lp8788-charger.c:15:0:
-> include/linux/iio/consumer.h:76:21: error: unknown type name 'u8'
-> include/linux/iio/consumer.h:78:11: error: expected ';', ',' or ')' before 'void'
-> 
-> Caused by commit 92d1079b281f ("staging:iio: add a callback buffer for in
-> kernel push interface").  Presumably just a missing include.
-> 
-> I have reverted that commit for today (it introduces a set of not yet
-> used interfaces).
+> I just intend to force the update of the distance value at the
+> beginning of the touch.
+> This is just to send a coherent state when the finger goes in range,
+> and to make sure that user-space application do not rely on the
+> undefined value (0) whereas the kernel thought it was set to 1.
 
-I've fixed this up in the tree now so you shouldn't have this problem
-with your next pull.
+Right, so we use EVIOCGMTSLOTS. This "problem" occurs with
+ABS_MT_ORIENTATION as well.
 
-thanks,
-
-greg k-h
+Thanks,
+Henrik
