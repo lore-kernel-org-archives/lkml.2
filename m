@@ -1,145 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab2KMQgU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:36:20 -0500
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:33133 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab2KMQgS (ORCPT
+	id S1755283Ab2KMQg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:36:26 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:45898 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab2KMQgW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:36:18 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjWwAIt0olBV5h1yPGdsb2JhbABEhTGFI7gXAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCAMYLhQNGAoaE4d4AwkKqgOGTw2JVBSLLWl5gX6CfGEDlCeBVIV7hTiIAQ
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="224933353"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 17:42:39 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] HID: hid-multitouch: support for hovering
- devices
-Message-ID: <20121113164239.GA712@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-12-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 13 Nov 2012 11:36:22 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v5 0/7] efi_pstore: multiple event logging support
+Thread-Topic: [PATCH v5 0/7] efi_pstore: multiple event logging support
+Thread-Index: Ac3Bu6/pJC77FKD1S1qBOAAnxG76oA==
+Date: Tue, 13 Nov 2012 16:35:29 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138C155D@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352306256-12180-12-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-11-13_07:2012-11-13,2012-11-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1211130141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 05:37:34PM +0100, Benjamin Tissoires wrote:
-> Win8 devices supporting hovering must provides InRange HID field.
+v4 -> v5
+   - Rebase to 3.7-rc5
+   - Add count to an argument of a write callback executed in pstore_console_write()
+     to build successfully in case where CONSIG_PSTORE_CONSOLE=y is specified. (Patch 5/7)
 
-provide the
+v3 -> v4
+   - Rebase to 3.7-rc3
+   - Add ctime to an argument of efi_pstore_erase to build successfully
+     in case where CONFIG_PTORE=n is specified. (Patch 4/7)
+   - Add count to an argument of efi_pstore_erase and efi_pstore_write to
+     build successfully in case where CONFIG_PTORE=n is specified (Patch 5/7)
+   - Fix a white space damage (Patch 6/7)
+   - Modify a logic checking a 3-variable format of a variable name (Patch 7/7)
 
-> The information that the finger is here but is not touching the surface
-> is sent to the user space through ABS_MT_DISTANCE as required by the
-> multitouch protocol.
+v2 -> v3
+   - Create patches 6/7 and 7/7 to work with an existing format of variable name
 
-In the absence of more detailed information, use ABS_MT_DISTANCE with
-a [0,1] interval to distinguish between presence (1) and touch (0).
+v1 -> v2
+   - Separate into 5 patches in accordance with Mike's comment
+   - Erase an extra line of comment in patch 1/5
 
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 24 ++++++++++++++++++++----
->  1 file changed, 20 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index b393c6c..1f3d1e0 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -59,6 +59,7 @@ struct mt_slot {
->  	__s32 x, y, cx, cy, p, w, h;
->  	__s32 contactid;	/* the device ContactID assigned to this slot */
->  	bool touch_state;	/* is the touch valid? */
-> +	bool inrange_state;	/* is the finger in proximity of the sensor? */
->  };
->  
->  struct mt_class {
-> @@ -397,6 +398,12 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	case HID_UP_DIGITIZER:
->  		switch (usage->hid) {
->  		case HID_DG_INRANGE:
-> +			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED) {
-> +				hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_DISTANCE);
-> +				input_set_abs_params(hi->input,
-> +					ABS_MT_DISTANCE, -1, 1, 0, 0);
+[Issue]
 
-Why [-1,1] here?
+    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+    So, in the following scenario, we will lose 1st panic messages.
 
-> +			}
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
-> @@ -516,6 +523,10 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  		if (slotnum < 0 || slotnum >= td->maxcontacts)
->  			return;
->  
-> +		if (!test_bit(ABS_MT_DISTANCE, input->absbit))
-> +			/* If InRange is not present, rely on TipSwitch */
-> +			s->inrange_state = s->touch_state;
-> +
+    1. kernel panics.
+    2. efi_pstore is kicked and writes panic messages to NVRAM.
+    3. system reboots.
+    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
 
-This could be skipped, see below.
+[Solution]
 
->  		if (td->mtclass.quirks & MT_QUIRK_IGNORE_DUPLICATES &&
->  		    input_mt_is_active(&input->mt->slots[slotnum]) &&
->  		    input_mt_is_used(input->mt, &input->mt->slots[slotnum]))
-> @@ -523,9 +534,9 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  
->  		input_mt_slot(input, slotnum);
->  		input_mt_report_slot_state(input, MT_TOOL_FINGER,
-> -			s->touch_state);
-> -		if (s->touch_state) {
-> -			/* this finger is on the screen */
-> +			s->inrange_state);
-> +		if (s->inrange_state) {
-> +			/* this finger is in proximity of the sensor */
+   Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
 
-Using (s->touch_state || s->inrange_state) here seems simpler.
+   http://marc.info/?l=linux-kernel&m=134273270704586&w=2
 
->  			int wide = (s->w > s->h);
->  			/* divided by two to match visual scale of touch */
->  			int major = max(s->w, s->h) >> 1;
-> @@ -535,11 +546,14 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
->  			input_event(input, EV_ABS, ABS_MT_TOOL_X, s->cx);
->  			input_event(input, EV_ABS, ABS_MT_TOOL_Y, s->cy);
-> +			input_event(input, EV_ABS, ABS_MT_DISTANCE,
-> +				!s->touch_state);
->  			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
->  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
-> -		}
-> +		} else
-> +			input_event(input, EV_ABS, ABS_MT_DISTANCE, -1);
+   And there are two possible solutions right now.
+     - First one is introducing some policy overwriting existing logs.
+     - Second one is simply holding multiple log without overwriting any entries.
 
-Just skip this, please.
+   We haven't decided the overwriting policy which is reasonable to all users yet.
+   But I believe we agree that just holding multiple logs is a reasonable way.
 
->  	}
->  
->  	td->num_received++;
-> @@ -567,6 +581,8 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->  		case HID_DG_INRANGE:
->  			if (quirks & MT_QUIRK_VALID_IS_INRANGE)
->  				td->curvalid = value;
-> +			if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
-> +				td->curdata.inrange_state = value;
->  			break;
->  		case HID_DG_TIPSWITCH:
->  			if (quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
-> -- 
-> 1.7.11.7
-> 
+   We may need further discussions to find the possibility of introducing overwriting
+   policy, especially getting critical messages in multiple oops case.
+   But I would like to begin with a simple and reasonable way to everyone.
+   So, this patch takes an approach just holding multiple logs.
 
-Thanks,
-Henrik
+Seiji Aguchi (7):
+  efi_pstore: Check remaining space with QueryVariableInfo() before
+    writing data
+  efi_pstore: Add a logic erasing entries to an erase callback
+  efi_pstore: Remove a logic erasing entries from a write callback to
+    hold multiple logs
+  efi_pstore: Add ctime to argument of erase callback
+  efi_pstore: Add a sequence counter to a variable name
+  efi_pstore: Add a format check for an existing variable name at
+    reading time
+  efi_pstore: Add a format check for an existing variable name at erasing time
+
+ drivers/acpi/apei/erst.c   |   16 ++--
+ drivers/firmware/efivars.c |  156 +++++++++++++++++++++++++++++++-------------
+ fs/pstore/inode.c          |    7 ++-
+ fs/pstore/internal.h       |    2 +-
+ fs/pstore/platform.c       |   13 ++--
+ fs/pstore/ram.c            |    9 +--
+ include/linux/efi.h        |    1 +
+ include/linux/pstore.h     |    6 +-
+ 8 files changed, 140 insertions(+), 70 deletions(-)
+
