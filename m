@@ -1,42 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab2KMLMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:12:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26812 "EHLO mx1.redhat.com"
+	id S1754882Ab2KMLNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:13:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49003 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab2KMLMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:12:50 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <14071.1352805065@warthog.procyon.org.uk>
-References: <14071.1352805065@warthog.procyon.org.uk> <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com> <1378.1352379110@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, Josh Boyer <jwboyer@gmail.com>,
-        acme@ghostprotocols.net, mingo@kernel.org, tglx@linutronix.de,
-        bp@alien8.de, namhyung@gmail.com, torvalds@linux-foundation.org,
-        paulus@samba.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [GIT PULL] UAPI: perf fixes
+	id S1754844Ab2KMLND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:03 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/31] mm: compaction: Move migration fail/success stats to migrate.c
 Date: Tue, 13 Nov 2012 11:12:30 +0000
-Message-ID: <14097.1352805150@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <1352805180-1607-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
+References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+The compact_pages_moved and compact_pagemigrate_failed events are
+convenient for determining if compaction is active and to what
+degree migration is succeeding but it's at the wrong level. Other
+users of migration may also want to know if migration is working
+properly and this will be particularly true for any automated
+NUMA migration. This patch moves the counters down to migration
+with the new events called pgmigrate_success and pgmigrate_fail.
+The compact_blocks_moved counter is removed because while it was
+useful for debugging initially, it's worthless now as no meaningful
+conclusions can be drawn from its value.
 
-> Josh Boyer <jwboyer@gmail.com> wrote:
-> 
-> > This patch seems to break building perf on ppc64.  It fails with:
-> 
-> Hmmm...  Getting my hands on an ARM or ppc/ppc64 box running Fedora is a
-> problem, and as far as I know, this needs to be built natively or maybe
-> cross-compiled with a full environment (including graphics libs).
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/vm_event_item.h |    4 +++-
+ mm/compaction.c               |    4 ----
+ mm/migrate.c                  |    6 ++++++
+ mm/vmstat.c                   |    7 ++++---
+ 4 files changed, 13 insertions(+), 8 deletions(-)
 
-Actually, having said that, it doesn't need to run Fedora specifically - only
-a sufficiently recent environment that it can build a cutting-edge kernel.
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 3d31145..8aa7cb9 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++#ifdef CONFIG_MIGRATION
++		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
++#endif
+ #ifdef CONFIG_COMPACTION
+-		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..00ad883 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
+ 
+-		count_vm_event(COMPACTBLOCKS);
+-		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
+-		if (nr_remaining)
+-			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
+ 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+ 						nr_remaining);
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 77ed2d7..04687f6 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
++	int nr_succeeded = 0;
+ 	int pass = 0;
+ 	struct page *page;
+ 	struct page *page2;
+@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
+ 				retry++;
+ 				break;
+ 			case 0:
++				nr_succeeded++;
+ 				break;
+ 			default:
+ 				/* Permanent failure */
+@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
+ 	}
+ 	rc = 0;
+ out:
++	if (nr_succeeded)
++		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
++	if (nr_failed)
++		count_vm_events(PGMIGRATE_FAIL, nr_failed);
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c737057..89a7fd6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
+ 
+ 	"pgrotated",
+ 
++#ifdef CONFIG_MIGRATION
++	"pgmigrate_success",
++	"pgmigrate_fail",
++#endif
+ #ifdef CONFIG_COMPACTION
+-	"compact_blocks_moved",
+-	"compact_pages_moved",
+-	"compact_pagemigrate_failed",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
+-- 
+1.7.9.2
 
-David
