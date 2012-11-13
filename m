@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab2KMQTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:19:15 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:42299 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2KMQTM (ORCPT
+	id S932115Ab2KMQT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:19:27 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22131 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102Ab2KMQTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:19:12 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjOwABFyolBV5h1yPGdsb2JhbABEhTGFI7gXAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCANGFA0YChoTh3gDCQqpeoZPDYlUFIstgWKBfoJ8YQOUJ4FUhXuDToFqiAE
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="448606684"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 17:25:31 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 09/13] HID: hid-multitouch: add
- MT_QUIRK_IGNORE_DUPLICATES
-Message-ID: <20121113162531.GA669@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-10-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 13 Nov 2012 11:19:24 -0500
+Message-ID: <50A272E7.9080103@oracle.com>
+Date: Tue, 13 Nov 2012 11:18:47 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352306256-12180-10-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: marcel@holtmann.org, gustavo@padovan.org,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: net, bluetooth: object debug warning in bt_host_release()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Hi all,
 
-> this prevents a device to reuse contact id 0 several time when
-> sending garbage values to complete the report.
+While fuzzing with trinity on a KVM tools (lkvm) guest running latest -next kernel I've
+stumbled on the following:
 
-This quirk allows a device to reuse a contact id when sending garbage
-inactive contacts at the end of a report.
+[ 1434.201149] ------------[ cut here ]------------
+[ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
+[ 1434.208324] ODEBUG: free active (active state 0) object type: work_struct hint: hci_power_on+0x0/0x90
+[ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    3.7.0-rc5-next-20121112-sasha-00018-g2f4ce0e #127
+[ 1434.210760] Call Trace:
+[ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
+[ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
+[ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
+[ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
+[ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
+[ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55/0xa0
+[ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x230
+[ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
+[ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
+[ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
+[ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
+[ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
+[ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
+[ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
+[ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
+[ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
+[ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
+[ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
+[ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
+[ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
+[ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
+[ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
+[ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
+[ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
+[ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
 
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 6 ++++++
->  include/linux/input/mt.h     | 6 ++++++
->  2 files changed, 12 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 2352770..351c814 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -52,6 +52,7 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
->  #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
->  #define MT_QUIRK_NO_AREA		(1 << 9)
-> +#define MT_QUIRK_IGNORE_DUPLICATES	(1 << 10)
->  
->  struct mt_slot {
->  	__s32 x, y, cx, cy, p, w, h;
-> @@ -510,6 +511,11 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  		if (slotnum < 0 || slotnum >= td->maxcontacts)
->  			return;
->  
-> +		if (td->mtclass.quirks & MT_QUIRK_IGNORE_DUPLICATES &&
+Not that the guest doesn't emulate anything that looks like a bluetooth device or
+has bluetooth capabilities.
 
-Don't like parenthesis, i see :-)
-
-> +		    input_mt_is_active(&input->mt->slots[slotnum]) &&
-> +		    input_mt_is_used(input->mt, &input->mt->slots[slotnum]))
-> +				return;
-> +
-
-It init_mt_slots failed earlier (no checks), input->mt can be NULL
-here. Also, a local variable instead of repetition would be nice.
-
->  		input_mt_slot(input, slotnum);
->  		input_mt_report_slot_state(input, MT_TOOL_FINGER,
->  			s->touch_state);
-> diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
-> index cc5cca7..2e86bd0 100644
-> --- a/include/linux/input/mt.h
-> +++ b/include/linux/input/mt.h
-> @@ -69,6 +69,12 @@ static inline bool input_mt_is_active(const struct input_mt_slot *slot)
->  	return input_mt_get_value(slot, ABS_MT_TRACKING_ID) >= 0;
->  }
->  
-> +static inline bool input_mt_is_used(const struct input_mt *mt,
-> +				    const struct input_mt_slot *slot)
-> +{
-> +	return slot->frame == mt->frame;
-> +}
-> +
-
-This is ok, although I would prefer to also change input-mt.c to use
-this helper function. Possibly that turns this hunk into a separate patch.
-
->  int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
->  			unsigned int flags);
->  void input_mt_destroy_slots(struct input_dev *dev);
-> -- 
-> 1.7.11.7
-> 
 
 Thanks,
-Henrik
+Sasha
