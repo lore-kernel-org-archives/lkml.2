@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab2KMWBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:01:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37901 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab2KMWA5 (ORCPT
+	id S1753478Ab2KMWA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:00:58 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34577 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750832Ab2KMWA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Nov 2012 17:00:57 -0500
-Date: Tue, 13 Nov 2012 14:00:45 -0800
-From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
-Message-ID: <tip-2e8458dfe4202df75543402c7343b8f94de4101e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20121019090049.GF26718@alberich>
-References: <20121019090049.GF26718@alberich>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cacheinfo:
-  Make use of CPUID 0x8000001d for cache information on AMD
-Git-Commit-ID: 2e8458dfe4202df75543402c7343b8f94de4101e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 14:00:50 -0800 (PST)
+Message-ID: <1352844053.15747.111.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: [GIT PULL] EFI changes for v3.8
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>
+Date: Tue, 13 Nov 2012 22:00:53 +0000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e8458dfe4202df75543402c7343b8f94de4101e
-Gitweb:     http://git.kernel.org/tip/2e8458dfe4202df75543402c7343b8f94de4101e
-Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
-AuthorDate: Fri, 19 Oct 2012 11:00:49 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 13 Nov 2012 11:22:30 -0800
+Hi guys,
 
-x86, cacheinfo: Make use of CPUID 0x8000001d for cache information on AMD
+The following changes since commit 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c:
 
-Rely on CPUID 0x8000001d for cache information when AMD CPUID topology
-extensions are available.
+  x86: efi: Turn off efi_enabled after setup on mixed fw/kernel (2012-10-25 19:09:40 +0100)
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/r/20121019090049.GF26718@alberich
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+are available in the git repository at:
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 8ce7a83..cd2e1cc 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -538,7 +538,11 @@ __cpuinit cpuid4_cache_lookup_regs(int index,
- 	unsigned		edx;
- 
- 	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
--		amd_cpuid4(index, &eax, &ebx, &ecx);
-+		if (cpu_has_topoext)
-+			cpuid_count(0x8000001d, index, &eax.full,
-+				    &ebx.full, &ecx.full, &edx);
-+		else
-+			amd_cpuid4(index, &eax, &ebx, &ecx);
- 		amd_init_l3_cache(this_leaf, index);
- 	} else {
- 		cpuid_count(4, index, &eax.full, &ebx.full, &ecx.full, &edx);
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.8
+
+for you to fetch changes up to fdafa1c8261d4fe2350e63e8dd315bfd58674455:
+
+  Merge branch 'next' (2012-11-13 21:30:02 +0000)
+
+----------------------------------------------------------------
+
+EFI updates for v3.8
+
+  * A new EFI variable filesystem, efivarfs, which addresses the
+    shortcomings of the old sysfs EFI variable code.
+
+  * We now switch to a 1:1 mapped pagetable for all virtual EFI
+    calls. This is actually a workaround for an ASUS firmware bug
+    which expects the physical mappings to still be around at runtime.
+
+  * Because of the above fix Jan's patch to use EFI for the platform
+    wall clock can be re-applied (it was originally reverted because
+    it broke some ASUS machines).
+
+----------------------------------------------------------------
+Andy Whitcroft (5):
+      efivarfs: efivarfs_file_read ensure we free data in error paths
+      efivarfs: efivarfs_create() ensure we drop our reference on inode on error
+      efivarfs: efivarfs_fill_super() fix inode reference counts
+      efivarfs: efivarfs_fill_super() ensure we free our temporary name
+      efivarfs: efivarfs_fill_super() ensure we clean up correctly on error
+
+Jan Beulich (1):
+      x86-64/efi: Use EFI to deal with platform wall clock (again)
+
+Jeremy Kerr (3):
+      efi: Handle deletions and size changes in efivarfs_write_file
+      efivarfs: Implement exclusive access for {get,set}_variable
+      efi: Clarify GUID length calculations
+
+Lee, Chun-Yi (1):
+      efi: add efivars kobject to efi sysfs folder
+
+Matt Fleming (11):
+      efivarfs: Add documentation for the EFI variable filesystem
+      x86, mm: Include the entire kernel memory map in trampoline_pgd
+      x86, efi: 1:1 pagetable mapping for virtual EFI calls
+      efivarfs: Return an error if we fail to read a variable
+      efivarfs: Replace magic number with sizeof(attributes)
+      efivarfs: Add unique magic number
+      efivarfs: Make 'datasize' unsigned long
+      efivarfs: Return a consistent error when efivarfs_get_inode() fails
+      efivarfs: Fix return value of efivarfs_file_write()
+      efivarfs: Use query_variable_info() to limit kmalloc()
+      Merge branch 'next'
+
+Matthew Garrett (1):
+      efi: Add support for a UEFI variable filesystem
+
+Xiaoyan Zhang (1):
+      x86/kernel: remove tboot 1:1 page table creation code
+
+ Documentation/filesystems/00-INDEX     |   2 +
+ Documentation/filesystems/efivarfs.txt |  16 +
+ arch/x86/include/asm/efi.h             |  28 +-
+ arch/x86/kernel/tboot.c                |  78 +----
+ arch/x86/mm/init_64.c                  |   9 +-
+ arch/x86/mm/ioremap.c                  | 105 +++++++
+ arch/x86/mm/pageattr.c                 |  10 +-
+ arch/x86/platform/efi/efi.c            |  29 +-
+ arch/x86/platform/efi/efi_64.c         |  15 +
+ arch/x86/realmode/init.c               |  17 +-
+ drivers/firmware/efivars.c             | 513 ++++++++++++++++++++++++++++++++-
+ include/linux/efi.h                    |   9 +-
+ include/uapi/linux/magic.h             |   1 +
+ init/main.c                            |   8 +-
+ 14 files changed, 714 insertions(+), 126 deletions(-)
+ create mode 100644 Documentation/filesystems/efivarfs.txt
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
