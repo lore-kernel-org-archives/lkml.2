@@ -1,152 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2KMPtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:49:49 -0500
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:46026 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab2KMPtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:49:46 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjWwAOppolBV5h1yPGdsb2JhbABEhTGFI7gXAgF+GQEBAQEfGQ0ngh4BAQUnExwTAQ8QCAMYLhQNGAoaE4d4AxOqAIZSDYlUFIstaXmBfoJ8YQOUJ4FUgR2EXoU4iAE
-X-IronPort-AV: E=Sophos;i="4.80,767,1344204000"; 
-   d="scan'208";a="228956547"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 16:56:06 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 07/13] HID: hid-multitouch: support T and C for win8
- devices
-Message-ID: <20121113155606.GA561@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-8-git-send-email-benjamin.tissoires@gmail.com>
+	id S1755243Ab2KMPuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:50:14 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38251 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530Ab2KMPp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 10:45:56 -0500
+Subject: [PATCH 02/15] nfsd: make nfs4_client network namespace dependent
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Date: Tue, 13 Nov 2012 18:48:28 +0300
+Message-ID: <20121113154828.12577.80401.stgit@localhost.localdomain>
+In-Reply-To: <20121113154722.12577.57671.stgit@localhost.localdomain>
+References: <20121113154722.12577.57671.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352306256-12180-8-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 05:37:30PM +0100, Benjamin Tissoires wrote:
-> Win8 input specification clarifies the X and Y sent by devices.
-> It distincts the position where the user wants to Touch (T) from
-> the center of the ellipsoide (C). This patch enable supports for this
-> distinction in hid-multitouch.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 46 +++++++++++++++++++++++++++++++++++---------
->  1 file changed, 37 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index ae57b8f..54367f4 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -54,7 +54,7 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_NO_AREA		(1 << 9)
->  
->  struct mt_slot {
-> -	__s32 x, y, p, w, h;
-> +	__s32 x, y, cx, cy, p, w, h;
->  	__s32 contactid;	/* the device ContactID assigned to this slot */
->  	bool touch_state;	/* is the touch valid? */
->  };
-> @@ -323,6 +323,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	struct mt_device *td = hid_get_drvdata(hdev);
->  	struct mt_class *cls = &td->mtclass;
->  	int code;
-> +	struct hid_usage *prev_usage = NULL;
->  
->  	/* Only map fields from TouchScreen or TouchPad collections.
->  	* We need to ignore fields that belong to other collections
-> @@ -345,23 +346,42 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	if (field->physical == HID_DG_STYLUS)
->  		return -1;
->  
-> +	if (usage->usage_index)
-> +		prev_usage = &field->usage[usage->usage_index - 1];
-> +
->  	switch (usage->hid & HID_USAGE_PAGE) {
->  
->  	case HID_UP_GENDESK:
->  		switch (usage->hid) {
->  		case HID_GD_X:
-> -			hid_map_usage(hi, usage, bit, max,
-> +			if (prev_usage && (prev_usage->hid == usage->hid)) {
-> +				hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_TOOL_X);
-> +				set_abs(hi->input, ABS_MT_TOOL_X, field,
-> +					cls->sn_move);
-> +			} else {
-> +				hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_X);
-> -			set_abs(hi->input, ABS_MT_POSITION_X, field,
-> -				cls->sn_move);
-> +				set_abs(hi->input, ABS_MT_POSITION_X, field,
-> +					cls->sn_move);
-> +			}
-> +
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
->  		case HID_GD_Y:
-> -			hid_map_usage(hi, usage, bit, max,
-> +			if (prev_usage && (prev_usage->hid == usage->hid)) {
-> +				hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_TOOL_Y);
-> +				set_abs(hi->input, ABS_MT_TOOL_Y, field,
-> +					cls->sn_move);
-> +			} else {
-> +				hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_Y);
-> -			set_abs(hi->input, ABS_MT_POSITION_Y, field,
-> -				cls->sn_move);
-> +				set_abs(hi->input, ABS_MT_POSITION_Y, field,
-> +					cls->sn_move);
-> +			}
-> +
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
-> @@ -502,6 +522,8 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  
->  			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
->  			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-> +			input_event(input, EV_ABS, ABS_MT_TOOL_X, s->cx);
-> +			input_event(input, EV_ABS, ABS_MT_TOOL_Y, s->cy);
->  			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
->  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
-> @@ -553,10 +575,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->  			td->curdata.p = value;
->  			break;
->  		case HID_GD_X:
-> -			td->curdata.x = value;
-> +			if (usage->code == ABS_MT_TOOL_X)
-> +				td->curdata.cx = value;
-> +			else
-> +				td->curdata.x = value;
->  			break;
->  		case HID_GD_Y:
-> -			td->curdata.y = value;
-> +			if (usage->code == ABS_MT_TOOL_Y)
-> +				td->curdata.cy = value;
-> +			else
-> +				td->curdata.y = value;
->  			break;
->  		case HID_DG_WIDTH:
->  			td->curdata.w = value;
-> -- 
-> 1.7.11.7
-> 
+And use it's net where possible.
 
-    Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfs4callback.c |    2 +-
+ fs/nfsd/nfs4recover.c  |    9 +++------
+ fs/nfsd/nfs4state.c    |   15 +++++++++------
+ fs/nfsd/state.h        |    1 +
+ 4 files changed, 14 insertions(+), 13 deletions(-)
 
-Thanks,
-Henrik
+diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+index 7bb187a..8bbe873 100644
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -663,7 +663,7 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
+ 		.to_retries	= 0,
+ 	};
+ 	struct rpc_create_args args = {
+-		.net		= &init_net,
++		.net		= clp->net,
+ 		.address	= (struct sockaddr *) &conn->cb_addr,
+ 		.addrsize	= conn->cb_addrlen,
+ 		.saddress	= (struct sockaddr *) &conn->cb_saddr,
+diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+index 151921b..83d2669 100644
+--- a/fs/nfsd/nfs4recover.c
++++ b/fs/nfsd/nfs4recover.c
+@@ -786,8 +786,7 @@ nfsd4_cld_create(struct nfs4_client *clp)
+ {
+ 	int ret;
+ 	struct cld_upcall *cup;
+-	/* FIXME: determine net from clp */
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+ 	struct cld_net *cn = nn->cld_net;
+ 
+ 	/* Don't upcall if it's already stored */
+@@ -824,8 +823,7 @@ nfsd4_cld_remove(struct nfs4_client *clp)
+ {
+ 	int ret;
+ 	struct cld_upcall *cup;
+-	/* FIXME: determine net from clp */
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+ 	struct cld_net *cn = nn->cld_net;
+ 
+ 	/* Don't upcall if it's already removed */
+@@ -862,8 +860,7 @@ nfsd4_cld_check(struct nfs4_client *clp)
+ {
+ 	int ret;
+ 	struct cld_upcall *cup;
+-	/* FIXME: determine net from clp */
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+ 	struct cld_net *cn = nn->cld_net;
+ 
+ 	/* Don't upcall if one was already stored during this grace pd */
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 6a3661b..865a793 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1247,10 +1247,9 @@ same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
+ 	return 0 == strcmp(cr1->cr_principal, cr2->cr_principal);
+ }
+ 
+-static void gen_clid(struct nfs4_client *clp)
++static void gen_clid(struct nfs4_client *clp, struct nfsd_net *nn)
+ {
+ 	static u32 current_clientid = 1;
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	clp->cl_clientid.cl_boot = nn->boot_time;
+ 	clp->cl_clientid.cl_id = current_clientid++; 
+@@ -1289,6 +1288,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name, char *recdir,
+ 	struct nfs4_client *clp;
+ 	struct sockaddr *sa = svc_addr(rqstp);
+ 	int ret;
++	struct net *net = SVC_NET(rqstp);
+ 
+ 	clp = alloc_client(name);
+ 	if (clp == NULL)
+@@ -1321,6 +1321,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name, char *recdir,
+ 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
+ 	gen_confirm(clp);
+ 	clp->cl_cb_session = NULL;
++	clp->net = net;
+ 	return clp;
+ }
+ 
+@@ -1428,7 +1429,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_r
+ 	else
+ 		goto out_err;
+ 
+-	conn->cb_addrlen = rpc_uaddr2sockaddr(&init_net, se->se_callback_addr_val,
++	conn->cb_addrlen = rpc_uaddr2sockaddr(clp->net, se->se_callback_addr_val,
+ 					    se->se_callback_addr_len,
+ 					    (struct sockaddr *)&conn->cb_addr,
+ 					    sizeof(conn->cb_addr));
+@@ -1578,6 +1579,7 @@ nfsd4_exchange_id(struct svc_rqst *rqstp,
+ 	nfs4_verifier		verf = exid->verifier;
+ 	struct sockaddr		*sa = svc_addr(rqstp);
+ 	bool	update = exid->flags & EXCHGID4_FLAG_UPD_CONFIRMED_REC_A;
++	struct nfsd_net		*nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+ 
+ 	rpc_ntop(sa, addr_str, sizeof(addr_str));
+ 	dprintk("%s rqstp=%p exid=%p clname.len=%u clname.data=%p "
+@@ -1667,7 +1669,7 @@ out_new:
+ 	}
+ 	new->cl_minorversion = 1;
+ 
+-	gen_clid(new);
++	gen_clid(new, nn);
+ 	add_to_unconfirmed(new, strhashval);
+ out_copy:
+ 	exid->clientid.cl_boot = new->cl_clientid.cl_boot;
+@@ -2199,7 +2201,8 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	struct nfs4_client	*conf, *unconf, *new;
+ 	__be32 			status;
+ 	char                    dname[HEXDIR_LEN];
+-	
++	struct nfsd_net		*nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
++
+ 	status = nfs4_make_rec_clidname(dname, &clname);
+ 	if (status)
+ 		return status;
+@@ -2234,7 +2237,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 		/* case 1: probable callback update */
+ 		copy_clid(new, conf);
+ 	else /* case 4 (new client) or cases 2, 3 (client reboot): */
+-		gen_clid(new);
++		gen_clid(new, nn);
+ 	new->cl_minorversion = 0;
+ 	gen_callback(new, setclid, rqstp);
+ 	add_to_unconfirmed(new, strhashval);
+diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+index 8053b57..b064577 100644
+--- a/fs/nfsd/state.h
++++ b/fs/nfsd/state.h
+@@ -283,6 +283,7 @@ struct nfs4_client {
+ 	unsigned long		cl_cb_slot_busy;
+ 	struct rpc_wait_queue	cl_cb_waitq;	/* backchannel callers may */
+ 						/* wait here for slots */
++	struct net		*net;
+ };
+ 
+ static inline void
+
