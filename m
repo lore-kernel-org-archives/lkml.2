@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab2KMWLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:11:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37983 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab2KMWLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:11:44 -0500
-Message-ID: <50A2C572.30307@zytor.com>
-Date: Tue, 13 Nov 2012 14:10:58 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1754040Ab2KMWNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:13:36 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50461 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab2KMWNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:13:34 -0500
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: [GIT PULL] EFI changes for v3.8
-References: <1352844053.15747.111.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1352844053.15747.111.camel@mfleming-mobl1.ger.corp.intel.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Nov 2012 14:13:13 -0800
+Message-ID: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
+Subject: [3.6 regression?] THP + migration/compaction livelock (I think)
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 02:00 PM, Matt Fleming wrote:
-> Hi guys,
-> 
-> The following changes since commit 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c:
-> 
->   x86: efi: Turn off efi_enabled after setup on mixed fw/kernel (2012-10-25 19:09:40 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.8
-> 
-> for you to fetch changes up to fdafa1c8261d4fe2350e63e8dd315bfd58674455:
-> 
+I've seen an odd problem three times in the past two weeks.  I suspect
+a Linux 3.6 regression.  I"m on 3.6.3-1.fc17.x86_64.  I run a parallel
+compilation, and no progress is made.  All cpus are pegged at 100%
+system time by the respective cc1plus processes.  Reading
+/proc/<pid>/stack shows either
 
-This is a lambda merge... are the commits in efi-for-3.7 already
-upstream?  If so, there is no reason to include them in this pull request.
+[<ffffffff8108e01a>] __cond_resched+0x2a/0x40
+[<ffffffff8114e432>] isolate_migratepages_range+0xb2/0x620
+[<ffffffff8114eba4>] compact_zone+0x144/0x410
+[<ffffffff8114f152>] compact_zone_order+0x82/0xc0
+[<ffffffff8114f271>] try_to_compact_pages+0xe1/0x130
+[<ffffffff816143db>] __alloc_pages_direct_compact+0xaa/0x190
+[<ffffffff81133d26>] __alloc_pages_nodemask+0x526/0x990
+[<ffffffff81171496>] alloc_pages_vma+0xb6/0x190
+[<ffffffff81182683>] do_huge_pmd_anonymous_page+0x143/0x340
+[<ffffffff811549fd>] handle_mm_fault+0x27d/0x320
+[<ffffffff81620adc>] do_page_fault+0x15c/0x4b0
+[<ffffffff8161d625>] page_fault+0x25/0x30
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-For now I am going to put efi/next into -tip as core/efi.  Please let me
-know if we should put the efi-for-3.7 into an urgent branch.
+or
 
-	-hpa
+[<ffffffffffffffff>] 0xffffffffffffffff
 
+seemingly at random (i.e. if I read that file twice in a row, I might
+see different results).  If I had to guess, I'd say that
+
+perf shows no 'faults'.  The livelock resolved after several minutes
+(and before I got far enough with perf to get more useful results).
+Every time this happens, firefox hangs but everything else keeps
+working.
+
+If I trigger it again, I'll try to grab /proc/zoneinfo and /proc/meminfo.
+
+--Andy
