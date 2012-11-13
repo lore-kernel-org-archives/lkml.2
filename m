@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab2KMR6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:58:33 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:65088 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab2KMR6b (ORCPT
+	id S1755501Ab2KMR6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:58:46 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:58341 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab2KMR6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:58:31 -0500
+	Tue, 13 Nov 2012 12:58:32 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai+wAOGJolBV5h1yPGdsb2JhbABEhTGFI7gmAgF+GQEBAQEfGQ0ngh4BAQQBOhwjBQsIA0YUJQoaLodpCqoVkC0UjQ+BfoJ8YQOVe4V7jTk
+X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
+   d="scan'208";a="224964773"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 13 Nov 2012 19:04:53 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 11/13] HID: hid-multitouch: support for hovering
+ devices
+Message-ID: <20121113180453.GA3622@polaris.bitmath.org>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-12-git-send-email-benjamin.tissoires@gmail.com>
+ <20121113164239.GA712@polaris.bitmath.org>
+ <CAN+gG=EbAdfOG_vwt2uamV+JcAKLFqM=zTo9oRQ9RLayrpdsoA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1352796571.2262.50.camel@sauron.fi.intel.com>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-75-git-send-email-keescook@chromium.org>
-	<1352734564.2262.7.camel@sauron.fi.intel.com>
-	<CAGXu5jJ2XMB+hhzH0MFY3=tkF+iFY8srbKbvy6RMxdrnb0-FYA@mail.gmail.com>
-	<1352796571.2262.50.camel@sauron.fi.intel.com>
-Date: Tue, 13 Nov 2012 09:58:30 -0800
-X-Google-Sender-Auth: UvhXIqgIpksr1_IA005aFGX0uIM
-Message-ID: <CAGXu5jL6rP=YQfgDhGNhcq4nGLj6Tjzv-XgxQXBTk4EReriySg@mail.gmail.com>
-Subject: Re: [PATCH 074/193] drivers/mtd/devices: remove CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: dedekind1@gmail.com
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Richard Weinberger <richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=EbAdfOG_vwt2uamV+JcAKLFqM=zTo9oRQ9RLayrpdsoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 12:49 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Mon, 2012-11-12 at 08:43 -0800, Kees Cook wrote:
->> On Mon, Nov 12, 2012 at 7:36 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
->> > On Tue, 2012-10-23 at 13:02 -0700, Kees Cook wrote:
->> >> This config item has not carried much meaning for a while now and is
->> >> almost always enabled by default. As agreed during the Linux kernel
->> >> summit, remove it.
->> >>
->> >> CC: David Woodhouse <dwmw2@infradead.org>
->> >> CC: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
->> >> CC: Robert Jarzmik <robert.jarzmik@free.fr>
->> >> CC: Fabio Estevam <fabio.estevam@freescale.com>
->> >> CC: Richard Weinberger <richard@nod.at>
->> >> Signed-off-by: Kees Cook <keescook@chromium.org>
->> >
->> > Will this stuff be merged in one go or you want it to go via subsystems?
->>
->> Stephen Rothwell asked that subsystem maintainers carry the patches to
->> make it easier to do merges, but in the cases where that's not
->> possible or a maintainer would like me to carry it, I've been putting
->> them into my linux-next tree. It's up to you; if you take it into your
->> tree, I'll drop it from mine. Just let me know either way. :)
->
-> Ok, please, carry and merge them with the rest of your EXPERIMENTAL
-> removal patches.
->
-> Acked-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
->
-> Thanks!
+Hi Benjamin,
 
-Cool, great. I CCed you on a few of the patches in the series; should
-I just push this one mtd, or all the ones that you're CCed on?
+> > Why [-1,1] here?
+> 
+> At first, I only used [0,1]. However, it's still the same problem with
+> the information being kept between the touches:
+> if you start an application after having touched your device, you
+> normally have to ask for the different per-touche states to get x, y,
+> distance, pressure, etc...
+> However, this is not much mandatory because the protocol in its
+> current form ensures that you will get the new states of the axes when
+> a new touch occurs.
+
+Right, the stateful communication requires a full state read after
+opening the deivce, although in most cases this is not really
+necessary. This is no different for ABS_MT_DISTANCE, of course.
+
+> ABS_MT_DISTANCE is a little bit different here because the protocol
+> guarantees that once you get the "not in range" state through
+> tracking_id == -1, distance should be 1.
+> When the new touch of the very same slot occurs, you also have the
+> guarantee that distance is at 1 too.
+
+ABS_MT_DISTANCE is just another attribute of the slot, so it really is
+no different.
+
+> So basically, if you don't ask for the slot states, you will never get
+> that very first distance.
+
+Which will not be important either; as long as the slot is unused, it
+does not matter what the attributes of that slot are.
+
+> I know that it's a user-space problem, but honestly, I don't want to
+> fix several user-space problems when we could fix it through the
+> protocol.
+> 
+> I can see 2 solutions:
+> - set the range to: [0,1] and still sending -1 (or 2) for the invalid
+> distance value (if it's not clamped)
+> - set the range to: [0,2] and having: 0 for touch, 1 for hovering, and
+> 2 for not in range
+> 
+> Does that make sense?
+
+I just do not see what problem you want to solve here.
 
 Thanks,
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Henrik
