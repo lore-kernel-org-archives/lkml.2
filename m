@@ -1,337 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2KMURZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:17:25 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:54421 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755650Ab2KMURX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:17:23 -0500
-Message-ID: <1352837845.12850.3.camel@joe-AO722>
-Subject: [PATCH V2] wanrouter: Remove it and the drivers that depend on it
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: rob@landley.net, harryxiyou@gmail.com, jdike@addtoit.com, richard@nod.at,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, benh@kernel.crashing.org,
-        paulus@samba.org, chris@zankel.net, jcmvbkbc@gmail.com,
-        isdn@linux-pingi.de, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xiyoulinuxkernelgroup@googlegroups.com,
-        linux-kernel@zh-kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-xtensa@linux-xtensa.org, netdev@vger.kernel.org
-Date: Tue, 13 Nov 2012 12:17:25 -0800
-In-Reply-To: <20121113.144406.1610017702502358739.davem@davemloft.net>
-References: <67fe0c5701a8c7cfe06b178cf04b1c5c06592714.1352548454.git.joe@perches.com>
-	 <20121113.144406.1610017702502358739.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755718Ab2KMUSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:18:38 -0500
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:64769 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab2KMUSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:18:36 -0500
+From: David Sharp <dhsharp@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v9 1/3] tracing,x86: Add a TSC trace_clock
+Date: Tue, 13 Nov 2012 12:18:21 -0800
+Message-Id: <1352837903-32191-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove wanrouter as it's obsolete and has not been updated
-by sangoma since 2.4.3 or so and it's not used anymore.
+In order to promote interoperability between userspace tracers and ftrace,
+add a trace_clock that reports raw TSC values which will then be recorded
+in the ring buffer. Userspace tracers that also record TSCs are then on
+exactly the same time base as the kernel and events can be unambiguously
+interlaced.
 
-Remove obsolete cyclomx drivers.
-Update files that include now deleted wanrouter bits.
+Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+timestamp values.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+v2:
+Move arch-specific bits out of generic code.
+v3:
+Rename "x86-tsc", cleanups
+v7:
+Generic arch bits in Kbuild.
+
+Google-Bug-Id: 6980623
+Signed-off-by: David Sharp <dhsharp@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
+ arch/alpha/include/asm/Kbuild      |    1 +
+ arch/arm/include/asm/Kbuild        |    1 +
+ arch/arm64/include/asm/Kbuild      |    1 +
+ arch/avr32/include/asm/Kbuild      |    1 +
+ arch/blackfin/include/asm/Kbuild   |    1 +
+ arch/c6x/include/asm/Kbuild        |    1 +
+ arch/cris/include/asm/Kbuild       |    1 +
+ arch/frv/include/asm/Kbuild        |    1 +
+ arch/h8300/include/asm/Kbuild      |    1 +
+ arch/hexagon/include/asm/Kbuild    |    1 +
+ arch/ia64/include/asm/Kbuild       |    1 +
+ arch/m32r/include/asm/Kbuild       |    1 +
+ arch/m68k/include/asm/Kbuild       |    1 +
+ arch/microblaze/include/asm/Kbuild |    1 +
+ arch/mips/include/asm/Kbuild       |    1 +
+ arch/mn10300/include/asm/Kbuild    |    1 +
+ arch/openrisc/include/asm/Kbuild   |    1 +
+ arch/parisc/include/asm/Kbuild     |    1 +
+ arch/powerpc/include/asm/Kbuild    |    1 +
+ arch/s390/include/asm/Kbuild       |    1 +
+ arch/score/include/asm/Kbuild      |    1 +
+ arch/sh/include/asm/Kbuild         |    1 +
+ arch/sparc/include/asm/Kbuild      |    1 +
+ arch/tile/include/asm/Kbuild       |    1 +
+ arch/um/include/asm/Kbuild         |    1 +
+ arch/unicore32/include/asm/Kbuild  |    1 +
+ arch/x86/include/asm/trace_clock.h |   20 ++++++++++++++++++++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/trace_clock.c      |   21 +++++++++++++++++++++
+ arch/xtensa/include/asm/Kbuild     |    1 +
+ include/asm-generic/trace_clock.h  |   16 ++++++++++++++++
+ include/linux/trace_clock.h        |    2 ++
+ kernel/trace/trace.c               |    1 +
+ 33 files changed, 88 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace_clock.h
+ create mode 100644 arch/x86/kernel/trace_clock.c
+ create mode 100644 include/asm-generic/trace_clock.h
 
-On Tue, 2012-11-13 at 14:44 -0500, David Miller wrote:
-> Remove wanrouter as it's obsolete and has not been updated
-> > by sangoma since 2.4.3 or so and it's not used anymore.
-> > 
-> > Remove obsolete cyclomx drivers.
-> > Update defconfig files that enable wanrouter.
-> > Update files that include now deleted wanrouter bits.
-> []
-> I'm fine with this change, except the arch defconfig bits.
-> 
-> We've been leaving those alone, and letting the arch maintainers
-> do the updates themselves periodically.
-> 
-> Please resubmit this with those parts removed.
-
-That seems an odd workflow as it leaves dangling CONFIG_<foo>
-options set, but I guess it doesn't hurt so here it is.
-
-I just removed the modified arch/.../<foo>defconfig files.
-
- Documentation/ioctl/ioctl-number.txt |    1 -
- Documentation/magic-number.txt       |    1 -
- Documentation/zh_CN/magic-number.txt |    1 -
- drivers/isdn/i4l/isdn_x25iface.c     |    1 -
- drivers/isdn/i4l/isdn_x25iface.h     |    1 -
- drivers/net/wan/Kconfig              |   54 --
- drivers/net/wan/Makefile             |    5 -
- drivers/net/wan/cycx_drv.c           |  569 ------------
- drivers/net/wan/cycx_main.c          |  346 --------
- drivers/net/wan/cycx_x25.c           | 1602 ----------------------------------
- include/linux/cyclomx.h              |   77 --
- include/linux/cycx_drv.h             |   64 --
- include/linux/wanrouter.h            |  129 ---
- include/uapi/linux/Kbuild            |    1 -
- include/uapi/linux/wanrouter.h       |  452 ----------
- net/Kconfig                          |    1 -
- net/Makefile                         |    1 -
- net/socket.c                         |    1 -
- net/wanrouter/Kconfig                |   27 -
- net/wanrouter/Makefile               |    7 -
- net/wanrouter/patchlevel             |    1 -
- net/wanrouter/wanmain.c              |  782 -----------------
- net/wanrouter/wanproc.c              |  380 --------
- 23 files changed, 0 insertions(+), 4504 deletions(-)
- delete mode 100644 drivers/net/wan/cycx_drv.c
- delete mode 100644 drivers/net/wan/cycx_main.c
- delete mode 100644 drivers/net/wan/cycx_x25.c
- delete mode 100644 include/linux/cyclomx.h
- delete mode 100644 include/linux/cycx_drv.h
- delete mode 100644 include/linux/wanrouter.h
- delete mode 100644 include/uapi/linux/wanrouter.h
- delete mode 100644 net/wanrouter/Kconfig
- delete mode 100644 net/wanrouter/Makefile
- delete mode 100644 net/wanrouter/patchlevel
- delete mode 100644 net/wanrouter/wanmain.c
- delete mode 100644 net/wanrouter/wanproc.c
-
-diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 2152b0e..028a034 100644
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -179,7 +179,6 @@ Code  Seq#(hex)	Include File		Comments
- 'V'	C0	media/davinci/vpfe_capture.h	conflict!
- 'V'	C0	media/si4713.h		conflict!
- 'W'	00-1F	linux/watchdog.h	conflict!
--'W'	00-1F	linux/wanrouter.h	conflict!
- 'W'	00-3F	sound/asound.h		conflict!
- 'X'	all	fs/xfs/xfs_fs.h		conflict!
- 		and fs/xfs/linux-2.6/xfs_ioctl32.h
-diff --git a/Documentation/magic-number.txt b/Documentation/magic-number.txt
-index 82761a3..0c39e72 100644
---- a/Documentation/magic-number.txt
-+++ b/Documentation/magic-number.txt
-@@ -122,7 +122,6 @@ SLAB_C_MAGIC          0x4f17a36d  kmem_cache        mm/slab.c
- COW_MAGIC             0x4f4f4f4d  cow_header_v1     arch/um/drivers/ubd_user.c
- I810_CARD_MAGIC       0x5072696E  i810_card         sound/oss/i810_audio.c
- TRIDENT_CARD_MAGIC    0x5072696E  trident_card      sound/oss/trident.c
--ROUTER_MAGIC          0x524d4157  wan_device        include/linux/wanrouter.h
- SCC_MAGIC             0x52696368  gs_port           drivers/char/scc.h
- SAVEKMSG_MAGIC1       0x53415645  savekmsg          arch/*/amiga/config.c
- GDA_MAGIC             0x58464552  gda               arch/mips/include/asm/sn/gda.h
-diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
-index 4263022..51b7e15 100644
---- a/Documentation/zh_CN/magic-number.txt
-+++ b/Documentation/zh_CN/magic-number.txt
-@@ -122,7 +122,6 @@ SLAB_C_MAGIC          0x4f17a36d  kmem_cache        mm/slab.c
- COW_MAGIC             0x4f4f4f4d  cow_header_v1     arch/um/drivers/ubd_user.c
- I810_CARD_MAGIC       0x5072696E  i810_card         sound/oss/i810_audio.c
- TRIDENT_CARD_MAGIC    0x5072696E  trident_card      sound/oss/trident.c
--ROUTER_MAGIC          0x524d4157  wan_device        include/linux/wanrouter.h
- SCC_MAGIC             0x52696368  gs_port           drivers/char/scc.h
- SAVEKMSG_MAGIC1       0x53415645  savekmsg          arch/*/amiga/config.c
- GDA_MAGIC             0x58464552  gda               arch/mips/include/asm/sn/gda.h
-diff --git a/drivers/isdn/i4l/isdn_x25iface.c b/drivers/isdn/i4l/isdn_x25iface.c
-index e2d4e58..d00c86d 100644
---- a/drivers/isdn/i4l/isdn_x25iface.c
-+++ b/drivers/isdn/i4l/isdn_x25iface.c
-@@ -21,7 +21,6 @@
- #include <linux/netdevice.h>
- #include <linux/concap.h>
- #include <linux/slab.h>
--#include <linux/wanrouter.h>
- #include <net/x25device.h>
- #include "isdn_x25iface.h"
+diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+index 64ffc9e..dcfabb9 100644
+--- a/arch/alpha/include/asm/Kbuild
++++ b/arch/alpha/include/asm/Kbuild
+@@ -11,3 +11,4 @@ header-y += reg.h
+ header-y += regdef.h
+ header-y += sysinfo.h
+ generic-y += exec.h
++generic-y += trace_clock.h
+diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
+index f70ae17..514e398 100644
+--- a/arch/arm/include/asm/Kbuild
++++ b/arch/arm/include/asm/Kbuild
+@@ -31,5 +31,6 @@ generic-y += sockios.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += timex.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += unaligned.h
+diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+index a581a22..6e9ca46 100644
+--- a/arch/arm64/include/asm/Kbuild
++++ b/arch/arm64/include/asm/Kbuild
+@@ -43,6 +43,7 @@ generic-y += swab.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += unaligned.h
+ generic-y += user.h
+diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
+index 4807ded..4dd4f78 100644
+--- a/arch/avr32/include/asm/Kbuild
++++ b/arch/avr32/include/asm/Kbuild
+@@ -1,3 +1,4 @@
  
-diff --git a/drivers/isdn/i4l/isdn_x25iface.h b/drivers/isdn/i4l/isdn_x25iface.h
-index 0b26e3b..ca08e08 100644
---- a/drivers/isdn/i4l/isdn_x25iface.h
-+++ b/drivers/isdn/i4l/isdn_x25iface.h
-@@ -19,7 +19,6 @@
- #endif
+ generic-y	+= clkdev.h
+ generic-y	+= exec.h
++generic-y	+= trace_clock.h
+diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
+index 5a0625a..27d7075 100644
+--- a/arch/blackfin/include/asm/Kbuild
++++ b/arch/blackfin/include/asm/Kbuild
+@@ -38,6 +38,7 @@ generic-y += statfs.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += unaligned.h
+diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
+index 112a496..eae7b59 100644
+--- a/arch/c6x/include/asm/Kbuild
++++ b/arch/c6x/include/asm/Kbuild
+@@ -49,6 +49,7 @@ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += tlbflush.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += user.h
+diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+index 6d43a95..15a122c 100644
+--- a/arch/cris/include/asm/Kbuild
++++ b/arch/cris/include/asm/Kbuild
+@@ -11,3 +11,4 @@ header-y += sync_serial.h
+ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += module.h
++generic-y += trace_clock.h
+diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
+index 4a159da..c5d7670 100644
+--- a/arch/frv/include/asm/Kbuild
++++ b/arch/frv/include/asm/Kbuild
+@@ -1,3 +1,4 @@
  
- #include <linux/skbuff.h>
--#include <linux/wanrouter.h>
- #include <linux/isdn.h>
- #include <linux/concap.h>
+ generic-y += clkdev.h
+ generic-y += exec.h
++generic-y += trace_clock.h
+diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
+index 50bbf38..4bc8ae7 100644
+--- a/arch/h8300/include/asm/Kbuild
++++ b/arch/h8300/include/asm/Kbuild
+@@ -3,3 +3,4 @@ include include/asm-generic/Kbuild.asm
+ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += module.h
++generic-y += trace_clock.h
+diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
+index 3bfa9b3..bdb54ce 100644
+--- a/arch/hexagon/include/asm/Kbuild
++++ b/arch/hexagon/include/asm/Kbuild
+@@ -48,6 +48,7 @@ generic-y += stat.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += unaligned.h
+diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
+index dd02f09..05b03ec 100644
+--- a/arch/ia64/include/asm/Kbuild
++++ b/arch/ia64/include/asm/Kbuild
+@@ -2,3 +2,4 @@
+ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += kvm_para.h
++generic-y += trace_clock.h
+diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
+index 50bbf38..4bc8ae7 100644
+--- a/arch/m32r/include/asm/Kbuild
++++ b/arch/m32r/include/asm/Kbuild
+@@ -3,3 +3,4 @@ include include/asm-generic/Kbuild.asm
+ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += module.h
++generic-y += trace_clock.h
+diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
+index 88fa3ac..7f1949c 100644
+--- a/arch/m68k/include/asm/Kbuild
++++ b/arch/m68k/include/asm/Kbuild
+@@ -24,6 +24,7 @@ generic-y += sections.h
+ generic-y += siginfo.h
+ generic-y += statfs.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += word-at-a-time.h
+ generic-y += xor.h
+diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
+index 8653072..2957fcc 100644
+--- a/arch/microblaze/include/asm/Kbuild
++++ b/arch/microblaze/include/asm/Kbuild
+@@ -3,3 +3,4 @@ include include/asm-generic/Kbuild.asm
+ header-y  += elf.h
+ generic-y += clkdev.h
+ generic-y += exec.h
++generic-y += trace_clock.h
+diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
+index 533053d..9b54b7a 100644
+--- a/arch/mips/include/asm/Kbuild
++++ b/arch/mips/include/asm/Kbuild
+@@ -1 +1,2 @@
+ # MIPS headers
++generic-y += trace_clock.h
+diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
+index 4a159da..c5d7670 100644
+--- a/arch/mn10300/include/asm/Kbuild
++++ b/arch/mn10300/include/asm/Kbuild
+@@ -1,3 +1,4 @@
  
-diff --git a/drivers/net/wan/Kconfig b/drivers/net/wan/Kconfig
-index d58431e..0c077b0 100644
---- a/drivers/net/wan/Kconfig
-+++ b/drivers/net/wan/Kconfig
-@@ -356,60 +356,6 @@ config SDLA
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called sdla.
+ generic-y += clkdev.h
+ generic-y += exec.h
++generic-y += trace_clock.h
+diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
+index 78de680..8971026 100644
+--- a/arch/openrisc/include/asm/Kbuild
++++ b/arch/openrisc/include/asm/Kbuild
+@@ -60,6 +60,7 @@ generic-y += swab.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += user.h
+diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
+index bac8deb..ff4c9fa 100644
+--- a/arch/parisc/include/asm/Kbuild
++++ b/arch/parisc/include/asm/Kbuild
+@@ -3,3 +3,4 @@ generic-y += word-at-a-time.h auxvec.h user.h cputime.h emergency-restart.h \
+ 	  segment.h topology.h vga.h device.h percpu.h hw_irq.h mutex.h \
+ 	  div64.h irq_regs.h kdebug.h kvm_para.h local64.h local.h param.h \
+ 	  poll.h xor.h clkdev.h exec.h
++generic-y += trace_clock.h
+diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
+index a4fe15e..2d62b48 100644
+--- a/arch/powerpc/include/asm/Kbuild
++++ b/arch/powerpc/include/asm/Kbuild
+@@ -2,3 +2,4 @@
  
--# Wan router core.
--config WAN_ROUTER_DRIVERS
--	tristate "WAN router drivers"
--	depends on WAN_ROUTER
--	---help---
--	  Connect LAN to WAN via Linux box.
--
--	  Select driver your card and remember to say Y to "Wan Router."
--	  You will need the wan-tools package which is available from
--	  <ftp://ftp.sangoma.com/>.
--
--	  Note that the answer to this question won't directly affect the
--	  kernel except for how subordinate drivers may be built:
--	  saying N will just cause the configurator to skip all
--	  the questions about WAN router drivers.
--
--	  If unsure, say N.
--
--config CYCLADES_SYNC
--	tristate "Cyclom 2X(tm) cards (EXPERIMENTAL)"
--	depends on WAN_ROUTER_DRIVERS && (PCI || ISA)
--	---help---
--	  Cyclom 2X from Cyclades Corporation <http://www.avocent.com/> is an
--	  intelligent multiprotocol WAN adapter with data transfer rates up to
--	  512 Kbps. These cards support the X.25 and SNA related protocols.
--
--	  While no documentation is available at this time please grab the
--	  wanconfig tarball in
--	  <http://www.conectiva.com.br/~acme/cycsyn-devel/> (with minor changes
--	  to make it compile with the current wanrouter include files; efforts
--	  are being made to use the original package available at
--	  <ftp://ftp.sangoma.com/>).
--
--	  Feel free to contact me or the cycsyn-devel mailing list at
--	  <acme@conectiva.com.br> and <cycsyn-devel@bazar.conectiva.com.br> for
--	  additional details, I hope to have documentation available as soon as
--	  possible. (Cyclades Brazil is writing the Documentation).
--
--	  The next questions will ask you about the protocols you want the
--	  driver to support (for now only X.25 is supported).
--
--	  If you have one or more of these cards, say Y to this option.
--
--	  To compile this driver as a module, choose M here: the
--	  module will be called cyclomx.
--
--config CYCLOMX_X25
--	bool "Cyclom 2X X.25 support (EXPERIMENTAL)"
--	depends on CYCLADES_SYNC
--	help
--	  Connect a Cyclom 2X card to an X.25 network.
--
--	  Enabling X.25 support will enlarge your kernel by about 11 kB.
--
- # X.25 network drivers
- config LAPBETHER
- 	tristate "LAPB over Ethernet driver (EXPERIMENTAL)"
-diff --git a/drivers/net/wan/Makefile b/drivers/net/wan/Makefile
-index df70248..c135ef4 100644
---- a/drivers/net/wan/Makefile
-+++ b/drivers/net/wan/Makefile
-@@ -5,10 +5,6 @@
- # Rewritten to use lists instead of if-statements.
- #
+ generic-y += clkdev.h
+ generic-y += rwsem.h
++generic-y += trace_clock.h
+diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
+index 0633dc6..f313f9c 100644
+--- a/arch/s390/include/asm/Kbuild
++++ b/arch/s390/include/asm/Kbuild
+@@ -1,3 +1,4 @@
  
--cyclomx-y                       := cycx_main.o
--cyclomx-$(CONFIG_CYCLOMX_X25)	+= cycx_x25.o
--cyclomx-objs			:= $(cyclomx-y)  
--
- obj-$(CONFIG_HDLC)		+= hdlc.o
- obj-$(CONFIG_HDLC_RAW)		+= hdlc_raw.o
- obj-$(CONFIG_HDLC_RAW_ETH)	+= hdlc_raw_eth.o
-@@ -28,7 +24,6 @@ obj-$(CONFIG_LANMEDIA)		+= lmc/
  
- obj-$(CONFIG_DLCI)		+= dlci.o 
- obj-$(CONFIG_SDLA)		+= sdla.o
--obj-$(CONFIG_CYCLADES_SYNC)	+= cycx_drv.o cyclomx.o
- obj-$(CONFIG_LAPBETHER)		+= lapbether.o
- obj-$(CONFIG_SBNI)		+= sbni.o
- obj-$(CONFIG_N2)		+= n2.o
-diff --git a/drivers/net/wan/cycx_drv.c b/drivers/net/wan/cycx_drv.c
-deleted file mode 100644
-index 2a3ecae..0000000
-diff --git a/drivers/net/wan/cycx_main.c b/drivers/net/wan/cycx_main.c
-deleted file mode 100644
-index 81fbbad..0000000
-diff --git a/drivers/net/wan/cycx_x25.c b/drivers/net/wan/cycx_x25.c
-deleted file mode 100644
-index 06f3f63..0000000
-diff --git a/include/linux/cyclomx.h b/include/linux/cyclomx.h
-deleted file mode 100644
-index b88f7f4..0000000
-diff --git a/include/linux/cycx_drv.h b/include/linux/cycx_drv.h
-deleted file mode 100644
-index 12fe6b0..0000000
-diff --git a/include/linux/wanrouter.h b/include/linux/wanrouter.h
-deleted file mode 100644
-index cec4b41..0000000
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index e194387..c54b7e7 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -408,7 +408,6 @@ header-y += virtio_ring.h
- header-y += virtio_rng.h
- header-y += vt.h
- header-y += wait.h
--header-y += wanrouter.h
- header-y += watchdog.h
- header-y += wimax.h
- header-y += wireless.h
-diff --git a/include/uapi/linux/wanrouter.h b/include/uapi/linux/wanrouter.h
-deleted file mode 100644
-index 7617df2..0000000
-diff --git a/net/Kconfig b/net/Kconfig
-index 30b48f5..4cf4bb5 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -209,7 +209,6 @@ source "net/ipx/Kconfig"
- source "drivers/net/appletalk/Kconfig"
- source "net/x25/Kconfig"
- source "net/lapb/Kconfig"
--source "net/wanrouter/Kconfig"
- source "net/phonet/Kconfig"
- source "net/ieee802154/Kconfig"
- source "net/mac802154/Kconfig"
-diff --git a/net/Makefile b/net/Makefile
-index 4f4ee08..c5aa8b3 100644
---- a/net/Makefile
-+++ b/net/Makefile
-@@ -26,7 +26,6 @@ obj-$(CONFIG_BRIDGE)		+= bridge/
- obj-$(CONFIG_NET_DSA)		+= dsa/
- obj-$(CONFIG_IPX)		+= ipx/
- obj-$(CONFIG_ATALK)		+= appletalk/
--obj-$(CONFIG_WAN_ROUTER)	+= wanrouter/
- obj-$(CONFIG_X25)		+= x25/
- obj-$(CONFIG_LAPB)		+= lapb/
- obj-$(CONFIG_NETROM)		+= netrom/
-diff --git a/net/socket.c b/net/socket.c
-index 2ca51c7..5c4d82c 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -69,7 +69,6 @@
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/mutex.h>
--#include <linux/wanrouter.h>
- #include <linux/if_bridge.h>
- #include <linux/if_frad.h>
- #include <linux/if_vlan.h>
-diff --git a/net/wanrouter/Kconfig b/net/wanrouter/Kconfig
-deleted file mode 100644
-index a157a2e..0000000
-diff --git a/net/wanrouter/Makefile b/net/wanrouter/Makefile
-deleted file mode 100644
-index 4da14bc..0000000
-diff --git a/net/wanrouter/patchlevel b/net/wanrouter/patchlevel
-deleted file mode 100644
-index c043eea..0000000
-diff --git a/net/wanrouter/wanmain.c b/net/wanrouter/wanmain.c
-deleted file mode 100644
-index 2ab7850..0000000
-diff --git a/net/wanrouter/wanproc.c b/net/wanrouter/wanproc.c
-deleted file mode 100644
-index c43612e..0000000
+ generic-y += clkdev.h
++generic-y += trace_clock.h
+diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
+index ec697ae..16e41fe 100644
+--- a/arch/score/include/asm/Kbuild
++++ b/arch/score/include/asm/Kbuild
+@@ -3,3 +3,4 @@ include include/asm-generic/Kbuild.asm
+ header-y +=
+ 
+ generic-y += clkdev.h
++generic-y += trace_clock.h
+diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
+index 29f83be..280bea9 100644
+--- a/arch/sh/include/asm/Kbuild
++++ b/arch/sh/include/asm/Kbuild
+@@ -31,5 +31,6 @@ generic-y += socket.h
+ generic-y += statfs.h
+ generic-y += termbits.h
+ generic-y += termios.h
++generic-y += trace_clock.h
+ generic-y += ucontext.h
+ generic-y += xor.h
+diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
+index 645a58d..e26d430 100644
+--- a/arch/sparc/include/asm/Kbuild
++++ b/arch/sparc/include/asm/Kbuild
+@@ -8,4 +8,5 @@ generic-y += local64.h
+ generic-y += irq_regs.h
+ generic-y += local.h
+ generic-y += module.h
++generic-y += trace_clock.h
+ generic-y += word-at-a-time.h
+diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+index 6948015..b17b9b8 100644
+--- a/arch/tile/include/asm/Kbuild
++++ b/arch/tile/include/asm/Kbuild
+@@ -34,5 +34,6 @@ generic-y += sockios.h
+ generic-y += statfs.h
+ generic-y += termbits.h
+ generic-y += termios.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += xor.h
+diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+index 0f6e7b3..b30f34a 100644
+--- a/arch/um/include/asm/Kbuild
++++ b/arch/um/include/asm/Kbuild
+@@ -2,3 +2,4 @@ generic-y += bug.h cputime.h device.h emergency-restart.h futex.h hardirq.h
+ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
+ generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
+ generic-y += switch_to.h clkdev.h
++generic-y += trace_clock.h
+diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
+index c910c98..7be503e 100644
+--- a/arch/unicore32/include/asm/Kbuild
++++ b/arch/unicore32/include/asm/Kbuild
+@@ -54,6 +54,7 @@ generic-y += syscalls.h
+ generic-y += termbits.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += ucontext.h
+ generic-y += unaligned.h
+diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..5c16527
+--- /dev/null
++++ b/arch/x86/include/asm/trace_clock.h
+@@ -0,0 +1,20 @@
++#ifndef _ASM_X86_TRACE_CLOCK_H
++#define _ASM_X86_TRACE_CLOCK_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#ifdef CONFIG_X86_TSC
++
++extern u64 notrace trace_clock_x86_tsc(void);
++
++# define ARCH_TRACE_CLOCKS \
++	{ trace_clock_x86_tsc,	"x86-tsc" },
++
++#else /* !CONFIG_X86_TSC */
++
++#define ARCH_TRACE_CLOCKS
++
++#endif
++
++#endif  /* _ASM_X86_TRACE_CLOCK_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 9fd5eed..34e923a 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
++obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+new file mode 100644
+index 0000000..25b9937
+--- /dev/null
++++ b/arch/x86/kernel/trace_clock.c
+@@ -0,0 +1,21 @@
++/*
++ * X86 trace clocks
++ */
++#include <asm/trace_clock.h>
++#include <asm/barrier.h>
++#include <asm/msr.h>
++
++/*
++ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
++ *
++ * Unlike the other clocks, this is not in nanoseconds.
++ */
++u64 notrace trace_clock_x86_tsc(void)
++{
++	u64 ret;
++
++	rdtsc_barrier();
++	rdtscll(ret);
++
++	return ret;
++}
+diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
+index 6d13027..095f0a2 100644
+--- a/arch/xtensa/include/asm/Kbuild
++++ b/arch/xtensa/include/asm/Kbuild
+@@ -25,4 +25,5 @@ generic-y += siginfo.h
+ generic-y += statfs.h
+ generic-y += termios.h
+ generic-y += topology.h
++generic-y += trace_clock.h
+ generic-y += xor.h
+diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+new file mode 100644
+index 0000000..6726f1b
+--- /dev/null
++++ b/include/asm-generic/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_GENERIC_TRACE_CLOCK_H
++#define _ASM_GENERIC_TRACE_CLOCK_H
++/*
++ * Arch-specific trace clocks.
++ */
++
++/*
++ * Additional trace clocks added to the trace_clocks
++ * array in kernel/trace/trace.c
++ * None if the architecture has not defined it.
++ */
++#ifndef ARCH_TRACE_CLOCKS
++# define ARCH_TRACE_CLOCKS
++#endif
++
++#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index 4eb4902..d563f37 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -12,6 +12,8 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ 
++#include <asm/trace_clock.h>
++
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
+ extern u64 notrace trace_clock_global(void);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index c1434b5..0d20620 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -488,6 +488,7 @@ static struct {
+ 	{ trace_clock_local,	"local" },
+ 	{ trace_clock_global,	"global" },
+ 	{ trace_clock_counter,	"counter" },
++	ARCH_TRACE_CLOCKS
+ };
+ 
+ int trace_clock_id;
 -- 
-1.7.8.112.g3fd21
-
-
+1.7.7.3
 
