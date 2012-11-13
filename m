@@ -1,103 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2KMMsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 07:48:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab2KMMsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 07:48:06 -0500
-Date: Tue, 13 Nov 2012 10:47:48 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wei Yongjun <weiyj.lk@gmail.com>, rusty@rustcorp.com.au, mst@redhat.com,
-        yongjun_wei@trendmicro.com.cn,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] virtio: balloon: fix missing unlock on error in
- fill_balloon()
-Message-ID: <20121113124748.GA1636@optiplex.redhat.com>
-References: <CAPgLHd80RvvGdTKN3aR7dQ_b1S3_pAkMwmGjewc7zgf=4jafcg@mail.gmail.com>
- <20121112153453.fa3edc3d.akpm@linux-foundation.org>
+	id S1754139Ab2KMMts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 07:49:48 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:61349 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab2KMMtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 07:49:46 -0500
+Date: Tue, 13 Nov 2012 21:49:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
+ index of first flushed entry
+Message-ID: <20121113124937.GA4360@barrios>
+References: <1351702597-10795-1-git-send-email-js1304@gmail.com>
+ <1351702597-10795-5-git-send-email-js1304@gmail.com>
+ <20121101050347.GD24883@bbox>
+ <CAAmzW4P=YdFt9KFmHcQh=tJheuZuvZVojYGNTqfO4YDy+C8_1g@mail.gmail.com>
+ <20121102224236.GB2070@barrios>
+ <CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121112153453.fa3edc3d.akpm@linux-foundation.org>
+In-Reply-To: <CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 03:34:53PM -0800, Andrew Morton wrote:
-> On Mon, 12 Nov 2012 21:50:40 +0800
-> Wei Yongjun <weiyj.lk@gmail.com> wrote:
+On Tue, Nov 13, 2012 at 09:30:57AM +0900, JoonSoo Kim wrote:
+> 2012/11/3 Minchan Kim <minchan@kernel.org>:
+> > Hi Joonsoo,
+> >
+> > On Sat, Nov 03, 2012 at 04:07:25AM +0900, JoonSoo Kim wrote:
+> >> Hello, Minchan.
+> >>
+> >> 2012/11/1 Minchan Kim <minchan@kernel.org>:
+> >> > On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
+> >> >> In current code, after flush_all_zero_pkmaps() is invoked,
+> >> >> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
+> >> >> return index of first flushed entry. With this index,
+> >> >> we can immediately map highmem page to virtual address represented by index.
+> >> >> So change return type of flush_all_zero_pkmaps()
+> >> >> and return index of first flushed entry.
+> >> >>
+> >> >> Additionally, update last_pkmap_nr to this index.
+> >> >> It is certain that entry which is below this index is occupied by other mapping,
+> >> >> therefore updating last_pkmap_nr to this index is reasonable optimization.
+> >> >>
+> >> >> Cc: Mel Gorman <mel@csn.ul.ie>
+> >> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> >> Cc: Minchan Kim <minchan@kernel.org>
+> >> >> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >> >>
+> >> >> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+> >> >> index ef788b5..97ad208 100644
+> >> >> --- a/include/linux/highmem.h
+> >> >> +++ b/include/linux/highmem.h
+> >> >> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+> >> >>
+> >> >>  #ifdef CONFIG_HIGHMEM
+> >> >>  #include <asm/highmem.h>
+> >> >> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
+> >> >>
+> >> >>  /* declarations for linux/mm/highmem.c */
+> >> >>  unsigned int nr_free_highpages(void);
+> >> >> diff --git a/mm/highmem.c b/mm/highmem.c
+> >> >> index d98b0a9..b365f7b 100644
+> >> >> --- a/mm/highmem.c
+> >> >> +++ b/mm/highmem.c
+> >> >> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
+> >> >>       return virt_to_page(addr);
+> >> >>  }
+> >> >>
+> >> >> -static void flush_all_zero_pkmaps(void)
+> >> >> +static unsigned int flush_all_zero_pkmaps(void)
+> >> >>  {
+> >> >>       int i;
+> >> >> -     int need_flush = 0;
+> >> >> +     unsigned int index = PKMAP_INVALID_INDEX;
+> >> >>
+> >> >>       flush_cache_kmaps();
+> >> >>
+> >> >> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
+> >> >>                         &pkmap_page_table[i]);
+> >> >>
+> >> >>               set_page_address(page, NULL);
+> >> >> -             need_flush = 1;
+> >> >> +             if (index == PKMAP_INVALID_INDEX)
+> >> >> +                     index = i;
+> >> >>       }
+> >> >> -     if (need_flush)
+> >> >> +     if (index != PKMAP_INVALID_INDEX)
+> >> >>               flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+> >> >> +
+> >> >> +     return index;
+> >> >>  }
+> >> >>
+> >> >>  /**
+> >> >> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
+> >> >>   */
+> >> >>  void kmap_flush_unused(void)
+> >> >>  {
+> >> >> +     unsigned int index;
+> >> >> +
+> >> >>       lock_kmap();
+> >> >> -     flush_all_zero_pkmaps();
+> >> >> +     index = flush_all_zero_pkmaps();
+> >> >> +     if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
+> >> >> +             last_pkmap_nr = index;
+> >> >
+> >> > I don't know how kmap_flush_unused is really fast path so how my nitpick
+> >> > is effective. Anyway,
+> >> > What problem happens if we do following as?
+> >> >
+> >> > lock()
+> >> > index = flush_all_zero_pkmaps();
+> >> > if (index != PKMAP_INVALID_INDEX)
+> >> >         last_pkmap_nr = index;
+> >> > unlock();
+> >> >
+> >> > Normally, last_pkmap_nr is increased with searching empty slot in
+> >> > map_new_virtual. So I expect return value of flush_all_zero_pkmaps
+> >> > in kmap_flush_unused normally become either less than last_pkmap_nr
+> >> > or last_pkmap_nr + 1.
+> >>
+> >> There is a case that return value of kmap_flush_unused() is larger
+> >> than last_pkmap_nr.
+> >
+> > I see but why it's problem? kmap_flush_unused returns larger value than
+> > last_pkmap_nr means that there is no free slot at below the value.
+> > So unconditional last_pkmap_nr update is vaild.
 > 
-> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> > 
-> > Add the missing unlock before return from function fill_balloon()
-> > in the error handling case.
-> > 
-> > Introduced by 9864a8(virtio_balloon: introduce migration primitives
-> > to balloon pages)
-> > 
-> > dpatch engine is used to auto generate this patch.
-> > (https://github.com/weiyj/dpatch)
-> > 
-> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> > ---
-> >  drivers/virtio/virtio_balloon.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > index f70151b..72e8dcb 100644
-> > --- a/drivers/virtio/virtio_balloon.c
-> > +++ b/drivers/virtio/virtio_balloon.c
-> > @@ -152,8 +152,10 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> >  	}
-> >  
-> >  	/* Didn't get any?  Oh well. */
-> > -	if (vb->num_pfns == 0)
-> > +	if (vb->num_pfns == 0) {
-> > +		mutex_unlock(&vb->balloon_lock);
-> >  		return;
-> > +	}
-> >  
-> >  	tell_host(vb, vb->inflate_vq);
-> >  	mutex_unlock(&vb->balloon_lock);
+> I think that this is not true.
+> Look at the slightly different example.
 > 
-> Well.  Why did this bug occur in the first place?  Because
-> fill_balloon() has multiple return points and one of those was
-> overlooked when adding new locking.
+> Assume last_pkmap = 20 and index 1-9, 12-19 is kmapped. 10, 11 is kunmapped.
 > 
-> This (and the addition of memory leaks) is quite common.  It is part of
-> the reason why so much kernel code uses goto's to avoid multiple return
-> points.  A maintainability thing.
+> do kmap_flush_unused() => flush index 10,11 => last_pkmap = 10;
+> do kunmap() with index 17
+> do kmap_flush_unused() => flush index 17 => last_pkmap = 17?
 > 
-> And we can fix this shortcoming in fill_balloon() without even needing a
-> goto:
-> 
-> --- a/drivers/virtio/virtio_balloon.c~virtio_balloon-introduce-migration-primitives-to-balloon-pages-fix-fix
-> +++ a/drivers/virtio/virtio_balloon.c
-> @@ -151,13 +151,9 @@ static void fill_balloon(struct virtio_b
->  		totalram_pages--;
->  	}
->  
-> -	/* Didn't get any?  Oh well. */
-> -	if (vb->num_pfns == 0) {
-> -		mutex_unlock(&vb->balloon_lock);
-> -		return;
-> -	}
-> -
-> -	tell_host(vb, vb->inflate_vq);
-> +	/* Did we get any? */
-> +	if (vb->num_pfns != 0)
-> +		tell_host(vb, vb->inflate_vq);
->  	mutex_unlock(&vb->balloon_lock);
->  }
->
+> In this case, unconditional last_pkmap_nr update skip one kunmapped index.
+> So, conditional update is needed.
 
-Your fix is far better, as it simplifies the code without loosing that test --
-which only evaluates as true, if we fail to allocate a page right after getting
-into the loop -- /me thinks driver folks place it there to not bother
-tell_host() and the virt_queues if no pageframe is present at that pfns array.
+Thanks for pouinting out, Joonsoo.
+You're right. I misunderstood your flush_all_zero_pkmaps change.
+As your change, flush_all_zero_pkmaps returns first *flushed* free slot index.
+What's the benefit returning flushed flushed free slot index rather than free slot index?
+I think flush_all_zero_pkmaps should return first free slot because customer of
+flush_all_zero_pkmaps doesn't care whether it's just flushed or not.
+What he want is just free or not. In such case, we can remove above check and it makes
+flusha_all_zero_pkmaps more intuitive.
 
 
+-- 
+Kind Regards,
+Minchan Kim
