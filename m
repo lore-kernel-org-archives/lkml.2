@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab2KMLNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:13:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49040 "EHLO mx2.suse.de"
+	id S1754969Ab2KMLSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:18:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49106 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754874Ab2KMLNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:08 -0500
+	id S1754921Ab2KMLNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:16 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/31] mm: numa: pte_numa() and pmd_numa()
-Date: Tue, 13 Nov 2012 11:12:34 +0000
-Message-Id: <1352805180-1607-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/31] mm: migrate: Introduce migrate_misplaced_page()
+Date: Tue, 13 Nov 2012 11:12:41 +0000
+Message-Id: <1352805180-1607-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -25,144 +25,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Implement pte_numa and pmd_numa.
+Note: This was originally based on Peter's patch "mm/migrate: Introduce
+	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
+	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
+	collection". The end result is barely recognisable so signed-offs
+	had to be dropped. If original authors are ok with it, I'll
+	re-add the signed-off-bys.
 
-We must atomically set the numa bit and clear the present bit to
-define a pte_numa or pmd_numa.
+Add migrate_misplaced_page() which deals with migrating pages from
+faults.
 
-Once a pte or pmd has been set as pte_numa or pmd_numa, the next time
-a thread touches a virtual address in the corresponding virtual range,
-a NUMA hinting page fault will trigger. The NUMA hinting page fault
-will clear the NUMA bit and set the present bit again to resolve the
-page fault.
-
-The expectation is that a NUMA hinting page fault is used as part
-of a placement policy that decides if a page should remain on the
-current node or migrated to a different node.
-
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- arch/x86/include/asm/pgtable.h |   65 ++++++++++++++++++++++++++++++++++++++--
- include/asm-generic/pgtable.h  |   12 ++++++++
- 2 files changed, 75 insertions(+), 2 deletions(-)
+ include/linux/migrate.h |    8 ++++
+ mm/migrate.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 110 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a1f780d..e075d57 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -404,7 +404,8 @@ static inline int pte_same(pte_t a, pte_t b)
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 9d1c159..69f60b5 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -13,6 +13,7 @@ enum migrate_reason {
+ 	MR_MEMORY_HOTPLUG,
+ 	MR_SYSCALL,		/* also applies to cpusets */
+ 	MR_MEMPOLICY_MBIND,
++	MR_NUMA_MISPLACED,
+ 	MR_CMA
+ };
  
- static inline int pte_present(pte_t a)
+@@ -39,6 +40,7 @@ extern int migrate_vmas(struct mm_struct *mm,
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_misplaced_page(struct page *page, int node);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -72,5 +74,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ #define migrate_page NULL
+ #define fail_migrate_page NULL
+ 
++static inline
++int migrate_misplaced_page(struct page *page, int node)
++{
++	return -EAGAIN; /* can't migrate now */
++}
+ #endif /* CONFIG_MIGRATION */
++
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 27be9c9..4a92808 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
  {
--	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
-+	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+			       _PAGE_NUMA);
- }
+-	int expected_count;
++	int expected_count = 0;
+ 	void **pslot;
  
- static inline int pte_hidden(pte_t pte)
-@@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
- 	 * the _PAGE_PSE flag will remain set at all times while the
- 	 * _PAGE_PRESENT bit is clear).
- 	 */
--	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
-+				 _PAGE_NUMA);
-+}
-+
-+#ifdef CONFIG_BALANCE_NUMA
-+/*
-+ * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
-+ * same bit too). It's set only when _PAGE_PRESET is not set and it's
-+ * never set if _PAGE_PRESENT is set.
-+ *
-+ * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
-+ * fault triggers on those regions if pte/pmd_numa returns true
-+ * (because _PAGE_PRESENT is not set).
-+ */
-+static inline int pte_numa(pte_t pte)
-+{
-+	return (pte_flags(pte) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return (pmd_flags(pmd) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+#endif
+ 	if (!mapping) {
+@@ -1415,4 +1415,104 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+  	}
+  	return err;
+ }
+-#endif
 +
 +/*
-+ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
-+ * because they're called by the NUMA hinting minor page fault. If we
-+ * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
-+ * would be forced to set it later while filling the TLB after we
-+ * return to userland. That would trigger a second write to memory
-+ * that we optimize away by setting _PAGE_ACCESSED here.
++ * Returns true if this is a safe migration target node for misplaced NUMA
++ * pages. Currently it only checks the watermarks which crude
 + */
-+static inline pte_t pte_mknonnuma(pte_t pte)
++static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
++				   int nr_migrate_pages)
 +{
-+	pte = pte_clear_flags(pte, _PAGE_NUMA);
-+	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
++	int z;
++	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
++		struct zone *zone = pgdat->node_zones + z;
++
++		if (!populated_zone(zone))
++			continue;
++
++		if (zone->all_unreclaimable)
++			continue;
++
++		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
++		if (!zone_watermark_ok(zone, 0,
++				       high_wmark_pages(zone) +
++				       nr_migrate_pages,
++				       0, 0))
++			continue;
++		return true;
++	}
++	return false;
 +}
 +
-+static inline pmd_t pmd_mknonnuma(pmd_t pmd)
++static struct page *alloc_misplaced_dst_page(struct page *page,
++					   unsigned long data,
++					   int **result)
 +{
-+	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
-+	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
++	int nid = (int) data;
++	struct page *newpage;
++
++	newpage = alloc_pages_exact_node(nid,
++					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
++					  __GFP_NOMEMALLOC | __GFP_NORETRY |
++					  __GFP_NOWARN) &
++					 ~GFP_IOFS, 0);
++	return newpage;
 +}
 +
-+static inline pte_t pte_mknuma(pte_t pte)
++/*
++ * Attempt to migrate a misplaced page to the specified destination
++ * node. Caller is expected to have an elevated reference count on
++ * the page that will be dropped by this function before returning.
++ */
++int migrate_misplaced_page(struct page *page, int node)
 +{
-+	pte = pte_set_flags(pte, _PAGE_NUMA);
-+	return pte_clear_flags(pte, _PAGE_PRESENT);
++	int isolated = 0;
++	LIST_HEAD(migratepages);
++
++	/*
++	 * Don't migrate pages that are mapped in multiple processes.
++	 * TODO: Handle false sharing detection instead of this hammer
++	 */
++	if (page_mapcount(page) != 1)
++		goto out;
++
++	/* Avoid migrating to a node that is nearly full */
++	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++		int page_lru;
++
++		if (isolate_lru_page(page)) {
++			put_page(page);
++			goto out;
++		}
++		isolated = 1;
++
++		/*
++		 * Page is isolated which takes a reference count so now the
++		 * callers reference can be safely dropped without the page
++		 * disappearing underneath us during migration
++		 */
++		put_page(page);
++
++		page_lru = page_is_file_cache(page);
++		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++		list_add(&page->lru, &migratepages);
++	}
++
++	if (isolated) {
++		int nr_remaining;
++
++		nr_remaining = migrate_pages(&migratepages,
++				alloc_misplaced_dst_page,
++				node, false, MIGRATE_ASYNC,
++				MR_NUMA_MISPLACED);
++		if (nr_remaining) {
++			putback_lru_pages(&migratepages);
++			isolated = 0;
++		}
++	}
++	BUG_ON(!list_empty(&migratepages));
++out:
++	return isolated;
 +}
 +
-+static inline pmd_t pmd_mknuma(pmd_t pmd)
-+{
-+	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
-+	return pmd_clear_flags(pmd, _PAGE_PRESENT);
- }
- 
- static inline int pmd_none(pmd_t pmd)
-@@ -479,6 +536,10 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
- 
- static inline int pmd_bad(pmd_t pmd)
- {
-+#ifdef CONFIG_BALANCE_NUMA
-+	if (pmd_numa(pmd))
-+		return 0;
-+#endif
- 	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
- }
- 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index b36ce40..896667e 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -554,6 +554,18 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
- }
- 
-+#ifndef CONFIG_BALANCE_NUMA
-+static inline int pte_numa(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_BALANCE_NUMA */
-+
- #endif /* CONFIG_MMU */
- 
- #endif /* !__ASSEMBLY__ */
++#endif /* CONFIG_NUMA */
 -- 
 1.7.9.2
 
