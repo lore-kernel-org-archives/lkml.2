@@ -1,48 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2KMBXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:23:06 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46283 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab2KMBXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:23:04 -0500
+	id S1753955Ab2KMBYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:24:51 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34154 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752968Ab2KMBYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 20:24:50 -0500
+Date: Mon, 12 Nov 2012 20:24:37 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 4/4] bootmem: fix wrong call parameter for free_bootmem()
+Message-ID: <20121113012436.GG10092@cmpxchg.org>
+References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
+ <1352737915-30906-4-git-send-email-js1304@gmail.com>
+ <20121112152342.ce90052a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1211121717060.8225@chino.kir.corp.google.com>
-References: <545706980.41498.1352739027798.JavaMail.mail@webmail19>
- <alpine.DEB.2.00.1211121339000.23347@chino.kir.corp.google.com>
- <CA+55aFz2Kgn0mVV4ozH0g1QGKw1VE6NpgCz9taxxfbCUz2a8VA@mail.gmail.com> <alpine.DEB.2.00.1211121717060.8225@chino.kir.corp.google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 12 Nov 2012 17:22:41 -0800
-X-Google-Sender-Auth: qXyQqNE8S7TqvinYr-IM7H_EX6E
-Message-ID: <CA+55aFwSxwjqK8CScNBWvzk=ExDqREAGAyRoZLW4zjOu4dyxqw@mail.gmail.com>
-Subject: Re: OOM changes in Linux 3.7 lead to udev warnings and total breakage
- of KDE 3.5.10/TDE
-To: David Rientjes <rientjes@google.com>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <dave@gnu.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121112152342.ce90052a.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 5:18 PM, David Rientjes <rientjes@google.com> wrote:
->
-> You want to carry a dummy tunable forever?
+On Mon, Nov 12, 2012 at 03:23:42PM -0800, Andrew Morton wrote:
+> On Tue, 13 Nov 2012 01:31:55 +0900
+> Joonsoo Kim <js1304@gmail.com> wrote:
+> 
+> > It is somehow strange that alloc_bootmem return virtual address
+> > and free_bootmem require physical address.
+> > Anyway, free_bootmem()'s first parameter should be physical address.
+> > 
+> > There are some call sites for free_bootmem() with virtual address.
+> > So fix them.
+> 
+> Well gee, I wonder how that happened :(
 
-Feel free to make it non-dummy.
+free_bootmem() is the counterpart to reserve_bootmem() to configure
+physical memory ranges.  Allocations are assumed to be permanent.
 
-> If not, then how long if two years isn't sufficient?
+> How does this look?
 
-What part of "We don't break user space" do you have trouble understanding?
+Much better.  How about this in addition?
 
-There is no time limit. It's not about time. It's about not breaking user space.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
 
-End of discussion. I don't understand why people have such a hard time
-understanding such a simple concept. If people reports it breaks
-user-space, we fix it. And we keep fixing things until nobody uses the
-old versions any more. Seriously, IT IS THAT SIMPLE.
-
-                 Linus
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 7b74452..b519cb2 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -49,7 +49,7 @@ extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
+ extern unsigned long free_all_bootmem(void);
+ 
+ extern void free_bootmem_node(pg_data_t *pgdat,
+-			      unsigned long addr,
++			      unsigned long physaddr,
+ 			      unsigned long size);
+ extern void free_bootmem(unsigned long physaddr, unsigned long size);
+ extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 4c079ba..5135d84 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -147,7 +147,7 @@ unsigned long __init init_bootmem(unsigned long start, unsigned long pages)
+ 
+ /*
+  * free_bootmem_late - free bootmem pages directly to page allocator
+- * @addr: starting physical address of the range
++ * @physaddr: starting physical address of the range
+  * @size: size of the range in bytes
+  *
+  * This is only useful when the bootmem allocator has already been torn
+@@ -385,7 +385,7 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
+ 
+ /**
+  * free_bootmem - mark a page range as usable
+- * @addr: starting physical address of the range
++ * @physaddr: starting physical address of the range
+  * @size: size of the range in bytes
+  *
+  * Partial pages will be considered reserved and left as they are.
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index 714d5d6..a532960 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -58,21 +58,21 @@ static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+ 
+ /*
+  * free_bootmem_late - free bootmem pages directly to page allocator
+- * @addr: starting address of the range
++ * @physaddr: starting physical address of the range
+  * @size: size of the range in bytes
+  *
+  * This is only useful when the bootmem allocator has already been torn
+  * down, but we are still initializing the system.  Pages are given directly
+  * to the page allocator, no bootmem metadata is updated because it is gone.
+  */
+-void __init free_bootmem_late(unsigned long addr, unsigned long size)
++void __init free_bootmem_late(unsigned long physaddr, unsigned long size)
+ {
+ 	unsigned long cursor, end;
+ 
+-	kmemleak_free_part(__va(addr), size);
++	kmemleak_free_part(__va(physaddr), size);
+ 
+-	cursor = PFN_UP(addr);
+-	end = PFN_DOWN(addr + size);
++	cursor = PFN_UP(physaddr);
++	end = PFN_DOWN(physaddr + size);
+ 
+ 	for (; cursor < end; cursor++) {
+ 		__free_pages_bootmem(pfn_to_page(cursor), 0);
+@@ -188,17 +188,17 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
+ 
+ /**
+  * free_bootmem - mark a page range as usable
+- * @addr: starting address of the range
++ * @physaddr: starting physical address of the range
+  * @size: size of the range in bytes
+  *
+  * Partial pages will be considered reserved and left as they are.
+  *
+  * The range must be contiguous but may span node boundaries.
+  */
+-void __init free_bootmem(unsigned long addr, unsigned long size)
++void __init free_bootmem(unsigned long physaddr, unsigned long size)
+ {
+-	kmemleak_free_part(__va(addr), size);
+-	memblock_free(addr, size);
++	kmemleak_free_part(__va(physaddr), size);
++	memblock_free(physaddr, size);
+ }
+ 
+ static void * __init ___alloc_bootmem_nopanic(unsigned long size,
