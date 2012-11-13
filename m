@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab2KMSL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:11:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57157 "EHLO bear.ext.ti.com"
+	id S1755534Ab2KMSMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:12:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40649 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab2KMSL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:11:57 -0500
+	id S1755175Ab2KMSMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:12:20 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <b-cousson@ti.com>, <devel@driverdev.osuosl.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>
-Subject: [PATCHv2 4/5] staging: omap-thermal: add IRQ debugging messaging
-Date: Tue, 13 Nov 2012 14:10:03 -0400
-Message-ID: <1352830204-21546-5-git-send-email-eduardo.valentin@ti.com>
+        Radhesh Fadnis <radhesh.fadnis@ti.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCHv2 5/5] staging: omap-thermal: fix context restore function
+Date: Tue, 13 Nov 2012 14:10:04 -0400
+Message-ID: <1352830204-21546-6-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
 References: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
@@ -24,30 +25,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For debugging purposes, print the IRQ event for the domain being processed.
+From: Radhesh Fadnis <radhesh.fadnis@ti.com>
 
+In the context restore function, if the context is lost or
+not is being checked by the contents of the counter register.
+But this is logic hold good as long as counter reset value is
+zero, if the reset value is non-zero then above logic doesn't
+hold good. Hence removed checking of the register value and
+restoring the context.
+
+Signed-off-by: Radhesh Fadnis <radhesh.fadnis@ti.com>
 Signed-off-by: Enric Balletbo i Serra <eballetbo@gmail.com>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/omap-thermal/omap-bandgap.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/staging/omap-thermal/omap-bandgap.c |   57 ++++++++++-----------------
+ 1 files changed, 21 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
-index 1cae5ed..3eb726f 100644
+index 3eb726f..c17bc95 100644
 --- a/drivers/staging/omap-thermal/omap-bandgap.c
 +++ b/drivers/staging/omap-thermal/omap-bandgap.c
-@@ -113,6 +113,11 @@ static irqreturn_t talert_irq_handler(int irq, void *data)
+@@ -1065,7 +1065,6 @@ static int omap_bandgap_save_ctxt(struct omap_bandgap *bg_ptr)
+ static int omap_bandgap_restore_ctxt(struct omap_bandgap *bg_ptr)
+ {
+ 	int i;
+-	u32 temp = 0;
  
- 		omap_bandgap_writel(bg_ptr, ctrl, tsr->bgap_mask_ctrl);
+ 	for (i = 0; i < bg_ptr->conf->sensor_count; i++) {
+ 		struct temp_sensor_registers *tsr;
+@@ -1078,41 +1077,27 @@ static int omap_bandgap_restore_ctxt(struct omap_bandgap *bg_ptr)
+ 		if (OMAP_BANDGAP_HAS(bg_ptr, COUNTER))
+ 			val = omap_bandgap_readl(bg_ptr, tsr->bgap_counter);
  
-+		dev_dbg(bg_ptr->dev,
-+			"%s: IRQ from %s sensor: hotevent %d coldevent %d\n",
-+			__func__, bg_ptr->conf->sensors[i].domain,
-+			t_hot, t_cold);
+-		if (val == 0) {
+-			if (OMAP_BANDGAP_HAS(bg_ptr, TSHUT_CONFIG))
+-				omap_bandgap_writel(bg_ptr,
+-					rval->tshut_threshold,
+-						   tsr->tshut_threshold);
+-			/* Force immediate temperature measurement and update
+-			 * of the DTEMP field
+-			 */
+-			omap_bandgap_force_single_read(bg_ptr, i);
+-
+-			if (OMAP_BANDGAP_HAS(bg_ptr, COUNTER))
+-				omap_bandgap_writel(bg_ptr, rval->bg_counter,
+-							   tsr->bgap_counter);
+-			if (OMAP_BANDGAP_HAS(bg_ptr, MODE_CONFIG))
+-				omap_bandgap_writel(bg_ptr, rval->bg_mode_ctrl,
+-							   tsr->bgap_mode_ctrl);
+-			if (OMAP_BANDGAP_HAS(bg_ptr, TALERT)) {
+-				omap_bandgap_writel(bg_ptr,
+-							   rval->bg_threshold,
+-							   tsr->bgap_threshold);
+-				omap_bandgap_writel(bg_ptr, rval->bg_ctrl,
+-							   tsr->bgap_mask_ctrl);
+-			}
+-		} else {
+-			temp = omap_bandgap_readl(bg_ptr,
+-						  tsr->temp_sensor_ctrl);
+-			temp &= (tsr->bgap_dtemp_mask);
+-			omap_bandgap_force_single_read(bg_ptr, i);
+-			if (temp == 0 && OMAP_BANDGAP_HAS(bg_ptr, TALERT)) {
+-				temp = omap_bandgap_readl(bg_ptr,
+-							  tsr->bgap_mask_ctrl);
+-				temp |= 1 << __ffs(tsr->mode_ctrl_mask);
+-				omap_bandgap_writel(bg_ptr, temp,
+-							   tsr->bgap_mask_ctrl);
+-			}
++		if (OMAP_BANDGAP_HAS(bg_ptr, TSHUT_CONFIG))
++			omap_bandgap_writel(bg_ptr,
++				rval->tshut_threshold,
++					   tsr->tshut_threshold);
++		/* Force immediate temperature measurement and update
++		 * of the DTEMP field
++		 */
++		omap_bandgap_force_single_read(bg_ptr, i);
 +
- 		/* read temperature */
- 		temp = omap_bandgap_readl(bg_ptr, tsr->temp_sensor_ctrl);
- 		temp &= tsr->bgap_dtemp_mask;
++		if (OMAP_BANDGAP_HAS(bg_ptr, COUNTER))
++			omap_bandgap_writel(bg_ptr, rval->bg_counter,
++						   tsr->bgap_counter);
++		if (OMAP_BANDGAP_HAS(bg_ptr, MODE_CONFIG))
++			omap_bandgap_writel(bg_ptr, rval->bg_mode_ctrl,
++						   tsr->bgap_mode_ctrl);
++		if (OMAP_BANDGAP_HAS(bg_ptr, TALERT)) {
++			omap_bandgap_writel(bg_ptr,
++						   rval->bg_threshold,
++						   tsr->bgap_threshold);
++			omap_bandgap_writel(bg_ptr, rval->bg_ctrl,
++						   tsr->bgap_mask_ctrl);
+ 		}
+ 	}
+ 
 -- 
 1.7.7.1.488.ge8e1c
 
