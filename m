@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2KMLhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:37:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50291 "EHLO mx2.suse.de"
+	id S1753051Ab2KMLmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:42:10 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56745 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816Ab2KMLho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:37:44 -0500
-Date: Tue, 13 Nov 2012 11:37:39 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] mm: numa: teach gup_fast about pmd_numa
-Message-ID: <20121113113739.GX8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <1352193295-26815-7-git-send-email-mgorman@suse.de>
- <20121113100735.GC21522@gmail.com>
+	id S1751698Ab2KMLmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:42:08 -0500
+Message-ID: <50A231EE.7050204@imgtec.com>
+Date: Tue, 13 Nov 2012 11:41:34 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121113100735.GC21522@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>
+Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-15-git-send-email-vgupta@synopsys.com> <201211071421.39523.arnd@arndb.de> <509CD1D1.3050105@imgtec.com>
+In-Reply-To: <509CD1D1.3050105@imgtec.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_11_13_11_41_35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 11:07:36AM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > When scanning pmds, the pmd may be of numa type (_PAGE_PRESENT not set),
-> > however the pte might be present. Therefore, gup_pmd_range() must return
-> > 0 in this case to avoid losing a NUMA hinting page fault during gup_fast.
-> > 
-> > Note: gup_fast will skip over non present ptes (like numa 
-> > types), so no explicit check is needed for the pte_numa case. 
-> > [...]
-> 
-> So, why not fix all architectures that choose to expose 
-> pte_numa() and pmd_numa() methods - via the patch below?
-> 
+On 09/11/12 09:50, James Hogan wrote:
+> On 07/11/12 14:21, Arnd Bergmann wrote:
+>> On Wednesday 07 November 2012, Vineet Gupta wrote:
+>>> + * Being uClibc based we need some of the deprecated syscalls:
+>>> + * -Not emulated by uClibc at all
+>>> + *     unlink, mkdir,... (needed by Busybox, LTP etc)
+>>> + *     times (needed by LTP pan test harness)
+>>> + * -Not emulated efficiently
+>>> + *     select: emulated using pselect (but extra code to chk usec > 1sec)
+>>> + *
+>>> + * some (send/recv) correctly emulated using (recfrom/sendto) and
+>>> + * some arch specific ones (fork/vfork)can easily be emulated using clone but
+>>> + * thats the price of using common-denominator....
+>>> + */
+>>> +#define __ARCH_WANT_SYSCALL_NO_AT
+>>> +#define __ARCH_WANT_SYSCALL_NO_FLAGS
+>>> +#define __ARCH_WANT_SYSCALL_OFF_T
+>>> +#define __ARCH_WANT_SYSCALL_DEPRECATED
+>>
+>> I'm pretty sure that this has been solved before, best get in contact with
+>> the maintainers of the openrisc/c6x/hexagon platforms, that probably all
+>> use uClibc without needing these.
+>>
+>> You have to remove the legacy calls here.
 
-I'll pick it up. Thanks.
+> FYI, we'll soon be making some uClibc patches available so that it can
+> work without these deprecated syscalls and with the newer IPC interface
+> (the work was needed for metag too). It's based roughly on the OpenRisc
+> patches from last year, but with a fair few changes.
 
--- 
-Mel Gorman
-SUSE Labs
+Hi Vineet,
+
+The uClibc patches I mentioned have been posted, see here:
+
+http://lists.busybox.net/pipermail/uclibc/2012-November/047110.html
+
+Please do try them out and provide any feedback.
+
+Cheers
+James
+
