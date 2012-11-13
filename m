@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2KMI3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:29:10 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60101 "EHLO bear.ext.ti.com"
+	id S1754643Ab2KMIbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:31:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60108 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab2KMI3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:29:04 -0500
+	id S932118Ab2KMI3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:29:10 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 03/13] MFD: twl-core: Convert to use regmap for I/O
-Date: Tue, 13 Nov 2012 09:28:44 +0100
-Message-ID: <1352795334-7406-4-git-send-email-peter.ujfalusi@ti.com>
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/13] mfd: twl4030-madc: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+Date: Tue, 13 Nov 2012 09:28:51 +0100
+Message-ID: <1352795334-7406-11-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,258 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the custom code to do I/O and replace it with standard regmap calls.
+To facilitate upcoming cleanup in twl stack.
+No functional changes.
 
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl-core.c | 147 +++++++++++++++++++++++++++----------------------
- 1 file changed, 80 insertions(+), 67 deletions(-)
+ drivers/mfd/twl4030-madc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 1dfd583..5043f505a 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -32,6 +32,7 @@
- #include <linux/mutex.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/regmap.h>
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/device.h>
-@@ -171,13 +172,7 @@ EXPORT_SYMBOL(twl_rev);
- /* Structure for each TWL4030/TWL6030 Slave */
- struct twl_client {
- 	struct i2c_client *client;
--	u8 address;
--
--	/* max numb of i2c_msg required is for read =2 */
--	struct i2c_msg xfer_msg[2];
--
--	/* To lock access to xfer_msg */
--	struct mutex xfer_lock;
-+	struct regmap *regmap;
- };
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 456ecb5..2baabaa 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -173,7 +173,7 @@ static int twl4030battery_temperature(int raw_volt)
  
- static struct twl_client twl_modules[TWL_NUM_SLAVES];
-@@ -225,6 +220,33 @@ static struct twl_mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
- 	{ 3, TWL4030_BASEADD_SECURED_REG },
- };
- 
-+static struct regmap_config twl4030_regmap_config[4] = {
-+	{
-+		/* Address 0x48 */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+	{
-+		/* Address 0x49 */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+	{
-+		/* Address 0x4a */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+	{
-+		/* Address 0x4b */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+};
-+
- static struct twl_mapping twl6030_map[] = {
- 	/*
- 	 * NOTE:  don't change this table without updating the
-@@ -262,6 +284,27 @@ static struct twl_mapping twl6030_map[] = {
- 	{ SUB_CHIP_ID1, TWL6025_BASEADD_CHARGER },
- };
- 
-+static struct regmap_config twl6030_regmap_config[3] = {
-+	{
-+		/* Address 0x48 */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+	{
-+		/* Address 0x49 */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+	{
-+		/* Address 0x4a */
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+		.max_register = 0xff,
-+	},
-+};
-+
- /*----------------------------------------------------------------------*/
- 
- /* Exported Functions */
-@@ -283,7 +326,6 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 	volt = (raw_volt * TEMP_STEP_SIZE) / TEMP_PSR_R;
+ 	/* Getting and calculating the supply current in micro ampers */
+-	ret = twl_i2c_read_u8(TWL4030_MODULE_MAIN_CHARGE, &val,
++	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE, &val,
+ 		REG_BCICTL2);
+ 	if (ret < 0)
+ 		return ret;
+@@ -196,7 +196,7 @@ static int twl4030battery_current(int raw_volt)
  	int ret;
- 	int sid;
- 	struct twl_client *twl;
--	struct i2c_msg *msg;
+ 	u8 val;
  
- 	if (unlikely(mod_no > TWL_MODULE_LAST)) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
-@@ -301,32 +343,14 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- 	}
- 	twl = &twl_modules[sid];
- 
--	mutex_lock(&twl->xfer_lock);
--	/*
--	 * [MSG1]: fill the register address data
--	 * fill the data Tx buffer
--	 */
--	msg = &twl->xfer_msg[0];
--	msg->addr = twl->address;
--	msg->len = num_bytes + 1;
--	msg->flags = 0;
--	msg->buf = value;
--	/* over write the first byte of buffer with the register address */
--	*value = twl_map[mod_no].base + reg;
--	ret = i2c_transfer(twl->client->adapter, twl->xfer_msg, 1);
--	mutex_unlock(&twl->xfer_lock);
--
--	/* i2c_transfer returns number of messages transferred */
--	if (ret != 1) {
--		pr_err("%s: i2c_write failed to transfer all messages\n",
--			DRIVER_NAME);
--		if (ret < 0)
--			return ret;
--		else
--			return -EIO;
--	} else {
--		return 0;
--	}
-+	ret = regmap_bulk_write(twl->regmap, twl_map[mod_no].base + reg,
-+				&value[1], num_bytes);
-+
-+	if (ret)
-+		pr_err("%s: Write failed (mod %d, reg 0x%02x count %d)\n",
-+		       DRIVER_NAME, mod_no, reg, num_bytes);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(twl_i2c_write);
- 
-@@ -342,10 +366,8 @@ EXPORT_SYMBOL(twl_i2c_write);
- int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
- {
+-	ret = twl_i2c_read_u8(TWL4030_MODULE_MAIN_CHARGE, &val,
++	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE, &val,
+ 		TWL4030_BCI_BCICTL1);
+ 	if (ret)
+ 		return ret;
+@@ -635,7 +635,7 @@ static int twl4030_madc_set_current_generator(struct twl4030_madc_data *madc,
  	int ret;
--	u8 val;
- 	int sid;
- 	struct twl_client *twl;
--	struct i2c_msg *msg;
+ 	u8 regval;
  
- 	if (unlikely(mod_no > TWL_MODULE_LAST)) {
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
-@@ -363,34 +385,14 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+-	ret = twl_i2c_read_u8(TWL4030_MODULE_MAIN_CHARGE,
++	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE,
+ 			      &regval, TWL4030_BCI_BCICTL1);
+ 	if (ret) {
+ 		dev_err(madc->dev, "unable to read BCICTL1 reg 0x%X",
+@@ -646,7 +646,7 @@ static int twl4030_madc_set_current_generator(struct twl4030_madc_data *madc,
+ 		regval |= chan ? TWL4030_BCI_ITHEN : TWL4030_BCI_TYPEN;
+ 	else
+ 		regval &= chan ? ~TWL4030_BCI_ITHEN : ~TWL4030_BCI_TYPEN;
+-	ret = twl_i2c_write_u8(TWL4030_MODULE_MAIN_CHARGE,
++	ret = twl_i2c_write_u8(TWL_MODULE_MAIN_CHARGE,
+ 			       regval, TWL4030_BCI_BCICTL1);
+ 	if (ret) {
+ 		dev_err(madc->dev, "unable to write BCICTL1 reg 0x%X\n",
+@@ -668,7 +668,7 @@ static int twl4030_madc_set_power(struct twl4030_madc_data *madc, int on)
+ 	u8 regval;
+ 	int ret;
+ 
+-	ret = twl_i2c_read_u8(TWL4030_MODULE_MAIN_CHARGE,
++	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE,
+ 			      &regval, TWL4030_MADC_CTRL1);
+ 	if (ret) {
+ 		dev_err(madc->dev, "unable to read madc ctrl1 reg 0x%X\n",
+@@ -725,7 +725,7 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		goto err_current_generator;
+ 
+-	ret = twl_i2c_read_u8(TWL4030_MODULE_MAIN_CHARGE,
++	ret = twl_i2c_read_u8(TWL_MODULE_MAIN_CHARGE,
+ 			      &regval, TWL4030_BCI_BCICTL1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to read reg BCI CTL1 0x%X\n",
+@@ -733,7 +733,7 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
+ 		goto err_i2c;
  	}
- 	twl = &twl_modules[sid];
- 
--	mutex_lock(&twl->xfer_lock);
--	/* [MSG1] fill the register address data */
--	msg = &twl->xfer_msg[0];
--	msg->addr = twl->address;
--	msg->len = 1;
--	msg->flags = 0;	/* Read the register value */
--	val = twl_map[mod_no].base + reg;
--	msg->buf = &val;
--	/* [MSG2] fill the data rx buffer */
--	msg = &twl->xfer_msg[1];
--	msg->addr = twl->address;
--	msg->flags = I2C_M_RD;	/* Read the register value */
--	msg->len = num_bytes;	/* only n bytes */
--	msg->buf = value;
--	ret = i2c_transfer(twl->client->adapter, twl->xfer_msg, 2);
--	mutex_unlock(&twl->xfer_lock);
--
--	/* i2c_transfer returns number of messages transferred */
--	if (ret != 2) {
--		pr_err("%s: i2c_read failed to transfer all messages\n",
--			DRIVER_NAME);
--		if (ret < 0)
--			return ret;
--		else
--			return -EIO;
--	} else {
--		return 0;
--	}
-+	ret = regmap_bulk_read(twl->regmap, twl_map[mod_no].base + reg,
-+			       value, num_bytes);
-+
-+	if (ret)
-+		pr_err("%s: Read failed (mod %d, reg 0x%02x count %d)\n",
-+		       DRIVER_NAME, mod_no, reg, num_bytes);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(twl_i2c_read);
- 
-@@ -1184,6 +1186,7 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	struct twl4030_platform_data	*pdata = client->dev.platform_data;
- 	struct device_node		*node = client->dev.of_node;
- 	struct platform_device		*pdev;
-+	struct regmap_config		*twl_regmap_config;
- 	int				irq_base = 0;
- 	int				status;
- 	unsigned			i, num_slaves;
-@@ -1237,22 +1240,23 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	if ((id->driver_data) & TWL6030_CLASS) {
- 		twl_id = TWL6030_CLASS_ID;
- 		twl_map = &twl6030_map[0];
-+		twl_regmap_config = twl6030_regmap_config;
- 		num_slaves = TWL_NUM_SLAVES - 1;
- 	} else {
- 		twl_id = TWL4030_CLASS_ID;
- 		twl_map = &twl4030_map[0];
-+		twl_regmap_config = twl4030_regmap_config;
- 		num_slaves = TWL_NUM_SLAVES;
- 	}
- 
- 	for (i = 0; i < num_slaves; i++) {
- 		struct twl_client *twl = &twl_modules[i];
- 
--		twl->address = client->addr + i;
- 		if (i == 0) {
- 			twl->client = client;
- 		} else {
- 			twl->client = i2c_new_dummy(client->adapter,
--					twl->address);
-+						    client->addr + i);
- 			if (!twl->client) {
- 				dev_err(&client->dev,
- 					"can't attach client %d\n", i);
-@@ -1260,7 +1264,16 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 				goto fail;
- 			}
- 		}
--		mutex_init(&twl->xfer_lock);
-+
-+		twl->regmap = devm_regmap_init_i2c(twl->client,
-+						   &twl_regmap_config[i]);
-+		if (IS_ERR(twl->regmap)) {
-+			status = PTR_ERR(twl->regmap);
-+			dev_err(&client->dev,
-+				"Failed to allocate regmap %d, err: %d\n", i,
-+				status);
-+			goto fail;
-+		}
- 	}
- 
- 	inuse = true;
+ 	regval |= TWL4030_BCI_MESBAT;
+-	ret = twl_i2c_write_u8(TWL4030_MODULE_MAIN_CHARGE,
++	ret = twl_i2c_write_u8(TWL_MODULE_MAIN_CHARGE,
+ 			       regval, TWL4030_BCI_BCICTL1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to write reg BCI Ctl1 0x%X\n",
 -- 
 1.8.0
 
