@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2KMWwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:52:22 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:41982 "EHLO ogre.sisk.pl"
+	id S1755044Ab2KMW5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:57:42 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:41991 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045Ab2KMWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:52:20 -0500
+	id S1754287Ab2KMW5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:57:40 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
-Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node objects
-Date: Tue, 13 Nov 2012 23:56:40 +0100
-Message-ID: <1957831.MvUm7YPtfp@vostro.rjw.lan>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: paulmck@linux.vnet.ibm.com, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
+Date: Wed, 14 Nov 2012 00:02 +0100
+Message-ID: <21157900.tI2QCFTxxq@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2586712.Jsv1H95qXQ@vostro.rjw.lan> <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
+In-Reply-To: <50A2CD77.7000403@linux.intel.com>
+References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com> <20121113222350.GH2489@linux.vnet.ibm.com> <50A2CD77.7000403@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -33,81 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 13, 2012 10:06:03 PM Moore, Robert wrote:
-> I may not quite understand what you are asking for, but I will try.
-> It seems like we already have much of what you want/need, so maybe
-> I'm missing something.
-
-I think all of the necessary pieces are there.
-
-> > So what I would like to have, in general terms, is something like
-> > acpi_walk_resources() split into three parts:
+On Tuesday, November 13, 2012 02:45:11 PM Arjan van de Ven wrote:
+> On 11/13/2012 2:23 PM, Paul E. McKenney wrote:
+> > On Tue, Nov 13, 2012 at 01:39:22PM -0800, Jacob Pan wrote:
+> >> On Tue, 13 Nov 2012 13:16:02 -0800
+> >> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >>
+> >>>> Please refer to Documentation/thermal/intel_powerclamp.txt for more
+> >>>> details.  
+> >>>
+> >>> If I read this correctly, this forces a group of CPUs into idle for
+> >>> about 600 milliseconds at a time.  This would indeed delay grace
+> >>> periods, which could easily result in user complaints.  Also, given
+> >>> the default RCU_BOOST_DELAY of 500 milliseconds in kernels enabling
+> >>> RCU_BOOST, you would see needless RCU priority boosting.
+> >>>
+> >> the default idle injection duration is 6ms. we adjust the sleep
+> >> interval to ensure idle ratio. So the idle duration stays the same once
+> >> set. So would it be safe to delay grace period for this small amount in
+> >> exchange for less over head in each injection period?
 > > 
-> >  (1) One that processes the _CRS output and creates a list of
-> >      struct acpi_resource objects for us to play with.  I suppose
-> >      it's OK if that's just a buffer filled with resource objects,
-> >      but a linked list might be more convenient.
-> > 
+> > Ah, 6ms of delay is much better than 600ms.  Should be OK (famous last
+> > words!).
 > 
-> This sounds like AcpiGetCurrentResources. It executes _CRS and formats
-> the data into acpi_resource objects.
+> well... power clamping is not "free".
+> You're going to lose performance as a trade off for dropping instantaneous power consumption....
 
-Yes, it does.  However, it is not completely clear to me if/how the caller is
-supposed to prepare the buffer object pointed to by the second arg.
+Yes.  It is good to realize that when the clamping triggers, we already
+have some more to worry about than losing some performance. :-)
 
-If the buffer is initialized by AcpiGetCurrentResources, then that's what
-I need for (1).
-
-> >  (2) One that allows us to access (read/write) resources in the
-> >      list returned by (1).  We don't need to open code walking
-> >      the list and I probably wouldn't event want to do that.  What
-> >      we need is to be able to walk the same list for a number of
-> >      times and possibly to modify values in the resource objects
-> >      if there are conflicts.
-> 
-> This sounds like AcpiWalkResources. I suppose a possible issue is that
-> currently, AcpiWalkResources actually invokes the _CRS, _PRS, or _AEI
-> method on behalf of the caller.
-
-Yes, that exactly is the problem.
-
-> It might make more sense to allow the caller to pass in the resource buffer
-> returned from a call to _CRS, etc.
-
-Yes! :-)
-
-> > 
-> >  (3) One allowing us to free the list returned by (1) if not needed
-> >      any more.
-> > 
-> 
-> AcpiGetCurrentResources: Currently, everything is returned in a single buffer
-> to minimize the number of allocations. A buffer you can free when you are
-> done with it.
-
-I suppose I should use ACPI_FREE(buffer.pointer) for that, but isn't it for the
-ACPICA's internal use only?
-
-Besides, I would prefer to be able to pass just "buffer" for freeing, without
-having to touch its internals.  No big deal, but it would be nicer. :-) 
-
-> I think I saw where you mentioned that you cannot copy this buffer because
-> of internal pointers to other areas of the buffer. Yes. However, we can build
-> linked lists all day if you really want them :-)
-
-I really won't care if I can pass a resource buffer to a "walker" routine. :-)
-
-> > And it would be great if we could take the list returned by (1), modify
-> > the resources in it and feed it back to _SRS (after conversion back to the
-> > format that _SRS understands).
-> > 
-> 
-> AcpiSetCurrentResources.
-> 
-> The AML debugger already has a command that illustrates the use of the
-> various resource interfaces, see dbcmds.c
-
-I will.
+The problem here is to find a way to lose as little performance as we possibly
+can and prevent the system from overheating at the same time.
 
 Thanks,
 Rafael
