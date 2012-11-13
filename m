@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2KMRnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:43:19 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49026 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab2KMRnR (ORCPT
+	id S1755405Ab2KMRn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:43:26 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48193 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab2KMRnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:43:17 -0500
-Message-ID: <50A286AF.2000505@kernel.org>
-Date: Tue, 13 Nov 2012 12:43:11 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 13 Nov 2012 12:43:24 -0500
+Message-ID: <50A286B9.7050709@wwwdotorg.org>
+Date: Tue, 13 Nov 2012 10:43:21 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT] power tools patches for Linux 3.7-rc5
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] NVIDIA Tegra DRM driver
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de> <50A1918E.1000809@wwwdotorg.org> <20121113064748.GB31443@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121113064748.GB31443@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 11/12/2012 11:47 PM, Thierry Reding wrote:
+> On Mon, Nov 12, 2012 at 05:17:18PM -0700, Stephen Warren wrote:
+>> On 11/12/2012 02:55 PM, Thierry Reding wrote:
+>>> This second version of this patch series addresses all the
+>>> comments received so far. Most notably it takes advantage of
+>>> the debugfs helpers provided by the DRM core. Oddly enough this
+>>> actually increases the line count, but that's because the
+>>> helpers don't fit with the subdevices approach as implemented
+>>> by this driver. However some quick discussions with Rob Clark
+>>> showed that Tegra DRM is not special in this respect but other
+>>> drivers may need the same functionality. Eventually the
+>>> debugfs code could be reworked on top of helpers that are
+>>> better suited at the design of embedded, multi-device DRM
+>>> drivers.
+>>> 
+>>> Other than that there is some removal of code that was actually
+>>> supposed to go into a later patch because it has dependencies
+>>> that haven't been merged yet and some moving around of #defines
+>>> and the device tree bindings documentation. Finally the driver
+>>> now uses the DRM core's drm_compat_ioctl() instead of a custom
+>>> and unimplemented (!) version.
+>> 
+>> The series,
+>> 
+>> Tested-by: Stephen Warren <swarren@nvidia.com>
+>> 
+>> (on the Harmony board's HDMI output; I'll test other
+>> boards/outputs later).
+> 
+> You also gave an Acked-by for the DT binding documentation in the
+> first version of this patchset, does it apply to the rest of the
+> patch as well? That is, can I add it to patch 1?
 
-Please pull this pair of power tools patches --
-a 3.7 regression fix plus a bug fix.
+I didn't actually read the rest of the patch since there are many
+people much more familiar with the host1x/... code that will provide
+useful feedback.
 
-thanks!
-Len Brown, Intel Open Source Technology Center
-
-The following changes since commit bc909421a9c7083fcde795846d22b36a51a7be54:
-
-  Merge tag 'gpio-fixes-v3.7-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio (2012-10-30 15:56:22 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
-
-for you to fetch changes up to d91bb17c2a874493603c4d99db305d8caf2d180c:
-
-  tools/power turbostat: graceful fail on garbage input (2012-11-01 00:22:00 -0400)
-
-----------------------------------------------------------------
-Len Brown (2):
-      tools/power turbostat: Repair Segmentation fault when using -i option
-      tools/power turbostat: graceful fail on garbage input
-
- tools/power/x86/turbostat/turbostat.c | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+However, yes, I think it's fine to include my ack in the patch - it's
+common to ack only parts of patches I believe.
