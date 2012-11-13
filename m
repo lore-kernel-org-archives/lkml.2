@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2KMMv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 07:51:28 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41648 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab2KMMv0 (ORCPT
+	id S1754342Ab2KMMxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 07:53:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33021 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab2KMMxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 07:51:26 -0500
+	Tue, 13 Nov 2012 07:53:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <14097.1352805150@warthog.procyon.org.uk>
-References: <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com>
-	<1378.1352379110@warthog.procyon.org.uk>
-	<14071.1352805065@warthog.procyon.org.uk>
-	<14097.1352805150@warthog.procyon.org.uk>
-Date: Tue, 13 Nov 2012 07:51:25 -0500
-Message-ID: <CA+5PVA4jHJeE6nZeZyqHnE9QtMvUGW-xGeKrizwATm96QTxeXQ@mail.gmail.com>
-Subject: Re: [GIT PULL] UAPI: perf fixes
-From: Josh Boyer <jwboyer@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: acme@ghostprotocols.net, mingo@kernel.org, tglx@linutronix.de,
-        bp@alien8.de, namhyung@gmail.com, torvalds@linux-foundation.org,
-        paulus@samba.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAD+1EGP8RjgBgfQ9oHSU3RdRnSbeOGJTpvkN_UWtNszWpvtd1w@mail.gmail.com>
+References: <20121109164426.GA3799@Super-MAGI> <CAD+1EGP8RjgBgfQ9oHSU3RdRnSbeOGJTpvkN_UWtNszWpvtd1w@mail.gmail.com>
+From: Dongsheng Song <dongsheng.song@gmail.com>
+Date: Tue, 13 Nov 2012 20:52:51 +0800
+Message-ID: <CAE8XmWp8HgK4p2i4+PkD60yY-xcTbTz43sUDHi-8-1_wTGLNUg@mail.gmail.com>
+Subject: Re: [PATCH v2]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
+To: Tekkaman Ninja <tekkamanninja@gmail.com>
+Cc: harryxiyou <harryxiyou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qADCrHD0015037
 
-On Tue, Nov 13, 2012 at 6:12 AM, David Howells <dhowells@redhat.com> wrote:
-> David Howells <dhowells@redhat.com> wrote:
->
->> Josh Boyer <jwboyer@gmail.com> wrote:
->>
->> > This patch seems to break building perf on ppc64.  It fails with:
->>
->> Hmmm...  Getting my hands on an ARM or ppc/ppc64 box running Fedora is a
->> problem, and as far as I know, this needs to be built natively or maybe
->> cross-compiled with a full environment (including graphics libs).
->
-> Actually, having said that, it doesn't need to run Fedora specifically - only
-> a sufficiently recent environment that it can build a cutting-edge kernel.
+Hi,
 
-You can just use koji scratch builds if you want to test Fedora kernels
-Either arm-koji or ppc-koji should work.  If you want actual access to a
-machine, I'm sure we can find one.
+Here is the original text:
 
-The error that is hitting ARM and ppc before your patch seemed to also
-be hit with sparc and was fixed by David Miller with commit 776260818
-by just pointing to "../../arch/sparc/include/uapi/asm/unistd.h".  That
-might be a temporary solution.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/arm/kernel_user_helpers.txt;h=5673594717cfcfe798d87ae95b7e5a1d386aeaff;hb=HEAD
 
-josh
+  23 User space is expected to bypass those helpers and implement those things
+  24 inline (either in the code emitted directly by the compiler, or part of
+  25 the implementation of a library call) when optimizing for a recent enough
+  26 processor that has the necessary native support, but only if resulting
+  27 binaries are already to be incompatible with earlier ARM processors due to
+  28 usage of similar native instructions for other things.
+
++在对那些拥有原生支持的新型处理器进行代码优化时，用户空间最好绕过这些
++辅助代码，并在内联函数中实现这些操作（无论是通过编译器在代码中直接放置，
++还是作为库函数调用实现的一部分）；仅有在为了其他操作使用了同类原生指令，
++导致二进制结果已与早期 ARM 处理不兼容的情况下，才使用这些辅助代码。
+
+My review is:
+
+当对那些拥有原生支持的新型处理器进行代码优化时，如果已经在其它代码中
+使用类似的新指令，从而导致二进制结果已与早期 ARM 处理器不兼容的情况下，
+用户空间最好绕过这些辅助代码，并在内联函数中实现这些操作（无论是通过
+编译器在代码中直接发出，还是作为库函数调用实现的一部分）。
+
+Why do you revert my translation ? The new translation looks wrong too.
+
+Regards,
+Dongsheng
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
