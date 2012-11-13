@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2KMRYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:24:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34111 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab2KMRYC (ORCPT
+	id S1755362Ab2KMRZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:25:51 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35108 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab2KMRZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:24:02 -0500
-Date: Tue, 13 Nov 2012 09:23:10 -0800
-From: tip-bot for Rik van Riel <riel@redhat.com>
-Message-ID: <tip-b644797f6b72b9b9b0cf35bdf7981f5602725bea@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
-        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
-        tglx@linutronix.de
-Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
-In-Reply-To: <20121018171928.24d06af4@cuia.bos.redhat.com>
-References: <20121018171928.24d06af4@cuia.bos.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm: Add credits for NUMA placement
-Git-Commit-ID: b644797f6b72b9b9b0cf35bdf7981f5602725bea
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 13 Nov 2012 12:25:49 -0500
+Message-ID: <50A28299.6080809@wwwdotorg.org>
+Date: Tue, 13 Nov 2012 10:25:45 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 09:23:16 -0800 (PST)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, spi-devel-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        swarren@nvidia.com
+Subject: Re: [PATCH] spi: tegra: add spi driver for sflash controller
+References: <1352782854-25351-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1352782854-25351-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b644797f6b72b9b9b0cf35bdf7981f5602725bea
-Gitweb:     http://git.kernel.org/tip/b644797f6b72b9b9b0cf35bdf7981f5602725bea
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Thu, 18 Oct 2012 17:19:28 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 13 Nov 2012 18:09:25 +0100
+On 11/12/2012 10:00 PM, Laxman Dewangan wrote:
+> Nvidia's Tegra20 have the SPI (SFLASH) controller to
+> interface with spi flash device which is used for system
+> boot. Add the spi driver for this controller.
 
-sched, numa, mm: Add credits for NUMA placement
+> diff --git a/drivers/spi/spi-tegra20-sflash.c b/drivers/spi/spi-tegra20-sflash.c
 
-The NUMA placement code has been rewritten several times, but
-the basic ideas took a lot of work to develop. The people who
-put in the work deserve credit for it. Thanks Andrea & Peter :)
+> +static void tegra_sflash_clear_status(struct tegra_sflash_data *tsd)
+> +{
+> +	unsigned long val;
+> +	unsigned long val_write = 0;
+> +
+> +	val = tegra_sflash_readl(tsd, SPI_STATUS);
 
-[ The Documentation/scheduler/numa-problem.txt file should
-  probably be rewritten once we figure out the final details of
-  what the NUMA code needs to do, and why. ]
+Why the read of the unused value. Is this to flush earlier bus
+transactions, or just left over? If for bus flushing, a comment would be
+useful.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20121018171928.24d06af4@cuia.bos.redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-----
-This is against tip.git numa/core
----
- CREDITS             |    1 +
- kernel/sched/fair.c |    3 +++
- mm/memory.c         |    2 ++
- 3 files changed, 6 insertions(+), 0 deletions(-)
+> +	/* Write 1 to clear status register */
+> +	val_write = SPI_RDY | SPI_FIFO_ERROR;
+> +	tegra_sflash_writel(tsd, val_write, SPI_STATUS);
+> +}
 
-diff --git a/CREDITS b/CREDITS
-index d8fe12a..b4cdc8f 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -125,6 +125,7 @@ D: Author of pscan that helps to fix lp/parport bugs
- D: Author of lil (Linux Interrupt Latency benchmark)
- D: Fixed the shm swap deallocation at swapoff time (try_to_unuse message)
- D: VM hacker
-+D: NUMA task placement
- D: Various other kernel hacks
- S: Imola 40026
- S: Italy
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 93f4de4..309a254 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -18,6 +18,9 @@
-  *
-  *  Adaptive scheduling granularity, math enhancements by Peter Zijlstra
-  *  Copyright (C) 2007 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
-+ *
-+ *  NUMA placement, statistics and algorithm by Andrea Arcangeli,
-+ *  CFS balancing changes by Peter Zijlstra. Copyright (C) 2012 Red Hat, Inc.
-  */
- 
- #include <linux/latencytop.h>
-diff --git a/mm/memory.c b/mm/memory.c
-index 1b9108c..ebd18fd 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -36,6 +36,8 @@
-  *		(Gerhard.Wichert@pdb.siemens.de)
-  *
-  * Aug/Sep 2004 Changed to four level page tables (Andi Kleen)
-+ *
-+ * 2012 - NUMA placement page faults (Andrea Arcangeli, Peter Zijlstra)
-  */
- 
- #include <linux/kernel_stat.h>
+> +static irqreturn_t handle_cpu_based_xfer(struct tegra_sflash_data *tsd)
+> +{
+> +	struct spi_transfer *t = tsd->curr_xfer;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&tsd->lock, flags);
+> +	if (tsd->tx_status ||  tsd->rx_status ||
+
+Nit: double-space after first || above.
+
+> +static struct tegra_spi_platform_data *tegra_sflash_parse_dt(
+> +		struct platform_device *pdev)
+
+> +	prop = of_get_property(np, "spi-max-frequency", NULL);
+> +	if (prop)
+> +		pdata->spi_max_frequency = be32_to_cpup(prop);
+
+Perhaps use of_property_read_u32()?
+
+> +static int __devinit tegra_sflash_probe(struct platform_device *pdev)
+
+> +	tsd->clk = devm_clk_get(&pdev->dev, "spi");
+> +	if (IS_ERR(tsd->clk)) {
+> +		dev_err(&pdev->dev, "can not get clock\n");
+> +		ret = PTR_ERR(tsd->clk);
+> +		goto exit_free_irq;
+> +	}
+> +
+> +
+> +	tsd->spi_max_frequency = pdata->spi_max_frequency;
+
+Nit: Double blank-line there.
+
+> +static int tegra_sflash_resume(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	struct tegra_sflash_data *tsd = spi_master_get_devdata(master);
+> +	int ret;
+> +
+> +	ret = pm_runtime_get_sync(dev);
+> +	if (ret < 0) {
+> +		dev_err(dev, "pm runtime failed, e = %d\n", ret);
+> +		return ret;
+> +	}
+> +	tegra_sflash_writel(tsd, tsd->command_reg, SPI_COMMAND);
+> +	pm_runtime_put(dev);
+
+Can we avoid this whole function simply by programming SPI_COMMAND at
+the start of each transaction? That seems simpler. I assume that
+shouldn't e.g. leave any chip-selects in some bad state, or at least if
+it does, that shouldn't be a problem, because before the driver probes()
+at kernel boot, SPI_COMMAND won't have been programmed either.
+
+Aside from that,
+
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+Thanks.
