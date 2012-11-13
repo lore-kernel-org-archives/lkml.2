@@ -1,201 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2KMRUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:20:52 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:40234 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab2KMRUu (ORCPT
+	id S932334Ab2KMRVL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:21:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65052 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402Ab2KMRPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:20:50 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj6wAAV/olBV5h1yPGdsb2JhbABEhTGFI7gmAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCAMRAwECLxQNGAoMDhOHeAMJCqoNhk0NiVQUiy1peYF+gnxhA5QngVSFe4NOgWqIAQ
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="445261905"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 18:27:11 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 13/13] HID: hid-multitouch: forwards ABS_SCAN_TIME
-Message-ID: <20121113172711.GA856@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-14-git-send-email-benjamin.tissoires@gmail.com>
- <50A25990.6040302@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A25990.6040302@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Nov 2012 12:15:08 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: [PATCH 12/31] mm/mpol: Add MPOL_MF_NOOP
+Date: Tue, 13 Nov 2012 18:13:35 +0100
+Message-Id: <1352826834-11774-13-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-> From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> Date: Tue, 13 Nov 2012 15:12:17 +0100
-> Subject: [PATCH v4] HID: hid-multitouch: forwards MSC_TIMESTAMP
-> 
-> Computes the device timestamp according to the specification.
-> It also ensures that if the time between two events is greater
-> than MAX_TIMESTAMP_INTERVAL, the timestamp will be reset.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 46 +++++++++++++++++++++++++++++++++++++++++---
->  include/linux/hid.h          |  1 +
->  2 files changed, 44 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index caf0f0b..3f8432d 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -32,6 +32,7 @@
->  #include <linux/slab.h>
->  #include <linux/usb.h>
->  #include <linux/input/mt.h>
-> +#include <linux/jiffies.h>
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
+to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+flags, mbind() will map the pages PROT_NONE so that they will be
+migrated on the next touch.
 
-Why?
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
 
->  #include "usbhid/usbhid.h"
->  
->  
-> @@ -98,6 +99,9 @@ struct mt_device {
->  	bool serial_maybe;	/* need to check for serial protocol */
->  	bool curvalid;		/* is the current contact valid? */
->  	unsigned mt_flags;	/* flags to pass to input-mt */
-> +	__s32 dev_time;		/* the scan time provided by the device */
-> +	unsigned long jiffies;	/* the frame's jiffies */
-> +	unsigned timestamp;	/* the timestamp to be sent */
+[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
 
-Why not just dev_time here?
+Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/uapi/linux/mempolicy.h |  1 +
+ mm/mempolicy.c                 | 11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
->  };
->  
->  /* classes of device behavior */
-> @@ -126,6 +130,8 @@ struct mt_device {
->  #define MT_DEFAULT_MAXCONTACT	10
->  #define MT_MAX_MAXCONTACT	250
->  
-> +#define MAX_TIMESTAMP_INTERVAL	500000
-> +
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 3e835c9..d23dca8 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -21,6 +21,7 @@ enum {
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
+ 	MPOL_LOCAL,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
+ };
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 72f50ba..c7c7c86 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
+ 
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
+ 	}
+ 	VM_BUG_ON(!nodes);
+ 
+@@ -1146,7 +1146,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
+ 
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
+ 
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -2407,7 +2407,8 @@ static const char * const policy_modes[] =
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
+ 
+ 
+@@ -2458,7 +2459,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
+ 
+ 	switch (mode) {
+-- 
+1.7.11.7
 
-Needs to be done in userland anyways, so no need to check this in the kernel.
-
->  #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
->  #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
->  
-> @@ -451,12 +457,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
-> +		case HID_DG_SCANTIME:
-> +			hid_map_usage(hi, usage, bit, max,
-> +				EV_MSC, MSC_TIMESTAMP);
-> +			set_bit(MSC_TIMESTAMP, hi->input->mscbit);
-> +			td->last_field_index = field->index;
-> +			return 1;
->  		case HID_DG_CONTACTCOUNT:
->  			td->last_field_index = field->index;
->  			return 1;
->  		case HID_DG_CONTACTMAX:
-> -			/* we don't set td->last_slot_field as contactcount and
-> -			 * contact max are global to the report */
-> +			/* we don't set td->last_slot_field as scan time,
-> +			 * contactcount and contact max are global to the
-> +			 * report */
->  			td->last_field_index = field->index;
->  			return -1;
->  		}
-> @@ -485,7 +498,8 @@ static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
->  		struct hid_field *field, struct hid_usage *usage,
->  		unsigned long **bit, int *max)
->  {
-> -	if (usage->type == EV_KEY || usage->type == EV_ABS)
-> +	if (usage->type == EV_KEY || usage->type == EV_ABS ||
-> +	    usage->type == EV_MSC)
->  		set_bit(usage->type, hi->input->evbit);
->  
->  	return -1;
-> @@ -565,11 +579,34 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->   */
->  static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
->  {
-> +	input_event(input, EV_MSC, MSC_TIMESTAMP, td->timestamp);
-
-I think this should go after the frame sync,
-
->  	input_mt_sync_frame(input);
-
-And the computation (100 * td->dev_time) should work fine. It will wrap
-properly.
-
->  	input_sync(input);
->  	td->num_received = 0;
->  }
->  
-> +static void mt_compute_timestamp(struct mt_device *td, struct hid_field *field,
-> +		__s32 value)
-> +{
-> +	long delta = value - td->dev_time;
-> +	unsigned long jdelta = jiffies_to_usecs(jiffies - td->jiffies);
-> +
-> +	td->jiffies = jiffies;
-> +	td->dev_time = value;
-> +
-> +	if (delta < 0)
-> +		delta += field->logical_maximum;
-> +
-> +	/* HID_DG_SCANTIME is expressed in 100us, we want it in ms. */
-> +	delta *= 100;
-> +
-> +	if (abs(delta - jdelta) > MAX_TIMESTAMP_INTERVAL)
-> +		/* obviously wrong clock -> the device time has been reset */
-> +		td->timestamp = 0;
-> +	else
-> +		td->timestamp += delta;
-> +}
-> +
-
-Can be skipped entirely.
-
->  static int mt_event(struct hid_device *hid, struct hid_field *field,
->  				struct hid_usage *usage, __s32 value)
->  {
-> @@ -617,6 +654,9 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->  		case HID_DG_HEIGHT:
->  			td->curdata.h = value;
->  			break;
-> +		case HID_DG_SCANTIME:
-> +			mt_compute_timestamp(td, field, value);
-
-Just td->dev_time = value should work fine here.
-
-> +			break;
->  		case HID_DG_CONTACTCOUNT:
->  			/*
->  			 * Includes multi-packet support where subsequent
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 6b4f322..0337e50 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -279,6 +279,7 @@ struct hid_item {
->  #define HID_DG_DEVICEINDEX	0x000d0053
->  #define HID_DG_CONTACTCOUNT	0x000d0054
->  #define HID_DG_CONTACTMAX	0x000d0055
-> +#define HID_DG_SCANTIME		0x000d0056
-
-Was this missing this the old patch, or did it get moved here?
-
->  
->  /*
->   * HID report types --- Ouch! HID spec says 1 2 3!
-> -- 
-> 1.8.0
-
-Thanks,
-Henrik
