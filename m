@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab2KMNf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 08:35:28 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47623 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab2KMNf1 (ORCPT
+	id S1754398Ab2KMNhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 08:37:34 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61759 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2KMNhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 08:35:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <50A12FF1.4000800@infradead.org>
-References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
-	<50A12FF1.4000800@infradead.org>
-Date: Tue, 13 Nov 2012 14:35:26 +0100
-Message-ID: <CACRpkdZj5iuyXAfynF-5r65dnakxxm2A1O602P4Lc6it8=fU9g@mail.gmail.com>
-Subject: Re: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Nov 2012 08:37:32 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
+        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
+        Michel Lespinasse <walken@google.com>
+Subject: [PATCH v3 00/11] rename random32 to prandom and introduce prandom_bytes()
+Date: Tue, 13 Nov 2012 22:36:59 +0900
+Message-Id: <1352813830-4624-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 6:20 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+This patchset introduces new functions into random32 library for
+getting the requested number of pseudo-random bytes.
 
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Fix build errors when CONFIG_OF is not enabled by including
-> <linux/of.h> (needs to be added in any case).
-> An alternative fix could be to make the driver depend on OF.
->
-> drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
-> drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
-> drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
+Before introducing these new functions into random32 library,
+rename all random32 functions to have 'prandom_' prefix.  As a result
+the function prototypes are as follows:
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+void prandom_seed(u32 seed);	/* rename from srandom32() */
+u32 prandom_u32(void);		/* rename from random32() */
+void prandom_bytes(void *buf, int nbytes);
 
-Yours,
-Linus Walleij
+void prandom_seed_state(struct rnd_state *state, u64 seed);
+				/* rename from prandom32_seed() */
+u32 prandom_u32_state(struct rnd_state *state);
+				/* rename from prandom32() */
+void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+
+The purpose of this renaming is to prevent some kernel developers
+from assuming that prandom32() and random32() might imply that only
+prandom32() was the one using a pseudo-random number generator by
+prandom32's "p", and the result may be a very embarassing security
+exposure.  This concern was expressed by Theodore Ts'o.
+
+Changelog
+
+* v3
+- change common prefix from 'random32_' to 'prandom_'
+- ensure prandom_bytes_state() generates same bytes with same rnd_state
+
+* v2
+- rename prandom32 to random32_state
+- dropped lib/uuid.c patch
+- add bnx2 and mtd_stresstest patches
+
+Akinobu Mita (11):
+  random32: rename random32 to prandom
+  prandom: introduce prandom_bytes() and prandom_bytes_state()
+  bnx2x: use prandom_bytes()
+  mtd: nandsim: use prandom_bytes
+  ubifs: use prandom_bytes
+  mtd: mtd_nandecctest: use prandom_bytes instead of get_random_bytes()
+  mtd: mtd_oobtest: convert to use prandom library
+  mtd: mtd_pagetest: convert to use prandom library
+  mtd: mtd_speedtest: use prandom_bytes
+  mtd: mtd_subpagetest: convert to use prandom library
+  mtd: mtd_stresstest: use prandom_bytes()
+
+ drivers/mtd/nand/nandsim.c                      |  5 +-
+ drivers/mtd/tests/mtd_nandecctest.c             |  2 +-
+ drivers/mtd/tests/mtd_oobtest.c                 | 49 ++++---------
+ drivers/mtd/tests/mtd_pagetest.c                | 43 ++++-------
+ drivers/mtd/tests/mtd_speedtest.c               |  9 +--
+ drivers/mtd/tests/mtd_stresstest.c              |  3 +-
+ drivers/mtd/tests/mtd_subpagetest.c             | 42 +++--------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |  5 +-
+ drivers/scsi/fcoe/fcoe_ctlr.c                   |  4 +-
+ fs/ubifs/debug.c                                |  8 +-
+ include/linux/random.h                          | 19 +++--
+ lib/interval_tree_test_main.c                   |  7 +-
+ lib/random32.c                                  | 97 +++++++++++++++++++------
+ lib/rbtree_test.c                               |  6 +-
+ 14 files changed, 145 insertions(+), 154 deletions(-)
+
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Cc: netdev@vger.kernel.org
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: devel@open-fcoe.org
+Cc: Michel Lespinasse <walken@google.com>
+-- 
+1.7.11.7
+
