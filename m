@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2KMKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 05:44:16 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37108 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab2KMKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 05:44:14 -0500
-Date: Tue, 13 Nov 2012 12:37:57 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH] usb: otg: twl4030: Change TWL4030_MODULE_* ids to
- TWL_MODULE_*
-Message-ID: <20121113103757.GE10951@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1352799818-22363-1-git-send-email-peter.ujfalusi@ti.com>
- <20121113094722.GB10395@arwen.pp.htv.fi>
- <50A220BF.7020901@ti.com>
+	id S1754831Ab2KMKph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 05:45:37 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61547 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab2KMKpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 05:45:36 -0500
+Date: Tue, 13 Nov 2012 11:45:30 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 15/19] mm: numa: Add fault driven placement and migration
+Message-ID: <20121113104530.GF21522@gmail.com>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <1352193295-26815-16-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u5E4XgoOPWr4PD9E"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50A220BF.7020901@ti.com>
+In-Reply-To: <1352193295-26815-16-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---u5E4XgoOPWr4PD9E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+* Mel Gorman <mgorman@suse.de> wrote:
 
-On Tue, Nov 13, 2012 at 11:28:15AM +0100, Peter Ujfalusi wrote:
-> Hi Felipe,
->=20
-> On 11/13/2012 10:47 AM, Felipe Balbi wrote:
-> > On Tue, Nov 13, 2012 at 10:43:38AM +0100, Peter Ujfalusi wrote:
-> >> To facilitate upcoming cleanup in twl stack.
-> >> No functional changes.
-> >>
-> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> >=20
-> > I guess this one must go together with the rest of your series...
->=20
-> I made the split between the patches and they are good to go in their sep=
-arate
-> ways to avoid cross tree hassle.
-> All of the defines were in place originally but they were used in non
-> consistent ways.
-> All of these will help in the future to clean up the twl core without bre=
-aking
-> the child drivers.
+> NOTE: This patch is based on "sched, numa, mm: Add fault driven
+>	placement and migration policy" but as it throws away 
+>	all the policy to just leave a basic foundation I had to 
+>	drop the signed-offs-by.
 
-ok good. Unfortunately I have already sent this merge window's pull
-request to Greg so I'd have to delay this until v3.9. If that's ok with
-you, I can take it through my tree.
+So, much of that has been updated meanwhile - but the split 
+makes fundamental sense - we considered it before.
 
---=20
-balbi
+One detail you did in this patch was the following rename:
 
---u5E4XgoOPWr4PD9E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+     s/EMBEDDED_NUMA/NUMA_VARIABLE_LOCALITY
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> --- a/arch/sh/mm/Kconfig
+> +++ b/arch/sh/mm/Kconfig
+> @@ -111,6 +111,7 @@ config VSYSCALL
+>  config NUMA
+>  	bool "Non Uniform Memory Access (NUMA) Support"
+>  	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
+> +	select NUMA_VARIABLE_LOCALITY
+>  	default n
+>  	help
+>  	  Some SH systems have many various memories scattered around
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+>
+..aaba45d 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -696,6 +696,20 @@ config LOG_BUF_SHIFT
+>  config HAVE_UNSTABLE_SCHED_CLOCK
+>  	bool
+>  
+> +#
+> +# For architectures that (ab)use NUMA to represent different memory regions
+> +# all cpu-local but of different latencies, such as SuperH.
+> +#
+> +config NUMA_VARIABLE_LOCALITY
+> +	bool
 
-iQIcBAEBAgAGBQJQoiMFAAoJEIaOsuA1yqREk24P/0i0bC0b8W15F3mglrzk0cVo
-DOaqwUIc92jz6FtMfpPTO2H9NhOCnkdZylaMJNakP9ONKZ7T7eWZ+h+gXO2Iamj9
-SX29uYgux3eTYSYsXLiLDxvAbzvHnEzSMA6r7ZMaiukMBeZR+cUiijsYSBXQhYvL
-Mux9Cde5UZP0x3MJNMfEryFiOKbrtNw3MSnSR/vNHfURUACc2ZoxZF6RklR24B30
-ZZbK1tf8Cxlk7SZ07tb5NLPBujDz4iI7hX789nWNLWsDDfbMrBi9UX2ghVfS38D4
-AocEH8wTwgexkazLh6qMvWiDU+uWXRkegdv6f7hO2rc0UZxB4cO9RI1BZsr6UN5E
-/YXIF/SaDrGHdUlVy2cTqcgCbgnfWMRLZJsBMbwbOqtaaIqIiwBwzMPrmIPTXgAW
-KGExxBmB5JaqHwEnVw4i27mbdIeVNl/XjmhQyqeP1fzV78QnpVaSzlybyTCY0jf2
-1TCvKDGIyAJF08Tenke8SjthvfUxIOJ2/4p90ch53COoE0Wx1cp6Y+kUExQTNntM
-o+SB3Mg289V/70mLRckLtdj0FHdLBgq6xZk5mrdLYB8cY5CkmhLQTSGc35oAKZtD
-YoZSMyX+bHvPPp5B00XfXlrLxNniHMzXG31h8RS5b35ytdOuveKNtyVNpb4uhoYn
-g7/LOTKNoLCQA5KL2DhF
-=OzIR
------END PGP SIGNATURE-----
+The NUMA_VARIABLE_LOCALITY name slightly misses the real point 
+though that NUMA_EMBEDDED tried to stress: it's important to 
+realize that these are systems that (ab-)use our NUMA memory 
+zoning code to implement support for variable speed RAM modules 
+- so they can use the existing node binding ABIs.
 
---u5E4XgoOPWr4PD9E--
+The cost of that is the losing of the regular NUMA node 
+structure. So by all means it's a convenient hack - but the name 
+must signal that. I'm not attached to the NUMA_EMBEDDED naming 
+overly strongly, but NUMA_VARIABLE_LOCALITY sounds more harmless 
+than it should.
+
+Perhaps ARCH_WANT_NUMA_VARIABLE_LOCALITY_OVERRIDE? A tad long 
+but we don't want it to be overused in any case.
+
+Thanks,
+
+	Ingo
