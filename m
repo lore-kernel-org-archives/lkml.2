@@ -1,108 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2KMRJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:09:42 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:41483 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab2KMRJl (ORCPT
+	id S1755352Ab2KMRKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:10:20 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58218 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907Ab2KMRKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:09:41 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkOwAFV8olBV5h1yPGdsb2JhbABEhTGFI7gmAgF+GQEBAQEfGQ0ngh4BAQQBOhwTAQ8FCwgDEQMBAi8UDRgKDA4THodaAwkKqgmGTQ2JVBSLLWl5gX6CfGEDlCeBVIV7hTiIAQ
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="151407521"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 18:15:53 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 12/13] HID: introduce Scan Time
-Message-ID: <20121113171553.GA821@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-13-git-send-email-benjamin.tissoires@gmail.com>
- <20121109084527.GA15371@core.coreip.homeip.net>
- <50A25861.5060803@gmail.com>
+	Tue, 13 Nov 2012 12:10:18 -0500
+Message-ID: <50A27EF5.7080806@wwwdotorg.org>
+Date: Tue, 13 Nov 2012 10:10:13 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A25861.5060803@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, Kevin Hilman <khilman@ti.com>,
+        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <CACxGe6v=+8UKerzp9z5cZo6TbXJQ4Nb=fpKgfkuvib_B-BoVdw@mail.gmail.com> <509D9089.7020407@wwwdotorg.org> <5B124797-6DFD-4C5E-90D7-665AFD4A7873@antoniou-consulting.com> <50A12950.6090808@wwwdotorg.org> <20121113072517.GE25915@truffula.fritz.box> <BD20AE03-C138-4BC6-AE02-F162AF6840B2@antoniou-consulting.com>
+In-Reply-To: <BD20AE03-C138-4BC6-AE02-F162AF6840B2@antoniou-consulting.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-> From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> Date: Tue, 13 Nov 2012 15:11:22 +0100
-> Subject: [PATCH] Input: introduce EV_MSC Timestamp
+On 11/13/2012 01:09 AM, Pantelis Antoniou wrote:
+> On Nov 13, 2012, at 9:25 AM, David Gibson wrote:
+...
+>> 1) We annotate the base tree with some extra label information for
+>> nodes which overlays are likely to want to reference by phandle.  e.g.
+>>
+>> 	beaglebone_pic: interrupt-controller@XXXXX {
+>> 		...
+>> 		phandle,symbolic-name = "beaglebone_pic";
+>> 	};
+>>
+>> We could extend dtc to (optionally?) auto-generate those properties
+>> from its existing label syntax.  Not sure if that's a good idea or
+>> not yet.  In any case, we compile this augmented base tree to .dtb as
+>> normal and boot our kernel with it.
 > 
-> Win 8 digitizer devices provides the actual timestamp (hid_dg_scan_time)
-> computed by the hardware itself. The value is global to the frame and is
-> not specific to the multitouch protocol (though only touch, not pen,
-> should use it according to the specification).
-
-I think it is good to use win8 as an example here, but this feature is
-present in many other devices as well, and this feature is generic to
-all of them. It would thus make sense to start off a bit more general here.
-
+> I'm fine with that. You can auto-generate when there's a label to a node.
+> The cape dt fragment will use the label name to reference a node.
+> More details below...
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  Documentation/input/event-codes.txt | 11 +++++++++++
->  include/linux/input.h               |  1 +
->  2 files changed, 12 insertions(+)
+>> 2) The information for the capes/modules/whatever is
+>> distributed/packaged as .dts, never .dtb.  When userspace detects the
+>> new module (or the user explicitly tells it, if it's not probeable) it
+>> picks up the correct dts and runs it through dtc in a special mode.
+>> In this mode dtc takes the existing base tree (from /proc/device-tree,
+>> say) as well as the new dts.  In this mode, dtc allocates phandles for
+>> the new tree fragment so as not to collide with anything from the
+>> supplied base tree (as well as avoiding internal conflicts,
+>> obviously).  It also allows node references to the base tree by using
+>> those label annotations from (1) to match symbolic names to the
+>> phandle values in the base tree.
 > 
-> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
-> index 53305bd..6f28e11 100644
-> --- a/Documentation/input/event-codes.txt
-> +++ b/Documentation/input/event-codes.txt
-> @@ -196,6 +196,17 @@ EV_MSC:
->  EV_MSC events are used for input and output events that do not fall under other
->  categories.
->  
-> +A few EV_MSC codes have special meanings:
-
-meaning:
-
-> +
-> +* MSC_TIMESTAMP:
-> +  - Used to report the number of microseconds since the last reset. This event
-> +    should be coded as an uint32 value, which is allowed to wrap around with
-> +    no special consequence. It is assumed that the time difference between two
-> +    consecutive events is reliable on a reasonable time scale (hours).
-> +    A reset to zero can happen, in which case the time since the last event is
-> +    unknown.  If the device does not provide this information, the driver must
-> +    not provide it to the user space.
-
-to user space.
-
-> +
->  EV_LED:
->  ----------
->  EV_LED events are used for input and output to set and query the state of
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index ba48743..25354f3 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -858,6 +858,7 @@ struct input_keymap_entry {
->  #define MSC_GESTURE		0x02
->  #define MSC_RAW			0x03
->  #define MSC_SCAN		0x04
-> +#define MSC_TIMESTAMP		0x05
->  #define MSC_MAX			0x07
->  #define MSC_CNT			(MSC_MAX+1)
->  
-> -- 
-> 1.8.0
+> Not good to rely on userspace kicking off dtc and compiling from source.
+> Some capes/expansion boards might have your root fs device, for example
+> there is an eMMC cape coming up, while networking capes are common too.
 > 
-> Cheers,
-> Benjamin
+> However I have a compromise. 
+> 
+> I agree that compiling from source can be an option for a runtime definable 
+> cape, but for built-in capes we could do a bit better.
+> 
+> In particular, I don't see any particular need to have a DT fragment
+> reference anything that dependent of the runtime device tree. It should
+> be possible to compile the DT fragment in kernel, against the generated
+> flattened device tree, producing a flattened DT fragment with the phandles
+> already resolved.
+> 
+> So the sequence could be something like this:
+> 
+> $ dtc -O dtb -o am335x-bone.dtb -b 0 am335x-bone.dts -@ ${LAST_PHANDLE_FILE}
+> $ dtc -O dtbf -R am335x-bone.dtb -o weather-cape.dtb -b 0 weather-cape.dts -@ ${LAST_PHANDLE_FILE}
+> $ dtc -O dtbf -R am335x-bone.dtb -o geiger-cape.dtb -b 0 geiger-cape.dts -@ ${LAST_PHANDLE_FILE}
+> 
+> The ${LAST_PHANDLE_FILE} can be updated with the last phandle value generated.
 
-    Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+I'm not sure that will avoid phandle collisions though.
 
-Thanks,
-Henrik
+If you build everything at runtime, you'll always be compiling each new
+partial .dtb based on the phandles actually in-use in the kernel's
+current complete device tree. You can always easily avoid collisions
+that way.
+
+If you instead pre-compile both the based .dtb /and/ some partial .dtbs,
+then you're essentially statically defining some phandle values, but
+splitting those static assignments across 3 (in your example) different
+.dtbs. However, what guarantees that those 3 .dtbs are already loaded
+into the system when some fourth partial .dtb is loaded, such that the
+static phandle assignments influence that fourth partial .dtb's runtime
+compilation?
+
+Put another way, what happens when you:
+
+1) Boot the kernel using am335x-bone.dtb.
+2) Incrementally load weather-cape.dtb. Don't incrementally load
+geiger-cape.dtb for whatever reason.
+3) Load runtime-compiled-cape.dtb. This avoids conflicts with the
+already-loaded am335x-bone.dtb and weather-cape.dtb since
+runtime-compiled-cape.dtb is compiled at runtime based on the currently
+loaded .dtbs. However, it may well end up conflicting with
+geiger-cape.dtb since that isn't loaded.
+4) Now attempt to load geiger-cape.dtb - possible conflict.
+
+Given all of that, I'd assert that if you want to statically assign any
+phandles, all static assignments need to be done in the base .dtb that
+the kernel is loaded with, and not in any pre-compiled partial .dtbs.
+
+So, if your root filesystem is on an eMMC cape, then you need to create
+a board .dts file that /include/s the base board .dts and the cape .dts
+files and boot the kernel with that.
+
+Or, you get U-Boot/... to merge the relevant pre-compiled .dtbs and boot
+the kernel with that.
+
+Or I suppose you could have a well-known range of phandles for
+pre-compiled .dtbs that the runtime dtc mode always avoided, preferably
+without the need for explicit phandle-range statements in the .dts
+files, e.g. driven by a dtc static-assignment-vs-dynamic-assignment
+command-line option?
