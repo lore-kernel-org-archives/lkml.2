@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2KMFvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 00:51:20 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35765 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab2KMFvS (ORCPT
+	id S1753861Ab2KMFv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 00:51:59 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58201 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab2KMFv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 00:51:18 -0500
-Date: Tue, 13 Nov 2012 16:51:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20121113165106.e592e23693663de49e9d78d0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Nov_2012_16_51_06_+1100_t/csKYQpBI/yInMe"
+	Tue, 13 Nov 2012 00:51:58 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50A1DFE1.3070809@jp.fujitsu.com>
+Date: Tue, 13 Nov 2012 14:51:29 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
+References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-3-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1352755122-25660-3-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Nov_2012_16_51_06_+1100_t/csKYQpBI/yInMe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2012/11/13 6:17, Yinghai Lu wrote:
+> So make init_memory_mapping smaller and readable.
+> 
+> Suggested-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Reviewed-by: Pekka Enberg <penberg@kernel.org>
+> ---
+>   arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
+>   1 files changed, 26 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index aa5b0da..6d8e102 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+>   	return nr_range;
+>   }
+>   
+> -/*
+> - * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+> - * This runs before bootmem is initialized and gets pages directly from
+> - * the physical memory. To access them they are temporarily mapped.
+> - */
+> -unsigned long __init_refok init_memory_mapping(unsigned long start,
+> -					       unsigned long end)
+> +static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+> +				     unsigned long start,
+> +				     unsigned long end)
+>   {
+>   	unsigned long start_pfn, end_pfn;
+> -	unsigned long ret = 0;
+>   	unsigned long pos;
+> -	struct map_range mr[NR_RANGE_MR];
+> -	int nr_range, i;
+> -
+> -	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+> -	       start, end - 1);
+> -
+> -	memset(mr, 0, sizeof(mr));
+> -	nr_range = 0;
+> +	int i;
+>   
+>   	/* head if not big page alignment ? */
+>   	start_pfn = start >> PAGE_SHIFT;
+> @@ -258,6 +246,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>   			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+>   			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+>   
+> +	return nr_range;
+> +}
+> +
+> +/*
+> + * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+> + * This runs before bootmem is initialized and gets pages directly from
+> + * the physical memory. To access them they are temporarily mapped.
+> + */
+> +unsigned long __init_refok init_memory_mapping(unsigned long start,
+> +					       unsigned long end)
+> +{
+> +	struct map_range mr[NR_RANGE_MR];
+> +	unsigned long ret = 0;
+> +	int nr_range, i;
+> +
+> +	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
+> +	       start, end - 1);
+> +
+> +	memset(mr, 0, sizeof(mr));
 
-Hi all,
+> +	nr_range = 0;
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+This is unnecessary since it is set in the below.
 
-In file included from drivers/power/lp8788-charger.c:15:0:
-include/linux/iio/consumer.h:76:21: error: unknown type name 'u8'
-include/linux/iio/consumer.h:78:11: error: expected ';', ',' or ')' before =
-'void'
+> +	nr_range = split_mem_range(mr, nr_range, start, end);
 
-Caused by commit 92d1079b281f ("staging:iio: add a callback buffer for in
-kernel push interface").  Presumably just a missing include.
+Thanks,
+Yasuaki Ishimatsu
 
-I have reverted that commit for today (it introduces a set of not yet
-used interfaces).
+> +
+>   	/*
+>   	 * Find space for the kernel direct mapping tables.
+>   	 *
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__13_Nov_2012_16_51_06_+1100_t/csKYQpBI/yInMe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQod/KAAoJEECxmPOUX5FEQCkP/30/Jq8dfiEEN5MIR4GbleB5
-LkYHW9WODO5Q9ZXc/SBQa4p3ogYPVrMWZDq4A5tA5JGhLruZn1k90QisYknL4jDK
-lSqcEyW/utqKYjtn3FOx0VNbkNmENQok/EzzOT+ooLpDiBc+i9NvaomikGwV/WIa
-SjfxZSWa50uoWeHwesNfdELiEFhNcHBCTixuA6G7uVLVEeHFefcdOLCf9uPl6xUA
-7IjMD6ilSU8N8qlUUKw+EHVjWGS0b/NXrEFgAtblLihw1PgX1xb1rftKT+t7dkeV
-rTtHkkD88hKHDLUAyO7QWJJ5UZjLFeCMlA+EY5vRlSxvoDSdq+THo/J+oQCM5H9/
-tiBJK6xv8O/72HDF0wYAeNZg2TKIv1MQwVHsbvT+ALP41ZKdEaQhGoEONskfdO19
-7KP6nLE1pse572IIMDnqTAfi0GLIGjp0+2cQgWQ195NIp/sqMpjzUh+mM6Dc0SxZ
-scuy+M4b8EKf6guCJwcVBXvNGsdWY2p+8HadDIitgZtdOZ5cJGls3r/K1pgThoGI
-qpxmYZh75HaGE7LRzN4FOGWQhqZZPJt6o46le+SMcwUD3b/en1DttBrMxDivU9D7
-1QfOk/eNk6uQZXYukZa+35h33bnX0aJ1lJivbVyj7mUsObAhA0pdCXEVt0XXtP/g
-q3ZgMTZt5/aAYJ7lrOiM
-=lRnk
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Nov_2012_16_51_06_+1100_t/csKYQpBI/yInMe--
