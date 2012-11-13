@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2KMPbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:31:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60663 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576Ab2KMPbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:31:18 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
-Subject: [RFC] rework mem_cgroup iterator
-Date: Tue, 13 Nov 2012 16:30:34 +0100
-Message-Id: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754048Ab2KMPd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:33:56 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37116 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab2KMPdy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 10:33:54 -0500
+Date: Wed, 14 Nov 2012 00:33:50 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: xiaoguangrong@linux.vnet.ibm.com, avi@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        qemu-devel@nongnu.org, owasserm@redhat.com, quintela@redhat.com,
+        pbonzini@redhat.com, chegu_vinod@hp.com, yamahata@valinux.co.jp
+Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
+Message-Id: <20121114003350.d6e8ff85658fccbf41183f05@gmail.com>
+In-Reply-To: <20121112231032.GB5798@amt.cnet>
+References: <50978DFE.1000005@linux.vnet.ibm.com>
+	<20121112231032.GB5798@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch set tries to make mem_cgroup_iter saner in the way how it
-walks hierarchies. css->id based traversal is far from being ideal as it
-is not deterministic because it depends on the creation ordering.
+Ccing live migration developers who should be interested in this work,
 
-Diffstat looks promising but it is fair the say that the biggest cleanup is
-just css_get_next removal. The memcg code has grown a bit but I think it is
-worth the resulting outcome (the sanity ;)).
+On Mon, 12 Nov 2012 21:10:32 -0200
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-The first patch fixes a potential misbehaving which I haven't seen but the
-fix is needed for the later patches anyway. We could take it alone as well
-but I do not have any bug report to base the fix on.
+> On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
+> > Do not drop large spte until it can be insteaded by small pages so that
+> > the guest can happliy read memory through it
+> > 
+> > The idea is from Avi:
+> > | As I mentioned before, write-protecting a large spte is a good idea,
+> > | since it moves some work from protect-time to fault-time, so it reduces
+> > | jitter.  This removes the need for the return value.
+> > 
+> > Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> > ---
+> >  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
+> >  1 files changed, 9 insertions(+), 25 deletions(-)
+> 
+> Its likely that other 4k pages are mapped read-write in the 2mb range 
+> covered by a read-only 2mb map. Therefore its not entirely useful to
+> map read-only. 
+> 
+> Can you measure an improvement with this change?
 
-The second patch replaces css_get_next by cgroup iterators which are
-scheduled for 3.8 in Tejun's tree and I depend on the following two patches:
-fe1e904c cgroup: implement generic child / descendant walk macros
-7e187c6c cgroup: use rculist ops for cgroup->children
+What we discussed at KVM Forum last week was about the jitter we could
+measure right after starting live migration: both Isaku and Chegu reported
+such jitter.
 
-The third patch is an attempt for simplification of the mem_cgroup_iter. It
-basically removes all css usages to make the code easier. The next patch
-removes the big while(!memcg) loop around the iterating logic. It could have
-been folded into #3 but I rather have the rework separate from the code
-moving noise.
+So if this patch reduces such jitter for some real workloads, by lazily
+dropping largepage mappings and saving read faults until that point, that
+would be very nice!
 
-The last patch just removes css_get_next as there is no user for it any
-longer.
+But sadly, what they measured included interactions with the outside of the
+guest, and the main cause was due to the big QEMU lock problem, they guessed.
+The order is so different that an improvement by a kernel side effort may not
+be seen easily.
 
-I am also thinking that leaf-to-root iteration makes more sense but this
-patch is not included in the series yet because I have to think some
-more about the justification.
+FWIW: I am now changing the initial write protection by
+kvm_mmu_slot_remove_write_access() to rmap based as I proposed at KVM Forum.
+ftrace said that 1ms was improved to 250-350us by the change for 10GB guest.
+My code still drops largepage mappings, so the initial write protection time
+itself may not be a such big issue here, I think.
 
-So far I didn't get to testing but I am posting this early if everybody is
-OK with this change.
+Again, if we can eliminate read faults to such an extent that guests can see
+measurable improvement, that should be very nice!
 
 Any thoughts?
 
-Cumulative diffstat:
- include/linux/cgroup.h |    7 ---
- kernel/cgroup.c        |   49 ---------------------
- mm/memcontrol.c        |  110 +++++++++++++++++++++++++++++++++---------------
- 3 files changed, 75 insertions(+), 91 deletions(-)
-
-Michal Hocko (5):
-      memcg: synchronize per-zone iterator access by a spinlock
-      memcg: rework mem_cgroup_iter to use cgroup iterators
-      memcg: simplify mem_cgroup_iter
-      memcg: clean up mem_cgroup_iter
-      cgroup: remove css_get_next
-
+Thanks,
+	Takuya
