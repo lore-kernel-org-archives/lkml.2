@@ -1,66 +1,551 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab2KMXyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 18:54:31 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab2KMXya (ORCPT
+	id S1756026Ab2KMXzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 18:55:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42747 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755984Ab2KMXzp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 18:54:30 -0500
-Date: Tue, 13 Nov 2012 15:54:28 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andy Lutomirski <luto@amacapital.net>, Marc Duponcheel <marc@offline.be>
-cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I
- think)
-In-Reply-To: <CALCETrXSzNEdNEZaQqB93rpP9zXcBD4KRX_bjTAnzU6JEXcApg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1211131553170.17623@chino.kir.corp.google.com>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com> <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com> <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com> <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
- <CALCETrXSzNEdNEZaQqB93rpP9zXcBD4KRX_bjTAnzU6JEXcApg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 13 Nov 2012 18:55:45 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+To: Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <20121113232648.GA19911@beefymiracle.amer.corp.natinst.com>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        John Linn <john.linn@xilinx.com>, <arm@kernel.org>
+References: <20121113232648.GA19911@beefymiracle.amer.corp.natinst.com>
+Message-ID: <20121113235516.20034.31067@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH v3] clk: Add support for fundamental zynq clks
+Date: Tue, 13 Nov 2012 15:55:16 -0800
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012, Andy Lutomirski wrote:
-
-> >> $ grep -E "compact_|thp_" /proc/vmstat
-> >> compact_blocks_moved 8332448774
-> >> compact_pages_moved 21831286
-> >> compact_pagemigrate_failed 211260
-> >> compact_stall 13484
-> >> compact_fail 6717
-> >> compact_success 6755
-> >> thp_fault_alloc 150665
-> >> thp_fault_fallback 4270
-> >> thp_collapse_alloc 19771
-> >> thp_collapse_alloc_failed 2188
-> >> thp_split 19600
-> >>
-> >
-> > Two of the patches from the list provided at
-> > http://marc.info/?l=linux-mm&m=135179005510688 are already in your 3.6.3
-> > kernel:
-> >
-> >         mm: compaction: abort compaction loop if lock is contended or run too long
-> >         mm: compaction: acquire the zone->lock as late as possible
-> >
-> > and all have not made it to the 3.6 stable kernel yet, so would it be
-> > possible to try with 3.7-rc5 to see if it fixes the issue?  If so, it will
-> > indicate that the entire series is a candidate to backport to 3.6.
+Quoting Josh Cartwright (2012-11-13 15:26:48)
+> Provide simplified models for the necessary clocks on the zynq-7000
+> platform.  Currently, the PLLs, the CPU clock network, and the basic
+> peripheral clock networks (for SDIO, SMC, SPI, QSPI, UART) are modelled.
 > 
-> I'll try later on.  The last time I tried to boot 3.7 on this box, it
-> failed impressively (presumably due to a localmodconfig bug, but I
-> haven't tracked it down yet).
+> OF bindings are also provided and documented.
 > 
-> I'm also not sure how reliably I can reproduce this.
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> ---
+> Michal-
+> 
+> Here is a v3 with a fix for the problem Soren Brinkmann spotted.  Am I
+> correct that your current plan is to merge this into your tree?
+> 
+> If so:
+> 
+> Mike-
+> 
+> Can we get your Acked-by on this one?
 > 
 
-The challenge goes out to Marc too since he reported this issue on 3.6.2 
-but we haven't heard back yet on the success of the backport (although 
-it's probably easier to try 3.7-rc5 since there are some conflicts to 
-resolve).
+Acked-by: Mike Turquette <mturquette@linaro.org>
+
+Regards,
+Mike
+
+> Thanks,
+>    Josh
+> 
+> v3: - Fix PERIPH_CLK_CTRL_SRC macro (thanks to Soren Brinkmann)
+> 
+>  .../devicetree/bindings/clock/zynq-7000.txt        |  55 +++
+>  drivers/clk/clk-zynq.c                             | 383 +++++++++++++++++++++
+>  include/linux/clk/zynq.h                           |  24 ++
+>  3 files changed, 462 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/zynq-7000.txt
+>  create mode 100644 drivers/clk/clk-zynq.c
+>  create mode 100644 include/linux/clk/zynq.h
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> new file mode 100644
+> index 0000000..23ae1db
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> @@ -0,0 +1,55 @@
+> +Device Tree Clock bindings for the Zynq 7000 EPP
+> +
+> +The Zynq EPP has several different clk providers, each with there own bindings.
+> +The purpose of this document is to document their usage.
+> +
+> +See clock_bindings.txt for more information on the generic clock bindings.
+> +See Chapter 25 of Zynq TRM for more information about Zynq clocks.
+> +
+> +== PLLs ==
+> +
+> +Used to describe the ARM_PLL, DDR_PLL, and IO_PLL.
+> +
+> +Required properties:
+> +- #clock-cells : shall be 0 (only one clock is output from this node)
+> +- compatible : "xlnx,zynq-pll"
+> +- reg : pair of u32 values, which are the address offsets within the SLCR
+> +        of the relevant PLL_CTRL register and PLL_CFG register respectively
+> +- clocks : phandle for parent clock.  should be the phandle for ps_clk
+> +
+> +Optional properties:
+> +- clock-output-names : name of the output clock
+> +
+> +Example:
+> +       armpll: armpll {
+> +               #clock-cells = <0>;
+> +               compatible = "xlnx,zynq-pll";
+> +               clocks = <&ps_clk>;
+> +               reg = <0x100 0x110>;
+> +               clock-output-names = "armpll";
+> +       };
+> +
+> +== Peripheral clocks ==
+> +
+> +Describes clock node for the SDIO, SMC, SPI, QSPI, and UART clocks.
+> +
+> +Required properties:
+> +- #clock-cells : shall be 1
+> +- compatible : "xlnx,zynq-periph-clock"
+> +- reg : a single u32 value, describing the offset within the SLCR where
+> +        the CLK_CTRL register is found for this peripheral
+> +- clocks : phandle for parent clocks.  should hold phandles for
+> +           the IO_PLL, ARM_PLL, and DDR_PLL in order
+> +- clock-output-names : names of the output clock(s).  For peripherals that have
+> +                       two output clocks (for example, the UART), two clocks
+> +                       should be listed.
+> +
+> +Example:
+> +       uart_clk: uart_clk {
+> +               #clock-cells = <1>;
+> +               compatible = "xlnx,zynq-periph-clock";
+> +               clocks = <&iopll &armpll &ddrpll>;
+> +               reg = <0x154>;
+> +               clock-output-names = "uart0_ref_clk",
+> +                                    "uart1_ref_clk";
+> +       };
+> diff --git a/drivers/clk/clk-zynq.c b/drivers/clk/clk-zynq.c
+> new file mode 100644
+> index 0000000..37a3051
+> --- /dev/null
+> +++ b/drivers/clk/clk-zynq.c
+> @@ -0,0 +1,383 @@
+> +/*
+> + * Copyright (c) 2012 National Instruments
+> + *
+> + * Josh Cartwright <josh.cartwright@ni.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/slab.h>
+> +#include <linux/kernel.h>
+> +#include <linux/clk-provider.h>
+> +
+> +static void __iomem *slcr_base;
+> +
+> +struct zynq_pll_clk {
+> +       struct clk_hw   hw;
+> +       void __iomem    *pll_ctrl;
+> +       void __iomem    *pll_cfg;
+> +};
+> +
+> +#define to_zynq_pll_clk(hw)    container_of(hw, struct zynq_pll_clk, hw)
+> +
+> +#define CTRL_PLL_FDIV(x)       ((x) >> 12)
+> +
+> +static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
+> +                                         unsigned long parent_rate)
+> +{
+> +       struct zynq_pll_clk *pll = to_zynq_pll_clk(hw);
+> +       return parent_rate * CTRL_PLL_FDIV(ioread32(pll->pll_ctrl));
+> +}
+> +
+> +static const struct clk_ops zynq_pll_clk_ops = {
+> +       .recalc_rate    = zynq_pll_recalc_rate,
+> +};
+> +
+> +static void __init zynq_pll_clk_setup(struct device_node *np)
+> +{
+> +       struct clk_init_data init;
+> +       struct zynq_pll_clk *pll;
+> +       const char *parent_name;
+> +       struct clk *clk;
+> +       u32 regs[2];
+> +       int ret;
+> +
+> +       ret = of_property_read_u32_array(np, "reg", regs, ARRAY_SIZE(regs));
+> +       if (WARN_ON(ret))
+> +               return;
+> +
+> +       pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+> +       if (WARN_ON(!pll))
+> +               return;
+> +
+> +       pll->pll_ctrl = slcr_base + regs[0];
+> +       pll->pll_cfg  = slcr_base + regs[1];
+> +
+> +       of_property_read_string(np, "clock-output-names", &init.name);
+> +
+> +       init.ops = &zynq_pll_clk_ops;
+> +       parent_name = of_clk_get_parent_name(np, 0);
+> +       init.parent_names = &parent_name;
+> +       init.num_parents = 1;
+> +
+> +       pll->hw.init = &init;
+> +
+> +       clk = clk_register(NULL, &pll->hw);
+> +       if (WARN_ON(IS_ERR(clk)))
+> +               return;
+> +
+> +       ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +       if (WARN_ON(ret))
+> +               return;
+> +}
+> +
+> +struct zynq_periph_clk {
+> +       struct clk_hw           hw;
+> +       struct clk_onecell_data onecell_data;
+> +       struct clk              *gates[2];
+> +       void __iomem            *clk_ctrl;
+> +       spinlock_t              clkact_lock;
+> +};
+> +
+> +#define to_zynq_periph_clk(hw) container_of(hw, struct zynq_periph_clk, hw)
+> +
+> +static const u8 periph_clk_parent_map[] = {
+> +       0, 0, 1, 2
+> +};
+> +#define PERIPH_CLK_CTRL_SRC(x) (periph_clk_parent_map[((x) & 0x30) >> 4])
+> +#define PERIPH_CLK_CTRL_DIV(x) (((x) & 0x3F00) >> 8)
+> +
+> +static unsigned long zynq_periph_recalc_rate(struct clk_hw *hw,
+> +                                            unsigned long parent_rate)
+> +{
+> +       struct zynq_periph_clk *periph = to_zynq_periph_clk(hw);
+> +       return parent_rate / PERIPH_CLK_CTRL_DIV(ioread32(periph->clk_ctrl));
+> +}
+> +
+> +static u8 zynq_periph_get_parent(struct clk_hw *hw)
+> +{
+> +       struct zynq_periph_clk *periph = to_zynq_periph_clk(hw);
+> +       return PERIPH_CLK_CTRL_SRC(ioread32(periph->clk_ctrl));
+> +}
+> +
+> +static const struct clk_ops zynq_periph_clk_ops = {
+> +       .recalc_rate    = zynq_periph_recalc_rate,
+> +       .get_parent     = zynq_periph_get_parent,
+> +};
+> +
+> +static void __init zynq_periph_clk_setup(struct device_node *np)
+> +{
+> +       struct zynq_periph_clk *periph;
+> +       const char *parent_names[3];
+> +       struct clk_init_data init;
+> +       int clk_num = 0, err;
+> +       const char *name;
+> +       struct clk *clk;
+> +       u32 reg;
+> +       int i;
+> +
+> +       err = of_property_read_u32(np, "reg", &reg);
+> +       if (WARN_ON(err))
+> +               return;
+> +
+> +       periph = kzalloc(sizeof(*periph), GFP_KERNEL);
+> +       if (WARN_ON(!periph))
+> +               return;
+> +
+> +       periph->clk_ctrl = slcr_base + reg;
+> +       spin_lock_init(&periph->clkact_lock);
+> +
+> +       init.name = np->name;
+> +       init.ops = &zynq_periph_clk_ops;
+> +       for (i = 0; i < ARRAY_SIZE(parent_names); i++)
+> +               parent_names[i] = of_clk_get_parent_name(np, i);
+> +       init.parent_names = parent_names;
+> +       init.num_parents = ARRAY_SIZE(parent_names);
+> +
+> +       periph->hw.init = &init;
+> +
+> +       clk = clk_register(NULL, &periph->hw);
+> +       if (WARN_ON(IS_ERR(clk)))
+> +               return;
+> +
+> +       err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +       if (WARN_ON(err))
+> +               return;
+> +
+> +       err = of_property_read_string_index(np, "clock-output-names", 0,
+> +                                           &name);
+> +       if (WARN_ON(err))
+> +               return;
+> +
+> +       periph->gates[0] = clk_register_gate(NULL, name, np->name, 0,
+> +                                            periph->clk_ctrl, 0, 0,
+> +                                            &periph->clkact_lock);
+> +       if (WARN_ON(IS_ERR(periph->gates[0])))
+> +               return;
+> +       clk_num++;
+> +
+> +       /* some periph clks have 2 downstream gates */
+> +       err = of_property_read_string_index(np, "clock-output-names", 1,
+> +                                           &name);
+> +       if (err != -ENODATA) {
+> +               periph->gates[1] = clk_register_gate(NULL, name, np->name, 0,
+> +                                                    periph->clk_ctrl, 1, 0,
+> +                                                    &periph->clkact_lock);
+> +               if (WARN_ON(IS_ERR(periph->gates[1])))
+> +                       return;
+> +               clk_num++;
+> +       }
+> +
+> +       periph->onecell_data.clks = periph->gates;
+> +       periph->onecell_data.clk_num = clk_num;
+> +
+> +       err = of_clk_add_provider(np, of_clk_src_onecell_get,
+> +                                 &periph->onecell_data);
+> +       if (WARN_ON(err))
+> +               return;
+> +}
+> +
+> +/* CPU Clock domain is modelled as a mux with 4 children subclks, whose
+> + * derivative rates depend on CLK_621_TRUE
+> + */
+> +
+> +struct zynq_cpu_clk {
+> +       struct clk_hw           hw;
+> +       struct clk_onecell_data onecell_data;
+> +       struct clk              *subclks[4];
+> +       void __iomem            *clk_ctrl;
+> +       spinlock_t              clkact_lock;
+> +};
+> +
+> +#define to_zynq_cpu_clk(hw)    container_of(hw, struct zynq_cpu_clk, hw)
+> +
+> +static const u8 zynq_cpu_clk_parent_map[] = {
+> +       1, 1, 2, 0
+> +};
+> +#define CPU_CLK_SRCSEL(x)      (zynq_cpu_clk_parent_map[(((x) & 0x30) >> 4)])
+> +#define CPU_CLK_CTRL_DIV(x)    (((x) & 0x3F00) >> 8)
+> +
+> +static u8 zynq_cpu_clk_get_parent(struct clk_hw *hw)
+> +{
+> +       struct zynq_cpu_clk *cpuclk = to_zynq_cpu_clk(hw);
+> +       return CPU_CLK_SRCSEL(ioread32(cpuclk->clk_ctrl));
+> +}
+> +
+> +static unsigned long zynq_cpu_clk_recalc_rate(struct clk_hw *hw,
+> +                                             unsigned long parent_rate)
+> +{
+> +       struct zynq_cpu_clk *cpuclk = to_zynq_cpu_clk(hw);
+> +       return parent_rate / CPU_CLK_CTRL_DIV(ioread32(cpuclk->clk_ctrl));
+> +}
+> +
+> +static const struct clk_ops zynq_cpu_clk_ops = {
+> +       .get_parent     = zynq_cpu_clk_get_parent,
+> +       .recalc_rate    = zynq_cpu_clk_recalc_rate,
+> +};
+> +
+> +struct zynq_cpu_subclk {
+> +       struct clk_hw   hw;
+> +       void __iomem    *clk_621;
+> +       enum {
+> +               CPU_SUBCLK_6X4X,
+> +               CPU_SUBCLK_3X2X,
+> +               CPU_SUBCLK_2X,
+> +               CPU_SUBCLK_1X,
+> +       } which;
+> +};
+> +
+> +#define CLK_621_TRUE(x)        ((x) & 1)
+> +
+> +#define to_zynq_cpu_subclk(hw) container_of(hw, struct zynq_cpu_subclk, hw);
+> +
+> +static unsigned long zynq_cpu_subclk_recalc_rate(struct clk_hw *hw,
+> +                                                unsigned long parent_rate)
+> +{
+> +       unsigned long uninitialized_var(rate);
+> +       struct zynq_cpu_subclk *subclk;
+> +       bool is_621;
+> +
+> +       subclk = to_zynq_cpu_subclk(hw)
+> +       is_621 = CLK_621_TRUE(ioread32(subclk->clk_621));
+> +
+> +       switch (subclk->which) {
+> +       case CPU_SUBCLK_6X4X:
+> +               rate = parent_rate;
+> +               break;
+> +       case CPU_SUBCLK_3X2X:
+> +               rate = parent_rate / 2;
+> +               break;
+> +       case CPU_SUBCLK_2X:
+> +               rate = parent_rate / (is_621 ? 3 : 2);
+> +               break;
+> +       case CPU_SUBCLK_1X:
+> +               rate = parent_rate / (is_621 ? 6 : 4);
+> +               break;
+> +       };
+> +
+> +       return rate;
+> +}
+> +
+> +static const struct clk_ops zynq_cpu_subclk_ops = {
+> +       .recalc_rate    = zynq_cpu_subclk_recalc_rate,
+> +};
+> +
+> +static struct clk *zynq_cpu_subclk_setup(struct device_node *np, u8 which,
+> +                                        void __iomem *clk_621)
+> +{
+> +       struct zynq_cpu_subclk *subclk;
+> +       struct clk_init_data init;
+> +       struct clk *clk;
+> +       int err;
+> +
+> +       err = of_property_read_string_index(np, "clock-output-names",
+> +                                           which, &init.name);
+> +       if (WARN_ON(err))
+> +               goto err_read_output_name;
+> +
+> +       subclk = kzalloc(sizeof(*subclk), GFP_KERNEL);
+> +       if (!subclk)
+> +               goto err_subclk_alloc;
+> +
+> +       subclk->clk_621 = clk_621;
+> +       subclk->which = which;
+> +
+> +       init.ops = &zynq_cpu_subclk_ops;
+> +       init.parent_names = &np->name;
+> +       init.num_parents = 1;
+> +
+> +       subclk->hw.init = &init;
+> +
+> +       clk = clk_register(NULL, &subclk->hw);
+> +       if (WARN_ON(IS_ERR(clk)))
+> +               goto err_clk_register;
+> +
+> +       return clk;
+> +
+> +err_clk_register:
+> +       kfree(subclk);
+> +err_subclk_alloc:
+> +err_read_output_name:
+> +       return ERR_PTR(-EINVAL);
+> +}
+> +
+> +static void __init zynq_cpu_clk_setup(struct device_node *np)
+> +{
+> +       struct zynq_cpu_clk *cpuclk;
+> +       const char *parent_names[3];
+> +       struct clk_init_data init;
+> +       void __iomem *clk_621;
+> +       struct clk *clk;
+> +       u32 reg[2];
+> +       int err;
+> +       int i;
+> +
+> +       err = of_property_read_u32_array(np, "reg", reg, ARRAY_SIZE(reg));
+> +       if (WARN_ON(err))
+> +               return;
+> +
+> +       cpuclk = kzalloc(sizeof(*cpuclk), GFP_KERNEL);
+> +       if (WARN_ON(!cpuclk))
+> +               return;
+> +
+> +       cpuclk->clk_ctrl = slcr_base + reg[0];
+> +       clk_621 = slcr_base + reg[1];
+> +       spin_lock_init(&cpuclk->clkact_lock);
+> +
+> +       init.name = np->name;
+> +       init.ops = &zynq_cpu_clk_ops;
+> +       for (i = 0; i < ARRAY_SIZE(parent_names); i++)
+> +               parent_names[i] = of_clk_get_parent_name(np, i);
+> +       init.parent_names = parent_names;
+> +       init.num_parents = ARRAY_SIZE(parent_names);
+> +
+> +       cpuclk->hw.init = &init;
+> +
+> +       clk = clk_register(NULL, &cpuclk->hw);
+> +       if (WARN_ON(IS_ERR(clk)))
+> +               return;
+> +
+> +       err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +       if (WARN_ON(err))
+> +               return;
+> +
+> +       for (i = 0; i < 4; i++) {
+> +               cpuclk->subclks[i] = zynq_cpu_subclk_setup(np, i, clk_621);
+> +               if (WARN_ON(IS_ERR(cpuclk->subclks[i])))
+> +                       return;
+> +       }
+> +
+> +       cpuclk->onecell_data.clks = cpuclk->subclks;
+> +       cpuclk->onecell_data.clk_num = i;
+> +
+> +       err = of_clk_add_provider(np, of_clk_src_onecell_get,
+> +                                 &cpuclk->onecell_data);
+> +       if (WARN_ON(err))
+> +               return;
+> +}
+> +
+> +static const __initconst struct of_device_id zynq_clk_match[] = {
+> +       { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+> +       { .compatible = "xlnx,zynq-pll", .data = zynq_pll_clk_setup, },
+> +       { .compatible = "xlnx,zynq-periph-clock",
+> +               .data = zynq_periph_clk_setup, },
+> +       { .compatible = "xlnx,zynq-cpu-clock", .data = zynq_cpu_clk_setup, },
+> +       {}
+> +};
+> +
+> +void __init xilinx_zynq_clocks_init(void __iomem *slcr)
+> +{
+> +       slcr_base = slcr;
+> +       of_clk_init(zynq_clk_match);
+> +}
+> diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+> new file mode 100644
+> index 0000000..56be7cd
+> --- /dev/null
+> +++ b/include/linux/clk/zynq.h
+> @@ -0,0 +1,24 @@
+> +/*
+> + * Copyright (C) 2012 National Instruments
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#ifndef __LINUX_CLK_ZYNQ_H_
+> +#define __LINUX_CLK_ZYNQ_H_
+> +
+> +void __init xilinx_zynq_clocks_init(void __iomem *slcr);
+> +
+> +#endif
+> -- 
+> 1.8.0
