@@ -1,138 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2KMBYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:24:51 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:34154 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968Ab2KMBYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:24:50 -0500
-Date: Mon, 12 Nov 2012 20:24:37 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH 4/4] bootmem: fix wrong call parameter for free_bootmem()
-Message-ID: <20121113012436.GG10092@cmpxchg.org>
-References: <1352737915-30906-1-git-send-email-js1304@gmail.com>
- <1352737915-30906-4-git-send-email-js1304@gmail.com>
- <20121112152342.ce90052a.akpm@linux-foundation.org>
+	id S1754302Ab2KMB34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:29:56 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63019 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab2KMB3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 20:29:55 -0500
+X-AuditID: 9c930197-b7b45ae000000e9e-62-50a1a291b91e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/12] perf tools: Keep group information
+References: <1352479414-2324-1-git-send-email-namhyung@kernel.org>
+	<1352479414-2324-2-git-send-email-namhyung@kernel.org>
+	<20121112170833.GE18978@ghostprotocols.net>
+Date: Tue, 13 Nov 2012 10:29:53 +0900
+In-Reply-To: <20121112170833.GE18978@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Mon, 12 Nov 2012 14:08:33 -0300")
+Message-ID: <87pq3imgry.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121112152342.ce90052a.akpm@linux-foundation.org>
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 03:23:42PM -0800, Andrew Morton wrote:
-> On Tue, 13 Nov 2012 01:31:55 +0900
-> Joonsoo Kim <js1304@gmail.com> wrote:
-> 
-> > It is somehow strange that alloc_bootmem return virtual address
-> > and free_bootmem require physical address.
-> > Anyway, free_bootmem()'s first parameter should be physical address.
-> > 
-> > There are some call sites for free_bootmem() with virtual address.
-> > So fix them.
-> 
-> Well gee, I wonder how that happened :(
+On Mon, 12 Nov 2012 14:08:33 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Sat, Nov 10, 2012 at 01:43:23AM +0900, Namhyung Kim escreveu:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Add a few of group-related field in struct perf_{evlist,evsel} so that
+>> the group information in a evlist can be known easily.  It only counts
+>> groups which have more than 1 members since leader-only groups are
+>> treated as non-group events.
+>
+> We don't need to add a group_idx, we can get it using evsel->idx -
+> evsel->leader->idx, interdiff of this patch to what I think is
+> equivalent:
 
-free_bootmem() is the counterpart to reserve_bootmem() to configure
-physical memory ranges.  Allocations are assumed to be permanent.
+Looks good to me.  Just a comment below..
 
-> How does this look?
+>
+> diff -u b/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> --- b/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -111,18 +111,16 @@
+>  void __perf_evlist__set_leader(struct list_head *list)
+>  {
+>  	struct perf_evsel *evsel, *leader;
+> -	int count = 0;
+>  
+>  	leader = list_entry(list->next, struct perf_evsel, node);
+> +	evsel = list_entry(list->prev, struct perf_evsel, node);
+>  	leader->leader = NULL;
+> +	leader->nr_members = evsel->idx - leader->idx + 1;
 
-Much better.  How about this in addition?
+This will lead a off-by-one difference with my patches.  I chose to use
+0 nr_members for leader-only group.  It was used for an additional
+allocation of group stats but it seems that it's not needed anymore
+with the hist_link change.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
-
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 7b74452..b519cb2 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -49,7 +49,7 @@ extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
- extern unsigned long free_all_bootmem(void);
- 
- extern void free_bootmem_node(pg_data_t *pgdat,
--			      unsigned long addr,
-+			      unsigned long physaddr,
- 			      unsigned long size);
- extern void free_bootmem(unsigned long physaddr, unsigned long size);
- extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 4c079ba..5135d84 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -147,7 +147,7 @@ unsigned long __init init_bootmem(unsigned long start, unsigned long pages)
- 
- /*
-  * free_bootmem_late - free bootmem pages directly to page allocator
-- * @addr: starting physical address of the range
-+ * @physaddr: starting physical address of the range
-  * @size: size of the range in bytes
-  *
-  * This is only useful when the bootmem allocator has already been torn
-@@ -385,7 +385,7 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
- 
- /**
-  * free_bootmem - mark a page range as usable
-- * @addr: starting physical address of the range
-+ * @physaddr: starting physical address of the range
-  * @size: size of the range in bytes
-  *
-  * Partial pages will be considered reserved and left as they are.
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 714d5d6..a532960 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -58,21 +58,21 @@ static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
- 
- /*
-  * free_bootmem_late - free bootmem pages directly to page allocator
-- * @addr: starting address of the range
-+ * @physaddr: starting physical address of the range
-  * @size: size of the range in bytes
-  *
-  * This is only useful when the bootmem allocator has already been torn
-  * down, but we are still initializing the system.  Pages are given directly
-  * to the page allocator, no bootmem metadata is updated because it is gone.
-  */
--void __init free_bootmem_late(unsigned long addr, unsigned long size)
-+void __init free_bootmem_late(unsigned long physaddr, unsigned long size)
- {
- 	unsigned long cursor, end;
- 
--	kmemleak_free_part(__va(addr), size);
-+	kmemleak_free_part(__va(physaddr), size);
- 
--	cursor = PFN_UP(addr);
--	end = PFN_DOWN(addr + size);
-+	cursor = PFN_UP(physaddr);
-+	end = PFN_DOWN(physaddr + size);
- 
- 	for (; cursor < end; cursor++) {
- 		__free_pages_bootmem(pfn_to_page(cursor), 0);
-@@ -188,17 +188,17 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
- 
- /**
-  * free_bootmem - mark a page range as usable
-- * @addr: starting address of the range
-+ * @physaddr: starting physical address of the range
-  * @size: size of the range in bytes
-  *
-  * Partial pages will be considered reserved and left as they are.
-  *
-  * The range must be contiguous but may span node boundaries.
-  */
--void __init free_bootmem(unsigned long addr, unsigned long size)
-+void __init free_bootmem(unsigned long physaddr, unsigned long size)
- {
--	kmemleak_free_part(__va(addr), size);
--	memblock_free(addr, size);
-+	kmemleak_free_part(__va(physaddr), size);
-+	memblock_free(physaddr, size);
- }
- 
- static void * __init ___alloc_bootmem_nopanic(unsigned long size,
+Thanks,
+Namhyung
