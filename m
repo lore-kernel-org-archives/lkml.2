@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab2KMLS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:18:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49090 "EHLO mx2.suse.de"
+	id S1754915Ab2KMLTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:19:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49075 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754908Ab2KMLNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:14 -0500
+	id S1754839Ab2KMLNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:13 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/31] mm: mempolicy: Add MPOL_MF_NOOP
-Date: Tue, 13 Nov 2012 11:12:39 +0000
-Message-Id: <1352805180-1607-11-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/31] mm: mempolicy: Make MPOL_LOCAL a real policy
+Date: Tue, 13 Nov 2012 11:12:38 +0000
+Message-Id: <1352805180-1607-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -25,31 +25,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-NOTE: I have not yet addressed by own review feedback of this patch. At
-	this point I'm trying to construct a baseline tree and will apply
-	my own review feedback later and then fold it in.
+Make MPOL_LOCAL a real and exposed policy such that applications that
+relied on the previous default behaviour can explicitly request it.
 
-This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
-to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
-flags, mbind() will map the pages PROT_NONE so that they will be
-migrated on the next touch.
-
-This allows an application to prepare for a new phase of operation
-where different regions of shared storage will be assigned to
-worker threads, w/o changing policy.  Note that we could just use
-"default" policy in this case.  However, this also allows an
-application to request that pages be migrated, only if necessary,
-to follow any arbitrary policy that might currently apply to a
-range of pages, without knowing the policy, or without specifying
-multiple mbind()s for ranges with different policies.
-
-[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
-
-Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Requested-by: Christoph Lameter <cl@linux.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -57,63 +40,56 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
  include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   11 ++++++-----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ mm/mempolicy.c                 |    9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 3e835c9..d23dca8 100644
+index 23e62e0..3e835c9 100644
 --- a/include/uapi/linux/mempolicy.h
 +++ b/include/uapi/linux/mempolicy.h
-@@ -21,6 +21,7 @@ enum {
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
  	MPOL_BIND,
  	MPOL_INTERLEAVE,
- 	MPOL_LOCAL,
-+	MPOL_NOOP,		/* retain existing policy for range */
++	MPOL_LOCAL,
  	MPOL_MAX,	/* always last member of enum */
  };
  
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 54bd3e5..c21e914 100644
+index 66e90ec..54bd3e5 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
- 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
+@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 			     (flags & MPOL_F_RELATIVE_NODES)))
+ 				return ERR_PTR(-EINVAL);
+ 		}
++	} else if (mode == MPOL_LOCAL) {
++		if (!nodes_empty(*nodes))
++			return ERR_PTR(-EINVAL);
++		mode = MPOL_PREFERRED;
+ 	} else if (nodes_empty(*nodes))
+ 		return ERR_PTR(-EINVAL);
+ 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
+@@ -2399,7 +2403,6 @@ void numa_default_policy(void)
+  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+  * Used only for mpol_parse_str() and mpol_to_str()
+  */
+-#define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
+ {
+ 	[MPOL_DEFAULT]    = "default",
+@@ -2452,12 +2455,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (flags)
+ 		*flags++ = '\0';	/* terminate mode string */
  
--	if (mode == MPOL_DEFAULT) {
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
- 		if (nodes && !nodes_empty(*nodes))
- 			return ERR_PTR(-EINVAL);
--		return NULL;	/* simply delete any existing policy */
-+		return NULL;
- 	}
- 	VM_BUG_ON(!nodes);
- 
-@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (start & ~PAGE_MASK)
- 		return -EINVAL;
- 
--	if (mode == MPOL_DEFAULT)
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
- 		flags &= ~MPOL_MF_STRICT;
- 
- 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
-@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
- 	[MPOL_PREFERRED]  = "prefer",
- 	[MPOL_BIND]       = "bind",
- 	[MPOL_INTERLEAVE] = "interleave",
--	[MPOL_LOCAL]      = "local"
-+	[MPOL_LOCAL]      = "local",
-+	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
- };
- 
- 
-@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+-	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
++	for (mode = 0; mode < MPOL_MAX; mode++) {
+ 		if (!strcmp(str, policy_modes[mode])) {
  			break;
  		}
  	}
--	if (mode >= MPOL_MAX)
-+	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+-	if (mode > MPOL_LOCAL)
++	if (mode >= MPOL_MAX)
  		goto out;
  
  	switch (mode) {
