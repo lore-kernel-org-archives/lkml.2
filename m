@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab2KMUJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:09:28 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35317 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab2KMUJ1 (ORCPT
+	id S1755729Ab2KMUNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:13:34 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42553 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab2KMUNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:09:27 -0500
-Date: Tue, 13 Nov 2012 16:09:02 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <gregkh@linuxfoundation.org>, <b-cousson@ti.com>,
-        <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ndec13@gmail.com>
-Subject: Re: [PATCHv2 0/5] staging: omap-thermal fixes
-Message-ID: <20121113200902.GA22185@besouro>
-Reply-To: <eduardo.valentin@ti.com>
-References: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
+	Tue, 13 Nov 2012 15:13:32 -0500
+Date: Tue, 13 Nov 2012 11:52:52 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arpith Easow Alexander <arpith99@gmail.com>
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        hsweeten@visionengravers.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: drivers: replaced printk with dev_dbg
+Message-ID: <20121113195252.GA13648@kroah.com>
+References: <20121110070833.GA18391@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <20121110070833.GA18391@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, Nov 10, 2012 at 12:38:38PM +0530, Arpith Easow Alexander wrote:
+> This is a patch to the vmk80xx.c file that replaces the printk with dev_dbg.
+> This fixes the warnings found by the checkpatch.pl tool.
+> 
+> Signed-off-by: Arpith Easow Alexander <arpith99@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/vmk80xx.c |   30 ++++++++++++++++++------------
+>  1 file changed, 18 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+> index df277aa..6eb5361 100644
+> --- a/drivers/staging/comedi/drivers/vmk80xx.c
+> +++ b/drivers/staging/comedi/drivers/vmk80xx.c
+> @@ -131,10 +131,10 @@ static int dbgcm = 1;
+>  static int dbgcm;
+>  #endif
+>  
+> -#define dbgcm(fmt, arg...)                     \
+> +#define dbgcm(dev, fmt, arg...)                     \
+>  do {                                           \
+>  	if (dbgcm)                             \
+> -		printk(KERN_DEBUG fmt, ##arg); \
+> +		dev_dbg(dev, fmt, ##arg); \
 
-On Tue, Nov 13, 2012 at 02:09:59PM -0400, Eduardo Valentin wrote:
-> Hello again Greg,
-> 
-> So here is the correct set of changes. They now include the
-> right version of the patches and with the fixes reported
-> by Enric. Thanks Enric for the heads up.
-> 
-> So, Several compilation fixes and a couple of debugging prints
-> added to the omap-thermal driver under staging area.
-> 
-> Patches are also available here:
-> 
-> git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes_3.7
+So a macro called dbgcm tests a variable called dbgcm?  Gotta love c at
+times...
 
-For those interested pulling using http:
-https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes_3.7
+Just delete the macro, and the variable, and call dev_dbg() directly
+please.
 
-> 
-> 
-> Cheers,
-> 
-> Eduardo Valentin (4):
->   staging: omap-thermal: fix compilation
->   staging: omap-thermal: remove platform data nomenclature
->   staging: omap-thermal: remove freq_clip table
->   staging: omap-thermal: add IRQ debugging messaging
-> 
-> Radhesh Fadnis (1):
->   staging: omap-thermal: fix context restore function
-> 
->  drivers/staging/omap-thermal/omap-bandgap.c        |   63 ++++++++----------
->  drivers/staging/omap-thermal/omap-bandgap.h        |    9 ---
->  drivers/staging/omap-thermal/omap-thermal-common.c |   69 ++------------------
->  3 files changed, 33 insertions(+), 108 deletions(-)
-> 
-> -- 
-> 1.7.7.1.488.ge8e1c
-> 
+thanks.
+
+greg k-h
