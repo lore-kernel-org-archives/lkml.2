@@ -1,172 +1,397 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2KMPuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:50:14 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38251 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530Ab2KMPp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:45:56 -0500
-Subject: [PATCH 02/15] nfsd: make nfs4_client network namespace dependent
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 13 Nov 2012 18:48:28 +0300
-Message-ID: <20121113154828.12577.80401.stgit@localhost.localdomain>
-In-Reply-To: <20121113154722.12577.57671.stgit@localhost.localdomain>
-References: <20121113154722.12577.57671.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1755262Ab2KMPuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:50:20 -0500
+Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:43567 "EHLO
+	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576Ab2KMPuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 10:50:17 -0500
+Message-ID: <50A26C48.4000804@gentoo.org>
+Date: Tue, 13 Nov 2012 09:50:32 -0600
+From: Matthew Thode <prometheanfire@gentoo.org>
+Reply-To: prometheanfire@gentoo.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121030 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>, Doug Goldstein <cardoe@gentoo.org>,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, mthode@mthode.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: [BUG 3.7-rc5] NULL pointer deref when using a pcie-pci bridged
+ pci device and intel-iommu
+References: <50A03281.6040206@gentoo.org>  <CAFWqQMQgmsFNqLS02Go3de-OZoxoPRbGuSmcj8ntic52C8AVpw@mail.gmail.com>  <50A1549C.7020404@redhat.com> <50A16481.5030309@gentoo.org> <1352821109.2233.3.camel@bling.home>
+In-Reply-To: <1352821109.2233.3.camel@bling.home>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0821AD0D914FF9596BCA2AB3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And use it's net where possible.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0821AD0D914FF9596BCA2AB3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfs4callback.c |    2 +-
- fs/nfsd/nfs4recover.c  |    9 +++------
- fs/nfsd/nfs4state.c    |   15 +++++++++------
- fs/nfsd/state.h        |    1 +
- 4 files changed, 14 insertions(+), 13 deletions(-)
+On 11/13/2012 09:38 AM, Alex Williamson wrote:
+> On Mon, 2012-11-12 at 15:05 -0600, Matthew Thode wrote:
+>> On 11/12/2012 01:57 PM, Don Dutile wrote:
+>>> On 11/12/2012 04:26 AM, Doug Goldstein wrote:
+>>>> On Sun, Nov 11, 2012 at 5:19 PM, Matthew Thode
+>>>> <prometheanfire@gentoo.org>  wrote:
+>>>>> System boots with vt-d disabled in bios. Otherwise I get the errors=
+ in
+>>>>> the attached log.  I can do whatever testing you need as this syste=
+m is
+>>>>> not in production yet.  gonna paste the important part here.  Let m=
+e
+>>>>> know if you want anything else.
+>>>>>
+>>>>> Please CC me directly as I am not subscribed to the LKML.
+>>>>>
+>>>>>
+>>>>> Trying to unpack rootfs image as initramfs...
+>>>>> Freeing initrd memory: 5124k freed
+>>>>> IOMMU 0 0xfbffe000: using Queued invalidation
+>>>>> IOMMU: Setting RMRR:
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.0 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.1 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.2 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.7 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.0 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.1 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.2 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.7 [0xbf7ec000 -
+>>>>> 0xbf7fffff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.0 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.1 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.2 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1d.7 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.0 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.1 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.2 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Setting identity map for device 0000:00:1a.7 [0xec000 - 0xef=
+fff]
+>>>>> IOMMU: Prepare 0-16MiB unity mapping for LPC
+>>>>> IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff=
+]
+>>>>> PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
+>>>>> BUG: unable to handle kernel NULL pointer dereference at
+>>>>> 000000000000003c
+>>>>> IP: [<ffffffff813bd796>] pci_get_dma_source+0xf/0x41
+>>>>> PGD 0
+>>>>> Oops: 0000 [#1] SMP
+>>>>> Modules linked in:
+>>>>> CPU 7
+>>>>> Pid: 1, comm: swapper/0 Not tainted 3.7.0-rc5 #1 Penguin Computing
+>>>>> Relion 1751/X8DTU
+>>>>> RIP: 0010:[<ffffffff813bd796>]  [<ffffffff813bd796>]
+>>>>> pci_get_dma_source+0xf/0x41
+>>>>> RSP: 0000:ffff8806264d1d88  EFLAGS: 00010282
+>>>>> RAX: ffffffff813bd3a8 RBX: ffff8806261d1000 RCX: 00000000e8221180
+>>>>> RDX: ffffffff818624f0 RSI: ffff88062635b0c0 RDI: 0000000000000000
+>>>>> RBP: ffff8806264d1d88 R08: ffff8806263d6000 R09: 00000000ffffffff
+>>>>> R10: ffff8806264d1ca8 R11: 0000000000000005 R12: 0000000000000000
+>>>>> R13: ffff8806261d1098 R14: 0000000000000000 R15: 0000000000000000
+>>>>> FS:  0000000000000000(0000) GS:ffff88063f2e0000(0000)
+>>>>> knlGS:0000000000000000
+>>>>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>>> CR2: 000000000000003c CR3: 0000000001c0b000 CR4: 00000000000007e0
+>>>>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>>>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>>>> Process swapper/0 (pid: 1, threadinfo ffff8806264d0000, task
+>>>>> ffff8806264cf910)
+>>>>> Stack:
+>>>>>   ffff8806264d1dc8 ffffffff815d02c9 0000000000000000 ffff8806000000=
+00
+>>>>>   ffff8806264d1dd8 ffffffff81c64b00 ffff8806261d1098 ffff8806264d1d=
+f8
+>>>>>   ffff8806264d1de8 ffffffff815cd5a4 ffffffff81c64b00 ffffffff815cd5=
+6a
+>>>>> Call Trace:
+>>>>>   [<ffffffff815d02c9>] intel_iommu_add_device+0x95/0x167
+>>>>>   [<ffffffff815cd5a4>] add_iommu_group+0x3a/0x41
+>>>>>   [<ffffffff815cd56a>] ? bus_set_iommu+0x44/0x44
+>>>>>   [<ffffffff8145eca1>] bus_for_each_dev+0x54/0x81
+>>>>>   [<ffffffff815cd563>] bus_set_iommu+0x3d/0x44
+>>>>>   [<ffffffff81cd3fa3>] intel_iommu_init+0xae5/0xb5e
+>>>>>   [<ffffffff81ca0277>] ? free_initrd+0x9e/0x9e
+>>>>>   [<ffffffff81ca4248>] ? memblock_find_dma_reserve+0x13f/0x13f
+>>>>>   [<ffffffff81ca425e>] pci_iommu_init+0x16/0x41
+>>>>>   [<ffffffff81cc4140>] ? pci_proc_init+0x6b/0x6b
+>>>>>   [<ffffffff81000231>] do_one_initcall+0x7a/0x129
+>>>>>   [<ffffffff816dac14>] kernel_init+0x139/0x2a2
+>>>>>   [<ffffffff81c9d4c7>] ? loglevel+0x31/0x31
+>>>>>   [<ffffffff816daadb>] ? rest_init+0x6f/0x6f
+>>>>>   [<ffffffff816f66ac>] ret_from_fork+0x7c/0xb0
+>>>>>   [<ffffffff816daadb>] ? rest_init+0x6f/0x6f
+>>>>> Code: ff c1 75 04 ff d0 eb 12 48 83 c2 10 48 8b 42 08 48 85 c0 75 d=
+3 b8
+>>>>> e7 ff ff ff c9 c3 55 48 c7 c2 f0 24 86 81 48 89 e5 eb 24 8b 0a<66> =
+ 3b
+>>>>> 4f 3c 74 05 66 ff c1 75 13 66 8b 4a 02 66 3b 4f 3e 74 05
+>>>>> RIP  [<ffffffff813bd796>] pci_get_dma_source+0xf/0x41
+>>>>>   RSP<ffff8806264d1d88>
+>>>>> CR2: 000000000000003c
+>>>>> ---[ end trace 5c5a2ceca067e0ec ]---
+>>>>> Kernel panic - not syncing: Attempted to kill init! exitcode=3D0x00=
+000009
+>>>>>
+>>>>> ------------[ cut here ]------------
+>>>>> WARNING: at arch/x86/kernel/smp.c:123
+>>>>> native_smp_send_reschedule+0x25/0x51()
+>>>>> Hardware name: Relion 1751
+>>>>> Modules linked in:
+>>>>> Pid: 1, comm: swapper/0 Tainted: G      D      3.7.0-rc5 #1
+>>>>> Call Trace:
+>>>>>   <IRQ>   [<ffffffff810968ee>] warn_slowpath_common+0x80/0x98
+>>>>>   [<ffffffff8109691b>] warn_slowpath_null+0x15/0x17
+>>>>>   [<ffffffff8104e1a3>] native_smp_send_reschedule+0x25/0x51
+>>>>>   [<ffffffff810bc81b>] trigger_load_balance+0x1e8/0x214
+>>>>>   [<ffffffff810b731f>] scheduler_tick+0xd8/0xe1
+>>>>>   [<ffffffff810a132f>] update_process_times+0x62/0x73
+>>>>>   [<ffffffff810cb78b>] tick_sched_timer+0x7c/0x9b
+>>>>>   [<ffffffff810b0f83>] __run_hrtimer.clone.24+0x4e/0xc1
+>>>>>   [<ffffffff810b15b0>] hrtimer_interrupt+0xc7/0x1ac
+>>>>>   [<ffffffff8104ef01>] smp_apic_timer_interrupt+0x81/0x94
+>>>>>   [<ffffffff816f71ca>] apic_timer_interrupt+0x6a/0x70
+>>>>>   <EOI>   [<ffffffff81097ffc>] ? console_unlock+0x2c2/0x2ed
+>>>>>   [<ffffffff816f32fc>] ? panic+0x189/0x1c5
+>>>>>   [<ffffffff816f3261>] ? panic+0xee/0x1c5
+>>>>>   [<ffffffff8109ab6b>] do_exit+0x357/0x7b2
+>>>>>   [<ffffffff810371b8>] oops_end+0xb2/0xba
+>>>>>   [<ffffffff8105841d>] no_context+0x266/0x275
+>>>>>   [<ffffffff810585e7>] __bad_area_nosemaphore+0x1bb/0x1db
+>>>>>   [<ffffffff8118de46>] ? sysfs_addrm_finish+0x2f/0xa6
+>>>>>   [<ffffffff81058615>] bad_area_nosemaphore+0xe/0x10
+>>>>>   [<ffffffff81058bdb>] __do_page_fault+0x360/0x39f
+>>>>>   [<ffffffff81394afa>] ? ida_get_new_above+0xf9/0x19e
+>>>>>   [<ffffffff8112a077>] ? slab_node+0x59/0xa2
+>>>>>   [<ffffffff816f3ffd>] ? mutex_unlock+0x9/0xb
+>>>>>   [<ffffffff816da653>] ? klist_put+0x4c/0x70
+>>>>>   [<ffffffff816da581>] ? klist_next+0x30/0xb6
+>>>>>   [<ffffffff813b8cf9>] ? pci_do_find_bus+0x49/0x49
+>>>>>   [<ffffffff81058c42>] do_page_fault+0x9/0xb
+>>>>>   [<ffffffff816f6232>] page_fault+0x22/0x30
+>>>>>   [<ffffffff813bd3a8>] ? nv_msi_ht_cap_quirk_all+0x10/0x10
+>>>>>   [<ffffffff813bd796>] ? pci_get_dma_source+0xf/0x41
+>>>>>   [<ffffffff815d02c9>] intel_iommu_add_device+0x95/0x167
+>>>>>   [<ffffffff815cd5a4>] add_iommu_group+0x3a/0x41
+>>>>>   [<ffffffff815cd56a>] ? bus_set_iommu+0x44/0x44
+>>>>>   [<ffffffff8145eca1>] bus_for_each_dev+0x54/0x81
+>>>>>   [<ffffffff815cd563>] bus_set_iommu+0x3d/0x44
+>>>>>   [<ffffffff81cd3fa3>] intel_iommu_init+0xae5/0xb5e
+>>>>>   [<ffffffff81ca0277>] ? free_initrd+0x9e/0x9e
+>>>>>   [<ffffffff81ca4248>] ? memblock_find_dma_reserve+0x13f/0x13f
+>>>>>   [<ffffffff81ca425e>] pci_iommu_init+0x16/0x41
+>>>>>   [<ffffffff81cc4140>] ? pci_proc_init+0x6b/0x6b
+>>>>>   [<ffffffff81000231>] do_one_initcall+0x7a/0x129
+>>>>>   [<ffffffff816dac14>] kernel_init+0x139/0x2a2
+>>>>>   [<ffffffff81c9d4c7>] ? loglevel+0x31/0x31
+>>>>>   [<ffffffff816daadb>] ? rest_init+0x6f/0x6f
+>>>>>   [<ffffffff816f66ac>] ret_from_fork+0x7c/0xb0
+>>>>>   [<ffffffff816daadb>] ? rest_init+0x6f/0x6f
+>>>>> ---[ end trace 5c5a2ceca067e0ed ]---
+>>>>>
+>>>>> --=20
+>>>>> -- Matthew Thode (prometheanfire)
+>>>>
+>>>> The root cause of Matt's issue is that intel_iommu_add_device() call=
+s
+>>>> pci_get_domain_bus_and_slot() which is returning NULL. Which is not =
+an
+>>>> expected value. The reason NULL is being returned is that Matt has a=
 
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index 7bb187a..8bbe873 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -663,7 +663,7 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
- 		.to_retries	= 0,
- 	};
- 	struct rpc_create_args args = {
--		.net		= &init_net,
-+		.net		= clp->net,
- 		.address	= (struct sockaddr *) &conn->cb_addr,
- 		.addrsize	= conn->cb_addrlen,
- 		.saddress	= (struct sockaddr *) &conn->cb_saddr,
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index 151921b..83d2669 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -786,8 +786,7 @@ nfsd4_cld_create(struct nfs4_client *clp)
- {
- 	int ret;
- 	struct cld_upcall *cup;
--	/* FIXME: determine net from clp */
--	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
- 	struct cld_net *cn = nn->cld_net;
- 
- 	/* Don't upcall if it's already stored */
-@@ -824,8 +823,7 @@ nfsd4_cld_remove(struct nfs4_client *clp)
- {
- 	int ret;
- 	struct cld_upcall *cup;
--	/* FIXME: determine net from clp */
--	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
- 	struct cld_net *cn = nn->cld_net;
- 
- 	/* Don't upcall if it's already removed */
-@@ -862,8 +860,7 @@ nfsd4_cld_check(struct nfs4_client *clp)
- {
- 	int ret;
- 	struct cld_upcall *cup;
--	/* FIXME: determine net from clp */
--	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
- 	struct cld_net *cn = nn->cld_net;
- 
- 	/* Don't upcall if one was already stored during this grace pd */
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 6a3661b..865a793 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1247,10 +1247,9 @@ same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
- 	return 0 == strcmp(cr1->cr_principal, cr2->cr_principal);
- }
- 
--static void gen_clid(struct nfs4_client *clp)
-+static void gen_clid(struct nfs4_client *clp, struct nfsd_net *nn)
- {
- 	static u32 current_clientid = 1;
--	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
- 
- 	clp->cl_clientid.cl_boot = nn->boot_time;
- 	clp->cl_clientid.cl_id = current_clientid++; 
-@@ -1289,6 +1288,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name, char *recdir,
- 	struct nfs4_client *clp;
- 	struct sockaddr *sa = svc_addr(rqstp);
- 	int ret;
-+	struct net *net = SVC_NET(rqstp);
- 
- 	clp = alloc_client(name);
- 	if (clp == NULL)
-@@ -1321,6 +1321,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name, char *recdir,
- 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
- 	gen_confirm(clp);
- 	clp->cl_cb_session = NULL;
-+	clp->net = net;
- 	return clp;
- }
- 
-@@ -1428,7 +1429,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_r
- 	else
- 		goto out_err;
- 
--	conn->cb_addrlen = rpc_uaddr2sockaddr(&init_net, se->se_callback_addr_val,
-+	conn->cb_addrlen = rpc_uaddr2sockaddr(clp->net, se->se_callback_addr_val,
- 					    se->se_callback_addr_len,
- 					    (struct sockaddr *)&conn->cb_addr,
- 					    sizeof(conn->cb_addr));
-@@ -1578,6 +1579,7 @@ nfsd4_exchange_id(struct svc_rqst *rqstp,
- 	nfs4_verifier		verf = exid->verifier;
- 	struct sockaddr		*sa = svc_addr(rqstp);
- 	bool	update = exid->flags & EXCHGID4_FLAG_UPD_CONFIRMED_REC_A;
-+	struct nfsd_net		*nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 
- 	rpc_ntop(sa, addr_str, sizeof(addr_str));
- 	dprintk("%s rqstp=%p exid=%p clname.len=%u clname.data=%p "
-@@ -1667,7 +1669,7 @@ out_new:
- 	}
- 	new->cl_minorversion = 1;
- 
--	gen_clid(new);
-+	gen_clid(new, nn);
- 	add_to_unconfirmed(new, strhashval);
- out_copy:
- 	exid->clientid.cl_boot = new->cl_clientid.cl_boot;
-@@ -2199,7 +2201,8 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
- 	struct nfs4_client	*conf, *unconf, *new;
- 	__be32 			status;
- 	char                    dname[HEXDIR_LEN];
--	
-+	struct nfsd_net		*nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
-+
- 	status = nfs4_make_rec_clidname(dname, &clname);
- 	if (status)
- 		return status;
-@@ -2234,7 +2237,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
- 		/* case 1: probable callback update */
- 		copy_clid(new, conf);
- 	else /* case 4 (new client) or cases 2, 3 (client reboot): */
--		gen_clid(new);
-+		gen_clid(new, nn);
- 	new->cl_minorversion = 0;
- 	gen_callback(new, setclid, rqstp);
- 	add_to_unconfirmed(new, strhashval);
-diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-index 8053b57..b064577 100644
---- a/fs/nfsd/state.h
-+++ b/fs/nfsd/state.h
-@@ -283,6 +283,7 @@ struct nfs4_client {
- 	unsigned long		cl_cb_slot_busy;
- 	struct rpc_wait_queue	cl_cb_waitq;	/* backchannel callers may */
- 						/* wait here for slots */
-+	struct net		*net;
- };
- 
- static inline void
+>>>> card with a TI XIO2000A/XIO2200A PCIe-PCI bridge (VID: 104C, DID:
+>>>> 8231) on it. This device already has a quirk setup for disabling fas=
+t
+>>>> back to back transfers on its secondary bus. If we cause it to use t=
+he
+>>>> primary bus, that appears to resolve the issue. I'm not sure exactly=
 
+>>>> how to proceed from here due to relative lack of knowledge of PCI. D=
+o
+>>>> all PCIe-PCI bridges with secondary buses need their DMA parent to b=
+e
+>>>> the primary bus or is that just something that should be done for th=
+e
+>>>> TI XIO2000A due to the existing quirk?
+>>>>
+>>> DMA from a (legacy) PCI device does not have a SRC-ID in the transact=
+ion,
+>>> so the source of the device generating the DMA is unknown.  When brid=
+ging
+>>> to a PCIe device, the Parent PPB's dev-id is inserted on the PCIe as =
+the
+>>> source
+>>> of a transaction -- in this case, DMA read/write transaction.
+>>> This (sw) mapping should have happened by default, unless a recent
+>>> change from VFIO
+>>> broke this mapping.... or the TI bridge didn't report itself correctl=
+y
+>>> as a PCIe-PCI bridge.
+>>> Alex ?
+>>>
+>>>
+>>>> The failing call with arguments was pci_get_domain_bus_and_slot(0, 5=
+,
+>>>> 0), while pci_get_domain_bus_and_slot(0, 4, 0) resulted in a system
+>>>> that didn't panic and a device that worked.
+>>>>
+>>>> $ lspci -tvn
+>>>> -+-[0000:ff]-+-00.0  8086:2c40
+>>>>   |           +-00.1  8086:2c01
+>>>>   |           +-02.0  8086:2c10
+>>>>   |           +-02.1  8086:2c11
+>>>>   |           +-02.4  8086:2c14
+>>>>   |           +-02.5  8086:2c15
+>>>>   |           +-03.0  8086:2c18
+>>>>   |           +-03.1  8086:2c19
+>>>>   |           +-03.2  8086:2c1a
+>>>>   |           +-03.4  8086:2c1c
+>>>>   |           +-04.0  8086:2c20
+>>>>   |           +-04.1  8086:2c21
+>>>>   |           +-04.2  8086:2c22
+>>>>   |           +-04.3  8086:2c23
+>>>>   |           +-05.0  8086:2c28
+>>>>   |           +-05.1  8086:2c29
+>>>>   |           +-05.2  8086:2c2a
+>>>>   |           +-05.3  8086:2c2b
+>>>>   |           +-06.0  8086:2c30
+>>>>   |           +-06.1  8086:2c31
+>>>>   |           +-06.2  8086:2c32
+>>>>   |           \-06.3  8086:2c33
+>>>>   \-[0000:00]-+-00.0  8086:3406
+>>>>               +-01.0-[01]--+-00.0  8086:10c9
+>>>>               |            \-00.1  8086:10c9
+>>>>               +-03.0-[02]--
+>>>>               +-05.0-[03]--
+>>>>               +-07.0-[04-05]----00.0-[05]----08.0  d161:8006
+>>>>               +-09.0-[06]----00.0  8086:10b9
+>>>>               +-13.0  8086:342d
+>>>>               +-14.0  8086:342e
+>>>>               +-14.1  8086:3422
+>>>>               +-14.2  8086:3423
+>>>>               +-14.3  8086:3438
+>>>>               +-16.0  8086:3430
+>>>>               +-16.1  8086:3431
+>>>>               +-16.2  8086:3432
+>>>>               +-16.3  8086:3433
+>>>>               +-16.4  8086:3429
+>>>>               +-16.5  8086:342a
+>>>>               +-16.6  8086:342b
+>>>>               +-16.7  8086:342c
+>>>>               +-1a.0  8086:3a37
+>>>>               +-1a.1  8086:3a38
+>>>>               +-1a.2  8086:3a39
+>>>>               +-1a.7  8086:3a3c
+>>>>               +-1d.0  8086:3a34
+>>>>               +-1d.1  8086:3a35
+>>>>               +-1d.2  8086:3a36
+>>>>               +-1d.7  8086:3a3a
+>>>>               +-1e.0-[07]----01.0  102b:0532
+>>>>               +-1f.0  8086:3a16
+>>>>               +-1f.2  8086:3a22
+>>>>               \-1f.3  8086:3a30
+>>>>
+>>>> If someone can craft the correct patch that'd be great or answer the=
+
+>>>> above question and I'll gladly craft it.
+>>>>
+>>>> Thanks.
+>>>
+>> because I didn't see it.  Here was the patch that got it working for m=
+e
+>> (ignore the printks), applies against 3.6.6 and 3.7-rc5.
+>=20
+> I think you're on the right track, but the solution is too specific.
+> Here's a version that will fall back to the bridge device for the base
+> of the group.  There may be opportunities to get rid of the pci_get_
+> call altogether, but this seems pretty safe.  Can you please test it?
+> Thanks,
+>=20
+> Alex
+>=20
+>=20
+> commit ca15170f05b140ab8c611db5cb7cb9c218ddc930
+> Author: Alex Williamson <alex.williamson@redhat.com>
+> Date:   Tue Nov 13 08:34:08 2012 -0700
+>=20
+>     intel-iommu: Fix lookup in add device
+>    =20
+>     We can't assume this device exists, fall back to the bridge itself.=
+
+>    =20
+>     Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>=20
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index d4a4cd4..0badfa4 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -4108,7 +4108,7 @@ static void swap_pci_ref(struct pci_dev **from, s=
+truct pci_dev *to)
+>  static int intel_iommu_add_device(struct device *dev)
+>  {
+>  	struct pci_dev *pdev =3D to_pci_dev(dev);
+> -	struct pci_dev *bridge, *dma_pdev;
+> +	struct pci_dev *bridge, *dma_pdev =3D NULL;
+>  	struct iommu_group *group;
+>  	int ret;
+> =20
+> @@ -4122,7 +4122,7 @@ static int intel_iommu_add_device(struct device *=
+dev)
+>  			dma_pdev =3D pci_get_domain_bus_and_slot(
+>  						pci_domain_nr(pdev->bus),
+>  						bridge->subordinate->number, 0);
+> -		else
+> +		if (!dma_pdev)
+>  			dma_pdev =3D pci_dev_get(bridge);
+>  	} else
+>  		dma_pdev =3D pci_dev_get(pdev);
+>=20
+>=20
+It works :D
+
+--=20
+-- Matthew Thode (prometheanfire)
+
+
+--------------enig0821AD0D914FF9596BCA2AB3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQomxQAAoJECRx6z5ArFrDkWgQAN7CYFAktmDZsLhbnzbDiFiJ
+mF+TVnAKcUttnOMdzuVXoHbXDmphE0kAUqIU1mG4SgC3p06+1qrvR5klfGruRYir
+Y8LNAyaGKDoFmeKKCZNvLDLG+hRtwV4+pFdV8M70bmQ06Gvi8HdunxdetP73foTO
+m3x2el9DffDiHFNt5YMapCISU+izTmkcs9HU58qST80j/c1ElUI6phXSfdLSmly4
+hU3wkY7iS2xveBNl4AbXRNQQtE4ob+fq6zJU7/3tqs5xgUMtIChdDRXuF5NaH2yx
+kDabwPjIwusus6PzWrfWVCZJ9Hdmn5BhJytcyPMFKfJSliDQMf97CrxYvQKrzNgS
+lexW9fLhEnwgZiy8YuRHSjkE8GC9OBmjSuUDyoLVC8f1QIbOffgDVLjDt9ECjS50
+7V0B0juWHr8HnbQRJ39OsuECMQypxDkoo6uquFg6glVeKdGxIE2y6VhpqTBZqGPN
+im5WRznl7t86ei5R0MYOu8EhRB9NbNHk+0l9437TsK4EmLo/WuqezkL6/NlGjjtN
+aDYyLukRfaF+0tbvrX5egNns2rboTFM3CA7Lqnu1VnF9f6FCe9EK1wN2s9ROFTZq
+tYakRNzW5is5Q7cpoNPaEg/Pm7+kRNFiZn0vxo1/C9IXLpI7b4PTFUwUEAus7nxo
+scX9Lls146ZiGcTa8wup
+=FpLV
+-----END PGP SIGNATURE-----
+
+--------------enig0821AD0D914FF9596BCA2AB3--
