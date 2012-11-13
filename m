@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2KMR47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:56:59 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:45701 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab2KMR45 (ORCPT
+	id S1755488Ab2KMR5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:57:04 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45803 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab2KMR5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:56:57 -0500
-Date: Tue, 13 Nov 2012 12:56:54 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: Does anyone use CONFIG_TINY_PREEMPT_RCU?
-Message-ID: <20121113175654.GA30119@elliptictech.com>
-References: <20121113004906.GA10557@linux.vnet.ibm.com>
- <20121113144620.GA27426@elliptictech.com>
- <20121113170804.GA2489@linux.vnet.ibm.com>
+	Tue, 13 Nov 2012 12:57:01 -0500
+Message-ID: <50A289E8.4030407@gmail.com>
+Date: Tue, 13 Nov 2012 09:56:56 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113170804.GA2489@linux.vnet.ibm.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Jonas Gorski <jonas.gorski@gmail.com>, linux-mips@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Kevin Cernekee <cernekee@gmail.com>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, Maxime Bizon <mbizon@freebox.fr>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [RFC] MIPS: BCM63XX: add simple Device Tree includes for all
+ SoCs
+References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com> <1352638249-29298-3-git-send-email-jonas.gorski@gmail.com> <50A1D290.3050409@wwwdotorg.org>
+In-Reply-To: <50A1D290.3050409@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-13 09:08 -0800, Paul E. McKenney wrote:
-> On Tue, Nov 13, 2012 at 09:46:20AM -0500, Nick Bowler wrote:
-> > On 2012-11-12 16:49 -0800, Paul E. McKenney wrote:
-> > > Hello!
-> > > 
-> > > I know of people using TINY_RCU, TREE_RCU, and TREE_PREEMPT_RCU, but I
-> > > have not heard of anyone using TINY_PREEMPT_RCU for whom TREE_PREEMPT_RCU
-> > > was not a viable option (in contrast, the people running Linux on
-> > > tiny-memmory systems typically use TINY_RCU).  Of course, if no one
-> > > really needs it, the proper thing to do is to remove it.
-> > > 
-> > > So, if you need TINY_PREEMPT_RCU, please let me know.  Otherwise, I will
-> > > remove it, probably in the 3.9 timeframe.
-> > 
-> > Yes, I use TINY_PREEMPT_RCU on my UP machines.  It is, in fact, the only
-> > option.
-> 
-> Suppose that TREE_PREEMPT_RCU was available for !SMP && PREEMPT builds.
-> Would that work for you?
+On 11/12/2012 08:54 PM, Stephen Warren wrote:
+> On 11/11/2012 05:50 AM, Jonas Gorski wrote:
+>> Add simple Device Tree include files for all currently supported SoCs.
+>> These will be populated with device definitions as driver support
+>> gets added.
+>
+>>   arch/mips/bcm63xx/dts/bcm6328.dtsi |   30 ++++++++++++++++++++++++++++++
+>>   arch/mips/bcm63xx/dts/bcm6338.dtsi |   30 ++++++++++++++++++++++++++++++
+>>   arch/mips/bcm63xx/dts/bcm6345.dtsi |   30 ++++++++++++++++++++++++++++++
+>>   arch/mips/bcm63xx/dts/bcm6348.dtsi |   30 ++++++++++++++++++++++++++++++
+>>   arch/mips/bcm63xx/dts/bcm6358.dtsi |   33 +++++++++++++++++++++++++++++++++
+>>   arch/mips/bcm63xx/dts/bcm6368.dtsi |   33 +++++++++++++++++++++++++++++++++
+>
+> All of ARM, c6x, microblaze, openrisc, powerpc put device tree files
+> into arch/${arch}/boot/dts/ - should MIPS follow the same layout?
 
-To be honest I don't really know what the difference is, other than what
-the help text says, which is:
+At this point, I don't see what the benefit of centralizing all of these 
+would be.  Currently there is no concept of a single kernel image that 
+would work across multiple MIPS system implementations.  So keeping the 
+DTS files with their users makes some organizational sense.
 
-  [TINY_PREEMPT_RCU] greatly reduces the memory footprint of RCU.
-  
-"Greatly reduced memory footprint" sounds pretty useful...
+Similar arguments could be made for moving all the files in `find . 
+-name \*.dts\*` to a top level dts/ directory.
 
-As a side note, I wonder why any of these RCU implementations are
-user-seclectable options in the first place?  It looks like you will
-only ever have one choice, since the dependencies all seem mutually
-exclusive:
-
-  TREE_RCU         depends on !PREEMPT &&  SMP
-  TREE_PREEMPT_RCU depends on  PREEMPT &&  SMP
-  TINY_RCU         depends on !PREEMPT && !SMP
-  TINY_PREEMPT_RCU depends on  PREEMPT && !SMP
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+David Daney
