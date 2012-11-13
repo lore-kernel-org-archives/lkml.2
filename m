@@ -1,56 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2KMRrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:47:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31576 "EHLO mx1.redhat.com"
+	id S1755303Ab2KMRtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:49:46 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:2636 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab2KMRrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:47:04 -0500
-Date: Tue, 13 Nov 2012 18:47:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
+	id S1752005Ab2KMRtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 12:49:45 -0500
+X-IronPort-AV: E=Sophos;i="4.80,768,1344211200"; 
+   d="scan'208";a="44455620"
+Date: Tue, 13 Nov 2012 17:40:33 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + fs-epoll-add-procfs-fdinfo-helper.patch added to -mm tree
-Message-ID: <20121113174706.GA20626@redhat.com>
-References: <20121113145050.GA13691@redhat.com> <20121113155313.GU6511@moon> <20121113162056.GK7808@moon> <20121113164951.GA18665@redhat.com> <20121113170159.GW6511@moon> <20121113171422.GM7808@moon>
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 23/46] x86, mm: Remove parameter in alloc_low_page for
+ 64bit
+In-Reply-To: <1352755122-25660-24-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.DEB.2.02.1211131740200.28049@kaball.uk.xensource.com>
+References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-24-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113171422.GM7808@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13, Cyrill Gorcunov wrote:
->
-> On Tue, Nov 13, 2012 at 09:01:59PM +0400, Cyrill Gorcunov wrote:
-> >
-> The sigmask is read in lockless manner for a sake of
-> code simplicity, thus if precise data needed here
-> the tasks which refer to the signalfd should be
-> stopped before read.
+On Mon, 12 Nov 2012, Yinghai Lu wrote:
+> Now all page table buf are pre-mapped, and could use virtual address directly.
+> So don't need to remember physical address anymore.
+> 
+> Remove that phys pointer in alloc_low_page(), and that will allow us to merge
+> alloc_low_page between 64bit and 32bit.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Yes, I think this is fine, and this patch should replace
-fs-epoll-add-procfs-fdinfo-helper.patch in -mm.
-
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
-
->  static const struct file_operations signalfd_fops = {
-> +#ifdef CONFIG_PROC_FS
-> +	.show_fdinfo	= signalfd_show_fdinfo,
-> +#endif
-
-I am just curious and I can't find the patch which adds .show_fdinfo.
-Could you please send me link/patch offlist?
-
-Oleg.
-
+>  arch/x86/mm/init_64.c |   19 +++++++------------
+>  1 files changed, 7 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 5ee9242..1960820 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
+>  	}
+>  }
+>  
+> -static __ref void *alloc_low_page(unsigned long *phys)
+> +static __ref void *alloc_low_page(void)
+>  {
+>  	unsigned long pfn;
+>  	void *adr;
+>  
+>  	if (after_bootmem) {
+>  		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+> -		*phys = __pa(adr);
+>  
+>  		return adr;
+>  	}
+> @@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
+>  
+>  	adr = __va(pfn * PAGE_SIZE);
+>  	clear_page(adr);
+> -	*phys  = pfn * PAGE_SIZE;
+>  	return adr;
+>  }
+>  
+> @@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+>  	int i = pmd_index(address);
+>  
+>  	for (; i < PTRS_PER_PMD; i++, address = next) {
+> -		unsigned long pte_phys;
+>  		pmd_t *pmd = pmd_page + pmd_index(address);
+>  		pte_t *pte;
+>  		pgprot_t new_prot = prot;
+> @@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+>  			continue;
+>  		}
+>  
+> -		pte = alloc_low_page(&pte_phys);
+> +		pte = alloc_low_page();
+>  		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+>  
+>  		spin_lock(&init_mm.page_table_lock);
+> -		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
+> +		pmd_populate_kernel(&init_mm, pmd, pte);
+>  		spin_unlock(&init_mm.page_table_lock);
+>  	}
+>  	update_page_count(PG_LEVEL_2M, pages);
+> @@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+>  	int i = pud_index(addr);
+>  
+>  	for (; i < PTRS_PER_PUD; i++, addr = next) {
+> -		unsigned long pmd_phys;
+>  		pud_t *pud = pud_page + pud_index(addr);
+>  		pmd_t *pmd;
+>  		pgprot_t prot = PAGE_KERNEL;
+> @@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+>  			continue;
+>  		}
+>  
+> -		pmd = alloc_low_page(&pmd_phys);
+> +		pmd = alloc_low_page();
+>  		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+>  					      prot);
+>  
+>  		spin_lock(&init_mm.page_table_lock);
+> -		pud_populate(&init_mm, pud, __va(pmd_phys));
+> +		pud_populate(&init_mm, pud, pmd);
+>  		spin_unlock(&init_mm.page_table_lock);
+>  	}
+>  	__flush_tlb_all();
+> @@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
+>  
+>  	for (; start < end; start = next) {
+>  		pgd_t *pgd = pgd_offset_k(start);
+> -		unsigned long pud_phys;
+>  		pud_t *pud;
+>  
+>  		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+> @@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
+>  			continue;
+>  		}
+>  
+> -		pud = alloc_low_page(&pud_phys);
+> +		pud = alloc_low_page();
+>  		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+>  						 page_size_mask);
+>  
+>  		spin_lock(&init_mm.page_table_lock);
+> -		pgd_populate(&init_mm, pgd, __va(pud_phys));
+> +		pgd_populate(&init_mm, pgd, pud);
+>  		spin_unlock(&init_mm.page_table_lock);
+>  		pgd_changed = true;
+>  	}
+> -- 
+> 1.7.7
+> 
