@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab2KMRXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:23:00 -0500
+	id S932249Ab2KMRX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:23:29 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184Ab2KMROr (ORCPT
+	with ESMTP id S932145Ab2KMROn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:14:47 -0500
+	Tue, 13 Nov 2012 12:14:43 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -16,15 +16,10 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 05/31] sched, numa, mm, s390/thp: Implement pmd_pgprot() for s390
-Date: Tue, 13 Nov 2012 18:13:28 +0100
-Message-Id: <1352826834-11774-6-git-send-email-mingo@kernel.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 03/31] sched, numa, mm: Make find_busiest_queue() a method
+Date: Tue, 13 Nov 2012 18:13:26 +0100
+Message-Id: <1352826834-11774-4-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
@@ -32,46 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-This patch adds an implementation of pmd_pgprot() for s390,
-in preparation to future THP changes.
+Its a bit awkward but it was the least painful means of modifying the
+queue selection. Used in a later patch to conditionally use a random
+queue.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-lfpez319yryvdhwqfqrh99f2@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/s390/include/asm/pgtable.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ kernel/sched/fair.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index dd647c9..098fc5a 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1240,6 +1240,19 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 	*pmdp = entry;
- }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6b800a1..6ab627e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3063,6 +3063,9 @@ struct lb_env {
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
++
++	struct rq *		(*find_busiest_queue)(struct lb_env *,
++						      struct sched_group *);
+ };
  
-+static inline pgprot_t pmd_pgprot(pmd_t pmd)
-+{
-+	pgprot_t prot = PAGE_RW;
-+
-+	if (pmd_val(pmd) & _SEGMENT_ENTRY_RO) {
-+		if (pmd_val(pmd) & _SEGMENT_ENTRY_INV)
-+			prot = PAGE_NONE;
-+		else
-+			prot = PAGE_RO;
-+	}
-+	return prot;
-+}
-+
- static inline unsigned long massage_pgprot_pmd(pgprot_t pgprot)
- {
- 	unsigned long pgprot_pmd = 0;
+ /*
+@@ -4236,13 +4239,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+ 
+ 	struct lb_env env = {
+-		.sd		= sd,
+-		.dst_cpu	= this_cpu,
+-		.dst_rq		= this_rq,
+-		.dst_grpmask    = sched_group_cpus(sd->groups),
+-		.idle		= idle,
+-		.loop_break	= sched_nr_migrate_break,
+-		.cpus		= cpus,
++		.sd		    = sd,
++		.dst_cpu	    = this_cpu,
++		.dst_rq		    = this_rq,
++		.dst_grpmask        = sched_group_cpus(sd->groups),
++		.idle		    = idle,
++		.loop_break	    = sched_nr_migrate_break,
++		.cpus		    = cpus,
++		.find_busiest_queue = find_busiest_queue,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+@@ -4261,7 +4265,7 @@ redo:
+ 		goto out_balanced;
+ 	}
+ 
+-	busiest = find_busiest_queue(&env, group);
++	busiest = env.find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
 -- 
 1.7.11.7
 
