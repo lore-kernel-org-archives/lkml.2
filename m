@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2KMRV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:21:56 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33061 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab2KMRPB (ORCPT
+	id S932366Ab2KMRWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:22:16 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab2KMRO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:15:01 -0500
+	Tue, 13 Nov 2012 12:14:57 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -16,14 +16,10 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 09/31] sched, numa, mm, MIPS/thp: Add pmd_pgprot() implementation
-Date: Tue, 13 Nov 2012 18:13:32 +0100
-Message-Id: <1352826834-11774-10-git-send-email-mingo@kernel.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 07/31] x86/mm: Introduce pte_accessible()
+Date: Tue, 13 Nov 2012 18:13:30 +0100
+Message-Id: <1352826834-11774-8-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
@@ -31,34 +27,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ralf Baechle <ralf@linux-mips.org>
+From: Rik van Riel <riel@redhat.com>
 
-Add the pmd_pgprot() method that will be needed
-by the new NUMA code.
+We need pte_present to return true for _PAGE_PROTNONE pages, to indicate that
+the pte is associated with a page.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+However, for TLB flushing purposes, we would like to know whether the pte
+points to an actually accessible page.  This allows us to skip remote TLB
+flushes for pages that are not actually accessible.
+
+Fill in this method for x86 and provide a safe (but slower) method
+on other architectures.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Fixed-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-66p11te4uj23gevgh4j987ip@git.kernel.org
+[ Added Linus's review fixes. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/mips/include/asm/pgtable.h | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/pgtable.h | 6 ++++++
+ include/asm-generic/pgtable.h  | 4 ++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index c02158b..bbe4cda 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -89,6 +89,8 @@ static inline int is_zero_pfn(unsigned long pfn)
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index f85dccd..a984cf9 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -408,6 +408,12 @@ static inline int pte_present(pte_t a)
+ 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
+ }
  
- extern void paging_init(void);
- 
-+#define pmd_pgprot(x)		__pgprot(pmd_val(x) & ~_PAGE_CHG_MASK)
++#define pte_accessible pte_accessible
++static inline int pte_accessible(pte_t a)
++{
++	return pte_flags(a) & _PAGE_PRESENT;
++}
 +
- /*
-  * Conversion functions: convert a page and protection to a page entry,
-  * and a page entry and page directory to the page they refer to.
+ static inline int pte_hidden(pte_t pte)
+ {
+ 	return pte_flags(pte) & _PAGE_HIDDEN;
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index b36ce40..48fc1dc 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -219,6 +219,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
+ #define move_pte(pte, prot, old_addr, new_addr)	(pte)
+ #endif
+ 
++#ifndef pte_accessible
++# define pte_accessible(pte)		((void)(pte),1)
++#endif
++
+ #ifndef flush_tlb_fix_spurious_fault
+ #define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
+ #endif
 -- 
 1.7.11.7
 
