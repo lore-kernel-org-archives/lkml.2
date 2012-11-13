@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab2KMCcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:32:12 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:58013 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab2KMCcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:32:11 -0500
-Date: Mon, 12 Nov 2012 20:32:07 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, Alex Elder <elder@kernel.org>,
-        linux list <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: Remove boolean_t typedef completely.
-Message-ID: <20121113023207.GZ9783@sgi.com>
-References: <CACnwZYd2kPaK1urLYc8BBuuqD7_Oo1oF+KvqWYj7DAEGy6grHQ@mail.gmail.com>
- <20121113015318.GD25039@dastard>
- <CACnwZYeutkdb+=yYx8XcXHSDhaP6QBjgn1BEnGAMYDO7biAtFw@mail.gmail.com>
+	id S1753193Ab2KMCcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:32:43 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:48972 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752237Ab2KMCcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 21:32:41 -0500
+Date: Mon, 12 Nov 2012 21:32:40 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Huang Ying <ying.huang@intel.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+In-Reply-To: <1352769596.7176.194.camel@yhuang-dev>
+Message-ID: <Pine.LNX.4.44L0.1211122120140.6961-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACnwZYeutkdb+=yYx8XcXHSDhaP6QBjgn1BEnGAMYDO7biAtFw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thiago,
+On Tue, 13 Nov 2012, Huang Ying wrote:
 
-On Tue, Nov 13, 2012 at 12:02:14AM -0200, Thiago Farina wrote:
-> On Mon, Nov 12, 2012 at 11:53 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Mon, Nov 12, 2012 at 10:36:47PM -0200, Thiago Farina wrote:
-> >> On Mon, Nov 12, 2012 at 10:24 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >> > On Mon, Nov 12, 2012 at 09:36:17PM -0200, Thiago Farina wrote:
-> >> >> Hi,
-> >> >>
-> >> >> Please, take a look.
-> >> >>
-> >> >> Patch attached.
-> >> >
-> >> > It's a good start for a cleanup, but there's no point in removing
-> >> > the boolean_t from one file and then not removing it from the rest
-> >> > of the XFS code.  It's only used in a handful of places, so just
-> >> > remove it completely.
-> >> >
-> >> Done.
-> >>
-> >> Please, take another look.
-> >>
-> >> > Also, can you please place patches in line rather than attaching
-> >> > them. Attaching them means they cannot be quoted in reply. See
-> >> > Documentation/SubmittingPatches and Documentation/email-clients.txt
-> >> > for guidelines.
-> >> >
-> >> Sorry, patch attached.
-> >
-> > It's still attached as a base64 encoded attachment, not as inline
-> > text....
-> >
-> Yep, sorry about that. Is just a text file from $(git format-patch master);
+> Sorry, my original idea is:
+> 
+> 	pm_runtime_disable will put device into SUSPENDED state if
+> 	dev->power.runtime_auto is clear.  pm_runtime_allow will put
+> 	device into SUSPENDED state if dev->power.disable_depth > 0.
 
-If you don't mind another try... it would be helpful if you could resend the
-patch inline.  It helps to facilitate a discussion of the patch along with your
-text should it be necessary.
+That's close to what I suggested.
 
-You're only touching xfs, so you can drop linux-kernel if you want.
+> So in general, my original idea is to manage device runtime power state
+> automatically instead of manually, especially when device is in disabled
+> state.
+> 
+> 	disabled + forbidden	-> ACTIVE
+> 	disabled + !forbidden	-> SUSPENDED
 
-Thanks,
-	Ben
+This is not quite right.  Consider a device that is in runtime suspend 
+when a system sleep starts.  When the system sleep ends, the device 
+will be resumed but the PM core will still think its state is 
+SUSPENDED.  The subsystem has to tell the PM core that the device is 
+now ACTIVE.  Currently, subsystems do this by calling 
+pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
+your scheme this wouldn't work; the pm_runtime_set_active call would 
+fail because the device was !forbidden.
+
+> 	enabled + forbidden	-> ACTIVE
+> 	enabled + !forbidden	-> auto
+> 
+> Why we can not do that?
+
+See above.  What we can do instead is:
+
+	disabled + forbidden	-> ACTIVE
+	disabled + !forbidden	-> anything
+
+which is basically what I proposed.
+
+> > This means:
+> > 
+> > 	pm_runtime_set_suspended should fail if dev->power.runtime_auto
+> > 	is clear.
+> 
+> I think we can WARN_ON() here.  Because the caller should responsible
+> for state consistence if they decide to manage runtime power state
+> manually.
+
+No.  Drivers should not have to worry about whether runtime PM is 
+forbidden.  Worrying about that is the PM core's job.
+
+> > 	pm_runtime_forbid should call pm_runtime_set_active if
+> > 	dev->power.disable_depth > 0.  (This would run into a problem
+> > 	if the parent is suspended and disabled.  Maybe 
+> > 	pm_runtime_forbid should fail when this happens.)
+> 
+> pm_runtime_forbid() may be called via echo "on" > .../power/control.  I
+> think it is hard to refuse the request from user space to forbid runtime
+> PM.  Device can always work with full power.
+
+It can't if the parent is in SUSPEND.  If necessary, the user can write 
+"on" to the parent's power/control attribute first.
+
+> > Finally, we probably should make a third change even though it isn't
+> > strictly necessary:
+> > 
+> > 	pm_runtime_allow should call pm_runtime_set_suspended if
+> > 	dev->power.disable_depth > 0.
+> 
+> I think this is something similar to manage device power state
+> automatically if disabled.
+
+Yes, it is similar but not exactly the same as your proposal.
+
+Alan Stern
+
