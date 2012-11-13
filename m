@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2KNHCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:02:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43573 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2KNHCs (ORCPT
+	id S1755070Ab2KNHC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:02:56 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55975 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751607Ab2KNHCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:02:48 -0500
-Date: Tue, 13 Nov 2012 23:01:53 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-0a3021c56b81eb3202a506e4d85cb8d99052f28f@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1351634526-1516-13-git-send-email-jolsa@redhat.com>
-References: <1351634526-1516-13-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add attr record no-inherit test
-Git-Commit-ID: 0a3021c56b81eb3202a506e4d85cb8d99052f28f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:01:58 -0800 (PST)
+	Wed, 14 Nov 2012 02:02:54 -0500
+Message-ID: <1352813997.2505.10.camel@dabdike.sthat4.btopenzone.com>
+Subject: Re: [PATCH 1/5]  arcmsr: Re-name the HBA Type
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: NickCheng <nick.cheng@areca.com.tw>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, jejb@kernel.org
+In-Reply-To: <E0E58D26E0F44C3580C13BBDE76CBB5D@arecaaebe11fae>
+References: <E0E58D26E0F44C3580C13BBDE76CBB5D@arecaaebe11fae>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Nov 2012 13:39:57 +0000
+Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a3021c56b81eb3202a506e4d85cb8d99052f28f
-Gitweb:     http://git.kernel.org/tip/0a3021c56b81eb3202a506e4d85cb8d99052f28f
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 30 Oct 2012 23:01:53 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 1 Nov 2012 17:08:40 -0300
+On Fri, 2012-10-12 at 17:05 +0800, NickCheng wrote:
+> -#define ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR_MASK        0x00000004 /*
+> When clear, the General Outbound Doorbell interrupt routes to
+> the host.*/
+> 
+The patch is still linebroken here.  It is a massively long line (like
+about 200 characters).  I suspect you just set your exchange server line
+break to something big, but not bigger than this?
 
-perf tests: Add attr record no-inherit test
+James
 
-Adding test to validate perf_event_attr data for command:
-  'record -i'
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-13-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/attr/test-record-no-inherit |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/tests/attr/test-record-no-inherit b/tools/perf/tests/attr/test-record-no-inherit
-new file mode 100644
-index 0000000..9079a25
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-no-inherit
-@@ -0,0 +1,7 @@
-+[config]
-+command = record
-+args    = -i kill >/dev/null 2>&1
-+
-+[event:base-record]
-+sample_type=259
-+inherit=0
