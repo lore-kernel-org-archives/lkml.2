@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2KMWpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:45:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37900 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754220Ab2KMWpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:45:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,768,1352102400"; 
-   d="scan'208";a="246574632"
-Message-ID: <50A2CD77.7000403@linux.intel.com>
-Date: Tue, 13 Nov 2012 14:45:11 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1755922Ab2KMWpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:45:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46785 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716Ab2KMWpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:45:44 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v3 2/2] i2c: i2c-ocores: Add support for the GRLIB port of the controller and custom getreg and setreg functions
+References: <1352834727-16368-1-git-send-email-andreas@gaisler.com>
+	<1352834727-16368-3-git-send-email-andreas@gaisler.com>
+Date: Tue, 13 Nov 2012 23:45:39 +0100
+In-Reply-To: <1352834727-16368-3-git-send-email-andreas@gaisler.com> (Andreas
+	Larsson's message of "Tue, 13 Nov 2012 20:25:27 +0100")
+Message-ID: <87sj8d86lo.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Linux PM <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com> <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com> <20121113211602.GA30150@linux.vnet.ibm.com> <20121113133922.47144a50@chromoly> <20121113222350.GH2489@linux.vnet.ibm.com>
-In-Reply-To: <20121113222350.GH2489@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 2:23 PM, Paul E. McKenney wrote:
-> On Tue, Nov 13, 2012 at 01:39:22PM -0800, Jacob Pan wrote:
->> On Tue, 13 Nov 2012 13:16:02 -0800
->> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->>
->>>> Please refer to Documentation/thermal/intel_powerclamp.txt for more
->>>> details.  
->>>
->>> If I read this correctly, this forces a group of CPUs into idle for
->>> about 600 milliseconds at a time.  This would indeed delay grace
->>> periods, which could easily result in user complaints.  Also, given
->>> the default RCU_BOOST_DELAY of 500 milliseconds in kernels enabling
->>> RCU_BOOST, you would see needless RCU priority boosting.
->>>
->> the default idle injection duration is 6ms. we adjust the sleep
->> interval to ensure idle ratio. So the idle duration stays the same once
->> set. So would it be safe to delay grace period for this small amount in
->> exchange for less over head in each injection period?
-> 
-> Ah, 6ms of delay is much better than 600ms.  Should be OK (famous last
-> words!).
+>>>>> "Andreas" == Andreas Larsson <andreas@gaisler.com> writes:
 
-well... power clamping is not "free".
-You're going to lose performance as a trade off for dropping instantaneous power consumption....
-in the measurements we've done comparing various methods.. this one is doing remarkably well.
+Hi,
 
-> 
-> For most kernel configuration options, it does use softirq.  And yes,
-> the kthread you are using would yield to softirqs -- but only as long
-> as softirq processing hasn't moved over to ksoftirqd.  Longer term,
-> RCU will be moving from softirq to kthreads, though, and these might be
-> prempted by your powerclamp kthread, depending on priorities.  It looks
-> like you use RT prio 50, which would usually preempt the RCU kthreads
-> (unless someone changed the priorities).
+ Andreas> The registers in the GRLIB port of the controller are 32-bit
+ Andreas> and in big endian byte order. The PRELOW and PREHIGH registers
+ Andreas> are merged into one register. The subsequent registers have
+ Andreas> their offset decreased accordingly. Hence the register access
+ Andreas> needs to be handled in a non-standard manner using custom
+ Andreas> getreg and setreg functions.
 
-we tried to pick a "middle of the road" value, so that usages that really really
-want to run, still get to run, but things that are more loose about it, get put on hold.
+ Andreas> @@ -257,6 +300,14 @@ static int ocores_i2c_of_probe(struct platform_device *pdev,
+ 
+ Andreas>  	of_property_read_u32(pdev->dev.of_node, "reg-io-width",
+ Andreas>  				&i2c->reg_io_width);
+ Andreas> +
+ Andreas> +	if (of_device_is_compatible(pdev->dev.of_node,
+ Andreas> +				    "aeroflexgaisler,i2cmst")) {
+ Andreas> +		dev_dbg(&pdev->dev, "GRLIB variant of i2c-ocores\n");
+ Andreas> +		i2c->setreg = oc_setreg_grlib;
+ Andreas> +		i2c->getreg = oc_getreg_grlib;
+ Andreas> +	}
+ Andreas> +
 
+Please also update the bindings documentation under
+Documentation/devicetree/bindings/i2c.
 
-> 
->>> It looks like you could end up with part of the system powerclamped
->>> in some situations, and with all of it powerclamped in other
->>> situations. Is that the case, or am I confused?
->>>
->> could you explain the part that is partially powerclamped?
-> 
-> Suppose that a given system has two sockets.  Are the two sockets
-> powerclamped independently, or at the same time?  My guess was the
-> former, but looking at the code again, it looks like the latter.
-> So it is a good thing I asked, I guess.  ;-)
+With this core you need to add both aeroflexgaisler,i2cmst and
+opencores,i2c-ocores to the compatible property, but the grlib variant
+is NOT compatible with i2c-ocores, so that's not really nice.
 
-they are clamped together, and they have to.
-you don't get (on the systems where this driver works) any "package" C state unless
-all packages are idle completely.
-And it's these package C states where the real deep power savings happen, that's
-why they are such a juicy target for power clamping ;-)
+Adding a type define (TYPE_OCORES / TYPE_GRLIB) and a 2nd of_device_id
+entry with .data = TYPE_GRLIB, and then using that in the probe routine
+would be nicer. Have a look at i2c-at91.c for an example of a driver
+doing something like that.
 
+-- 
+Bye, Peter Korsgaard
