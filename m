@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab2KMUaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:30:16 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48376 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab2KMU1p (ORCPT
+	id S1755839Ab2KMUga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:36:30 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54616 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab2KMUg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:27:45 -0500
-Message-Id: <20121113202738.971472536@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 14 Nov 2012 00:20:26 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+	Tue, 13 Nov 2012 15:36:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <50A2A706.1090608@zytor.com>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
+	<1352755122-25660-22-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1211131707380.28049@kaball.uk.xensource.com>
+	<CAE9FiQU1HGyw8ZLu8KdmR3ikyZ=YTG+8dUoDAVbO4Bc1hEPPgQ@mail.gmail.com>
+	<50A2A706.1090608@zytor.com>
+Date: Tue, 13 Nov 2012 12:36:27 -0800
+X-Google-Sender-Auth: 6Nm6nd6jKgHEeDhDg0l8EumqWYo
+Message-ID: <CAE9FiQU3PM+2=Kt8XwAe6OuVMJUvRzimnfp3MEJgZi+EJMbXHw@mail.gmail.com>
+Subject: Re: [PATCH 21/46] x86, mm: setup page table in top-down
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jacob Shin <jacob.shin@amd.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>
-Subject: [patch 3/7] fs, epoll: Add procfs fdinfo helper v2
-References: <20121113202023.748833257@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventpoll-8
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out eventpoll target file descriptor,
-events and data, the /proc/pid/fdinfo/fd consists of
+On Tue, Nov 13, 2012 at 12:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/13/2012 11:59 AM, Yinghai Lu wrote:
+>>>
+>>> The changes to init_mem_mapping are a bit iffy but they aren't too
+>>> unreasonable.
+>>> Overall the patch is OK even though I would certainly appreciate more
+>>> comments and better variable names (real_end?), see below.
+>>
+>> real_end is not good?
+>>
+>> xen put big reserved range between real_end and end.
+>>
+>> that real_end is some kind of end of real usable areas.
+>>
+>> so change to real_usable_end  or usable_end?
+>>
+>
+> A description of a variable that includes the words "some kind of"
+> clearly indicates major confusion.  We need to know what the semantics
+> are, here.
 
- | pos:	0
- | flags:	02
- | tfd:        5 events:       1d data: ffffffffffffffff enabled: 1
+originally, we map range in this sequence:
+1. map [0, 1M],
+2. map 2M near max_pfn. and end is max_pfn<<PAGE_SHIFT
+3. use new mapped area, to map low range.
+4. change step size if more ram get mapped.
+5. goto 3, until reach 1M.
 
-[avagin@: fix for unitialized ret variable]
+now for xen, there is big chunk range under max_pfn and they are reserved
+in memblock.reserved.
+so even we map them, we still can not use them for page table.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Matthew Helsley <matt.helsley@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Andrey Vagin <avagin@openvz.org>
----
- fs/eventpoll.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+so 2 become:
+2a. find real_end under max_pfn that we can use it for page table
+2b, map [real_end - 2M, real_end)
 
-Index: linux-2.6.git/fs/eventpoll.c
-===================================================================
---- linux-2.6.git.orig/fs/eventpoll.c
-+++ linux-2.6.git/fs/eventpoll.c
-@@ -38,6 +38,8 @@
- #include <asm/io.h>
- #include <asm/mman.h>
- #include <linux/atomic.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
- 
- /*
-  * LOCKING:
-@@ -783,8 +785,35 @@ static unsigned int ep_eventpoll_poll(st
- 	return pollflags != -1 ? pollflags : 0;
- }
- 
-+#ifdef CONFIG_PROC_FS
-+static int ep_show_fdinfo(struct seq_file *m, struct file *f)
-+{
-+	struct eventpoll *ep = f->private_data;
-+	struct rb_node *rbp;
-+	int ret = 0;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
-+
-+		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx enabled: %d\n",
-+				 epi->ffd.fd, epi->event.events,
-+				 (long long)epi->event.data,
-+				 ep_is_linked(&epi->rdllink));
-+		if (ret)
-+			break;
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return ret;
-+}
-+#endif
-+
- /* File callbacks that implement the eventpoll file behaviour */
- static const struct file_operations eventpoll_fops = {
-+#ifdef CONFIG_PROC_FS
-+	.show_fdinfo	= ep_show_fdinfo,
-+#endif
- 	.release	= ep_eventpoll_release,
- 	.poll		= ep_eventpoll_poll,
- 	.llseek		= noop_llseek,
-
+and need to add
+6. map [real_end, max_pfn<<PAGE_SHIFT)
