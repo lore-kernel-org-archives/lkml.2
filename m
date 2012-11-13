@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab2KMGiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:38:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab2KMGiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:38:00 -0500
-Date: Tue, 13 Nov 2012 08:40:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        krkumar2@in.ibm.com, kvm@vger.kernel.org, edumazet@google.com
-Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
-Message-ID: <20121113064026.GA27416@redhat.com>
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
- <1351591403-23065-3-git-send-email-jasowang@redhat.com>
- <87y5igyhyg.fsf@rustcorp.com.au>
+	id S1751733Ab2KMGlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:41:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:61748 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab2KMGln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 01:41:43 -0500
+Date: Tue, 13 Nov 2012 07:41:36 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mark Zhang <markz@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+Message-ID: <20121113064135.GA31443@avionic-0098.mockup.avionic-design.de>
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
+ <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
+ <50A0C3BF.90509@nvidia.com>
+ <50A1CECA.3090804@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
 Content-Disposition: inline
-In-Reply-To: <87y5igyhyg.fsf@rustcorp.com.au>
+In-Reply-To: <50A1CECA.3090804@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:28JHCApDBzEyeaFZZxZGD3KsuahGWTn1La1EI+TR4ZM
+ TTKVyOlpcaCIHJmbqA7+TDUOEzLloi2qo3rcFOr0p9xg2jl4DO
+ K+qrbol03ZlDUBAHDAvYrXKVoDPCZg4/Ud+Pgw5S0ziyJkIg0w
+ PtfzceOAwmXKZsXL+uXhe//58Dxj0H+a2I1nn1cLaLx79xhj7V
+ S1ztnKFnjfFH/acPjsBoPjP3Io1mP/A808w7h5Z9PpKqyrhrZK
+ 0KYVacm8NRb5vdRoyLFBMkH1GbsruonZAUldoTYau/7QymmlZo
+ 4Or+GcMR1CK3wEx1ITiV0DHyZxN/KkstDZy738WAdyQg/awqZn
+ mBXb04ZZNxCrItyaKzUieocterOlc2zQtB1vhvvthtuVOly1lO
+ Z2RvT2XRlOWlC31PmexPghRGy2WenHupCF5L5lXqTx1nO+5oyV
+ pFO5a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:38:39AM +1030, Rusty Russell wrote:
-> > @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
-> >  {
-> >  	struct virtnet_info *vi = netdev_priv(dev);
-> >  
-> > -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
-> > -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
-> > +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
-> > +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
-> >  	ring->rx_pending = ring->rx_max_pending;
-> >  	ring->tx_pending = ring->tx_max_pending;
-> > -
-> >  }
-> 
-> This assumes all vqs are the same size.  I think this should probably
-> check: for mq mode, use the first vq, otherewise use the 0th.
 
-For rx_pending/tx_pending I think what is required here is the
-actual number of outstanding buffers.
-Dave, Eric - right?
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So this should be the total over all rings and to be useful,
-rx_max_pending/tx_max_pending should be the total too.
+On Tue, Nov 13, 2012 at 12:38:34PM +0800, Mark Zhang wrote:
+> On 11/12/2012 05:39 PM, Mark Zhang wrote:
+> > On 11/09/2012 09:20 PM, Thierry Reding wrote:
+[...]
+> >> @@ -1036,9 +1041,6 @@ static struct clk_duplicate tegra_clk_duplicates=
+[] =3D {
+> >>         CLK_DUPLICATE("usbd",   "utmip-pad",    NULL),
+> >>         CLK_DUPLICATE("usbd",   "tegra-ehci.0", NULL),
+> >>         CLK_DUPLICATE("usbd",   "tegra-otg",    NULL),
+> >> -       CLK_DUPLICATE("hdmi",   "tegradc.0",    "hdmi"),
+> >> -       CLK_DUPLICATE("hdmi",   "tegradc.1",    "hdmi"),
+> >> -       CLK_DUPLICATE("host1x", "tegra_grhost", "host1x"),
+> >>         CLK_DUPLICATE("2d",     "tegra_grhost", "gr2d"),
+> >>         CLK_DUPLICATE("3d",     "tegra_grhost", "gr3d"),
+> >>         CLK_DUPLICATE("epp",    "tegra_grhost", "epp"),
+> >> @@ -1051,6 +1053,9 @@ static struct clk_duplicate tegra_clk_duplicates=
+[] =3D {
+> >>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.1", "fast-clk"),
+> >>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
+> >>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
+> >> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
+> >> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
+> >> +       CLK_DUPLICATE("pll_d_out0", "tegra-hdmi", "parent"),
+> >>  };
+>=20
+> Why we need this "CLK_DUPLICATE"? Set the clock parent of the dc
+> controllers to pll_p?
 
-> For bonus points, check this assertion at probe time.
+This was the method proposed by Stephen to abstract away the clock tree
+differences between Tegra20 and Tegra30. The way this works is that we
+can {devm_,}clk_get(&pdev->dev, "parent") in the display and HDMI
+controllers' .probe() and it'll obtain the correct parent clock
+independent of which version of Tegra is used.
 
-Looks like we can easily support different queues too.
+Thierry
 
--- 
-MST
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQoeufAAoJEN0jrNd/PrOh+mYP/16MVLgTLhc+1Mby+Fg10P6W
+/R8IJkngnH62m8z09dCBRTzOM1m1AaCmIW9nB2TYCCjQMA4g0Q1aqKwypEkaqItu
+TRUDBTrsYakWx3JEtRl+20dzAuW7tVinLsZZXg2d39LOYKm4rHokdD1pmEDRVvvN
+DzH+fIMQpyAShew0TYD70ExZM90YKV7uYmpAObenFqDph7YRn0gpVq6VXNWmvi7B
+S4ZTCGKUQlBX/dZphIC0cJQASO/xz8tiUMjl5BfNwzfkP9z0ez+w2kDWe2RkiaBH
+9IUUCg6iW7rfKIEO4FVrU/M/lxGhIcKEx56UGTjvT9avhB9vL4JZ0BSGoikoXO0e
+RnCRvF59ZM+DBFDtJzjZ1qvcGBiyG2vouiYDGueaQW/7nUdShYizYyv1LVj8iUp8
+VDksJDRV97uVx8QfhoCEQWs1r3K8aHHmqgIVJICDpBxDVbusYFI3xwygFl0tbcul
+Af9CQyTS1bXY/ot+rsKMNOB6tPCrw6xzR9tIddcDnaNuVLaPUOu/k8bvHkMHGnK1
+YMFQvGM4ehTb+BYV4pq2CCNoOQfQUA0/9yUKK+rZ78AnHrwc3HwW/Tg8BJa8/pea
+Y4Vbe7UZfHpWCKMpfBZKpRKNbpGXj2Ogt9EeKzfogPjFv+JWuFIeIcht72lkBWr6
+pp2NNO4hsUTPADGKhyu3
+=pKcX
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
