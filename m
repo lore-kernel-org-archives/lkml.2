@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab2KMHn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:43:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40296 "EHLO mx2.suse.de"
+	id S1753537Ab2KMHoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:44:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40308 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab2KMHnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:43:25 -0500
-Date: Tue, 13 Nov 2012 08:43:19 +0100 (CET)
+	id S1751347Ab2KMHoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 02:44:06 -0500
+Date: Tue, 13 Nov 2012 08:44:02 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 03/13] HID: core: fix unit exponent parsing
-In-Reply-To: <1352306256-12180-4-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211130843060.15877@pobox.suse.cz>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com> <1352306256-12180-4-git-send-email-benjamin.tissoires@gmail.com>
+Subject: Re: [PATCH v3 04/13] HID: hid-input: add usage_index in struct
+ hid_usage.
+In-Reply-To: <1352306256-12180-5-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1211130843490.15877@pobox.suse.cz>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com> <1352306256-12180-5-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,112 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 7 Nov 2012, Benjamin Tissoires wrote:
 
-> HID spec details special values for the HID field unit exponent.
-> Basically, the range [0x8..0xf] correspond to [-8..-1], so this is
-> a standard two's complement on a half-byte.
+> Currently, there is no way to know the index of the current field
+> in the .input_mapping and .event callbacks  when this field is inside
+> an array of HID fields.
+> This patch adds this index to the struct hid_usage so that this
+> information is available to input_mapping and event callbacks.
 > 
 > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 
 Acked-by: Jiri Kosina <jkosina@suse.cz>
 
 > ---
->  drivers/hid/hid-core.c  | 16 +++++++++++++++-
->  drivers/hid/hid-input.c | 13 +++++++++----
->  include/linux/hid.h     |  1 +
->  3 files changed, 25 insertions(+), 5 deletions(-)
+>  drivers/hid/hid-core.c | 4 ++++
+>  include/linux/hid.h    | 1 +
+>  2 files changed, 5 insertions(+)
 > 
 > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 3d0da29..9da3007 100644
+> index 9da3007..8f82c4c 100644
 > --- a/drivers/hid/hid-core.c
 > +++ b/drivers/hid/hid-core.c
-> @@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
->  
->  static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+> @@ -92,6 +92,7 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+>  static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
 >  {
-> +	__u32 raw_value;
->  	switch (item->tag) {
->  	case HID_GLOBAL_ITEM_TAG_PUSH:
+>  	struct hid_field *field;
+> +	int i;
 >  
-> @@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
->  		return 0;
+>  	if (report->maxfield == HID_MAX_FIELDS) {
+>  		hid_err(report->device, "too many fields in report\n");
+> @@ -110,6 +111,9 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
+>  	field->value = (s32 *)(field->usage + usages);
+>  	field->report = report;
 >  
->  	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
-> -		parser->global.unit_exponent = item_sdata(item);
-> +		/* Units exponent negative numbers are given through a
-> +		 * two's complement.
-> +		 * See "6.2.2.7 Global Items" for more information. */
-> +		raw_value = item_udata(item);
-> +		if (!(raw_value & 0xfffffff0))
-> +			parser->global.unit_exponent = hid_snto32(raw_value, 4);
-> +		else
-> +			parser->global.unit_exponent = raw_value;
->  		return 0;
->  
->  	case HID_GLOBAL_ITEM_TAG_UNIT:
-> @@ -865,6 +873,12 @@ static s32 snto32(__u32 value, unsigned n)
->  	return value & (1 << (n - 1)) ? value | (-1 << n) : value;
->  }
->  
-> +s32 hid_snto32(__u32 value, unsigned n)
-> +{
-> +	return snto32(value, n);
-> +}
-> +EXPORT_SYMBOL_GPL(hid_snto32);
+> +	for (i = 0; i < usages; i++)
+> +		field->usage[i].usage_index = i;
 > +
->  /*
->   * Convert a signed 32-bit integer to a signed n-bit integer.
->   */
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 67044f3..7015080 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -192,7 +192,6 @@ static int hidinput_setkeycode(struct input_dev *dev,
->  	return -EINVAL;
+>  	return field;
 >  }
 >  
-> -
->  /**
->   * hidinput_calc_abs_res - calculate an absolute axis resolution
->   * @field: the HID report field to calculate resolution for
-> @@ -235,17 +234,23 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	case ABS_MT_TOOL_Y:
->  	case ABS_MT_TOUCH_MAJOR:
->  	case ABS_MT_TOUCH_MINOR:
-> -		if (field->unit == 0x11) {		/* If centimeters */
-> +		if (field->unit & 0xffffff00)		/* Not a length */
-> +			return 0;
-> +		unit_exponent += hid_snto32(field->unit >> 4, 4) - 1;
-> +		switch (field->unit & 0xf) {
-> +		case 0x1:				/* If centimeters */
->  			/* Convert to millimeters */
->  			unit_exponent += 1;
-> -		} else if (field->unit == 0x13) {	/* If inches */
-> +			break;
-> +		case 0x3:				/* If inches */
->  			/* Convert to millimeters */
->  			prev = physical_extents;
->  			physical_extents *= 254;
->  			if (physical_extents < prev)
->  				return 0;
->  			unit_exponent -= 1;
-> -		} else {
-> +			break;
-> +		default:
->  			return 0;
->  		}
->  		break;
 > diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 9edb06c..a110a3e 100644
+> index a110a3e..6b4f322 100644
 > --- a/include/linux/hid.h
 > +++ b/include/linux/hid.h
-> @@ -754,6 +754,7 @@ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
->  void hid_disconnect(struct hid_device *hid);
->  const struct hid_device_id *hid_match_id(struct hid_device *hdev,
->  					 const struct hid_device_id *id);
-> +s32 hid_snto32(__u32 value, unsigned n);
->  
->  /**
->   * hid_map_usage - map usage input bits
+> @@ -380,6 +380,7 @@ struct hid_usage {
+>  	unsigned  hid;			/* hid usage code */
+>  	unsigned  collection_index;	/* index into collection array */
+>  	/* hidinput data */
+> +	unsigned  usage_index;		/* index into usage array */
+>  	__u16     code;			/* input driver code */
+>  	__u8      type;			/* input driver type */
+>  	__s8	  hat_min;		/* hat switch fun */
 > -- 
 > 1.7.11.7
 > 
