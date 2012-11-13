@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2KMU3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:29:22 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:45258 "EHLO
+	id S1755848Ab2KMU3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:29:41 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:47911 "EHLO
 	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab2KMU1q (ORCPT
+	with ESMTP id S1755812Ab2KMU1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Nov 2012 15:27:46 -0500
-Message-Id: <20121113202023.748833257@openvz.org>
+Message-Id: <20121113202739.062864800@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 14 Nov 2012 00:20:23 +0400
+Date: Wed, 14 Nov 2012 00:20:27 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -18,16 +18,46 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
         aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com
-Subject: [patch 0/7]  Providing additional information in fdinfo sufficient for c/r, v2
+        rientjes@google.com, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 4/7] fs, exportfs: Escape nil dereference if no s_export_op present
+References: <20121113202023.748833257@openvz.org>
+Content-Disposition: inline; filename=fs-exportfs-add-null-check
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys, here is an updated series for fdinfo. I've shrunk the buffer
-attached to inotify mark and updated the changelog for it (still wonder
-if there some document in Documentation/ which should be updated as well),
-the signalfd was fixed too. Please review, I tried to address all complains
-I've got so far, ping me if I missed something please.
+This routine will be used to generate a file handle in fdinfo
+output for inotify subsystem, where if no s_export_op present
+the general export_encode_fh should be used. Thus add
+a test if s_export_op present inside exportfs_encode_fh itself.
 
-	Cyrill
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/exportfs/expfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.git/fs/exportfs/expfs.c
+===================================================================
+--- linux-2.6.git.orig/fs/exportfs/expfs.c
++++ linux-2.6.git/fs/exportfs/expfs.c
+@@ -357,7 +357,7 @@ int exportfs_encode_fh(struct dentry *de
+ 		 */
+ 		parent = p->d_inode;
+ 	}
+-	if (nop->encode_fh)
++	if (nop && nop->encode_fh)
+ 		error = nop->encode_fh(inode, fid->raw, max_len, parent);
+ 	else
+ 		error = export_encode_fh(inode, fid, max_len, parent);
+
