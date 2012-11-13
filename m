@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab2KMBAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:00:22 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59731 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab2KMBAS (ORCPT
+	id S1754324Ab2KMBFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:05:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45546 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204Ab2KMBFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:00:18 -0500
-Message-ID: <1352768407.19229.1.camel@phoenix>
-Subject: [PATCH] pinctrl: imx: Fix the logic checking if not able to find
- pin reg map
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dong.aisheng@linaro.org>,
-        Devendra Naga <devendra.aaru@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 13 Nov 2012 09:00:07 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Nov 2012 20:05:16 -0500
+Date: Mon, 12 Nov 2012 17:05:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 7/7] fdinfo: Show sigmask for signalfd fd v2
+Message-Id: <20121112170514.1ac51330.akpm@linux-foundation.org>
+In-Reply-To: <20121112101846.167035815@openvz.org>
+References: <20121112101440.665694060@openvz.org>
+	<20121112101846.167035815@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code sets "pin_reg = &info->pin_regs[i];" in each loop iteration,
-so in the case of no-match, pin_reg is not NULL.
+On Mon, 12 Nov 2012 14:14:47 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-imx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> ...
+>
+> --- linux-2.6.git.orig/include/linux/proc_fs.h
+> +++ linux-2.6.git/include/linux/proc_fs.h
+> @@ -290,4 +290,7 @@ static inline struct net *PDE_NET(struct
+>  	return pde->parent->data;
+>  }
+>  
+> +#include <asm/signal.h>
+> +
+> +void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
+>  #endif /* _LINUX_PROC_FS_H */
 
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index f3d2384..525a2c8 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -71,7 +71,7 @@ static const struct imx_pin_reg *imx_find_pin_reg(
- 			break;
- 	}
- 
--	if (!pin_reg) {
-+	if (i == info->npin_regs) {
- 		dev_err(info->dev, "Pin(%s): unable to find pin reg map\n",
- 			info->pins[pin].name);
- 		return NULL;
--- 
-1.7.9.5
-
-
+hm.  Are you sure asm/signal.h is the way to get sigset_t?  "grep -l
+sigset_t arch/*/include/asm/signal.h" is unpromising and
+kernel/signal.c doesn't do it this way?
 
