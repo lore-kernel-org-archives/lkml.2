@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab2KMUwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:52:22 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:41747 "EHLO ogre.sisk.pl"
+	id S932174Ab2KMUwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:52:34 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:41761 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754824Ab2KMUwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:52:17 -0500
+	id S1755830Ab2KMUwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:52:19 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: linux-acpi@vger.kernel.org
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
@@ -14,9 +14,9 @@ Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, khali@linux-fr.org,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3/3 rev 2] ACPI: Centralized processing of ACPI device resources
-Date: Tue, 13 Nov 2012 21:56:12 +0100
-Message-ID: <25072250.maaM7eVGUT@vostro.rjw.lan>
+Subject: [PATCH 1/3 rev 2] ACPI: Move device resources interpretation code from PNP to ACPI core
+Date: Tue, 13 Nov 2012 21:55:17 +0100
+Message-ID: <1512856.GC2b6SnyWH@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
 In-Reply-To: <5953163.ZajFIHZXph@vostro.rjw.lan>
 References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2429141.J1r7BIpiiT@vostro.rjw.lan> <5953163.ZajFIHZXph@vostro.rjw.lan>
@@ -29,344 +29,872 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Currently, whoever wants to use ACPI device resources has to call
-acpi_walk_resources() to browse the buffer returned by the _CRS
-method for the given device and create filters passed to that
-routine to apply to the individual resource items.  This generally
-is cumbersome, time-consuming and inefficient.  Moreover, it may
-be problematic if resource conflicts need to be resolved, because
-the different users of _CRS will need to do that in a consistent
-way.  However, if there are resource conflicts, the ACPI core
-should be able to resolve them centrally instead of relying on
-various users of acpi_walk_resources() to handle them correctly
-together.
-
-For this reason, introduce a new function, acpi_dev_get_resources(),
-that can be used by subsystems to obtain a list of struct resource
-objects corresponding to the ACPI device resources returned by
-_CRS and, if necessary, to apply additional preprocessing routine
-to the ACPI resources before converting them to the struct resource
-format.
-
-Make the ACPI code that creates platform device objects use
-acpi_dev_get_resources() for resource processing instead of executing
-acpi_walk_resources() twice by itself, which causes it to be much
-more straightforward and easier to follow.
-
-In the future, acpi_dev_get_resources() can be extended to meet
-the needs of the ACPI PNP subsystem and other users of _CRS in
-the kernel.
+Move some code used for parsing ACPI device resources from the PNP
+subsystem to the ACPI core, so that other bus types (platform, SPI,
+I2C) can use the same routines for parsing resources in a consistent
+way, without duplicating code.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/acpi_platform.c |   94 +++++-------------------------
- drivers/acpi/resource.c      |  134 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h         |   10 +++
- 3 files changed, 161 insertions(+), 77 deletions(-)
+ drivers/acpi/Makefile          |    1 
+ drivers/acpi/resource.c        |  393 +++++++++++++++++++++++++++++++++++++++++
+ drivers/pnp/base.h             |    2 
+ drivers/pnp/pnpacpi/rsparser.c |  296 +++---------------------------
+ drivers/pnp/resource.c         |   16 +
+ include/linux/acpi.h           |   10 +
+ 6 files changed, 454 insertions(+), 264 deletions(-)
 
+Index: linux/drivers/acpi/resource.c
+===================================================================
+--- /dev/null
++++ linux/drivers/acpi/resource.c
+@@ -0,0 +1,393 @@
++/*
++ * drivers/acpi/resource.c - ACPI device resources interpretation.
++ *
++ * Copyright (C) 2012, Intel Corp.
++ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as published
++ *  by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/acpi.h>
++#include <linux/device.h>
++#include <linux/export.h>
++#include <linux/ioport.h>
++
++#ifdef CONFIG_X86
++#define valid_IRQ(i) (((i) != 0) && ((i) != 2))
++#else
++#define valid_IRQ(i) (true)
++#endif
++
++static unsigned long acpi_dev_memresource_flags(u64 len, u8 write_protect,
++						bool window)
++{
++	unsigned long flags = IORESOURCE_MEM;
++
++	if (len == 0)
++		flags |= IORESOURCE_DISABLED;
++
++	if (write_protect == ACPI_READ_WRITE_MEMORY)
++		flags |= IORESOURCE_MEM_WRITEABLE;
++
++	if (window)
++		flags |= IORESOURCE_WINDOW;
++
++	return flags;
++}
++
++static void acpi_dev_get_memresource(struct resource *res, u64 start, u64 len,
++				     u8 write_protect)
++{
++	res->start = start;
++	res->end = start + len - 1;
++	res->flags = acpi_dev_memresource_flags(len, write_protect, false);
++}
++
++/**
++ * acpi_dev_resource_memory - Extract ACPI memory resource information.
++ * @ares: Input ACPI resource object.
++ * @res: Output generic resource object.
++ *
++ * Check if the given ACPI resource object represents a memory resource and
++ * if that's the case, use the information in it to populate the generic
++ * resource object pointed to by @res.
++ */
++bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
++{
++	struct acpi_resource_memory24 *memory24;
++	struct acpi_resource_memory32 *memory32;
++	struct acpi_resource_fixed_memory32 *fixed_memory32;
++
++	switch (ares->type) {
++	case ACPI_RESOURCE_TYPE_MEMORY24:
++		memory24 = &ares->data.memory24;
++		acpi_dev_get_memresource(res, memory24->minimum,
++					 memory24->address_length,
++					 memory24->write_protect);
++		break;
++	case ACPI_RESOURCE_TYPE_MEMORY32:
++		memory32 = &ares->data.memory32;
++		acpi_dev_get_memresource(res, memory32->minimum,
++					 memory32->address_length,
++					 memory32->write_protect);
++		break;
++	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
++		fixed_memory32 = &ares->data.fixed_memory32;
++		acpi_dev_get_memresource(res, fixed_memory32->address,
++					 fixed_memory32->address_length,
++					 fixed_memory32->write_protect);
++		break;
++	default:
++		return false;
++	}
++	return true;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_resource_memory);
++
++static unsigned int acpi_dev_ioresource_flags(u64 start, u64 end, u8 io_decode,
++					      bool window)
++{
++	int flags = IORESOURCE_IO;
++
++	if (io_decode == ACPI_DECODE_16)
++		flags |= IORESOURCE_IO_16BIT_ADDR;
++
++	if (start > end || end >= 0x10003)
++		flags |= IORESOURCE_DISABLED;
++
++	if (window)
++		flags |= IORESOURCE_WINDOW;
++
++	return flags;
++}
++
++static void acpi_dev_get_ioresource(struct resource *res, u64 start, u64 len,
++				    u8 io_decode)
++{
++	u64 end = start + len - 1;
++
++	res->start = start;
++	res->end = end;
++	res->flags = acpi_dev_ioresource_flags(start, end, io_decode, false);
++}
++
++/**
++ * acpi_dev_resource_io - Extract ACPI I/O resource information.
++ * @ares: Input ACPI resource object.
++ * @res: Output generic resource object.
++ *
++ * Check if the given ACPI resource object represents an I/O resource and
++ * if that's the case, use the information in it to populate the generic
++ * resource object pointed to by @res.
++ */
++bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
++{
++	struct acpi_resource_io *io;
++	struct acpi_resource_fixed_io *fixed_io;
++
++	switch (ares->type) {
++	case ACPI_RESOURCE_TYPE_IO:
++		io = &ares->data.io;
++		acpi_dev_get_ioresource(res, io->minimum,
++					io->address_length,
++					io->io_decode);
++		break;
++	case ACPI_RESOURCE_TYPE_FIXED_IO:
++		fixed_io = &ares->data.fixed_io;
++		acpi_dev_get_ioresource(res, fixed_io->address,
++					fixed_io->address_length,
++					ACPI_DECODE_10);
++		break;
++	default:
++		return false;
++	}
++	return true;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_resource_io);
++
++/**
++ * acpi_dev_resource_address_space - Extract ACPI address space information.
++ * @ares: Input ACPI resource object.
++ * @res: Output generic resource object.
++ *
++ * Check if the given ACPI resource object represents an address space resource
++ * and if that's the case, use the information in it to populate the generic
++ * resource object pointed to by @res.
++ */
++bool acpi_dev_resource_address_space(struct acpi_resource *ares,
++				     struct resource *res)
++{
++	acpi_status status;
++	struct acpi_resource_address64 addr;
++	bool window;
++	u64 len;
++	u8 io_decode;
++
++	switch (ares->type) {
++	case ACPI_RESOURCE_TYPE_ADDRESS16:
++	case ACPI_RESOURCE_TYPE_ADDRESS32:
++	case ACPI_RESOURCE_TYPE_ADDRESS64:
++		break;
++	default:
++		return false;
++	}
++
++	status = acpi_resource_to_address64(ares, &addr);
++	if (ACPI_FAILURE(status))
++		return true;
++
++	res->start = addr.minimum;
++	res->end = addr.maximum;
++	window = addr.producer_consumer == ACPI_PRODUCER;
++
++	switch(addr.resource_type) {
++	case ACPI_MEMORY_RANGE:
++		len = addr.maximum - addr.minimum + 1;
++		res->flags = acpi_dev_memresource_flags(len,
++						addr.info.mem.write_protect,
++						window);
++		break;
++	case ACPI_IO_RANGE:
++		io_decode = addr.granularity == 0xfff ?
++				ACPI_DECODE_10 : ACPI_DECODE_16;
++		res->flags = acpi_dev_ioresource_flags(addr.minimum,
++						       addr.maximum,
++						       io_decode, window);
++		break;
++	case ACPI_BUS_NUMBER_RANGE:
++		res->flags = IORESOURCE_BUS;
++		break;
++	default:
++		res->flags = 0;
++	}
++
++	return true;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space);
++
++/**
++ * acpi_dev_resource_ext_address_space - Extract ACPI address space information.
++ * @ares: Input ACPI resource object.
++ * @res: Output generic resource object.
++ *
++ * Check if the given ACPI resource object represents an extended address space
++ * resource and if that's the case, use the information in it to populate the
++ * generic resource object pointed to by @res.
++ */
++bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
++					 struct resource *res)
++{
++	struct acpi_resource_extended_address64 *ext_addr;
++	bool window;
++	u64 len;
++	u8 io_decode;
++
++	if (ares->type != ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64)
++		return false;
++
++	ext_addr = &ares->data.ext_address64;
++
++	res->start = ext_addr->minimum;
++	res->end = ext_addr->maximum;
++	window = ext_addr->producer_consumer == ACPI_PRODUCER;
++
++	switch(ext_addr->resource_type) {
++	case ACPI_MEMORY_RANGE:
++		len = ext_addr->maximum - ext_addr->minimum + 1;
++		res->flags = acpi_dev_memresource_flags(len,
++					ext_addr->info.mem.write_protect,
++					window);
++		break;
++	case ACPI_IO_RANGE:
++		io_decode = ext_addr->granularity == 0xfff ?
++				ACPI_DECODE_10 : ACPI_DECODE_16;
++		res->flags = acpi_dev_ioresource_flags(ext_addr->minimum,
++						       ext_addr->maximum,
++						       io_decode, window);
++		break;
++	case ACPI_BUS_NUMBER_RANGE:
++		res->flags = IORESOURCE_BUS;
++		break;
++	default:
++		res->flags = 0;
++	}
++
++	return true;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_resource_ext_address_space);
++
++/**
++ * acpi_dev_irq_flags - Determine IRQ resource flags.
++ * @triggering: Triggering type as provided by ACPI.
++ * @polarity: Interrupt polarity as provided by ACPI.
++ * @shareable: Whether or not the interrupt is shareable.
++ */
++unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable)
++{
++	unsigned long flags;
++
++	if (triggering == ACPI_LEVEL_SENSITIVE)
++		flags = polarity == ACPI_ACTIVE_LOW ?
++			IORESOURCE_IRQ_LOWLEVEL : IORESOURCE_IRQ_HIGHLEVEL;
++	else
++		flags = polarity == ACPI_ACTIVE_LOW ?
++			IORESOURCE_IRQ_LOWEDGE : IORESOURCE_IRQ_HIGHEDGE;
++
++	if (shareable == ACPI_SHARED)
++		flags |= IORESOURCE_IRQ_SHAREABLE;
++
++	return flags | IORESOURCE_IRQ;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_irq_flags);
++
++static void acpi_dev_irqresource_disabled(struct resource *res, u32 gsi)
++{
++	res->start = gsi;
++	res->end = gsi;
++	res->flags = IORESOURCE_IRQ | IORESOURCE_DISABLED;
++}
++
++static void acpi_dev_get_irqresource(struct resource *res, u32 gsi,
++				     u8 triggering, u8 polarity, u8 shareable)
++{
++	int irq, p, t;
++
++	if (!valid_IRQ(gsi)) {
++		acpi_dev_irqresource_disabled(res, gsi);
++		return;
++	}
++
++	/*
++	 * In IO-APIC mode, use overrided attribute. Two reasons:
++	 * 1. BIOS bug in DSDT
++	 * 2. BIOS uses IO-APIC mode Interrupt Source Override
++	 */
++	if (!acpi_get_override_irq(gsi, &t, &p)) {
++		u8 trig = t ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
++		u8 pol = p ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
++
++		if (triggering != trig || polarity != pol) {
++			pr_warning("ACPI: IRQ %d override to %s, %s\n", gsi,
++				   t ? "edge" : "level", p ? "low" : "high");
++			triggering = trig;
++			polarity = pol;
++		}
++	}
++
++	res->flags = acpi_dev_irq_flags(triggering, polarity, shareable);
++	irq = acpi_register_gsi(NULL, gsi, triggering, polarity);
++	if (irq >= 0) {
++		res->start = irq;
++		res->end = irq;
++	} else {
++		acpi_dev_irqresource_disabled(res, gsi);
++	}
++}
++
++/**
++ * acpi_dev_resource_interrupt - Extract ACPI interrupt resource information.
++ * @ares: Input ACPI resource object.
++ * @index: Index into the array of GSIs represented by the resource.
++ * @res: Output generic resource object.
++ *
++ * Check if the given ACPI resource object represents an interrupt resource
++ * and @index does not exceed the resource's interrupt count (true is returned
++ * in that case regardless of the results of the other checks)).  If that's the
++ * case, register the GSI corresponding to @index from the array of interrupts
++ * represented by the resource and populate the generic resource object pointed
++ * to by @res accordingly.  If the registration of the GSI is not successful,
++ * IORESOURCE_DISABLED will be set it that object's flags.
++ */
++bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
++				 struct resource *res)
++{
++	struct acpi_resource_irq *irq;
++	struct acpi_resource_extended_irq *ext_irq;
++
++	switch (ares->type) {
++	case ACPI_RESOURCE_TYPE_IRQ:
++		/*
++		 * Per spec, only one interrupt per descriptor is allowed in
++		 * _CRS, but some firmware violates this, so parse them all.
++		 */
++		irq = &ares->data.irq;
++		if (index >= irq->interrupt_count) {
++			acpi_dev_irqresource_disabled(res, 0);
++			return false;
++		}
++		acpi_dev_get_irqresource(res, irq->interrupts[index],
++					 irq->triggering, irq->polarity,
++					 irq->sharable);
++		break;
++	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
++		ext_irq = &ares->data.extended_irq;
++		if (index >= ext_irq->interrupt_count) {
++			acpi_dev_irqresource_disabled(res, 0);
++			return false;
++		}
++		acpi_dev_get_irqresource(res, ext_irq->interrupts[index],
++					 ext_irq->triggering, ext_irq->polarity,
++					 ext_irq->sharable);
++		break;
++	default:
++		return false;
++	}
++
++	return true;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_resource_interrupt);
+Index: linux/drivers/acpi/Makefile
+===================================================================
+--- linux.orig/drivers/acpi/Makefile
++++ linux/drivers/acpi/Makefile
+@@ -33,6 +33,7 @@ acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+ #
+ acpi-y				+= bus.o glue.o
+ acpi-y				+= scan.o
++acpi-y				+= resource.o
+ acpi-y				+= processor_core.o
+ acpi-y				+= ec.o
+ acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+Index: linux/drivers/pnp/pnpacpi/rsparser.c
+===================================================================
+--- linux.orig/drivers/pnp/pnpacpi/rsparser.c
++++ linux/drivers/pnp/pnpacpi/rsparser.c
+@@ -28,37 +28,6 @@
+ #include "../base.h"
+ #include "pnpacpi.h"
+ 
+-#ifdef CONFIG_IA64
+-#define valid_IRQ(i) (1)
+-#else
+-#define valid_IRQ(i) (((i) != 0) && ((i) != 2))
+-#endif
+-
+-/*
+- * Allocated Resources
+- */
+-static int irq_flags(int triggering, int polarity, int shareable)
+-{
+-	int flags;
+-
+-	if (triggering == ACPI_LEVEL_SENSITIVE) {
+-		if (polarity == ACPI_ACTIVE_LOW)
+-			flags = IORESOURCE_IRQ_LOWLEVEL;
+-		else
+-			flags = IORESOURCE_IRQ_HIGHLEVEL;
+-	} else {
+-		if (polarity == ACPI_ACTIVE_LOW)
+-			flags = IORESOURCE_IRQ_LOWEDGE;
+-		else
+-			flags = IORESOURCE_IRQ_HIGHEDGE;
+-	}
+-
+-	if (shareable == ACPI_SHARED)
+-		flags |= IORESOURCE_IRQ_SHAREABLE;
+-
+-	return flags;
+-}
+-
+ static void decode_irq_flags(struct pnp_dev *dev, int flags, int *triggering,
+ 			     int *polarity, int *shareable)
+ {
+@@ -94,45 +63,6 @@ static void decode_irq_flags(struct pnp_
+ 		*shareable = ACPI_EXCLUSIVE;
+ }
+ 
+-static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
+-						u32 gsi, int triggering,
+-						int polarity, int shareable)
+-{
+-	int irq, flags;
+-	int p, t;
+-
+-	if (!valid_IRQ(gsi)) {
+-		pnp_add_irq_resource(dev, gsi, IORESOURCE_DISABLED);
+-		return;
+-	}
+-
+-	/*
+-	 * in IO-APIC mode, use overrided attribute. Two reasons:
+-	 * 1. BIOS bug in DSDT
+-	 * 2. BIOS uses IO-APIC mode Interrupt Source Override
+-	 */
+-	if (!acpi_get_override_irq(gsi, &t, &p)) {
+-		t = t ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
+-		p = p ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+-
+-		if (triggering != t || polarity != p) {
+-			dev_warn(&dev->dev, "IRQ %d override to %s, %s\n",
+-				gsi, t ? "edge":"level", p ? "low":"high");
+-			triggering = t;
+-			polarity = p;
+-		}
+-	}
+-
+-	flags = irq_flags(triggering, polarity, shareable);
+-	irq = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
+-	if (irq >= 0)
+-		pcibios_penalize_isa_irq(irq, 1);
+-	else
+-		flags |= IORESOURCE_DISABLED;
+-
+-	pnp_add_irq_resource(dev, irq, flags);
+-}
+-
+ static int dma_flags(struct pnp_dev *dev, int type, int bus_master,
+ 		     int transfer)
+ {
+@@ -177,21 +107,16 @@ static int dma_flags(struct pnp_dev *dev
+ 	return flags;
+ }
+ 
+-static void pnpacpi_parse_allocated_ioresource(struct pnp_dev *dev, u64 start,
+-					       u64 len, int io_decode,
+-					       int window)
+-{
+-	int flags = 0;
+-	u64 end = start + len - 1;
++/*
++ * Allocated Resources
++ */
+ 
+-	if (io_decode == ACPI_DECODE_16)
+-		flags |= IORESOURCE_IO_16BIT_ADDR;
+-	if (len == 0 || end >= 0x10003)
+-		flags |= IORESOURCE_DISABLED;
+-	if (window)
+-		flags |= IORESOURCE_WINDOW;
++static void pnpacpi_add_irqresource(struct pnp_dev *dev, struct resource *r)
++{
++	if (!(r->flags & IORESOURCE_DISABLED))
++		pcibios_penalize_isa_irq(r->start, 1);
+ 
+-	pnp_add_io_resource(dev, start, end, flags);
++	pnp_add_resource(dev, r);
+ }
+ 
+ /*
+@@ -249,130 +174,49 @@ static void pnpacpi_parse_allocated_vend
+ 	}
+ }
+ 
+-static void pnpacpi_parse_allocated_memresource(struct pnp_dev *dev,
+-						u64 start, u64 len,
+-						int write_protect, int window)
+-{
+-	int flags = 0;
+-	u64 end = start + len - 1;
+-
+-	if (len == 0)
+-		flags |= IORESOURCE_DISABLED;
+-	if (write_protect == ACPI_READ_WRITE_MEMORY)
+-		flags |= IORESOURCE_MEM_WRITEABLE;
+-	if (window)
+-		flags |= IORESOURCE_WINDOW;
+-
+-	pnp_add_mem_resource(dev, start, end, flags);
+-}
+-
+-static void pnpacpi_parse_allocated_busresource(struct pnp_dev *dev,
+-						u64 start, u64 len)
+-{
+-	u64 end = start + len - 1;
+-
+-	pnp_add_bus_resource(dev, start, end);
+-}
+-
+-static void pnpacpi_parse_allocated_address_space(struct pnp_dev *dev,
+-						  struct acpi_resource *res)
+-{
+-	struct acpi_resource_address64 addr, *p = &addr;
+-	acpi_status status;
+-	int window;
+-	u64 len;
+-
+-	status = acpi_resource_to_address64(res, p);
+-	if (!ACPI_SUCCESS(status)) {
+-		dev_warn(&dev->dev, "failed to convert resource type %d\n",
+-			 res->type);
+-		return;
+-	}
+-
+-	/* Windows apparently computes length rather than using _LEN */
+-	len = p->maximum - p->minimum + 1;
+-	window = (p->producer_consumer == ACPI_PRODUCER) ? 1 : 0;
+-
+-	if (p->resource_type == ACPI_MEMORY_RANGE)
+-		pnpacpi_parse_allocated_memresource(dev, p->minimum, len,
+-			p->info.mem.write_protect, window);
+-	else if (p->resource_type == ACPI_IO_RANGE)
+-		pnpacpi_parse_allocated_ioresource(dev, p->minimum, len,
+-			p->granularity == 0xfff ? ACPI_DECODE_10 :
+-				ACPI_DECODE_16, window);
+-	else if (p->resource_type == ACPI_BUS_NUMBER_RANGE)
+-		pnpacpi_parse_allocated_busresource(dev, p->minimum, len);
+-}
+-
+-static void pnpacpi_parse_allocated_ext_address_space(struct pnp_dev *dev,
+-						      struct acpi_resource *res)
+-{
+-	struct acpi_resource_extended_address64 *p = &res->data.ext_address64;
+-	int window;
+-	u64 len;
+-
+-	/* Windows apparently computes length rather than using _LEN */
+-	len = p->maximum - p->minimum + 1;
+-	window = (p->producer_consumer == ACPI_PRODUCER) ? 1 : 0;
+-
+-	if (p->resource_type == ACPI_MEMORY_RANGE)
+-		pnpacpi_parse_allocated_memresource(dev, p->minimum, len,
+-			p->info.mem.write_protect, window);
+-	else if (p->resource_type == ACPI_IO_RANGE)
+-		pnpacpi_parse_allocated_ioresource(dev, p->minimum, len,
+-			p->granularity == 0xfff ? ACPI_DECODE_10 :
+-				ACPI_DECODE_16, window);
+-	else if (p->resource_type == ACPI_BUS_NUMBER_RANGE)
+-		pnpacpi_parse_allocated_busresource(dev, p->minimum, len);
+-}
+-
+ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+ 					      void *data)
+ {
+ 	struct pnp_dev *dev = data;
+-	struct acpi_resource_irq *irq;
+ 	struct acpi_resource_dma *dma;
+-	struct acpi_resource_io *io;
+-	struct acpi_resource_fixed_io *fixed_io;
+ 	struct acpi_resource_vendor_typed *vendor_typed;
+-	struct acpi_resource_memory24 *memory24;
+-	struct acpi_resource_memory32 *memory32;
+-	struct acpi_resource_fixed_memory32 *fixed_memory32;
+-	struct acpi_resource_extended_irq *extended_irq;
++	struct resource r;
+ 	int i, flags;
+ 
+-	switch (res->type) {
+-	case ACPI_RESOURCE_TYPE_IRQ:
+-		/*
+-		 * Per spec, only one interrupt per descriptor is allowed in
+-		 * _CRS, but some firmware violates this, so parse them all.
+-		 */
+-		irq = &res->data.irq;
+-		if (irq->interrupt_count == 0)
+-			pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
+-		else {
+-			for (i = 0; i < irq->interrupt_count; i++) {
+-				pnpacpi_parse_allocated_irqresource(dev,
+-					irq->interrupts[i],
+-					irq->triggering,
+-					irq->polarity,
+-				    irq->sharable);
+-			}
++	if (acpi_dev_resource_memory(res, &r)
++	    || acpi_dev_resource_io(res, &r)
++	    || acpi_dev_resource_address_space(res, &r)
++	    || acpi_dev_resource_ext_address_space(res, &r)) {
++		pnp_add_resource(dev, &r);
++		return AE_OK;
++	}
++
++	r.flags = 0;
++	if (acpi_dev_resource_interrupt(res, 0, &r)) {
++		pnpacpi_add_irqresource(dev, &r);
++		for (i = 1; acpi_dev_resource_interrupt(res, i, &r); i++)
++			pnpacpi_add_irqresource(dev, &r);
+ 
++		if (i > 1) {
+ 			/*
+ 			 * The IRQ encoder puts a single interrupt in each
+ 			 * descriptor, so if a _CRS descriptor has more than
+ 			 * one interrupt, we won't be able to re-encode it.
+ 			 */
+-			if (pnp_can_write(dev) && irq->interrupt_count > 1) {
++			if (pnp_can_write(dev)) {
+ 				dev_warn(&dev->dev, "multiple interrupts in "
+ 					 "_CRS descriptor; configuration can't "
+ 					 "be changed\n");
+ 				dev->capabilities &= ~PNP_WRITE;
+ 			}
+ 		}
+-		break;
++		return AE_OK;
++	} else if (r.flags & IORESOURCE_DISABLED) {
++		pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
++		return AE_OK;
++	}
+ 
++	switch (res->type) {
+ 	case ACPI_RESOURCE_TYPE_DMA:
+ 		dma = &res->data.dma;
+ 		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
+@@ -383,26 +227,10 @@ static acpi_status pnpacpi_allocated_res
+ 		pnp_add_dma_resource(dev, dma->channels[0], flags);
+ 		break;
+ 
+-	case ACPI_RESOURCE_TYPE_IO:
+-		io = &res->data.io;
+-		pnpacpi_parse_allocated_ioresource(dev,
+-			io->minimum,
+-			io->address_length,
+-			io->io_decode, 0);
+-		break;
+-
+ 	case ACPI_RESOURCE_TYPE_START_DEPENDENT:
+ 	case ACPI_RESOURCE_TYPE_END_DEPENDENT:
+ 		break;
+ 
+-	case ACPI_RESOURCE_TYPE_FIXED_IO:
+-		fixed_io = &res->data.fixed_io;
+-		pnpacpi_parse_allocated_ioresource(dev,
+-			fixed_io->address,
+-			fixed_io->address_length,
+-			ACPI_DECODE_10, 0);
+-		break;
+-
+ 	case ACPI_RESOURCE_TYPE_VENDOR:
+ 		vendor_typed = &res->data.vendor_typed;
+ 		pnpacpi_parse_allocated_vendor(dev, vendor_typed);
+@@ -411,66 +239,6 @@ static acpi_status pnpacpi_allocated_res
+ 	case ACPI_RESOURCE_TYPE_END_TAG:
+ 		break;
+ 
+-	case ACPI_RESOURCE_TYPE_MEMORY24:
+-		memory24 = &res->data.memory24;
+-		pnpacpi_parse_allocated_memresource(dev,
+-			memory24->minimum,
+-			memory24->address_length,
+-			memory24->write_protect, 0);
+-		break;
+-	case ACPI_RESOURCE_TYPE_MEMORY32:
+-		memory32 = &res->data.memory32;
+-		pnpacpi_parse_allocated_memresource(dev,
+-			memory32->minimum,
+-			memory32->address_length,
+-			memory32->write_protect, 0);
+-		break;
+-	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+-		fixed_memory32 = &res->data.fixed_memory32;
+-		pnpacpi_parse_allocated_memresource(dev,
+-			fixed_memory32->address,
+-			fixed_memory32->address_length,
+-			fixed_memory32->write_protect, 0);
+-		break;
+-	case ACPI_RESOURCE_TYPE_ADDRESS16:
+-	case ACPI_RESOURCE_TYPE_ADDRESS32:
+-	case ACPI_RESOURCE_TYPE_ADDRESS64:
+-		pnpacpi_parse_allocated_address_space(dev, res);
+-		break;
+-
+-	case ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64:
+-		pnpacpi_parse_allocated_ext_address_space(dev, res);
+-		break;
+-
+-	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+-		extended_irq = &res->data.extended_irq;
+-
+-		if (extended_irq->interrupt_count == 0)
+-			pnp_add_irq_resource(dev, 0, IORESOURCE_DISABLED);
+-		else {
+-			for (i = 0; i < extended_irq->interrupt_count; i++) {
+-				pnpacpi_parse_allocated_irqresource(dev,
+-					extended_irq->interrupts[i],
+-					extended_irq->triggering,
+-					extended_irq->polarity,
+-					extended_irq->sharable);
+-			}
+-
+-			/*
+-			 * The IRQ encoder puts a single interrupt in each
+-			 * descriptor, so if a _CRS descriptor has more than
+-			 * one interrupt, we won't be able to re-encode it.
+-			 */
+-			if (pnp_can_write(dev) &&
+-			    extended_irq->interrupt_count > 1) {
+-				dev_warn(&dev->dev, "multiple interrupts in "
+-					 "_CRS descriptor; configuration can't "
+-					 "be changed\n");
+-				dev->capabilities &= ~PNP_WRITE;
+-			}
+-		}
+-		break;
+-
+ 	case ACPI_RESOURCE_TYPE_GENERIC_REGISTER:
+ 		break;
+ 
+@@ -531,7 +299,7 @@ static __init void pnpacpi_parse_irq_opt
+ 		if (p->interrupts[i])
+ 			__set_bit(p->interrupts[i], map.bits);
+ 
+-	flags = irq_flags(p->triggering, p->polarity, p->sharable);
++	flags = acpi_dev_irq_flags(p->triggering, p->polarity, p->sharable);
+ 	pnp_register_irq_resource(dev, option_flags, &map, flags);
+ }
+ 
+@@ -555,7 +323,7 @@ static __init void pnpacpi_parse_ext_irq
+ 		}
+ 	}
+ 
+-	flags = irq_flags(p->triggering, p->polarity, p->sharable);
++	flags = acpi_dev_irq_flags(p->triggering, p->polarity, p->sharable);
+ 	pnp_register_irq_resource(dev, option_flags, &map, flags);
+ }
+ 
+Index: linux/drivers/pnp/base.h
+===================================================================
+--- linux.orig/drivers/pnp/base.h
++++ linux/drivers/pnp/base.h
+@@ -159,6 +159,8 @@ struct pnp_resource {
+ 
+ void pnp_free_resource(struct pnp_resource *pnp_res);
+ 
++struct pnp_resource *pnp_add_resource(struct pnp_dev *dev,
++				      struct resource *res);
+ struct pnp_resource *pnp_add_irq_resource(struct pnp_dev *dev, int irq,
+ 					  int flags);
+ struct pnp_resource *pnp_add_dma_resource(struct pnp_dev *dev, int dma,
+Index: linux/drivers/pnp/resource.c
+===================================================================
+--- linux.orig/drivers/pnp/resource.c
++++ linux/drivers/pnp/resource.c
+@@ -503,6 +503,22 @@ static struct pnp_resource *pnp_new_reso
+ 	return pnp_res;
+ }
+ 
++struct pnp_resource *pnp_add_resource(struct pnp_dev *dev,
++				      struct resource *res)
++{
++	struct pnp_resource *pnp_res;
++
++	pnp_res = pnp_new_resource(dev);
++	if (!pnp_res) {
++		dev_err(&dev->dev, "can't add resource %pR\n", res);
++		return NULL;
++	}
++
++	pnp_res->res = *res;
++	dev_dbg(&dev->dev, "%pR\n", res);
++	return pnp_res;
++}
++
+ struct pnp_resource *pnp_add_irq_resource(struct pnp_dev *dev, int irq,
+ 					  int flags)
+ {
 Index: linux/include/linux/acpi.h
 ===================================================================
 --- linux.orig/include/linux/acpi.h
 +++ linux/include/linux/acpi.h
-@@ -261,6 +261,16 @@ unsigned long acpi_dev_irq_flags(u8 trig
- bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
- 				 struct resource *res);
+@@ -251,6 +251,16 @@ extern int pnpacpi_disabled;
  
-+struct resource_list_entry {
-+	struct list_head node;
-+	struct resource res;
-+};
-+
-+void acpi_dev_free_resource_list(struct list_head *list);
-+int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
-+			   int (*preproc)(struct acpi_resource *, void *),
-+			   void *preproc_data);
+ #define PXM_INVAL	(-1)
+ 
++bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res);
++bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res);
++bool acpi_dev_resource_address_space(struct acpi_resource *ares,
++				     struct resource *res);
++bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
++					 struct resource *res);
++unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
++bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
++				 struct resource *res);
 +
  int acpi_check_resource_conflict(const struct resource *res);
  
  int acpi_check_region(resource_size_t start, resource_size_t n,
-Index: linux/drivers/acpi/resource.c
-===================================================================
---- linux.orig/drivers/acpi/resource.c
-+++ linux/drivers/acpi/resource.c
-@@ -26,6 +26,7 @@
- #include <linux/device.h>
- #include <linux/export.h>
- #include <linux/ioport.h>
-+#include <linux/slab.h>
- 
- #ifdef CONFIG_X86
- #define valid_IRQ(i) (((i) != 0) && ((i) != 2))
-@@ -391,3 +392,136 @@ bool acpi_dev_resource_interrupt(struct
- 	return true;
- }
- EXPORT_SYMBOL_GPL(acpi_dev_resource_interrupt);
-+
-+/**
-+ * acpi_dev_free_resource_list - Free resource from %acpi_dev_get_resources().
-+ * @list: The head of the resource list to free.
-+ */
-+void acpi_dev_free_resource_list(struct list_head *list)
-+{
-+	struct resource_list_entry *rentry, *re;
-+
-+	list_for_each_entry_safe(rentry, re, list, node) {
-+		list_del(&rentry->node);
-+		kfree(rentry);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_free_resource_list);
-+
-+struct res_proc_context {
-+	struct list_head *list;
-+	int (*preproc)(struct acpi_resource *, void *);
-+	void *preproc_data;
-+	int count;
-+	int error;
-+};
-+
-+static acpi_status acpi_dev_new_resource_entry(struct resource *r,
-+					       struct res_proc_context *c)
-+{
-+	struct resource_list_entry *rentry;
-+
-+	rentry = kmalloc(sizeof(*rentry), GFP_KERNEL);
-+	if (!rentry) {
-+		c->error = -ENOMEM;
-+		return AE_NO_MEMORY;
-+	}
-+	INIT_LIST_HEAD(&rentry->node);
-+	rentry->res = *r;
-+	list_add_tail(&rentry->node, c->list);
-+	c->count++;
-+	return AE_OK;
-+}
-+
-+static acpi_status acpi_dev_process_resource(struct acpi_resource *ares,
-+					     void *context)
-+{
-+	struct res_proc_context *c = context;
-+	struct resource r;
-+	int i;
-+
-+	if (c->preproc) {
-+		int ret;
-+
-+		ret = c->preproc(ares, c->preproc_data);
-+		if (ret < 0) {
-+			c->error = ret;
-+			return AE_ABORT_METHOD;
-+		} else if (ret > 0) {
-+			return AE_OK;
-+		}
-+	}
-+
-+	memset(&r, 0, sizeof(r));
-+
-+	if (acpi_dev_resource_memory(ares, &r)
-+	    || acpi_dev_resource_io(ares, &r)
-+	    || acpi_dev_resource_address_space(ares, &r)
-+	    || acpi_dev_resource_ext_address_space(ares, &r))
-+		return acpi_dev_new_resource_entry(&r, c);
-+
-+	for (i = 0; acpi_dev_resource_interrupt(ares, i, &r); i++) {
-+		acpi_status status;
-+
-+		status = acpi_dev_new_resource_entry(&r, c);
-+		if (ACPI_FAILURE(status))
-+			return status;
-+	}
-+
-+	return AE_OK;
-+}
-+
-+/**
-+ * acpi_dev_get_resources - Get current resources of a device.
-+ * @adev: ACPI device node to get the resources for.
-+ * @list: Head of the resultant list of resources (must be empty).
-+ * @preproc: The caller's preprocessing routine.
-+ * @preproc_data: Pointer passed to the caller's preprocessing routine.
-+ *
-+ * Evaluate the _CRS method for the given device node and process its output by
-+ * (1) executing the @preproc() rountine provided by the caller, passing the
-+ * resource pointer and @preproc_data to it as arguments, for each ACPI resource
-+ * returned and (2) converting all of the returned ACPI resources into struct
-+ * resource objects if possible.  If the return value of @preproc() in step (1)
-+ * is different from 0, step (2) is not applied to the given ACPI resource and
-+ * if that value is negative, the whole processing is aborted and that value is
-+ * returned as the final error code.
-+ *
-+ * The resultant struct resource objects are put on the list pointed to by
-+ * @list, that must be empty initially, as members of struct resource_list_entry
-+ * objects.  Callers of this routine should use %acpi_dev_free_resource_list() to
-+ * free that list.
-+ *
-+ * The number of resources in the output list is returned on success, an error
-+ * code reflecting the error condition is returned otherwise.
-+ */
-+int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
-+			   int (*preproc)(struct acpi_resource *, void *),
-+			   void *preproc_data)
-+{
-+	struct res_proc_context c;
-+	acpi_handle not_used;
-+	acpi_status status;
-+
-+	if (!adev || !adev->handle || !list_empty(list))
-+		return -EINVAL;
-+
-+	status = acpi_get_handle(adev->handle, METHOD_NAME__CRS, &not_used);
-+	if (ACPI_FAILURE(status))
-+		return 0;
-+
-+	c.list = list;
-+	c.preproc = preproc;
-+	c.preproc_data = preproc_data;
-+	c.count = 0;
-+	c.error = 0;
-+	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
-+				     acpi_dev_process_resource, &c);
-+	if (ACPI_FAILURE(status)) {
-+		acpi_dev_free_resource_list(list);
-+		return c.error ? c.error : -EIO;
-+	}
-+
-+	return c.count;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_resources);
-Index: linux/drivers/acpi/acpi_platform.c
-===================================================================
---- linux.orig/drivers/acpi/acpi_platform.c
-+++ linux/drivers/acpi/acpi_platform.c
-@@ -19,61 +19,6 @@
- 
- ACPI_MODULE_NAME("platform");
- 
--struct resource_info {
--	struct device *dev;
--	struct resource *res;
--	size_t n, cur;
--};
--
--static acpi_status acpi_platform_count_resources(struct acpi_resource *res,
--						 void *data)
--{
--	struct acpi_resource_extended_irq *acpi_xirq;
--	struct acpi_resource_irq *acpi_irq;
--	struct resource_info *ri = data;
--
--	switch (res->type) {
--	case ACPI_RESOURCE_TYPE_IRQ:
--		acpi_irq = &res->data.irq;
--		ri->n += acpi_irq->interrupt_count;
--		break;
--	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
--		acpi_xirq = &res->data.extended_irq;
--		ri->n += acpi_xirq->interrupt_count;
--		break;
--	default:
--		ri->n++;
--	}
--
--	return AE_OK;
--}
--
--static acpi_status acpi_platform_add_resources(struct acpi_resource *res,
--					       void *data)
--{
--	struct resource_info *ri = data;
--	struct resource *r;
--
--	r = ri->res + ri->cur;
--	if (acpi_dev_resource_memory(res, r)
--	    || acpi_dev_resource_io(res, r)
--	    || acpi_dev_resource_address_space(res, r)
--	    || acpi_dev_resource_ext_address_space(res, r)) {
--		ri->cur++;
--		return AE_OK;
--	}
--	if (acpi_dev_resource_interrupt(res, 0, r)) {
--		int i;
--
--		r++;
--		for (i = 1; acpi_dev_resource_interrupt(res, i, r); i++)
--			r++;
--
--		ri->cur += i;
--	}
--	return AE_OK;
--}
--
- /**
-  * acpi_create_platform_device - Create platform device for ACPI device node
-  * @adev: ACPI device node to create a platform device for.
-@@ -89,35 +34,31 @@ struct platform_device *acpi_create_plat
- 	struct platform_device *pdev = NULL;
- 	struct acpi_device *acpi_parent;
- 	struct device *parent = NULL;
--	struct resource_info ri;
--	acpi_status status;
-+	struct resource_list_entry *rentry;
-+	struct list_head resource_list;
-+	struct resource *resources;
-+	int count;
- 
- 	/* If the ACPI node already has a physical device attached, skip it. */
- 	if (adev->physical_node_count)
- 		return NULL;
- 
--	memset(&ri, 0, sizeof(ri));
--	/* First, count the resources. */
--	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
--				     acpi_platform_count_resources, &ri);
--	if (ACPI_FAILURE(status) || !ri.n)
-+	INIT_LIST_HEAD(&resource_list);
-+	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
-+	if (count <= 0)
- 		return NULL;
- 
--	/* Next, allocate memory for all the resources and populate it. */
--	ri.dev = &adev->dev;
--	ri.res = kzalloc(ri.n * sizeof(struct resource), GFP_KERNEL);
--	if (!ri.res) {
--		dev_err(&adev->dev,
--			"failed to allocate memory for resources\n");
-+	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
-+	if (!resources) {
-+		dev_err(&adev->dev, "No memory for resources\n");
-+		acpi_dev_free_resource_list(&resource_list);
- 		return NULL;
- 	}
-+	count = 0;
-+	list_for_each_entry(rentry, &resource_list, node)
-+		resources[count++] = rentry->res;
- 
--	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
--				     acpi_platform_add_resources, &ri);
--	if (ACPI_FAILURE(status)) {
--		dev_err(&adev->dev, "failed to walk resources\n");
--		goto out;
--	}
-+	acpi_dev_free_resource_list(&resource_list);
- 
- 	/*
- 	 * If the ACPI node has a parent and that parent has a physical device
-@@ -140,7 +81,7 @@ struct platform_device *acpi_create_plat
- 		mutex_unlock(&acpi_parent->physical_node_lock);
- 	}
- 	pdev = platform_device_register_resndata(parent, dev_name(&adev->dev),
--						 -1, ri.res, ri.cur, NULL, 0);
-+						 -1, resources, count, NULL, 0);
- 	if (IS_ERR(pdev)) {
- 		dev_err(&adev->dev, "platform device creation failed: %ld\n",
- 			PTR_ERR(pdev));
-@@ -150,8 +91,7 @@ struct platform_device *acpi_create_plat
- 			dev_name(&pdev->dev));
- 	}
- 
-- out:
--	kfree(ri.res);
-+	kfree(resources);
- 	return pdev;
- }
- 
