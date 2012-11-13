@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab2KMGpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:45:23 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:60196 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab2KMGpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:45:22 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL REQUEST] UniCore32 update for v3.7-rc4
-Cc: linux-kernel@vger.kernel.org
-Message-Id: <20121113063853.E47D114600B1@linuxdev-32>
-Date: Tue, 13 Nov 2012 14:38:53 +0800 (CST)
-From: guanxuetao@mprc.pku.edu.cn (guanxuetao)
+	id S1752544Ab2KMGsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:48:08 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:56902 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2KMGsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 01:48:05 -0500
+Date: Tue, 13 Nov 2012 07:47:48 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] NVIDIA Tegra DRM driver
+Message-ID: <20121113064748.GB31443@avionic-0098.mockup.avionic-design.de>
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
+ <50A1918E.1000809@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
+Content-Disposition: inline
+In-Reply-To: <50A1918E.1000809@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:xigN1mOqMhriLVGRfsXG6+0dNQjdD1ACv9mFoGbzcNk
+ j+ds8oBi+QV/BCV0dUFcIdwAyoL9fUqNH6Zq1+C5osI4jiFppS
+ F3krXF21iCzgy68VV9fjDvy3ysCiavSCIN8Z/rFuSHnHYqkg4W
+ APpHvrE0akI0/20VeVXmFjIrd0ODCfWURyOua3IOgHJ7aeM2/f
+ DdpvJhUmtsjGXiFGemqixMDoQ12AbIOKQoipL+eESsD5XYqIdP
+ RlaUES+qc9wxfGcfRni5j9WipA182obA5b+9rXreEU8VCUAwDV
+ XtUUKWGWVGaykL0jURiOw7CRYUJjJae5st7WmZLjK4DY2N97g0
+ +tow4gXiya2RPgWdKFBScjDsJg2Xrs/LQ8e9SyGRzW5/yaJLgm
+ oRK8Qw7uJdAQhaH4vArwds62SQ/CaBZLq24RfZgMsanDnRFA+O
+ 1P2w6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-The following changes since commit 0e4a43ed08e2f44aa7b96aa95d0a540d675483e1:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../steve/gfs2-3.0-fixes
+--WYTEVAkct0FjGQmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-are available in the git repository at:
+On Mon, Nov 12, 2012 at 05:17:18PM -0700, Stephen Warren wrote:
+> On 11/12/2012 02:55 PM, Thierry Reding wrote:
+> > This second version of this patch series addresses all the comments
+> > received so far. Most notably it takes advantage of the debugfs helpers
+> > provided by the DRM core. Oddly enough this actually increases the line
+> > count, but that's because the helpers don't fit with the subdevices
+> > approach as implemented by this driver. However some quick discussions
+> > with Rob Clark showed that Tegra DRM is not special in this respect but
+> > other drivers may need the same functionality. Eventually the debugfs
+> > code could be reworked on top of helpers that are better suited at the
+> > design of embedded, multi-device DRM drivers.
+> >=20
+> > Other than that there is some removal of code that was actually supposed
+> > to go into a later patch because it has dependencies that haven't been
+> > merged yet and some moving around of #defines and the device tree
+> > bindings documentation. Finally the driver now uses the DRM core's
+> > drm_compat_ioctl() instead of a custom and unimplemented (!) version.
+>=20
+> The series,
+>=20
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+>=20
+> (on the Harmony board's HDMI output; I'll test other boards/outputs later=
+).
 
-  git://github.com/gxt/linux.git unicore32
+You also gave an Acked-by for the DT binding documentation in the first
+version of this patchset, does it apply to the rest of the patch as
+well? That is, can I add it to patch 1?
 
-Al Viro (2):
-      unicore32: switch to generic kernel_thread()/kernel_execve()
-      unicore32: switch to generic sys_execve()
+Thierry
 
-David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/unicore32/include/asm
+--WYTEVAkct0FjGQmd
+Content-Type: application/pgp-signature
 
-Guan Xuetao (4):
-      UniCore32 bugfix: add missed CONFIG_ZONE_DMA
-      UniCore32-bugfix: fix mismatch return value of __xchg_bad_pointer
-      UniCore32-bugfix: Remove definitions in asm/bug.h to solve difference between native and cross compiler
-      unicore32: Use Kbuild infrastructure for kvm_para.h
-
-Kautuk Consul (1):
-      unicore32/mm/fault.c: Port OOM changes to do_pf
-
-Kees Cook (1):
-      arch/unicore32: remove CONFIG_EXPERIMENTAL
-
- arch/unicore32/Kconfig                             |    7 ++-
- arch/unicore32/include/asm/Kbuild                  |    1 -
- arch/unicore32/include/asm/bug.h                   |    5 -
- arch/unicore32/include/asm/cmpxchg.h               |    2 +-
- arch/unicore32/include/asm/kvm_para.h              |    1 -
- arch/unicore32/include/asm/processor.h             |    5 -
- arch/unicore32/include/asm/ptrace.h                |   76 +----------------
- arch/unicore32/include/uapi/asm/Kbuild             |    7 ++
- arch/unicore32/include/{ => uapi}/asm/byteorder.h  |    0
- arch/unicore32/include/uapi/asm/ptrace.h           |   90 ++++++++++++++++++++
- arch/unicore32/include/{ => uapi}/asm/sigcontext.h |    0
- arch/unicore32/include/{ => uapi}/asm/unistd.h     |    1 +
- arch/unicore32/kernel/entry.S                      |   20 ++---
- arch/unicore32/kernel/process.c                    |   58 +++----------
- arch/unicore32/kernel/setup.h                      |    6 ++
- arch/unicore32/kernel/sys.c                        |   63 --------------
- arch/unicore32/mm/fault.c                          |   37 ++++++--
- 17 files changed, 160 insertions(+), 219 deletions(-)
- delete mode 100644 arch/unicore32/include/asm/kvm_para.h
- rename arch/unicore32/include/{ => uapi}/asm/byteorder.h (100%)
- create mode 100644 arch/unicore32/include/uapi/asm/ptrace.h
- rename arch/unicore32/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/unicore32/include/{ => uapi}/asm/unistd.h (92%)
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQoeryAAoJENFylnOm3dTb0AUQAL0YxduSqFJHM7mvyTzfhedM
-jw0nHoOvA+5N50t4uHmcqoto8R2VY5eTsho7rInKsURilFzwU7SNZBzHQ9cmHX5p
-ljO5l5gxMMvTa3SYG0jRBhw1DgeVeHBpuPPfCEproJ5EOIFEFuDUvyUPKNcyEoRV
-Ey3QZy4RTfe9DnKwBboqi80pN4Gl6E25VWGz3LnhaFzQXxUyZbm0kycuF1BGWu3F
-TUubRs/OMYArNwq4LgZvcFs/7SrsJNSZ4f6wUnobYgJoBhe+Q5W3OS99JNb7PDuY
-fxvJQJnbFfYlzk87U1slDTZk+Z7rMJ2sBfguBO13EOtc6DvZeaXMnaiW+HK6CSRW
-dSpolVJ7CvCDXP2cFLn3ThMhM8gv0A/XnXnZ7h33zmXNC7HyZq6iMDoq4aqcClko
-0LcJwypu1j5c0doQG/mVoiQje7un17pTY9yUNrgR4Ni4v9/Rq6NVy9ksckwEpS7i
-g3QhdGtDPDD9zv/YLFId8GX+JbPC2QE2qVaEufj95YAD6AUJVgmqjZiRYKyw+RnY
-cdMljswDa4iZC7/dOdOm5hR959Xtc2/XWAG735iWtb99VThgJzanim3pAZi1m+6z
-Wp3Heil4IIcCXKdmIsjIeaVINYg00xQto+6+KTFYhtdRn/B6DUNS0+SmstrHVsld
-eGUBUqfSFJiBLUIYeFbV
-=MPI3
+iQIcBAEBAgAGBQJQoe0UAAoJEN0jrNd/PrOhkO4P/j1fH+7cGSILND7bxqP+bpAe
+G8P1m9GsvVYHMiDGE2vzvBzRrQpy4AlPEBU9NxEpEenJSM5wxMIXJdyo6DM3wAJE
+pTqsX7QMlgDu5etvGkLGDtPo6JELd+9MeH1gKVFHD5ju/Pmsx7nhNxIku1XA3NTU
+UKPtNRCwfaHl50ATaxiv9WJhPv7wTeHj39EE5/OqhDCEtG4t2hCUKsyYPdpoRGsJ
+9JLKG+KHbgIqqpRrq7bYEa3OBHOxy/cZ4MFCmL9bVd30a6rIcAStnGRJGNB5J7BH
+kakTBv1cauNJCJfMw4BK/8MhlyPyaEZdpeb6Kb1S92NRCbXGODlpfJOUpDudD0b7
+k9KVsIK6fPvm72xrofa+trR1yJ7vJzorJvAdUWZ3lvDjCevQIALG87FWb5uPxif4
+3l3LXO9+6N/nNAki8QZNJ+eDDKTVKDJ3sYlZHiJnrL/9Se3U5km56b7CNwZcy207
+kXuvtAxYI3vJPO4cP3sgDltBrm8/6157azjp4VuJNoWKL5NXXpB6Kjoxnb1GaUka
+AvTJr+WrGsMqoyxey3SrOx8XpsCCRYR6GjNeWDUv9oMgCyrQs3YQrH7fQ2nbMnWL
+Rlotxsi7p/yVr5qXFTezHEWxfkQ1hfpswvxfv2bRn4Od3jRE40z0Twcgc6juxOlr
+OljfR8dx17fuGwUiPRV1
+=FOwG
 -----END PGP SIGNATURE-----
+
+--WYTEVAkct0FjGQmd--
