@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2KNCdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:33:42 -0500
+	id S932614Ab2KNCiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:38:18 -0500
 Received: from mga14.intel.com ([143.182.124.37]:3412 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423Ab2KNCdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:33:40 -0500
+	id S932493Ab2KNCdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 21:33:42 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
-   d="scan'208";a="217413881"
+   d="scan'208";a="217413910"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -26,99 +26,132 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v10 0/14] x86: Arbitrary CPU hot(un)plug support
-Date: Tue, 13 Nov 2012 11:32:37 -0800
-Message-Id: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v10 04/14] x86, hotplug: Support functions for CPU0 online/offline
+Date: Tue, 13 Nov 2012 11:32:41 -0800
+Message-Id: <1352835171-3958-5-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-CPU0 or BSP (Bootstrap Processor) has been the last processor that can not be
-hot removed on x86. This patchset implements CPU0 or BSP online and offline
-and removes this obstacle to CPU hotplug.
+Add smp_store_boot_cpu_info() to store cpu info for BSP during boot time.
 
-RAS needs the feature. If socket0 needs to be hotplugged for any reason (any
-thread on socket0 is bad, shared cache issue, uncore issue, etc), CPU0 is
-required to be offline or hot replaced to keep the system run. For example,
-starting with Core Duo, if you have a system that is reporting cache problems
-via the "yellow" status in the MCi_STATUS msr, then there is benefit in simply
-soft off-lining the cores that share that cache - assuming that leaves you at
-least one online core. A single socket system with L3 cache troubles is not
-helped - but problems in L1/L2 cache, or on multi-socket systems can be avoided.
-They are already being avoided for the cases where CPU0 is not involved.
-This patchset can help L1/L2 cache problem in CPU0 or L3 cache problem on the
-socket with CPU0 in a multi-socket system.
+Now smp_store_cpu_info() stores cpu info for bringing up BSP or AP after
+it's offline.
 
-v10: Use first online CPU to handle retriggered irq in ioapic. Correct
-cpu0_logical_apicid for x2apic. Add wakeup_cpu_via_init_nmi() to make code more
-readable. Add ENDPROC(start_cpu0). Add comment for pm_notifier priority in
-cpu_hotplug_pm_callback.
+Continue to online CPU0 in native_cpu_up().
 
-v9: Add Intel vendor check to support the feature on Intel platforms only.
+Continue to offline CPU0 in native_cpu_disable().
 
-v8: Add smp_store_boot_cpu_info() and change smp_store_cpu_info() back to avoid
-a compilation error. Fix a few messy subject issues.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/include/asm/smp.h |    1 +
+ arch/x86/kernel/smpboot.c  |   38 ++++++++++++++++++--------------------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
 
-v7: Change smp_store_cpu_info() to allow store cpuinfo for CPU0 when online.
-Change PIC irq detection in native_cpu_disable().
-
-v6: If CPU0 is offlined during boot time in CPU0 hotplug debug mode, put CPU0
-online again before resuming from hibernation and disable x2apic and xapic.Don't
-set __CPUINIT for start_cpu0() in head_32.S. Clean up CPU0 wake up nmi handler
-after callin and callout sync. In a period (3 seconds), check if CPU0 wake up
-NMI is handled after offlined CPU0 exits from mwait.
-
-v5: Add CONFIG_BOOTPARAM_HOTPLUG_CPU0 and CONFIG_DEBUG_HOTPLUG_CPU0. Simplify
-duplicate xstate_size init check. Wakeup CPU0 via nmi instead INITs. Add
-mcheck_cpu_init when CPU0 online. Change variable bsp_hotpluggable to
-cpu0_hotpluggable with __initdata qualifier.
-
-v4: Add __read_mostly for internal bsp_hotpluggable variable. Add my email
-address in cpu-hotplug.txt document. A wording change in comment.
-
-v3: Register a pm notifier to check if CPU0 is online before hibernate/suspend.
-Small wording changes in document and print info.
-
-v2: Add locking changes between cpu hotplug and hibernate/suspend. Change PIC
-irq bound to CPU0 detection.
-
-Fenghua Yu (14):
-  doc: Add x86 CPU0 online/offline feature
-  x86, Kconfig: Add config switch for CPU0 hotplug
-  x86, topology: Don't offline CPU0 if any PIC irq can not be migrated
-    out of it
-  x86, hotplug: Support functions for CPU0 online/offline
-  x86, hotplug, suspend: Online CPU0 for suspend or hibernate
-  kernel/cpu.c: Add comment for priority in cpu_hotplug_pm_callback
-  x86-64, hotplug: Add start_cpu0() entry point to head_64.S
-  x86-32, hotplug: Add start_cpu0() entry point to head_32.S
-  x86, hotplug: Wake up CPU0 via NMI instead of INIT, SIPI, SIPI
-  x86, hotplug: During CPU0 online, enable x2apic, set_numa_node.
-  x86, hotplug: The first online processor saves the MTRR state
-  x86, hotplug: Handle retrigger irq by the first available CPU
-  x86/i387.c: Initialize thread xstate only on CPU0 only once
-  x86, topology: Debug CPU00 hotplug
-
- Documentation/cpu-hotplug.txt       |   24 ++++++
- Documentation/kernel-parameters.txt |   14 +++
- arch/x86/Kconfig                    |   44 ++++++++++
- arch/x86/include/asm/cpu.h          |    4 +
- arch/x86/include/asm/smp.h          |    1 +
- arch/x86/kernel/apic/io_apic.c      |    4 +-
- arch/x86/kernel/cpu/common.c        |    5 +-
- arch/x86/kernel/cpu/mtrr/main.c     |    9 ++-
- arch/x86/kernel/head_32.S           |   13 +++
- arch/x86/kernel/head_64.S           |   16 ++++
- arch/x86/kernel/i387.c              |    6 +-
- arch/x86/kernel/smpboot.c           |  151 ++++++++++++++++++++++++++++------
- arch/x86/kernel/topology.c          |  101 ++++++++++++++++++++++--
- arch/x86/power/cpu.c                |   82 +++++++++++++++++++
- kernel/cpu.c                        |    5 +
- 15 files changed, 438 insertions(+), 41 deletions(-)
-
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 4f19a15..b073aae 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -166,6 +166,7 @@ void native_send_call_func_ipi(const struct cpumask *mask);
+ void native_send_call_func_single_ipi(int cpu);
+ void x86_idle_thread_init(unsigned int cpu, struct task_struct *idle);
+ 
++void smp_store_boot_cpu_info(void);
+ void smp_store_cpu_info(int id);
+ #define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..c297907 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -125,8 +125,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
+ atomic_t init_deasserted;
+ 
+ /*
+- * Report back to the Boot Processor.
+- * Running on AP.
++ * Report back to the Boot Processor during boot time or to the caller processor
++ * during CPU online.
+  */
+ static void __cpuinit smp_callin(void)
+ {
+@@ -279,19 +279,30 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	cpu_idle();
+ }
+ 
++void __init smp_store_boot_cpu_info(void)
++{
++	int id = 0; /* CPU 0 */
++	struct cpuinfo_x86 *c = &cpu_data(id);
++
++	*c = boot_cpu_data;
++	c->cpu_index = id;
++}
++
+ /*
+  * The bootstrap kernel entry code has set these up. Save them for
+  * a given CPU
+  */
+-
+ void __cpuinit smp_store_cpu_info(int id)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(id);
+ 
+ 	*c = boot_cpu_data;
+ 	c->cpu_index = id;
+-	if (id != 0)
+-		identify_secondary_cpu(c);
++	/*
++	 * During boot time, CPU0 has this setup already. Save the info when
++	 * bringing up AP or offlined CPU0.
++	 */
++	identify_secondary_cpu(c);
+ }
+ 
+ static bool __cpuinit
+@@ -795,7 +806,7 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 
+ 	pr_debug("++++++++++++++++++++=_---CPU UP  %u\n", cpu);
+ 
+-	if (apicid == BAD_APICID || apicid == boot_cpu_physical_apicid ||
++	if (apicid == BAD_APICID ||
+ 	    !physid_isset(apicid, phys_cpu_present_map) ||
+ 	    !apic->apic_id_valid(apicid)) {
+ 		pr_err("%s: bad cpu %d\n", __func__, cpu);
+@@ -990,7 +1001,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	/*
+ 	 * Setup boot CPU information
+ 	 */
+-	smp_store_cpu_info(0); /* Final full version of the data */
++	smp_store_boot_cpu_info(); /* Final full version of the data */
+ 	cpumask_copy(cpu_callin_mask, cpumask_of(0));
+ 	mb();
+ 
+@@ -1214,19 +1225,6 @@ void cpu_disable_common(void)
+ 
+ int native_cpu_disable(void)
+ {
+-	int cpu = smp_processor_id();
+-
+-	/*
+-	 * Perhaps use cpufreq to drop frequency, but that could go
+-	 * into generic code.
+-	 *
+-	 * We won't take down the boot processor on i386 due to some
+-	 * interrupts only being able to be serviced by the BSP.
+-	 * Especially so if we're not using an IOAPIC	-zwane
+-	 */
+-	if (cpu == 0)
+-		return -EBUSY;
+-
+ 	clear_local_APIC();
+ 
+ 	cpu_disable_common();
 -- 
 1.7.2
 
