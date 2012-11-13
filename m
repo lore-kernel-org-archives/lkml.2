@@ -1,160 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab2KMKBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 05:01:25 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:64236 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab2KMKBX (ORCPT
+	id S1754448Ab2KMKFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 05:05:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50580 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab2KMKFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 05:01:23 -0500
+	Tue, 13 Nov 2012 05:05:35 -0500
+Date: Tue, 13 Nov 2012 11:05:27 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mark Zhang <markz@nvidia.com>
+Cc: Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
+Message-ID: <20121113100527.GB982@avionic-0098.mockup.avionic-design.de>
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
+ <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de>
+ <50A1F3A3.40905@nvidia.com>
+ <20121113074822.GA8409@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-X-Originating-IP: [217.140.96.21]
-In-Reply-To: <20121113090222.1180.36111.sendpatchset@indoh>
-References: <20121113090212.1180.12233.sendpatchset@indoh>
-	<20121113090222.1180.36111.sendpatchset@indoh>
-Date: Tue, 13 Nov 2012 10:01:21 +0000
-Message-ID: <CAPcvp5FCDt5Sy9W7s4gsWuq7z9dATvk37hS_5XfrYepNiJN=nA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] x86, pci: add dummy pci device for early stage
-From: Andrew Murray <amurray@embedded-bits.co.uk>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, yinghai@kernel.org, mingo@redhat.com,
-        vgoyal@redhat.com, khalid@gonehiking.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
+Content-Disposition: inline
+In-Reply-To: <20121113074822.GA8409@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:HRGZAWP5E9If2XxqnPjBsS5O1xnAhbb6d4nEM8oTk35
+ WP1QFhZ16YYnb38gOdsIkJZwjaywsmNw7h114kjnj5CxDflNvF
+ DcRCe4+MGmxf6TtZoN0baG1yMCkPcSiNd1BIdSVriHZ9ar93t9
+ oFrDKphmZ5kRnm0fw+GFAcE522cCoXGtx+OFCPaQCzxR+M33Yu
+ 4PutdCmxZUI/K0nm9+g3Jd6pdv/TfdIczdQCfHDa+I2SDUAvwo
+ JT9t59OWwzUQkKY1D59mAW2N4YLWrBKUkxS59wbeZZyVNWLaFg
+ l6nZO+jVr7v29lT4fkEqeUW/xkRo4p/JSqyfegg2wAKhXTCkpT
+ ax6u7yZ1dbwqMKRKv27I76PQWhixwpujWAvqSTgMMTB1JXg7Zy
+ 2Ap8+mAKwUDz3S1uF7tp51wv2I6IuTCjpE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Some comments inline...
+--eAbsdosE1cNLO4uF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 13 November 2012 09:07, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
->
-> So we can pass pci_dev *dev to reuse some generic pci functions.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> ---
->  arch/x86/include/asm/pci-direct.h |    2 +
->  arch/x86/pci/early.c              |   75 +++++++++++++++++++++++++++++++++++++
->  2 files changed, 77 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pci-direct.h b/arch/x86/include/asm/pci-direct.h
-> index b1e7a45..b6360d3 100644
-> --- a/arch/x86/include/asm/pci-direct.h
-> +++ b/arch/x86/include/asm/pci-direct.h
-> @@ -18,4 +18,6 @@ extern int early_pci_allowed(void);
->  extern unsigned int pci_early_dump_regs;
->  extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
->  extern void early_dump_pci_devices(void);
-> +
-> +struct pci_dev *get_early_pci_dev(int num, int slot, int func);
->  #endif /* _ASM_X86_PCI_DIRECT_H */
-> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
-> index d1067d5..aea6b2b 100644
-> --- a/arch/x86/pci/early.c
-> +++ b/arch/x86/pci/early.c
-> @@ -109,3 +109,78 @@ void early_dump_pci_devices(void)
->                 }
->         }
->  }
-> +
-> +static __init int
-> +early_pci_read(struct pci_bus *bus, unsigned int devfn, int where,
-> +                       int size, u32 *value)
-> +{
-> +       int num, slot, func;
-> +
-> +       num = bus->number;
-> +       slot = devfn >> 3;
-> +       func = devfn & 7;
+On Tue, Nov 13, 2012 at 08:48:22AM +0100, Thierry Reding wrote:
+> On Tue, Nov 13, 2012 at 03:15:47PM +0800, Mark Zhang wrote:
+> > On 11/13/2012 05:55 AM, Thierry Reding wrote:
+[...]
+> > > +int tegra_output_init(struct drm_device *drm, struct tegra_output *o=
+utput)
+> > > +{
+> > > +       int connector, encoder, err;
+> > > +       enum of_gpio_flags flags;
+> > > +       struct device_node *ddc;
+> > > +       size_t size;
+> > > +
+> > > +       if (!output->of_node)
+> > > +               output->of_node =3D output->dev->of_node;
+> > > +
+> > > +       output->edid =3D of_get_property(output->of_node, "nvidia,edi=
+d", &size);
+> > > +
+> > > +       ddc =3D of_parse_phandle(output->of_node, "nvidia,ddc-i2c-bus=
+", 0);
+> > > +       if (ddc) {
+> > > +               output->ddc =3D of_find_i2c_adapter_by_node(ddc);
+> >=20
+> > The i2c adapter may not be ready at this time. For Tegra 2, the I2C bus
+> > for HDMI is not dedicated and we need the i2cmux driver loaded before
+> > this i2c can be used. It proved that sometimes i2cmux driver loads after
+> > drm driver.
+> >=20
+> > So we need to add some logics to support driver probe deferral here.
+> > Anyway, I'm just want you know about this and we can improve this later.
+>=20
+> Good point. Unfortunately tegra_output_init() isn't always used from
+> within .probe(), so it isn't quite easy to handle deferred probe here.
+> I'll have to take a look at how to solve this properly.
 
-You may want to use the PCI_SLOT and PCI_FUNC macros in
-include/linux/pci.h to determine values for slot and func.
+After a closer look at this I think what should be done here is split up
+tegra_output_init() into a tegra_output_parse() that does the DT parsing
+and tegra_output_init() that actually initializes the output.
 
-> +       switch (size) {
-> +       case 1:
-> +               *value = read_pci_config_byte(num, slot, func, where);
-> +               break;
-> +       case 2:
-> +               *value = read_pci_config_16(num, slot, func, where);
-> +               break;
-> +       case 4:
-> +               *value = read_pci_config(num, slot, func, where);
-> +               break;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static __init int
-> +early_pci_write(struct pci_bus *bus, unsigned int devfn, int where,
-> +                       int size, u32 value)
-> +{
-> +       int num, slot, func;
-> +
-> +       num = bus->number;
-> +       slot = devfn >> 3;
-> +       func = devfn & 7;
+I'll try to implement something like that for the next version.
 
-As above.
+Thierry
 
-> +       switch (size) {
-> +       case 1:
-> +               write_pci_config_byte(num, slot, func, where, (u8)value);
-> +               break;
-> +       case 2:
-> +               write_pci_config_16(num, slot, func, where, (u16)value);
-> +               break;
-> +       case 4:
-> +               write_pci_config(num, slot, func, where, (u32)value);
-> +               break;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static __initdata struct pci_ops pci_early_ops = {
-> +       .read  = early_pci_read,
-> +       .write = early_pci_write,
-> +};
-> +static __initdata struct pci_bus pci_early_bus = {
-> +       .ops = &pci_early_ops,
-> +};
-> +static __initdata char pci_early_init_name[8];
-> +static __initdata struct pci_dev pci_early_dev = {
-> +       .bus = &pci_early_bus,
-> +       .dev = {
-> +               .init_name = pci_early_init_name,
-> +       },
-> +};
-> +
-> +__init struct pci_dev *get_early_pci_dev(int num, int slot, int func)
-> +{
-> +       struct pci_dev *pdev;
-> +
-> +       pdev = &pci_early_dev;
-> +       pdev->devfn = (slot<<3) | (func & 7);
+--eAbsdosE1cNLO4uF
+Content-Type: application/pgp-signature
 
-You can use PCI_DEVFN here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-> +       pdev->bus->number = num;
-> +       sprintf((char *)pdev->dev.init_name, "%02x:%02x.%01x", num, slot, func);
-> +
-> +       return pdev;
-> +}
-> --
-> 1.7.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+iQIcBAEBAgAGBQJQohtnAAoJEN0jrNd/PrOhHVIP/2FY1h7O30G9SvHRHDvFXKKm
+ZPfCeoSPxyHu+cE4qVNn084NHttrYVuAcn1GUa4WeULVXP6RxGowKX2tAk1Ty/TQ
+PHZ9A4i2cQeG8NwP0c14AC1cEfJ0Td5ry0RFdjBWdjXgRS+qXWo1n+Xk+Rpljve9
+2Xi650YzOzdie8QIFaR7TkaiHAlkckhdts74oZBdsHAv4D+u1nvdb9UVd8Bx2K8C
+kL47mfzHjpFB3s7G17LbBZC8kssxzCpkOGhhGu8t7zHSLHqOcCtGKbxsTcCwiK7L
+Usxjb/+B/I59GexjkZ7wsiMiiQyWgjFtxVYfU9mrnQFhGNDo/SLStU8E5xQ8iHGd
+u6uYHxCz8OGwjPlwDsb7HIvmCozA/gpBjE69tzV4RDUNyQGReqL/bPIAXxLv1Ti3
+4FHhxwaZYPFix42EnQCLMkcaHn20RHwdwvUVPXIrGdWmIbo8SFF0Z+YN3Np8M1St
+8OFRr+sSv4AHry/TLXD6AZBWXpJCgaxRiTSpbCPi/ZWoTSbXSlg2AjqgECvXg5XN
+m8ZtdBJZ0edlo1fWcWSOXisnLXAnjhqzlSlEirE5s7JNvGDFqJAQSuNrDlEtuGz7
+SIeYNmCHwmh2u0oiecf7muH4yKcxE0Gr5P1Av+XzIUlzhnppGWlueYOmrmzBCXXH
+l4sgPAqi7NUwr0w+NXZe
+=5RWK
+-----END PGP SIGNATURE-----
 
-Andrew Murray
+--eAbsdosE1cNLO4uF--
