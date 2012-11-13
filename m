@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2KMS6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:58:37 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49453 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083Ab2KMS6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:58:36 -0500
+	id S1755651Ab2KMS7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:59:08 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43285 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755595Ab2KMS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:59:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,768,1344236400"; 
+   d="scan'208";a="219116110"
+Date: Tue, 13 Nov 2012 19:59:02 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH] MFD: twl-core: Fix chip ID for the twl6030-pwm module
+Message-ID: <20121113185902.GO27828@sortiz-mobl>
+References: <1351695277-8629-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <50A289BB.5030009@zytor.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
-	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
-	<1352755122-25660-29-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1211131638060.28049@kaball.uk.xensource.com>
-	<50A289BB.5030009@zytor.com>
-Date: Tue, 13 Nov 2012 10:58:34 -0800
-X-Google-Sender-Auth: PiUyC4t5aNhJm-cSCxQn2uwuxAE
-Message-ID: <CAE9FiQUw3Dt1N6ascvnGBdrDuADPaTfC9vdNW86cEv6hBWTYkQ@mail.gmail.com>
-Subject: Re: [PATCH 28/46] x86, mm: Add pointer about Xen mmu requirement for alloc_low_pages
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351695277-8629-1-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 9:56 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> When making references to git commits, please include the title of the
-> commit:
->
->  *
->  * Changing that is likely to break Xen, see commit:
->  *
->  *    279b706 x86,xen: introduce x86_init.mapping.pagetable_reserve
->  *
->  * for detailed information.
->
-> Otherwise it might be very confusing if we have an abbreviated hash
-> collision or end up having to change git to use another hash system.
+Hi Peter,
 
-updated to your version.
+On Wed, Oct 31, 2012 at 03:54:37PM +0100, Peter Ujfalusi wrote:
+> The correct chip id is 1 since the PWM module is on address 0x49. With the
+> current TWL6030_MODULE_ID1 the kernel will crash early since:
+> #define TWL6030_MODULE_ID1 0x0E
+> and
+> static struct twl_client twl_modules[4];
+> 
+> Down in the stack we try to get the module by:
+> struct twl_client	*twl = &twl_modules[chip];
+> 
+> Which obviously going to do nasty things.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+> Hi Samuel,
+> 
+> Can you push this patch to 3.7?
+Applied to my for-linus branch. This should make it to 3.7.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
