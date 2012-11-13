@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2KMH4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:56:55 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3934 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab2KMH4y (ORCPT
+	id S1754062Ab2KMH6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:58:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60418 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab2KMH6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:56:54 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 12 Nov 2012 23:56:48 -0800
-Message-ID: <50A1FE01.5090808@nvidia.com>
-Date: Tue, 13 Nov 2012 10:00:01 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 02:58:19 -0500
+Date: Tue, 13 Nov 2012 08:58:13 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH 1/7] I2c-nomadik: Fix the usage of
+ wait_for_completion_timeout
+Message-ID: <20121113075813.GA23119@pengutronix.de>
+References: <1352222317.15558.1584.camel@cliu38-desktop-build>
+ <20121112172651.GC15159@pengutronix.de>
+ <27240C0AC20F114CBF8149A2696CBE4A1C3952@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
-References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de> <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
+Content-Disposition: inline
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A1C3952@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.11.2012 15:59, Thierry Reding wrote:
-> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
-> support for host1x and the two display controllers found on the Tegra20
-> SoC. Each display controller can drive a separate RGB/LVDS output.
 
-Thanks Thierry for the hard work. I noticed the same thing Stephen
-noticed earlier - I couldn't compile the driver.
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Other than that, there were a couple of differences to the tree we've
-worked with and tested earlier: Tegra30 support was dropped and as a
-consequence so was IOMMU support.
 
-I'm perfectly fine with leaving out IOMMU support, because we had some
-problems with that and dma-buf. We were getting a bit worried about how
-to implement mapping and re-mapping dma-buf's without causing duplicate
-IOMMU mappings.
+> Thanks your pointing out. I just manually reviewed the code when found
+> this point. Would like to try some auto-script but failed:)
 
-Best regards,
-Terje
+I can suggest 'coccinelle' for that kind of job.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlCh/ZUACgkQD27XaX1/VRtfbwCgpxhJREFgmTFc6liGgO4gW6Pn
+OSQAoMQm7VZQHd45eDDe6yj1lYHdJdvl
+=Hbkr
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
