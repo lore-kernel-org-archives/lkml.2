@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab2KMWcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:32:54 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51894 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621Ab2KMWcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:32:51 -0500
-Date: Tue, 13 Nov 2012 14:23:50 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-Message-ID: <20121113222350.GH2489@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
- <20121113211602.GA30150@linux.vnet.ibm.com>
- <20121113133922.47144a50@chromoly>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113133922.47144a50@chromoly>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111322-3620-0000-0000-00000058ED4E
+	id S1755122Ab2KMWcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:32:41 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39661 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754682Ab2KMWcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:32:39 -0500
+Message-ID: <1352845961.17444.13.camel@joe-AO722>
+Subject: Re: [PATCH V2] wanrouter: Remove it and the drivers that depend on
+ it
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: rob@landley.net, harryxiyou@gmail.com, jdike@addtoit.com, richard@nod.at,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, chris@zankel.net, jcmvbkbc@gmail.com,
+        isdn@linux-pingi.de, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xiyoulinuxkernelgroup@googlegroups.com,
+        linux-kernel@zh-kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-xtensa@linux-xtensa.org, netdev@vger.kernel.org
+Date: Tue, 13 Nov 2012 14:32:41 -0800
+In-Reply-To: <20121113.171736.561094209116852795.davem@davemloft.net>
+References: <67fe0c5701a8c7cfe06b178cf04b1c5c06592714.1352548454.git.joe@perches.com>
+	 <20121113.144406.1610017702502358739.davem@davemloft.net>
+	 <1352837845.12850.3.camel@joe-AO722>
+	 <20121113.171736.561094209116852795.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 01:39:22PM -0800, Jacob Pan wrote:
-> On Tue, 13 Nov 2012 13:16:02 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Tue, 2012-11-13 at 17:17 -0500, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Tue, 13 Nov 2012 12:17:25 -0800
 > 
-> > > Please refer to Documentation/thermal/intel_powerclamp.txt for more
-> > > details.  
-> > 
-> > If I read this correctly, this forces a group of CPUs into idle for
-> > about 600 milliseconds at a time.  This would indeed delay grace
-> > periods, which could easily result in user complaints.  Also, given
-> > the default RCU_BOOST_DELAY of 500 milliseconds in kernels enabling
-> > RCU_BOOST, you would see needless RCU priority boosting.
-> > 
-> the default idle injection duration is 6ms. we adjust the sleep
-> interval to ensure idle ratio. So the idle duration stays the same once
-> set. So would it be safe to delay grace period for this small amount in
-> exchange for less over head in each injection period?
-
-Ah, 6ms of delay is much better than 600ms.  Should be OK (famous last
-words!).
-
-> > Of course, if the idle period extended for longer, you would see RCU
-> > CPU stall warnings.  And if the idle period extended indefinitely, you
-> > could hang the system -- the RCU callbacks on the idled CPU could not
-> > be invoked, and if one of those RCU callbacks was waking someone up,
-> > that someone would not be woken up.
-> > 
-> for the same algorithm, idle duration is not extended. the injected
-> idle loop also yield to pending softirqs, i guess that is what rcu
-> callbacks are using?
-
-For most kernel configuration options, it does use softirq.  And yes,
-the kthread you are using would yield to softirqs -- but only as long
-as softirq processing hasn't moved over to ksoftirqd.  Longer term,
-RCU will be moving from softirq to kthreads, though, and these might be
-prempted by your powerclamp kthread, depending on priorities.  It looks
-like you use RT prio 50, which would usually preempt the RCU kthreads
-(unless someone changed the priorities).
-
-> > It looks like you could end up with part of the system powerclamped
-> > in some situations, and with all of it powerclamped in other
-> > situations. Is that the case, or am I confused?
-> > 
-> could you explain the part that is partially powerclamped?
-
-Suppose that a given system has two sockets.  Are the two sockets
-powerclamped independently, or at the same time?  My guess was the
-former, but looking at the code again, it looks like the latter.
-So it is a good thing I asked, I guess.  ;-)
-
- 							Thanx, Paul
-
-> [Jacob Pan]
+> > That seems an odd workflow as it leaves dangling CONFIG_<foo>
+> > options set, but I guess it doesn't hurt so here it is.
 > 
-> -- 
-> Thanks,
+> As you said it's harmless, and more importantly it avoids
+> unnecessary conflicts.
 > 
-> Jacob
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > I just removed the modified arch/.../<foo>defconfig files.
 > 
+> Something is not right here:
+
+> [davem@drr net-next]$ git am --signoff V2-wanrouter-Remove-it-and-the-drivers-that-depend-on-it.patch 
+> Applying: wanrouter: Remove it and the drivers that depend on it
+> error: removal patch leaves file contents
+> error: net/wanrouter/Kconfig: patch does not apply
+> error: removal patch leaves file contents
+> error: net/wanrouter/Makefile: patch does not apply
+> error: removal patch leaves file contents
+> error: net/wanrouter/patchlevel: patch does not apply
+> error: removal patch leaves file contents
+> error: net/wanrouter/wanmain.c: patch does not apply
+> error: removal patch leaves file contents
+> error: net/wanrouter/wanproc.c: patch does not apply
+> error: removal patch leaves file contents
+> error: drivers/net/wan/cycx_drv.c: patch does not apply
+> error: removal patch leaves file contents
+> error: drivers/net/wan/cycx_main.c: patch does not apply
+> error: removal patch leaves file contents
+> error: drivers/net/wan/cycx_x25.c: patch does not apply
+> error: removal patch leaves file contents
+> error: include/linux/cyclomx.h: patch does not apply
+> error: removal patch leaves file contents
+> error: include/linux/cycx_drv.h: patch does not apply
+> error: removal patch leaves file contents
+> error: include/linux/wanrouter.h: patch does not apply
+> error: removal patch leaves file contents
+> error: include/uapi/linux/wanrouter.h: patch does not apply
+
+Right, that is unexpected/odd/interesting.
+
+I was trying to save mailing list bandwidth by reducing
+the patch size.
+
+I generated this with
+	$ git format-patch -M -D
+but it doesn't apply here either. :(
+
+Using
+	$ git format-patch -M
+does apply correctly.
+
+It's quite a bit larger though. (120KB vs 14)
+I'll send the large patch just to netdev.
+
+Joe
 
