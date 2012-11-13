@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab2KMRzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:55:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36826 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab2KMRzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:55:09 -0500
-Date: Tue, 13 Nov 2012 18:55:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + fs-epoll-add-procfs-fdinfo-helper.patch added to -mm tree
-Message-ID: <20121113175538.GA21872@redhat.com>
-References: <20121113145050.GA13691@redhat.com> <20121113155313.GU6511@moon> <20121113162056.GK7808@moon> <20121113164951.GA18665@redhat.com> <20121113170159.GW6511@moon> <20121113171422.GM7808@moon> <20121113174706.GA20626@redhat.com>
+	id S1755468Ab2KMRz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:55:26 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:35101 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab2KMRzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 12:55:23 -0500
+Date: Tue, 13 Nov 2012 18:55:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20121113175517.GA12824@gmail.com>
+References: <1351602159-10340-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121113174706.GA20626@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1351602159-10340-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Damn, sorry for noise...
 
-On 11/13, Oleg Nesterov wrote:
->
-> On 11/13, Cyrill Gorcunov wrote:
-> >
-> > On Tue, Nov 13, 2012 at 09:01:59PM +0400, Cyrill Gorcunov wrote:
-> > >
-> > The sigmask is read in lockless manner for a sake of
-> > code simplicity, thus if precise data needed here
-> > the tasks which refer to the signalfd should be
-> > stopped before read.
->
-> Yes, I think this is fine, and this patch should replace
-> fs-epoll-add-procfs-fdinfo-helper.patch in -mm.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-I meant fdinfo-show-sigmask-for-signalfd-fd.patch
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 0d855354ea351bec6b222e9fea86a876cfafdcb6:
+> 
+>   perf, powerpc: Fix hw breakpoints returning -ENOSPC (2012-10-30 10:07:58 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to f787d9519fb10411f2948f5b9957a1669879ba84:
+> 
+>   perf tools: Fix strbuf_addf() when the buffer needs to grow (2012-10-30 10:32:56 -0200)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes
+> 
+> .  Fix numa topology printing, from Namhyung Kim.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Namhyung Kim (2):
+>       perf header: Fix numa topology printing
+>       perf tools: Fix strbuf_addf() when the buffer needs to grow
+> 
+>  tools/perf/util/header.c |    2 ++
+>  tools/perf/util/strbuf.c |    8 ++++----
+>  2 files changed, 6 insertions(+), 4 deletions(-)
 
-And the subject was wrong from the very beginning, sorry for confusion.
+Pulled, thanks Arnaldo!
 
-Oleg.
-
+	Ingo
