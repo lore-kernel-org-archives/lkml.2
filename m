@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2KMP3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:29:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60732 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab2KMP25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:28:57 -0500
-Date: Tue, 13 Nov 2012 07:26:10 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-c46c05a7cfb4ce34d1b7cfbf77a58d98c7be6210@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, mgorman@suse.de, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, mgorman@suse.de, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm: Introduce sched_feat_numa()
-Git-Commit-ID: c46c05a7cfb4ce34d1b7cfbf77a58d98c7be6210
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 07:26:21 -0800 (PST)
+	id S1754298Ab2KMPbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:31:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60710 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753981Ab2KMPbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 10:31:22 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
+Subject: [RFC 5/5] cgroup: remove css_get_next
+Date: Tue, 13 Nov 2012 16:30:39 +0100
+Message-Id: <1352820639-13521-6-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
+References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c46c05a7cfb4ce34d1b7cfbf77a58d98c7be6210
-Gitweb:     http://git.kernel.org/tip/c46c05a7cfb4ce34d1b7cfbf77a58d98c7be6210
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 1 May 2012 23:47:08 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 13 Nov 2012 14:11:48 +0100
+Now that we have generic and well ordered cgroup tree walkers there is
+no need to keep css_get_next in the place.
 
-sched, numa, mm: Introduce sched_feat_numa()
-
-Avoid a few #ifdef's later on.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-sxrRsaqz4cj1plnzyjbtWzbf@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- kernel/sched/sched.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ include/linux/cgroup.h |    7 -------
+ kernel/cgroup.c        |   49 ------------------------------------------------
+ 2 files changed, 56 deletions(-)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 5eca173..6ac4056 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -663,6 +663,12 @@ extern struct static_key sched_feat_keys[__SCHED_FEAT_NR];
- #define sched_feat(x) (sysctl_sched_features & (1UL << __SCHED_FEAT_##x))
- #endif /* SCHED_DEBUG && HAVE_JUMP_LABEL */
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 329eb46..ba46041 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -676,13 +676,6 @@ void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css);
  
-+#ifdef CONFIG_NUMA_BALANCING
-+#define sched_feat_numa(x) sched_feat(x)
-+#else
-+#define sched_feat_numa(x) (0)
-+#endif
-+
- static inline u64 global_rt_period(void)
- {
- 	return (u64)sysctl_sched_rt_period * NSEC_PER_USEC;
+ struct cgroup_subsys_state *css_lookup(struct cgroup_subsys *ss, int id);
+ 
+-/*
+- * Get a cgroup whose id is greater than or equal to id under tree of root.
+- * Returning a cgroup_subsys_state or NULL.
+- */
+-struct cgroup_subsys_state *css_get_next(struct cgroup_subsys *ss, int id,
+-		struct cgroup_subsys_state *root, int *foundid);
+-
+ /* Returns true if root is ancestor of cg */
+ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+ 		     const struct cgroup_subsys_state *root);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d51958a..4d874b2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5230,55 +5230,6 @@ struct cgroup_subsys_state *css_lookup(struct cgroup_subsys *ss, int id)
+ }
+ EXPORT_SYMBOL_GPL(css_lookup);
+ 
+-/**
+- * css_get_next - lookup next cgroup under specified hierarchy.
+- * @ss: pointer to subsystem
+- * @id: current position of iteration.
+- * @root: pointer to css. search tree under this.
+- * @foundid: position of found object.
+- *
+- * Search next css under the specified hierarchy of rootid. Calling under
+- * rcu_read_lock() is necessary. Returns NULL if it reaches the end.
+- */
+-struct cgroup_subsys_state *
+-css_get_next(struct cgroup_subsys *ss, int id,
+-	     struct cgroup_subsys_state *root, int *foundid)
+-{
+-	struct cgroup_subsys_state *ret = NULL;
+-	struct css_id *tmp;
+-	int tmpid;
+-	int rootid = css_id(root);
+-	int depth = css_depth(root);
+-
+-	if (!rootid)
+-		return NULL;
+-
+-	BUG_ON(!ss->use_id);
+-	WARN_ON_ONCE(!rcu_read_lock_held());
+-
+-	/* fill start point for scan */
+-	tmpid = id;
+-	while (1) {
+-		/*
+-		 * scan next entry from bitmap(tree), tmpid is updated after
+-		 * idr_get_next().
+-		 */
+-		tmp = idr_get_next(&ss->idr, &tmpid);
+-		if (!tmp)
+-			break;
+-		if (tmp->depth >= depth && tmp->stack[depth] == rootid) {
+-			ret = rcu_dereference(tmp->css);
+-			if (ret) {
+-				*foundid = tmpid;
+-				break;
+-			}
+-		}
+-		/* continue to scan from next id */
+-		tmpid = tmpid + 1;
+-	}
+-	return ret;
+-}
+-
+ /*
+  * get corresponding css from file open on cgroupfs directory
+  */
+-- 
+1.7.10.4
+
