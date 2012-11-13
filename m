@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab2KMDC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:02:28 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36312 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2KMDCX (ORCPT
+	id S1754597Ab2KMDEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:04:54 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:65334 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2KMDC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:02:23 -0500
+	Mon, 12 Nov 2012 22:02:27 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, containers@lists.linux-foundation.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: mhocko@suse.cz, glommer@parallels.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/17] cgroup: make CSS_* flags bit masks instead of bit positions
-Date: Mon, 12 Nov 2012 19:01:34 -0800
-Message-Id: <1352775704-9023-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/17] cgroup: lock cgroup_mutex in cgroup_init_subsys()
+Date: Mon, 12 Nov 2012 19:01:36 -0800
+Message-Id: <1352775704-9023-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352775704-9023-1-git-send-email-tj@kernel.org>
 References: <1352775704-9023-1-git-send-email-tj@kernel.org>
@@ -21,71 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, CSS_* flags are defined as bit positions and manipulated
-using atomic bitops.  There's no reason to use atomic bitops for them
-and bit positions are clunkier to deal with than bit masks.  Make
-CSS_* bit masks instead and use the usual C bitwise operators to
-access them.
+Make cgroup_init_subsys() grab cgroup_mutex while initializing a
+subsystem so that all helpers and callbacks are called under the
+context they expect.  This isn't strictly necessary as
+cgroup_init_subsys() doesn't race with anybody but will allow adding
+lockdep assertions.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h | 8 ++++----
- kernel/cgroup.c        | 2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/cgroup.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 9dcbfa1..e9f07ef 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -81,7 +81,7 @@ struct cgroup_subsys_state {
- 
- /* bits in struct cgroup_subsys_state flags field */
- enum {
--	CSS_ROOT, /* This CSS is the root of the subsystem */
-+	CSS_ROOT	= (1 << 0), /* this CSS is the root of the subsystem */
- };
- 
- /* Caller must verify that the css is not for root cgroup */
-@@ -100,7 +100,7 @@ static inline void __css_get(struct cgroup_subsys_state *css, int count)
- static inline void css_get(struct cgroup_subsys_state *css)
- {
- 	/* We don't need to reference count the root state */
--	if (!test_bit(CSS_ROOT, &css->flags))
-+	if (!(css->flags & CSS_ROOT))
- 		__css_get(css, 1);
- }
- 
-@@ -113,7 +113,7 @@ static inline void css_get(struct cgroup_subsys_state *css)
- extern bool __css_tryget(struct cgroup_subsys_state *css);
- static inline bool css_tryget(struct cgroup_subsys_state *css)
- {
--	if (test_bit(CSS_ROOT, &css->flags))
-+	if (css->flags & CSS_ROOT)
- 		return true;
- 	return __css_tryget(css);
- }
-@@ -126,7 +126,7 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
- extern void __css_put(struct cgroup_subsys_state *css);
- static inline void css_put(struct cgroup_subsys_state *css)
- {
--	if (!test_bit(CSS_ROOT, &css->flags))
-+	if (!(css->flags & CSS_ROOT))
- 		__css_put(css);
- }
- 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a91e7ad..d849efd 100644
+index 6df17cb..76f1a01 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4020,7 +4020,7 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
- 	css->flags = 0;
- 	css->id = NULL;
- 	if (cgrp == dummytop)
--		set_bit(CSS_ROOT, &css->flags);
-+		css->flags |= CSS_ROOT;
- 	BUG_ON(cgrp->subsys[ss->subsys_id]);
- 	cgrp->subsys[ss->subsys_id] = css;
+@@ -4317,6 +4317,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
  
+ 	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
+ 
++	mutex_lock(&cgroup_mutex);
++
+ 	/* init base cftset */
+ 	cgroup_init_cftsets(ss);
+ 
+@@ -4346,6 +4348,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 	if (ss->post_create)
+ 		ss->post_create(dummytop);
+ 
++	mutex_unlock(&cgroup_mutex);
++
+ 	/* this function shouldn't be used with modular subsystems, since they
+ 	 * need to register a subsys_id, among other things */
+ 	BUG_ON(ss->module);
 -- 
 1.7.11.7
 
