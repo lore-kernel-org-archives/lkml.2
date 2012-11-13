@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab2KMVLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:11:06 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:34220 "EHLO zene.cmpxchg.org"
+	id S932175Ab2KMVLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:11:44 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:49574 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755846Ab2KMVLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:11:04 -0500
-Date: Tue, 13 Nov 2012 16:10:41 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list error
- handling
-Message-ID: <20121113211041.GB1543@cmpxchg.org>
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
- <1351251453-6140-4-git-send-email-mhocko@suse.cz>
- <508E8B95.406@parallels.com>
- <20121029150022.a595b866.akpm@linux-foundation.org>
- <20121030103559.GA7394@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030103559.GA7394@dhcp22.suse.cz>
+	id S1755857Ab2KMVLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 16:11:43 -0500
+X-Greylist: delayed 795 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Nov 2012 16:11:42 EST
+From: Simon Marchi <simon.marchi@polymtl.ca>
+To: cmetcalf@tilera.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Simon Marchi <simon.marchi@polymtl.ca>
+Subject: [PATCH] tilegx: request_irq with a non-null device name
+Date: Tue, 13 Nov 2012 15:58:20 -0500
+Message-Id: <1352840300-27814-1-git-send-email-simon.marchi@polymtl.ca>
+X-Mailer: git-send-email 1.7.1
+X-Poly-FromMTA: ([132.207.72.18]) at Tue, 13 Nov 2012 20:58:21 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:35:59AM +0100, Michal Hocko wrote:
-> On Mon 29-10-12 15:00:22, Andrew Morton wrote:
-> > On Mon, 29 Oct 2012 17:58:45 +0400
-> > Glauber Costa <glommer@parallels.com> wrote:
-> > 
-> > > > + * move charges to its parent or the root cgroup if the group has no
-> > > > + * parent (aka use_hierarchy==0).
-> > > > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
-> > > > + * mem_cgroup_move_account fails) the failure is always temporary and
-> > > > + * it signals a race with a page removal/uncharge or migration. In the
-> > > > + * first case the page is on the way out and it will vanish from the LRU
-> > > > + * on the next attempt and the call should be retried later.
-> > > > + * Isolation from the LRU fails only if page has been isolated from
-> > > > + * the LRU since we looked at it and that usually means either global
-> > > > + * reclaim or migration going on. The page will either get back to the
-> > > > + * LRU or vanish.
-> > > 
-> > > I just wonder for how long can it go in the worst case?
-> > 
-> > If the kernel is uniprocessor and the caller is SCHED_FIFO: ad infinitum!
-> 
-> You are right, if the rmdir (resp. echo > force_empty) at SCHED_FIFO
-> races with put_page (on a shared page) which gets preempted after
-> put_page_testzero and before __page_cache_release then we are screwed:
-> 
-> 						put_page(page)
-> 						  put_page_testzero
-> 						  <preempted and page still on LRU>
-> mem_cgroup_force_empty_list
->   page = list_entry(list->prev, struct page, lru);
->   mem_cgroup_move_parent(page)
->     get_page_unless_zero <fails>
->   cond_resched() <scheduled again>
-> 
-> The race window is really small but it is definitely possible. I am not
-> happy about this state and it should be probably mentioned in the
-> patch description but I do not see any way around (except for hacks like
-> sched_setscheduler for the current which is, ehm...) and still keep
-> do_not_fail contract here.
-> 
-> Can we consider this as a corner case (it is much easier to kill a
-> machine with SCHED_FIFO than this anyway) or the concern is really
-> strong and we should come with a solution before this can get merged?
+This patch simply makes the tilegx net driver call request_irq with a
+non-null name. It makes the output in /proc/interrupts more obvious, but
+also helps tools that don't expect to find null there.
 
-Wouldn't the much bigger race window be reclaim having the page
-isolated and SCHED_FIFO preventing it from putback?
+Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+---
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I also don't think this is a new class of problem, though.
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 4e98100..66e025a 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -917,7 +917,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+ 	ingress_irq = rc;
+ 	tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
+ 	rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
+-			 0, NULL, NULL);
++			 0, "tile_net", NULL);
+ 	if (rc != 0) {
+ 		netdev_err(dev, "request_irq failed: %d\n", rc);
+ 		destroy_irq(ingress_irq);
+-- 
+1.7.1
 
-Would it make sense to stick a wait_on_page_locked() in there just so
-that we don't busy spin on a page under migration/reclaim?
