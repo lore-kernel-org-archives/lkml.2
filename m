@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab2KMLpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:45:46 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58236 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab2KMLpn (ORCPT
+	id S1753859Ab2KMLqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:46:54 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45770 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab2KMLqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:45:43 -0500
+	Tue, 13 Nov 2012 06:46:52 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: raven@themaw.net
 Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com, mszeredi@suse.cz
-Subject: [PATCH 1/2] autofs4: allow autofs to work outside the initial PID namespace
-Date: Tue, 13 Nov 2012 12:48:02 +0100
-Message-ID: <87sj8drafh.fsf@tucsk.pomaz.szeredi.hu>
+        serge.hallyn@canonical.com, ebiederm@xmission.com
+Subject: [PATCH 2/2] autofs4: translate pids to the right namespace for the daemon
+References: <87sj8drafh.fsf@tucsk.pomaz.szeredi.hu>
+Date: Tue, 13 Nov 2012 12:49:04 +0100
+In-Reply-To: <87sj8drafh.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
+	of "Tue, 13 Nov 2012 12:48:02 +0100")
+Message-ID: <87obj1radr.fsf@tucsk.pomaz.szeredi.hu>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,234 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gone over this issue once again, with a deeper understanding of what's
-actually needed and updated the patches.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-And I think these patches clearly fix the requirement of the customer:
-autofs4 can be started in a "container" and it will be able to serve
-mounts in that container.
+The PID and the TGID of the process tringgering the mount are sent to the
+daemon.  Currently the global pid values are sent (ones valid in the initial pid
+namespace) but this is wrong if the autofs daemon itself is not running in the
+initial pid namespace.
 
-If second patch makes sure that triggers from unrelated pid namespaces
-are not honoured (because they can't be honoured properly).
+So send the pid values that are valid in the namespace of the autofs daemon.
 
-Untested, for review only at this point.
+The namespace to use is taken from the oz_pgrp pid pointer, which was set at
+mount time to the mounting process' pid namespace.
 
-Thanks,
-Miklos
+If the pid translation fails (the triggering process is in an unrelated pid
+namespace) then the automount fails with ENOENT.
 
-
-----
-From: Sukadev Bhattiprolu <sukadev@us.ibm.com>
-
-This patch enables autofs4 to work in a "container".  oz_pgrp is converted from
-pid_t to struct pid and this is stored at mount time based on the "pgrp=" option
-or if the option is missing then the current pgrp.
-
-The "pgrp=" option is interpreted in the PID namespace of the current process.
-This option is flawed in that it doesn't carry the namespace information, so it
-should be deprecated.  AFAICS the autofs daemon always sends the current pgrp,
-which is the default anyway.
-
-The oz_pgrp is also set from the AUTOFS_DEV_IOCTL_SETPIPEFD_CMD ioctl.  This
-ioctl sets oz_pgrp to the current pgrp.  It is not allowed to change the pid
-namespace.
-
-oz_pgrp is used mainly to determine whether the process traversing the autofs
-mount tree is the autofs daemon itself or not.  This function now compares the
-pid pointers instead of the pid_t values.
-
-One other use of oz_pgrp is in autofs4_show_options.  There is shows the
-virtual pid number (i.e. the one that is valid inside the PID namespace of the
-calling process)
-
-For debugging printk convert oz_pgrp to the value in the initial pid namespace.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Cc: Serge Hallyn <serue@us.ibm.com>
+Cc: Serge E. Hallyn <serue@us.ibm.com>
 Cc: Eric Biederman <ebiederm@xmission.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/autofs4/autofs_i.h  |    4 ++--
- fs/autofs4/dev-ioctl.c |   16 ++++++++++++++--
- fs/autofs4/inode.c     |   33 +++++++++++++++++++++++++--------
- 3 files changed, 41 insertions(+), 12 deletions(-)
-Index: linux-2.6/fs/autofs4/autofs_i.h
+ fs/autofs4/waitq.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+03944aae0b9cb4a36d091f275d2f2217447b27ec
+Index: linux-2.6/fs/autofs4/waitq.c
 ===================================================================
---- linux-2.6.orig/fs/autofs4/autofs_i.h	2012-11-12 17:55:28.000000000 +0100
-+++ linux-2.6/fs/autofs4/autofs_i.h	2012-11-12 19:09:40.000000000 +0100
-@@ -104,7 +104,7 @@ struct autofs_sb_info {
- 	u32 magic;
- 	int pipefd;
- 	struct file *pipe;
--	pid_t oz_pgrp;
-+	struct pid *oz_pgrp;
- 	int catatonic;
- 	int version;
- 	int sub_version;
-@@ -139,7 +139,7 @@ static inline struct autofs_info *autofs
-    filesystem without "magic".) */
+--- linux-2.6.orig/fs/autofs4/waitq.c	2012-11-12 19:07:06.000000000 +0100
++++ linux-2.6/fs/autofs4/waitq.c	2012-11-12 19:57:10.000000000 +0100
+@@ -354,11 +354,23 @@ int autofs4_wait(struct autofs_sb_info *
+ 	struct qstr qstr;
+ 	char *name;
+ 	int status, ret, type;
++	pid_t pid;
++	pid_t tgid;
  
- static inline int autofs4_oz_mode(struct autofs_sb_info *sbi) {
--	return sbi->catatonic || task_pgrp_nr(current) == sbi->oz_pgrp;
-+	return sbi->catatonic || task_pgrp(current) == sbi->oz_pgrp;
- }
+ 	/* In catatonic mode, we don't wait for nobody */
+ 	if (sbi->catatonic)
+ 		return -ENOENT;
  
- /* Does a dentry have some pending activity? */
-Index: linux-2.6/fs/autofs4/inode.c
-===================================================================
---- linux-2.6.orig/fs/autofs4/inode.c	2012-11-12 17:55:28.000000000 +0100
-+++ linux-2.6/fs/autofs4/inode.c	2012-11-12 19:09:35.000000000 +0100
-@@ -62,6 +62,8 @@ void autofs4_kill_sb(struct super_block
- 	/* Free wait queues, close pipe */
- 	autofs4_catatonic_mode(sbi);
- 
-+	put_pid(sbi->oz_pgrp);
++	/*
++	 * Try translating pids to the namespace of the daemon.
++	 *
++	 * Zero means failure: we are in an unrelated pid namespace.
++	 */
++	pid = task_pid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
++	tgid = task_tgid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
++	if (pid == 0 || tgid == 0)
++		return -ENOENT;
 +
- 	sb->s_fs_info = NULL;
- 	kfree(sbi);
- 
-@@ -83,7 +85,7 @@ static int autofs4_show_options(struct s
- 		seq_printf(m, ",uid=%u", root_inode->i_uid);
- 	if (root_inode->i_gid != 0)
- 		seq_printf(m, ",gid=%u", root_inode->i_gid);
--	seq_printf(m, ",pgrp=%d", sbi->oz_pgrp);
-+	seq_printf(m, ",pgrp=%d", pid_vnr(sbi->oz_pgrp));
- 	seq_printf(m, ",timeout=%lu", sbi->exp_timeout/HZ);
- 	seq_printf(m, ",minproto=%d", sbi->min_proto);
- 	seq_printf(m, ",maxproto=%d", sbi->max_proto);
-@@ -127,7 +129,8 @@ static const match_table_t tokens = {
- };
- 
- static int parse_options(char *options, int *pipefd, uid_t *uid, gid_t *gid,
--		pid_t *pgrp, unsigned int *type, int *minproto, int *maxproto)
-+			 int *pgrp, bool *pgrp_set, unsigned int *type,
-+			 int *minproto, int *maxproto)
- {
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
-@@ -135,7 +138,6 @@ static int parse_options(char *options,
- 
- 	*uid = current_uid();
- 	*gid = current_gid();
--	*pgrp = task_pgrp_nr(current);
- 
- 	*minproto = AUTOFS_MIN_PROTO_VERSION;
- 	*maxproto = AUTOFS_MAX_PROTO_VERSION;
-@@ -170,6 +172,7 @@ static int parse_options(char *options,
- 			if (match_int(args, &option))
- 				return 1;
- 			*pgrp = option;
-+			*pgrp_set = true;
- 			break;
- 		case Opt_minproto:
- 			if (match_int(args, &option))
-@@ -205,6 +208,8 @@ int autofs4_fill_super(struct super_bloc
- 	int pipefd;
- 	struct autofs_sb_info *sbi;
- 	struct autofs_info *ino;
-+	int pgrp;
-+	bool pgrp_set = false;
- 
- 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
- 	if (!sbi)
-@@ -217,7 +222,7 @@ int autofs4_fill_super(struct super_bloc
- 	sbi->pipe = NULL;
- 	sbi->catatonic = 1;
- 	sbi->exp_timeout = 0;
--	sbi->oz_pgrp = task_pgrp_nr(current);
-+	sbi->oz_pgrp = NULL;
- 	sbi->sb = s;
- 	sbi->version = 0;
- 	sbi->sub_version = 0;
-@@ -254,12 +259,23 @@ int autofs4_fill_super(struct super_bloc
- 
- 	/* Can this call block? */
- 	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
--				&sbi->oz_pgrp, &sbi->type, &sbi->min_proto,
--				&sbi->max_proto)) {
-+			  &pgrp, &pgrp_set, &sbi->type, &sbi->min_proto,
-+			  &sbi->max_proto)) {
- 		printk("autofs: called with bogus options\n");
- 		goto fail_dput;
- 	}
- 
-+	if (pgrp_set) {
-+		sbi->oz_pgrp = find_get_pid(pgrp);
-+		if (!sbi->oz_pgrp) {
-+			pr_warn("autofs: could not find process group %d\n",
-+				pgrp);
-+			goto fail_dput;
-+		}
-+	} else {
-+		sbi->oz_pgrp = get_task_pid(current, PIDTYPE_PGID);
-+	}
-+
- 	if (autofs_type_trigger(sbi->type))
- 		__managed_dentry_set_managed(root);
- 
-@@ -283,9 +299,9 @@ int autofs4_fill_super(struct super_bloc
- 		sbi->version = sbi->max_proto;
- 	sbi->sub_version = AUTOFS_PROTO_SUBVERSION;
- 
--	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, sbi->oz_pgrp);
-+	DPRINTK("pipe fd = %d, pgrp = %u", pipefd, pid_nr(sbi->oz_pgrp));
- 	pipe = fget(pipefd);
--	
-+
- 	if (!pipe) {
- 		printk("autofs: could not open pipe file descriptor\n");
- 		goto fail_dput;
-@@ -315,6 +331,7 @@ int autofs4_fill_super(struct super_bloc
- fail_ino:
- 	kfree(ino);
- fail_free:
-+	put_pid(sbi->oz_pgrp);
- 	kfree(sbi);
- 	s->s_fs_info = NULL;
- fail_unlock:
-Index: linux-2.6/fs/autofs4/dev-ioctl.c
-===================================================================
---- linux-2.6.orig/fs/autofs4/dev-ioctl.c	2012-11-12 17:55:28.000000000 +0100
-+++ linux-2.6/fs/autofs4/dev-ioctl.c	2012-11-12 20:41:26.000000000 +0100
-@@ -346,6 +346,7 @@ static int autofs_dev_ioctl_setpipefd(st
- {
- 	int pipefd;
- 	int err = 0;
-+	struct pid *new_pid = NULL;
- 
- 	if (param->setpipefd.pipefd == -1)
- 		return -EINVAL;
-@@ -357,7 +358,17 @@ static int autofs_dev_ioctl_setpipefd(st
+ 	if (!dentry->d_inode) {
+ 		/*
+ 		 * A wait for a negative dentry is invalid for certain
+@@ -424,8 +436,8 @@ int autofs4_wait(struct autofs_sb_info *
+ 		wq->ino = autofs4_get_ino(sbi);
+ 		wq->uid = current_uid();
+ 		wq->gid = current_gid();
+-		wq->pid = current->pid;
+-		wq->tgid = current->tgid;
++		wq->pid = pid;
++		wq->tgid = tgid;
+ 		wq->status = -EINTR; /* Status return if interrupted */
+ 		wq->wait_ctr = 2;
  		mutex_unlock(&sbi->wq_mutex);
- 		return -EBUSY;
- 	} else {
--		struct file *pipe = fget(pipefd);
-+		struct file *pipe;
-+
-+		new_pid = get_task_pid(current, PIDTYPE_PGID);
-+
-+		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
-+			AUTOFS_WARN("Not allowed to change PID namespace");
-+			err = -EINVAL;
-+			goto out;
-+		}
-+
-+		pipe = fget(pipefd);
- 		if (!pipe) {
- 			err = -EBADF;
- 			goto out;
-@@ -367,12 +378,13 @@ static int autofs_dev_ioctl_setpipefd(st
- 			fput(pipe);
- 			goto out;
- 		}
--		sbi->oz_pgrp = task_pgrp_nr(current);
-+		swap(sbi->oz_pgrp, new_pid);
- 		sbi->pipefd = pipefd;
- 		sbi->pipe = pipe;
- 		sbi->catatonic = 0;
- 	}
- out:
-+	put_pid(new_pid);
- 	mutex_unlock(&sbi->wq_mutex);
- 	return err;
- }
