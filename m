@@ -1,125 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab2KMRf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:35:58 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63613 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2KMRfN (ORCPT
+	id S1755424Ab2KMRhM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:37:12 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39445 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab2KMRhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:35:13 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH v3 1/2] sg_io: pass request_queue to blk_verify_command
-Date: Tue, 13 Nov 2012 18:25:12 +0100
-Message-Id: <1352827513-29890-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1352827513-29890-1-git-send-email-pbonzini@redhat.com>
-References: <1352827513-29890-1-git-send-email-pbonzini@redhat.com>
+	Tue, 13 Nov 2012 12:37:10 -0500
+Message-ID: <50A28542.8020406@wwwdotorg.org>
+Date: Tue, 13 Nov 2012 10:37:06 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mark Zhang <markz@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de> <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de> <50A1F3A3.40905@nvidia.com>
+In-Reply-To: <50A1F3A3.40905@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the blk_verify_command function to let it look at per-queue
-data.  This will be done in the next patch.
+On 11/13/2012 12:15 AM, Mark Zhang wrote:
+> On 11/13/2012 05:55 AM, Thierry Reding wrote:
+>> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+>> support for host1x and the two display controllers found on the Tegra20
+>> SoC. Each display controller can drive a separate RGB/LVDS output.
 
-Cc: linux-scsi@vger.kernel.org
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Ric Wheeler <rwheeler@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-	v2->v3: separated from "block: add back queue-private command filter"
+Mark, when you're replying to a long patch, it's useful to quote only
+the code you're directly responding to; slowly scrolling through your
+email to find your comments is rather error-prone and time-consuming.
 
- block/bsg.c            |    2 +-
- block/scsi_ioctl.c     |    7 ++++---
- drivers/scsi/sg.c      |    3 ++-
- include/linux/blkdev.h |    3 ++-
- 4 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/block/bsg.c b/block/bsg.c
-index ff64ae3..eb5ad59 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -187,7 +187,7 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
- 		return -EFAULT;
- 
- 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
--		if (blk_verify_command(rq->cmd, has_write_perm))
-+		if (blk_verify_command(q, rq->cmd, has_write_perm))
- 			return -EPERM;
- 	} else if (!capable(CAP_SYS_RAWIO))
- 		return -EPERM;
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 9a87daa..a737562 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -196,7 +196,8 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
- }
- 
--int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
-+int blk_verify_command(struct request_queue *q,
-+		       unsigned char *cmd, fmode_t has_write_perm)
- {
- 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
- 
-@@ -225,7 +226,7 @@ static int blk_fill_sghdr_rq(struct request_queue *q, struct request *rq,
- {
- 	if (copy_from_user(rq->cmd, hdr->cmdp, hdr->cmd_len))
- 		return -EFAULT;
--	if (blk_verify_command(rq->cmd, mode & FMODE_WRITE))
-+	if (blk_verify_command(q, rq->cmd, mode & FMODE_WRITE))
- 		return -EPERM;
- 
- 	/*
-@@ -472,7 +473,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	if (in_len && copy_from_user(buffer, sic->data + cmdlen, in_len))
- 		goto error;
- 
--	err = blk_verify_command(rq->cmd, mode & FMODE_WRITE);
-+	err = blk_verify_command(q, rq->cmd, mode & FMODE_WRITE);
- 	if (err)
- 		goto error;
- 
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index be2c9a6..cab816f 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -217,11 +217,12 @@ static void sg_put_dev(Sg_device *sdp);
- static int sg_allow_access(struct file *filp, unsigned char *cmd)
- {
- 	struct sg_fd *sfp = filp->private_data;
-+	struct request_queue *q = sfp->parentdp->device->request_queue;
- 
- 	if (sfp->parentdp->device->type == TYPE_SCANNER)
- 		return 0;
- 
--	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
-+	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
- }
- 
- static int get_exclude(Sg_device *sdp)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1756001..69a5e55 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1053,7 +1053,8 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
- 				    gfp_mask);
- }
- 
--extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
-+extern int blk_verify_command(struct request_queue *q,
-+			      unsigned char *cmd, fmode_t has_write_perm);
- 
- enum blk_default_limits {
- 	BLK_MAX_SEGMENTS	= 128,
--- 
-1.7.4.1
-
-
+Thanks for the feedback though.
