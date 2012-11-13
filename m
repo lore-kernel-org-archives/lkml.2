@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab2KMQpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:45:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60459 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755312Ab2KMQpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:45:34 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] ASoC: wm5110: Remove mixer widgets on the ASRC
-Date: Tue, 13 Nov 2012 16:40:34 +0000
-Message-Id: <1352824834-11224-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S932092Ab2KMQtU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:49:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754923Ab2KMQtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 11:49:18 -0500
+Date: Tue, 13 Nov 2012 17:49:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: + fs-epoll-add-procfs-fdinfo-helper.patch added to -mm tree
+Message-ID: <20121113164951.GA18665@redhat.com>
+References: <20121113145050.GA13691@redhat.com> <20121113155313.GU6511@moon> <20121113162056.GK7808@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113162056.GK7808@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no mixer attached to the ASRC on the wm5110 only a multiplexer
-to select the source for the single input line. This change correctly
-defines this in the wm5110 CODEC driver.
+On 11/13, Cyrill Gorcunov wrote:
+>
+>  struct signalfd_ctx {
+> +	rwlock_t lock;
+>  	sigset_t sigmask;
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/wm5110.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+Oh, I don't think.
 
-diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
-index 9211e41..3485b83 100644
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -308,10 +308,10 @@ ARIZONA_MIXER_ENUMS(AIF2TX2, ARIZONA_AIF2TX2MIX_INPUT_1_SOURCE);
- ARIZONA_MIXER_ENUMS(AIF3TX1, ARIZONA_AIF3TX1MIX_INPUT_1_SOURCE);
- ARIZONA_MIXER_ENUMS(AIF3TX2, ARIZONA_AIF3TX2MIX_INPUT_1_SOURCE);
- 
--ARIZONA_MIXER_ENUMS(ASRC1L, ARIZONA_ASRC1LMIX_INPUT_1_SOURCE);
--ARIZONA_MIXER_ENUMS(ASRC1R, ARIZONA_ASRC1RMIX_INPUT_1_SOURCE);
--ARIZONA_MIXER_ENUMS(ASRC2L, ARIZONA_ASRC2LMIX_INPUT_1_SOURCE);
--ARIZONA_MIXER_ENUMS(ASRC2R, ARIZONA_ASRC2RMIX_INPUT_1_SOURCE);
-+ARIZONA_MUX_ENUMS(ASRC1L, ARIZONA_ASRC1LMIX_INPUT_1_SOURCE);
-+ARIZONA_MUX_ENUMS(ASRC1R, ARIZONA_ASRC1RMIX_INPUT_1_SOURCE);
-+ARIZONA_MUX_ENUMS(ASRC2L, ARIZONA_ASRC2LMIX_INPUT_1_SOURCE);
-+ARIZONA_MUX_ENUMS(ASRC2R, ARIZONA_ASRC2RMIX_INPUT_1_SOURCE);
- 
- static const char *wm5110_aec_loopback_texts[] = {
- 	"HPOUT1L", "HPOUT1R", "HPOUT2L", "HPOUT2R", "HPOUT3L", "HPOUT3R",
-@@ -585,10 +585,10 @@ ARIZONA_MIXER_WIDGETS(AIF2TX2, "AIF2TX2"),
- ARIZONA_MIXER_WIDGETS(AIF3TX1, "AIF3TX1"),
- ARIZONA_MIXER_WIDGETS(AIF3TX2, "AIF3TX2"),
- 
--ARIZONA_MIXER_WIDGETS(ASRC1L, "ASRC1L"),
--ARIZONA_MIXER_WIDGETS(ASRC1R, "ASRC1R"),
--ARIZONA_MIXER_WIDGETS(ASRC2L, "ASRC2L"),
--ARIZONA_MIXER_WIDGETS(ASRC2R, "ASRC2R"),
-+ARIZONA_MUX_WIDGETS(ASRC1L, "ASRC1L"),
-+ARIZONA_MUX_WIDGETS(ASRC1R, "ASRC1R"),
-+ARIZONA_MUX_WIDGETS(ASRC2L, "ASRC2L"),
-+ARIZONA_MUX_WIDGETS(ASRC2R, "ASRC2R"),
- 
- SND_SOC_DAPM_OUTPUT("HPOUT1L"),
- SND_SOC_DAPM_OUTPUT("HPOUT1R"),
-@@ -786,10 +786,10 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
- 	ARIZONA_MIXER_ROUTES("LHPF3", "LHPF3"),
- 	ARIZONA_MIXER_ROUTES("LHPF4", "LHPF4"),
- 
--	ARIZONA_MIXER_ROUTES("ASRC1L", "ASRC1L"),
--	ARIZONA_MIXER_ROUTES("ASRC1R", "ASRC1R"),
--	ARIZONA_MIXER_ROUTES("ASRC2L", "ASRC2L"),
--	ARIZONA_MIXER_ROUTES("ASRC2R", "ASRC2R"),
-+	ARIZONA_MUX_ROUTES("ASRC1L"),
-+	ARIZONA_MUX_ROUTES("ASRC1R"),
-+	ARIZONA_MUX_ROUTES("ASRC2L"),
-+	ARIZONA_MUX_ROUTES("ASRC2R"),
- 
- 	{ "HPOUT1L", NULL, "OUT1L" },
- 	{ "HPOUT1R", NULL, "OUT1R" },
--- 
-1.7.2.5
+rwlock_t is horrible in general, and what it can buy for signalfd?
+A plain spinlock would be better. Or seqlock_t.
+
+Whatever you do, you are trying to introduce the lock which should
+serialize the access to ->sigmask correctly. In this case I think
+you should split this change into 2 patches. The first one should
+fix the locking, imo. sys_signalfd4() should not use ->siglock at
+all, and the users which take ->siglock to read ->sigmask should be
+updated.
+
+Or,
+
+> +#ifdef CONFIG_PROC_FS
+> +static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
+> +{
+> +	struct signalfd_ctx *ctx = f->private_data;
+> +	sigset_t sigmask;
+> +
+> +	read_lock(&ctx->lock);
+> +	sigmask = ctx->sigmask;
+> +	read_unlock(&ctx->lock);
+
+Just read ctx->sigmask lockless. Do we really care if show_fdinfo()
+reads the value "in between" ?
+
+Oleg.
 
