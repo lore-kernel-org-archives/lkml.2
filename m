@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2KMLRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:17:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49115 "EHLO mx2.suse.de"
+	id S932143Ab2KMLRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:17:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49155 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754927Ab2KMLNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:18 -0500
+	id S1754943Ab2KMLNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:21 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/31] mm: mempolicy: Use _PAGE_NUMA to migrate pages
-Date: Tue, 13 Nov 2012 11:12:42 +0000
-Message-Id: <1352805180-1607-14-git-send-email-mgorman@suse.de>
+Subject: [PATCH 16/31] mm: numa: Only call task_numa_placement for misplaced pages
+Date: Tue, 13 Nov 2012 11:12:45 +0000
+Message-Id: <1352805180-1607-17-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -25,197 +25,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: Based on "mm/mpol: Use special PROT_NONE to migrate pages" but
-	sufficiently different that the signed-off-bys were dropped
+task_numa_placement is potentially very expensive so limit it to being
+called when a page is misplaced. How necessary this is depends on
+the placement policy.
 
-Combine our previous _PAGE_NUMA, mpol_misplaced and migrate_misplaced_page()
-pieces into an effective migrate on fault scheme.
-
-Note that (on x86) we rely on PROT_NONE pages being !present and avoid
-the TLB flush from try_to_unmap(TTU_MIGRATION). This greatly improves the
-page-migration performance.
-
-Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/huge_mm.h |    8 ++++----
- mm/huge_memory.c        |   32 +++++++++++++++++++++++++++++---
- mm/memory.c             |   44 ++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 73 insertions(+), 11 deletions(-)
+ include/linux/sched.h |    4 ++--
+ kernel/sched/fair.c   |    9 +++++++--
+ mm/huge_memory.c      |    2 +-
+ mm/memory.c           |    6 ++++--
+ 4 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index a13ebb1..406f81c 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -160,8 +160,8 @@ static inline struct page *compound_trans_head(struct page *page)
- 	return page;
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ac71181..241e4f7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1562,9 +1562,9 @@ struct task_struct {
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
  
--extern int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
--				  pmd_t pmd, pmd_t *pmdp);
-+extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
- 
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
-@@ -200,8 +200,8 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
- 	return 0;
- }
- 
--static inline int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
--					pmd_t pmd, pmd_t *pmdp);
-+static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+					unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+ #ifdef CONFIG_BALANCE_NUMA
+-extern void task_numa_fault(int node, int pages);
++extern void task_numa_fault(int node, int pages, bool was_misplaced);
+ #else
+-static inline void task_numa_fault(int node, int pages)
++static inline void task_numa_fault(int node, int pages, bool was_misplaced)
  {
  }
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e8bdaef..9ea13e9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -799,13 +799,18 @@ static void task_numa_placement(struct task_struct *p)
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void task_numa_fault(int node, int pages)
++void task_numa_fault(int node, int pages, bool misplaced)
+ {
+ 	struct task_struct *p = current;
  
+ 	/* FIXME: Allocate task-specific structure for placement policy here */
+ 
+-	task_numa_placement(p);
++	/*
++	 * task_numa_placement can be expensive so only call it if pages were
++	 * misplaced
++	 */
++	if (misplaced)
++		task_numa_placement(p);
+ }
+ 
+ /*
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 92a64d2..1453c30 100644
+index ccff412..833a601 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -18,6 +18,7 @@
- #include <linux/freezer.h>
- #include <linux/mman.h>
- #include <linux/pagemap.h>
-+#include <linux/migrate.h>
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
- #include "internal.h"
-@@ -1018,16 +1019,39 @@ out:
- }
- 
- /* NUMA hinting page fault entry point for trans huge pmds */
--int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
--				pmd_t pmd, pmd_t *pmdp)
-+int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
- {
--	struct page *page;
-+	struct page *page = NULL;
-+	unsigned long haddr = addr & HPAGE_PMD_MASK;
-+	int target_nid;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
- 
- 	page = pmd_page(pmd);
-+	get_page(page);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	target_nid = mpol_misplaced(page, vma, haddr);
-+	if (target_nid == -1)
-+		goto clear_pmdnuma;
-+
-+	/*
-+	 * Due to lacking code to migrate thp pages, we'll split
-+	 * (which preserves the special PROT_NONE) and re-take the
-+	 * fault on the normal pages.
-+	 */
-+	split_huge_page(page);
-+	put_page(page);
-+	return 0;
-+
-+clear_pmdnuma:
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(pmd, *pmdp)))
-+		goto out_unlock;
-+
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
-@@ -1035,6 +1059,8 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
- 
- out_unlock:
+@@ -1062,7 +1062,7 @@ out_unlock:
  	spin_unlock(&mm->page_table_lock);
-+	if (page)
-+		put_page(page);
+ 	if (page) {
+ 		put_page(page);
+-		task_numa_fault(numa_node_id(), HPAGE_PMD_NR);
++		task_numa_fault(numa_node_id(), HPAGE_PMD_NR, false);
+ 	}
  	return 0;
  }
- 
 diff --git a/mm/memory.c b/mm/memory.c
-index 0d9d539..b41f89c 100644
+index cd348fd..ab9fbcf 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -57,6 +57,7 @@
- #include <linux/swapops.h>
- #include <linux/elf.h>
- #include <linux/gfp.h>
-+#include <linux/migrate.h>
- 
- #include <asm/io.h>
- #include <asm/pgalloc.h>
-@@ -3436,8 +3437,9 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
- {
--	struct page *page;
-+	struct page *page = NULL;
+@@ -3441,6 +3441,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
  	spinlock_t *ptl;
-+	int current_nid, target_nid;
+ 	int current_nid = -1;
+ 	int target_nid;
++	bool misplaced = false;
  
  	/*
  	* The "pte" at this point cannot be used safely without
-@@ -3452,14 +3454,48 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	spin_lock(ptl);
- 	if (unlikely(!pte_same(*ptep, pte)))
- 		goto out_unlock;
--	pte = pte_mknonnuma(pte);
--	set_pte_at(mm, addr, ptep, pte);
-+
- 	page = vm_normal_page(vma, addr, pte);
- 	BUG_ON(!page);
-+
-+	get_page(page);
-+	current_nid = page_to_nid(page);
-+	target_nid = mpol_misplaced(page, vma, addr);
-+	if (target_nid == -1) {
-+		/*
-+		 * Account for the fault against the current node if it not
-+		 * being replaced regardless of where the page is located.
-+		 */
-+		current_nid = numa_node_id();
-+		goto clear_pmdnuma;
-+	}
-+	pte_unmap_unlock(ptep, ptl);
-+
-+	/* Migrate to the requested node */
-+	if (migrate_misplaced_page(page, target_nid)) {
-+		/*
-+		 * If the page was migrated then the pte_same check below is
-+		 * guaranteed to fail so just retry the entire fault.
-+		 */
-+		current_nid = target_nid;
-+		goto out;
-+	}
-+	page = NULL;
-+
-+	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	if (!pte_same(*ptep, pte))
-+		goto out_unlock;
-+
-+clear_pmdnuma:
-+	pte = pte_mknonnuma(pte);
-+	set_pte_at(mm, addr, ptep, pte);
- 	update_mmu_cache(vma, addr, ptep);
+@@ -3470,6 +3471,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		current_nid = numa_node_id();
+ 		goto clear_pmdnuma;
+ 	}
++	misplaced = true;
  
- out_unlock:
  	pte_unmap_unlock(ptep, ptl);
-+	if (page)
-+		put_page(page);
-+out:
+ 
+@@ -3498,7 +3500,7 @@ out_unlock:
+ 	if (page)
+ 		put_page(page);
+ out:
+-	task_numa_fault(current_nid, 1);
++	task_numa_fault(current_nid, 1, misplaced);
  	return 0;
  }
  
-@@ -3626,7 +3662,7 @@ retry:
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd)) {
- 			if (pmd_numa(*pmd))
--				return do_huge_pmd_numa_page(mm, address,
-+				return do_huge_pmd_numa_page(mm, vma, address,
- 							     orig_pmd, pmd);
+@@ -3556,7 +3558,7 @@ int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(pte, ptl);
  
- 			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
+ 		curr_nid = page_to_nid(page);
+-		task_numa_fault(curr_nid, 1);
++		task_numa_fault(curr_nid, 1, false);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
 -- 
 1.7.9.2
 
