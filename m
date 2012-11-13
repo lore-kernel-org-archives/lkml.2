@@ -1,106 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2KMAGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:06:52 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52787 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab2KMAGv (ORCPT
+	id S1753854Ab2KMAJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:09:41 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:34090 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab2KMAJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:06:51 -0500
-Date: Mon, 12 Nov 2012 16:06:48 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org
-Subject: [patch] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v7
- fix fix fix
-In-Reply-To: <509D88C6.8030700@infradead.org>
-Message-ID: <alpine.DEB.2.00.1211121553300.3841@chino.kir.corp.google.com>
-References: <20121108231753.E6B7A100047@wpzn3.hot.corp.google.com> <509D88C6.8030700@infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 12 Nov 2012 19:09:40 -0500
+Message-ID: <50A18FB6.90407@us.ibm.com>
+Date: Mon, 12 Nov 2012 16:09:26 -0800
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Henningsson <david.henningsson@canonical.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        "Rostedt, Steven" <rostedt@goodmis.org>
+Subject: Re: getnstimeofday stuck for several milliseconds?
+References: <50977DF5.60703@canonical.com> <50A18C0F.9000604@us.ibm.com>
+In-Reply-To: <50A18C0F.9000604@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111300-5518-0000-0000-0000093B94A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Nov 2012, Randy Dunlap wrote:
+On 11/12/2012 03:53 PM, John Stultz wrote:
+> On 11/05/2012 12:51 AM, David Henningsson wrote:
+>> Hi LKML,
+>>
+>> I'm trying to make audio more useful in everyday low-latency 
+>> scenarios such as gaming or VOIP.
+>>
+>> While doing so, I ran the wakeup_rt tracer, to track the time from 
+>> PulseAudio requesting wakeup (through hrtimers), to the thread 
+>> actually running.
+>>
+>> I'm not sure how much overhead added by the wakeup_rt tracer itself, 
+>> but I got 9 ms on one machine and 20 ms on another, which I consider 
+>> to be quite a lot even for a standard kernel (i e without RT or other 
+>> special configuration).
+>>
+>> The 9 ms example is pastebinned at [1], and here's where we get stuck 
+>> for most of the time:
+>>
+>>   <idle>-0       3d... 1105us : ktime_get_real <-intel_idle
+>>   <idle>-0       3d... 1106us!: getnstimeofday <-ktime_get_real
+>>   <idle>-0       3d... 7823us : ktime_get_real <-intel_idle
+>>
+>>   <idle>-0       3d... 7890us : ktime_get_real <-intel_idle
+>>   <idle>-0       3d... 7891us!: getnstimeofday <-ktime_get_real
+>>   <idle>-0       3d... 9023us : ktime_get_real <-intel_idle
+>>
+>
+> Looking at the trace you posted here: http://pastebin.se/6iMRdDfR
+>
+> The trace also looks like its the cpuidle to interrupt transition 
+> where you're seeing this.  I sort of wonder if its mis-attributing the 
+> idle time to the getnstimeofday()? Mainly because you don't seem to 
+> spend much time in intel_idle() otherwise.
+>
+> Or maybe we're both misreading it and its saying there's a delay 
+> between the first ktime_get_real() from intel_idle() to the second 
+> call of ktime_get_real(), between which we're in deep idle (which 
+> would make sense)?
+>
+The more I think about it, I'm pretty sure this is the case:
+The full context you need is:
+     <idle>-0       3d... 7890us : ktime_get_real <-intel_idle
+     <idle>-0       3d... 7891us!: getnstimeofday <-ktime_get_real
+     <idle>-0       3d... 9023us : ktime_get_real <-intel_idle
+     <idle>-0       3d... 9024us : getnstimeofday <-ktime_get_real
 
-> on x86_64:
-> 
-> In file included from mm/mprotect.c:13:0:
-> include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
-> include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
-> include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
-> include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
-> include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
-> include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
-> 
-> In file included from include/linux/hugetlb.h:16:0,
->                  from mm/mmap.c:23:
-> include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
-> include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
-> include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
-> include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
-> include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
-> include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
-> make[2]: *** [mm/mprotect.o] Error 1
-> 
+Where intel_idle() is calling ktime_get_real twice in a row, and 
+inbetween we see a large latency. Looking at intel_idle() the code in 
+question is:
 
-This is an elusive one, I couldn't reproduce it with master.  This appears 
-to only happen on the akpm branch, correct?
+     kt_before = ktime_get_real();
 
-It happens because of e37c64a9751a ("mm: support more pagesizes for 
-MAP_HUGETLB/SHM_HUGETLB") adds a spurious "#endif" to include/linux/shm.h 
-and gets reverted in master by 359078d82a20 ("Revert "mm: support more 
-pagesizes for MAP_HUGETLB/SHM_HUGETLB"") because of another build failure 
-that Stephen reports on November 8:
+     stop_critical_timings();
+     if (!need_resched()) {
 
-mm/mmap.c: In function 'SYSC_mmap_pgoff':
-mm/mmap.c:1271:15: error: 'MAP_HUGE_SHIFT' undeclared (first use in this function)
-mm/mmap.c:1271:15: note: each undeclared identifier is reported only once for each function it appears in
-mm/mmap.c:1271:33: error: 'MAP_HUGE_MASK' undeclared (first use in this function)
+         __monitor((void *)&current_thread_info()->flags, 0, 0);
+         smp_mb();
+         if (!need_resched())
+             __mwait(eax, ecx);
+     }
 
-I think the best bet would be to merge the following in -mm and then let 
-Stephen revert it in master again if his build error persists for powerpc:
+     start_critical_timings();
+
+     kt_after = ktime_get_real();
 
 
-mm-support-more-pagesizes-for-map_hugetlb-shm_hugetlb-v7-fix-fix-fix
+Where we're basically timing how long we were in idle for.
 
-Fix the build:
+So I think the problem is just misreading the trace output.
 
-include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
-include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
-include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
-include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
-include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
-include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
+thanks
+-john
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/shm.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/shm.h b/include/linux/shm.h
---- a/include/linux/shm.h
-+++ b/include/linux/shm.h
-@@ -23,8 +23,6 @@ struct shmid_kernel /* private to the kernel */
- 	struct task_struct	*shm_creator;
- };
- 
--#endif
--
- /* shm_mode upper byte flags */
- #define	SHM_DEST	01000	/* segment will be destroyed on last detach */
- #define SHM_LOCKED      02000   /* segment will not be swapped */
-@@ -46,8 +44,6 @@ struct shmid_kernel /* private to the kernel */
- #define SHM_HUGE_2MB    (21 << SHM_HUGE_SHIFT)
- #define SHM_HUGE_1GB    (30 << SHM_HUGE_SHIFT)
- 
--#ifdef __KERNEL__
--
- #ifdef CONFIG_SYSVIPC
- long do_shmat(int shmid, char __user *shmaddr, int shmflg, unsigned long *addr,
- 	      unsigned long shmlba);
+
+
