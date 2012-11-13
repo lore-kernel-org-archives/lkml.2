@@ -1,121 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab2KMQZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:25:20 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:48119 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab2KMQZR (ORCPT
+	id S1754854Ab2KMQ0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:26:34 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37374 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab2KMQ0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:25:17 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjWwALxzolBV5h1yPGdsb2JhbABEhTGFI7gXAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCANGFA0YChoTHodaAwkKqX+GTw2JVBSLLYFigX6CfGEDlCeBVIV7hTiIAQ
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="448608770"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 17:31:38 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 10/13] HID: hid-multitouch: fix Win 8 protocol
-Message-ID: <20121113163138.GA707@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-11-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 13 Nov 2012 11:26:32 -0500
+Date: Tue, 13 Nov 2012 08:26:27 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.7-rc5
+Message-ID: <20121113162627.GB18227@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352306256-12180-11-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Please pull from the following branch to receive fixes for v3.7-rc5.
+It contains two fix patches for device_cgroup.  One fixes a regression
+introduced earlier in 3.7 cycle where device_cgroup could try to
+dereference the NULL parent of the root cgroup.  The other one is RCU
+usage fix.
 
-> Win 8 specification is much more precise than the Win 7 one.
-> Moreover devices that need to take certification must be submitted
-> to Microsoft.
-> 
-> The result is a better protocol support and we can rely on that to
-> skip all the messy tests we used to do.
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.7-fixes
 
-You could possibly start the commit message here..
+Thanks.
+---
+Aristeu Rozanski (1):
+      device_cgroup: fix unchecked cgroup parent usage
 
-> The protocol specify the fact that each valid touch must be reported
+Tejun Heo (1):
+      device_cgroup: fix RCU usage
 
-The win8 protocol...
+ security/device_cgroup.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-> within a frame until it is released.
-> So we can use the always_valid quirk and dismiss reports when we see
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 842c254..b08d20c 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -164,8 +164,8 @@ static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
+ 	struct dev_exception_item *ex, *tmp;
+ 
+ 	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
+-		list_del(&ex->list);
+-		kfree(ex);
++		list_del_rcu(&ex->list);
++		kfree_rcu(ex, rcu);
+ 	}
+ }
+ 
+@@ -298,7 +298,7 @@ static int may_access(struct dev_cgroup *dev_cgroup,
+ 	struct dev_exception_item *ex;
+ 	bool match = false;
+ 
+-	list_for_each_entry(ex, &dev_cgroup->exceptions, list) {
++	list_for_each_entry_rcu(ex, &dev_cgroup->exceptions, list) {
+ 		if ((refex->type & DEV_BLOCK) && !(ex->type & DEV_BLOCK))
+ 			continue;
+ 		if ((refex->type & DEV_CHAR) && !(ex->type & DEV_CHAR))
+@@ -352,6 +352,8 @@ static int parent_has_perm(struct dev_cgroup *childcg,
+  */
+ static inline int may_allow_all(struct dev_cgroup *parent)
+ {
++	if (!parent)
++		return 1;
+ 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
+ }
+ 
+@@ -376,11 +378,14 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
+ 	int count, rc;
+ 	struct dev_exception_item ex;
+ 	struct cgroup *p = devcgroup->css.cgroup;
+-	struct dev_cgroup *parent = cgroup_to_devcgroup(p->parent);
++	struct dev_cgroup *parent = NULL;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	if (p->parent)
++		parent = cgroup_to_devcgroup(p->parent);
++
+ 	memset(&ex, 0, sizeof(ex));
+ 	b = buffer;
+ 
+@@ -391,11 +396,14 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
+ 			if (!may_allow_all(parent))
+ 				return -EPERM;
+ 			dev_exception_clean(devcgroup);
++			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
++			if (!parent)
++				break;
++
+ 			rc = dev_exceptions_copy(&devcgroup->exceptions,
+ 						 &parent->exceptions);
+ 			if (rc)
+ 				return rc;
+-			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+ 			break;
+ 		case DEVCG_DENY:
+ 			dev_exception_clean(devcgroup);
 
-We can therefore...
-
-> duplicates contact ID.
-
-duplicate contacts.
-
-> 
-> We recognize Win8 certified devices from their vendor feature 0xff0000c5
-> where Microsoft put a signed blob in the report to check if the device
-> passed the certification.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 351c814..b393c6c 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -53,6 +53,7 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
->  #define MT_QUIRK_NO_AREA		(1 << 9)
->  #define MT_QUIRK_IGNORE_DUPLICATES	(1 << 10)
-> +#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 11)
->  
->  struct mt_slot {
->  	__s32 x, y, cx, cy, p, w, h;
-> @@ -293,6 +294,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
->  			td->maxcontacts = td->mtclass.maxcontacts;
->  
->  		break;
-> +	case 0xff0000c5:
-> +		if (field->report_count == 256 && field->report_size == 8)
-> +			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
-> +		break;
->  	}
->  }
->  
-> @@ -679,14 +684,17 @@ static void mt_post_parse_default_settings(struct mt_device *td)
->  {
->  	__s32 quirks = td->mtclass.quirks;
->  
-> -	/* unknown serial device needs special quirks */
-> -	if (td->touches_by_report == 1) {
-> +	/* unknown serial devices or win8 ones need special quirks */
-> +	if (td->touches_by_report == 1 || (quirks & MT_QUIRK_WIN_8_CERTIFIED)) {
->  		quirks |= MT_QUIRK_ALWAYS_VALID;
->  		quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
->  		quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
-
-Won't this line interfere with the hovering functionality?
-
->  		quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
->  	}
->  
-> +	if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
-> +		quirks |= MT_QUIRK_IGNORE_DUPLICATES;
-> +
->  	td->mtclass.quirks = quirks;
->  }
->  
-> -- 
-> 1.7.11.7
-> 
-
-Thanks,
-Henrik
