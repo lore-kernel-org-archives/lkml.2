@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2KMACe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:02:34 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:51092 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752542Ab2KMACc (ORCPT
+	id S1753620Ab2KMAGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:06:52 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52787 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab2KMAGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:02:32 -0500
-Date: Tue, 13 Nov 2012 00:02:31 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/8] sched, numa, mm: Add adaptive NUMA affinity
- support
-In-Reply-To: <20121112161215.782018877@chello.nl>
-Message-ID: <0000013af7130ad7-95edbaf9-d31d-4258-8fc0-013d152246a2-000000@email.amazonses.com>
-References: <20121112160451.189715188@chello.nl> <20121112161215.782018877@chello.nl>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 12 Nov 2012 19:06:51 -0500
+Date: Mon, 12 Nov 2012 16:06:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-next@vger.kernel.org
+Subject: [patch] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v7
+ fix fix fix
+In-Reply-To: <509D88C6.8030700@infradead.org>
+Message-ID: <alpine.DEB.2.00.1211121553300.3841@chino.kir.corp.google.com>
+References: <20121108231753.E6B7A100047@wpzn3.hot.corp.google.com> <509D88C6.8030700@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 9 Nov 2012, Randy Dunlap wrote:
 
-On Mon, 12 Nov 2012, Peter Zijlstra wrote:
+> on x86_64:
+> 
+> In file included from mm/mprotect.c:13:0:
+> include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
+> include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
+> include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
+> include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
+> include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
+> include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
+> 
+> In file included from include/linux/hugetlb.h:16:0,
+>                  from mm/mmap.c:23:
+> include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
+> include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
+> include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
+> include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
+> include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
+> include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
+> make[2]: *** [mm/mprotect.o] Error 1
+> 
 
-> We define 'shared memory' as all user memory that is frequently
-> accessed by multiple tasks and conversely 'private memory' is
-> the user memory used predominantly by a single task.
+This is an elusive one, I couldn't reproduce it with master.  This appears 
+to only happen on the akpm branch, correct?
 
-"All"? Should that not be "a memory segment that is frequently..."?
+It happens because of e37c64a9751a ("mm: support more pagesizes for 
+MAP_HUGETLB/SHM_HUGETLB") adds a spurious "#endif" to include/linux/shm.h 
+and gets reverted in master by 359078d82a20 ("Revert "mm: support more 
+pagesizes for MAP_HUGETLB/SHM_HUGETLB"") because of another build failure 
+that Stephen reports on November 8:
 
-> Using this, we can construct two per-task node-vectors, 'S_i'
-> and 'P_i' reflecting the amount of shared and privately used
-> pages of this task respectively. Pages for which two consecutive
-> 'hits' are of the same cpu are assumed private and the others
-> are shared.
+mm/mmap.c: In function 'SYSC_mmap_pgoff':
+mm/mmap.c:1271:15: error: 'MAP_HUGE_SHIFT' undeclared (first use in this function)
+mm/mmap.c:1271:15: note: each undeclared identifier is reported only once for each function it appears in
+mm/mmap.c:1271:33: error: 'MAP_HUGE_MASK' undeclared (first use in this function)
 
-The classification is per task? But most tasks have memory areas
-that are private and other areas where shared accesses occur. Can that be
-per memory area? Private areas need to be kept with the process. Shared
-areas may have to be spread across nodes if the memory area is too large.
+I think the best bet would be to merge the following in -mm and then let 
+Stephen revert it in master again if his build error persists for powerpc:
 
-Guess that is too complicated to determine unless we would be using vmas
-which may only roughly correlate to the memory regions for which memory
-policies are currently manually setup.
 
-But then this is rather different from my expectations that I had after
-reading the intro.
+mm-support-more-pagesizes-for-map_hugetlb-shm_hugetlb-v7-fix-fix-fix
 
-> We also add an extra 'lateral' force to the load balancer that
-> perturbs the state when otherwise 'fairly' balanced. This
-> ensures we don't get 'stuck' in a state which is fair but
-> undesired from a memory location POV (see can_do_numa_run()).
+Fix the build:
 
-We do useless moves and create additional overhead?
+include/linux/shm.h:57:20: error: redefinition of 'do_shmat'
+include/linux/shm.h:57:20: note: previous definition of 'do_shmat' was here
+include/linux/shm.h:63:19: error: redefinition of 'is_file_shm_hugepages'
+include/linux/shm.h:63:19: note: previous definition of 'is_file_shm_hugepages' was here
+include/linux/shm.h:67:20: error: redefinition of 'exit_shm'
+include/linux/shm.h:67:20: note: previous definition of 'exit_shm' was here
 
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/shm.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -23,8 +23,6 @@ struct shmid_kernel /* private to the kernel */
+ 	struct task_struct	*shm_creator;
+ };
+ 
+-#endif
+-
+ /* shm_mode upper byte flags */
+ #define	SHM_DEST	01000	/* segment will be destroyed on last detach */
+ #define SHM_LOCKED      02000   /* segment will not be swapped */
+@@ -46,8 +44,6 @@ struct shmid_kernel /* private to the kernel */
+ #define SHM_HUGE_2MB    (21 << SHM_HUGE_SHIFT)
+ #define SHM_HUGE_1GB    (30 << SHM_HUGE_SHIFT)
+ 
+-#ifdef __KERNEL__
+-
+ #ifdef CONFIG_SYSVIPC
+ long do_shmat(int shmid, char __user *shmaddr, int shmflg, unsigned long *addr,
+ 	      unsigned long shmlba);
