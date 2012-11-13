@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2KMIAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:00:40 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64068 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2KMIAh (ORCPT
+	id S1754283Ab2KMIBC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:01:02 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4293 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab2KMIA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:00:37 -0500
-Date: Tue, 13 Nov 2012 12:00:32 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
- inotify_inode_mark
-Message-ID: <20121113080032.GF6511@moon>
-References: <20121112101440.665694060@openvz.org>
- <20121112101845.839702715@openvz.org>
- <20121112165540.2ec39f50.akpm@linux-foundation.org>
- <20121113072057.GC6511@moon>
- <20121112234001.009b2ae3.akpm@linux-foundation.org>
+	Tue, 13 Nov 2012 03:00:59 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 13 Nov 2012 00:00:54 -0800
+Message-ID: <50A1FE2F.8000107@nvidia.com>
+Date: Tue, 13 Nov 2012 16:00:47 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121112234001.009b2ae3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A1FA7C.4010507@nvidia.com> <20121113075247.GB8409@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121113075247.GB8409@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 11:40:01PM -0800, Andrew Morton wrote:
-> On Tue, 13 Nov 2012 11:20:57 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > > 
-> > > Whoa.  This adds 128+8 bytes to the inotify_inode_mark.  That's a lot of
-> > > bloat, and there can be a lot of inotify_inode_mark's in the system?
-> > 
-> > Yes, that's why it's not turned on by default, only if is c/r turned on.
-> > iirc I've been said that usually only about 40 bytes is used (in the tests
-> > I met only 8 bytes). Letme re-check all things.
+On 11/13/2012 03:52 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 > 
-> The question is, how many `struct inotify_inode_mark's are instantiated
-> system-wide?  Could be millions?
+> On Tue, Nov 13, 2012 at 03:45:00PM +0800, Mark Zhang wrote:
+>> On 11/09/2012 09:20 PM, Thierry Reding wrote:
+>>> @@ -116,6 +122,9 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+>>>         { "sbc2",       "pll_p",        100000000,      false },
+>>>         { "sbc3",       "pll_p",        100000000,      false },
+>>>         { "sbc4",       "pll_p",        100000000,      false },
+>>> +       { "host1x",     "pll_c",        144000000,      false },
+>>> +       { "disp1",      "pll_p",        600000000,      false },
+>>> +       { "disp2",      "pll_p",        600000000,      false },
+>>
+>> I think here the parent of disp2 should be "pll_d_out0", not "pll_p".
+>> Right now pll_p has not a proper clock setting to make 148.5MHz 1080p
+>> HDMI happy. In addition, you add the 297MHz in pll_d frequency table
+>> next and I think this is for disp2 has a proper clock rate to support HDMI.
+> [...]
+>>> @@ -1051,6 +1053,9 @@ static struct clk_duplicate tegra_clk_duplicates[] = {
+>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.1", "fast-clk"),
+>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
+>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
+>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
+>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
+>>> +       CLK_DUPLICATE("pll_d_out0", "tegra-hdmi", "parent"),
+>>>  };
+>>
+>> The same with my above comments, the tegra-dc.1's parent should be
+>> pll_d_out0.
+> 
+> The way this works is that for HDMI it is required that the DC and HDMI
+> blocks have the same parent. So what really happens is that once you
+> setup one of the DCs to work with HDMI, its clock will automatically be
+> reparented to the HDMI parent clock, which in this case is "pll_d_out0".
+> 
 
-Well, hard to tell, to be fair. On my testing machine only apache has been
-using inotify system as far as I remember, but for sure nothing except memory
-limit the number of inotify. But I think if one running machine with millions
-of inotify it's rather powerful machine with enough memory.
+Are you sure about this? Is this a hardware feature? I know the dc and
+hdmi controller should have the same clock parent but I think this
+should be ensured by device driver...
 
-> Dumb question: do we really need inotify_inode_mark.fhandle at all? 
-> What prevents us from assembling this info on demand when ->show_fdinfo() is
-> called?
-
-exportfs requires the dentry to be passed as an argument while inotify works
-with inodes instead and at moment of show-fdinfo the target dentry might be
-already deleted but inode yet present as far as I remember.
+> Thierry
+> 
+> * Unknown Key
+> * 0x7F3EB3A1
+> 
