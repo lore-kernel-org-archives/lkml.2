@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2KMRW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:22:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2KMRWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:22:24 -0500
-Subject: [PATCH] intel-iommu: Fix lookup in add device
-To: iommu@lists.linux-foundation.org, joro@8bytes.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: prometheanfire@gentoo.org, cardoe@gentoo.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mthode@mthode.org, ddutile@redhat.com,
-        bhelgaas@google.com, dwmw2@infradead.org
-Date: Tue, 13 Nov 2012 10:22:03 -0700
-Message-ID: <20121113172144.6783.37724.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932257Ab2KMRXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:23:00 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab2KMROr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 12:14:47 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 05/31] sched, numa, mm, s390/thp: Implement pmd_pgprot() for s390
+Date: Tue, 13 Nov 2012 18:13:28 +0100
+Message-Id: <1352826834-11774-6-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't assume this device exists, fall back to the bridge itself.
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Matthew Thode <prometheanfire@gentoo.org>
-Cc: stable@vger.kernel.org
+This patch adds an implementation of pmd_pgprot() for s390,
+in preparation to future THP changes.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/iommu/intel-iommu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/pgtable.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index d4a4cd4..0badfa4 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4108,7 +4108,7 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
- static int intel_iommu_add_device(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
--	struct pci_dev *bridge, *dma_pdev;
-+	struct pci_dev *bridge, *dma_pdev = NULL;
- 	struct iommu_group *group;
- 	int ret;
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index dd647c9..098fc5a 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1240,6 +1240,19 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 	*pmdp = entry;
+ }
  
-@@ -4122,7 +4122,7 @@ static int intel_iommu_add_device(struct device *dev)
- 			dma_pdev = pci_get_domain_bus_and_slot(
- 						pci_domain_nr(pdev->bus),
- 						bridge->subordinate->number, 0);
--		else
-+		if (!dma_pdev)
- 			dma_pdev = pci_dev_get(bridge);
- 	} else
- 		dma_pdev = pci_dev_get(pdev);
++static inline pgprot_t pmd_pgprot(pmd_t pmd)
++{
++	pgprot_t prot = PAGE_RW;
++
++	if (pmd_val(pmd) & _SEGMENT_ENTRY_RO) {
++		if (pmd_val(pmd) & _SEGMENT_ENTRY_INV)
++			prot = PAGE_NONE;
++		else
++			prot = PAGE_RO;
++	}
++	return prot;
++}
++
+ static inline unsigned long massage_pgprot_pmd(pgprot_t pgprot)
+ {
+ 	unsigned long pgprot_pmd = 0;
+-- 
+1.7.11.7
 
