@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2KMLSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:18:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49106 "EHLO mx2.suse.de"
+	id S1755053Ab2KMLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:18:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49090 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754921Ab2KMLNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:16 -0500
+	id S1754908Ab2KMLNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:14 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 12/31] mm: migrate: Introduce migrate_misplaced_page()
-Date: Tue, 13 Nov 2012 11:12:41 +0000
-Message-Id: <1352805180-1607-13-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/31] mm: mempolicy: Add MPOL_MF_NOOP
+Date: Tue, 13 Nov 2012 11:12:39 +0000
+Message-Id: <1352805180-1607-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -25,179 +25,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Note: This was originally based on Peter's patch "mm/migrate: Introduce
-	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
-	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
-	collection". The end result is barely recognisable so signed-offs
-	had to be dropped. If original authors are ok with it, I'll
-	re-add the signed-off-bys.
+NOTE: I have not yet addressed by own review feedback of this patch. At
+	this point I'm trying to construct a baseline tree and will apply
+	my own review feedback later and then fold it in.
 
-Add migrate_misplaced_page() which deals with migrating pages from
-faults.
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
+to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+flags, mbind() will map the pages PROT_NONE so that they will be
+migrated on the next touch.
 
-Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
+
+[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
+
+Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |    8 ++++
- mm/migrate.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 110 insertions(+), 2 deletions(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 9d1c159..69f60b5 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -13,6 +13,7 @@ enum migrate_reason {
- 	MR_MEMORY_HOTPLUG,
- 	MR_SYSCALL,		/* also applies to cpusets */
- 	MR_MEMPOLICY_MBIND,
-+	MR_NUMA_MISPLACED,
- 	MR_CMA
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 3e835c9..d23dca8 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -21,6 +21,7 @@ enum {
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
+ 	MPOL_LOCAL,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
  };
  
-@@ -39,6 +40,7 @@ extern int migrate_vmas(struct mm_struct *mm,
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
-+extern int migrate_misplaced_page(struct page *page, int node);
- #else
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 54bd3e5..c21e914 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
- static inline void putback_lru_pages(struct list_head *l) {}
-@@ -72,5 +74,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #define migrate_page NULL
- #define fail_migrate_page NULL
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
+ 	}
+ 	VM_BUG_ON(!nodes);
  
-+static inline
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	return -EAGAIN; /* can't migrate now */
-+}
- #endif /* CONFIG_MIGRATION */
-+
- #endif /* _LINUX_MIGRATE_H */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 27be9c9..4a92808 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 		struct page *newpage, struct page *page,
- 		struct buffer_head *head, enum migrate_mode mode)
- {
--	int expected_count;
-+	int expected_count = 0;
- 	void **pslot;
+@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
  
- 	if (!mapping) {
-@@ -1415,4 +1415,104 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
-  	}
-  	return err;
- }
--#endif
-+
-+/*
-+ * Returns true if this is a safe migration target node for misplaced NUMA
-+ * pages. Currently it only checks the watermarks which crude
-+ */
-+static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
-+				   int nr_migrate_pages)
-+{
-+	int z;
-+	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
-+		struct zone *zone = pgdat->node_zones + z;
-+
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		if (zone->all_unreclaimable)
-+			continue;
-+
-+		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
-+		if (!zone_watermark_ok(zone, 0,
-+				       high_wmark_pages(zone) +
-+				       nr_migrate_pages,
-+				       0, 0))
-+			continue;
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static struct page *alloc_misplaced_dst_page(struct page *page,
-+					   unsigned long data,
-+					   int **result)
-+{
-+	int nid = (int) data;
-+	struct page *newpage;
-+
-+	newpage = alloc_pages_exact_node(nid,
-+					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
-+					  __GFP_NOMEMALLOC | __GFP_NORETRY |
-+					  __GFP_NOWARN) &
-+					 ~GFP_IOFS, 0);
-+	return newpage;
-+}
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node. Caller is expected to have an elevated reference count on
-+ * the page that will be dropped by this function before returning.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	int isolated = 0;
-+	LIST_HEAD(migratepages);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1)
-+		goto out;
-+
-+	/* Avoid migrating to a node that is nearly full */
-+	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
-+		int page_lru;
-+
-+		if (isolate_lru_page(page)) {
-+			put_page(page);
-+			goto out;
-+		}
-+		isolated = 1;
-+
-+		/*
-+		 * Page is isolated which takes a reference count so now the
-+		 * callers reference can be safely dropped without the page
-+		 * disappearing underneath us during migration
-+		 */
-+		put_page(page);
-+
-+		page_lru = page_is_file_cache(page);
-+		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+		list_add(&page->lru, &migratepages);
-+	}
-+
-+	if (isolated) {
-+		int nr_remaining;
-+
-+		nr_remaining = migrate_pages(&migratepages,
-+				alloc_misplaced_dst_page,
-+				node, false, MIGRATE_ASYNC,
-+				MR_NUMA_MISPLACED);
-+		if (nr_remaining) {
-+			putback_lru_pages(&migratepages);
-+			isolated = 0;
-+		}
-+	}
-+	BUG_ON(!list_empty(&migratepages));
-+out:
-+	return isolated;
-+}
-+
-+#endif /* CONFIG_NUMA */
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
+ 
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
+ 
+ 
+@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
+ 
+ 	switch (mode) {
 -- 
 1.7.9.2
 
