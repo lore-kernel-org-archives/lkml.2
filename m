@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2KMCga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:36:30 -0500
-Received: from ozlabs.org ([203.10.76.45]:43203 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab2KMCg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:36:29 -0500
-Date: Tue, 13 Nov 2012 13:28:08 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joel A Fernandes <agnel.joel@gmail.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
- omap_devices to mach-omap2)
-Message-ID: <20121113022808.GS4696@truffula.fritz.box>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
- <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
- <-4237940489086529028@unknownmsgid>
- <559B8433-67C3-4A1A-A5D6-859907655176@antoniou-consulting.com>
- <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
+	id S1753305Ab2KMChp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:37:45 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:52118 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab2KMChn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Nov 2012 21:37:43 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: <linux-fsdevel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+References: <87objjcfp4.fsf@xmission.com>
+	<87625brr76.fsf@tucsk.pomaz.szeredi.hu>
+Date: Mon, 12 Nov 2012 18:37:33 -0800
+In-Reply-To: <87625brr76.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
+	of "Mon, 12 Nov 2012 12:33:33 +0100")
+Message-ID: <878va6i5xu.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=GYpZwpRRUD=Qy529KkiL-5e2zHaCWMZM9+CTQEnMqSR3yEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+LgbKEO/z4vb3XqX64/FXCHNeuhqmChm4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0115]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] userns: Support fuse interacting with multiple user namespaces
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 09, 2012 at 09:36:26PM -0600, Joel A Fernandes wrote:
-> Hi Pantelis,
-> 
-> On Fri, Nov 9, 2012 at 2:13 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
-> 
-> >>>> Option C: U-Boot loads both the base and overlay FDT files, merges them,
-> >>>>       and passes the resolved tree to the kernel.
-> >>>>
-> >>>
-> >>> Could be made to work. Only really required if Joanne wants the
-> >>> cape interface to work for u-boot too. For example if the cape has some
-> >>> kind of network interface that u-boot will use to boot from.
-> >>>
-> >>
-> >> I love Grant's hashing idea a lot keeping the phandle problem for
-> >> compile time and not requiring fixups.
-> >>
-> >> IMO it is still a cleaner approach if u-boot does the tree merging for
-> >> all cases, and not the kernel.
-> >>
-> >> That way from a development standpoint, very little or nothing will
-> >> have to be changed in kernel (except for scripts/dtc) considering we
-> >> are moving forward with hashing.
-> >>
-> >> Also this discussed a while back but at some point is going to brought
-> >> up again-  loading of dt fragment directly from EEPROM and merging at
-> >> run time. If we were to implement this in kernel, we would have to add
-> >> cape specific EEPROM reading code, merge the tree before it is
-> >> unflattened and parse. I think doing tree merging in kernel is messy
-> >> and we should do it in uboot. Ideally reading the fragment from the
-> >> EEPROM for all capes and merging without worrying about version
-> >> detection, Doing the merge and passing the merged blob to the kernel
-> >> which (kernel) works the same way it does today.
-> >
-> > Not going to work, for a lot of cases. Doing it in the kernel seems to be
-> > the cleaner option. There are valid use cases for doing in u-boot too.
-> 
-> True, if dynamic runtime stuff from userspace is what we're talking
-> about, then yeah I see the important need for kernel to do the merge.
-> 
-> >> Alternatively to hashing, reading david gibsons paper I followed,
-> >> phandle is supposed to 'uniquely' identity node. I wonder why the node
-> >> name itself is not sufficient to unquiely identify. The code that does
-> >> the tree walking can then just strcmp the node name while it walks the
-> >> tree instead of having to find a node with a phandle number. I guess
-> >> the reason is phandles are small to store as data values. Another
-> >> approach can be to arrange the string block in alphabetical order
-> >> (unless it already is), and store phandle as index of the node name
-> >> referenced relative to the starting of the strong block. This will not
-> >> affect nodes in dtb being moved around since they will still have the
-> >> same index value. the problem being adding or removing nodes Changes
-> >> the offsets of all other nodes in the string block as well.. Hmm.
-> >>
-> >
-> > This is pretty radical change to the DT format, no?
-> 
-> Yes, true and the only way hypothetically to replace the phandle
-> tree-walking mechanism is to store node paths instead of phandle which
-> David pointed is too long to store, so I guess this wont work after
-> all. Anyway this was an interesting exercise, thanks.
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
-They're not too long to store, but changing to paths would break years
-of existing OF practice.
+> ebiederm@xmission.com (Eric W. Biederman) writes:
+>
+>> Use kuid_t and kgid_t in struct fuse_conn and struct fuse_mount_data.
+>>
+>> The connection between between a fuse filesystem and a fuse daemon is
+>> established when a fuse filesystem is mounted and provided with a file
+>> descriptor the fuse daemon created by opening /dev/fuse.
+>>
+>> For now restrict the communication of uids and gids between the fuse
+>> filesystem and the fuse daemon to the initial user namespace.
+>
+> Why?
+>
+> I think far more logical would be to limit a single instance of the
+> filesystem and the daemon to an arbitrary but *single* namespace.
+> I.e. one fuse_conn <-> one user namespace.
+>
+> Is there a reason to treat the initial namespace specially?
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Stepwise making this work.
+
+The initial user namespace is special in that is the only user namespace
+you can currently mount a filesystem in.
+
+My goal with the posted patch is to support users on the other side of
+the vfs that are in multiple user namespaces.  Which basically means
+accepting kuid_t and kgid_t values and converting them to uid_t and
+gid_t values where needed.
+
+As for creating a version of fuse that can be mounted in different user
+namespaces and can communicate with the fuse daemon in the user
+namespace the filesystem was mounted in, I have a preliminary patch for
+that.  My goal with that patch is to support unprivileged mounts of fuse
+without the help of a suid root mount program.  But that patch is more
+involved and not quite ready yet.
+
+I want to get to the point that I can enable fuse and user namespaces at
+the same time (what this patch allows) and then put in the effort to
+fully take advantage of user namespaces.
+
+Eric
+
+
+
+
+
+
+
+
+
