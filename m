@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab2KMDml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:42:41 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57955 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab2KMDmk (ORCPT
+	id S1753412Ab2KMDtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:49:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56721 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab2KMDtP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:42:40 -0500
-Message-ID: <50A1C1A1.7060200@vlnb.net>
-Date: Mon, 12 Nov 2012 22:42:25 -0500
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+	Mon, 12 Nov 2012 22:49:15 -0500
+X-IronPort-AV: E=Sophos;i="4.80,765,1344182400"; 
+   d="scan'208";a="6186737"
+Message-ID: <50A1B983.2090108@cn.fujitsu.com>
+Date: Tue, 13 Nov 2012 11:07:47 +0800
+From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-To: =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Richard Hipp <drh@hwaci.com>
-Subject: Re: [sqlite] light weight write barriers
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org> <508B3EED.2080003@vlnb.net> <CABK4GYMmigmi7YM9A5Aga21ZWoMKgUe3eX-AhPzLw9CnYhpcGA@mail.gmail.com>
-In-Reply-To: <CABK4GYMmigmi7YM9A5Aga21ZWoMKgUe3eX-AhPzLw9CnYhpcGA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:pDU+3oPLsasYbL4hQOMK/uCFz6QImKwBlROxaIM2NHr
- n1Gp68NvORHayR3Jj/cLYNF0AnSWqcTPdzh6/lotfQiqDQV4dt
- fa39QL6Zn3HBHQUtK9CASRsccdlilc3KlAkymLuwA/+Rzw0gq8
- 01GcrhhF2lC9eb9mXGOeC86Jwg8b1GBXCjhGdxkhNo0brYS2zr
- WsmoJqvecoRD78omiIi4YK92PCgT1BM0DP4vNiWJui4lZ6EwQG
- /0zKffxMxkm6iXBnnVxdCGyIDjgMT1H4qSVb0+pJlhwIs2CaTI
- kZH/TE4TKto7SjXY2XPK4M8ZnbZ+xcKJYMXQ7/omJQ4YXBYXun
- P2QJdDWKyc2ips/g7Ybs=
+To: x86@kernel.org, kexec@lists.infradead.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] x86: clear vmcss on all cpus when doing kdump
+ if necessary
+References: <50909B55.2070901@cn.fujitsu.com>
+In-Reply-To: <50909B55.2070901@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/13 11:09:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/13 11:09:24
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-æ¨è‹ç«‹ Yang Su Li, on 11/10/2012 11:25 PM wrote:
->>  SATA's Native Command
->>> Queuing (NCQ) is not equivalent; this allows the drive to reorder
->>> requests (in particular read requests) so they can be serviced more
->>> efficiently, but it does *not* allow the OS to specify a partial,
->>> relative ordering of requests.
->>>
->>
->> And so? If SATA can't do it, does it mean that nobody else can't do it
->> too? I know a plenty of non-SATA devices, which can do the ordering
->> requirements you need.
->>
->
-> I would be very much interested in what kind of device support this kind of
-> "topological order", and in what settings they are typically used.
->
-> Does modern flash/SSD (esp. which are used on smartphones) support this?
->
-> If you could point me to some information about this, that would be very
-> much appreciated.
+Hello Marcelo,
 
-I don't think storage in smartphone can support such advanced functionality, 
-because it tends to be the cheapest, hence the simplest.
+Do you have any comments about this version?
 
-But many modern Enterprise SAS drives can do it, because for those customers 
-performance is the key requirement. Unfortunately, I'm not sure I can name exact 
-brands and models, because I had my knowledge from NDA'ed docs, so this info can 
-be also NDA'ed.
+Thanks
+Zhang
 
-Vlad
+ÓÚ 2012Äê10ÔÂ31ÈÕ 11:30, zhangyanfei Ð´µÀ:
+> Currently, kdump just makes all the logical processors leave VMX operation by
+> executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> executing the VMXOFF instruction.
+> 
+> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> vmcore updated and non-corrupted.
+> 
+> Changelog from v2 to v3:
+> 1. remove unnecessary conditions in function
+>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+> 
+> Changelog from v1 to v2:
+> 1. remove the sysctl and clear VMCSs unconditionally.
+> 
+> Zhang Yanfei (2):
+>   x86/kexec: VMCLEAR vmcss on all cpus if necessary
+>   KVM: make crash_clear_loaded_vmcss valid when loading kvm_intel
+>     module
+> 
+>  arch/x86/include/asm/kexec.h |    2 ++
+>  arch/x86/kernel/crash.c      |   25 +++++++++++++++++++++++++
+>  arch/x86/kvm/vmx.c           |    9 +++++++++
+>  3 files changed, 36 insertions(+), 0 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
