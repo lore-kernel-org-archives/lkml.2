@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab2KMS7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:59:13 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:44681 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755641Ab2KMS7I (ORCPT
+	id S1755702Ab2KMS7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:59:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56915 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687Ab2KMS7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:59:08 -0500
+	Tue, 13 Nov 2012 13:59:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352249879-11406-1-git-send-email-ying.huang@intel.com>
-References: <1352249879-11406-1-git-send-email-ying.huang@intel.com>
+In-Reply-To: <50A205C902000078000A7ECF@nat28.tlf.novell.com>
+References: <1352781547-9433-1-git-send-email-acooks@gmail.com> <50A205C902000078000A7ECF@nat28.tlf.novell.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 13 Nov 2012 11:58:44 -0700
-Message-ID: <CAErSpo6LqWfXd3NY2pDsE0RmWNKApyF+Lbv8_Bvq3ULMuy7Bvw@mail.gmail.com>
-Subject: Re: [PATCH -v2] ACPI/PCI: Make PCI devices notified when its power
- resource turned on
-To: Huang Ying <ying.huang@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org
+Date: Tue, 13 Nov 2012 11:59:16 -0700
+Message-ID: <CAErSpo4WtLcMwyCHJ5rkJNhc6g-U9A=uaBzBP6HhtGUsRUn8pQ@mail.gmail.com>
+Subject: Re: [PATCH] Add missing license for ioapic module.
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Andrew Cooks <acooks@gmail.com>, open list <linux-kernel@vger.kernel.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 5:57 PM, Huang Ying <ying.huang@intel.com> wrote:
-> A set of power resources may be shared by multiple devices.  When all
-> devices share one set of power resources is put into D3_COLD state,
-> the power resources will be turned off.  When one of the device is
-> waked, the power resource will be turned on and all devices share it
-> will be powered on to D0uninitialized state.  These devices should be
-> resumed, so that they can get opportunity to go to low power state
-> later.
+On Tue, Nov 13, 2012 at 12:33 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 13.11.12 at 05:39, Andrew Cooks <acooks@gmail.com> wrote:
+>> config PCI_IOAPIC turned into a tristate in commit
+>> b95a7bd700466c10fda84acbd33f70cf66ec91ce, but no module license is specified.
+>> This adds the missing module license.
+>>
+>> Signed-off-by: Andrew Cooks <acooks@gmail.com>
 >
-> v2:
->
-> - Fix build error
->
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/acpi/pci_bind.c |    2 ++
->  1 file changed, 2 insertions(+)
+> Acked-by: Jan Beulich <jbeulich@suse.com>
 
 I applied this to my pci/misc branch as v3.8 material.  Thanks!
 
