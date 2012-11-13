@@ -1,146 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2KMRtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:49:46 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:2636 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab2KMRtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:49:45 -0500
-X-IronPort-AV: E=Sophos;i="4.80,768,1344211200"; 
-   d="scan'208";a="44455620"
-Date: Tue, 13 Nov 2012 17:40:33 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 23/46] x86, mm: Remove parameter in alloc_low_page for
- 64bit
-In-Reply-To: <1352755122-25660-24-git-send-email-yinghai@kernel.org>
-Message-ID: <alpine.DEB.2.02.1211131740200.28049@kaball.uk.xensource.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-24-git-send-email-yinghai@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755270Ab2KMRvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:51:19 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4414 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab2KMRvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 12:51:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Nov 2012 09:51:15 -0800
+Message-ID: <50A287F2.4070008@nvidia.com>
+Date: Tue, 13 Nov 2012 23:18:34 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
+References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com> <1352646721-8350-2-git-send-email-ldewangan@nvidia.com> <20121113074623.GL18224@opensource.wolfsonmicro.com>
+In-Reply-To: <20121113074623.GL18224@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012, Yinghai Lu wrote:
-> Now all page table buf are pre-mapped, and could use virtual address directly.
-> So don't need to remember physical address anymore.
-> 
-> Remove that phys pointer in alloc_low_page(), and that will allow us to merge
-> alloc_low_page between 64bit and 32bit.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Tuesday 13 November 2012 01:16 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Sun, Nov 11, 2012 at 08:42:00PM +0530, Laxman Dewangan wrote:
+>
+>> +#define TPS80031_RGEMAP_IRQ(_reg, _mask)			\
+> Why RGEMAP_IRQ?
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+I think not require. I will remove it.
+
+>> +static struct regmap_irq_chip tps80031_irq_chip = {
+>> +	.name = "tps80031",
+>> +	.irqs = tps80031_main_irqs,
+>> +	.num_irqs = ARRAY_SIZE(tps80031_main_irqs),
+>> +	.num_regs = 3,
+>> +	.status_base = TPS80031_INT_STS_A,
+>> +	.mask_base = TPS80031_INT_MSK_LINE_A,
+>> +	.wake_base = 1,
+> I'm not sure your wake_base setting is sane here - this is expected to
+> be a register.  If it is a register why is it not a #define?
+
+There is no wake register. Here I kept for the incerease the wake conut 
+so that irq_set_irq_wake() can be called.
+
+I think it is also not correct after change
+regmap: irq: initialize all irqs to wake disabled
+
+I need to set the irq_wake(0 without the register.
 
 
->  arch/x86/mm/init_64.c |   19 +++++++------------
->  1 files changed, 7 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 5ee9242..1960820 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
->  	}
->  }
->  
-> -static __ref void *alloc_low_page(unsigned long *phys)
-> +static __ref void *alloc_low_page(void)
->  {
->  	unsigned long pfn;
->  	void *adr;
->  
->  	if (after_bootmem) {
->  		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-> -		*phys = __pa(adr);
->  
->  		return adr;
->  	}
-> @@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
->  
->  	adr = __va(pfn * PAGE_SIZE);
->  	clear_page(adr);
-> -	*phys  = pfn * PAGE_SIZE;
->  	return adr;
->  }
->  
-> @@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  	int i = pmd_index(address);
->  
->  	for (; i < PTRS_PER_PMD; i++, address = next) {
-> -		unsigned long pte_phys;
->  		pmd_t *pmd = pmd_page + pmd_index(address);
->  		pte_t *pte;
->  		pgprot_t new_prot = prot;
-> @@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  			continue;
->  		}
->  
-> -		pte = alloc_low_page(&pte_phys);
-> +		pte = alloc_low_page();
->  		last_map_addr = phys_pte_init(pte, address, end, new_prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-> +		pmd_populate_kernel(&init_mm, pmd, pte);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	update_page_count(PG_LEVEL_2M, pages);
-> @@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  	int i = pud_index(addr);
->  
->  	for (; i < PTRS_PER_PUD; i++, addr = next) {
-> -		unsigned long pmd_phys;
->  		pud_t *pud = pud_page + pud_index(addr);
->  		pmd_t *pmd;
->  		pgprot_t prot = PAGE_KERNEL;
-> @@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  			continue;
->  		}
->  
-> -		pmd = alloc_low_page(&pmd_phys);
-> +		pmd = alloc_low_page();
->  		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
->  					      prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pud_populate(&init_mm, pud, __va(pmd_phys));
-> +		pud_populate(&init_mm, pud, pmd);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	__flush_tlb_all();
-> @@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
->  
->  	for (; start < end; start = next) {
->  		pgd_t *pgd = pgd_offset_k(start);
-> -		unsigned long pud_phys;
->  		pud_t *pud;
->  
->  		next = (start + PGDIR_SIZE) & PGDIR_MASK;
-> @@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
->  			continue;
->  		}
->  
-> -		pud = alloc_low_page(&pud_phys);
-> +		pud = alloc_low_page();
->  		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
->  						 page_size_mask);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pgd_populate(&init_mm, pgd, __va(pud_phys));
-> +		pgd_populate(&init_mm, pgd, pud);
->  		spin_unlock(&init_mm.page_table_lock);
->  		pgd_changed = true;
->  	}
-> -- 
-> 1.7.7
-> 
+>> +static int __devinit tps80031_irq_init(struct tps80031 *tps80031, int irq,
+>> +				int irq_base)
+>> +{
+>> +	struct device *dev = tps80031->dev;
+>> +	int i, ret;
+>> +
+>> +	for (i = 0; i<  3; i++)
+>> +		tps80031_write(dev, SLAVE_ID2,
+>> +				TPS80031_INT_MSK_STS_A + i, 0x00);
+> regmap ought to be masking everything for you on init.
+
+There is 2 sets of registers which need to be configure, MASK and LINE 
+enable.
+
+regmap take care of mask only.
+> * Unknown Key
+> * 0x7EA229BD
+
