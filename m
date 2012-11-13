@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2KMT4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 14:56:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48430 "EHLO mga02.intel.com"
+	id S1755741Ab2KMT53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 14:57:29 -0500
+Received: from mailq2.tnnet.fi ([217.112.254.233]:36341 "EHLO mailq2.tnnet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab2KMT4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 14:56:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,768,1352102400"; 
-   d="scan'208";a="219138390"
-Date: Tue, 13 Nov 2012 20:56:37 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 RESEND 0/4] mfd: tps65910: use regmap irq framework
- for interrupt
-Message-ID: <20121113195637.GQ27828@sortiz-mobl>
-References: <1352815439-26040-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
+	id S1755478Ab2KMT51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 14:57:27 -0500
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Nov 2012 14:57:27 EST
+Message-ID: <50A2A3CE.7DDB8A48@users.sourceforge.net>
+Date: Tue, 13 Nov 2012 21:47:26 +0200
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: linux-crypto@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Announce loop-AES-v3.6f file/swap crypto package
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352815439-26040-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+loop-AES changes since previous release:
+- Worked around block layer interface changes on 3.7-rc kernels.
+- Fixed bug that caused loop device to report un-optimal I/O size on some
+  backing devices. This bug caused bad performance.
+- Fixed bug that assumed /bin/sh -> bash. For /bin/sh -> dash case some
+  auto-detections failed.
 
-On Tue, Nov 13, 2012 at 07:33:55PM +0530, Laxman Dewangan wrote:
-> This patch series has following change:
-> - Use regmap irq framework for interrupt registration. Corrected the
->   register bit definition for interrupts.
-> - Move the irq table to tps65910.c and get rid of tps65910-irq.c.
-> - Raarrange the init sequence of different sub moduled of tps65910 like
->   irq, clock and then mfd devices.
-> - Export the irq domain handle from regmap to use in mfd driver.
-> - Pass the irq domain in mfd_add_devices to have proper interrupt mapping
->   for sub devices like RTC.
-> 
-> 
-> Changes from V1: 
-> - rearrange patch on which older patch3 become the new patch 1.
-> - Add stub for new api in the regmap.
-> - Add empty line if paragraph change in description.
-> 
-> Changes from V2:
-> - Remove the older 4th patch where API for getting irq_domain was added
->   in regmap. It is already taken care by Mark B.
-The patchset looks fine, but it should either go through Mark's tree or I
-should merge Mark's regmap_irq_get_domain patch to my for-next branch.
-Mark, any preference ?
+bzip2 compressed tarball is here:
 
-Cheers,
-Samuel.
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6f.tar.bz2
+    md5sum 0b5bfe4538fd8439b84c586846726507
+
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6f.tar.bz2.sign
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
