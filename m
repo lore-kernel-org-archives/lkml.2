@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2KMIjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:39:53 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33623 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab2KMIjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:39:52 -0500
-Message-ID: <50A20750.8050808@linux.vnet.ibm.com>
-Date: Tue, 13 Nov 2012 16:39:44 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754147Ab2KMInv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:43:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab2KMInu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:43:50 -0500
+Date: Tue, 13 Nov 2012 09:43:42 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@localhost
+To: Jens Axboe <axboe@kernel.dk>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lukas Czerner <lczerner@redhat.com>, dchinner@redhat.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
+In-Reply-To: <509CB1EB.4080408@kernel.dk>
+Message-ID: <alpine.LFD.2.00.1211130942160.3577@localhost>
+References: <1350379305-13858-1-git-send-email-lczerner@redhat.com> <20121108111418.bcaad11d.akpm@linux-foundation.org> <509CB1EB.4080408@kernel.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
-References: <5097AC70.1080904@linux.vnet.ibm.com> <5097ACA0.7080408@linux.vnet.ibm.com> <20121112231223.GC5798@amt.cnet>
-In-Reply-To: <20121112231223.GC5798@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12111308-2674-0000-0000-000006B6F83D
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 07:12 AM, Marcelo Tosatti wrote:
-> On Mon, Nov 05, 2012 at 08:10:08PM +0800, Xiao Guangrong wrote:
->> In order to detecting spte remapping, we can simply check whether the
->> spte has already been pointing to the pfn even if the spte is not the
->> last spte for middle spte is pointing to the kernel pfn which can not
->> be mapped to userspace
->>
->> Also, update slot and stat.lpages iff the spte is not remapped
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |   40 +++++++++++++---------------------------
->>  1 files changed, 13 insertions(+), 27 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 692ebb1..4ea731e 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2420,8 +2420,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  			 pfn_t pfn, bool speculative,
->>  			 bool host_writable)
->>  {
->> -	int was_rmapped = 0;
->> -	int rmap_count;
->> +	bool was_rmapped = false;
->>
->>  	pgprintk("%s: spte %llx access %x write_fault %d"
->>  		 " user_fault %d gfn %llx\n",
->> @@ -2429,25 +2428,13 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  		 write_fault, user_fault, gfn);
->>
->>  	if (is_rmap_spte(*sptep)) {
->> -		/*
->> -		 * If we overwrite a PTE page pointer with a 2MB PMD, unlink
->> -		 * the parent of the now unreachable PTE.
->> -		 */
->> -		if (level > PT_PAGE_TABLE_LEVEL &&
->> -		    !is_large_pte(*sptep)) {
->> -			struct kvm_mmu_page *child;
->> -			u64 pte = *sptep;
->> +		if (pfn != spte_to_pfn(*sptep)) {
->> +			struct kvm_mmu_page *sp = page_header(__pa(sptep));
->>
->> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
->> -			drop_parent_pte(child, sptep);
->> -			kvm_flush_remote_tlbs(vcpu->kvm);
+On Fri, 9 Nov 2012, Jens Axboe wrote:
+
+> Date: Fri, 09 Nov 2012 08:34:03 +0100
+> From: Jens Axboe <axboe@kernel.dk>
+> To: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Lukas Czerner <lczerner@redhat.com>, dchinner@redhat.com,
+>     jmoyer@redhat.com, linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] loop: Limit the number of requests in the bio list
 > 
-> How come its safe to drop this case?
+> On 2012-11-08 20:14, Andrew Morton wrote:
+> > On Tue, 16 Oct 2012 11:21:45 +0200
+> > Lukas Czerner <lczerner@redhat.com> wrote:
+> > 
+> >> Currently there is not limitation of number of requests in the loop bio
+> >> list. This can lead into some nasty situations when the caller spawns
+> >> tons of bio requests taking huge amount of memory. This is even more
+> >> obvious with discard where blkdev_issue_discard() will submit all bios
+> >> for the range and wait for them to finish afterwards. On really big loop
+> >> devices and slow backing file system this can lead to OOM situation as
+> >> reported by Dave Chinner.
+> >>
+> >> With this patch we will wait in loop_make_request() if the number of
+> >> bios in the loop bio list would exceed 'nr_requests' number of requests.
+> >> We'll wake up the process as we process the bios form the list. Some
+> >> threshold hysteresis is in place to avoid high frequency oscillation.
+> >>
+> > 
+> > What's happening with this?
+> 
+> Sorry I didn't reply to this yet. My initial thought is that we had
+> something like this for loop back in the 2.4 days, and it was deadlock
+> prone. Can't seem to remember all the details on that yet.
+> 
+> v2 is a nice improvement, though. With 1:1 bio and wakeups, you would
+> get tons of context switches. The batched approach is much better.
+> 
+> Lukas, have you beaten on this with a file backed loop and heavy traffic
+> on a file system on top?
 
-We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
-There are two cases:
-1) the sptep is not the last mapping.
-   under this case, sptep must point to a shadow page table, that means
-   spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
-   so, 'if' condition must be satisfied, the sptep will be dropped.
+Hi Jeff,
 
-   Actually, This is the origin case:
-  | if (level > PT_PAGE_TABLE_LEVEL &&
-  |	    !is_large_pte(*sptep))"
+sorry for the delay. Yes, I've tested this with xfstests using loop
+driver for both test and scratch disk.
 
-2) the sptep is the last mapping.
-   under this case, the level of spte (sp.level) must equal the 'level' which
-   we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
-   we drop it.
+I'll resend the updated version hopefully later today.
 
-I think this is safe. :)
-
+Thanks!
+-Lukas
