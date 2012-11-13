@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2KMARX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:17:23 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46105 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2KMARV (ORCPT
+	id S1753894Ab2KMAY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:24:29 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18900 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752663Ab2KMAY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:17:21 -0500
-Message-ID: <50A1918E.1000809@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 17:17:18 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Mon, 12 Nov 2012 19:24:27 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiYVANmRoVB5LErT/2dsb2JhbABEvWWEdgOBBIEJgh4BAQU6HCMQCAMOCi4UJQMhE4gJqW+QLhSMAWwxhExhA5V7iUmGe4MDgVAX
+Date: Tue, 13 Nov 2012 11:24:20 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux list <linux-kernel@vger.kernel.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: Use bool type rather than a custom boolean_t type.
+Message-ID: <20121113002420.GC25039@dastard>
+References: <CACnwZYdPntxqWh_Hb2=fa4NPFhtZQSj-sRK3hMHcK6FdctQEXw@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] NVIDIA Tegra DRM driver
-References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACnwZYdPntxqWh_Hb2=fa4NPFhtZQSj-sRK3hMHcK6FdctQEXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 02:55 PM, Thierry Reding wrote:
-> This second version of this patch series addresses all the comments
-> received so far. Most notably it takes advantage of the debugfs helpers
-> provided by the DRM core. Oddly enough this actually increases the line
-> count, but that's because the helpers don't fit with the subdevices
-> approach as implemented by this driver. However some quick discussions
-> with Rob Clark showed that Tegra DRM is not special in this respect but
-> other drivers may need the same functionality. Eventually the debugfs
-> code could be reworked on top of helpers that are better suited at the
-> design of embedded, multi-device DRM drivers.
+On Mon, Nov 12, 2012 at 09:36:17PM -0200, Thiago Farina wrote:
+> Hi,
 > 
-> Other than that there is some removal of code that was actually supposed
-> to go into a later patch because it has dependencies that haven't been
-> merged yet and some moving around of #defines and the device tree
-> bindings documentation. Finally the driver now uses the DRM core's
-> drm_compat_ioctl() instead of a custom and unimplemented (!) version.
+> Please, take a look.
+> 
+> Patch attached.
 
-The series,
+It's a good start for a cleanup, but there's no point in removing
+the boolean_t from one file and then not removing it from the rest
+of the XFS code.  It's only used in a handful of places, so just
+remove it completely.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Also, can you please place patches in line rather than attaching
+them. Attaching them means they cannot be quoted in reply. See
+Documentation/SubmittingPatches and Documentation/email-clients.txt
+for guidelines.
 
-(on the Harmony board's HDMI output; I'll test other boards/outputs later).
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
