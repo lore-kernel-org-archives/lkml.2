@@ -1,140 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2KMKHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 05:07:42 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63439 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab2KMKHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 05:07:41 -0500
-Date: Tue, 13 Nov 2012 11:07:36 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] mm: numa: teach gup_fast about pmd_numa
-Message-ID: <20121113100735.GC21522@gmail.com>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <1352193295-26815-7-git-send-email-mgorman@suse.de>
+	id S1754722Ab2KMKMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 05:12:12 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:45440 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754436Ab2KMKMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 05:12:10 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: [RFC, RFT] [PATCH] staging: ft1000: unify struct ft1000_info between USB and PCMCIA drivers
+Date: Tue, 13 Nov 2012 11:11:38 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: "Greg Kroah-Hartman" <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201211092242.34697.linux@rainbow-software.org> <CAAfyv36UhwVmjwBV5RKDmWm3ag_yqr+t1u+NHAtamFSkmcrUhw@mail.gmail.com>
+In-Reply-To: <CAAfyv36UhwVmjwBV5RKDmWm3ag_yqr+t1u+NHAtamFSkmcrUhw@mail.gmail.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1352193295-26815-7-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201211131111.38721.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 12 November 2012, Belisko Marek wrote:
+> Hi Ondrej,
+>
+> On Fri, Nov 9, 2012 at 10:42 PM, Ondrej Zary <linux@rainbow-software.org> 
+wrote:
+> > Unify struct ft1000_info between ft1000-usb and ft1000-pcmcia and move it
+> > to common ft1000.h.
+> >
+> > ft1000-pcmcia seems to work. Please test ft1000-usb.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > ---
+> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   33 +-----
+> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   21 ++-
+> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |   10 +-
+> >  drivers/staging/ft1000/ft1000-usb/ft1000_debug.c   |  147
+> > ++++++++++---------- .../staging/ft1000/ft1000-usb/ft1000_download.c    |
+> >   70 +++++----- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   99
+> > +++++++------- drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |    4
+> > +-
+> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |   30 ++--
+> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |   54 +------
+> >  drivers/staging/ft1000/ft1000.h                    |   35 +++++
+> >  10 files changed, 236 insertions(+), 267 deletions(-)
+> >
+> > diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+> > b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h index adb436e..65f7ab6
+> > 100644
+> > --- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+> > +++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+> > @@ -31,41 +31,10 @@
+> >  #define SUCCESS        0x00
+> >  #define FAILURE        0x01
+> >
+> > -struct ft1000_info {
+> > -       struct net_device_stats stats;
+> > -       u16 DrvErrNum;
+> > -       u16 AsicID;
+> > +struct ft1000_pcmcia {
+>
+> To be consistent can you please name also usb part not ft100_device
+> but e.g. ft1000_usb or something?
 
-* Mel Gorman <mgorman@suse.de> wrote:
+Yes, that's a good idea. I'd like to do that in a separate patch, this one is 
+already big enough.
 
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> When scanning pmds, the pmd may be of numa type (_PAGE_PRESENT not set),
-> however the pte might be present. Therefore, gup_pmd_range() must return
-> 0 in this case to avoid losing a NUMA hinting page fault during gup_fast.
-> 
-> Note: gup_fast will skip over non present ptes (like numa 
-> types), so no explicit check is needed for the pte_numa case. 
-> [...]
+> > @@ -1179,8 +1179,6 @@ static int ft1000_open(struct net_device *dev)
+> >         struct ft1000_info *pInfo = netdev_priv(dev);
+> >         struct timeval tv;
+> >
+> > -       DEBUG("ft1000_open is called for card %d\n", pInfo->CardNumber);
+>
+> ^^^ Why removing this debug?
 
-So, why not fix all architectures that choose to expose 
-pte_numa() and pmd_numa() methods - via the patch below?
+I don't remember exactly (this is from an old patch) but probably because I 
+didn't want to add code to reach CardNumber (which should be removed too).
+The debug messages are a mess, some are completely useless, some should be 
+non-debug instead.
 
-Thanks,
+If you have the USB hardware, please test if this patch does not break 
+anything. I have only a PCMCIA card.
 
-	Ingo
-
------------------>
->From db4aa58db59a2a296141c698be8b4535d0051ca1 Mon Sep 17 00:00:00 2001
-From: Andrea Arcangeli <aarcange@redhat.com>
-Date: Fri, 5 Oct 2012 21:36:27 +0200
-Subject: [PATCH] numa, mm: Support NUMA hinting page faults from gup/gup_fast
-
-Introduce FOLL_NUMA to tell follow_page to check
-pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe to do
-so because it always invokes handle_mm_fault and retries the
-follow_page later.
-
-KVM secondary MMU page faults will trigger the NUMA hinting page
-faults through gup_fast -> get_user_pages -> follow_page ->
-handle_mm_fault.
-
-Other follow_page callers like KSM should not use FOLL_NUMA, or they
-would fail to get the pages if they use follow_page instead of
-get_user_pages.
-
-[ This patch was picked up from the AutoNUMA tree. ]
-
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ ported to this tree. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/mm.h |  1 +
- mm/memory.c        | 17 +++++++++++++++++
- 2 files changed, 18 insertions(+)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0025bf9..1821629 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1600,6 +1600,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_MLOCK	0x40	/* mark page as mlocked */
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
- #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
-+#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
- 
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index e3e8ab2..a660fd0 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1536,6 +1536,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
- 		goto out;
- 	}
-+	if ((flags & FOLL_NUMA) && pmd_numa(vma, *pmd))
-+		goto no_page_table;
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
- 			split_huge_page_pmd(mm, pmd);
-@@ -1565,6 +1567,8 @@ split_fallthrough:
- 	pte = *ptep;
- 	if (!pte_present(pte))
- 		goto no_page;
-+	if ((flags & FOLL_NUMA) && pte_numa(vma, pte))
-+		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
- 
-@@ -1716,6 +1720,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
- 	vm_flags &= (gup_flags & FOLL_FORCE) ?
- 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
-+
-+	/*
-+	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
-+	 * would be called on PROT_NONE ranges. We must never invoke
-+	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
-+	 * page faults would unprotect the PROT_NONE ranges if
-+	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
-+	 * bitflag. So to avoid that, don't set FOLL_NUMA if
-+	 * FOLL_FORCE is set.
-+	 */
-+	if (!(gup_flags & FOLL_FORCE))
-+		gup_flags |= FOLL_NUMA;
-+
- 	i = 0;
- 
- 	do {
+-- 
+Ondrej Zary
