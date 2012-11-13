@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2KMGE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:04:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47982 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab2KMGEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:04:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
-   d="scan'208";a="241143531"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 2/3] x86/nmi: export local_touch_nmi() symbol for modules
-Date: Mon, 12 Nov 2012 14:03:50 -0800
-Message-Id: <1352757831-5202-3-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1753987Ab2KMGUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:20:24 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63032 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab2KMGUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 01:20:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <50A1DFE1.3070809@jp.fujitsu.com>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
+	<1352755122-25660-3-git-send-email-yinghai@kernel.org>
+	<50A1DFE1.3070809@jp.fujitsu.com>
+Date: Mon, 12 Nov 2012 22:20:20 -0800
+X-Google-Sender-Auth: zstzkyn1lwCDogHnmdZLl7lQ788
+Message-ID: <CAE9FiQXx6p58T9B3df6waBUsywDd9NkZ5FsxMt5kjJ8hQmZqbw@mail.gmail.com>
+Subject: Re: [PATCH 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- arch/x86/kernel/nmi.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index f84f5c5..6030805 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -509,3 +509,4 @@ void local_touch_nmi(void)
- {
- 	__this_cpu_write(last_nmi_rip, 0);
- }
-+EXPORT_SYMBOL_GPL(local_touch_nmi);
--- 
-1.7.9.5
-
+On Mon, Nov 12, 2012 at 9:51 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> 2012/11/13 6:17, Yinghai Lu wrote:
+>> +     nr_range = 0;
+>
+> This is unnecessary since it is set in the below.
+>
+>> +     nr_range = split_mem_range(mr, nr_range, start, end);
+                                                             ^^^^^^^^
