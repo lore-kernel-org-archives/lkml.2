@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2KMQJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:09:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab2KMQJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:09:36 -0500
-Message-ID: <50A270AB.5040305@redhat.com>
-Date: Tue, 13 Nov 2012 11:09:15 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754887Ab2KMQKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:10:52 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:57717 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753153Ab2KMQKu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 11:10:50 -0500
+Date: Tue, 13 Nov 2012 11:10:49 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Huang Ying <ying.huang@intel.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+In-Reply-To: <1352783539.7176.212.camel@yhuang-dev>
+Message-ID: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/8] sched, numa, mm: Add last_cpu to page flags
-References: <20121112160451.189715188@chello.nl> <20121112161215.685202629@chello.nl>
-In-Reply-To: <20121112161215.685202629@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2012 11:04 AM, Peter Zijlstra wrote:
-> @@ -706,6 +669,51 @@ static inline int page_to_nid(const stru
->   }
->   #endif
->
-> +#ifdef CONFIG_SCHED_NUMA
-> +#ifdef LAST_CPU_NOT_IN_PAGE_FLAGS
-> +static inline int page_xchg_last_cpu(struct page *page, int cpu)
-> +{
-> +	return xchg(&page->_last_cpu, cpu);
-> +}
-> +
-> +static inline int page_last_cpu(struct page *page)
-> +{
-> +	return page->_last_cpu;
-> +}
-> +#else
-> +static inline int page_xchg_last_cpu(struct page *page, int cpu)
-> +{
-> +	unsigned long old_flags, flags;
-> +	int last_cpu;
-> +
-> +	do {
-> +		old_flags = flags = page->flags;
-> +		last_cpu = (flags >> LAST_CPU_PGSHIFT) & LAST_CPU_MASK;
-> +
-> +		flags &= ~(LAST_CPU_MASK << LAST_CPU_PGSHIFT);
-> +		flags |= (cpu & LAST_CPU_MASK) << LAST_CPU_PGSHIFT;
-> +	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
-> +
-> +	return last_cpu;
-> +}
+On Tue, 13 Nov 2012, Huang Ying wrote:
 
-These functions, and the accompanying config option, could
-use some comments and documentation, explaining why things
-are done this way, why it is safe, and what (if any) constraints
-it places on other users of page.flags ...
+> > This is not quite right.  Consider a device that is in runtime suspend 
+> > when a system sleep starts.  When the system sleep ends, the device 
+> > will be resumed but the PM core will still think its state is 
+> > SUSPENDED.  The subsystem has to tell the PM core that the device is 
+> > now ACTIVE.  Currently, subsystems do this by calling 
+> > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
+> > your scheme this wouldn't work; the pm_runtime_set_active call would 
+> > fail because the device was !forbidden.
+> 
+> Thanks for your information.  For this specific situation, is it
+> possible to call pm_runtime_resume() or pm_request_resume() for the
+> device?
 
-> +static inline int page_last_cpu(struct page *page)
-> +{
-> +	return (page->flags >> LAST_CPU_PGSHIFT) & LAST_CPU_MASK;
-> +}
-> +#endif /* LAST_CPU_NOT_IN_PAGE_FLAGS */
-> +#else /* CONFIG_SCHED_NUMA */
-> +static inline int page_xchg_last_cpu(struct page *page, int cpu)
-> +{
-> +	return page_to_nid(page);
-> +}
-> +
-> +static inline int page_last_cpu(struct page *page)
-> +{
-> +	return page_to_nid(page);
-> +}
-> +#endif /* CONFIG_SCHED_NUMA */
-> +
+No, because the device already is at full power.  The subsystem just
+needs to tell the PM core that it is.
 
+> > > PM.  Device can always work with full power.
+> > 
+> > It can't if the parent is in SUSPEND.  If necessary, the user can write 
+> > "on" to the parent's power/control attribute first.
+> 
+> Is it possible to call pm_runtime_set_active() for the parent if the
+> parent is disabled and SUSPENDED.
 
--- 
-All rights reversed
+Doing that is possible, but it might not work.  The parent might
+actually be at low power; calling pm_runtime_set_active wouldn't change
+the physical power level.  Basically, it's not safe to assume anything
+about devices that are disabled for runtime PM.
+
+> It appears that there is race condition between this and the
+> pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable sequence
+> you mentioned ealier.
+> 
+> thread 1			thread 2
+> pm_runtime_disable
+> pm_runtime_set_active
+> 				pm_runtime_allow
+> 				  pm_runtime_set_suspended
+> pm_runtime_enable
+
+This can't happen in the situation I described earlier because during
+system sleep transitions, no other user threads are allowed to run.  
+All of them except the one actually carrying out the transition are
+frozen.
+
+Alan Stern
+
