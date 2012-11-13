@@ -1,100 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab2KMUZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:25:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51155 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755687Ab2KMUZC (ORCPT
+	id S1755818Ab2KMU1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:27:21 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57097 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab2KMU1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:25:02 -0500
-Message-ID: <1352838281.16264.106.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [3.0.y, 3.2.y, 3.4.y] Re: [PATCH v2] r8169: Fix WoL on
- RTL8168d/8111d.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>, romieu@fr.zoreil.com
-Cc: jrnieder@gmail.com, stable@vger.kernel.org, kibi@debian.org,
-        netdev@vger.kernel.org, nic_swsd@realtek.com, hayeswang@realtek.com,
-        linux-kernel@vger.kernel.org, florent.fourcot@enst-bretagne.fr
-Date: Tue, 13 Nov 2012 20:24:41 +0000
-In-Reply-To: <20121112.182754.384199300061351360.davem@davemloft.net>
-References: <20121101222113.GB7708@electric-eye.fr.zoreil.com>
-	 <20121112163858.GA4343@elie.Belkin>
-	 <20121112230339.GA28555@electric-eye.fr.zoreil.com>
-	 <20121112.182754.384199300061351360.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LWof8aclMGFufVWbgLoz"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 13 Nov 2012 15:27:20 -0500
+Date: Tue, 13 Nov 2012 12:27:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] cgroup: s/CGRP_CLONE_CHILDREN/CGRP_CPUSET_CLONE_CHILDREN/
+Message-ID: <20121113202714.GA21185@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 6e405c1ae4018d813e8ed9e0bd463d6976aebfa8 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 13 Nov 2012 12:21:50 -0800
 
---=-LWof8aclMGFufVWbgLoz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+clone_children is only meaningful for cpuset and will stay that way.
+Rename the flag to reflect that and update documentation.  Also, drop
+clone_children() wrapper in cgroup.c.  The thin wrapper is used only a
+few times and one of them will go away soon.
 
-On Mon, 2012-11-12 at 18:27 -0500, David Miller wrote:
-> From: Francois Romieu <romieu@fr.zoreil.com>
-> Date: Tue, 13 Nov 2012 00:03:39 +0100
->=20
-> > Jonathan Nieder <jrnieder@gmail.com> :
-> > [...]
-> >> This has been applied as commit b00e69dee4cc in mainline; thanks!
-> >>=20
-> >> Fran??ois and David, would this be a candidate for inclusion in
-> >> 3.0- and newer stable kernels?
-> >=20
-> > - 3.0.51
-> >   b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
-> >   aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
-> >=20
-> > - 3.4.18
-> >   0481776b7a70f09acf7d9d97c288c3a8403fbfe4
-> >   b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
-> >   aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
-> >=20
-> > - 3.6.6
-> >   0481776b7a70f09acf7d9d97c288c3a8403fbfe4
-> >   b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd
-> >   aee77e4accbeb2c86b1d294cd84fec4a12dde3bd
-> >=20
-> > I'll cook the patches.
->=20
-> Thank you, these all look fine for -stable to me.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>
+---
+These two patches are based on top of "cgroup: allow->post_create() to
+fail" patchset.
 
-I've queued up all three for 3.2.
+ http://thread.gmane.org/gmane.linux.kernel.cgroups/5047
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-online-may-fail
 
-Ben.
+and availalbe in the following branch.
 
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-remove-post_clone
 
---=-LWof8aclMGFufVWbgLoz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ Documentation/cgroups/cgroups.txt |  8 +++-----
+ include/linux/cgroup.h            |  6 ++++--
+ kernel/cgroup.c                   | 28 ++++++++++++----------------
+ 3 files changed, 19 insertions(+), 23 deletions(-)
 
-iQIVAwUAUKKsiee/yOyVhhEJAQp7GRAA1iSSgTnp/o7TGnyZsYHJEA/opDtC48JY
-sXUORFOZs5PZVNZnCtwO4EQr5RrJkRq00I7EwbynUIUOMdwiKydoWH+xauWE7gbC
-CDAqaRUnuA+u+DFEW4LPVh4s0wWxjE9XhA9TJrYEeBVFjiwxNI53j+8mauwWXVO7
-vNcOevfdjs86ctWgzpeoAMP4IwNObCUbJdQxSIINwNpPC+4+4iVzLJj68PDFBcCJ
-p9Q8Oi4XWnZlC/Ap+Sm6wkHHvKB1iIqOkF5SIh/EOD2fcDutVypI7W5RnVbLZtS2
-qhHUBOgrn3m6oxLXbn9lB1rGuAqa8Ihya2giamtG0E4GGs6PJwWinFz3CZRLGv1r
-TWi8gwz0bZENY5wMmhCnZVgkA8yBCx4C1V1Xuhj51+JU8RTmRzUzi8feJSgxRxOk
-3l8NKrbPUpfJQNbyFnGC9VwDrYyBnQRUSD/cgoXoBbPk1ps40xZvxuYFjcMUk595
-MU3EX1cBW6NxQYik62TDfSm/DrI7sNMKRgUnprA+Mc+psWa8dJ1kvMy4a7j1rOyr
-FIxeDaTFzdQ7EmkCCrLwxMafhDRFzb04+YHXqHgWztOi9//wKsniEeKIGo/WVE2V
-0uoo888oSyeFA657pGxpkkDC4hp1/bfHlvvPH5KXPCezIGJ/8tTMlSqkFqXqO5wA
-oFG0BuWu81A=
-=Wrk0
------END PGP SIGNATURE-----
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index b06eea2..24cdf76 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -299,11 +299,9 @@ a cgroup hierarchy's release_agent path is empty.
+ 1.5 What does clone_children do ?
+ ---------------------------------
+ 
+-If the clone_children flag is enabled (1) in a cgroup, then all
+-cgroups created beneath will call the post_clone callbacks for each
+-subsystem of the newly created cgroup. Usually when this callback is
+-implemented for a subsystem, it copies the values of the parent
+-subsystem, this is the case for the cpuset.
++This flag only affects the cpuset controller. If the clone_children
++flag is enabled (1) in a cgroup, a new cpuset cgroup will copy its
++configuration from the parent during initialization.
+ 
+ 1.6 How do I use cgroups ?
+ --------------------------
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 89c631d..926d8d1 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -143,9 +143,11 @@ enum {
+ 	/* Control Group requires release notifications to userspace */
+ 	CGRP_NOTIFY_ON_RELEASE,
+ 	/*
+-	 * Clone cgroup values when creating a new child cgroup
++	 * Clone the parent's configuration when creating a new child
++	 * cpuset cgroup.  For historical reasons, this option can be
++	 * specified at mount time and thus is implemented here.
+ 	 */
+-	CGRP_CLONE_CHILDREN,
++	CGRP_CPUSET_CLONE_CHILDREN,
+ };
+ 
+ struct cgroup {
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 46c5119..a49572e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -296,11 +296,6 @@ static int notify_on_release(const struct cgroup *cgrp)
+ 	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+ }
+ 
+-static int clone_children(const struct cgroup *cgrp)
+-{
+-	return test_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
+-}
+-
+ /*
+  * for_each_subsys() allows you to iterate on each subsystem attached to
+  * an active hierarchy
+@@ -1101,7 +1096,7 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
+ 		seq_puts(seq, ",xattr");
+ 	if (strlen(root->release_agent_path))
+ 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+-	if (clone_children(&root->top_cgroup))
++	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &root->top_cgroup.flags))
+ 		seq_puts(seq, ",clone_children");
+ 	if (strlen(root->name))
+ 		seq_printf(seq, ",name=%s", root->name);
+@@ -1113,7 +1108,7 @@ struct cgroup_sb_opts {
+ 	unsigned long subsys_mask;
+ 	unsigned long flags;
+ 	char *release_agent;
+-	bool clone_children;
++	bool cpuset_clone_children;
+ 	char *name;
+ 	/* User explicitly requested empty subsystem */
+ 	bool none;
+@@ -1164,7 +1159,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			continue;
+ 		}
+ 		if (!strcmp(token, "clone_children")) {
+-			opts->clone_children = true;
++			opts->cpuset_clone_children = true;
+ 			continue;
+ 		}
+ 		if (!strcmp(token, "xattr")) {
+@@ -1474,8 +1469,8 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
+ 		strcpy(root->release_agent_path, opts->release_agent);
+ 	if (opts->name)
+ 		strcpy(root->name, opts->name);
+-	if (opts->clone_children)
+-		set_bit(CGRP_CLONE_CHILDREN, &root->top_cgroup.flags);
++	if (opts->cpuset_clone_children)
++		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &root->top_cgroup.flags);
+ 	return root;
+ }
+ 
+@@ -3905,7 +3900,7 @@ fail:
+ static u64 cgroup_clone_children_read(struct cgroup *cgrp,
+ 				    struct cftype *cft)
+ {
+-	return clone_children(cgrp);
++	return test_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
+ }
+ 
+ static int cgroup_clone_children_write(struct cgroup *cgrp,
+@@ -3913,9 +3908,9 @@ static int cgroup_clone_children_write(struct cgroup *cgrp,
+ 				     u64 val)
+ {
+ 	if (val)
+-		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
+ 	else
+-		clear_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++		clear_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
+ 	return 0;
+ }
+ 
+@@ -4130,8 +4125,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (notify_on_release(parent))
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+ 
+-	if (clone_children(parent))
+-		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags))
++		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
+ 
+ 	for_each_subsys(root, ss) {
+ 		struct cgroup_subsys_state *css;
+@@ -4148,7 +4143,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 				goto err_free_all;
+ 		}
+ 		/* At error, ->css_free() callback has to free assigned ID. */
+-		if (clone_children(parent) && ss->post_clone)
++		if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags) &&
++		    ss->post_clone)
+ 			ss->post_clone(cgrp);
+ 
+ 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+-- 
+1.7.11.7
 
---=-LWof8aclMGFufVWbgLoz--
