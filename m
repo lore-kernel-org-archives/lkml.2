@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab2KMP4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:56:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49047 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab2KMP4J (ORCPT
+	id S1754051Ab2KMP4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:56:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54136 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab2KMP4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:56:09 -0500
-Message-ID: <50A26D66.4060603@infradead.org>
-Date: Tue, 13 Nov 2012 07:55:18 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 13 Nov 2012 10:56:23 -0500
+Date: Tue, 13 Nov 2012 16:56:12 +0100
+From: Robert Richter <rric@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, jun.zhang@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com, wei.yang@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86-32: Fix invalid stack address while in
+ softirq
+Message-ID: <20121113155612.GH2504@rric.localhost>
+References: <20120912135059.GZ8285@erda.amd.com>
+ <tip-fa22b5dfbea95c14dd96da264e80cac68857ceb7@git.kernel.org>
+ <20121113151727.GA20400@gmail.com>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Arend van Spriel <arend@broadcom.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH -next] wireless: brcmfmac: fix printk format warning
-References: <20121101163622.129b59967d2ee76e6946874a@canb.auug.org.au>	 <5092B4BE.4080803@infradead.org> <5092B900.2090801@broadcom.com>	 (sfid-20121101_190234_358746_9918835B) <1351798279.17469.0.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1351798279.17469.0.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113151727.GA20400@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 12:31 PM, Johannes Berg wrote:
-
-> On Thu, 2012-11-01 at 19:01 +0100, Arend van Spriel wrote:
->> On 11/01/2012 06:43 PM, Randy Dunlap wrote:
->>> From: Randy Dunlap <rdunlap@infradead.org>
->>>
->>> Fix printk format warning for ssid_len, which is a size_t:
->>>
->>> drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c:3941:2: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
->>>
->>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->>> Cc:	brcm80211-dev-list@broadcom.com
->>
->>
->> We actually have a patch ready for that with credit to people who
->> reported it. We can add you to that list ;-)
+On 13.11.12 16:17:27, Ingo Molnar wrote:
 > 
-> Which you've been sitting on for WAY too long already :)
+> * tip-bot for Robert Richter <robert.richter@amd.com> wrote:
+> 
+> > Commit-ID:  fa22b5dfbea95c14dd96da264e80cac68857ceb7
+> > Gitweb:     http://git.kernel.org/tip/fa22b5dfbea95c14dd96da264e80cac68857ceb7
+> > Author:     Robert Richter <robert.richter@amd.com>
+> > AuthorDate: Mon, 3 Sep 2012 20:54:48 +0200
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Wed, 31 Oct 2012 14:25:18 -0700
+> > 
+> > x86-32: Fix invalid stack address while in softirq
+> 
+> Had to remove this one because it broke the 32-bit allmodconfig 
+> build:
+> 
+> ERROR: "kernel_stack_pointer" [arch/x86/oprofile/oprofile.ko] undefined!
 
-ping Arend.
-Please have your patch included in linux-next builds.  thanks.
+Argh! Will look at this.
 
--- 
-~Randy
+-Robert
