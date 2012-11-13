@@ -1,75 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2KMJI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:08:59 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56573 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab2KMJIz (ORCPT
+	id S1754699Ab2KMJJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:09:54 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53087 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab2KMJHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:08:55 -0500
-Date: Tue, 13 Nov 2012 20:08:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Joachim Eastwood <manabian@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the net-next
- tree
-Message-Id: <20121113200845.719276a14b4aa37a3dbdd896@canb.auug.org.au>
-In-Reply-To: <CAGhQ9Vx3Y3j0qqkEif09HebFyR+1UYmSbp=3jwuXnoiuWBdymQ@mail.gmail.com>
-References: <20121113151536.50d0292e8cb88b10686b576e@canb.auug.org.au>
-	<CAGhQ9Vx3Y3j0qqkEif09HebFyR+1UYmSbp=3jwuXnoiuWBdymQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Nov_2012_20_08_45_+1100_5iglaAZHDz8LU0/s"
+	Tue, 13 Nov 2012 04:07:35 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: andi@firstfloor.org, tokunaga.keiich@jp.fujitsu.com,
+        kexec@lists.infradead.org, hbabu@us.ibm.com, mingo@redhat.com,
+        ddutile@redhat.com, vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com,
+        hpa@zytor.com, bhelgaas@google.com, tglx@linutronix.de,
+        yinghai@kernel.org, Takao Indoh <indou.takao@jp.fujitsu.com>,
+        khalid@gonehiking.org
+Message-Id: <20121113090212.1180.12233.sendpatchset@indoh>
+Subject: [PATCH v6 0/5] Reset PCIe devices to address DMA problem on kdump with iommu
+Date: Tue, 13 Nov 2012 18:07:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Nov_2012_20_08_45_+1100_5iglaAZHDz8LU0/s
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+These patches reset PCIe devices at boot time to address DMA problem on
+kdump with iommu. When "reset_devices" is specified, a hot reset is
+triggered on each PCIe root port and downstream port to reset its
+downstream endpoint.
 
-Hi Joachim,
+Background:
+A kdump problem about DMA has been discussed for a long time. That is,
+when a kernel is switched to the kdump kernel, DMA derived from first
+kernel affects second kernel. Especially this problem surfaces when
+iommu is used for PCI passthrough on KVM guest. In the case of the
+machine I use, when intel_iommu=on is specified, DMAR error is detected
+in kdump kernel and PCI SERR is also detected. Finally kdump fails
+because some devices does not work correctly.
 
-On Tue, 13 Nov 2012 08:21:26 +0100 Joachim  Eastwood <manabian@gmail.com> w=
-rote:
->
-> The platform_data/atmel.h include shouldn't be necessary since the
-> driver already includes platform_data/macb.h.
->=20
-> Otherwise the fix up looks correct.
+The root cause is that ongoing DMA from first kernel causes DMAR fault
+because page table of DMAR is initialized while kdump kernel is booting
+up. Therefore to solve this problem DMA needs to be stopped before DMAR
+is initialized at kdump kernel boot time. By these patches, PCIe devices
+are reset by hot reset and its DMA is stopped when reset_devices is
+specified. One problem of this solution is that the monitor blacks out
+when VGA controller is reset. So this patch does not reset the port
+whose child endpoint is VGA device.
 
-Thanks, I have fixed up my fix for tomorrow.
+What I tried:
+- Clearing bus master bit and INTx disable bit at boot time
+    This did not solve this problem. I still got DMAR error on devices.
+- Resetting devices in fixup_final(v1 patch)
+    DMAR error disappeared, but sometimes PCI SERR was detected. This
+    is well explained here.
+    https://lkml.org/lkml/2012/9/9/245
+    This PCI SERR seems to be related to interrupt remapping.
+- Clearing bus master in setup_arch() and resetting devices in
+  fixup_final
+    Neither DMAR error nor PCI SERR occurred. But on certain machine
+    kdump kernel hung up when resetting devices. It seems to be a
+    problem specific to the platform.
+- Resetting devices in setup_arch() (v2 and later patch)
+    This solution solves all problems I found so far.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Changelog:
+v6:
+Rewrite using Yinghai's dummy-pci patch
 
---Signature=_Tue__13_Nov_2012_20_08_45_+1100_5iglaAZHDz8LU0/s
-Content-Type: application/pgp-signature
+v5:
+Do bus reset after all devices are scanned and its config registers are
+saved. This fixes a bug that config register is accessed without delay
+after reset.
+https://lkml.org/lkml/2012/10/17/47
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+v4:
+Reduce waiting time after resetting devices. A previous patch does reset
+like this:
+  for (each device) {
+    save config registers
+    reset
+    wait for 500 ms
+    restore config registers
+  }
 
-iQIcBAEBCAAGBQJQog4dAAoJEECxmPOUX5FEnScQAIR8YchYwefEd6VHmWuCZNNe
-52NfQXEvlP7jjNPTEAmgg+G2Mn7rdXSMsMYgDlwyJsXts1xCucImr+rDbZk7WwKD
-931CWA4Y5j2hDfm0iQOGFPxAShxSKCCAhfTdou179HWj4uRZUMBK5VhcuriSTs3I
-Lk6hcHCxXSVhKO+qNugPFPjCxNrZeCV2Enpa+2Ok0u910c5QMo2yYc4hFZQB7Q0l
-yPE9ljVIO0AJrMTsaDvm2koUDgOp8DAIK1BA9AmU6MxnIT4zjTt/ihDQKnusLKjt
-HxqLAjrqVb5M/yE4OE1pWziOGO0VDfuinPGY1OnQGrLbqaNrZBOVJ0OOtZGnU92t
-nOnwrtM9xM2rilSNXwrGiT45bUrJ+/unNltbS8/hqo5RryORn12nU3qb1sd1Ksz6
-QmYS9cPFT/V/G88newfMVggWgCibgwh92gMbyfI5xI7zQ2o99zkwKD4TB3sW1ACG
-rwdFmk0xLxBpWnpli+zt4wY4B1x9PxE9E+1JuCEUJpPwosgqxNEhiua+I2tMIPDP
-llbm5/SZrCj/o78qDoyIp48VyZvnFVfe5hsKjo1OmmgO/vgF6sd4Gx76C6Tx3Bxn
-nn6qx9wYW65CbuCdauW1FQ/eezY1aZREEqyJ+vZOzbyhT+aktEM8M1bc6WLPAGxY
-APeJ+yib1GdXBmYDjZZI
-=3pNi
------END PGP SIGNATURE-----
+If there are N devices to be reset, it takes N*500 ms. On the other
+hand, the v4 patch does:
+  for (each device) {
+    save config registers
+    reset
+  }
+  wait 500 ms
+  for (each device) {
+    restore config registers
+  }
+Though it needs more memory space to save config registers, the waiting
+time is always 500ms.
+https://lkml.org/lkml/2012/10/15/49
 
---Signature=_Tue__13_Nov_2012_20_08_45_+1100_5iglaAZHDz8LU0/s--
+v3:
+Move alloc_bootmem and free_bootmem to early_reset_pcie_devices so that
+they are called only once.
+https://lkml.org/lkml/2012/10/10/57
+
+v2:
+Reset devices in setup_arch() because reset need to be done before
+interrupt remapping is initialized.
+https://lkml.org/lkml/2012/10/2/54
+
+v1:
+Add fixup_final quirk to reset PCIe devices
+https://lkml.org/lkml/2012/8/3/160
+
+
+Takao Indoh (4):
+  PCI: Define the maximum number of PCI function
+  Make reset_devices available at early stage
+  x86, pci: Reset PCIe devices at boot time
+  x86, pci: Enable PCI INTx when MSI is disabled
+
+Yinghai Lu (1):
+  x86, pci: add dummy pci device for early stage
+
+ arch/x86/include/asm/pci-direct.h |    3 +
+ arch/x86/kernel/setup.c           |    3 +
+ arch/x86/pci/common.c             |    4 +-
+ arch/x86/pci/early.c              |  303 +++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h               |    2 +
+ init/main.c                       |    4 +-
+ 6 files changed, 316 insertions(+), 3 deletions(-)
+
+
