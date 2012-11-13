@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2KMPbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:31:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60689 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753873Ab2KMPbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753965Ab2KMPbU (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 Nov 2012 10:31:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60668 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab2KMPbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 10:31:18 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
         Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
-Subject: [RFC 3/5] memcg: simplify mem_cgroup_iter
-Date: Tue, 13 Nov 2012 16:30:37 +0100
-Message-Id: <1352820639-13521-4-git-send-email-mhocko@suse.cz>
+Subject: [RFC 1/5] memcg: synchronize per-zone iterator access by a spinlock
+Date: Tue, 13 Nov 2012 16:30:35 +0100
+Message-Id: <1352820639-13521-2-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
 References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
@@ -22,113 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of mem_cgroup_iter has to consider both css and
-memcg to find out whether no group has been found (css==NULL - aka the
-loop is completed) and that no memcg is associated with the found node
-(!memcg - aka css_tryget failed because the group is no longer alive).
-This leads to awkward tweaks like tests for css && !memcg to skip the
-current node.
+per-zone per-priority iterator is aimed at coordinating concurrent
+reclaimers on the same hierarchy (or the global reclaim when all
+groups are reclaimed) so that all groups get reclaimed evenly as
+much as possible. iter->position holds the last css->id visited
+and iter->generation signals the completed tree walk (when it is
+incremented).
+Concurrent reclaimers are supposed to provide a reclaim cookie which
+holds the reclaim priority and the last generation they saw. If cookie's
+generation doesn't match the iterator's view then other concurrent
+reclaimer already did the job and the tree walk is done for that
+priority.
 
-It will be much easier if we got rid off css variable altogether and
-only rely on memcg. In order to do that the iteration part has to skip
-dead nodes. This sounds natural to me and as a nice side effect we will
-get a simple invariant that memcg is always alive when non-NULL and all
-nodes have been visited otherwise.
+This scheme works nicely in most cases but it is not raceless. Two
+racing reclaimers can see the same iter->position and so bang on the
+same group. iter->generation increment is not serialized as well so a
+reclaimer can see an updated iter->position with and old generation so
+the iteration might be restarted from the root of the hierarchy.
 
-We could get rid of the surrounding while loop but keep it for now for
-an easier review. It will go away in the next patch.
+The simplest way to fix this issue is to synchronise access to the
+iterator by a lock. This implementation uses per-zone per-priority
+spinlock which linearizes only directly racing reclaimers which use
+reclaim cookies so the effect of the new locking should be really
+minimal.
+
+I have to note that I haven't seen this as a real issue so far. The
+primary motivation for the change is different. The following patch
+will change the way how the iterator is implemented and css->id
+iteration will be replaced cgroup generic iteration which requires
+storing mem_cgroup pointer into iterator and that requires reference
+counting and so concurrent access will be a problem.
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |   52 ++++++++++++++++++++++++----------------------------
- 1 file changed, 24 insertions(+), 28 deletions(-)
+ mm/memcontrol.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5da1e58..dd84094 100644
+index 6136fec..0fe5177 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1086,7 +1086,6 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+@@ -146,6 +146,8 @@ struct mem_cgroup_reclaim_iter {
+ 	int position;
+ 	/* scan generation, increased every round-trip */
+ 	unsigned int generation;
++	/* lock to protect the position and generation */
++	spinlock_t iter_lock;
+ };
  
- 	while (!memcg) {
- 		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
--		struct cgroup_subsys_state *css = NULL;
+ /*
+@@ -1093,8 +1095,11 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
  
- 		if (reclaim) {
- 			int nid = zone_to_nid(reclaim->zone);
-@@ -1113,49 +1112,46 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		 * treatment.
- 		 */
- 		if (!last_visited) {
--			css = &root->css;
-+			memcg = root;
- 		} else {
--			struct cgroup *next_cgroup;
--
-+			struct cgroup *next_cgroup,
-+				      *pos = last_visited->css.cgroup;
-+skip_node:
- 			next_cgroup = cgroup_next_descendant_pre(
--					last_visited->css.cgroup,
-+					pos,
- 					root->css.cgroup);
--			if (next_cgroup)
--				css = cgroup_subsys_state(next_cgroup,
--						mem_cgroup_subsys_id);
-+			/*
-+			 * Even if we find a group we have to make sure it is
-+			 * alive. If not we, should skip the node.
-+			 */
-+			if (next_cgroup) {
-+				struct mem_cgroup *mem = mem_cgroup_from_cont(
-+						next_cgroup);
-+				if (css_tryget(&mem->css))
-+					memcg = mem;
-+				else {
-+					pos = next_cgroup;
-+					goto skip_node;
-+				}
+ 			mz = mem_cgroup_zoneinfo(root, nid, zid);
+ 			iter = &mz->reclaim_iter[reclaim->priority];
+-			if (prev && reclaim->generation != iter->generation)
++			spin_lock(&iter->iter_lock);
++			if (prev && reclaim->generation != iter->generation) {
++				spin_unlock(&iter->iter_lock);
+ 				return NULL;
 +			}
+ 			id = iter->position;
  		}
  
--		/*
--		 * Even if we find a group we have to make sure it is alive.
--		 * css && !memcg means that the groups should be skipped and
--		 * we should continue the tree walk.
--		 */
--		if (css == &root->css || (css && css_tryget(css)))
--			memcg = mem_cgroup_from_css(css);
--
- 		if (reclaim) {
--			struct mem_cgroup *curr = memcg;
--
- 			if (last_visited)
- 				mem_cgroup_put(last_visited);
-+			if (memcg)
-+				mem_cgroup_get(memcg);
-+			iter->last_visited = memcg;
- 
--			if (css && !memcg)
--				curr = mem_cgroup_from_css(css);
--			if (curr)
--				mem_cgroup_get(curr);
--			iter->last_visited = curr;
--
--			if (!css)
-+			if (!memcg)
+@@ -1113,6 +1118,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
  				iter->generation++;
  			else if (!prev && memcg)
  				reclaim->generation = iter->generation;
- 			spin_unlock(&iter->iter_lock);
--		} else if (css && !memcg) {
--			last_visited = mem_cgroup_from_css(css);
++			spin_unlock(&iter->iter_lock);
  		}
- 		rcu_read_unlock();
  
--		if (prev && !css)
-+		if (prev && !memcg)
- 			return NULL;
- 	}
- 	return memcg;
+ 		if (prev && !css)
+@@ -5871,8 +5877,12 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 		return 1;
+ 
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
++		int prio;
++
+ 		mz = &pn->zoneinfo[zone];
+ 		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
++		for (prio = 0; prio < DEF_PRIORITY + 1; prio++)
++			spin_lock_init(&mz->reclaim_iter[prio].iter_lock);
+ 		mz->usage_in_excess = 0;
+ 		mz->on_tree = false;
+ 		mz->memcg = memcg;
 -- 
 1.7.10.4
 
