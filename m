@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2KMJJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:09:54 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53087 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab2KMJHf (ORCPT
+	id S1754637Ab2KMJLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:11:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:64465 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab2KMJLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:07:35 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: andi@firstfloor.org, tokunaga.keiich@jp.fujitsu.com,
-        kexec@lists.infradead.org, hbabu@us.ibm.com, mingo@redhat.com,
-        ddutile@redhat.com, vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com,
-        hpa@zytor.com, bhelgaas@google.com, tglx@linutronix.de,
-        yinghai@kernel.org, Takao Indoh <indou.takao@jp.fujitsu.com>,
-        khalid@gonehiking.org
-Message-Id: <20121113090212.1180.12233.sendpatchset@indoh>
-Subject: [PATCH v6 0/5] Reset PCIe devices to address DMA problem on kdump with iommu
-Date: Tue, 13 Nov 2012 18:07:32 +0900 (JST)
+	Tue, 13 Nov 2012 04:11:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Clark <rob.clark@linaro.org>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Date: Tue, 13 Nov 2012 09:11:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <20121112235348.GD28341@n2100.arm.linux.org.uk> <CAF6AEGvoXR3YJomjV1YOeNvjr46aYJ2mVxS+jZfH+41+v1nAvw@mail.gmail.com>
+In-Reply-To: <CAF6AEGvoXR3YJomjV1YOeNvjr46aYJ2mVxS+jZfH+41+v1nAvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211130911.09613.arnd@arndb.de>
+X-Provags-ID: V02:K0:YiZ1o/rPZz6v7UopDqCyTb6r4WPbrJwIcQTjnLwdSkg
+ KliNWxLApIggDAUSM6RExoINWKDcrWMSyRNO9ImRJ5KURP/BjZ
+ LxOyPG7hVsDOCv7iJ1JNbY4oZNwskwFjH2Z78wg3h7vfZY3yCo
+ YoPnNo8gL1XPwbdTs5IVhFTzBiXGn0CMsBzcy9YJqsD4ovn8Iy
+ v2g/l5a5mg7Uq9sFI9oz3rZGjIcxJGWv6H1vxk9T3YezHau6ac
+ d1hw7yd5P0NM9IjLEGsPEUNRJIE9NYynG/X190S2mjbv/UxdE4
+ 4ecdnW+qzuZPJGrrl9tbSgWY/7OEdkZiIEBKj4HaSql2lwtZXA
+ zf4NT/rR4d9up1amimdk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches reset PCIe devices at boot time to address DMA problem on
-kdump with iommu. When "reset_devices" is specified, a hot reset is
-triggered on each PCIe root port and downstream port to reset its
-downstream endpoint.
+On Tuesday 13 November 2012, Rob Clark wrote:
+> right, that is what I was worried about..  but what about something
+> along the lines of:
+> 
+>                 case 8: {                                               \
+>                         if (sizeof(x) < 8)                              \
+>                                 __get_user_x(__r2, __p, __e, __l, 4);   \
+>                         else                                            \
+>                                 __get_user_x(__r2, __p, __e, __l, 8);   \
+>                         break;                                          \
+>                 }                                                       \
 
-Background:
-A kdump problem about DMA has been discussed for a long time. That is,
-when a kernel is switched to the kdump kernel, DMA derived from first
-kernel affects second kernel. Especially this problem surfaces when
-iommu is used for PCI passthrough on KVM guest. In the case of the
-machine I use, when intel_iommu=on is specified, DMAR error is detected
-in kdump kernel and PCI SERR is also detected. Finally kdump fails
-because some devices does not work correctly.
+I guess that's still broken if x is 8 or 16 bits wide.
 
-The root cause is that ongoing DMA from first kernel causes DMAR fault
-because page table of DMAR is initialized while kdump kernel is booting
-up. Therefore to solve this problem DMA needs to be stopped before DMAR
-is initialized at kdump kernel boot time. By these patches, PCIe devices
-are reset by hot reset and its DMA is stopped when reset_devices is
-specified. One problem of this solution is that the monitor blacks out
-when VGA controller is reset. So this patch does not reset the port
-whose child endpoint is VGA device.
+> maybe we need a special variant of __get_user_8() instead to get the
+> right 32bits on big vs little endian systems, but I think something
+> roughly along these lines could work.
+> 
+> Or maybe in sizeof(x)<8 case, we just __get_user_bad()..  I'm not 100%
+> sure on whether this is supposed to be treated as an error case at
+> compile time or not.
 
-What I tried:
-- Clearing bus master bit and INTx disable bit at boot time
-    This did not solve this problem. I still got DMAR error on devices.
-- Resetting devices in fixup_final(v1 patch)
-    DMAR error disappeared, but sometimes PCI SERR was detected. This
-    is well explained here.
-    https://lkml.org/lkml/2012/9/9/245
-    This PCI SERR seems to be related to interrupt remapping.
-- Clearing bus master in setup_arch() and resetting devices in
-  fixup_final
-    Neither DMAR error nor PCI SERR occurred. But on certain machine
-    kdump kernel hung up when resetting devices. It seems to be a
-    problem specific to the platform.
-- Resetting devices in setup_arch() (v2 and later patch)
-    This solution solves all problems I found so far.
+We know that nobody is using that at the moment, so we could define
+it to be a compile-time error.
 
-Changelog:
-v6:
-Rewrite using Yinghai's dummy-pci patch
+But I still think this is a pointless exercise, a number of people have
+concluded independently that it's not worth trying to come up with a
+solution, whether one exists or not. Why can't you just use copy_from_user()
+anyway?
 
-v5:
-Do bus reset after all devices are scanned and its config registers are
-saved. This fixes a bug that config register is accessed without delay
-after reset.
-https://lkml.org/lkml/2012/10/17/47
-
-v4:
-Reduce waiting time after resetting devices. A previous patch does reset
-like this:
-  for (each device) {
-    save config registers
-    reset
-    wait for 500 ms
-    restore config registers
-  }
-
-If there are N devices to be reset, it takes N*500 ms. On the other
-hand, the v4 patch does:
-  for (each device) {
-    save config registers
-    reset
-  }
-  wait 500 ms
-  for (each device) {
-    restore config registers
-  }
-Though it needs more memory space to save config registers, the waiting
-time is always 500ms.
-https://lkml.org/lkml/2012/10/15/49
-
-v3:
-Move alloc_bootmem and free_bootmem to early_reset_pcie_devices so that
-they are called only once.
-https://lkml.org/lkml/2012/10/10/57
-
-v2:
-Reset devices in setup_arch() because reset need to be done before
-interrupt remapping is initialized.
-https://lkml.org/lkml/2012/10/2/54
-
-v1:
-Add fixup_final quirk to reset PCIe devices
-https://lkml.org/lkml/2012/8/3/160
-
-
-Takao Indoh (4):
-  PCI: Define the maximum number of PCI function
-  Make reset_devices available at early stage
-  x86, pci: Reset PCIe devices at boot time
-  x86, pci: Enable PCI INTx when MSI is disabled
-
-Yinghai Lu (1):
-  x86, pci: add dummy pci device for early stage
-
- arch/x86/include/asm/pci-direct.h |    3 +
- arch/x86/kernel/setup.c           |    3 +
- arch/x86/pci/common.c             |    4 +-
- arch/x86/pci/early.c              |  303 +++++++++++++++++++++++++++++++++++++
- include/linux/pci.h               |    2 +
- init/main.c                       |    4 +-
- 6 files changed, 316 insertions(+), 3 deletions(-)
-
-
+	Arnd
