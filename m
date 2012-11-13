@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2KMS7I (ORCPT <rfc822;w@1wt.eu>);
+	id S1755673Ab2KMS7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:59:13 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:44681 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755641Ab2KMS7I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Nov 2012 13:59:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43285 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755595Ab2KMS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:59:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,768,1344236400"; 
-   d="scan'208";a="219116110"
-Date: Tue, 13 Nov 2012 19:59:02 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] MFD: twl-core: Fix chip ID for the twl6030-pwm module
-Message-ID: <20121113185902.GO27828@sortiz-mobl>
-References: <1351695277-8629-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351695277-8629-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352249879-11406-1-git-send-email-ying.huang@intel.com>
+References: <1352249879-11406-1-git-send-email-ying.huang@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 13 Nov 2012 11:58:44 -0700
+Message-ID: <CAErSpo6LqWfXd3NY2pDsE0RmWNKApyF+Lbv8_Bvq3ULMuy7Bvw@mail.gmail.com>
+Subject: Re: [PATCH -v2] ACPI/PCI: Make PCI devices notified when its power
+ resource turned on
+To: Huang Ying <ying.huang@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On Wed, Oct 31, 2012 at 03:54:37PM +0100, Peter Ujfalusi wrote:
-> The correct chip id is 1 since the PWM module is on address 0x49. With the
-> current TWL6030_MODULE_ID1 the kernel will crash early since:
-> #define TWL6030_MODULE_ID1 0x0E
-> and
-> static struct twl_client twl_modules[4];
-> 
-> Down in the stack we try to get the module by:
-> struct twl_client	*twl = &twl_modules[chip];
-> 
-> Which obviously going to do nasty things.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+On Tue, Nov 6, 2012 at 5:57 PM, Huang Ying <ying.huang@intel.com> wrote:
+> A set of power resources may be shared by multiple devices.  When all
+> devices share one set of power resources is put into D3_COLD state,
+> the power resources will be turned off.  When one of the device is
+> waked, the power resource will be turned on and all devices share it
+> will be powered on to D0uninitialized state.  These devices should be
+> resumed, so that they can get opportunity to go to low power state
+> later.
+>
+> v2:
+>
+> - Fix build error
+>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
 > ---
-> Hi Samuel,
-> 
-> Can you push this patch to 3.7?
-Applied to my for-linus branch. This should make it to 3.7.
+>  drivers/acpi/pci_bind.c |    2 ++
+>  1 file changed, 2 insertions(+)
 
-Cheers,
-Samuel.
+I applied this to my pci/misc branch as v3.8 material.  Thanks!
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Bjorn
