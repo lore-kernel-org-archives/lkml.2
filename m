@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab2KMDbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:31:47 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:48227 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2KMDbq (ORCPT
+	id S1751762Ab2KMDho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:37:44 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34927 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab2KMDhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:31:46 -0500
-MIME-Version: 1.0
-Date: Tue, 13 Nov 2012 11:31:45 +0800
-Message-ID: <CABawtvMsrMhGL7emsvYRXrGEB9f2Pzha2+XTVSHaYw1PVJGa-Q@mail.gmail.com>
-Subject: [PATCH ] tbfadt.c: output warning only when 64bit 32bit address of
- FACS/DSDT all have value but not equal to each other
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Len Brown <len.brown@intel.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=f46d0447f21aae332f04ce580e3c
+	Mon, 12 Nov 2012 22:37:43 -0500
+Date: Tue, 13 Nov 2012 14:37:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wei Yongjun <weiyj.lk@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: linux-next: manual merge of the usb tree with the usb.current tree
+Message-Id: <20121113143732.624361eaf8ed2f4d0d64dd7d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0447f21aae332f04ce580e3c
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi, Len, Robert,
+Hi Greg,
 
-       Please help to check the following patch, add more conditions
-when validate the 64bit 32bit FACS/DSDT address in FADT to follow ACPI
-spec, In the meantime, keep the compatibility and latitude.
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/musb/ux500.c between commit 9a65d162e449 ("usb: musb: ux500:
+fix 'musbid' undeclared error in ux500_remove()") from the usb.current
+tree and commit 2f7711642559 ("usb: musb: remove hand-crafted id
+handling") from the usb tree.
 
+The latter supercedes the former so I used that and can carry the fix as
+necessary (no action is required).
 
-Thanks,
-Ethan
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->From c1116211a7b329c26b0370565c36b084ceb08f71 Mon Sep 17 00:00:00 2001
-From: ethan.zhao <ethan.kernel@gmail.com>
-Date: Tue, 13 Nov 2012 22:21:12 -0800
-Subject: [PATCH 642/642] To follow the ACPI spec 3,4&5 and keep the
-compatibility and latitude,only
- output mismatch warning when 64bit address and 32bit address of
-FACS/DSDT are all
- valid but not equal to each other.
+iQIcBAEBCAAGBQJQocB8AAoJEECxmPOUX5FEonkP/3X64lhOSDNEnRa9f0DNm4Ow
+g78oC4u+Zf0OsG9AG+robFHc+uKwBAz8e81i0fdxoQgVq14HE5lVrOt8oOLG6t1z
+qWZmau/nyy1VFZ69sWxvGB69BgkphOznD9OKnhORmJNUxFq13MQvnFES2VxVgs3o
+3MtL9UnGiIFvrUHIGSLrCIjjDwVrHdnAqWQlIUMxQqsGXbgvoKCO4EbnEhtaOrLl
+YaZsSMtchTpr/ei9cur9HgDev08tlEfMhgcUh6qvzv3yKcNs7jdQ7QPjnBSeR04v
+IedsI8+vT7X7+k1ceEqzmCngN0/Vpx+iGJixvpFQBEMSxwtro3faRK7lPh5ckAis
+eRpAM3IoClvFGUS258tjH6qxiOvYHwmLaMqEP1afXO2nljpqw1/8b2rafdHbpnp3
+mGxBJ7EB4Hrrd3Cq86Xl0cp++Leclbr6wBdewkkp4GDcal6sdz3/5ybPesOEERAN
+Uk3d1S3zQrRZLeU9Nl6FzTX2Hyxdak2xHZEBHJWRIUyYS2XVPFojJCwdOH5i/4GP
+rg68SuF0adhkLomRfn764JogFG0XHgnEsYhNHoRlLIYxKXTrjgQkj8Z5gEFGWYto
+U+Cg9mN9FgxVg5AwC3Y+Q0B1MTX2ZnCOwYZJnXJP666W+urX8Y8Q0XRt7RSoBFde
+pJ7AfHeIpwsRTvVFhVAo
+=nNiR
+-----END PGP SIGNATURE-----
 
-
-Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
----
- drivers/acpi/acpica/tbfadt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
-index 3906518..f23f512 100644
---- a/drivers/acpi/acpica/tbfadt.c
-+++ b/drivers/acpi/acpica/tbfadt.c
-@@ -512,7 +512,7 @@ static void acpi_tb_validate_fadt(void)
-         * the 32-bit and 64-bit address fields
-(FIRMWARE_CTRL/X_FIRMWARE_CTRL and
-         * DSDT/X_DSDT) would indicate the presence of two FACS or two
-DSDT tables.
-         */
--       if (acpi_gbl_FADT.facs &&
-+       if ((acpi_gbl_FADT.facs && acpi_gbl_FADT.Xfacs) &&
-            (acpi_gbl_FADT.Xfacs != (u64)acpi_gbl_FADT.facs)) {
-                ACPI_BIOS_WARNING((AE_INFO,
-                                   "32/64X FACS address mismatch in FADT - "
-@@ -523,7 +523,7 @@ static void acpi_tb_validate_fadt(void)
-                acpi_gbl_FADT.Xfacs = (u64)acpi_gbl_FADT.facs;
-        }
-
--       if (acpi_gbl_FADT.dsdt &&
-+       if ((acpi_gbl_FADT.dsdt && acpi_gbl_FADT.Xdsdt) &&
-            (acpi_gbl_FADT.Xdsdt != (u64)acpi_gbl_FADT.dsdt)) {
-                ACPI_BIOS_WARNING((AE_INFO,
-                                   "32/64X DSDT address mismatch in FADT - "
---
-1.7.1
-
---f46d0447f21aae332f04ce580e3c
-Content-Type: application/octet-stream; 
-	name="To-follow-the-ACPI-spec-3-4-5-and-keep-the-compatibi.patch"
-Content-Disposition: attachment; 
-	filename="To-follow-the-ACPI-spec-3-4-5-and-keep-the-compatibi.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h9ggndbr0
-
-RnJvbSBjMTExNjIxMWE3YjMyOWMyNmIwMzcwNTY1YzM2YjA4NGNlYjA4ZjcxIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBldGhhbi56aGFvIDxldGhhbi5rZXJuZWxAZ21haWwuY29tPgpE
-YXRlOiBUdWUsIDEzIE5vdiAyMDEyIDIyOjIxOjEyIC0wODAwClN1YmplY3Q6IFtQQVRDSCA2NDIv
-NjQyXSBUbyBmb2xsb3cgdGhlIEFDUEkgc3BlYyAzLDQmNSBhbmQga2VlcCB0aGUgY29tcGF0aWJp
-bGl0eSBhbmQgbGF0aXR1ZGUsb25seQogb3V0cHV0IG1pc21hdGNoIHdhcm5pbmcgd2hlbiA2NGJp
-dCBhZGRyZXNzIGFuZCAzMmJpdCBhZGRyZXNzIG9mIEZBQ1MvRFNEVCBhcmUgYWxsCiB2YWxpZCBi
-dXQgbm90IGVxdWFsIHRvIGVhY2ggb3RoZXIuCgoKU2lnbmVkLW9mZi1ieTogZXRoYW4uemhhbyA8
-ZXRoYW4ua2VybmVsQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2FjcGkvYWNwaWNhL3RiZmFkdC5j
-IHwgICAgNCArKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlv
-bnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2FjcGkvYWNwaWNhL3RiZmFkdC5jIGIvZHJpdmVy
-cy9hY3BpL2FjcGljYS90YmZhZHQuYwppbmRleCAzOTA2NTE4Li5mMjNmNTEyIDEwMDY0NAotLS0g
-YS9kcml2ZXJzL2FjcGkvYWNwaWNhL3RiZmFkdC5jCisrKyBiL2RyaXZlcnMvYWNwaS9hY3BpY2Ev
-dGJmYWR0LmMKQEAgLTUxMiw3ICs1MTIsNyBAQCBzdGF0aWMgdm9pZCBhY3BpX3RiX3ZhbGlkYXRl
-X2ZhZHQodm9pZCkKIAkgKiB0aGUgMzItYml0IGFuZCA2NC1iaXQgYWRkcmVzcyBmaWVsZHMgKEZJ
-Uk1XQVJFX0NUUkwvWF9GSVJNV0FSRV9DVFJMIGFuZAogCSAqIERTRFQvWF9EU0RUKSB3b3VsZCBp
-bmRpY2F0ZSB0aGUgcHJlc2VuY2Ugb2YgdHdvIEZBQ1Mgb3IgdHdvIERTRFQgdGFibGVzLgogCSAq
-LwotCWlmIChhY3BpX2dibF9GQURULmZhY3MgJiYKKwlpZiAoKGFjcGlfZ2JsX0ZBRFQuZmFjcyAm
-JiBhY3BpX2dibF9GQURULlhmYWNzKSAmJgogCSAgICAoYWNwaV9nYmxfRkFEVC5YZmFjcyAhPSAo
-dTY0KWFjcGlfZ2JsX0ZBRFQuZmFjcykpIHsKIAkJQUNQSV9CSU9TX1dBUk5JTkcoKEFFX0lORk8s
-CiAJCQkJICAgIjMyLzY0WCBGQUNTIGFkZHJlc3MgbWlzbWF0Y2ggaW4gRkFEVCAtICIKQEAgLTUy
-Myw3ICs1MjMsNyBAQCBzdGF0aWMgdm9pZCBhY3BpX3RiX3ZhbGlkYXRlX2ZhZHQodm9pZCkKIAkJ
-YWNwaV9nYmxfRkFEVC5YZmFjcyA9ICh1NjQpYWNwaV9nYmxfRkFEVC5mYWNzOwogCX0KIAotCWlm
-IChhY3BpX2dibF9GQURULmRzZHQgJiYKKwlpZiAoKGFjcGlfZ2JsX0ZBRFQuZHNkdCAmJiBhY3Bp
-X2dibF9GQURULlhkc2R0KSAmJgogCSAgICAoYWNwaV9nYmxfRkFEVC5YZHNkdCAhPSAodTY0KWFj
-cGlfZ2JsX0ZBRFQuZHNkdCkpIHsKIAkJQUNQSV9CSU9TX1dBUk5JTkcoKEFFX0lORk8sCiAJCQkJ
-ICAgIjMyLzY0WCBEU0RUIGFkZHJlc3MgbWlzbWF0Y2ggaW4gRkFEVCAtICIKLS0gCjEuNy4xCgo=
---f46d0447f21aae332f04ce580e3c--
+--Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f--
