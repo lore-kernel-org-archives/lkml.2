@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab2KMUBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:01:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36278 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755693Ab2KMUBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:01:43 -0500
-Message-ID: <50A2A706.1090608@zytor.com>
-Date: Tue, 13 Nov 2012 12:01:10 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1755666Ab2KMUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:09:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35317 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab2KMUJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:09:27 -0500
+Date: Tue, 13 Nov 2012 16:09:02 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <gregkh@linuxfoundation.org>, <b-cousson@ti.com>,
+        <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ndec13@gmail.com>
+Subject: Re: [PATCHv2 0/5] staging: omap-thermal fixes
+Message-ID: <20121113200902.GA22185@besouro>
+Reply-To: <eduardo.valentin@ti.com>
+References: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 21/46] x86, mm: setup page table in top-down
-References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-22-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1211131707380.28049@kaball.uk.xensource.com> <CAE9FiQU1HGyw8ZLu8KdmR3ikyZ=YTG+8dUoDAVbO4Bc1hEPPgQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQU1HGyw8ZLu8KdmR3ikyZ=YTG+8dUoDAVbO4Bc1hEPPgQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 11:59 AM, Yinghai Lu wrote:
->>
->> The changes to init_mem_mapping are a bit iffy but they aren't too
->> unreasonable.
->> Overall the patch is OK even though I would certainly appreciate more
->> comments and better variable names (real_end?), see below.
-> 
-> real_end is not good?
-> 
-> xen put big reserved range between real_end and end.
-> 
-> that real_end is some kind of end of real usable areas.
-> 
-> so change to real_usable_end  or usable_end?
-> 
+Hello,
 
-A description of a variable that includes the words "some kind of"
-clearly indicates major confusion.  We need to know what the semantics
-are, here.
+On Tue, Nov 13, 2012 at 02:09:59PM -0400, Eduardo Valentin wrote:
+> Hello again Greg,
+> 
+> So here is the correct set of changes. They now include the
+> right version of the patches and with the fixes reported
+> by Enric. Thanks Enric for the heads up.
+> 
+> So, Several compilation fixes and a couple of debugging prints
+> added to the omap-thermal driver under staging area.
+> 
+> Patches are also available here:
+> 
+> git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes_3.7
 
-	-hpa
+For those interested pulling using http:
+https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes_3.7
 
+> 
+> 
+> Cheers,
+> 
+> Eduardo Valentin (4):
+>   staging: omap-thermal: fix compilation
+>   staging: omap-thermal: remove platform data nomenclature
+>   staging: omap-thermal: remove freq_clip table
+>   staging: omap-thermal: add IRQ debugging messaging
+> 
+> Radhesh Fadnis (1):
+>   staging: omap-thermal: fix context restore function
+> 
+>  drivers/staging/omap-thermal/omap-bandgap.c        |   63 ++++++++----------
+>  drivers/staging/omap-thermal/omap-bandgap.h        |    9 ---
+>  drivers/staging/omap-thermal/omap-thermal-common.c |   69 ++------------------
+>  3 files changed, 33 insertions(+), 108 deletions(-)
+> 
+> -- 
+> 1.7.7.1.488.ge8e1c
+> 
