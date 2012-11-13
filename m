@@ -1,90 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab2KMJsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:48:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65135 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab2KMJsl (ORCPT
+	id S1754532Ab2KMJtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:49:50 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11914 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab2KMJts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:48:41 -0500
-Date: Tue, 13 Nov 2012 10:48:34 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
-Cc: Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
+	Tue, 13 Nov 2012 04:49:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 13 Nov 2012 01:49:41 -0800
+Message-ID: <50A217A8.2000600@nvidia.com>
+Date: Tue, 13 Nov 2012 17:49:28 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
         "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
-Message-ID: <20121113094834.GA23744@avionic-0098.mockup.avionic-design.de>
-References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
- <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de>
- <50A216D3.1070604@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <50A216D3.1070604@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:dzOyDOQovqe2D9Res2hXzC+bQ3EAw2R7WlbGf4YCwME
- Sr1QLABmW0PZsdwSWA/yLdSTBnxg3ggh83CijsU1yuigL5iswR
- tE800a9SYkDV6BhFPCq/kRKOaVtQWgyoYy2T14Ei57OePpb85c
- vq8FSiBoWaZN1yCbA7hQdrDGNnBtPns7UTUuxNN4rZKlUMdy13
- 6S1NDZPQdwuDUQNJGSViea2hRbXEBfVEEv5pDPLdgj45Nhf053
- lkNzevoWPTC3kqKc0ZVB1NzjE6vjrEXZKWfGLTEs1YnhF0336W
- 6f7qVvRnzTVK2fCLDs64SS8UhDWSRUEJrYDBVxouWitTVAu6gm
- +zlHMtDtPursNGaHaSQ9z0Yh1d0Stfb0swOqYWDF5Kqeir98O3
- RTqFIPde8jr8i0PcpKQSpN2QWLWxhzLpEwTaJA80TMLIHOqhCI
- YhRp4
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de> <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de> <50A1F3A3.40905@nvidia.com> <20121113074822.GA8409@avionic-0098.mockup.avionic-design.de> <50A20994.9000305@nvidia.com> <20121113093725.GB8122@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121113093725.GB8122@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/13/2012 05:37 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Nov 13, 2012 at 04:49:24PM +0800, Mark Zhang wrote:
+>> On 11/13/2012 03:48 PM, Thierry Reding wrote:
+>>>> Old Signed by an unknown key
+>>>
+>>> On Tue, Nov 13, 2012 at 03:15:47PM +0800, Mark Zhang wrote:
+>>>> On 11/13/2012 05:55 AM, Thierry Reding wrote:
+>>>>> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+>>>>> support for host1x and the two display controllers found on the Tegra20
+>>>>> SoC. Each display controller can drive a separate RGB/LVDS output.
+>>>>>
+>>>>> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>>>>> ---
+>>>>> Changes in v2:
+>>>>> - drop Linux-specific drm subdirectory for DT bindings documentation
+>>>>> - remove display helper leftovers that belong in a later patch
+>>>>> - reuse debugfs infrastructure provided by the DRM core
+>>>>> - move vblank syncpoint defines to dc.h
+>>>>> - use drm_compat_ioctl()
+>>>>>
+>>>> [...]
+>>>>> diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/drm/tegra/Kconfig
+>>>>> new file mode 100644
+>>>>> index 0000000..be1daf7
+>>>>> --- /dev/null
+>>>>> +++ b/drivers/gpu/drm/tegra/Kconfig
+>>>>> @@ -0,0 +1,23 @@
+>>>>> +config DRM_TEGRA
+>>>>> +       tristate "NVIDIA Tegra DRM"
+>>>>> +       depends on DRM && OF && ARCH_TEGRA
+>>>>> +       select DRM_KMS_HELPER
+>>>>> +       select DRM_GEM_CMA_HELPER
+>>>>> +       select DRM_KMS_CMA_HELPER
+>>>>
+>>>> Just for curious, according to my testing, why the "CONFIG_CMA" is not
+>>>> enabled while DRM_GEM_CMA_HELPER & DRM_KMS_CMA_HELPER are enabled here?
+>>>
+>>> The reason is that CMA doesn't actually provide any API for drivers to
+>>> use and in fact unless you use very large buffers you could indeed run
+>>> this code on top of a non-CMA kernel and it will likely even work.
+>>>
+>>
+>> Okay. But I think it's better to turn on CMA defaultly. During my
+>> testing, it's hard to allocate more 2MB without CMA...
+> 
+> CMA is enabled by default in one of the Tegra default configuration
+> patches in my tegra/next branch. I will submit that patch to Stephen
+> when the 3.8 cycle starts, so that it'll be automatically enabled along
+> with the DRM driver.
+> 
+> But I don't think it makes sense to couple it to the DRM_TEGRA symbol as
+> it isn't strictly required.
+> 
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes. We don't need to touch CMA in our Kconfig. In my opinion, right now
+we're relying on the DRM_GEM_CMA_HELPER which should turn on CMA when
+it's been selected.
 
-On Tue, Nov 13, 2012 at 11:45:55AM +0200, Terje Bergstr=C3=B6m wrote:
-> On 12.11.2012 23:55, Thierry Reding wrote:
-> > This commit adds a KMS driver for the Tegra20 SoC. This includes basic
-> > support for host1x and the two display controllers found on the Tegra20
-> > SoC. Each display controller can drive a separate RGB/LVDS output.
->=20
-> I have tested this with further patches to enable display on my ventana
-> board.
+>>>>> +static struct of_device_id tegra_dc_of_match[] = {
+>>>>> +       { .compatible = "nvidia,tegra20-dc", },
+>>>>> +       { .compatible = "nvidia,tegra30-dc", },
+>>>>
+>>>> If you don't want add Tegra 3 support in this patch set, remove
+>>>> { .compatible = "nvidia,tegra30-dc", } here.
+>>>
+>>> Good catch! I'll move that into the Tegra30 support patch.
+>>>
+>>>>> +static int host1x_activate_drm_client(struct host1x *host1x,
+>>>>> +                                     struct host1x_drm_client *drm,
+>>>>> +                                     struct host1x_client *client)
+>>>>> +{
+>>>>> +       mutex_lock(&host1x->drm_clients_lock);
+>>>>> +       list_del_init(&drm->list);
+>>>>> +       list_add_tail(&drm->list, &host1x->drm_active);
+>>>>
+>>>> Why we need this "drm_active" list? We can combine this function and
+>>>> function "host1x_remove_drm_client" and free the drm client just here.
+>>>> It's useless after host1x clients registered themselves.
+>>>
+>>> The list is used to properly remove all clients and resources when the
+>>> module is unloaded. Granted, this code isn't executed if you don't build
+>>> the driver as a loadable module, but it should still be a supported use-
+>>> case.
+>>>
+>>
+>> My opinion is, after registration is completed, host1x_drm_client is
+>> useless, host1x_client is enough for follow-up operations.
+>> I still don't get how this is related with building the driver into the
+>> kernel or as a kernel module, so if something I misunderstood, please
+>> let me know it. Thanks.
+> 
+> I can take another look at this and see if it can be further simplified.
+> This was actually a rather tricky part to get right, so I'm naturally a
+> bit hesitant to touch it.
+> 
 
-Thanks for testing!
+Okay. I recall I did some changes on this part about 3 month ago in a
+patch named "drm: Add T30 support - host1x". So maybe you can know what
+I mean by reading that patch.
 
-> My only problem is that we don't force CMA on, but we can add
-> that later.
-
-As I've already explained to Mark, this is enabled in the Tegra default
-configuration in a later patch.
-
-Thierry
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQohdyAAoJEN0jrNd/PrOh9NgP/Au9TEWPHfGFebm/7aiviYAS
-JJNM3GxCFBES8tH982vOSPYcOTwcAcIBoGjqspn9U1HQtExg3+kh6ynr9LQ/nv9d
-XsTsdnVGXR++o/L+550azzyE21ylk4vLWXAfPJ1nknu4BbUxyGhds1C9d9n7r7ra
-PznpU9FI6Bjq+5wwjemk7X6PR3ZmJofzh0hOdK6eUxTfNL3P2+upxJqrEGGrU+Q/
-6zgWG2HRWZTAtM91ZYCmLTNrXhYDEUHCDVt2quDhis/RqIh89beoqYlW9RxwX5e5
-txXcKZs5toBp5yCTMt1xksOvU2JuZq/7kb32f2N6hDpnIX5IjXMuU4HH+zPqX7wu
-2bVuOtdUdQrvQTIFnquu8+sXopG1pVpSdnBTRlinNtF9Le+4mhd3h1nrKUa9m6Fn
-Hyz+/tJRbWCMKTRn+yE6qKNFFuKSPPe3CdhOPdpLw4KsBf1kVrss/JSxhdClXWtG
-kjRVByqGAFAgO/eWe8IPLMEtEjoVxlSgKPi5weOVZShh+C+OwNanZWgOsZs0EtI+
-yFlhIZ56juVZl8C7OXiNaeWvw6Y7bbiXtzCk2hK75aIeWYTLBUDy5vI1bwaMB84L
-mOcSFej3bIPs5+h40XTcQFEklUDb/q3PO6ngAJJSokgZsIpz2KLKg3rmpTjr71bS
-yvMkJHY6tCDqv14E8EgF
-=FF4s
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+> Thierry
+> 
+> * Unknown Key
+> * 0x7F3EB3A1
+> 
