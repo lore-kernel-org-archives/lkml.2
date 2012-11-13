@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab2KMGzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:55:17 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58313 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752500Ab2KMGzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:55:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
-   d="scan'208";a="216954857"
-Date: Mon, 12 Nov 2012 22:55:02 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-Message-ID: <20121112225502.17421024@chromoly>
-In-Reply-To: <1352788416.24230.6.camel@joe-AO722>
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1352788416.24230.6.camel@joe-AO722>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753206Ab2KMHDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:03:11 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:57750 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab2KMHDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 02:03:09 -0500
+Date: Tue, 13 Nov 2012 11:03:05 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 1/7] procfs: Add ability to plug in auxiliary fdinfo
+ providers
+Message-ID: <20121113070305.GB6511@moon>
+References: <20121112101440.665694060@openvz.org>
+ <20121112101845.678229459@openvz.org>
+ <20121112164022.1bc3dd4e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121112164022.1bc3dd4e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 22:33:36 -0800
-Joe Perches <joe@perches.com> wrote:
-
-> > Intel PowerClamp driver performs synchronized idle injection across
-> > all online CPUs. The goal is to maintain a given package level
-> > C-state ratio.  
+On Mon, Nov 12, 2012 at 04:40:22PM -0800, Andrew Morton wrote:
+> >
+> > --- linux-2.6.git.orig/include/linux/fs.h
+> > +++ linux-2.6.git/include/linux/fs.h
+> > @@ -1517,6 +1517,8 @@ struct block_device_operations;
+> >  #define HAVE_COMPAT_IOCTL 1
+> >  #define HAVE_UNLOCKED_IOCTL 1
+> >  
+> > +struct seq_file;
+> > +
 > 
-> style trivia:
-they are all good catches. will fix in the next version.
+> We already have a forward declaration of seq_file in fs.h.  At line
+> 1583(!).
+> 
+> This is why forward declarations should always be placed at the start
+> of the file, please.
 
--- 
-Thanks,
+Yes, thanks a lot, Andrew!
 
-Jacob
+	Cyrill
