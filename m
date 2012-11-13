@@ -1,194 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab2KMRUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:20:37 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab2KMRPK (ORCPT
+	id S932317Ab2KMRUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:20:52 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:40234 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229Ab2KMRUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:15:10 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: [PATCH 13/31] mm/mpol: Check for misplaced page
-Date: Tue, 13 Nov 2012 18:13:36 +0100
-Message-Id: <1352826834-11774-14-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
-References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+	Tue, 13 Nov 2012 12:20:50 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj6wAAV/olBV5h1yPGdsb2JhbABEhTGFI7gmAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCAMRAwECLxQNGAoMDhOHeAMJCqoNhk0NiVQUiy1peYF+gnxhA5QngVSFe4NOgWqIAQ
+X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
+   d="scan'208";a="445261905"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 13 Nov 2012 18:27:11 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 13/13] HID: hid-multitouch: forwards ABS_SCAN_TIME
+Message-ID: <20121113172711.GA856@polaris.bitmath.org>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-14-git-send-email-benjamin.tissoires@gmail.com>
+ <50A25990.6040302@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A25990.6040302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Hi Benjamin,
 
-This patch provides a new function to test whether a page resides
-on a node that is appropriate for the mempolicy for the vma and
-address where the page is supposed to be mapped.  This involves
-looking up the node where the page belongs.  So, the function
-returns that node so that it may be used to allocated the page
-without consulting the policy again.
+> From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> Date: Tue, 13 Nov 2012 15:12:17 +0100
+> Subject: [PATCH v4] HID: hid-multitouch: forwards MSC_TIMESTAMP
+> 
+> Computes the device timestamp according to the specification.
+> It also ensures that if the time between two events is greater
+> than MAX_TIMESTAMP_INTERVAL, the timestamp will be reset.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 46 +++++++++++++++++++++++++++++++++++++++++---
+>  include/linux/hid.h          |  1 +
+>  2 files changed, 44 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index caf0f0b..3f8432d 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/usb.h>
+>  #include <linux/input/mt.h>
+> +#include <linux/jiffies.h>
 
-A subsequent patch will call this function from the fault path.
-Because of this, I don't want to go ahead and allocate the page, e.g.,
-via alloc_page_vma() only to have to free it if it has the correct
-policy.  So, I just mimic the alloc_page_vma() node computation
-logic--sort of.
+Why?
 
-Note:  we could use this function to implement a MPOL_MF_STRICT
-behavior when migrating pages to match mbind() mempolicy--e.g.,
-to ensure that pages in an interleaved range are reinterleaved
-rather than left where they are when they reside on any page in
-the interleave nodemask.
+>  #include "usbhid/usbhid.h"
+>  
+>  
+> @@ -98,6 +99,9 @@ struct mt_device {
+>  	bool serial_maybe;	/* need to check for serial protocol */
+>  	bool curvalid;		/* is the current contact valid? */
+>  	unsigned mt_flags;	/* flags to pass to input-mt */
+> +	__s32 dev_time;		/* the scan time provided by the device */
+> +	unsigned long jiffies;	/* the frame's jiffies */
+> +	unsigned timestamp;	/* the timestamp to be sent */
 
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-[ Added MPOL_F_LAZY to trigger migrate-on-fault;
-  simplified code now that we don't have to bother
-  with special crap for interleaved ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-z3mgep4tgrc08o07vl1ahb2m@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/mempolicy.h      |  8 +++++
- include/uapi/linux/mempolicy.h |  1 +
- mm/mempolicy.c                 | 76 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 85 insertions(+)
+Why not just dev_time here?
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index e5ccb9d..c511e25 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -198,6 +198,8 @@ static inline int vma_migratable(struct vm_area_struct *vma)
- 	return 1;
- }
- 
-+extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
-+
- #else
- 
- struct mempolicy {};
-@@ -323,5 +325,11 @@ static inline int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol,
- 	return 0;
- }
- 
-+static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
-+				 unsigned long address)
-+{
-+	return -1; /* no node preference */
-+}
-+
- #endif /* CONFIG_NUMA */
- #endif
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index d23dca8..472de8a 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -61,6 +61,7 @@ enum mpol_rebind_step {
- #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
- #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
- #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
-+#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
- 
- 
- #endif /* _UAPI_LINUX_MEMPOLICY_H */
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index c7c7c86..1b2890c 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2179,6 +2179,82 @@ static void sp_free(struct sp_node *n)
- 	kmem_cache_free(sn_cache, n);
- }
- 
-+/**
-+ * mpol_misplaced - check whether current page node is valid in policy
-+ *
-+ * @page   - page to be checked
-+ * @vma    - vm area where page mapped
-+ * @addr   - virtual address where page mapped
-+ *
-+ * Lookup current policy node id for vma,addr and "compare to" page's
-+ * node id.
-+ *
-+ * Returns:
-+ *	-1	- not misplaced, page is in the right node
-+ *	node	- node id where the page should be
-+ *
-+ * Policy determination "mimics" alloc_page_vma().
-+ * Called from fault path where we know the vma and faulting address.
-+ */
-+int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
-+{
-+	struct mempolicy *pol;
-+	struct zone *zone;
-+	int curnid = page_to_nid(page);
-+	unsigned long pgoff;
-+	int polnid = -1;
-+	int ret = -1;
-+
-+	BUG_ON(!vma);
-+
-+	pol = get_vma_policy(current, vma, addr);
-+	if (!(pol->flags & MPOL_F_MOF))
-+		goto out;
-+
-+	switch (pol->mode) {
-+	case MPOL_INTERLEAVE:
-+		BUG_ON(addr >= vma->vm_end);
-+		BUG_ON(addr < vma->vm_start);
-+
-+		pgoff = vma->vm_pgoff;
-+		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
-+		polnid = offset_il_node(pol, vma, pgoff);
-+		break;
-+
-+	case MPOL_PREFERRED:
-+		if (pol->flags & MPOL_F_LOCAL)
-+			polnid = numa_node_id();
-+		else
-+			polnid = pol->v.preferred_node;
-+		break;
-+
-+	case MPOL_BIND:
-+		/*
-+		 * allows binding to multiple nodes.
-+		 * use current page if in policy nodemask,
-+		 * else select nearest allowed node, if any.
-+		 * If no allowed nodes, use current [!misplaced].
-+		 */
-+		if (node_isset(curnid, pol->v.nodes))
-+			goto out;
-+		(void)first_zones_zonelist(
-+				node_zonelist(numa_node_id(), GFP_HIGHUSER),
-+				gfp_zone(GFP_HIGHUSER),
-+				&pol->v.nodes, &zone);
-+		polnid = zone->node;
-+		break;
-+
-+	default:
-+		BUG();
-+	}
-+	if (curnid != polnid)
-+		ret = polnid;
-+out:
-+	mpol_cond_put(pol);
-+
-+	return ret;
-+}
-+
- static void sp_delete(struct shared_policy *sp, struct sp_node *n)
- {
- 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
--- 
-1.7.11.7
+>  };
+>  
+>  /* classes of device behavior */
+> @@ -126,6 +130,8 @@ struct mt_device {
+>  #define MT_DEFAULT_MAXCONTACT	10
+>  #define MT_MAX_MAXCONTACT	250
+>  
+> +#define MAX_TIMESTAMP_INTERVAL	500000
+> +
 
+Needs to be done in userland anyways, so no need to check this in the kernel.
+
+>  #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
+>  #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
+>  
+> @@ -451,12 +457,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+> +		case HID_DG_SCANTIME:
+> +			hid_map_usage(hi, usage, bit, max,
+> +				EV_MSC, MSC_TIMESTAMP);
+> +			set_bit(MSC_TIMESTAMP, hi->input->mscbit);
+> +			td->last_field_index = field->index;
+> +			return 1;
+>  		case HID_DG_CONTACTCOUNT:
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONTACTMAX:
+> -			/* we don't set td->last_slot_field as contactcount and
+> -			 * contact max are global to the report */
+> +			/* we don't set td->last_slot_field as scan time,
+> +			 * contactcount and contact max are global to the
+> +			 * report */
+>  			td->last_field_index = field->index;
+>  			return -1;
+>  		}
+> @@ -485,7 +498,8 @@ static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>  		struct hid_field *field, struct hid_usage *usage,
+>  		unsigned long **bit, int *max)
+>  {
+> -	if (usage->type == EV_KEY || usage->type == EV_ABS)
+> +	if (usage->type == EV_KEY || usage->type == EV_ABS ||
+> +	    usage->type == EV_MSC)
+>  		set_bit(usage->type, hi->input->evbit);
+>  
+>  	return -1;
+> @@ -565,11 +579,34 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>   */
+>  static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
+>  {
+> +	input_event(input, EV_MSC, MSC_TIMESTAMP, td->timestamp);
+
+I think this should go after the frame sync,
+
+>  	input_mt_sync_frame(input);
+
+And the computation (100 * td->dev_time) should work fine. It will wrap
+properly.
+
+>  	input_sync(input);
+>  	td->num_received = 0;
+>  }
+>  
+> +static void mt_compute_timestamp(struct mt_device *td, struct hid_field *field,
+> +		__s32 value)
+> +{
+> +	long delta = value - td->dev_time;
+> +	unsigned long jdelta = jiffies_to_usecs(jiffies - td->jiffies);
+> +
+> +	td->jiffies = jiffies;
+> +	td->dev_time = value;
+> +
+> +	if (delta < 0)
+> +		delta += field->logical_maximum;
+> +
+> +	/* HID_DG_SCANTIME is expressed in 100us, we want it in ms. */
+> +	delta *= 100;
+> +
+> +	if (abs(delta - jdelta) > MAX_TIMESTAMP_INTERVAL)
+> +		/* obviously wrong clock -> the device time has been reset */
+> +		td->timestamp = 0;
+> +	else
+> +		td->timestamp += delta;
+> +}
+> +
+
+Can be skipped entirely.
+
+>  static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  				struct hid_usage *usage, __s32 value)
+>  {
+> @@ -617,6 +654,9 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  		case HID_DG_HEIGHT:
+>  			td->curdata.h = value;
+>  			break;
+> +		case HID_DG_SCANTIME:
+> +			mt_compute_timestamp(td, field, value);
+
+Just td->dev_time = value should work fine here.
+
+> +			break;
+>  		case HID_DG_CONTACTCOUNT:
+>  			/*
+>  			 * Includes multi-packet support where subsequent
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index 6b4f322..0337e50 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -279,6 +279,7 @@ struct hid_item {
+>  #define HID_DG_DEVICEINDEX	0x000d0053
+>  #define HID_DG_CONTACTCOUNT	0x000d0054
+>  #define HID_DG_CONTACTMAX	0x000d0055
+> +#define HID_DG_SCANTIME		0x000d0056
+
+Was this missing this the old patch, or did it get moved here?
+
+>  
+>  /*
+>   * HID report types --- Ouch! HID spec says 1 2 3!
+> -- 
+> 1.8.0
+
+Thanks,
+Henrik
