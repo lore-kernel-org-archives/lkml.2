@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2KMIDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:03:10 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:47738 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753247Ab2KMIDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:03:08 -0500
-Message-ID: <1352793790.24230.18.camel@joe-AO722>
-Subject: Re: [patch] ALSA: es1968: precedence bug in
- snd_es1968_tea575x_get_pins()
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Tue, 13 Nov 2012 00:03:10 -0800
-In-Reply-To: <20121113074454.GB13198@elgon.mountain>
-References: <20121113074454.GB13198@elgon.mountain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754268Ab2KMIDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:03:38 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57486 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab2KMIDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:03:36 -0500
+Date: Tue, 13 Nov 2012 09:03:23 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
+Message-ID: <20121113080323.GA15983@avionic-0098.mockup.avionic-design.de>
+References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de>
+ <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de>
+ <50A1FE01.5090808@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
+Content-Disposition: inline
+In-Reply-To: <50A1FE01.5090808@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:NE7hOJ49BeHHj/fzge6Vjc3kzgefncaw5ukMJQn9Wia
+ OIydkXaYylHp4hw6ID6uqfAnQmIuDnkjI1yxY9wr/rW63ntAqe
+ X/U1klZD7jn2psSdzDQDScP5Etz4M5x7g9yTednwzaJ6Fmz70N
+ P0oQx9q4sNBI6cyQ7C2xTWh+/YnWcqAdQOSAQSzAdj03hca084
+ HTDuXr5LUFRVnsxCByZKMVGIcmQHUsQEcfcKw5M34gSbXhLNzl
+ t0AYQHiTfQrJRyYDdQhnMfan9TrurTE7fMMcgcRpkKBEDZASJs
+ XfBQ0/BsfV2JO8Qaomj7JLESqOW218RsqOB+dwEKt2kpNlN74O
+ Oo9Y9aQmSDP204VHioxONHM0zPQlPKsdYHW+pQ5la7JyT38/Be
+ jD2DJxH00n0itmhfISn84Wqg66ZrEHGyFEeCRP2disqgPkilPd
+ HQypo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-13 at 10:44 +0300, Dan Carpenter wrote:
-> I don't think this works as intended.  '|' higher precedence than ?: so
-> the bitwize OR "0 | (val & STR_MOST)" is a no-op.
-> 
-> I have re-written it to be more clear.
-[]
-> diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
-[]
-> @@ -2581,9 +2581,14 @@ static u8 snd_es1968_tea575x_get_pins(struct snd_tea575x *tea)
->  	struct es1968 *chip = tea->private_data;
->  	unsigned long io = chip->io_port + GPIO_DATA;
->  	u16 val = inw(io);
-> -
-> -	return  (val & STR_DATA) ? TEA575X_DATA : 0 |
-> -		(val & STR_MOST) ? TEA575X_MOST : 0;
-> +	u8 ret;
-> +
-> +	ret = 0;
-> +	if (val & STR_DATA)
-> +		ret |= TEA575X_DATA;
-> +	if (val & STR_MOST)
-> +		ret |= TEA575X_MOST;
-> +	return ret;
 
-Cute.  smatch I presume?  Tools are useful.
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Moving the close parentheses is a pretty common style too
+On Tue, Nov 13, 2012 at 10:00:01AM +0200, Terje Bergstr=C3=B6m wrote:
+> On 09.11.2012 15:59, Thierry Reding wrote:
+> > This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+> > support for host1x and the two display controllers found on the Tegra20
+> > SoC. Each display controller can drive a separate RGB/LVDS output.
+>=20
+> Thanks Thierry for the hard work. I noticed the same thing Stephen
+> noticed earlier - I couldn't compile the driver.
 
-	return  (val & STR_DATA ? TEA575X_DATA : 0) |
-		(val & STR_MOST ? TEA575X_MOST : 0);
+That should be fixed with v2 I posted a few hours ago.
 
+> Other than that, there were a couple of differences to the tree we've
+> worked with and tested earlier: Tegra30 support was dropped and as a
+> consequence so was IOMMU support.
 
+Yes, Tegra30 support will follow in a separate patch. As for IOMMU
+support it should eventually be made completely transparent, but I'm not
+opposed to adding a patch with explicit IOMMU support back in if it
+turns out that it can't be done transparently.
+
+Thierry
+
+--3V7upXqbjpZ4EhLz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQof7LAAoJEN0jrNd/PrOh+o0QAI4CvF/E1oupG1YU04DopqIN
+LmZJZqGzCFIwFM24mmYhoVYlGXwUnyJ6Rfycy76XXkkgSmtaICGCUD5vadIC+k1Z
+TNb8RPPf7OoZ/E5i+YKQAoaSt62Ao9XXVJ8tAyi1WAN61O2U1S9utdCnbaQQRRrc
+Bh7PRsoM1PeC/o04FH1v90Xs3hLz+TVsC8BXxTQsTK/IrH3pLPoPlAZSOIc86d1d
+qKxpTwe53uZezPymsQ1BAF4NkqYzLpjga3pgAo+o/EwwZ5qGs4SXe1aC97cYFEj4
+4ULjBoOaXvViVTrp4Q/6VfVcrD505LegRYdXZ7J2AaW3IDVl31ep2eVTjLeb6KWA
+iTu23Exe7ADDebhEIVCBfexwZwD/LcssKs7KqRbswEgMtZ9ncIpN6Z037NkfNHJz
+cRi3FCkfQF5JY3mcLXixB9+3QHo2t8ngZqelKKj6WCIGREdgKRKxW//eB3cdAvYC
+GJzVFqUOeObP+pKVqBg8Bgc6oU6icfAKREIvUb1oIa2ncNCpUvPc+1zZBnBgrFD9
+TH5f+31jMj5ASViRix2VuT9WNwtTDt9u2o+Ko7hhHde8UQYXBO6U0OXyTkI/xeqs
+pS06l8MlBln5uHEdKRQBOKtgs5FElJ4BnbShd2XWEtHq/VCN+FyhIOeP8WrlKWAu
+6bCcWdEepG45ScA/1GFl
+=0OEH
+-----END PGP SIGNATURE-----
+
+--3V7upXqbjpZ4EhLz--
