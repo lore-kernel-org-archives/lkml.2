@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab2KMDCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:02:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44393 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752727Ab2KMDCE (ORCPT
+	id S1754464Ab2KMDCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:02:18 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36312 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab2KMDCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:02:04 -0500
-Message-ID: <1352775711.16264.96.camel@deadeye.wl.decadent.org.uk>
-Subject: Missing signoff for 'module: fix out-by-one error in kallsyms'
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Nov 2012 03:01:51 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-VWIiC4bPInvRx2qLoTzF"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 12 Nov 2012 22:02:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mhocko@suse.cz, glommer@parallels.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/17] cgroup: initialize cgrp->allcg_node in init_cgroup_housekeeping()
+Date: Mon, 12 Nov 2012 19:01:29 -0800
+Message-Id: <1352775704-9023-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352775704-9023-1-git-send-email-tj@kernel.org>
+References: <1352775704-9023-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Not strictly necessary but it's annoying to have uninitialized
+list_head around.
 
---=-VWIiC4bPInvRx2qLoTzF
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-This doesn't have anyone's Signed-off-by:
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d0803f0..ed0e177 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1381,6 +1381,7 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	INIT_LIST_HEAD(&cgrp->children);
+ 	INIT_LIST_HEAD(&cgrp->files);
+ 	INIT_LIST_HEAD(&cgrp->css_sets);
++	INIT_LIST_HEAD(&cgrp->allcg_node);
+ 	INIT_LIST_HEAD(&cgrp->release_list);
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+ 	mutex_init(&cgrp->pidlist_mutex);
+-- 
+1.7.11.7
 
-commit 59ef28b1f14899b10d6b2682c7057ca00a9a3f47
-Author: Rusty Russell <rusty@rustcorp.com.au>
-Date:   Thu Oct 25 10:49:25 2012 +1030
-
-    module: fix out-by-one error in kallsyms
-
-It's a bit late to fix it now, but maybe some kind of an automatic check
-for this would be a good idea.
-
-Rusty, can I have your signoff for stable?
-
-Ben.
-
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
-
---=-VWIiC4bPInvRx2qLoTzF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUKG4H+e/yOyVhhEJAQo1+Q/+K/t2U7rgULoxzUJBf9DBN+gilN9ECf+E
-gEImFJ13X4pKynGUUgUVYtLKzx2A/xNq34IpUZTJEfGJZ0Mx/JDZgYfbpnl8zbM7
-u/hUlJbSFd3XQ/vGh0uMi7rPK+VyqFtRGjioFPZEBI9msNZnj6B6Y4GDlXxUuPsy
-A9tUxjUTeMRY1yF5TXkGSAagKP9eNAF2YKRjilrGu5QjRYnQogpvTU2kgkZTm1sH
-l+gsyRWCOsJUXsRyi/gQyuWSO0bCu55CXDiZnXs1QHa4CGeWzjTB951zkH2SkqOl
-4SmjxS9sxgkAk4qmqeUAiG3q6ft7Hup1r3YyrFzyeL7xFK4FBDZ7kUp/HGT5OLda
-aEVFjcvJvUvGbMyj0tZ5UtM2rLs00Jt5nbK40jvzu3T8LxelV5LNkWHzgL3SrK/C
-4f6SWKBljTLVRndkQ/DZ2MseYxlgR+HGuZypZR7JCxif/SUXAXHWyDn+WgacQXzw
-BFT50hHiyXCL2yiQQ5kffe2HPjh8P6AJYtMVnnXzX8UzGcr4QO9HFggfz9h72mHl
-iMAmZEx1Rm340CU90u8OULwg0O0Me8RZpMTnudkmm/dBI/Nb6/8Drt58AP18y2ak
-bbdM/HvP++R2OX0CqMvS4y4DS650T5RED3SEEc8BPnKHDAU5S+SavxyZ372OTc2c
-XrWcwzKALHg=
-=/fIc
------END PGP SIGNATURE-----
-
---=-VWIiC4bPInvRx2qLoTzF--
