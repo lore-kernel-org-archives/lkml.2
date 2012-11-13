@@ -1,78 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2KMSwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:52:03 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33734 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab2KMSwA (ORCPT
+	id S1755587Ab2KMSwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:52:43 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49906 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755167Ab2KMSwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:52:00 -0500
+	Tue, 13 Nov 2012 13:52:41 -0500
+Date: Tue, 13 Nov 2012 10:52:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
+ inserting/removing USB stick
+Message-ID: <20121113185237.GA26995@kroah.com>
+References: <201211071501.38288.Martin@lichtvoll.de>
+ <201211101734.07084.Martin@lichtvoll.de>
+ <27240C0AC20F114CBF8149A2696CBE4A1C2915@SHSMSX101.ccr.corp.intel.com>
+ <201211121527.02007.Martin@lichtvoll.de>
+ <alpine.LFD.2.02.1211122025490.10000@ionos>
+ <27240C0AC20F114CBF8149A2696CBE4A1C3887@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1211131629230.28049@kaball.uk.xensource.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
-	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
-	<1352755122-25660-27-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1211131629230.28049@kaball.uk.xensource.com>
-Date: Tue, 13 Nov 2012 10:51:59 -0800
-X-Google-Sender-Auth: BokghV0aXgOOmFv6zSloWkBG3Ps
-Message-ID: <CAE9FiQUc0Jz0g+oZXye95dNCV0W4YMr-WMroUR_HaUmh-qZwoA@mail.gmail.com>
-Subject: Re: [PATCH 26/46] x86, mm, Xen: Remove mapping_pagetable_reserve()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A1C3887@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 8:36 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Mon, 12 Nov 2012, Yinghai Lu wrote:
->> Page table area are pre-mapped now after
->>       x86, mm: setup page table in top-down
->>       x86, mm: Remove early_memremap workaround for page table accessing on 64bit
->>
->> mapping_pagetable_reserve is not used anymore, so remove it.
->
-> You should mention in the description of the patch that you are
-> removing mask_rw_pte too.
->
-> The reason why you can do that safely is that you previously modified
-> allow_low_page to always return pages that are already mapped, moreover
-> xen_alloc_pte_init, xen_alloc_pmd_init, etc, will mark the page RO
-> before hooking it into the pagetable automatically.
+On Tue, Nov 13, 2012 at 12:47:31AM +0000, Liu, Chuansheng wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> > Sent: Tuesday, November 13, 2012 3:32 AM
+> > To: Martin Steigerwald
+> > Cc: Liu, Chuansheng; linux-kernel@vger.kernel.org; Ingo Molnar; Greg
+> > Kroah-Hartman
+> > Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
+> > inserting/removing USB stick
+> > 
+> > On Mon, 12 Nov 2012, Martin Steigerwald wrote:
+> > > Am Sonntag, 11. November 2012 schrieb Liu, Chuansheng:
+> > > > > The first bad commit is:
+> > > > >
+> > > > > commit 73d4066055e0e2830533041f4b91df8e6e5976ff
+> > > > > Author: Chuansheng Liu <chuansheng.liu@intel.com>
+> > > > > Date:   Tue Sep 11 16:00:30 2012 +0800
+> > > > >
+> > > > >     USB/host: Cleanup unneccessary irq disable code
+> > > > >
+> > > > >     Because the IRQF_DISABLED as the flag is now a NOOP and has
+> > been
+> > > > >     deprecated and in hardirq context the interrupt is disabled.
+> > > > >
+> > > > >     so in usb/host code:
+> > > > >     Removing the usage of flag IRQF_DISABLED;
+> > > > >     Removing the calling local_irq save/restore actions in irq
+> > > > >     handler usb_hcd_irq();
+> > > > >
+> > > > >     Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> > > > >     Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> > > > >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > >
+> > > > >
+> > > > > But:
+> > > > >
+> > > > > This ony happens with threadirqs option!
+> > > > >
+> > > > > When I remove threadirqs from kernel command line and reboot with this
+> > > > > last bisect kernel USB sticks work.
+> > > > >
+> > > > > That may explain why nobody else has seen this.
+> > > > >
+> > > > > So I will try a 3.7-rc4 now, but without threadirqs enabled.
+> > > > >
+> > > > Thanks your pointing out, the USB HCD irq handler is designed to
+> > > > execute in irq handler with irq disabled.  When threadirqs is in
+> > > > commandline, it will be executed in thread context with local irq
+> > > > enabling, which causes this hardlockup.
+> > 
+> > No. The problem is caused by the commit above. USB with threaded
+> > interrupt handlers worked perfectly fine in the past.
+> The reason is that removing local_irq_save/restore() in function usb_hcd_irq().
+> The hard lockup analysis is:
+> CPU3
+> Usb_hcd_irq() -->
+>   ehci_irq -->
+> spin_lock (&ehci->lock);
+> ...
+> if (status == ~(u32) 0) {
+> 
+> At this time, one hrtimer is coming:
+> ehci_hrtimer_func() -->
+> spin_lock_irqsave(&ehci->lock, flags);
+> 
+> Due to the spin_lock has been hold before, it causes the deadlock.
+> 
+> The dmesg is as below:
+> [  155.010424]  [<ffffffff814027b0>] ? _raw_spin_lock_irqsave+0x3f/0x48
+> [  155.010649]  [<ffffffff814027b0>] ? _raw_spin_lock_irqsave+0x3f/0x48
+> [  155.010884]  [<ffffffff814027b0>] ? _raw_spin_lock_irqsave+0x3f/0x48
+> [  155.011104]  <<EOE>>  <IRQ>  [<ffffffffa00c6836>] ehci_hrtimer_func+0x28/0xb5 [ehci_hcd]
+> [  155.011446]  [<ffffffff8105dc7d>] ? __remove_hrtimer+0x31/0x8b
+> [  155.011661]  [<ffffffffa00c680e>] ? end_free_itds+0x108/0x108 [ehci_hcd]
+> [  155.011911]  [<ffffffff8105e116>] __run_hrtimer+0xb9/0x176
+> [  155.012105]  [<ffffffff8105e804>] hrtimer_interrupt+0xcb/0x1b4
+> [  155.012311]  [<ffffffff810a4b6d>] ? irq_thread_fn+0x35/0x35
+> [  155.012509]  [<ffffffff8102abc2>] smp_apic_timer_interrupt+0x71/0x84
+> [  155.012742]  [<ffffffff81407b4a>] apic_timer_interrupt+0x6a/0x70
+> [  155.012950]  <EOI>  [<ffffffffa00c9087>] ? ehci_irq+0x39/0x267 [ehci_hcd]
+> [  155.013230]  [<ffffffff81401830>] ? __schedule+0x57f/0x5b2
+> [  155.013424]  [<ffffffff810a4b6d>] ? irq_thread_fn+0x35/0x35
+> [  155.013645]  [<ffffffffa003befc>] usb_hcd_irq+0x20/0x2f [usbcore]
+> [  155.013874]  [<ffffffff810a4b8d>] irq_forced_thread_fn+0x20/0x3e
+> 
+> > 
+> > > > --- a/drivers/usb/core/hcd.c
+> > > > +++ b/drivers/usb/core/hcd.c
+> > > > @@ -2349,7 +2349,7 @@ static int usb_hcd_request_irqs(struct usb_hcd
+> > *hcd,
+> > > >         if (hcd->driver->irq) {
+> > > >                 snprintf(hcd->irq_descr, sizeof(hcd->irq_descr),
+> > "%s:usb%d",
+> > > >                                 hcd->driver->description,
+> > hcd->self.busnum);
+> > > > -               retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
+> > > > +               retval = request_irq(irqnum, &usb_hcd_irq,
+> > irqflags|IRQF_NO_THREAD,
+> > > >                                 hcd->irq_descr, hcd);
+> > 
+> > NAK. This is exactly the wrong thing to do.
+> > 
+> > We want to be able to run that code in an handler thread. So you
+> As Martin's experience:
+> "I think that thread IRQs for USB based interrupts might not be a good
+> from another experience."
+> Maybe it shows something.
+> 
+> > removed the local_irq_save/restore() in the driver code and with
+> > forced threaded irqs this breaks. Now setting IRQF_NO_THREAD is just
+> > working around the problem that the above commit broke it.
+> > 
+> > There is no hard requirement to run USB interrupts in hard interrupt
+> > context. I'd rather see the above commit reverted and then a proper
+> > analysis done why removing local_irq_save/restore() breaks forced
+> > threaded interrupt handlers.
+> As you said, we can revert the patch directly, or submit a new patch to just add
+> local_irq_save/restore() back.
 
-updated change log:
----
-x86, mm, Xen: Remove mapping_pagetable_reserve()
+Let me revert this for now, as it's obviously causing problems.
 
-Page table area are pre-mapped now after
-        x86, mm: setup page table in top-down
-        x86, mm: Remove early_memremap workaround for page table
-accessing on 64bit
+thanks,
 
-mapping_pagetable_reserve is not used anymore, so remove it.
-
-Also remove operation in mask_rw_pte(), as modified allow_low_page
-always return pages that are already mapped, moreover
-xen_alloc_pte_init, xen_alloc_pmd_init, etc, will mark the page RO
-before hooking it into the pagetable automatically.
-
--v2: add changelog about mask_rw_pte() from Stefano.
------
-
-
->
-> [ ... ]
->
-> you should just get rid of mask_rw_pte completely
-
-then how about 32bit mask_rw_pte? Maybe you can clean up that later?
-
-Thanks
-
-Yinghai
+greg k-h
