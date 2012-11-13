@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab2KMGdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 01:33:36 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:47382 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750779Ab2KMGdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 01:33:35 -0500
-Message-ID: <1352788416.24230.6.camel@joe-AO722>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-From: Joe Perches <joe@perches.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Mon, 12 Nov 2012 22:33:36 -0800
-In-Reply-To: <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	 <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751781Ab2KMGgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 01:36:03 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50952 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751364Ab2KMGgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 01:36:01 -0500
+Date: Tue, 13 Nov 2012 15:35:50 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] RFC: pinctrl: grab default handler with bus notifiers
+Message-ID: <20121113063546.GD18224@opensource.wolfsonmicro.com>
+References: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com>
+ <50A15A54.3090803@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
+Content-Disposition: inline
+In-Reply-To: <50A15A54.3090803@wwwdotorg.org>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-12 at 14:03 -0800, Jacob Pan wrote:
-> Intel PowerClamp driver performs synchronized idle injection across
-> all online CPUs. The goal is to maintain a given package level C-state
-> ratio.
 
-style trivia:
+--oJ71EGRlYNjSvfq7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[]
+On Mon, Nov 12, 2012 at 01:21:40PM -0700, Stephen Warren wrote:
+> On 11/11/2012 05:22 AM, Linus Walleij wrote:
 
-> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
-[]
-> +
-> +/* #define DEBUG */
-> +
+> > Another solution that was discussed was whether to move
+> > the default pinctrl handle and state grab to the device
+> > core as an optional field in struct device itself, but
+> > I'd like to first propose this less intrusive mechanism.
 
-Adding this #define before any #include
+> I think doing that approach makes a lot more sense; wouldn't it
+> completely avoid the issues with deferred probe that this notifier-based
+> method can't solve? It would also be very much in line with e.g.
+> dev_get_regmap() - if every resource that a driver required were handled
+> like that, then deferred probe could be significantly isolated into the
+> driver core rather than in every driver...
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+I have to say that I agree with this, notifiers seem to make life more
+complicated for limited gain.  Otherwise I guess we could enhance
+notifiers so that they're able to trigger deferrals?
 
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
+--oJ71EGRlYNjSvfq7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> +static int window_size_set(const char *arg, const struct kernel_param *kp)
-> +{
-[]
-> +	if (new_window_size >= 10 || new_window_size < 2) {
-> +		pr_err("PowerClamp: invalid window size %lu, between 2-10\n",
-> +			new_window_size);
+iQIcBAEBAgAGBQJQoeotAAoJELSic+t+oim9xYUP/RjzXmLzAYPBCrqZYaZrDU5g
+GrgUP2RRI+eDZWw+/m6ecJSIbokEPswNOgGSH7zT7bdjGeHVvcxN8I17F/Dyn6VZ
+Kv5s/8r7gJ0XFUM99W2Ii9yjH92ALd6Y9T/bC5BX8yyyB2GuACC53yp3EBafNbOA
+MNbPYnaj+msR2Vahz0GYwXzMcm1pnBtKV60hB3tzK6JpdHt9m0Wp/2KkOLE7Df/P
+SArkClq+J4Ic5l8Ip2uiEHyiZSm4+L9Qy/4z5lue1mehALT4glsdYa1AruIoBakg
+MFyGAZoYT+MwIdMjKSxpU+f4OfaLrdPQuMKsQG4b/H8nXh+F/+IOGblhXw25wGlt
+3JuS9O8tZY0GdBCvvRoK/rBwKNuruhUB1t6pVrFzR4cg8p2wzcIBMKPyitOJCx3V
+/dUX5/7b/kdegOXzo7PcpkAB240Pg510HG1WyOKKuEmzRTC5w/2zVXWnFdFKrLJS
+64Sf56cKvKY6T8pn/mD9XqGHOgLcvIPVlt5eKmnyQ6E0TS/goDgLTTnN1knP61OY
+HGQQ8R3byEvsk0nSwK9B3RQGXRzhzBDM5WtVZUcjTIpicCOd4NSxDOkBcNIGi1JU
+Hp1kfR4PACxOOuFiRPH6YKwa8L/OXS1sK4KgvpY69I5Z6F0/vhj6Ab6MKJyAIhB2
+FD6YClGk+VAnj190RSH6
+=s9Cs
+-----END PGP SIGNATURE-----
 
-Means there's no need for "PowerClamp: " prefixes with pr_fmt
-
-		pr_err("invalid window size %lu...
-
-and all the other pr_<level> uses get prefixed too.
-
-> +static u64 pkg_state_counter(void)
-> +{
-> +	u64 val;
-> +	u64 count = 0;
-> +
-> +	static int skip_c2;
-> +	static int skip_c3;
-> +	static int skip_c6;
-> +	static int skip_c7;
-
-bool?
-
-
+--oJ71EGRlYNjSvfq7--
