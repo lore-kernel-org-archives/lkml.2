@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2KMWNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:13:36 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50461 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab2KMWNe (ORCPT
+	id S1754135Ab2KMWNr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:13:47 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:49364 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753209Ab2KMWNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:13:34 -0500
+	Tue, 13 Nov 2012 17:13:46 -0500
+X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail02.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1de0h1202h1d1ah1d2ahzzz2fh2a8h668h839h93fhd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh1155h)
+Message-ID: <50A2C5C3.8040804@am.sony.com>
+Date: Tue, 13 Nov 2012 14:12:19 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Nov 2012 14:13:13 -0800
-Message-ID: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
-Subject: [3.6 regression?] THP + migration/compaction livelock (I think)
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Thiago Farina <tfransosi@gmail.com>,
+        linux list <linux-kernel@vger.kernel.org>
+Subject: Re: acked-by meaning
+References: <CACnwZYc4xY5r_oxu36URsSHen1kHDiStULMyB2LrZB+Eg=FF2g@mail.gmail.com> <50A07169.6090201@infradead.org>
+In-Reply-To: <50A07169.6090201@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've seen an odd problem three times in the past two weeks.  I suspect
-a Linux 3.6 regression.  I"m on 3.6.3-1.fc17.x86_64.  I run a parallel
-compilation, and no progress is made.  All cpus are pegged at 100%
-system time by the respective cc1plus processes.  Reading
-/proc/<pid>/stack shows either
+On 11/11/12 19:47, Randy Dunlap wrote:
+> On 11/11/2012 05:40 PM, Thiago Farina wrote:
+> 
+>> Hi,
+>>
+>> What is the meaning of 'Acked-by:' line? Is the same of LGTM? How it
+>> differs from 'Reviewed-by:'?
+> 
 
-[<ffffffff8108e01a>] __cond_resched+0x2a/0x40
-[<ffffffff8114e432>] isolate_migratepages_range+0xb2/0x620
-[<ffffffff8114eba4>] compact_zone+0x144/0x410
-[<ffffffff8114f152>] compact_zone_order+0x82/0xc0
-[<ffffffff8114f271>] try_to_compact_pages+0xe1/0x130
-[<ffffffff816143db>] __alloc_pages_direct_compact+0xaa/0x190
-[<ffffffff81133d26>] __alloc_pages_nodemask+0x526/0x990
-[<ffffffff81171496>] alloc_pages_vma+0xb6/0x190
-[<ffffffff81182683>] do_huge_pmd_anonymous_page+0x143/0x340
-[<ffffffff811549fd>] handle_mm_fault+0x27d/0x320
-[<ffffffff81620adc>] do_page_fault+0x15c/0x4b0
-[<ffffffff8161d625>] page_fault+0x25/0x30
-[<ffffffffffffffff>] 0xffffffffffffffff
+> Reviewed-by: is stronger than Acked-by:.
+> If someone replies with Reviewed-by, they also accept some
+> responsibility for fixing any problems that the patch might
+> introduce after it is merged.
 
-or
+I haven't found a "responsibility for fixing any problems" in the
+references provided below.  Can you help me out by pointing
+to a specific sentence or another reference?
 
-[<ffffffffffffffff>] 0xffffffffffffffff
+> Acked-by just means agreement with the patch.
+> 
+>> If someone acks a patch (can anybody acks or just the maintainer?),
+>> does it mean that he will also apply the patch to his tree?
+> 
+> 
+> Anybody can reply to a patch with Acked-by.
+> No, it doesn't mean that the replying/acking person will apply
+> the patch to any tree.
+> 
+> 
+> Have you read what Documentation/SubmittingPatches and
+> Documentation/development-process/5.Posting and 6.Followthrough
+> say about Acked-by?
 
-seemingly at random (i.e. if I read that file twice in a row, I might
-see different results).  If I had to guess, I'd say that
+Thanks...
 
-perf shows no 'faults'.  The livelock resolved after several minutes
-(and before I got far enough with perf to get more useful results).
-Every time this happens, firefox hangs but everything else keeps
-working.
+-Frank
 
-If I trigger it again, I'll try to grab /proc/zoneinfo and /proc/meminfo.
-
---Andy
