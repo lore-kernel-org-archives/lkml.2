@@ -1,240 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2KMBvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 20:51:17 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52681 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab2KMBvQ (ORCPT
+	id S1754326Ab2KMBvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 20:51:48 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36812 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab2KMBvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 20:51:16 -0500
-X-AuditID: 9c93016f-b7b42ae000004383-c7-50a1a79269ee
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 02/12] perf header: Add HEADER_GROUP_DESC feature
-References: <1352479414-2324-1-git-send-email-namhyung@kernel.org>
-	<1352479414-2324-3-git-send-email-namhyung@kernel.org>
-	<20121112174534.GF18978@ghostprotocols.net>
-Date: Tue, 13 Nov 2012 10:51:14 +0900
-In-Reply-To: <20121112174534.GF18978@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Mon, 12 Nov 2012 14:45:34 -0300")
-Message-ID: <87lie6mfsd.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 12 Nov 2012 20:51:46 -0500
+Message-ID: <50A1A7A9.6050501@gmail.com>
+Date: Tue, 13 Nov 2012 09:51:37 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: cl@linux-foundation.org, David Miller <davem@davemloft.net>,
+        NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>,
+        Shan Wei <shanwei88@gmail.com>
+Subject: [PATCH 0/9 v4] use efficient this_cpu_* helper
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 14:45:34 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Sat, Nov 10, 2012 at 01:43:24AM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Save group relationship information so that it can be restored when
->> perf report is running.
->> 
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Stephane Eranian <eranian@google.com>
->> Acked-by: Jiri Olsa <jolsa@redhat.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->
-> <SNIP>
->   
->> +static int process_group_desc(struct perf_file_section *section __maybe_unused,
->> +			      struct perf_header *ph, int fd,
->> +			      void *data __maybe_unused)
->> +{
->> +	size_t ret = -1;
->
-> why initialize ret if the first thing you do with it is...
->
->> +	u32 i, nr, nr_groups;
->> +	struct perf_session *session;
->> +	struct perf_evsel *evsel, *leader = NULL;
->> +	struct group_desc {
->> +		char *name;
->> +		u32 leader_idx;
->> +		u32 nr_members;
->> +	} *desc;
->> +
->> +	ret = read(fd, &nr_groups, sizeof(nr_groups));
->
-> assign another value?
->
-> We need to use readn instead of read, and not use ret here, just do
-> 	if (read(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
+this_cpu_ptr/this_cpu_read is faster than per_cpu_ptr(p, smp_processor_id()) 
+and can reduce  memory accesses.
+The latter helper needs to find the offset for current cpu,
+and needs more assembler instructions which objdump shows in following. 
 
-Will do.
+this_cpu_ptr relocates and address. this_cpu_read() relocates the address
+and performs the fetch. If you want to operate on rda(defined as per_cpu) 
+then you can only use this_cpu_ptr. this_cpu_read() saves you more instructions
+since it can do the relocation and the fetch in one instruction.
 
->
->> +	if (ret != sizeof(nr_groups))
->> +		return -1;
->> +
->> +	if (ph->needs_swap)
->> +		nr_groups = bswap_32(nr_groups);
->> +
->> +	ph->env.nr_groups = nr_groups;
->> +	if (!nr_groups) {
->> +		pr_debug("group desc not available\n");
->> +		return 0;
->> +	}
->> +
->> +	desc = calloc(nr_groups, sizeof(*desc));
->> +	if (!desc)
->> +		return -1;
->> +
->> +	for (i = 0; i < nr_groups; i++) {
->> +		desc[i].name = do_read_string(fd, ph);
->> +		if (!desc[i].name)
->> +			goto out_free;
->> +
->> +		ret = read(fd, &desc[i].leader_idx, sizeof(u32));
->> +		if (ret != sizeof(u32))
->> +			goto out_free;
->
-> ditto
->
->> +
->> +		ret = read(fd, &desc[i].nr_members, sizeof(u32));
->> +		if (ret != sizeof(u32))
->> +			goto out_free;
->
-> ditto
->
->> +
->> +		if (ph->needs_swap) {
->> +			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
->> +			desc[i].nr_members = bswap_32(desc[i].nr_members);
->> +		}
->> +	}
->> +
->> +	/*
->> +	 * Rebuild group relationship based on the group_desc
->> +	 */
->> +	session = container_of(ph, struct perf_session, header);
->> +	session->evlist->nr_groups = nr_groups;
->> +
->> +	i = nr = 0;
->> +	list_for_each_entry(evsel, &session->evlist->entries, node) {
->> +		if (evsel->idx == (int) desc[i].leader_idx) {
->> +			evsel->leader = NULL;
->
-> Humm, isn't it better to set evsel->leader to evsel, that way all
-> members in a group have its evsel->leader pointing to the leader and for
-> things like the group idx we can do just:
->
-> 		evsel->idx - evsel->leader->idx
->
-> avoiding the need to special case the leader, will do that.
+per_cpu_ptr(p, smp_processor_id())：
+  1e:   65 8b 04 25 00 00 00 00         mov    %gs:0x0,%eax
+  26:   48 98                           cltq
+  28:   31 f6                           xor    %esi,%esi
+  2a:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
+  31:   48 8b 04 c5 00 00 00 00         mov    0x0(,%rax,8),%rax
+  39:   c7 44 10 04 14 00 00 00         movl   $0x14,0x4(%rax,%rdx,1)
 
-I just followed the existing behavior.  I'm open to changing it. :)
+this_cpu_ptr(p)
+  1e:   65 48 03 14 25 00 00 00 00      add    %gs:0x0,%rdx
+  27:   31 f6                           xor    %esi,%esi
+  29:   c7 42 04 14 00 00 00            movl   $0x14,0x4(%rdx)
+  30:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
 
->
->> +			/* {anon_group} is a dummy name */
->> +			if (strcmp(desc[i].name, "{anon_group}"))
->> +				evsel->group_name = desc[i].name;
->> +			evsel->nr_members = desc[i].nr_members;
->> +
->> +			BUG_ON(i >= nr_groups);
->> +			BUG_ON(nr > 0);
->
-> BUG_ON here is way too extreme, we should just bail out, testing and if
-> the problem is found, goto out_free
 
-Okay, it was there to help me debugging the code. Will change.
 
->
->> +			leader = evsel;
->> +			nr = evsel->nr_members;
->> +			i++;
->> +		} else if (nr) {
->
-> Humm, do we really need to test against nr? Or even use nr at all?
+Changelog V4:
+1. [read|write]ing fields of struct rds_ib_cache_head using __this_cpu_* operation for rds subsystem.
+   see patch2
+2. fix bug in xfrm to read pointer. see patch3. 
+3. avoid type cast in patch7.
 
-The group descriptor misses leader-only groups intentionally.  In that
-case I wanted to skip those events with nr == 0.
+Changelog V3:
+1. use this_cpu_read directly read member of per-cpu variable,
+   so that droping the this_cpu_ptr operation.
+2. for preemption off and bottom halves off case,
+   use __this_cpu_read instead of this_cpu_read. 
 
->
->> +			/* This is a group member */
->> +			evsel->leader = leader;
->> +			/* group_idx starts from 0 */
->> +			evsel->group_idx = leader->nr_members - nr;
->> +			nr--;
->> +		}
->> +	}
->> +
->> +	BUG_ON(i != nr_groups);
->> +	BUG_ON(nr != 0);
->
-> Too extreme, goto out_free.
->
-> And just before out_free we need to set ret = 0, otherwise we will
-> return...
+Changelog V2:
+1. Use this_cpu_read directly instead of ref to field of per-cpu variable.
+2. Patch5 about ftrace is dropped from this series.
+3. Add new patch9 to replace get_cpu;per_cpu_ptr;put_cpu with this_cpu_add opt.
+4. For preemption disable case, use __this_cpu_read instead.
+  
 
-Right, will do.
-
->
->> +out_free:
->> +	while ((int) --i >= 0)
->> +		free(desc[i].name);
->> +	free(desc);
->
-> here, whatever value was in ret, in this patch it will be, if all goes
-> well, sizeof(u32) :-)
->
->> +	return ret;
->> +}
->> +
->>  struct feature_ops {
->>  	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
->>  	void (*print)(struct perf_header *h, int fd, FILE *fp);
->> @@ -1986,6 +2137,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
->>  	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
->>  	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
->>  	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
->> +	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
->>  };
->>  
->>  struct header_print_data {
->> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
->> index 5f1cd6884f37..e3e7fb490310 100644
->> --- a/tools/perf/util/header.h
->> +++ b/tools/perf/util/header.h
->> @@ -29,6 +29,7 @@ enum {
->>  	HEADER_NUMA_TOPOLOGY,
->>  	HEADER_BRANCH_STACK,
->>  	HEADER_PMU_MAPPINGS,
->> +	HEADER_GROUP_DESC,
->>  	HEADER_LAST_FEATURE,
->>  	HEADER_FEAT_BITS	= 256,
->>  };
->
-> Here we're adding holes to the struct:
->
->> @@ -79,6 +80,7 @@ struct perf_session_env {
->>  	char			*numa_nodes;
->>  	int			nr_pmu_mappings;
->
-> 4 byte hole
->
->>  	char			*pmu_mappings;
->
-> 4 byte hole
-
-Yes, I thought it's a in-memory struct for a session, so a couple of
-holes doesn't matter much.  So I just wanted to keep the struct in a
-consistent and straight-forward way.
-
->
->> +	int			nr_groups;
->
-> I'm working on a patch implementing my suggestions.
-
-Great!
-
-Thanks,
-Namhyung
+$ git diff --stat d4185bbf62a5d8d777ee445db1581beb17882a07
+ drivers/clocksource/arm_generic.c |    2 +-
+ kernel/padata.c                   |    5 ++---
+ kernel/rcutree.c                  |    2 +-
+ kernel/trace/blktrace.c           |    2 +-
+ kernel/trace/trace.c              |    5 +----
+ net/batman-adv/main.h             |    4 +---
+ net/core/flow.c                   |    4 +---
+ net/openvswitch/datapath.c        |    4 ++--
+ net/openvswitch/vport.c           |    5 ++---
+ net/rds/ib.h                      |    2 +-
+ net/rds/ib_recv.c                 |   24 +++++++++++++-----------
+ net/xfrm/xfrm_ipcomp.c            |    8 +++-----
+ 12 files changed, 29 insertions(+), 38 deletions(-)
