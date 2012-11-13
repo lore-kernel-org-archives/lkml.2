@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab2KNCc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:32:59 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52914 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423Ab2KNCc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:32:57 -0500
-Message-ID: <50A302C9.2060800@linux.vnet.ibm.com>
-Date: Wed, 14 Nov 2012 10:32:41 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pawel.sikora@agmk.net>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, arekm@pld-linux.org,
-        baggins@pld-linux.org
-Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule)
-References: <56378024.A3Kec8xZj0@pawels> <1539324.MIArxLN8tE@pawels> <3023364.Bjpo0brdul@pawels> <2413953.H7iie8v1th@pawels>
-In-Reply-To: <2413953.H7iie8v1th@pawels>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-x-cbid: 12111402-1618-0000-0000-000002D6D714
+	id S932564Ab2KNCdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:33:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37267 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932502Ab2KNCdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 21:33:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="217413918"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "Arjan Dan De Ven" <arjan@linux.intel.com>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        "Len Brown" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Chen Gong" <gong.chen@linux.intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v10 05/14] x86, hotplug, suspend: Online CPU0 for suspend or hibernate
+Date: Tue, 13 Nov 2012 11:32:42 -0800
+Message-Id: <1352835171-3958-6-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 05:40 PM, Paweł Sikora wrote:
-> On Monday 12 of November 2012 13:33:39 Paweł Sikora wrote:
->> On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
->>> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
->>>> On 11/12/2012 03:16 PM, Paweł Sikora wrote:
->>>>> On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
->>>>>> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
->>>>>>> Hi,
->>>>>>>
->>>>>>> during playing with new ups i've caught an nice oops on reboot:
->>>>>>>
->>>>>>> http://imgbin.org/index.php?page=image&id=10253
->>>>>>>
->>>>>>> probably the upstream is also affected.
->>>>>>
->>>>>> Hi, Paweł
->>>>>>
->>>>>> Are you using a clean 3.6.6 without any modify?
->>>>>
->>>>> yes, pure 3.6.6 form git tree with modular config.
->>>>>
->>>>>> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
->>>>>> any design on switch itself back later(or the time is too long), are you
->>>>>> accidentally using some bad designed module?
->>>>>
->>>>> hmm, hard to say. mostly all modules are loaded automatically by kernel.
->>>>
->>>> Could you please provide the whole dmesg in text? your picture lost the
->>>> print info of the hung task.
->>>
->>> i've grabbed the console via rs232 but there's no more info (see attached txt).
->>
->> hmm, i have one observation.
->>
->> during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
->> afaics this file descriptor points to vnc log file on a remote machine, e.g.:
->>
->> # ps aux|grep xfwm4
->> eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4 
->>
->> # readlink -m /proc/1748/fd/1
->> /remote/dragon/ahome/eda/.vnc/odra:11.log
->>
->> # mount|grep ahome
->> dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
->>
->>
->> so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
->> and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
->>
-> 
-> ok, now i have full sysrq+w backtraces from shutdown process. i hope i'll help you.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-This can only tell us what's the task in UNINTERRUPTABLE state, but with
-out time info, we can't find out which one is the hung task...
+Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't
+be executed if CPU0 is detected offline. To make suspend or hibernate and
+further resume succeed, CPU0 must be online.
 
-Regards,
-Michael Wang
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-
-> 
-> BR,
-> Paweł.
-> 
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 218cdb1..adde775 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -237,3 +237,47 @@ void restore_processor_state(void)
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(restore_processor_state);
+ #endif
++
++/*
++ * When bsp_check() is called in hibernate and suspend, cpu hotplug
++ * is disabled already. So it's unnessary to handle race condition between
++ * cpumask query and cpu hotplug.
++ */
++static int bsp_check(void)
++{
++	if (cpumask_first(cpu_online_mask) != 0) {
++		pr_warn("CPU0 is offline.\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
++			   void *ptr)
++{
++	int ret = 0;
++
++	switch (action) {
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		ret = bsp_check();
++		break;
++	default:
++		break;
++	}
++	return notifier_from_errno(ret);
++}
++
++static int __init bsp_pm_check_init(void)
++{
++	/*
++	 * Set this bsp_pm_callback as lower priority than
++	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
++	 * earlier to disable cpu hotplug before bsp online check.
++	 */
++	pm_notifier(bsp_pm_callback, -INT_MAX);
++	return 0;
++}
++
++core_initcall(bsp_pm_check_init);
+-- 
+1.7.2
 
