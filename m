@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab2KMJAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:00:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51852 "EHLO
+	id S1754307Ab2KMJBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:01:15 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51861 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751646Ab2KMJAU (ORCPT
+	by vger.kernel.org with ESMTP id S1750811Ab2KMJBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:00:20 -0500
-Date: Tue, 13 Nov 2012 18:00:09 +0900
+	Tue, 13 Nov 2012 04:01:14 -0500
+Date: Tue, 13 Nov 2012 18:01:06 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
         Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH 2/3] regulator: threat regulators with constant volatage
- as fixed
-Message-ID: <20121113090007.GS18224@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/3] regulator: fix voltage check in
+ regulator_is_supported_voltage()
+Message-ID: <20121113090104.GT18224@opensource.wolfsonmicro.com>
 References: <1352796533-12350-1-git-send-email-m.szyprowski@samsung.com>
- <1352796533-12350-3-git-send-email-m.szyprowski@samsung.com>
+ <1352796533-12350-2-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EguBBKnZWdUQS9Kz"
+	protocol="application/pgp-signature"; boundary="MT9SxUWSsctiw0kG"
 Content-Disposition: inline
-In-Reply-To: <1352796533-12350-3-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1352796533-12350-2-git-send-email-m.szyprowski@samsung.com>
 X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,45 +30,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---EguBBKnZWdUQS9Kz
+--MT9SxUWSsctiw0kG
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Nov 13, 2012 at 09:48:52AM +0100, Marek Szyprowski wrote:
+On Tue, Nov 13, 2012 at 09:48:51AM +0100, Marek Szyprowski wrote:
+> regulator_is_supported_voltage() should return true only if the voltage
+> of fixed/constant regulator is between min_uV and max_uV.
 
-> Some drivers has additional logic for fixed regulators. Let regulator core
-> to threat regulators which cannot change their voltage due to applied
+Applied, thanks.
 
-YM "treat".
-
-> +	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)
-> +		return rdev->desc->n_voltages ? : -EINVAL;
-
-Please don't perpetuate the use of ? : as it's not a triumph of
-legibility (even worse than the regular ternery operator).  I realise
-that the original code did this but there's no need to carry on doing
-the same thing.
-
---EguBBKnZWdUQS9Kz
+--MT9SxUWSsctiw0kG
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQogwJAAoJELSic+t+oim94HEQAIu86j5Dpf5M02rgDhw4OSeK
-yOtjgQVQF5uGKrXYihUwa2MyZQjNOro6ulWi7mrPZ27gdYjDSipm1nFkloau36kq
-sFujzi8w6jxAC+C5NkQoUsV1ruSvSSSPy94SYg8OJNhBwvI/yGWufJLezFWS7Knf
-zARqcUGSLTCto64fDODEQjko8enO8hbs5tLmqQySeajGV1fPV72wY9os+5sssyw+
-ADGeoGIhGSpQDWpsj2aIE7eVwiSlMZMU5JXRr4b32K8ONn3Ay7rQKz8a9vC0GQNh
-/IWMOzDMPPOy2ScTSVadtiuQNR5M5390qp7XZcN7SpqXWG1eDdvkjulX9EQTQhtM
-iHkLM9B6Gh5UciBRoS+GRQfeLQdQv4uYkZ9sY1Yise4MatgB2hKuH67MRx2xFvjM
-YLRhZUA5hj+QsgAT3EFASEJKemzbK65E5FFZhS8G/y/i+x+BNdTh4v42j5oMamHb
-yTMxZdgVAoLhT+LiTE7yjqd2vr78an2uIdA3e7RoXlWa7PGgkI4IXYAjtMj2KjAN
-XSN5voIogN977zO7MLEp7iAepDmfKi3+bL/RNIJSBcI614Q5E2WVm0lQ6l0epU+z
-B8Z3wUOdTx95D7JwtOmlaL280Q80RPce0np3jfEpovNfo+sOeQOgCElP6uXhU6cy
-t66/51biOIdC4vk3wi1G
-=YIYY
+iQIcBAEBAgAGBQJQogw4AAoJELSic+t+oim9AG8P/0oGKHrupzuwhI9oXF0yZrcb
+3426KLB2ce5qwM4Io9GWN82CX41qRpscKbKDePV5StsRclsEWrmHdd/p2XHvbCpc
+OtyDmub1yV2hF4gqchcqR9U6t2AI9ESmcHQyGUhqRZFPvKAlWO2X4+ZkdEpsLAL5
+IM80RaQQe//9o3Ck8Sx7nN12hv2xMLexZzmZLH/B/zYL0uOiY7RlTzlOxdwZ3u2O
+cPCkBRD6YjEEaZsiPWHiUoRHYHQCiZ5yaX4fc+yldnlP66Pp/QAwrTrXdao4Vpki
+g8eSdgkTIG90x9E+95ZLMhd2Gh9ffrs+94DemC6eQsnF3BOrze1vezx58PxgSKlQ
+VttX2H/QRRSYndSAuynha63faGGsUjndseUtMtBzY9+UnMamMdYUrZO5U5VmSk73
+W7QwyX1SCsQ7suI7KkbKcaTqm6MZ/EINdxmI8e4wW9Rcw96rJ5EqFLjTt6sJRhXH
+O/WxNPYQSC0D4H9RU/1BLUhwjsQ1CxzxSwVN+bgVxvah22k+DEio1mGEuw1BVJjq
+wttKMksSGmK8BhydZgPk3o8jOoqInxzcK57a9LACaJzUasmmnvhjGUtJe3Y3ZJz8
+DsAI9RsCgtmpB0N7vvAo7jDN5zZF3yJ1Cnq20BViaOQrnbUCYxvmUtLopcXXPIs0
+vekEDBeQ+dg/0EAcoX2m
+=xyDO
 -----END PGP SIGNATURE-----
 
---EguBBKnZWdUQS9Kz--
+--MT9SxUWSsctiw0kG--
