@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2KMIdf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:33:35 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60709 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214Ab2KMI3A (ORCPT
+	id S1754068Ab2KMIjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:39:53 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33623 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2KMIjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:29:00 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/13] MFD: twl-core: Support for proper PWM drivers
-Date: Tue, 13 Nov 2012 09:28:43 +0100
-Message-ID: <1352795334-7406-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 13 Nov 2012 03:39:52 -0500
+Message-ID: <50A20750.8050808@linux.vnet.ibm.com>
+Date: Tue, 13 Nov 2012 16:39:44 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
+References: <5097AC70.1080904@linux.vnet.ibm.com> <5097ACA0.7080408@linux.vnet.ibm.com> <20121112231223.GC5798@amt.cnet>
+In-Reply-To: <20121112231223.GC5798@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12111308-2674-0000-0000-000006B6F83D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twl6030-pwm driver is going to be deleted since it was only able to
-control the Charging indicator LED on the twl6030 PMIC.
-The new set of drivers are going to provide support for both PWMs and PWM
-driven LED outputs on TWL4030 and TWL6030 PMICs.
-The twl-pwm driver will handle the PWMs (2 instance) while the twl-pwmled
-driver is to control the two LED instance on TWL4030 and to charging
-indicator LED (1 instance) on TWL6030.
+On 11/13/2012 07:12 AM, Marcelo Tosatti wrote:
+> On Mon, Nov 05, 2012 at 08:10:08PM +0800, Xiao Guangrong wrote:
+>> In order to detecting spte remapping, we can simply check whether the
+>> spte has already been pointing to the pfn even if the spte is not the
+>> last spte for middle spte is pointing to the kernel pfn which can not
+>> be mapped to userspace
+>>
+>> Also, update slot and stat.lpages iff the spte is not remapped
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c |   40 +++++++++++++---------------------------
+>>  1 files changed, 13 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 692ebb1..4ea731e 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -2420,8 +2420,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>>  			 pfn_t pfn, bool speculative,
+>>  			 bool host_writable)
+>>  {
+>> -	int was_rmapped = 0;
+>> -	int rmap_count;
+>> +	bool was_rmapped = false;
+>>
+>>  	pgprintk("%s: spte %llx access %x write_fault %d"
+>>  		 " user_fault %d gfn %llx\n",
+>> @@ -2429,25 +2428,13 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>>  		 write_fault, user_fault, gfn);
+>>
+>>  	if (is_rmap_spte(*sptep)) {
+>> -		/*
+>> -		 * If we overwrite a PTE page pointer with a 2MB PMD, unlink
+>> -		 * the parent of the now unreachable PTE.
+>> -		 */
+>> -		if (level > PT_PAGE_TABLE_LEVEL &&
+>> -		    !is_large_pte(*sptep)) {
+>> -			struct kvm_mmu_page *child;
+>> -			u64 pte = *sptep;
+>> +		if (pfn != spte_to_pfn(*sptep)) {
+>> +			struct kvm_mmu_page *sp = page_header(__pa(sptep));
+>>
+>> -			child = page_header(pte & PT64_BASE_ADDR_MASK);
+>> -			drop_parent_pte(child, sptep);
+>> -			kvm_flush_remote_tlbs(vcpu->kvm);
+> 
+> How come its safe to drop this case?
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl-core.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+We use "if (pfn != spte_to_pfn(*sptep))" to simplify the thing.
+There are two cases:
+1) the sptep is not the last mapping.
+   under this case, sptep must point to a shadow page table, that means
+   spte_to_pfn(*sptep)) is used by KVM module, and 'pfn' is used by userspace.
+   so, 'if' condition must be satisfied, the sptep will be dropped.
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index d7577cb..1dfd583 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -671,8 +671,15 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
- 			return PTR_ERR(child);
- 	}
- 
--	if (IS_ENABLED(CONFIG_PWM_TWL6030) && twl_class_is_6030()) {
--		child = add_child(SUB_CHIP_ID1, "twl6030-pwm", NULL, 0,
-+	if (IS_ENABLED(CONFIG_PWM_TWL)) {
-+		child = add_child(SUB_CHIP_ID1, "twl-pwm", NULL, 0,
-+				  false, 0, 0);
-+		if (IS_ERR(child))
-+			return PTR_ERR(child);
-+	}
-+
-+	if (IS_ENABLED(CONFIG_PWM_TWL_LED)) {
-+		child = add_child(SUB_CHIP_ID1, "twl-pwmled", NULL, 0,
- 				  false, 0, 0);
- 		if (IS_ERR(child))
- 			return PTR_ERR(child);
--- 
-1.8.0
+   Actually, This is the origin case:
+  | if (level > PT_PAGE_TABLE_LEVEL &&
+  |	    !is_large_pte(*sptep))"
+
+2) the sptep is the last mapping.
+   under this case, the level of spte (sp.level) must equal the 'level' which
+   we pass to mmu_set_spte. If they point to the same pfn, it is 'remap', otherwise
+   we drop it.
+
+I think this is safe. :)
 
