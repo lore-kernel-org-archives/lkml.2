@@ -1,148 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2KMUOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:14:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3772 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab2KMUOV (ORCPT
+	id S1755720Ab2KMUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:16:59 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43955 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab2KMUQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:14:21 -0500
-X-Authority-Analysis: v=2.0 cv=RoZH3VaK c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5Xtx3q0f4H0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_FLLeQT4LzsA:10 a=GvQkQWPkAAAA:8 a=pGLkceISAAAA:8 a=Dm5ff2XOCjhLPtTZpxkA:9 a=PUjeQqilurYA:10 a=Wwjp7rKQgkIA:10 a=MSl-tDqOz04A:10 a=NWVoK91CQyQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352837659.18025.37.camel@gandalf.local.home>
-Subject: Re: [PATCH cleanup RFC] ftrace: kill unused and puzzled sample code
- in ftrace.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Shan Wei <asweisun@gmail.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, Shan Wei <shanwei88@gmail.com>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Nov 2012 15:14:19 -0500
-In-Reply-To: <50949FC9.6050202@gmail.com>
-References: <50949FC9.6050202@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Tue, 13 Nov 2012 15:16:58 -0500
+Message-ID: <50A2AAA3.7080303@gmail.com>
+Date: Tue, 13 Nov 2012 15:16:35 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tty_ldisc_hangup: waiting (init) for ttyS0 took too long, but
+ we keep waiting...
+References: <509DDC15.5040502@gmail.com> <50A2A6DE.4030305@suse.cz>
+In-Reply-To: <50A2A6DE.4030305@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-03 at 12:38 +0800, Shan Wei wrote:
-> From: Shan Wei <davidshan@tencent.com>
+On 11/13/2012 03:00 PM, Jiri Slaby wrote:
+> On 11/10/2012 05:46 AM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> I'm seeing lots of cases when my fuzzing session hangs with a message that
+>> starts with:
+>>
+>> [  104.670841] tty_ldisc_hangup: waiting (init) for ttyS0 took too long, but we keep waiting...
+>>
+>> And continues with a hung task spew, such as:
+>>
+>> [  242.990329] INFO: task init:1 blocked for more than 120 seconds.
+>> [  242.990955] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [  242.991527] init            D ffff8800132c0000  3408     1      0 0x00000002
+>> [  242.992156]  ffff88001327dc18 0000000000000002 ffff88001327dbd8 ffffffff81152f95
+>> [  242.992784]  ffff880013280000 ffff88001327dfd8 ffff88001327dfd8 ffff88001327dfd8
+>> [  242.994200]  ffff8800132c0000 ffff880013280000 ffff880013280910 7fffffffffffffff
+>> [  242.995780] Call Trace:
+>> [  242.996429]  [<ffffffff81152f95>] ? sched_clock_local+0x25/0xa0
+>> [  242.997704]  [<ffffffff83bdf065>] schedule+0x55/0x60
+>> [  242.999864]  [<ffffffff83bdcea5>] schedule_timeout+0x45/0x360
+>> [  243.008415]  [<ffffffff83be077d>] ? _raw_spin_unlock_irqrestore+0x5d/0xb0
+>> [  243.008980]  [<ffffffff8117ff8d>] ? trace_hardirqs_on+0xd/0x10
+>> [  243.009756]  [<ffffffff83be07a4>] ? _raw_spin_unlock_irqrestore+0x84/0xb0
+>> [  243.010662]  [<ffffffff81139e17>] ? prepare_to_wait+0x77/0x90
+>> [  243.011452]  [<ffffffff81bb7a56>] tty_ldisc_wait_idle.isra.6+0x76/0xb0
+>> [  243.012314]  [<ffffffff81139ff0>] ? abort_exclusive_wait+0xb0/0xb0
+>> [  243.013157]  [<ffffffff81bb83bb>] tty_ldisc_hangup+0x1cb/0x320
+>> [  243.013927]  [<ffffffff81baf712>] ? __tty_hangup+0x122/0x430
+>> [  243.014687]  [<ffffffff81baf71a>] __tty_hangup+0x12a/0x430
+>> [  243.015410]  [<ffffffff83be07a4>] ? _raw_spin_unlock_irqrestore+0x84/0xb0
+>> [  243.016321]  [<ffffffff81bb187a>] disassociate_ctty+0x6a/0x230
+>> [  243.017112]  [<ffffffff811107fa>] do_exit+0x4ea/0xbd0
+>> [  243.017793]  [<ffffffff811ccc65>] ? rcu_user_exit+0xc5/0xf0
+>> [  243.018549]  [<ffffffff8117ff8d>] ? trace_hardirqs_on+0xd/0x10
+>> [  243.019339]  [<ffffffff81110fa4>] do_group_exit+0x84/0xd0
+>> [  243.020109]  [<ffffffff81111002>] sys_exit_group+0x12/0x20
+>> [  243.020815]  [<ffffffff83be2298>] tracesys+0xe1/0xe6
+>> [  243.021607] 1 lock held by init/1:
+>> [  243.022079]  #0:  (&tty->ldisc_mutex){+.+...}, at: [<ffffffff81bb8312>] tty_ldisc_hangup+0x122/0x320
+>>
+>> All of this on latest -next, inside a KVM tools guest.
+>>
+>> Help appreciated.
 > 
-> When doing per-cpu helper optimizing work, find that this code is so puzzled.
-> 1. It's mark as comment text, maybe a sample function for guidelines 
->    or a todo work.
-> 2. But, this sample code is odd where struct perf_trace_buf is nonexistent.
->    commit ce71b9 delete struct perf_trace_buf definition.
-> 
->    Author: Frederic Weisbecker <fweisbec@gmail.com>
->    Date:   Sun Nov 22 05:26:55 2009 +0100
-> 
->    tracing: Use the perf recursion protection from trace event
-> 
-> Is it necessary to keep there?
-> just compile test. 
-> 
+> Hi, for me this looks like a false positive. The TTY layer just waits
+> for the process sitting on the TTY to vanish. Maybe we should touch the
+> watchdogs?
 
-I have no problem with this. I can take a look later. If it it's just
-dead comments then I'll apply it.
+Doesn't it happen only when the process is terminating though? Why would
+it take more than 2 minutes to die?
+
 
 Thanks,
-
--- Steve
-
-> 
-> 
-> Signed-off-by: Shan Wei <davidshan@tencent.com>
-> ---
->  include/trace/ftrace.h |   73 ------------------------------------------------
->  1 files changed, 0 insertions(+), 73 deletions(-)
-> 
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index a763888..4f993c2 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -620,79 +620,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
->  
->  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
->  
-> -/*
-> - * Define the insertion callback to perf events
-> - *
-> - * The job is very similar to ftrace_raw_event_<call> except that we don't
-> - * insert in the ring buffer but in a perf counter.
-> - *
-> - * static void ftrace_perf_<call>(proto)
-> - * {
-> - *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-> - *	struct ftrace_event_call *event_call = &event_<call>;
-> - *	extern void perf_tp_event(int, u64, u64, void *, int);
-> - *	struct ftrace_raw_##call *entry;
-> - *	struct perf_trace_buf *trace_buf;
-> - *	u64 __addr = 0, __count = 1;
-> - *	unsigned long irq_flags;
-> - *	struct trace_entry *ent;
-> - *	int __entry_size;
-> - *	int __data_size;
-> - *	int __cpu
-> - *	int pc;
-> - *
-> - *	pc = preempt_count();
-> - *
-> - *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
-> - *
-> - *	// Below we want to get the aligned size by taking into account
-> - *	// the u32 field that will later store the buffer size
-> - *	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),
-> - *			     sizeof(u64));
-> - *	__entry_size -= sizeof(u32);
-> - *
-> - *	// Protect the non nmi buffer
-> - *	// This also protects the rcu read side
-> - *	local_irq_save(irq_flags);
-> - *	__cpu = smp_processor_id();
-> - *
-> - *	if (in_nmi())
-> - *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
-> - *	else
-> - *		trace_buf = rcu_dereference_sched(perf_trace_buf);
-> - *
-> - *	if (!trace_buf)
-> - *		goto end;
-> - *
-> - *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
-> - *
-> - * 	// Avoid recursion from perf that could mess up the buffer
-> - * 	if (trace_buf->recursion++)
-> - *		goto end_recursion;
-> - *
-> - * 	raw_data = trace_buf->buf;
-> - *
-> - *	// Make recursion update visible before entering perf_tp_event
-> - *	// so that we protect from perf recursions.
-> - *
-> - *	barrier();
-> - *
-> - *	//zero dead bytes from alignment to avoid stack leak to userspace:
-> - *	*(u64 *)(&raw_data[__entry_size - sizeof(u64)]) = 0ULL;
-> - *	entry = (struct ftrace_raw_<call> *)raw_data;
-> - *	ent = &entry->ent;
-> - *	tracing_generic_entry_update(ent, irq_flags, pc);
-> - *	ent->type = event_call->id;
-> - *
-> - *	<tstruct> <- do some jobs with dynamic arrays
-> - *
-> - *	<assign>  <- affect our values
-> - *
-> - *	perf_tp_event(event_call->id, __addr, __count, entry,
-> - *		     __entry_size);  <- submit them to perf counter
-> - *
-> - * }
-> - */
->  
->  #ifdef CONFIG_PERF_EVENTS
->  
-
+Sasha
 
