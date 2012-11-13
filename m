@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2KMPcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:32:17 -0500
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:37178 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab2KMPcN (ORCPT
+	id S1754946Ab2KMPcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:32:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60811 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2KMPcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:32:13 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AijCACxnolBV5h1yPGdsb2JhbABEhTGFI7ghAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCANGFA0YChoTh3gDCQqpfoZRDYlUFIskgWKBfoJ8YQOUJ4FUhXuDToFqiAE
-X-IronPort-AV: E=Sophos;i="4.80,767,1344204000"; 
-   d="scan'208";a="151366225"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 16:38:33 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 04/13] HID: hid-input: add usage_index in struct
- hid_usage.
-Message-ID: <20121113153833.GA485@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-5-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 13 Nov 2012 10:32:20 -0500
+Date: Tue, 13 Nov 2012 07:31:44 -0800
+From: tip-bot for Rik van Riel <riel@redhat.com>
+Message-ID: <tip-0c4a966d7968363c833e58068da58a121095b075@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
+        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
+In-Reply-To: <20121018171928.24d06af4@cuia.bos.redhat.com>
+References: <20121018171928.24d06af4@cuia.bos.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:numa/core] sched, numa, mm: Add credits for NUMA placement
+Git-Commit-ID: 0c4a966d7968363c833e58068da58a121095b075
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1352306256-12180-5-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 07:31:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Commit-ID:  0c4a966d7968363c833e58068da58a121095b075
+Gitweb:     http://git.kernel.org/tip/0c4a966d7968363c833e58068da58a121095b075
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Thu, 18 Oct 2012 17:19:28 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 13 Nov 2012 14:11:50 +0100
 
-> Currently, there is no way to know the index of the current field
-> in the .input_mapping and .event callbacks  when this field is inside
-> an array of HID fields.
-> This patch adds this index to the struct hid_usage so that this
-> information is available to input_mapping and event callbacks.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-core.c | 4 ++++
->  include/linux/hid.h    | 1 +
->  2 files changed, 5 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 9da3007..8f82c4c 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -92,6 +92,7 @@ EXPORT_SYMBOL_GPL(hid_register_report);
->  static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
->  {
->  	struct hid_field *field;
-> +	int i;
->  
->  	if (report->maxfield == HID_MAX_FIELDS) {
->  		hid_err(report->device, "too many fields in report\n");
-> @@ -110,6 +111,9 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
->  	field->value = (s32 *)(field->usage + usages);
->  	field->report = report;
->  
-> +	for (i = 0; i < usages; i++)
-> +		field->usage[i].usage_index = i;
-> +
->  	return field;
->  }
->  
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index a110a3e..6b4f322 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -380,6 +380,7 @@ struct hid_usage {
->  	unsigned  hid;			/* hid usage code */
->  	unsigned  collection_index;	/* index into collection array */
->  	/* hidinput data */
-> +	unsigned  usage_index;		/* index into usage array */
+sched, numa, mm: Add credits for NUMA placement
 
-Is  this really hidinput data? Should it not be one line above?
+The NUMA placement code has been rewritten several times, but
+the basic ideas took a lot of work to develop. The people who
+put in the work deserve credit for it. Thanks Andrea & Peter :)
 
->  	__u16     code;			/* input driver code */
->  	__u8      type;			/* input driver type */
->  	__s8	  hat_min;		/* hat switch fun */
-> -- 
-> 1.7.11.7
-> 
+[ The Documentation/scheduler/numa-problem.txt file should
+  probably be rewritten once we figure out the final details of
+  what the NUMA code needs to do, and why. ]
 
-Thanks,
-Henrik
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20121018171928.24d06af4@cuia.bos.redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+----
+This is against tip.git numa/core
+---
+ CREDITS             |    1 +
+ kernel/sched/fair.c |    3 +++
+ mm/memory.c         |    2 ++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/CREDITS b/CREDITS
+index d8fe12a..b4cdc8f 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -125,6 +125,7 @@ D: Author of pscan that helps to fix lp/parport bugs
+ D: Author of lil (Linux Interrupt Latency benchmark)
+ D: Fixed the shm swap deallocation at swapoff time (try_to_unuse message)
+ D: VM hacker
++D: NUMA task placement
+ D: Various other kernel hacks
+ S: Imola 40026
+ S: Italy
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 93f4de4..309a254 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -18,6 +18,9 @@
+  *
+  *  Adaptive scheduling granularity, math enhancements by Peter Zijlstra
+  *  Copyright (C) 2007 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
++ *
++ *  NUMA placement, statistics and algorithm by Andrea Arcangeli,
++ *  CFS balancing changes by Peter Zijlstra. Copyright (C) 2012 Red Hat, Inc.
+  */
+ 
+ #include <linux/latencytop.h>
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b9108c..ebd18fd 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -36,6 +36,8 @@
+  *		(Gerhard.Wichert@pdb.siemens.de)
+  *
+  * Aug/Sep 2004 Changed to four level page tables (Andi Kleen)
++ *
++ * 2012 - NUMA placement page faults (Andrea Arcangeli, Peter Zijlstra)
+  */
+ 
+ #include <linux/kernel_stat.h>
