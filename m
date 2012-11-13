@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab2KMU3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:29:50 -0500
-Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:51577
-	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755704Ab2KMU3r (ORCPT
+	id S932195Ab2KMUaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:30:16 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48376 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806Ab2KMU1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:29:47 -0500
-X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Nov 2012 15:29:47 EST
-From: Tim Sander <tim01@vlsi.informatik.tu-darmstadt.de>
-Organization: Sander & Lighting
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: Does anyone use CONFIG_TINY_PREEMPT_RCU?
-Date: Tue, 13 Nov 2012 21:22:29 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc4-00136-gaffd9a8; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-References: <20121113004906.GA10557@linux.vnet.ibm.com>
-In-Reply-To: <20121113004906.GA10557@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211132122.30259.tim01@vlsi.informatik.tu-darmstadt.de>
+	Tue, 13 Nov 2012 15:27:45 -0500
+Message-Id: <20121113202738.971472536@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 14 Nov 2012 00:20:26 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
+        rientjes@google.com, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>
+Subject: [patch 3/7] fs, epoll: Add procfs fdinfo helper v2
+References: <20121113202023.748833257@openvz.org>
+Content-Disposition: inline; filename=seq-fdinfo-eventpoll-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul
-> I know of people using TINY_RCU, TREE_RCU, and TREE_PREEMPT_RCU, but I
-> have not heard of anyone using TINY_PREEMPT_RCU for whom TREE_PREEMPT_RCU
-> was not a viable option (in contrast, the people running Linux on
-> tiny-memmory systems typically use TINY_RCU).  Of course, if no one
-> really needs it, the proper thing to do is to remove it.
-> 
-> So, if you need TINY_PREEMPT_RCU, please let me know.  Otherwise, I will
-> remove it, probably in the 3.9 timeframe.
-I am using TINY_PREEMPT_RCU on the i.mx35 platform. I am currently on 3.4-rt 
-since the 3.6 compile failed due to for my config? Some strange device tree 
-stuff which i haven't had the time to figure out why.
+This allow us to print out eventpoll target file descriptor,
+events and data, the /proc/pid/fdinfo/fd consists of
 
-Best regards
-Tim
+ | pos:	0
+ | flags:	02
+ | tfd:        5 events:       1d data: ffffffffffffffff enabled: 1
+
+[avagin@: fix for unitialized ret variable]
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Andrey Vagin <avagin@openvz.org>
+---
+ fs/eventpoll.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+Index: linux-2.6.git/fs/eventpoll.c
+===================================================================
+--- linux-2.6.git.orig/fs/eventpoll.c
++++ linux-2.6.git/fs/eventpoll.c
+@@ -38,6 +38,8 @@
+ #include <asm/io.h>
+ #include <asm/mman.h>
+ #include <linux/atomic.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ 
+ /*
+  * LOCKING:
+@@ -783,8 +785,35 @@ static unsigned int ep_eventpoll_poll(st
+ 	return pollflags != -1 ? pollflags : 0;
+ }
+ 
++#ifdef CONFIG_PROC_FS
++static int ep_show_fdinfo(struct seq_file *m, struct file *f)
++{
++	struct eventpoll *ep = f->private_data;
++	struct rb_node *rbp;
++	int ret = 0;
++
++	mutex_lock(&ep->mtx);
++	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
++		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
++
++		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx enabled: %d\n",
++				 epi->ffd.fd, epi->event.events,
++				 (long long)epi->event.data,
++				 ep_is_linked(&epi->rdllink));
++		if (ret)
++			break;
++	}
++	mutex_unlock(&ep->mtx);
++
++	return ret;
++}
++#endif
++
+ /* File callbacks that implement the eventpoll file behaviour */
+ static const struct file_operations eventpoll_fops = {
++#ifdef CONFIG_PROC_FS
++	.show_fdinfo	= ep_show_fdinfo,
++#endif
+ 	.release	= ep_eventpoll_release,
+ 	.poll		= ep_eventpoll_poll,
+ 	.llseek		= noop_llseek,
+
