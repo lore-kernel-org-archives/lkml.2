@@ -1,133 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2KMITp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:19:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43727 "EHLO
+	id S1754507Ab2KMI0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:26:25 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58219 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab2KMITn (ORCPT
+	with ESMTP id S1753990Ab2KMI0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:19:43 -0500
-Date: Tue, 13 Nov 2012 09:19:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/8] sched, numa, mm: Add adaptive NUMA affinity support
-Message-ID: <20121113081935.GB21386@gmail.com>
-References: <20121112160451.189715188@chello.nl>
- <20121112161215.782018877@chello.nl>
- <0000013af7130ad7-95edbaf9-d31d-4258-8fc0-013d152246a2-000000@email.amazonses.com>
+	Tue, 13 Nov 2012 03:26:23 -0500
+Message-ID: <50A20429.3020109@suse.cz>
+Date: Tue, 13 Nov 2012 09:26:17 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013af7130ad7-95edbaf9-d31d-4258-8fc0-013d152246a2-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>
+CC: alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Sound+USB: deadlock problem
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Christoph Lameter <cl@linux.com> wrote:
+I've just plugged+unplugged+plugged my USB audio card and the audio
+subsystem got stuck:
 
-> > Using this, we can construct two per-task node-vectors, 
-> > 'S_i' and 'P_i' reflecting the amount of shared and 
-> > privately used pages of this task respectively. Pages for 
-> > which two consecutive 'hits' are of the same cpu are assumed 
-> > private and the others are shared.
-> 
-> The classification is per task? [...]
+INFO: task khubd:440 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+khubd           D ffff8801cbc92400     0   440      2 0x00000000
+ ffff8801c4ae3a38 0000000000000046 ffff8801c49be270 ffff8801c4ae3fd8
+ ffff8801c4ae3fd8 ffff8801c4ae3fd8 ffff8801c4284830 ffff8801c49be270
+ ffff8801c4ae3a28 ffff8801a7198758 ffff8801a719875c ffff8801c49be270
+Call Trace:
+ [<ffffffff816ae109>] schedule+0x29/0x70
+ [<ffffffff816ae38e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff816ad02a>] __mutex_lock_slowpath+0xca/0x140
+ [<ffffffff816acb5a>] mutex_lock+0x2a/0x50
+ [<ffffffff8157c8e6>] snd_pcm_dev_disconnect+0x46/0x1f0
+ [<ffffffff81576512>] snd_device_disconnect+0x62/0xa0
+ [<ffffffff815765f4>] snd_device_disconnect_all+0x44/0x70
+ [<ffffffff81570d83>] snd_card_disconnect+0x153/0x1d0
+ [<ffffffff816ad3a8>] ? down_write+0x38/0x40
+ [<ffffffff815bf038>] usb_audio_disconnect+0x88/0x1c0
+ [<ffffffff814df460>] usb_unbind_interface+0x60/0x1a0
+ [<ffffffff81436e4c>] __device_release_driver+0x7c/0xe0
+ [<ffffffff814370bc>] device_release_driver+0x2c/0x40
+ [<ffffffff8143681e>] bus_remove_device+0xee/0x160
+ [<ffffffff81433c2a>] device_del+0x11a/0x1b0
+ [<ffffffff814dce40>] usb_disable_device+0xb0/0x270
+ [<ffffffff814d38ed>] usb_disconnect+0xad/0x160
+ [<ffffffff814d613e>] hub_thread+0x6fe/0x1700
+ [<ffffffff810b643e>] ? dequeue_task_fair+0xee/0x100
+ [<ffffffff810a2c70>] ? finish_wait+0x80/0x80
+ [<ffffffff814d5a40>] ? usb_remote_wakeup+0x70/0x70
+ [<ffffffff810a2620>] kthread+0xc0/0xd0
+ [<ffffffff810a2560>] ? kthread_create_on_node+0x130/0x130
+ [<ffffffff816afb5c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810a2560>] ? kthread_create_on_node+0x130/0x130
+INFO: task pulseaudio:4642 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+pulseaudio      D ffff8801cbc12400     0  4642      1 0x00000000
+ ffff8801c1c39cf0 0000000000000082 ffff8801c0d7d550 ffff8801c1c39fd8
+ ffff8801c1c39fd8 ffff8801c1c39fd8 ffff8801a7203480 ffff8801c0d7d550
+ ffff8801aa37b530 ffff8801c0d7d550 ffff8800ab118a48 fffffffeffffffff
+Call Trace:
+ [<ffffffff816ae109>] schedule+0x29/0x70
+ [<ffffffff816aeafd>] rwsem_down_failed_common+0xbd/0x150
+ [<ffffffff816aebc5>] rwsem_down_read_failed+0x15/0x17
+ [<ffffffff81302c04>] call_rwsem_down_read_failed+0x14/0x30
+ [<ffffffff816ad3d4>] ? down_read+0x24/0x2b
+ [<ffffffff815c84b2>] snd_usb_hw_free+0x42/0x90
+ [<ffffffff815809ab>] snd_pcm_release_substream+0x5b/0xc0
+ [<ffffffff81580a58>] snd_pcm_release+0x48/0xb0
+ [<ffffffff815707d7>] snd_disconnect_release+0x97/0xe0
+ [<ffffffff8116ed8c>] __fput+0xec/0x230
+ [<ffffffff8116eede>] ____fput+0xe/0x10
+ [<ffffffff8109ef37>] task_work_run+0xa7/0xe0
+ [<ffffffff81045959>] do_notify_resume+0x59/0x80
+ [<ffffffff816afe08>] int_signal+0x12/0x17
+INFO: task khubd:440 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+khubd           D ffff8801cbc92400     0   440      2 0x00000000
+ ffff8801c4ae3a38 0000000000000046 ffff8801c49be270 ffff8801c4ae3fd8
+ ffff8801c4ae3fd8 ffff8801c4ae3fd8 ffff8801c4284830 ffff8801c49be270
+ ffff8801c4ae3a28 ffff8801a7198758 ffff8801a719875c ffff8801c49be270
+Call Trace:
+ [<ffffffff816ae109>] schedule+0x29/0x70
+ [<ffffffff816ae38e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff816ad02a>] __mutex_lock_slowpath+0xca/0x140
+ [<ffffffff816acb5a>] mutex_lock+0x2a/0x50
+ [<ffffffff8157c8e6>] snd_pcm_dev_disconnect+0x46/0x1f0
+ [<ffffffff81576512>] snd_device_disconnect+0x62/0xa0
+ [<ffffffff815765f4>] snd_device_disconnect_all+0x44/0x70
+ [<ffffffff81570d83>] snd_card_disconnect+0x153/0x1d0
+ [<ffffffff816ad3a8>] ? down_write+0x38/0x40
+ [<ffffffff815bf038>] usb_audio_disconnect+0x88/0x1c0
+ [<ffffffff814df460>] usb_unbind_interface+0x60/0x1a0
+ [<ffffffff81436e4c>] __device_release_driver+0x7c/0xe0
+ [<ffffffff814370bc>] device_release_driver+0x2c/0x40
+ [<ffffffff8143681e>] bus_remove_device+0xee/0x160
+ [<ffffffff81433c2a>] device_del+0x11a/0x1b0
+ [<ffffffff814dce40>] usb_disable_device+0xb0/0x270
+ [<ffffffff814d38ed>] usb_disconnect+0xad/0x160
+ [<ffffffff814d613e>] hub_thread+0x6fe/0x1700
+ [<ffffffff810b643e>] ? dequeue_task_fair+0xee/0x100
+ [<ffffffff810a2c70>] ? finish_wait+0x80/0x80
+ [<ffffffff814d5a40>] ? usb_remote_wakeup+0x70/0x70
+ [<ffffffff810a2620>] kthread+0xc0/0xd0
+ [<ffffffff810a2560>] ? kthread_create_on_node+0x130/0x130
+ [<ffffffff816afb5c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810a2560>] ? kthread_create_on_node+0x130/0x130
+sadc            D ffff8801cbc92400     0  7883   7870 0x00000004
+ ffff8801b9ab5d98 0000000000000082 ffff8801087b0d20 ffff8801b9ab5fd8
+ ffff8801b9ab5fd8 ffff8801b9ab5fd8 ffff8801c487c830 ffff8801087b0d20
+ ffff8801c0ca5380 ffff8801b99b08e8 ffff8801b99b08ec ffff8801087b0d20
+Call Trace:
+ [<ffffffff816ae109>] schedule+0x29/0x70
+ [<ffffffff816ae38e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff816ad02a>] __mutex_lock_slowpath+0xca/0x140
+ [<ffffffff816acb5a>] mutex_lock+0x2a/0x50
+ [<ffffffff814e312b>] show_manufacturer+0x2b/0x60
+ [<ffffffff81433910>] dev_attr_show+0x20/0x60
+ [<ffffffff81129707>] ? __get_free_pages+0x17/0x50
+ [<ffffffff811d6fc5>] sysfs_read_file+0xa5/0x1c0
+ [<ffffffff8116dcb9>] vfs_read+0xa9/0x180
+ [<ffffffff8116dde2>] sys_read+0x52/0xa0
+ [<ffffffff816afc02>] system_call_fastpath+0x16/0x1b
 
-Yes, exactly - access patterns are fundamentally and physically 
-per task, as a task can execute only on a single CPU at once. (I 
-say 'task' instead of 'thread' or 'process' because the new code 
-makes no distinction between threads and processes.)
 
-The new code maps out inter-task relationships, statistically. 
-
-So we are basically able to (statistically) approximate which 
-task relates to which other task in the system, based on their 
-memory access patterns alone: using a very compact metric and 
-matching scheduler rules and a (lazy) memory placement machinery 
-on the VM side.
-
-Say consider the following 10-task workload, where the scheduler 
-is able to figure out these relationships:
-
-  { A, B, C, D } dominantly share memory X with each other
-  { E, F, G, H } dominantly share memory Y with each other
-  { I }          uses memory privately
-  { J }          uses memory privately
-
-and the scheduler rules then try to converge these groups of 
-tasks ideally.
-
-[ The 'role' and grouping of tasks is not static but sampled and 
-  average based - so if a worker thread changes its role, the 
-  scheduler will adapt placement to that. ]
-
-[ A 'private task' is basically a special case for sharing 
-  memory: if a task only shares memory with itself. Its 
-  placement and spreading is easy. ]
-
-> [...] But most tasks have memory areas that are private and 
-> other areas where shared accesses occur. Can that be per 
-> memory area? [...]
-
-Do you mean per vma, and/or per mm?
-
-How would that work? Consider the above case:
-
- - 12x CPU-intense threads and a large piece of shared memory
-
- - 2x 4 threads are using two large shared memory area to 
-   calculate (one area for each group of threads)
-
- - the 4 remaining processes aggregate and sort the results from
-   the 8 threads, in their own dominantly 'private' working set.
-
-how does per vma or per mm describe that properly? The whole 
-workload might be just within a single large vma within a JVM. 
-Or it might be implemented using processes and anonymous shared 
-memory.
-
-If you look at this from a 'per task access pattern and 
-inter-task working set relationship' perspective then the 
-resolution and optimization is natural: the 2x 4 threads should 
-be grouped together modulo capacity constraints, while the 
-remaining 4 'private memory' threads should be spread out over 
-the remaining capacity of the system.
-
-What matters is how tasks relate to each other as they perform 
-processing, not which APIs the workload uses to create tasks and 
-memory areas.
-
-The main constraint from a placement optimization complexity POV 
-is task->CPU placement: for NUMA workloads the main challenge - 
-and 80% of the code and much of the real meat of the feature - 
-is to categorize and place tasks properly.
-
-There might be much discussion about PROT_NONE and memory 
-migration details, but that is because the VM code is 5 times 
-larger than the scheduler code and due to that there's 5 times 
-more VM hackers than scheduler hackers ;-)
-
-In reality the main complexity of this problem [the placement 
-optimization problem portion] is a dominantly CPU/task scheduler 
-feature, and IMO rather fundamentally so: it's not an 
-implementation choice but derives from the Von Neumann model of 
-computing in essence.
-
-And that is why IMO the task based access pattern metric 
-implementaton is such a good fit in practice as well - and that 
-is why other approaches struggled getting a hold of the NUMA 
-problem.
-
-Thanks,
-
-	Ingo
+thanks,
+-- 
+js
+suse labs
