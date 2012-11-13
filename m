@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab2KMU7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:59:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12797 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab2KMU67 (ORCPT
+	id S1755873Ab2KMVFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:05:01 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54674 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827Ab2KMVFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:58:59 -0500
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MbCFXo7hY28A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=2HxqKFuZ9XIA:10 a=Olpd5A85YGfAUBk8Mi4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352840337.18025.43.camel@gandalf.local.home>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
-Date: Tue, 13 Nov 2012 15:58:57 -0500
-In-Reply-To: <509DB632.7070305@linaro.org>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	 <1350408232.2336.42.camel@laptop> <509DB632.7070305@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 16:05:00 -0500
+Date: Tue, 13 Nov 2012 13:04:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+cc: KY Srinivasan <kys@microsoft.com>, Konrad Wilk <konrad.wilk@oracle.com>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        yinghan@google.com
+Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+In-Reply-To: <d85b47d7-00d0-4ebd-afdf-1e69747d0a91@default>
+Message-ID: <alpine.DEB.2.00.1211131255310.5164@chino.kir.corp.google.com>
+References: <1352600728-17766-1-git-send-email-kys@microsoft.com> <alpine.DEB.2.00.1211101830250.18494@chino.kir.corp.google.com> <426367E2313C2449837CD2DE46E7EAF930E35B45@SN2PRD0310MB382.namprd03.prod.outlook.com> <alpine.DEB.2.00.1211121349130.23347@chino.kir.corp.google.com>
+ <426367E2313C2449837CD2DE46E7EAF930E39FBC@SN2PRD0310MB382.namprd03.prod.outlook.com> <c04bb062-bbce-4980-b2b3-fbbb18e64b66@default> <alpine.DEB.2.00.1211121547450.3841@chino.kir.corp.google.com> <426367E2313C2449837CD2DE46E7EAF930E3E0B5@BL2PRD0310MB375.namprd03.prod.outlook.com>
+ <d85b47d7-00d0-4ebd-afdf-1e69747d0a91@default>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 18:04 -0800, John Stultz wrote:
-> On 10/16/2012 10:23 AM, Peter Zijlstra wrote:
+On Tue, 13 Nov 2012, Dan Magenheimer wrote:
 
-> > I've no problem with adding CLOCK_PERF (or another/better name).
-> Hrm. I'm not excited about exporting that sort of internal kernel 
-> details to userland.
+> KY is simply asking that the data item be exported so that he can
+> use it from a new module.  No change to the Xen selfballoon driver
+> is necessary right now and requiring one only gets in the way of the
+> patch.  At some future time, the Xen selfballoon driver can, at its
+> leisure, switch to use the new exported function but need not
+> unless/until it is capable of being loaded as a module.
 > 
-> The behavior and expectations from sched_clock() has changed over the 
-> years, so I'm not sure its wise to export it, since we'd have to 
-> preserve its behavior from then on.
+
+That's obvious.
+
+> And, IIUC, you are asking that KY's proposed new function include a
+> comment about how it is used by Xen?  How many kernel globals/functions
+> document at their point of declaration the intent of all the in-kernel
+> users that use/call them?  That seems a bit unreasonable.  There is a
+> very long explanatory comment at the beginning of the Xen
+> selfballoon driver code already.
 > 
-> Also I worry that it will be abused in the same way that direct TSC 
-> access is, where the seemingly better performance from the more 
-> careful/correct CLOCK_MONOTONIC would cause developers to write fragile 
-> userland code that will break when moved from one machine to the next.
-> 
-> I'd probably rather perf output timestamps to userland using sane clocks 
-> (CLOCK_MONOTONIC), rather then trying to introduce a new time domain to 
-> userland.   But I probably could be convinced I'm wrong.
 
-I'm surprised that perf has its own clock anyway. But I would like to
-export the tracing clocks. We have three (well four) of them:
+Sorry, I don't think it's unreasonable at all: if you're going to be using 
+a symbol which was always assumed to be internal to the VM for other 
+purposes and then that usage becomes convoluted with additional usage like 
+in KY's patch, then no VM hacker will ever know what a change to that 
+symbol means outside of the VM.  There's been a lot of confusion about why 
+this heuristic is needed outside the VM and whether the symbol is actually 
+the correct choice, so verbosity as to the intent of what it is to 
+represent is helpful for a maintainable kernel.
 
-trace_clock_local() which is defined to be a very fast clock but may not
-be synced with other cpus (basically, it just calls sched_clock).
-
-trace_clock() which is not totally serialized, but also not totally off
-(between local and global). This uses local_clock() which is the same
-thing that perf_clock() uses.
-
-trace_clock_global() which is a monotonic clock across CPUs. It's much
-slower than the above, but works well when you require synced
-timestamps.
-
-There's also trace_clock_counter() which isn't even a clock :-)  It's
-just a incremental atomic counter that goes up every time it's called.
-This is the most synced clock, but is absolutely meaningless for
-timestamps. It's just a way to show ordered events.
-
--- Steve
-
-
+Presumably xen is hijacking that symbol for a similar purpose to KY's 
+purpose, but perhaps I was too optimistic that others would help to 
+solidify the semantics in which it is being used and describe it 
+concisely.
