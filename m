@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2KMSLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:11:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57146 "EHLO bear.ext.ti.com"
+	id S1755518Ab2KMSL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:11:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57157 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab2KMSLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:11:35 -0500
+	id S1752812Ab2KMSL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:11:57 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <b-cousson@ti.com>, <devel@driverdev.osuosl.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv2 3/5] staging: omap-thermal: remove freq_clip table
-Date: Tue, 13 Nov 2012 14:10:02 -0400
-Message-ID: <1352830204-21546-4-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>
+Subject: [PATCHv2 4/5] staging: omap-thermal: add IRQ debugging messaging
+Date: Tue, 13 Nov 2012 14:10:03 -0400
+Message-ID: <1352830204-21546-5-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
 References: <1352830204-21546-1-git-send-email-eduardo.valentin@ti.com>
@@ -23,158 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API exposed by cpu cooling does not need any freq clip
-table anymore. Now the cpu cooling device is smart enough
-to build its own table.
+For debugging purposes, print the IRQ event for the domain being processed.
 
-For this reason, this patch removes all the code that is
-generating a freq clip table and also removes all references
-in data structures regarding freq clip table.
-
+Signed-off-by: Enric Balletbo i Serra <eballetbo@gmail.com>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/omap-thermal/omap-bandgap.h        |    9 ---
- drivers/staging/omap-thermal/omap-thermal-common.c |   63 +-------------------
- 2 files changed, 3 insertions(+), 69 deletions(-)
+ drivers/staging/omap-thermal/omap-bandgap.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/omap-thermal/omap-bandgap.h b/drivers/staging/omap-thermal/omap-bandgap.h
-index 78aed75..2bb14bd 100644
---- a/drivers/staging/omap-thermal/omap-bandgap.h
-+++ b/drivers/staging/omap-thermal/omap-bandgap.h
-@@ -336,14 +336,6 @@ struct temp_sensor_regval {
- };
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index 1cae5ed..3eb726f 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -113,6 +113,11 @@ static irqreturn_t talert_irq_handler(int irq, void *data)
  
- /**
-- * struct thermal_cooling_conf - description on how to cool a thermal zone
-- * @freq_clip_count: size of freq_data
-- */
--struct thermal_cooling_conf {
--	int freq_clip_count;
--};
--
--/**
-  * struct omap_temp_sensor - bandgap temperature sensor platform data
-  * @ts_data: pointer to struct with thresholds, limits of temperature sensor
-  * @registers: pointer to the list of register offsets and bitfields
-@@ -365,7 +357,6 @@ struct omap_temp_sensor {
- 	struct temp_sensor_registers	*registers;
- 	struct temp_sensor_regval	regval;
- 	char				*domain;
--	struct thermal_cooling_conf	cooling_data;
- 	/* for hotspot extrapolation */
- 	const int			slope;
- 	const int			constant;
-diff --git a/drivers/staging/omap-thermal/omap-thermal-common.c b/drivers/staging/omap-thermal/omap-thermal-common.c
-index 5be66d7..15e9723 100644
---- a/drivers/staging/omap-thermal/omap-thermal-common.c
-+++ b/drivers/staging/omap-thermal/omap-thermal-common.c
-@@ -29,6 +29,7 @@
- #include <linux/workqueue.h>
- #include <linux/thermal.h>
- #include <linux/cpufreq.h>
-+#include <linux/cpumask.h>
- #include <linux/cpu_cooling.h>
+ 		omap_bandgap_writel(bg_ptr, ctrl, tsr->bgap_mask_ctrl);
  
- #include "omap-thermal.h"
-@@ -112,7 +113,7 @@ static int omap_thermal_bind(struct thermal_zone_device *thermal,
- 			      struct thermal_cooling_device *cdev)
- {
- 	struct omap_thermal_data *data = thermal->devdata;
--	int max, id;
-+	int id;
- 
- 	if (IS_ERR_OR_NULL(data))
- 		return -ENODEV;
-@@ -122,7 +123,6 @@ static int omap_thermal_bind(struct thermal_zone_device *thermal,
- 		return 0;
- 
- 	id = data->sensor_id;
--	max = data->bg_ptr->conf->sensors[id].cooling_data.freq_clip_count;
- 
- 	/* TODO: bind with min and max states */
- 	/* Simple thing, two trips, one passive another critical */
-@@ -304,58 +304,9 @@ int omap_thermal_report_sensor_temperature(struct omap_bandgap *bg_ptr, int id)
- 	return 0;
- }
- 
--static int omap_thermal_build_cpufreq_clip(struct omap_bandgap *bg_ptr,
--					   struct freq_clip_table **tab_ptr,
--					   int *tab_size)
--{
--	struct cpufreq_frequency_table *freq_table;
--	struct freq_clip_table *tab;
--	int i, count = 0;
--
--	freq_table = cpufreq_frequency_get_table(0);
--	if (IS_ERR_OR_NULL(freq_table)) {
--		dev_err(bg_ptr->dev,
--			"%s: failed to get cpufreq table (%p)\n",
--			__func__, freq_table);
--		return -EINVAL;
--	}
--
--	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
--		unsigned int freq = freq_table[i].frequency;
--		if (freq == CPUFREQ_ENTRY_INVALID)
--			continue;
--		count++;
--	}
--
--	tab = devm_kzalloc(bg_ptr->dev, sizeof(*tab) * count, GFP_KERNEL);
--	if (!tab) {
--		dev_err(bg_ptr->dev,
--			"%s: no memory available\n", __func__);
--		return -ENOMEM;
--	}
--
--	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
--		unsigned int freq = freq_table[i].frequency;
--
--		if (freq == CPUFREQ_ENTRY_INVALID)
--			continue;
--
--		tab[count - i - 1].freq_clip_max = freq;
--		tab[count - i - 1].temp_level = OMAP_TRIP_HOT;
--		tab[count - i - 1].mask_val = cpumask_of(0);
--	}
--
--	*tab_ptr = tab;
--	*tab_size = count;
--
--	return 0;
--}
--
- int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
- {
- 	struct omap_thermal_data *data;
--	struct freq_clip_table *tab_ptr;
--	int tab_size, ret;
- 
- 	data = omap_bandgap_get_sensor_data(bg_ptr, id);
- 	if (!data)
-@@ -364,21 +315,13 @@ int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
- 	if (!data)
- 		return -EINVAL;
- 
--	ret = omap_thermal_build_cpufreq_clip(bg_ptr, &tab_ptr, &tab_size);
--	if (ret < 0) {
--		dev_err(bg_ptr->dev,
--			"%s: failed to build cpufreq clip table\n", __func__);
--		return ret;
--	}
--
- 	/* Register cooling device */
--	data->cool_dev = cpufreq_cooling_register(tab_ptr, tab_size);
-+	data->cool_dev = cpufreq_cooling_register(cpu_present_mask);
- 	if (IS_ERR_OR_NULL(data->cool_dev)) {
- 		dev_err(bg_ptr->dev,
- 			"Failed to register cpufreq cooling device\n");
- 		return PTR_ERR(data->cool_dev);
- 	}
--	bg_ptr->conf->sensors[id].cooling_data.freq_clip_count = tab_size;
- 	omap_bandgap_set_sensor_data(bg_ptr, id, data);
- 
- 	return 0;
++		dev_dbg(bg_ptr->dev,
++			"%s: IRQ from %s sensor: hotevent %d coldevent %d\n",
++			__func__, bg_ptr->conf->sensors[i].domain,
++			t_hot, t_cold);
++
+ 		/* read temperature */
+ 		temp = omap_bandgap_readl(bg_ptr, tsr->temp_sensor_ctrl);
+ 		temp &= tsr->bgap_dtemp_mask;
 -- 
 1.7.7.1.488.ge8e1c
 
