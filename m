@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab2KMU2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:28:32 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:45258 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093Ab2KMU1t (ORCPT
+	id S1755844Ab2KMU1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:27:47 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46212 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab2KMU1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:27:49 -0500
-Message-Id: <20121113202739.241400152@openvz.org>
+	Tue, 13 Nov 2012 15:27:44 -0500
+Message-Id: <20121113202738.785599668@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 14 Nov 2012 00:20:29 +0400
+Date: Wed, 14 Nov 2012 00:20:24 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -19,41 +19,23 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
         aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
         rientjes@google.com, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Subject: [patch 6/7] fs, notify: Add file handle entry into inotify_inode_mark v2
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 1/7] procfs: Add ability to plug in auxiliary fdinfo providers
 References: <20121113202023.748833257@openvz.org>
-Content-Disposition: inline; filename=fsnotify-add-fhandler-2
+Content-Disposition: inline; filename=seq-fdinfo-seq-ops-helpers-12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file handle will be provided as auxiliay information
-associated with the file descriptor in /proc/pid/fdinfo/fd
-output.
+This patch brings ability to print out auxiliary data associated
+with file in procfs interface /proc/pid/fdinfo/fd.
 
-The file handle is needed in a sake of C/R becasue it
-provides back to a userspace information sufficient for
-opening the target file on restore procedure.
+In particular further patches make eventfd, evenpoll, signalfd
+and fsnotify to print additional information complete enough
+to restore these objects after checkpoint.
 
-As a minimum size of the file handle storage the 64 bytes
-chosen since it's the value the nfs3 is uses at moment.
-Still, if there no room left in a buffer carried with the
-mark, we yield a warning but don't fail, because the inotify
-system doesn't depend on file handle at all and can
-continue working without problems.
-
-The reason for this patch is that on restore we need to
-reconstruct the path to the watched target and use
-inotify_add_watch() syscall then.
-
-This feature is CONFIG_CHECKPOINT_RESTORE only.
-
-v2:
- - shrink the buffer down to 64 bytes
- - declare fhandle as a structure and align it
- - don't fail to add a watch descriptor if buffer
-   is too small to carry the fhandle
+To simplify the code we add show_fdinfo callback inside
+struct file_operations (as Al and Pavel are proposing).
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
@@ -66,138 +48,51 @@ CC: Alexey Dobriyan <adobriyan@gmail.com>
 CC: Matthew Helsley <matt.helsley@gmail.com>
 CC: "J. Bruce Fields" <bfields@fieldses.org>
 CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-CC: David Rientjes <rientjes@google.com>
 ---
- fs/notify/inotify/inotify.h      |   11 +++++++++
- fs/notify/inotify/inotify_user.c |   46 ++++++++++++++++++++++++++++++++++-----
- 2 files changed, 52 insertions(+), 5 deletions(-)
+ fs/proc/fd.c       |    2 ++
+ include/linux/fs.h |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.git/fs/notify/inotify/inotify.h
+Index: linux-2.6.git/fs/proc/fd.c
 ===================================================================
---- linux-2.6.git.orig/fs/notify/inotify/inotify.h
-+++ linux-2.6.git/fs/notify/inotify/inotify.h
-@@ -1,6 +1,7 @@
- #include <linux/fsnotify_backend.h>
- #include <linux/inotify.h>
- #include <linux/slab.h> /* struct kmem_cache */
-+#include <linux/exportfs.h>
+--- linux-2.6.git.orig/fs/proc/fd.c
++++ linux-2.6.git/fs/proc/fd.c
+@@ -50,6 +50,8 @@ static int seq_show(struct seq_file *m,
+ 	if (!ret) {
+                 seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
+ 			   (long long)file->f_pos, f_flags);
++		if (file->f_op->show_fdinfo)
++			ret = file->f_op->show_fdinfo(m, file);
+ 		fput(file);
+ 	}
  
- extern struct kmem_cache *event_priv_cachep;
+Index: linux-2.6.git/include/linux/fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/fs.h
++++ linux-2.6.git/include/linux/fs.h
+@@ -44,6 +44,7 @@ struct vm_area_struct;
+ struct vfsmount;
+ struct cred;
+ struct swap_info_struct;
++struct seq_file;
  
-@@ -9,9 +10,19 @@ struct inotify_event_private_data {
- 	int wd;
+ extern void __init inode_init(void);
+ extern void __init inode_init_early(void);
+@@ -1545,6 +1546,7 @@ struct file_operations {
+ 	int (*setlease)(struct file *, long, struct file_lock **);
+ 	long (*fallocate)(struct file *file, int mode, loff_t offset,
+ 			  loff_t len);
++	int (*show_fdinfo)(struct seq_file *m, struct file *f);
  };
  
-+#if defined(CONFIG_PROC_FS) && defined(CONFIG_EXPORTFS) && defined(CONFIG_CHECKPOINT_RESTORE)
-+# define INOTIFY_USE_FHANDLE
-+#endif
-+
- struct inotify_inode_mark {
- 	struct fsnotify_mark fsn_mark;
- 	int wd;
-+#ifdef INOTIFY_USE_FHANDLE
-+	struct {
-+		struct file_handle handle;
-+		u8 pad[64];
-+	} __aligned(8) fh;
-+#endif
- };
+ struct inode_operations {
+@@ -1580,8 +1582,6 @@ struct inode_operations {
+ 			   umode_t create_mode, int *opened);
+ } ____cacheline_aligned;
  
- extern void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
-Index: linux-2.6.git/fs/notify/inotify/inotify_user.c
-===================================================================
---- linux-2.6.git.orig/fs/notify/inotify/inotify_user.c
-+++ linux-2.6.git/fs/notify/inotify/inotify_user.c
-@@ -566,6 +566,37 @@ static void inotify_free_mark(struct fsn
- 	kmem_cache_free(inotify_inode_mark_cachep, i_mark);
- }
- 
-+#ifdef INOTIFY_USE_FHANDLE
-+static int inotify_encode_wd_fhandle(struct inotify_inode_mark *mark, struct dentry *dentry)
-+{
-+	struct file_handle *fhandle = &mark->fh.handle;
-+	int size, ret;
-+
-+	fhandle->handle_bytes = sizeof(mark->fh.pad);
-+	size = fhandle->handle_bytes >> 2;
-+
-+	ret = exportfs_encode_fh(dentry, (struct fid *)fhandle->f_handle, &size,  0);
-+	if ((ret == 255) || (ret == -ENOSPC)) {
-+
-+		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
-+
-+		fhandle->handle_type = -1;
-+		fhandle->handle_bytes = 0;
-+		return 0;
-+	}
-+
-+	fhandle->handle_type = ret;
-+	fhandle->handle_bytes = size * sizeof(u32);
-+
-+	return 0;
-+}
-+# else
-+static int inotify_encode_wd_fhandle(struct inotify_inode_mark *mark, struct dentry *dentry)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int inotify_update_existing_watch(struct fsnotify_group *group,
- 					 struct inode *inode,
- 					 u32 arg)
-@@ -621,10 +652,11 @@ static int inotify_update_existing_watch
- }
- 
- static int inotify_new_watch(struct fsnotify_group *group,
--			     struct inode *inode,
-+			     struct dentry *dentry,
- 			     u32 arg)
- {
- 	struct inotify_inode_mark *tmp_i_mark;
-+	struct inode *inode = dentry->d_inode;
- 	__u32 mask;
- 	int ret;
- 	struct idr *idr = &group->inotify_data.idr;
-@@ -647,6 +679,10 @@ static int inotify_new_watch(struct fsno
- 	if (atomic_read(&group->inotify_data.user->inotify_watches) >= inotify_max_user_watches)
- 		goto out_err;
- 
-+	ret = inotify_encode_wd_fhandle(tmp_i_mark, dentry);
-+	if (ret)
-+		goto out_err;
-+
- 	ret = inotify_add_to_idr(idr, idr_lock, &group->inotify_data.last_wd,
- 				 tmp_i_mark);
- 	if (ret)
-@@ -673,16 +709,16 @@ out_err:
- 	return ret;
- }
- 
--static int inotify_update_watch(struct fsnotify_group *group, struct inode *inode, u32 arg)
-+static int inotify_update_watch(struct fsnotify_group *group, struct dentry *dentry, u32 arg)
- {
- 	int ret = 0;
- 
- retry:
- 	/* try to update and existing watch with the new arg */
--	ret = inotify_update_existing_watch(group, inode, arg);
-+	ret = inotify_update_existing_watch(group, dentry->d_inode, arg);
- 	/* no mark present, try to add a new one */
- 	if (ret == -ENOENT)
--		ret = inotify_new_watch(group, inode, arg);
-+		ret = inotify_new_watch(group, dentry, arg);
- 	/*
- 	 * inotify_new_watch could race with another thread which did an
- 	 * inotify_new_watch between the update_existing and the add watch
-@@ -785,7 +821,7 @@ SYSCALL_DEFINE3(inotify_add_watch, int,
- 	group = f.file->private_data;
- 
- 	/* create/update an inode mark */
--	ret = inotify_update_watch(group, inode, mask);
-+	ret = inotify_update_watch(group, path.dentry, mask);
- 	path_put(&path);
- fput_and_out:
- 	fdput(f);
+-struct seq_file;
+-
+ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+ 			      unsigned long nr_segs, unsigned long fast_segs,
+ 			      struct iovec *fast_pointer,
 
