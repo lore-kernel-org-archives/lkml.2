@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2KMVja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:39:30 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25177 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2KMVj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:39:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,768,1352102400"; 
-   d="scan'208";a="167988873"
-Date: Tue, 13 Nov 2012 13:39:22 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-Message-ID: <20121113133922.47144a50@chromoly>
-In-Reply-To: <20121113211602.GA30150@linux.vnet.ibm.com>
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20121113211602.GA30150@linux.vnet.ibm.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752506Ab2KMVjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:39:42 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38639 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab2KMVjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 16:39:40 -0500
+Message-ID: <50A2BE19.7000604@gmail.com>
+Date: Tue, 13 Nov 2012 16:39:37 -0500
+From: Xi Wang <xi.wang@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mm: fix null dev in dma_pool_create()
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+In-Reply-To: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012 13:16:02 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+A few drivers invoke dma_pool_create() with a null dev.  Note that dev
+is dereferenced in dev_to_node(dev), causing a null pointer dereference.
 
-> > Please refer to Documentation/thermal/intel_powerclamp.txt for more
-> > details.  
-> 
-> If I read this correctly, this forces a group of CPUs into idle for
-> about 600 milliseconds at a time.  This would indeed delay grace
-> periods, which could easily result in user complaints.  Also, given
-> the default RCU_BOOST_DELAY of 500 milliseconds in kernels enabling
-> RCU_BOOST, you would see needless RCU priority boosting.
-> 
-the default idle injection duration is 6ms. we adjust the sleep
-interval to ensure idle ratio. So the idle duration stays the same once
-set. So would it be safe to delay grace period for this small amount in
-exchange for less over head in each injection period?
-> Of course, if the idle period extended for longer, you would see RCU
-> CPU stall warnings.  And if the idle period extended indefinitely, you
-> could hang the system -- the RCU callbacks on the idled CPU could not
-> be invoked, and if one of those RCU callbacks was waking someone up,
-> that someone would not be woken up.
-> 
-for the same algorithm, idle duration is not extended. the injected
-idle loop also yield to pending softirqs, i guess that is what rcu
-callbacks are using?
-> It looks like you could end up with part of the system powerclamped
-> in some situations, and with all of it powerclamped in other
-> situations. Is that the case, or am I confused?
-> 
-could you explain the part that is partially powerclamped?
+A long term solution is to disallow null dev.  Once the drivers are
+fixed, we can simplify the core code here.  For now we add WARN_ON(!dev)
+to notify the driver maintainers and avoid the null pointer dereference.
 
-> 							Thanx, Paul
-[Jacob Pan]
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ mm/dmapool.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index c5ab33b..bf7f8f0 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -135,6 +135,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ {
+ 	struct dma_pool *retval;
+ 	size_t allocation;
++	int node;
+ 
+ 	if (align == 0) {
+ 		align = 1;
+@@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 		return NULL;
+ 	}
+ 
+-	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
++	node = WARN_ON(!dev) ? -1 : dev_to_node(dev);
++
++	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
+ 	if (!retval)
+ 		return retval;
+ 
 -- 
-Thanks,
+1.7.10.4
 
-Jacob
