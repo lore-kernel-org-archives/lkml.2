@@ -1,123 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab2KMOkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 09:40:32 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:54180
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab2KMOkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 09:40:31 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com, dan.magenheimer@oracle.com, konrad.wilk@oracle.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] mm: Export a function to get vm committed memory
-Date: Tue, 13 Nov 2012 07:02:37 -0800
-Message-Id: <1352818957-9229-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755213Ab2KMOko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 09:40:44 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43648 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755182Ab2KMOkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 09:40:42 -0500
+Date: Tue, 13 Nov 2012 18:40:36 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
+ inotify_inode_mark
+Message-ID: <20121113144036.GI7808@moon>
+References: <20121112101440.665694060@openvz.org>
+ <alpine.DEB.2.00.1211130016240.18379@chino.kir.corp.google.com>
+ <20121113082936.GG6511@moon>
+ <2910785.4Vm74eFJyi@deuteros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2910785.4Vm74eFJyi@deuteros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be useful to be able to access global memory commitment from device
-drivers. On the Hyper-V platform, the host has a policy engine to balance
-the available physical memory amongst all competing virtual machines
-hosted on a given node. This policy engine is driven by a number of metrics
-including the memory commitment reported by the guests. The balloon driver
-for Linux on Hyper-V will use this function to retrieve guest memory commitment.
-This function is also used in Xen self ballooning code.
+On Tue, Nov 13, 2012 at 12:37:23PM +0000, Tvrtko Ursulin wrote:
+>> Which would give about 26K of additional memory if c/r get used here.
+>>  Not a big number i guess?
+> 
+> I am pretty sure there are desktop file indexing packages which use
+> inotify or fanotify which will put a mark on every single directory within
+> users home.
+> 
+> You probably need to test this with default installs of popular desktop
+> environments and realistic home directories.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/xen/xen-selfballoon.c |    2 +-
- include/linux/mman.h          |    2 ++
- mm/mmap.c                     |   15 +++++++++++++++
- mm/nommu.c                    |   16 ++++++++++++++++
- 4 files changed, 34 insertions(+), 1 deletions(-)
+I'm about to shrink the handle down to 40/64 bytes as being proposed in one
+of early review cycles (i'll do that with patch on top), which should minimize
+the amount of memory needed (look, it's pretty clear that if the system
+uses millions of inotify watchers each inotify mark will need the fhandle here
+in c/r sake, i simply see no way at moment how to escape this completely,
+but if the c/r is turned off, which is by default, no additional memory
+needed).
 
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 7d041cb..2552d3e 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -222,7 +222,7 @@ static void selfballoon_process(struct work_struct *work)
- 	if (xen_selfballooning_enabled) {
- 		cur_pages = totalram_pages;
- 		tgt_pages = cur_pages; /* default is no change */
--		goal_pages = percpu_counter_read_positive(&vm_committed_as) +
-+		goal_pages = vm_memory_committed() +
- 				totalreserve_pages +
- 				MB2PAGES(selfballoon_reserved_mb);
- #ifdef CONFIG_FRONTSWAP
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index d09dde1..9aa863d 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -11,6 +11,8 @@ extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern struct percpu_counter vm_committed_as;
- 
-+unsigned long vm_memory_committed(void);
-+
- static inline void vm_acct_memory(long pages)
- {
- 	percpu_counter_add(&vm_committed_as, pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2d94235..3dd0a17 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -89,6 +89,21 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
- 
- /*
-+ * The global memory commitment made in the system can be a metric
-+ * that can be used to drive ballooning decisions when Linux is hosted
-+ * as a guest. On Hyper-V, the host implements a policy engine for dynamically
-+ * balancing memory across competing virtual machines that are hosted.
-+ * Several metrics drive this policy engine including the guest reported
-+ * memory commitment.
-+ */
-+
-+unsigned long vm_memory_committed(void)
-+{
-+	return percpu_counter_read_positive(&vm_committed_as);
-+}
-+EXPORT_SYMBOL_GPL(vm_memory_committed);
-+
-+/*
-  * Check that a process has enough memory to allocate a new virtual
-  * mapping. 0 means there is enough memory for the allocation to
-  * succeed and -ENOMEM implies there is not.
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 45131b4..f11e703 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -66,6 +66,22 @@ int heap_stack_gap = 0;
- 
- atomic_long_t mmap_pages_allocated;
- 
-+/*
-+ * The global memory commitment made in the system can be a metric
-+ * that can be used to drive ballooning decisions when Linux is hosted
-+ * as a guest. On Hyper-V, the host implements a policy engine for dynamically
-+ * balancing memory across competing virtual machines that are hosted.
-+ * Several metrics drive this policy engine including the guest reported
-+ * memory commitment.
-+ */
-+
-+unsigned long vm_memory_committed(void)
-+{
-+	return percpu_counter_read_positive(&vm_committed_as);
-+}
-+
-+EXPORT_SYMBOL_GPL(vm_memory_committed);
-+
- EXPORT_SYMBOL(mem_map);
- EXPORT_SYMBOL(num_physpages);
- 
--- 
-1.7.4.1
-
+p.s.: could you please don't use the html formatted messages
