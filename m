@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab2KMTzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 14:55:39 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:43471 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab2KMTzi (ORCPT
+	id S1755753Ab2KMT4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 14:56:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54469 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755728Ab2KMTz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 14:55:38 -0500
-Message-ID: <50A2A5B6.4080600@suse.cz>
-Date: Tue, 13 Nov 2012 20:55:34 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc()
-References: <20121113052026.GA26289@localhost>
-In-Reply-To: <20121113052026.GA26289@localhost>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Nov 2012 14:55:59 -0500
+Date: Tue, 13 Nov 2012 11:55:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
+        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH v3 00/11] rename random32 to prandom and introduce
+ prandom_bytes()
+Message-Id: <20121113115557.9b573359.akpm@linux-foundation.org>
+In-Reply-To: <1352813830-4624-1-git-send-email-akinobu.mita@gmail.com>
+References: <1352813830-4624-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 06:20 AM, Fengguang Wu wrote:
-> Hi Jiri,
+On Tue, 13 Nov 2012 22:36:59 +0900
+Akinobu Mita <akinobu.mita@gmail.com> wrote:
 
-Hi,
-
-> I got the following warning
+> This patchset introduces new functions into random32 library for
+> getting the requested number of pseudo-random bytes.
 > 
-> cat: /proc/1/maps: No such file or directory
-> [   72.249806] ------------[ cut here ]------------
-> [   72.250807] WARNING: at /c/kernel-tests/src/tip/drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x5a/0x1ad()
-> [   72.252674] tty is NULL
-> [   72.253182] Pid: 15, comm: kworker/0:1 Not tainted 3.7.0-rc4-05821-gdb38463 #166
-> [   72.253672] Call Trace:
-> [   72.253672]  [<ffffffff8103ccee>] warn_slowpath_common+0x62/0x79
-> [   72.256297]  [<ffffffff8103cd73>] warn_slowpath_fmt+0x46/0x48
-> [   72.257292]  [<ffffffff811e66c3>] flush_to_ldisc+0x5a/0x1ad
-> [   72.258478]  [<ffffffff81053a6d>] process_one_work+0x246/0x44f
-> [   72.259640]  [<ffffffff810539da>] ? process_one_work+0x1b3/0x44f
-> [   72.260817]  [<ffffffff811e6669>] ? tty_buffer_free+0x61/0x61
-> [   72.261820]  [<ffffffff81053fd2>] worker_thread+0x1ed/0x2c8
-> [   72.262883]  [<ffffffff81053de5>] ? rescuer_thread+0x140/0x140
-> [   72.263878]  [<ffffffff81058556>] kthread+0xd4/0xdc
-> [   72.264980]  [<ffffffff810625d7>] ? finish_task_switch.constprop.79+0x7a/0xbf
-> [   72.266150]  [<ffffffff81058482>] ? __kthread_parkme+0x61/0x61
-> [   72.267145]  [<ffffffff81533bea>] ret_from_fork+0x7a/0xb0
-> [   72.268361]  [<ffffffff81058482>] ? __kthread_parkme+0x61/0x61
+> Before introducing these new functions into random32 library,
+> rename all random32 functions to have 'prandom_' prefix.  As a result
+> the function prototypes are as follows:
 > 
-> and it's bisected to
+> void prandom_seed(u32 seed);	/* rename from srandom32() */
+> u32 prandom_u32(void);		/* rename from random32() */
+> void prandom_bytes(void *buf, int nbytes);
 > 
-> commit ecbbfd44a08fa80e0d664814efd4c187721b85f6
+> void prandom_seed_state(struct rnd_state *state, u64 seed);
+> 				/* rename from prandom32_seed() */
+> u32 prandom_u32_state(struct rnd_state *state);
+> 				/* rename from prandom32() */
+> void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+> 
+> The purpose of this renaming is to prevent some kernel developers
+> from assuming that prandom32() and random32() might imply that only
+> prandom32() was the one using a pseudo-random number generator by
+> prandom32's "p", and the result may be a very embarassing security
+> exposure.  This concern was expressed by Theodore Ts'o.
 
-Yes, I know about this already. Can you reproducible that easily given
-you bisected that? I would love to be able to reproduce that...
+There were a large number of rejects in MTD code, due to pending
+changes in linux-next.  It's all quite mechanical stuff which I
+fixed up.  Please check the result.
 
-thanks,
--- 
-js
-suse labs
