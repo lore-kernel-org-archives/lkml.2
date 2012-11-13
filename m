@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab2KMRXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:23:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab2KMROi (ORCPT
+	id S932243Ab2KMRYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:24:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34111 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab2KMRYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:14:38 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 01/31] mm/generic: Only flush the local TLB in ptep_set_access_flags()
-Date: Tue, 13 Nov 2012 18:13:24 +0100
-Message-Id: <1352826834-11774-2-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
-References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+	Tue, 13 Nov 2012 12:24:02 -0500
+Date: Tue, 13 Nov 2012 09:23:10 -0800
+From: tip-bot for Rik van Riel <riel@redhat.com>
+Message-ID: <tip-b644797f6b72b9b9b0cf35bdf7981f5602725bea@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
+        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
+In-Reply-To: <20121018171928.24d06af4@cuia.bos.redhat.com>
+References: <20121018171928.24d06af4@cuia.bos.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:numa/core] sched, numa, mm: Add credits for NUMA placement
+Git-Commit-ID: b644797f6b72b9b9b0cf35bdf7981f5602725bea
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 09:23:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+Commit-ID:  b644797f6b72b9b9b0cf35bdf7981f5602725bea
+Gitweb:     http://git.kernel.org/tip/b644797f6b72b9b9b0cf35bdf7981f5602725bea
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Thu, 18 Oct 2012 17:19:28 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 13 Nov 2012 18:09:25 +0100
 
-The function ptep_set_access_flags() is only ever used to upgrade
-access permissions to a page - i.e. they make it less restrictive.
+sched, numa, mm: Add credits for NUMA placement
 
-That means the only negative side effect of not flushing remote
-TLBs in this function is that other CPUs may incur spurious page
-faults, if they happen to access the same address, and still have
-a PTE with the old permissions cached in their TLB caches.
+The NUMA placement code has been rewritten several times, but
+the basic ideas took a lot of work to develop. The people who
+put in the work deserve credit for it. Thanks Andrea & Peter :)
 
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
-
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
-
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault() to actually flush the TLB entry.
+[ The Documentation/scheduler/numa-problem.txt file should
+  probably be rewritten once we figure out the final details of
+  what the NUMA code needs to do, and why. ]
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-[ Changelog massage. ]
+Link: http://lkml.kernel.org/r/20121018171928.24d06af4@cuia.bos.redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+----
+This is against tip.git numa/core
 ---
- mm/pgtable-generic.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ CREDITS             |    1 +
+ kernel/sched/fair.c |    3 +++
+ mm/memory.c         |    2 ++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e642627..d8397da 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -12,8 +12,8 @@
+diff --git a/CREDITS b/CREDITS
+index d8fe12a..b4cdc8f 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -125,6 +125,7 @@ D: Author of pscan that helps to fix lp/parport bugs
+ D: Author of lil (Linux Interrupt Latency benchmark)
+ D: Fixed the shm swap deallocation at swapoff time (try_to_unuse message)
+ D: VM hacker
++D: NUMA task placement
+ D: Various other kernel hacks
+ S: Imola 40026
+ S: Italy
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 93f4de4..309a254 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -18,6 +18,9 @@
+  *
+  *  Adaptive scheduling granularity, math enhancements by Peter Zijlstra
+  *  Copyright (C) 2007 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
++ *
++ *  NUMA placement, statistics and algorithm by Andrea Arcangeli,
++ *  CFS balancing changes by Peter Zijlstra. Copyright (C) 2012 Red Hat, Inc.
+  */
  
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-- * Only sets the access flags (dirty, accessed, and
-- * writable). Furthermore, we know it always gets set to a "more
-+ * Only sets the access flags (dirty, accessed), as well as write 
-+ * permission. Furthermore, we know it always gets set to a "more
-  * permissive" setting, which allows most architectures to optimize
-  * this. We return whether the PTE actually changed, which in turn
-  * instructs the caller to do things like update__mmu_cache.  This
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
- 	}
- 	return changed;
- }
--- 
-1.7.11.7
-
+ #include <linux/latencytop.h>
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b9108c..ebd18fd 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -36,6 +36,8 @@
+  *		(Gerhard.Wichert@pdb.siemens.de)
+  *
+  * Aug/Sep 2004 Changed to four level page tables (Andi Kleen)
++ *
++ * 2012 - NUMA placement page faults (Andrea Arcangeli, Peter Zijlstra)
+  */
+ 
+ #include <linux/kernel_stat.h>
