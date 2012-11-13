@@ -1,167 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab2KMHm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:42:29 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35869 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab2KMHm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:42:27 -0500
-Date: Mon, 12 Nov 2012 23:42:19 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <ak@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
-Subject: [patch] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v7
- fix fix fix fix
-In-Reply-To: <20121113170046.48e2c790d5c6c1e5f51c593d@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.00.1211122338500.29609@chino.kir.corp.google.com>
-References: <20121113170046.48e2c790d5c6c1e5f51c593d@canb.auug.org.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753499Ab2KMHn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:43:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab2KMHnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 02:43:25 -0500
+Date: Tue, 13 Nov 2012 08:43:19 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 03/13] HID: core: fix unit exponent parsing
+In-Reply-To: <1352306256-12180-4-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1211130843060.15877@pobox.suse.cz>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com> <1352306256-12180-4-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the definitions of MAP_HUGE_SHIFT and MAP_HUGE_MASK to mman-common.h 
-and fixup the architectures which do not use that file to fix the 
-following build failure:
+On Wed, 7 Nov 2012, Benjamin Tissoires wrote:
 
-mm/mmap.c: In function 'SYSC_mmap_pgoff':
-mm/mmap.c:1271:15: error: 'MAP_HUGE_SHIFT' undeclared (first use in this function)
-mm/mmap.c:1271:15: note: each undeclared identifier is reported only once for each function it appears in
-mm/mmap.c:1271:33: error: 'MAP_HUGE_MASK' undeclared (first use in this function)
+> HID spec details special values for the HID field unit exponent.
+> Basically, the range [0x8..0xf] correspond to [-8..-1], so this is
+> a standard two's complement on a half-byte.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 
-Tested on alpha, hppa, ia64, mips, powerpc, sparc, and x86.
+Acked-by: Jiri Kosina <jkosina@suse.cz>
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/alpha/include/asm/mman.h          |   11 +++++++++++
- arch/mips/include/uapi/asm/mman.h      |   11 +++++++++++
- arch/parisc/include/uapi/asm/mman.h    |   11 +++++++++++
- arch/xtensa/include/uapi/asm/mman.h    |   11 +++++++++++
- include/uapi/asm-generic/mman-common.h |   11 +++++++++++
- include/uapi/asm-generic/mman.h        |   13 +------------
- 6 files changed, 56 insertions(+), 12 deletions(-)
+> ---
+>  drivers/hid/hid-core.c  | 16 +++++++++++++++-
+>  drivers/hid/hid-input.c | 13 +++++++++----
+>  include/linux/hid.h     |  1 +
+>  3 files changed, 25 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 3d0da29..9da3007 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
+>  
+>  static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+>  {
+> +	__u32 raw_value;
+>  	switch (item->tag) {
+>  	case HID_GLOBAL_ITEM_TAG_PUSH:
+>  
+> @@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+>  		return 0;
+>  
+>  	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
+> -		parser->global.unit_exponent = item_sdata(item);
+> +		/* Units exponent negative numbers are given through a
+> +		 * two's complement.
+> +		 * See "6.2.2.7 Global Items" for more information. */
+> +		raw_value = item_udata(item);
+> +		if (!(raw_value & 0xfffffff0))
+> +			parser->global.unit_exponent = hid_snto32(raw_value, 4);
+> +		else
+> +			parser->global.unit_exponent = raw_value;
+>  		return 0;
+>  
+>  	case HID_GLOBAL_ITEM_TAG_UNIT:
+> @@ -865,6 +873,12 @@ static s32 snto32(__u32 value, unsigned n)
+>  	return value & (1 << (n - 1)) ? value | (-1 << n) : value;
+>  }
+>  
+> +s32 hid_snto32(__u32 value, unsigned n)
+> +{
+> +	return snto32(value, n);
+> +}
+> +EXPORT_SYMBOL_GPL(hid_snto32);
+> +
+>  /*
+>   * Convert a signed 32-bit integer to a signed n-bit integer.
+>   */
+> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+> index 67044f3..7015080 100644
+> --- a/drivers/hid/hid-input.c
+> +++ b/drivers/hid/hid-input.c
+> @@ -192,7 +192,6 @@ static int hidinput_setkeycode(struct input_dev *dev,
+>  	return -EINVAL;
+>  }
+>  
+> -
+>  /**
+>   * hidinput_calc_abs_res - calculate an absolute axis resolution
+>   * @field: the HID report field to calculate resolution for
+> @@ -235,17 +234,23 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+>  	case ABS_MT_TOOL_Y:
+>  	case ABS_MT_TOUCH_MAJOR:
+>  	case ABS_MT_TOUCH_MINOR:
+> -		if (field->unit == 0x11) {		/* If centimeters */
+> +		if (field->unit & 0xffffff00)		/* Not a length */
+> +			return 0;
+> +		unit_exponent += hid_snto32(field->unit >> 4, 4) - 1;
+> +		switch (field->unit & 0xf) {
+> +		case 0x1:				/* If centimeters */
+>  			/* Convert to millimeters */
+>  			unit_exponent += 1;
+> -		} else if (field->unit == 0x13) {	/* If inches */
+> +			break;
+> +		case 0x3:				/* If inches */
+>  			/* Convert to millimeters */
+>  			prev = physical_extents;
+>  			physical_extents *= 254;
+>  			if (physical_extents < prev)
+>  				return 0;
+>  			unit_exponent -= 1;
+> -		} else {
+> +			break;
+> +		default:
+>  			return 0;
+>  		}
+>  		break;
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index 9edb06c..a110a3e 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -754,6 +754,7 @@ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
+>  void hid_disconnect(struct hid_device *hid);
+>  const struct hid_device_id *hid_match_id(struct hid_device *hdev,
+>  					 const struct hid_device_id *id);
+> +s32 hid_snto32(__u32 value, unsigned n);
+>  
+>  /**
+>   * hid_map_usage - map usage input bits
+> -- 
+> 1.7.11.7
+> 
 
-diff --git a/arch/alpha/include/asm/mman.h b/arch/alpha/include/asm/mman.h
---- a/arch/alpha/include/asm/mman.h
-+++ b/arch/alpha/include/asm/mman.h
-@@ -63,4 +63,15 @@
- /* compatibility flags */
- #define MAP_FILE	0
- 
-+/*
-+ * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-+ * This gives us 6 bits, which is enough until someone invents 128 bit address
-+ * spaces.
-+ *
-+ * Assume these are all power of twos.
-+ * When 0 use the default page size.
-+ */  
-+#define MAP_HUGE_SHIFT	26
-+#define MAP_HUGE_MASK	0x3f
-+
- #endif /* __ALPHA_MMAN_H__ */
-diff --git a/arch/mips/include/uapi/asm/mman.h b/arch/mips/include/uapi/asm/mman.h
---- a/arch/mips/include/uapi/asm/mman.h
-+++ b/arch/mips/include/uapi/asm/mman.h
-@@ -87,4 +87,15 @@
- /* compatibility flags */
- #define MAP_FILE	0
- 
-+/*
-+ * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-+ * This gives us 6 bits, which is enough until someone invents 128 bit address
-+ * spaces.
-+ *
-+ * Assume these are all power of twos.
-+ * When 0 use the default page size.
-+ */  
-+#define MAP_HUGE_SHIFT	26
-+#define MAP_HUGE_MASK	0x3f
-+
- #endif /* _ASM_MMAN_H */
-diff --git a/arch/parisc/include/uapi/asm/mman.h b/arch/parisc/include/uapi/asm/mman.h
---- a/arch/parisc/include/uapi/asm/mman.h
-+++ b/arch/parisc/include/uapi/asm/mman.h
-@@ -70,4 +70,15 @@
- #define MAP_FILE	0
- #define MAP_VARIABLE	0
- 
-+/*
-+ * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-+ * This gives us 6 bits, which is enough until someone invents 128 bit address
-+ * spaces.
-+ *
-+ * Assume these are all power of twos.
-+ * When 0 use the default page size.
-+ */  
-+#define MAP_HUGE_SHIFT	26
-+#define MAP_HUGE_MASK	0x3f
-+
- #endif /* __PARISC_MMAN_H__ */
-diff --git a/arch/xtensa/include/uapi/asm/mman.h b/arch/xtensa/include/uapi/asm/mman.h
---- a/arch/xtensa/include/uapi/asm/mman.h
-+++ b/arch/xtensa/include/uapi/asm/mman.h
-@@ -93,4 +93,15 @@
- /* compatibility flags */
- #define MAP_FILE	0
- 
-+/*
-+ * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-+ * This gives us 6 bits, which is enough until someone invents 128 bit address
-+ * spaces.
-+ *
-+ * Assume these are all power of twos.
-+ * When 0 use the default page size.
-+ */  
-+#define MAP_HUGE_SHIFT	26
-+#define MAP_HUGE_MASK	0x3f
-+
- #endif /* _XTENSA_MMAN_H */
-diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
---- a/include/uapi/asm-generic/mman-common.h
-+++ b/include/uapi/asm-generic/mman-common.h
-@@ -55,4 +55,15 @@
- /* compatibility flags */
- #define MAP_FILE	0
- 
-+/*
-+ * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-+ * This gives us 6 bits, which is enough until someone invents 128 bit address
-+ * spaces.
-+ *
-+ * Assume these are all power of twos.
-+ * When 0 use the default page size.
-+ */
-+#define MAP_HUGE_SHIFT	26
-+#define MAP_HUGE_MASK	0x3f
-+
- #endif /* __ASM_GENERIC_MMAN_COMMON_H */
-diff --git a/include/uapi/asm-generic/mman.h b/include/uapi/asm-generic/mman.h
---- a/include/uapi/asm-generic/mman.h
-+++ b/include/uapi/asm-generic/mman.h
-@@ -13,18 +13,7 @@
- #define MAP_STACK	0x20000		/* give out an address that is best suited for process/thread stacks */
- #define MAP_HUGETLB	0x40000		/* create a huge page mapping */
- 
--/* Bits [26:31] are reserved */
--
--/*
-- * When MAP_HUGETLB is set bits [26:31] encode the log2 of the huge page size.
-- * This gives us 6 bits, which is enough until someone invents 128 bit address
-- * spaces.
-- *
-- * Assume these are all power of twos.
-- * When 0 use the default page size.
-- */
--#define MAP_HUGE_SHIFT  26
--#define MAP_HUGE_MASK   0x3f
-+/* Bits [26:31] are reserved, see mman-common.h for MAP_HUGETLB usage */
- 
- #define MCL_CURRENT	1		/* lock all current mappings */
- #define MCL_FUTURE	2		/* lock all future mappings */
+-- 
+Jiri Kosina
+SUSE Labs
