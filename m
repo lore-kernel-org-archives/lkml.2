@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab2KMQYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:24:53 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50911 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab2KMQYv (ORCPT
+	id S1755241Ab2KMQZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:25:20 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:48119 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2KMQZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:24:51 -0500
+	Tue, 13 Nov 2012 11:25:17 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjWwALxzolBV5h1yPGdsb2JhbABEhTGFI7gXAgF+GQEBAQEfGQ0ngh4BAQQBJxMcIwULCANGFA0YChoTHodaAwkKqX+GTw2JVBSLLYFigX6CfGEDlCeBVIV7hTiIAQ
+X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
+   d="scan'208";a="448608770"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 13 Nov 2012 17:31:38 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 10/13] HID: hid-multitouch: fix Win 8 protocol
+Message-ID: <20121113163138.GA707@polaris.bitmath.org>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352306256-12180-11-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <509D5C97.2020801@oracle.com>
-References: <50899507.1040900@oracle.com> <20121026143754.50277bd8@pyramind.ukuu.org.uk>
- <CA+1xoqdEesjh1EZvR_r7Hn0GUc7741EDWn59qagngcxg4=9bjQ@mail.gmail.com>
- <20121105175937.26f31d2a@pyramind.ukuu.org.uk> <5097FEA9.2090603@oracle.com>
- <alpine.LNX.2.00.1211051106590.1709@eggly.anvils> <20121105201507.79fe47d7@pyramind.ukuu.org.uk>
- <alpine.LNX.2.00.1211051231070.21645@eggly.anvils> <20121106161100.216c6d79@pyramind.ukuu.org.uk>
- <20121106164214.GA18246@redhat.com> <20121106173845.4a50d661@pyramind.ukuu.org.uk>
- <509A665C.3030603@gmail.com> <20121107160232.18e83ee9@pyramind.ukuu.org.uk>
- <87625h9yoe.fsf@nemi.mork.no> <20121108143408.77033416@pyramind.ukuu.org.uk>
- <alpine.LNX.2.00.1211091133310.3733@eggly.anvils> <509D5C97.2020801@oracle.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 13 Nov 2012 11:24:29 -0500
-Message-ID: <CA+1xoqeZ7ByntzpaWKkphJNOJqMzBLvufSvKwe7mS-2sMyVSBg@mail.gmail.com>
-Subject: Re: tty, vt: lockdep warnings (Patch v3)
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
-        Dave Jones <davej@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, florianSchandinat@gmx.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352306256-12180-11-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 9, 2012 at 2:42 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 11/09/2012 02:34 PM, Hugh Dickins wrote:
->> On Thu, 8 Nov 2012, Alan Cox wrote:
->>> commit f35b3fbf24c4e4debb6a7a864b09854ccc2a22e7
->>> Author: Alan Cox <alan@linux.intel.com>
->>> Date:   Wed Nov 7 16:35:08 2012 +0000
->>>
->>>     fb: Rework locking to fix lock ordering on takeover
->>>
->>>     Adjust the console layer to allow a take over call where the caller already
->>>     holds the locks. Make the fb layer lock in order.
->>>
->>>     This s partly a band aid, the fb layer is terminally confused about the
->>>     locking rules it uses for its notifiers it seems.
->>>
->>>     Signed-off-by: Alan Cox <alan@linux.intel.com>
->>
->> This version works for me too - thanks.
->> Hugh
->
-> I was planning to test it last night, but new code in mm/ failed horribly and
-> was BUG()ing all over the place, so I didn't get any significant testing
-> of this patch done.
->
-> Will update...
+Hi Benjamin,
 
-Nothing complains anywhere, looks great.
+> Win 8 specification is much more precise than the Win 7 one.
+> Moreover devices that need to take certification must be submitted
+> to Microsoft.
+> 
+> The result is a better protocol support and we can rely on that to
+> skip all the messy tests we used to do.
+> 
 
+You could possibly start the commit message here..
+
+> The protocol specify the fact that each valid touch must be reported
+
+The win8 protocol...
+
+> within a frame until it is released.
+> So we can use the always_valid quirk and dismiss reports when we see
+
+We can therefore...
+
+> duplicates contact ID.
+
+duplicate contacts.
+
+> 
+> We recognize Win8 certified devices from their vendor feature 0xff0000c5
+> where Microsoft put a signed blob in the report to check if the device
+> passed the certification.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 351c814..b393c6c 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -53,6 +53,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
+>  #define MT_QUIRK_NO_AREA		(1 << 9)
+>  #define MT_QUIRK_IGNORE_DUPLICATES	(1 << 10)
+> +#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 11)
+>  
+>  struct mt_slot {
+>  	__s32 x, y, cx, cy, p, w, h;
+> @@ -293,6 +294,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
+>  			td->maxcontacts = td->mtclass.maxcontacts;
+>  
+>  		break;
+> +	case 0xff0000c5:
+> +		if (field->report_count == 256 && field->report_size == 8)
+> +			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
+> +		break;
+>  	}
+>  }
+>  
+> @@ -679,14 +684,17 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>  {
+>  	__s32 quirks = td->mtclass.quirks;
+>  
+> -	/* unknown serial device needs special quirks */
+> -	if (td->touches_by_report == 1) {
+> +	/* unknown serial devices or win8 ones need special quirks */
+> +	if (td->touches_by_report == 1 || (quirks & MT_QUIRK_WIN_8_CERTIFIED)) {
+>  		quirks |= MT_QUIRK_ALWAYS_VALID;
+>  		quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
+>  		quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
+
+Won't this line interfere with the hovering functionality?
+
+>  		quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
+>  	}
+>  
+> +	if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
+> +		quirks |= MT_QUIRK_IGNORE_DUPLICATES;
+> +
+>  	td->mtclass.quirks = quirks;
+>  }
+>  
+> -- 
+> 1.7.11.7
+> 
 
 Thanks,
-Sasha
+Henrik
