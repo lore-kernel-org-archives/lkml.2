@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab2KMLN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:13:56 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51122 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935Ab2KMLNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:51 -0500
-Date: Tue, 13 Nov 2012 12:13:37 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v2 2/2] i2c: i2c-ocores: Add support for the GRLIB port
- of the controller and custom getreg and setreg functions
-Message-ID: <20121113111337.GG23119@pengutronix.de>
-References: <1352739591-1317-1-git-send-email-andreas@gaisler.com>
- <1352739591-1317-3-git-send-email-andreas@gaisler.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wj9ZLJVQDRFjGSdK"
-Content-Disposition: inline
-In-Reply-To: <1352739591-1317-3-git-send-email-andreas@gaisler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755049Ab2KMLOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:14:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49280 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754990Ab2KMLOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:14:06 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 24/31] mm,generic: only flush the local TLB in ptep_set_access_flags
+Date: Tue, 13 Nov 2012 11:12:53 +0000
+Message-Id: <1352805180-1607-25-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
+References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rik van Riel <riel@redhat.com>
 
---wj9ZLJVQDRFjGSdK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The function ptep_set_access_flags is only ever used to upgrade
+access permissions to a page. That means the only negative side
+effect of not flushing remote TLBs is that other CPUs may incur
+spurious page faults, if they happen to access the same address,
+and still have a PTE with the old permissions cached in their
+TLB.
 
-Hi,
+Having another CPU maybe incur a spurious page fault is faster
+than always incurring the cost of a remote TLB flush, so replace
+the remote TLB flush with a purely local one.
 
-On Mon, Nov 12, 2012 at 05:59:51PM +0100, Andreas Larsson wrote:
+This should be safe on every architecture that correctly
+implements flush_tlb_fix_spurious_fault() to actually invalidate
+the local TLB entry that caused a page fault, as well as on
+architectures where the hardware invalidates TLB entries that
+cause page faults.
 
-> @@ -233,6 +276,7 @@ static int ocores_i2c_of_probe(struct platform_device=
- *pdev,
->  {
->  	struct device_node *np =3D pdev->dev.of_node;
->  	u32 val;
-> +	const char *name;
-> =20
->  	if (of_property_read_u32(np, "reg-shift", &i2c->reg_shift)) {
->  		/* no 'reg-shift', check for deprecated 'regstep' */
-> @@ -257,6 +301,15 @@ static int ocores_i2c_of_probe(struct platform_devic=
-e *pdev,
-> =20
->  	of_property_read_u32(pdev->dev.of_node, "reg-io-width",
->  				&i2c->reg_io_width);
-> +
-> +	name =3D of_get_property(pdev->dev.of_node, "name", NULL);
-> +	if (name && (!strcmp(name, "GAISLER_I2CMST") ||
-> +		     !strcmp(name, "01_028"))) {
-> +		dev_dbg(&pdev->dev, "GRLIB variant of i2c-ocores\n");
-> +		i2c->setreg =3D oc_setreg_grlib;
-> +		i2c->getreg =3D oc_getreg_grlib;
-> +	}
-> +
+In the unlikely event that you are hitting what appears to be
+an infinite loop of page faults, and 'git bisect' took you to
+this changeset, your architecture needs to implement
+flush_tlb_fix_spurious_fault to actually flush the TLB entry.
 
-I'd think we should handle this via a seperate compatible-entry and
-match->data?
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ mm/pgtable-generic.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Regards,
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index e642627..d8397da 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -12,8 +12,8 @@
+ 
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+ /*
+- * Only sets the access flags (dirty, accessed, and
+- * writable). Furthermore, we know it always gets set to a "more
++ * Only sets the access flags (dirty, accessed), as well as write 
++ * permission. Furthermore, we know it always gets set to a "more
+  * permissive" setting, which allows most architectures to optimize
+  * this. We return whether the PTE actually changed, which in turn
+  * instructs the caller to do things like update__mmu_cache.  This
+@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 	int changed = !pte_same(*ptep, entry);
+ 	if (changed) {
+ 		set_pte_at(vma->vm_mm, address, ptep, entry);
+-		flush_tlb_page(vma, address);
++		flush_tlb_fix_spurious_fault(vma, address);
+ 	}
+ 	return changed;
+ }
+-- 
+1.7.9.2
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---wj9ZLJVQDRFjGSdK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCiK2EACgkQD27XaX1/VRs2WwCeM2W91JCFQPb8A1GyNWXurial
-KckAoJCGapS975/aUPf9wKQHv5a77HTO
-=21ra
------END PGP SIGNATURE-----
-
---wj9ZLJVQDRFjGSdK--
