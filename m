@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762Ab2KMDho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:37:44 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:34927 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2KMDhn (ORCPT
+	id S1752832Ab2KMDh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:37:57 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65180 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab2KMDht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:37:43 -0500
-Date: Tue, 13 Nov 2012 14:37:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wei Yongjun <weiyj.lk@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: linux-next: manual merge of the usb tree with the usb.current tree
-Message-Id: <20121113143732.624361eaf8ed2f4d0d64dd7d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f"
+	Mon, 12 Nov 2012 22:37:49 -0500
+Message-ID: <50A1C083.6080904@vlnb.net>
+Date: Mon, 12 Nov 2012 22:37:39 -0500
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Howard Chu <hyc@symas.com>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        drh@hwaci.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org> <508B3EED.2080003@vlnb.net> <20121027044456.GA2764@thunk.org> <5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk> <5092D90F.7020105@vlnb.net> <20121101212418.140e3a82@pyramind.ukuu.org.uk> <50931601.4060102@symas.com>
+In-Reply-To: <50931601.4060102@symas.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:oewUXUDSLPlySju8A9iwDBi3ZKHCbSOn77+69jEIHBD
+ LGvJjW9wXkBn15zmhwWkph7N28DepI0daI+oFv1ue56NZzxGiA
+ LohwxO982J5Eq35QLJ2F6YtGAHrTHGJ81He3WQKzBlBvRsUUU2
+ o6+AGjKLfQJnthcPgVi9VlKNNAqjYIoyx8+vd4hf/7fLsXnmfK
+ ZYJgLTjKu4WLLJrfNYoHrxw/aYt3Aq063FH1leMnPpEQsUedZC
+ mdY2HH6+VRrjIvK7b1zrj/Nhvaco5rgNPhf4Tj3IEQUTt16F3I
+ WfHPIQrNaHx0BsENc5/0k63u7yCCYITwB2DkJ86bvRYM6QeS2N
+ XilSwKffmel0b9Q/2MBc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
+Howard Chu, on 11/01/2012 08:38 PM wrote:
+> Alan Cox wrote:
+>>> How about that recently preliminary infrastructure to send ORDERED commands
+>>> instead of queue draining was deleted from the kernel, because "there's no
+>>> difference where to drain the queue, on the kernel or the storage side"?
+>>
+>> Send patches.
+>
+> Isn't any type of kernel-side ordering an exercise in futility, since
+> a) the kernel has no knowledge of the disk's actual geometry
+> b) most drives will internally re-order requests anyway
+> c) cheap drives won't support barriers
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/musb/ux500.c between commit 9a65d162e449 ("usb: musb: ux500:
-fix 'musbid' undeclared error in ux500_remove()") from the usb.current
-tree and commit 2f7711642559 ("usb: musb: remove hand-crafted id
-handling") from the usb tree.
+This is why it is so important for performance to use all storage capabilities. 
+Particularly, ORDERED commands instead of trying to pretend be smarter, than the 
+storage, doing queue draining.
 
-The latter supercedes the former so I used that and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQocB8AAoJEECxmPOUX5FEonkP/3X64lhOSDNEnRa9f0DNm4Ow
-g78oC4u+Zf0OsG9AG+robFHc+uKwBAz8e81i0fdxoQgVq14HE5lVrOt8oOLG6t1z
-qWZmau/nyy1VFZ69sWxvGB69BgkphOznD9OKnhORmJNUxFq13MQvnFES2VxVgs3o
-3MtL9UnGiIFvrUHIGSLrCIjjDwVrHdnAqWQlIUMxQqsGXbgvoKCO4EbnEhtaOrLl
-YaZsSMtchTpr/ei9cur9HgDev08tlEfMhgcUh6qvzv3yKcNs7jdQ7QPjnBSeR04v
-IedsI8+vT7X7+k1ceEqzmCngN0/Vpx+iGJixvpFQBEMSxwtro3faRK7lPh5ckAis
-eRpAM3IoClvFGUS258tjH6qxiOvYHwmLaMqEP1afXO2nljpqw1/8b2rafdHbpnp3
-mGxBJ7EB4Hrrd3Cq86Xl0cp++Leclbr6wBdewkkp4GDcal6sdz3/5ybPesOEERAN
-Uk3d1S3zQrRZLeU9Nl6FzTX2Hyxdak2xHZEBHJWRIUyYS2XVPFojJCwdOH5i/4GP
-rg68SuF0adhkLomRfn764JogFG0XHgnEsYhNHoRlLIYxKXTrjgQkj8Z5gEFGWYto
-U+Cg9mN9FgxVg5AwC3Y+Q0B1MTX2ZnCOwYZJnXJP666W+urX8Y8Q0XRt7RSoBFde
-pJ7AfHeIpwsRTvVFhVAo
-=nNiR
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Nov_2012_14_37_32_+1100_SjYREEFple2e1T0f--
+Vlad
