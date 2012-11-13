@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2KMCQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:16:16 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:47514 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2KMCQP (ORCPT
+	id S1752993Ab2KMCW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:22:27 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62174 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab2KMCW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:16:15 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arvid Brodin <Arvid.Brodin@xdin.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "David Rientjes" <rientjes@google.com>
-References: <50A16BD0.7030600@xdin.com>
-	<20121112150325.2516a0bf.akpm@linux-foundation.org>
-Date: Mon, 12 Nov 2012 18:16:03 -0800
-In-Reply-To: <20121112150325.2516a0bf.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Mon, 12 Nov 2012 15:03:25 -0800")
-Message-ID: <871ufyjli4.fsf@xmission.com>
+	Mon, 12 Nov 2012 21:22:26 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-6f-50a1aee06e51
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 5/5] perf tool: Add basic event modifier sanity check
+References: <1352741644-16809-1-git-send-email-jolsa@redhat.com>
+	<1352741644-16809-6-git-send-email-jolsa@redhat.com>
+Date: Tue, 13 Nov 2012 11:22:24 +0900
+In-Reply-To: <1352741644-16809-6-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Mon, 12 Nov 2012 18:34:04 +0100")
+Message-ID: <87haoumecf.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Onl5asMJdYSjF4yKHcgaQI6ryESR/ICk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] fs/proc: Add process text segment md5-summing
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+Hi Jiri,
 
-> On Mon, 12 Nov 2012 21:36:17 +0000
-> Arvid Brodin <Arvid.Brodin@xdin.com> wrote:
+On Mon, 12 Nov 2012 18:34:04 +0100, Jiri Olsa wrote:
+> Updating event parser to allow any non zero string containing
+> [ukhpGH] characters for event modifier.
 >
->> Adds /proc/<pid>/text_md5sum which, when read, calculates an md5sum over
->> the process' text segment. This can detect some cases where the system RAM
->> has been disturbed by e.g. ESD or cosmic radiation (on systems where ECC
->> is not available). It might also detect some accidental or malicious
->> modifications of executables, where the perpetrator has not bothered to
->> cover up the tracks.
->
-> I thought the review comments regarding the earlier patch were rather
-> fatal, sorry.
+> The modifier sanity is checked later in parse-event object logic.
+> The check validates modifier to contain only one instance of any
+> modifier (apart from 'p') present.
+[snip]
+> +/*
+> + * Basic modifier sanity check to validate it contains only one
+> + * instance of any modifier (apart from 'p') present.
+> + */
+> +static int check_modifier(char *str)
+> +{
+> +	char *p = str;
+> +
+> +	while (*p) {
+> +		if (*p != 'p' && strchr(p + 1, *p))
+> +			return -1;
+> +		p++;
+> +	}
 
-To add another nail in the coffin.
+How about adding a length check too?  i.e. something like:
 
-You can do this with ptrace or with /proc/<pid>/mem without a kernel
-patch.
+	if ((p - str) > strlen("ukhGHppp"))
+        	return -1;
 
-To make this safe would need a ptrace_may_acces(PTRACE_MODE_READ)
-permission check.  At which point not doing this with ptrace just adds
-up to extra kernel maintenance for no real point.
+Thanks,
+Namhyung
 
-Eric
-
-
+> +
+> +	return 0;
+> +}
+> +
+>  int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+>  {
+>  	struct perf_evsel *evsel;
+> @@ -730,6 +747,9 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+>  	if (str == NULL)
+>  		return 0;
+>  
+> +	if (check_modifier(str))
+> +		return -EINVAL;
+> +
+>  	if (!add && get_event_modifier(&mod, str, NULL))
+>  		return -EINVAL;
+>  
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 66959fa..e9d1134 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -82,7 +82,7 @@ num_hex		0x[a-fA-F0-9]+
+>  num_raw_hex	[a-fA-F0-9]+
+>  name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+>  name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
+> -modifier_event	[ukhpGH]{1,8}
+> +modifier_event	[ukhpGH]+
+>  modifier_bp	[rwx]{1,3}
+>  
+>  %%
