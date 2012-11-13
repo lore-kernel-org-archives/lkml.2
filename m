@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab2KMUwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:52:32 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:41771 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755864Ab2KMUwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:52:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-acpi@vger.kernel.org
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        mathias.nyman@linux.intel.com, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 0/3 rev 2] Centralized parsing of ACPI device resources
-Date: Tue, 13 Nov 2012 21:51:39 +0100
-Message-ID: <5953163.ZajFIHZXph@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <2429141.J1r7BIpiiT@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2429141.J1r7BIpiiT@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932237Ab2KMUws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:52:48 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34207 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188Ab2KMUwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:52:46 -0500
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org, Till Harbaum <till@harbaum.org>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH] i2c: i2c-tiny-usb: Add parameter for optional i2c-devices.
+Date: Tue, 13 Nov 2012 21:52:20 +0100
+Message-Id: <1352839940-7559-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <50A2AC28.7050304@ahsoftware.de>
+References: <50A2AC28.7050304@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 12, 2012 12:51:32 PM Rafael J. Wysocki wrote:
-> On Saturday, November 03, 2012 09:46:30 AM Mika Westerberg wrote:
-> > Hi,
-> > 
-> > With ACPI 5 we can now describe how devices are connected to their bus
-> > using new resources: SPISerialBus and I2CSerialBus. Also it is now possible
-> > to add GPIO connections for the devices with the help of GpioIO and GpioInt
-> > resources.
-> > 
-> > This series adds support for these new resources.
-> > 
-> > The series based on the ACPI 5 enumeration support patches that are available
-> > on Rafael's linux-next branch:
-> > 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next	
-> > 
-> > Specifically patches from this thread:
-> > 
-> > 	https://lkml.org/lkml/2012/10/31/154
-> > 
-> > Since these patches depend on the above patches on Rafael's linux-next branch
-> > I suggest that these be merged via that branch, if there are no objections.
-> > 
-> > The series follows the Device Tree way so that it would be easy to add ACPI
-> > support for the existing SPI and I2C drivers if one is familiar how the
-> > corresponding DT support is done.
-> > 
-> > For GPIO we introduce a function that maps between ACPI GPIO numbers and Linux
-> > ones - acpi_get_gpio().
-> > 
-> > SPI slave devices gets enumerated automatically if the master device has
-> > master->dev.acpi_handle set (this is analogous to master->dev.of_mode). The
-> > platform bus code in Rafael's branch assigns the ACPI handle to the master
-> > device.
-> > 
-> > I2C slave devices can be enumerated by calling acpi_i2c_register_devices() in
-> > the adapter driver.
-> 
-> Following the previous discussion, the patches below move some ACPI resources
-> parsing code from drivers/pnp/pnpacpi/rsparser.c to a new file
-> drivers/acpi/resource.c and reformat it so that it can be used by other
-> subsystems (patch [1/3]), convert the new ACPI platform devices creation
-> code to use the routines in drivers/acpi/resource.c instead of doing its
-> own resource parsing (patch [2/3]) and make the ACPI namespace scan attach
-> a list of _CRS resources to each struct acpi_device it creates, where
-> applicable (patch [3/3] - the ACPI platform device code is converted to use
-> that instead of executing _CRS by itself via acpi_walk_resources()).
-> 
-> The patchset is on top of the current linux-pm.git/linux-next branch and
-> has been tested somewhat.  Please let me know if you find any problems in it.
+Make it possible to define i2c-devices at the kernel command line
+or as a module parameter.
 
-Updated series, taking the Mika's feedback into account, follows.  There are
-bug fixes in [1/3], [2/3] is unchanged and the new [3/3] is a replacement, done
-in a different way because of some ACPICA limitations I didn't realize before.
+Format is devname1@addr1,devname2@addr2,...
 
-Thanks,
-Rafael
+Example for the kernel command line:
 
+   i2c-tiny-usb.devices=ds1307@0x68,pcf8563@0x51
 
+The devices will be probed using the standard probe mechanism,
+the definition of up to 8 devices is allowed.
+
+Cc: Till Harbaum <till@harbaum.org>
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ drivers/i2c/busses/i2c-tiny-usb.c | 40 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-tiny-usb.c b/drivers/i2c/busses/i2c-tiny-usb.c
+index 0510636..2096092 100644
+--- a/drivers/i2c/busses/i2c-tiny-usb.c
++++ b/drivers/i2c/busses/i2c-tiny-usb.c
+@@ -40,6 +40,11 @@ module_param(delay, ushort, 0);
+ MODULE_PARM_DESC(delay, "bit delay in microseconds "
+ 		 "(default is 10us for 100kHz max)");
+ 
++#define MAX_OPTIONAL_I2C_DEVICES 8
++static char *opt_devices[MAX_OPTIONAL_I2C_DEVICES];
++module_param_array_named(devices, opt_devices, charp, NULL, 0);
++MODULE_PARM_DESC(devices, "devname1@adr1,devname2@adr2,... (e.g. ds1307@0x68)");
++
+ static int usb_read(struct i2c_adapter *adapter, int cmd,
+ 		    int value, int index, void *data, int len);
+ 
+@@ -190,6 +195,11 @@ static int i2c_tiny_usb_probe(struct usb_interface *interface,
+ 	struct i2c_tiny_usb *dev;
+ 	int retval = -ENOMEM;
+ 	u16 version;
++	unsigned i;
++	struct i2c_board_info i2c_info;
++	uint addr;
++	unsigned short i2c_addr[] = { 0, I2C_CLIENT_END };
++	char *at;
+ 
+ 	dev_dbg(&interface->dev, "probing usb device\n");
+ 
+@@ -236,6 +246,36 @@ static int i2c_tiny_usb_probe(struct usb_interface *interface,
+ 	/* inform user about successful attachment to i2c layer */
+ 	dev_info(&dev->adapter.dev, "connected i2c-tiny-usb device\n");
+ 
++	for (i = 0; opt_devices[i]; ++i) {
++		at = strchr(opt_devices[i], '@');
++		if (at == NULL) {
++			dev_warn(&dev->adapter.dev,
++				"address needed in device definition '%s'\n",
++				opt_devices[i]);
++			continue;
++		}
++		*at++ = 0;
++		if (kstrtouint(at, 0, &addr) || addr >= I2C_CLIENT_END) {
++			*--at = '@';
++			dev_warn(&dev->adapter.dev,
++				"wrong address in slave definition '%s'\n",
++				opt_devices[i]);
++			continue;
++		}
++		memset(&i2c_info, 0, sizeof(struct i2c_board_info));
++		strlcpy(i2c_info.type, opt_devices[i], I2C_NAME_SIZE);
++		i2c_addr[0] = addr;
++		if (i2c_new_probed_device(&dev->adapter, &i2c_info, i2c_addr,
++			NULL))
++			dev_info(&dev->adapter.dev,
++				"device %s at address 0x%02x registered\n",
++				i2c_info.type, addr);
++		else
++			dev_warn(&dev->adapter.dev,
++				"device %s at address 0x%02x not found\n",
++				i2c_info.type, addr);
++	}
++
+ 	return 0;
+ 
+  error:
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.11.7
+
