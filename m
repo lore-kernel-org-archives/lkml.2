@@ -1,161 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab2KMJ6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:58:15 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12535 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2KMJ6N (ORCPT
+	id S932087Ab2KMKBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 05:01:25 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:64236 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab2KMKBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:58:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 13 Nov 2012 01:58:06 -0800
-Message-ID: <50A219A8.7090605@nvidia.com>
-Date: Tue, 13 Nov 2012 17:58:00 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 05:01:23 -0500
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
-References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de> <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de> <50A1F3A3.40905@nvidia.com> <20121113074822.GA8409@avionic-0098.mockup.avionic-design.de> <50A20994.9000305@nvidia.com> <20121113093725.GB8122@avionic-0098.mockup.avionic-design.de> <50A217A8.2000600@nvidia.com> <20121113095424.GA982@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121113095424.GA982@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [217.140.96.21]
+In-Reply-To: <20121113090222.1180.36111.sendpatchset@indoh>
+References: <20121113090212.1180.12233.sendpatchset@indoh>
+	<20121113090222.1180.36111.sendpatchset@indoh>
+Date: Tue, 13 Nov 2012 10:01:21 +0000
+Message-ID: <CAPcvp5FCDt5Sy9W7s4gsWuq7z9dATvk37hS_5XfrYepNiJN=nA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] x86, pci: add dummy pci device for early stage
+From: Andrew Murray <amurray@embedded-bits.co.uk>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de, yinghai@kernel.org, mingo@redhat.com,
+        vgoyal@redhat.com, khalid@gonehiking.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 05:54 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Nov 13, 2012 at 05:49:28PM +0800, Mark Zhang wrote:
->> On 11/13/2012 05:37 PM, Thierry Reding wrote:
->>>> Old Signed by an unknown key
->>>
->>> On Tue, Nov 13, 2012 at 04:49:24PM +0800, Mark Zhang wrote:
->>>> On 11/13/2012 03:48 PM, Thierry Reding wrote:
->>>>>> Old Signed by an unknown key
->>>>>
->>>>> On Tue, Nov 13, 2012 at 03:15:47PM +0800, Mark Zhang wrote:
->>>>>> On 11/13/2012 05:55 AM, Thierry Reding wrote:
->>>>>>> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
->>>>>>> support for host1x and the two display controllers found on the Tegra20
->>>>>>> SoC. Each display controller can drive a separate RGB/LVDS output.
->>>>>>>
->>>>>>> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->>>>>>> ---
->>>>>>> Changes in v2:
->>>>>>> - drop Linux-specific drm subdirectory for DT bindings documentation
->>>>>>> - remove display helper leftovers that belong in a later patch
->>>>>>> - reuse debugfs infrastructure provided by the DRM core
->>>>>>> - move vblank syncpoint defines to dc.h
->>>>>>> - use drm_compat_ioctl()
->>>>>>>
->>>>>> [...]
->>>>>>> diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/drm/tegra/Kconfig
->>>>>>> new file mode 100644
->>>>>>> index 0000000..be1daf7
->>>>>>> --- /dev/null
->>>>>>> +++ b/drivers/gpu/drm/tegra/Kconfig
->>>>>>> @@ -0,0 +1,23 @@
->>>>>>> +config DRM_TEGRA
->>>>>>> +       tristate "NVIDIA Tegra DRM"
->>>>>>> +       depends on DRM && OF && ARCH_TEGRA
->>>>>>> +       select DRM_KMS_HELPER
->>>>>>> +       select DRM_GEM_CMA_HELPER
->>>>>>> +       select DRM_KMS_CMA_HELPER
->>>>>>
->>>>>> Just for curious, according to my testing, why the "CONFIG_CMA" is not
->>>>>> enabled while DRM_GEM_CMA_HELPER & DRM_KMS_CMA_HELPER are enabled here?
->>>>>
->>>>> The reason is that CMA doesn't actually provide any API for drivers to
->>>>> use and in fact unless you use very large buffers you could indeed run
->>>>> this code on top of a non-CMA kernel and it will likely even work.
->>>>>
->>>>
->>>> Okay. But I think it's better to turn on CMA defaultly. During my
->>>> testing, it's hard to allocate more 2MB without CMA...
->>>
->>> CMA is enabled by default in one of the Tegra default configuration
->>> patches in my tegra/next branch. I will submit that patch to Stephen
->>> when the 3.8 cycle starts, so that it'll be automatically enabled along
->>> with the DRM driver.
->>>
->>> But I don't think it makes sense to couple it to the DRM_TEGRA symbol as
->>> it isn't strictly required.
->>>
->>
->> Yes. We don't need to touch CMA in our Kconfig. In my opinion, right now
->> we're relying on the DRM_GEM_CMA_HELPER which should turn on CMA when
->> it's been selected.
-> 
-> Again, I don't think CMA should be selected by those either as the
-> helpers will work fine if CMA is disabled (their name is a bit
-> unfortunate). It's just that they won't be able to allocate very large
-> buffers.
-> 
-> So I think the correct way is to select CMA in the Tegra default
-> configuration to make it explicit that Tegra wants to use the CMA for
-> large contiguous buffer allocations.
-> 
+Hello,
 
-Agree.
+Some comments inline...
 
->>>>>>> +static struct of_device_id tegra_dc_of_match[] = {
->>>>>>> +       { .compatible = "nvidia,tegra20-dc", },
->>>>>>> +       { .compatible = "nvidia,tegra30-dc", },
->>>>>>
->>>>>> If you don't want add Tegra 3 support in this patch set, remove
->>>>>> { .compatible = "nvidia,tegra30-dc", } here.
->>>>>
->>>>> Good catch! I'll move that into the Tegra30 support patch.
->>>>>
->>>>>>> +static int host1x_activate_drm_client(struct host1x *host1x,
->>>>>>> +                                     struct host1x_drm_client *drm,
->>>>>>> +                                     struct host1x_client *client)
->>>>>>> +{
->>>>>>> +       mutex_lock(&host1x->drm_clients_lock);
->>>>>>> +       list_del_init(&drm->list);
->>>>>>> +       list_add_tail(&drm->list, &host1x->drm_active);
->>>>>>
->>>>>> Why we need this "drm_active" list? We can combine this function and
->>>>>> function "host1x_remove_drm_client" and free the drm client just here.
->>>>>> It's useless after host1x clients registered themselves.
->>>>>
->>>>> The list is used to properly remove all clients and resources when the
->>>>> module is unloaded. Granted, this code isn't executed if you don't build
->>>>> the driver as a loadable module, but it should still be a supported use-
->>>>> case.
->>>>>
->>>>
->>>> My opinion is, after registration is completed, host1x_drm_client is
->>>> useless, host1x_client is enough for follow-up operations.
->>>> I still don't get how this is related with building the driver into the
->>>> kernel or as a kernel module, so if something I misunderstood, please
->>>> let me know it. Thanks.
->>>
->>> I can take another look at this and see if it can be further simplified.
->>> This was actually a rather tricky part to get right, so I'm naturally a
->>> bit hesitant to touch it.
->>>
->>
->> Okay. I recall I did some changes on this part about 3 month ago in a
->> patch named "drm: Add T30 support - host1x". So maybe you can know what
->> I mean by reading that patch.
-> 
-> Yes, I remember the patch. Unfortunately the result of applying that
-> patch was that unloading the module no longer worked properly.
-> 
+On 13 November 2012 09:07, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+>
+> So we can pass pci_dev *dev to reuse some generic pci functions.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+> ---
+>  arch/x86/include/asm/pci-direct.h |    2 +
+>  arch/x86/pci/early.c              |   75 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 77 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/pci-direct.h b/arch/x86/include/asm/pci-direct.h
+> index b1e7a45..b6360d3 100644
+> --- a/arch/x86/include/asm/pci-direct.h
+> +++ b/arch/x86/include/asm/pci-direct.h
+> @@ -18,4 +18,6 @@ extern int early_pci_allowed(void);
+>  extern unsigned int pci_early_dump_regs;
+>  extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
+>  extern void early_dump_pci_devices(void);
+> +
+> +struct pci_dev *get_early_pci_dev(int num, int slot, int func);
+>  #endif /* _ASM_X86_PCI_DIRECT_H */
+> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
+> index d1067d5..aea6b2b 100644
+> --- a/arch/x86/pci/early.c
+> +++ b/arch/x86/pci/early.c
+> @@ -109,3 +109,78 @@ void early_dump_pci_devices(void)
+>                 }
+>         }
+>  }
+> +
+> +static __init int
+> +early_pci_read(struct pci_bus *bus, unsigned int devfn, int where,
+> +                       int size, u32 *value)
+> +{
+> +       int num, slot, func;
+> +
+> +       num = bus->number;
+> +       slot = devfn >> 3;
+> +       func = devfn & 7;
 
-Okay. I'll take a look at this part as well when I'm free.
+You may want to use the PCI_SLOT and PCI_FUNC macros in
+include/linux/pci.h to determine values for slot and func.
 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
-> 
+> +       switch (size) {
+> +       case 1:
+> +               *value = read_pci_config_byte(num, slot, func, where);
+> +               break;
+> +       case 2:
+> +               *value = read_pci_config_16(num, slot, func, where);
+> +               break;
+> +       case 4:
+> +               *value = read_pci_config(num, slot, func, where);
+> +               break;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static __init int
+> +early_pci_write(struct pci_bus *bus, unsigned int devfn, int where,
+> +                       int size, u32 value)
+> +{
+> +       int num, slot, func;
+> +
+> +       num = bus->number;
+> +       slot = devfn >> 3;
+> +       func = devfn & 7;
+
+As above.
+
+> +       switch (size) {
+> +       case 1:
+> +               write_pci_config_byte(num, slot, func, where, (u8)value);
+> +               break;
+> +       case 2:
+> +               write_pci_config_16(num, slot, func, where, (u16)value);
+> +               break;
+> +       case 4:
+> +               write_pci_config(num, slot, func, where, (u32)value);
+> +               break;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static __initdata struct pci_ops pci_early_ops = {
+> +       .read  = early_pci_read,
+> +       .write = early_pci_write,
+> +};
+> +static __initdata struct pci_bus pci_early_bus = {
+> +       .ops = &pci_early_ops,
+> +};
+> +static __initdata char pci_early_init_name[8];
+> +static __initdata struct pci_dev pci_early_dev = {
+> +       .bus = &pci_early_bus,
+> +       .dev = {
+> +               .init_name = pci_early_init_name,
+> +       },
+> +};
+> +
+> +__init struct pci_dev *get_early_pci_dev(int num, int slot, int func)
+> +{
+> +       struct pci_dev *pdev;
+> +
+> +       pdev = &pci_early_dev;
+> +       pdev->devfn = (slot<<3) | (func & 7);
+
+You can use PCI_DEVFN here.
+
+> +       pdev->bus->number = num;
+> +       sprintf((char *)pdev->dev.init_name, "%02x:%02x.%01x", num, slot, func);
+> +
+> +       return pdev;
+> +}
+> --
+> 1.7.1
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Andrew Murray
