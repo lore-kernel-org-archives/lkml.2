@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab2KMXNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 18:13:32 -0500
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:63433 "EHLO
+	id S1754113Ab2KMXPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 18:15:42 -0500
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:63561 "EHLO
 	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab2KMXNb (ORCPT
+	with ESMTP id S1752146Ab2KMXPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 18:13:31 -0500
+	Tue, 13 Nov 2012 18:15:40 -0500
 From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
         =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH 00/12] printk() fixes, optimizations, and clean ups
-Date: Wed, 14 Nov 2012 00:12:57 +0100
-Message-Id: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
+Subject: [PATCH 01/12] printk: drop ambiguous LOG_CONT flag
+Date: Wed, 14 Nov 2012 00:12:58 +0100
+Message-Id: <1352848389-23114-2-git-send-email-schnhrr@cs.tu-berlin.de>
 X-Mailer: git-send-email 1.8.0.316.g291341c.dirty
+In-Reply-To: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,85 +24,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, hi Kay, and all other interested people.
+The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
+ending, or middle fragment. Unfortunately, this cannot be inferred from
+the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
+Furthermore, in some cases LOG_CONT is set, although it is unknown if
+there will be a continuation. This leads to wrongly concatenated output.
 
-This series aims at cleaning up and fixing some bugs around printk().
-Patches 9 and 11 might require some discussion, see below.
+Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
+distinguish the type of fragment. That is, if LOG_PREFIX is set, this
+fragment does not continue the previous fragment. And if LOG_NEWLINE is
+set, this fragment is not continued by the next fragment.
 
-(This is not to be confused with the printk.c reorganization that Joe 
-Perches currently does [1]. This series is really focused around printk().)
+(Unfortunately, we still have to look at the previous fragment to catch the
+case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
+the previous fragment.)
 
-Let's get straight to the individual patches (series is currently against
-v3.7-rc5, but applies to next-20121113 as well):
+Tested-by: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+---
+Changes since last posting:
+- fixed check for flushed buffer
+- minor code adjustment
+- coding style fixes
+---
+ kernel/printk.c | 58 ++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 33 insertions(+), 25 deletions(-)
 
-1. printk: drop ambiguous LOG_CONT flag
-
-	This is the only patch that was previously posted [2]. Compared to
-	the previous version, a small bug got fixed. With this patch,
-	independent continuation records are no longer incorrectly merged.
-
-2. printk: use saved timestamp for temporarily buffered message
-3. printk: reclaim cont buffer immediately for fully printed messages
-4. printk: reuse reclaimed continuation buffer immediately
-5. printk: move wake_klogd-check out of the loop
-
-	These four patches fall into the optimization category. The only
-	measurable effect is probably that continuation records are more often
-	merged than before (patches 3+4).
-
-6. printk: reorganize storage of continuation buffer
-7. printk: let cont_print_text() reuse existing code
-
-  	These two reduce replicated code within printk.c and fix an actual bug
-	in the console output of logged messages.
-
-8. printk: refactor locking in console_unlock()
-
-  	Another bugfix. And due to the refactored locking, I hopefully closed
-	all the smaller time-windows where the same race could have happened.
-	(This patch does not fix all issues within console_unlock() that I am
-	aware of, see patch description.) 
-
-9. printk: avoid glitches in console output
-
-	This one has a notable effect on the console output when there are
-	concurrent printk()s. Personally, I think it improves the readability,
-	but there could be a reason I'm not aware of why such a change is
-	not acceptable. Please discuss.
-
-10. printk: retain unknown log-level until log_store()
-11. printk: track previously logged message in log_store()
-12. printk: drop now useless tracking of previous message flags
-
-	The change due to these three patches is only noticeable for a user in
-	a few corner cases. OTOH, it improves source readability by removing
-	some of the historical growth (patch 12) that only makes sense when
-	you have actually read the history.
-
-
-Regards
-Jan
-
-[1] http://lkml.org/lkml/2012/10/24/748
-[2] http://lkml.org/lkml/2012/9/26/392
-
-Jan H. Schönherr (12):
-  printk: drop ambiguous LOG_CONT flag
-  printk: use saved timestamp for temporarily buffered message
-  printk: reclaim cont buffer immediately for fully printed messages
-  printk: reuse reclaimed continuation buffer immediately
-  printk: move wake_klogd-check out of the loop
-  printk: reorganize storage of continuation buffer
-  printk: let cont_print_text() reuse existing code
-  printk: refactor locking in console_unlock()
-  printk: avoid glitches in console output
-  printk: retain unknown log-level until log_store()
-  printk: track previously logged message in log_store()
-  printk: drop now useless tracking of previous message flags
-
- kernel/printk.c | 368 ++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 209 insertions(+), 159 deletions(-)
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 2d607f4..857ff7c 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -197,7 +197,6 @@ enum log_flags {
+ 	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
+ 	LOG_NEWLINE	= 2,	/* text ended with a newline */
+ 	LOG_PREFIX	= 4,	/* text started with a prefix */
+-	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+ };
+ 
+ struct log {
+@@ -481,10 +480,9 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	 * better readable output. 'c' in the record flags mark the first
+ 	 * fragment of a line, '+' the following.
+ 	 */
+-	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
++	if (!(msg->flags & LOG_NEWLINE) && msg->flags & LOG_PREFIX)
+ 		cont = 'c';
+-	else if ((msg->flags & LOG_CONT) ||
+-		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
++	else if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		cont = '+';
+ 
+ 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+@@ -887,15 +885,16 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
+ 	bool newline = true;
+ 	size_t len = 0;
+ 
+-	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
++	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		prefix = false;
+ 
+-	if (msg->flags & LOG_CONT) {
+-		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
+-			prefix = false;
++	if (!(msg->flags & LOG_NEWLINE))
++		newline = false;
+ 
+-		if (!(msg->flags & LOG_NEWLINE))
+-			newline = false;
++	if (!(prev & LOG_NEWLINE) && prefix) {
++		if (buf)
++			buf[len] = '\n';
++		len++;
+ 	}
+ 
+ 	do {
+@@ -1400,35 +1399,36 @@ static void cont_flush(enum log_flags flags)
+ 	if (cont.len == 0)
+ 		return;
+ 
++	cont.flags |= flags;
+ 	if (cont.cons) {
+ 		/*
+ 		 * If a fragment of this line was directly flushed to the
+ 		 * console; wait for the console to pick up the rest of the
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+-		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
++		log_store(cont.facility, cont.level, cont.flags | LOG_NOCONS,
+ 			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
+-		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+ 		/*
+ 		 * If no fragment of this line ever reached the console,
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+-		log_store(cont.facility, cont.level, flags, 0,
++		log_store(cont.facility, cont.level, cont.flags, 0,
+ 			  NULL, 0, cont.buf, cont.len);
+ 		cont.len = 0;
+ 	}
+ }
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, enum log_flags flags,
++		     const char *text, size_t len)
+ {
+ 	if (cont.len && cont.flushed)
+ 		return false;
+ 
+ 	if (cont.len + len > sizeof(cont.buf)) {
+ 		/* the line gets too long, split it up in separate records */
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 		return false;
+ 	}
+ 
+@@ -1437,7 +1437,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.level = level;
+ 		cont.owner = current;
+ 		cont.ts_nsec = local_clock();
+-		cont.flags = 0;
++		cont.flags = flags;
+ 		cont.cons = 0;
+ 		cont.flushed = false;
+ 	}
+@@ -1446,7 +1446,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 	cont.len += len;
+ 
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 
+ 	return true;
+ }
+@@ -1456,8 +1456,11 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t textlen = 0;
+ 	size_t len;
+ 
+-	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++	if (cont.cons == 0 && (console_prev & LOG_NEWLINE ||
++			       cont.flags & LOG_PREFIX)) {
++		if (!(console_prev & LOG_NEWLINE))
++			text[textlen++] = '\n';
++		textlen += print_time(cont.ts_nsec, text + textlen);
+ 		size -= textlen;
+ 	}
+ 
+@@ -1575,12 +1578,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * Flush the conflicting buffer. An earlier newline was missing,
+ 		 * or another task also prints continuation lines.
+ 		 */
+-		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+-			cont_flush(LOG_NEWLINE);
++		if (cont.len && !cont.flushed) {
++			if (cont.owner != current)
++				lflags |= LOG_PREFIX;
++			if (lflags & LOG_PREFIX)
++				cont_flush(LOG_NEWLINE);
++		}
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
+-			log_store(facility, level, lflags | LOG_CONT, 0,
++		if (!cont_add(facility, level, lflags, text, text_len))
++			log_store(facility, level, lflags, 0,
+ 				  dict, dictlen, text, text_len);
+ 	} else {
+ 		bool stored = false;
+@@ -1591,9 +1598,10 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * there was a race with interrupts (prefix == true) then just
+ 		 * flush it out and store this line separately.
+ 		 */
+-		if (cont.len && cont.owner == current) {
++		if (cont.len && !cont.flushed && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, lflags,
++							text, text_len);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
 -- 
 1.8.0.316.g291341c.dirty
 
