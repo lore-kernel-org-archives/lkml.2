@@ -1,128 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab2KNCgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:36:33 -0500
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:33017 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932454Ab2KNCeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:34:46 -0500
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Nov 2012 21:34:46 EST
-Date: Tue, 13 Nov 2012 18:27:53 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ingo Molnar <mingo@kernel.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
-Subject: [PATCH 1/2] sched, numa, mm: Add memcg support to
- do_huge_pmd_numa_page()
-In-Reply-To: <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1211131826090.29612@eggly.anvils>
-References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <1352826834-11774-22-git-send-email-mingo@kernel.org> <20121113184835.GH10092@cmpxchg.org> <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932630Ab2KNCgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:36:54 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53055 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932532Ab2KNCdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 21:33:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="217413946"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "Arjan Dan De Ven" <arjan@linux.intel.com>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        "Len Brown" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Chen Gong" <gong.chen@linux.intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v10 09/14] x86, hotplug: Wake up CPU0 via NMI instead of INIT, SIPI, SIPI
+Date: Tue, 13 Nov 2012 11:32:46 -0800
+Message-Id: <1352835171-3958-10-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Add mem_cgroup_prepare_migration() and mem_cgroup_end_migration() calls
-into do_huge_pmd_numa_page(), and fix mem_cgroup_prepare_migration() to
-account for a Transparent Huge Page correctly without bugging.
+Instead of waiting for STARTUP after INITs, BSP will execute the BIOS boot-strap
+code which is not a desired behavior for waking up BSP. To avoid the boot-strap
+code, wake up CPU0 by NMI instead.
 
-Tested-by: Zhouping Liu <zliu@redhat.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined (i.e.
+physically hot removed and then hot added), NMI won't wake it up. We'll change
+this code in the future to wake up hard offlined CPU0 if real platform and
+request are available.
+
+AP is still waken up as before by INIT, SIPI, SIPI sequence.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
+ arch/x86/include/asm/cpu.h |    1 +
+ arch/x86/kernel/smpboot.c  |  113 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 107 insertions(+), 7 deletions(-)
 
- mm/huge_memory.c |   16 ++++++++++++++++
- mm/memcontrol.c  |    7 +++++--
- 2 files changed, 21 insertions(+), 2 deletions(-)
-
---- mmotm/mm/huge_memory.c	2012-11-09 09:43:46.892046342 -0800
-+++ linux/mm/huge_memory.c	2012-11-13 14:51:04.000321370 -0800
-@@ -750,6 +750,7 @@ void do_huge_pmd_numa_page(struct mm_str
- 			   unsigned int flags, pmd_t entry)
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	struct mem_cgroup *memcg = NULL;
- 	struct page *new_page = NULL;
- 	struct page *page = NULL;
- 	int node, lru;
-@@ -840,6 +841,14 @@ migrate:
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index 4564c8e..a119572 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -28,6 +28,7 @@ struct x86_cpu {
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern int arch_register_cpu(int num);
+ extern void arch_unregister_cpu(int);
++extern void __cpuinit start_cpu0(void);
+ #endif
  
- 		return;
- 	}
-+	/*
-+	 * Traditional migration needs to prepare the memcg charge
-+	 * transaction early to prevent the old page from being
-+	 * uncharged when installing migration entries.  Here we can
-+	 * save the potential rollback and start the charge transfer
-+	 * only when migration is already known to end successfully.
-+	 */
-+	mem_cgroup_prepare_migration(page, new_page, &memcg);
- 
- 	entry = mk_pmd(new_page, vma->vm_page_prot);
- 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-@@ -850,6 +859,12 @@ migrate:
- 	set_pmd_at(mm, haddr, pmd, entry);
- 	update_mmu_cache_pmd(vma, address, entry);
- 	page_remove_rmap(page);
-+	/*
-+	 * Finish the charge transaction under the page table lock to
-+	 * prevent split_huge_page() from dividing up the charge
-+	 * before it's fully transferred to the new page.
-+	 */
-+	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(&mm->page_table_lock);
- 
- 	put_page(page);			/* Drop the rmap reference */
-@@ -860,6 +875,7 @@ migrate:
- 		put_page(page);		/* drop the LRU isolation reference */
- 
- 	unlock_page(new_page);
-+
- 	unlock_page(page);
- 	put_page(page);			/* Drop the local reference */
- 
---- mmotm/mm/memcontrol.c	2012-11-09 09:43:46.896046342 -0800
-+++ linux/mm/memcontrol.c	2012-11-13 14:51:04.004321370 -0800
-@@ -4186,15 +4186,18 @@ void mem_cgroup_prepare_migration(struct
- 				  struct mem_cgroup **memcgp)
- {
- 	struct mem_cgroup *memcg = NULL;
-+	unsigned int nr_pages = 1;
- 	struct page_cgroup *pc;
- 	enum charge_type ctype;
- 
- 	*memcgp = NULL;
- 
--	VM_BUG_ON(PageTransHuge(page));
- 	if (mem_cgroup_disabled())
- 		return;
- 
-+	if (PageTransHuge(page))
-+		nr_pages <<= compound_order(page);
-+
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
-@@ -4256,7 +4259,7 @@ void mem_cgroup_prepare_migration(struct
- 	 * charged to the res_counter since we plan on replacing the
- 	 * old one and only one page is going to be left afterwards.
+ DECLARE_PER_CPU(int, cpu_state);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c297907..31854bc 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -138,15 +138,17 @@ static void __cpuinit smp_callin(void)
+ 	 * we may get here before an INIT-deassert IPI reaches
+ 	 * our local APIC.  We have to wait for the IPI or we'll
+ 	 * lock up on an APIC access.
++	 *
++	 * Since CPU0 is not wakened up by INIT, it doesn't wait for the IPI.
  	 */
--	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
-+	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
+-	if (apic->wait_for_init_deassert)
++	cpuid = smp_processor_id();
++	if (apic->wait_for_init_deassert && cpuid != 0)
+ 		apic->wait_for_init_deassert(&init_deasserted);
+ 
+ 	/*
+ 	 * (This works even if the APIC is not enabled.)
+ 	 */
+ 	phys_id = read_apic_id();
+-	cpuid = smp_processor_id();
+ 	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+ 		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+ 					phys_id, cpuid);
+@@ -228,6 +230,8 @@ static void __cpuinit smp_callin(void)
+ 	cpumask_set_cpu(cpuid, cpu_callin_mask);
  }
  
- /* remove redundant charge if migration failed*/
++static int cpu0_logical_apicid;
++static int enable_start_cpu0;
+ /*
+  * Activate a secondary processor.
+  */
+@@ -243,6 +247,8 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	preempt_disable();
+ 	smp_callin();
+ 
++	enable_start_cpu0 = 0;
++
+ #ifdef CONFIG_X86_32
+ 	/* switch away from the initial page table */
+ 	load_cr3(swapper_pg_dir);
+@@ -492,7 +498,7 @@ void __inquire_remote_apic(int apicid)
+  * won't ... remember to clear down the APIC, etc later.
+  */
+ int __cpuinit
+-wakeup_secondary_cpu_via_nmi(int logical_apicid, unsigned long start_eip)
++wakeup_secondary_cpu_via_nmi(int apicid, unsigned long start_eip)
+ {
+ 	unsigned long send_status, accept_status = 0;
+ 	int maxlvt;
+@@ -500,7 +506,7 @@ wakeup_secondary_cpu_via_nmi(int logical_apicid, unsigned long start_eip)
+ 	/* Target chip */
+ 	/* Boot on the stack */
+ 	/* Kick the second */
+-	apic_icr_write(APIC_DM_NMI | apic->dest_logical, logical_apicid);
++	apic_icr_write(APIC_DM_NMI | apic->dest_logical, apicid);
+ 
+ 	pr_debug("Waiting for send to finish...\n");
+ 	send_status = safe_apic_wait_icr_idle();
+@@ -660,6 +666,63 @@ static void __cpuinit announce_cpu(int cpu, int apicid)
+ 			node, cpu, apicid);
+ }
+ 
++static int wakeup_cpu0_nmi(unsigned int cmd, struct pt_regs *regs)
++{
++	int cpu;
++
++	cpu = smp_processor_id();
++	if (cpu == 0 && !cpu_online(cpu) && enable_start_cpu0)
++		return NMI_HANDLED;
++
++	return NMI_DONE;
++}
++
++/*
++ * Wake up AP by INIT, INIT, STARTUP sequence.
++ *
++ * Instead of waiting for STARTUP after INITs, BSP will execute the BIOS
++ * boot-strap code which is not a desired behavior for waking up BSP. To
++ * void the boot-strap code, wake up CPU0 by NMI instead.
++ *
++ * This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined
++ * (i.e. physically hot removed and then hot added), NMI won't wake it up.
++ * We'll change this code in the future to wake up hard offlined CPU0 if
++ * real platform and request are available.
++ */
++static int __cpuinit
++wakeup_cpu_via_init_nmi(int cpu, unsigned long start_ip, int apicid,
++	       int *cpu0_nmi_registered)
++{
++	int id;
++	int boot_error;
++
++	/*
++	 * Wake up AP by INIT, INIT, STARTUP sequence.
++	 */
++	if (cpu)
++		return wakeup_secondary_cpu_via_init(apicid, start_ip);
++
++	/*
++	 * Wake up BSP by nmi.
++	 *
++	 * Register a NMI handler to help wake up CPU0.
++	 */
++	boot_error = register_nmi_handler(NMI_LOCAL,
++					  wakeup_cpu0_nmi, 0, "wake_cpu0");
++
++	if (!boot_error) {
++		enable_start_cpu0 = 1;
++		*cpu0_nmi_registered = 1;
++		if (apic->dest_logical == APIC_DEST_LOGICAL)
++			id = cpu0_logical_apicid;
++		else
++			id = apicid;
++		boot_error = wakeup_secondary_cpu_via_nmi(id, start_ip);
++	}
++
++	return boot_error;
++}
++
+ /*
+  * NOTE - on most systems this is a PHYSICAL apic ID, but on multiquad
+  * (ie clustered apic addressing mode), this is a LOGICAL apic ID.
+@@ -675,6 +738,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 
+ 	unsigned long boot_error = 0;
+ 	int timeout;
++	int cpu0_nmi_registered = 0;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -722,13 +786,16 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	}
+ 
+ 	/*
+-	 * Kick the secondary CPU. Use the method in the APIC driver
+-	 * if it's defined - or use an INIT boot APIC message otherwise:
++	 * Wake up a CPU in difference cases:
++	 * - Use the method in the APIC driver if it's defined
++	 * Otherwise,
++	 * - Use an INIT boot APIC message for APs or NMI for BSP.
+ 	 */
+ 	if (apic->wakeup_secondary_cpu)
+ 		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+ 	else
+-		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
++						     &cpu0_nmi_registered);
+ 
+ 	if (!boot_error) {
+ 		/*
+@@ -793,6 +860,13 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		 */
+ 		smpboot_restore_warm_reset_vector();
+ 	}
++	/*
++	 * Clean up the nmi handler. Do this after the callin and callout sync
++	 * to avoid impact of possible long unregister time.
++	 */
++	if (cpu0_nmi_registered)
++		unregister_nmi_handler(NMI_LOCAL, "wake_cpu0");
++
+ 	return boot_error;
+ }
+ 
+@@ -1037,6 +1111,11 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	 */
+ 	setup_local_APIC();
+ 
++	if (x2apic_mode)
++		cpu0_logical_apicid = apic_read(APIC_LDR);
++	else
++		cpu0_logical_apicid = GET_APIC_LOGICAL_ID(apic_read(APIC_LDR));
++
+ 	/*
+ 	 * Enable IO APIC before setting up error vector
+ 	 */
+@@ -1264,6 +1343,16 @@ void play_dead_common(void)
+ 	local_irq_disable();
+ }
+ 
++static bool wakeup_cpu0(void)
++{
++	unsigned int timeout;
++
++	if (smp_processor_id() == 0 && enable_start_cpu0)
++		return true;
++
++	return false;
++}
++
+ /*
+  * We need to flush the caches before going to sleep, lest we have
+  * dirty data in our caches when we come back up.
+@@ -1327,6 +1416,11 @@ static inline void mwait_play_dead(void)
+ 		__monitor(mwait_ptr, 0, 0);
+ 		mb();
+ 		__mwait(eax, 0);
++		/*
++		 * If NMI wants to wake up CPU0, start CPU0.
++		 */
++		if (wakeup_cpu0())
++			start_cpu0();
+ 	}
+ }
+ 
+@@ -1337,6 +1431,11 @@ static inline void hlt_play_dead(void)
+ 
+ 	while (1) {
+ 		native_halt();
++		/*
++		 * If NMI wants to wake up CPU0, start CPU0.
++		 */
++		if (wakeup_cpu0())
++			start_cpu0();
+ 	}
+ }
+ 
+-- 
+1.7.2
+
