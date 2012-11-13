@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2KMIAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:00:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:49030 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab2KMIAc convert rfc822-to-8bit (ORCPT
+	id S1754192Ab2KMIAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:00:40 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64068 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab2KMIAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:00:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
-   d="scan'208";a="246184684"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: RE: [PATCH 1/7] I2c-nomadik: Fix the usage of
- wait_for_completion_timeout
-Thread-Topic: [PATCH 1/7] I2c-nomadik: Fix the usage of
- wait_for_completion_timeout
-Thread-Index: AQHNwXSzc7ymnBQVR0ipwXxr7IQD7ZfnZrvw
-Date: Tue, 13 Nov 2012 08:00:21 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1C3EE6@SHSMSX101.ccr.corp.intel.com>
-References: <1352222317.15558.1584.camel@cliu38-desktop-build>
- <20121112172651.GC15159@pengutronix.de>
- <27240C0AC20F114CBF8149A2696CBE4A1C3952@SHSMSX101.ccr.corp.intel.com>
- <20121113075813.GA23119@pengutronix.de>
-In-Reply-To: <20121113075813.GA23119@pengutronix.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Nov 2012 03:00:37 -0500
+Date: Tue, 13 Nov 2012 12:00:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
+ inotify_inode_mark
+Message-ID: <20121113080032.GF6511@moon>
+References: <20121112101440.665694060@openvz.org>
+ <20121112101845.839702715@openvz.org>
+ <20121112165540.2ec39f50.akpm@linux-foundation.org>
+ <20121113072057.GC6511@moon>
+ <20121112234001.009b2ae3.akpm@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121112234001.009b2ae3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 12, 2012 at 11:40:01PM -0800, Andrew Morton wrote:
+> On Tue, 13 Nov 2012 11:20:57 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > > 
+> > > Whoa.  This adds 128+8 bytes to the inotify_inode_mark.  That's a lot of
+> > > bloat, and there can be a lot of inotify_inode_mark's in the system?
+> > 
+> > Yes, that's why it's not turned on by default, only if is c/r turned on.
+> > iirc I've been said that usually only about 40 bytes is used (in the tests
+> > I met only 8 bytes). Letme re-check all things.
+> 
+> The question is, how many `struct inotify_inode_mark's are instantiated
+> system-wide?  Could be millions?
 
+Well, hard to tell, to be fair. On my testing machine only apache has been
+using inotify system as far as I remember, but for sure nothing except memory
+limit the number of inotify. But I think if one running machine with millions
+of inotify it's rather powerful machine with enough memory.
 
-> -----Original Message-----
-> From: Wolfram Sang [mailto:w.sang@pengutronix.de]
-> Sent: Tuesday, November 13, 2012 3:58 PM
-> To: Liu, Chuansheng
-> Cc: linus.walleij@linaro.org; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; linux-i2c@vger.kernel.org
-> Subject: Re: [PATCH 1/7] I2c-nomadik: Fix the usage of
-> wait_for_completion_timeout
-> 
-> 
-> > Thanks your pointing out. I just manually reviewed the code when found
-> > this point. Would like to try some auto-script but failed:)
-> 
-> I can suggest 'coccinelle' for that kind of job.
-Thanks, let me try, if possible anyone can give some help?
-> 
-> --
-> Pengutronix e.K.                           | Wolfram Sang
-> |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/
-> |
+> Dumb question: do we really need inotify_inode_mark.fhandle at all? 
+> What prevents us from assembling this info on demand when ->show_fdinfo() is
+> called?
+
+exportfs requires the dentry to be passed as an argument while inotify works
+with inodes instead and at moment of show-fdinfo the target dentry might be
+already deleted but inode yet present as far as I remember.
