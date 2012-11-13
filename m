@@ -1,157 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2KMCtP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:49:15 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:26079 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab2KMCtO (ORCPT
+	id S1753346Ab2KMCvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:51:18 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:34321 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab2KMCvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:49:14 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6894"; a="6251183"
-Message-ID: <50A1B50B.4020509@codeaurora.org>
-Date: Mon, 12 Nov 2012 18:48:43 -0800
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 12 Nov 2012 21:51:17 -0500
+Message-ID: <50A1B59D.1020106@linux.vnet.ibm.com>
+Date: Tue, 13 Nov 2012 10:51:09 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dt/platform: Use cell-index for device naming if available
-References: <1352508532-19241-1-git-send-email-stepanm@codeaurora.org>    <509F0E56.6080806@gmail.com>    <CACxGe6s3gJ4fmhn9VBd1Fq8bH5S0_ejmE=KqVjYn20bT42wQ_Q@mail.gmail.com> <554191d69bc21a4b133fb876df84ff89.squirrel@www.codeaurora.org>
-In-Reply-To: <554191d69bc21a4b133fb876df84ff89.squirrel@www.codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pawel.sikora@agmk.net>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, arekm@pld-linux.org,
+        baggins@pld-linux.org
+Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule)
+References: <56378024.A3Kec8xZj0@pawels> <50A0A7EF.3050706@linux.vnet.ibm.com> <1539324.MIArxLN8tE@pawels> <3023364.Bjpo0brdul@pawels>
+In-Reply-To: <3023364.Bjpo0brdul@pawels>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+x-cbid: 12111302-2000-0000-0000-000009D88C1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2012 5:45 PM, Stepan Moskovchenko wrote:
->
->> On Sun, Nov 11, 2012 at 2:32 AM, Rob Herring <robherring2@gmail.com>
->> wrote:
->>> On 11/09/2012 06:48 PM, Stepan Moskovchenko wrote:
->>>> Use the cell-index property to construct names for platform
->>>> devices, falling back on the existing scheme of using the
->>>> device register address if cell-index is not specified.
+On 11/12/2012 08:33 PM, Paweł Sikora wrote:
+> On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
+>> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
+>>> On 11/12/2012 03:16 PM, Paweł Sikora wrote:
+>>>> On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
+>>>>> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> during playing with new ups i've caught an nice oops on reboot:
+>>>>>>
+>>>>>> http://imgbin.org/index.php?page=image&id=10253
+>>>>>>
+>>>>>> probably the upstream is also affected.
+>>>>>
+>>>>> Hi, Paweł
+>>>>>
+>>>>> Are you using a clean 3.6.6 without any modify?
 >>>>
->>>> The cell-index property is a more useful device identifier,
->>>> especially in systems containing several numbered instances
->>>> of a particular hardware block, since it more easily
->>>> illustrates how devices relate to each other.
+>>>> yes, pure 3.6.6 form git tree with modular config.
 >>>>
->>>> Additionally, userspace software may rely on the classic
->>>> <name>.<id> naming scheme to access device attributes in
->>>> sysfs, without having to know the physical addresses of
->>>> that device on every platform the userspace software may
->>>> support. Using cell-index for device naming allows the
->>>> device addresses to be hidden from userspace and to be
->>>> exposed by logical device number without having to rely on
->>>> auxdata to perform name overrides. This allows userspace to
->>>> make assumptions about which sysfs nodes map to which
->>>> logical instance of a specific hardware block.
+>>>>> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
+>>>>> any design on switch itself back later(or the time is too long), are you
+>>>>> accidentally using some bad designed module?
 >>>>
->>>> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
->>>> ---
->>>> I had also considered using something like the linux,label property to
->>>> allow
->>>> custom names for platform devices without resorting to auxdata, but the
->>>> cell-index approach seems more in line with what cell-index was
->>>> intended for
->>>> and with what the pre-DT platform device naming scheme used to be.
->>>> Please let
->>>> me know if you think there is a better way to accomplish this.
->>>>
->>>> This is just being sent out as an RFC for now. If there are no
->>>> objections, I
->>>> will send this out as an official patch, along with (or combined with)
->>>> a patch
->>>> to fix up the device names in things like clock tables of any affected
->>>> platforms.
+>>>> hmm, hard to say. mostly all modules are loaded automatically by kernel.
 >>>
->>> cell-index is basically deprecated. This has been discussed multiple
->>> times in the past. You can use auxdata if you really need to have the
->>> old name.
+>>> Could you please provide the whole dmesg in text? your picture lost the
+>>> print info of the hung task.
 >>
->> Actually, I think it would be fine to use an /aliases entry to set the
->> device name. That's the place to put global namespace information.
->>
->> g.
->>
->
-> Ah, thank you. I would prefer to stay away from auxdata, since it involves
-> placing more platform-specific data into the kernel, and it is my
-> understanding that auxdata is intended as a temporary measure. The
-> /aliases approach looks interesting, and I'll see what I can do with it -
-> hopefully I can have an RFC / patch soon. It looks like we would want an
-> "inverse" alias lookup- that is, we would need to know which alias
-> corresponds to a given node. Is it possible for a node to have multiple
-> aliases? If so, which shall we use to create the device name? Anyway, I
-> will further look into how these aliases work.
->
-> Steve
+>> i've grabbed the console via rs232 but there's no more info (see attached txt).
+> 
+> hmm, i have one observation.
+> 
+> during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
+> afaics this file descriptor points to vnc log file on a remote machine, e.g.:
+> 
+> # ps aux|grep xfwm4
+> eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4 
+> 
+> # readlink -m /proc/1748/fd/1
+> /remote/dragon/ahome/eda/.vnc/odra:11.log
+> 
+> # mount|grep ahome
+> dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
+> 
 
-Hi Grant,
+We can report the bug to driver folks, but have to make sure whether
+the hung thread is belong to it firstly, so we need the hung task info
+(at least the name).
 
-Looking through the alias code, I see that the stem and the alias ID are 
-stored and parsed separately. For the current way of using aliases, this 
-makes sense. However, can you please clarify what you meant by using an 
-/aliases entry to set the device name?
+I'm not sure what's the environment we faced, but setup debug method is
+necessary, 'script' may help you to record the dmesg even when remote
+console hung.
 
-The first and most straightforward approach would be to use the entire 
-alias name as the device name, making no distinction between the alias 
-stem and ID. However, since it is possible to have multiple aliases to 
-the same device, which of the aliases shall we use to construct the 
-device name? Additionally, this may cause possible problems for legacy 
-software that expects names in the format of <name>.<ID>, since '.' is 
-not a valid character for alias names as defined by the DT spec, 
-although strictly speaking this approach would successfully solve the 
-problem of giving devices predictable and controllable names.
+If it's really hard to get dmesg, please try below modify and
+see whether the info print out on console.
 
-Another way an /aliases entry could be used to set the device name is to 
-have a <name>.<ID> naming scheme, where the name comes from node->name 
-(as is done in of_device_make_bus_id) and the ID gets queried using 
-of_alias_get_id(). We would need to create a new alias stem for this 
-purpose, and suppose that something like "platform" would work. The 
-name-setting code would then roughly look as follows:
-
-+	alias_id = of_alias_get_id(node, "platform");
-+	if (alias_id != -ENODEV) {
-+		dev_set_name(dev, "%s.%d", node->name, alias_id);
-+		return;
-+	}
-
-The downside to this approach is that it imposes the restriction that 
-device ID numbers now have to be unique throughout the system, whereas 
-before only the <name>.<ID> combinations had to be unique. This is the 
-result of only the ID number being present in the alias table, with each 
-such ID number having the "platform" stem, and the restriction that node 
-properties shall have unique names.
-
-A third possible solution is to use an alias stem prefix for defining 
-the device name. That is, the alias to set the device name would have 
-some prefix (such as "platform-" for example) and the aliases would look 
-something like platform-<name><ID>. The code to assign device names 
-would find the matching alias containing the "platform-" prefix, strip 
-the prefix, and use the resulting name and ID to construct the device 
-name. This approach would make it more obvious as to which of several 
-aliases is used to set the device name, but it imposes additional 
-structure on the stem names and causes any aliases starting with 
-"platform-" to become magical, which bothers me slightly.
-
-Do any of these describe what you intended when you suggested using the 
-/aliases node to set device names, or is there another approach that I 
-have missed? Can you please elaborate further?
-
-Thank you
-Steve
+Regards,
+Michael Wang
 
 
--- 
-  The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-  hosted by The Linux Foundation
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c2e077c..2f1b718 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4504,7 +4504,7 @@ void sched_show_task(struct task_struct *p)
+        unsigned state;
+ 
+        state = p->state ? __ffs(p->state) + 1 : 0;
+-       printk(KERN_INFO "%-15.15s %c", p->comm,
++       printk(KERN_EMERG "%-15.15s %c", p->comm,
+                state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+ #if BITS_PER_LONG == 32
+        if (state == TASK_RUNNING)
+
+
+> 
+> so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
+> and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
+> 
+> BR,
+> Paweł.
+> 
+
