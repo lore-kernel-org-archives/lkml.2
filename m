@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2KMINZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:13:25 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16647 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab2KMINY (ORCPT
+	id S1754443Ab2KMITa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:19:30 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50217 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab2KMIT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:13:24 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 13 Nov 2012 00:13:17 -0800
-Message-ID: <50A201DE.9090409@nvidia.com>
-Date: Tue, 13 Nov 2012 10:16:30 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 03:19:28 -0500
+Date: Tue, 13 Nov 2012 00:19:25 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
+ inotify_inode_mark
+In-Reply-To: <20121113080032.GF6511@moon>
+Message-ID: <alpine.DEB.2.00.1211130016240.18379@chino.kir.corp.google.com>
+References: <20121112101440.665694060@openvz.org> <20121112101845.839702715@openvz.org> <20121112165540.2ec39f50.akpm@linux-foundation.org> <20121113072057.GC6511@moon> <20121112234001.009b2ae3.akpm@linux-foundation.org> <20121113080032.GF6511@moon>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
-References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de> <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de> <50A1FE01.5090808@nvidia.com> <20121113080323.GA15983@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121113080323.GA15983@avionic-0098.mockup.avionic-design.de>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.11.2012 10:03, Thierry Reding wrote:
-> That should be fixed with v2 I posted a few hours ago.
+On Tue, 13 Nov 2012, Cyrill Gorcunov wrote:
 
-That's true.
+> > The question is, how many `struct inotify_inode_mark's are instantiated
+> > system-wide?  Could be millions?
+> 
+> Well, hard to tell, to be fair. On my testing machine only apache has been
+> using inotify system as far as I remember, but for sure nothing except memory
+> limit the number of inotify. But I think if one running machine with millions
+> of inotify it's rather powerful machine with enough memory.
+> 
 
-> Yes, Tegra30 support will follow in a separate patch. As for IOMMU
-> support it should eventually be made completely transparent, but I'm not
-> opposed to adding a patch with explicit IOMMU support back in if it
-> turns out that it can't be done transparently.
-
-The trouble with this is that the generic case demands that we support
-each device having a separate address space. But, on Tegra30 SMMU has
-only four address spaces, so in Tegra30 case we actually end up using
-the same address space for multiple devices.
-
-Second problem is trying to avoid double mapping. With 2D acceleration,
-we need support for allocating buffers, and mapping them to DC, host1x
-and 2D. DMA Mapping API has a problem in that it doesn't allow just
-allocating - it forces mapping the buffer to a device at the same time.
-So, when 2D submit contains a reference to a dma-buf, the buffer has
-already been mapped to some device, but we don't have a good way of
-detecting that. We end up mapping it again, which is a performance
-killer and possibly a coherence problem.
-
-Fortunately this is all related to 2D acceleration, so we can defer both
-of these problems for now.
-
-Best regards,
-Terje
-
+Seems easy to determine if you boot with slub_nomerge on the command line 
+and then read /sys/kernel/slab/inotify_inode_mark/objects.  On my system, 
+that happens to be 210, but I'm sure you could come up with a realistic 
+synthetic workload to make it much higher.
