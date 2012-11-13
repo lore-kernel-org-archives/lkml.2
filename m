@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab2KMNdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 08:33:07 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:21240 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KMNdE (ORCPT
+	id S1754300Ab2KMNf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 08:35:28 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47623 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab2KMNf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 08:33:04 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-d9-50a24bf0de37
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH v2] mmc: sdhci: apply voltage range check only for non-fixed
- regulators
-Date: Tue, 13 Nov 2012 14:32:14 +0100
-Message-id: <1352813534-6795-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <87fw4dn030.fsf@octavius.laptop.org>
-References: <87fw4dn030.fsf@octavius.laptop.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t9jAd0P3osCDH484LG4vGsOm8WR//2M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGX8bYsquMBRsf3dTcYGxoXsXYycHBICJhJ7pqxhgbDF
-	JC7cW8/WxcjFISSwiFFicuN/JginnUlizuUXYFVsAoYSXW+7gKo4OEQErCX2LvQFqWEWOM0o
-	MWnWdjaQGmGBSIlrl3aDbWARUJX4c+0IWC+vgLvE5Bdr2EF6JQQUJOZMsgEJcwKN3NP/DaxV
-	SMBA4kHDG7YJjLwLGBlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgR7/pnUDsaVDRaHGAU4
-	GJV4eG+4LAwQYk0sK67MPcQowcGsJMJ73m1RgBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeZo+U
-	ACGB9MSS1OzU1ILUIpgsEwenVAPj/omBGR/0VNV4C6tSf6jdiZ7z51pv5rbZVjpJMb9Y8roa
-	pXQlz7/wOB19L33338at4l4xLxNtbAJKPJtbnwXwPLidtOWDv2Vqfc8WUwn+xh0T+taYJex9
-	tFzmmkx3admZtuknLa2PKx89YZGksfuavUT7xYM/860jpzOYzH4XrFW1Lnzer69KLMUZiYZa
-	zEXFiQCOyzjh+AEAAA==
+	Tue, 13 Nov 2012 08:35:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <50A12FF1.4000800@infradead.org>
+References: <20121112164431.8bcfe78d2a2ec73271733db4@canb.auug.org.au>
+	<50A12FF1.4000800@infradead.org>
+Date: Tue, 13 Nov 2012 14:35:26 +0100
+Message-ID: <CACRpkdZj5iuyXAfynF-5r65dnakxxm2A1O602P4Lc6it8=fU9g@mail.gmail.com>
+Subject: Re: [PATCH -next] mfd: fix stmpe.c build when OF is not enabled
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed regulators cannot change their voltage, so disable all voltage
-range checking for them, otherwise the driver fails to operate with
-fixed regulators. Up to now it worked only by luck, because
-regulator_is_supported_voltage() function returned incorrect values.
-Commit "regulator: fix voltage check in regulator_is_supported_voltage()"
-fixed that function and now additional check is needed for fixed
-regulators.
+On Mon, Nov 12, 2012 at 6:20 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/mmc/host/sdhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> From: Randy Dunlap <rdunlap@infradead.org>
+>
+> Fix build errors when CONFIG_OF is not enabled by including
+> <linux/of.h> (needs to be added in any case).
+> An alternative fix could be to make the driver depend on OF.
+>
+> drivers/mfd/stmpe.c:1025:2: error: implicit declaration of function 'of_property_read_u32'
+> drivers/mfd/stmpe.c:1030:2: error: implicit declaration of function 'for_each_child_of_node'
+> drivers/mfd/stmpe.c:1030:36: error: expected ';' before '{' token
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index c7851c0..6f6534e 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 		regulator_enable(host->vmmc);
- 
- #ifdef CONFIG_REGULATOR
--	if (host->vmmc) {
-+	if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
- 		ret = regulator_is_supported_voltage(host->vmmc, 3300000,
- 			3300000);
- 		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
--- 
-1.7.9.5
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
