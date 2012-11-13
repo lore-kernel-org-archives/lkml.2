@@ -1,162 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab2KMJnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:43:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45006 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab2KMJnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:43:41 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH] usb: otg: twl4030: Change TWL4030_MODULE_* ids to TWL_MODULE_*
-Date: Tue, 13 Nov 2012 10:43:38 +0100
-Message-ID: <1352799818-22363-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
+	id S1754474Ab2KMJsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:48:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65135 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab2KMJsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 04:48:41 -0500
+Date: Tue, 13 Nov 2012 10:48:34 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
+Message-ID: <20121113094834.GA23744@avionic-0098.mockup.avionic-design.de>
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
+ <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de>
+ <50A216D3.1070604@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+In-Reply-To: <50A216D3.1070604@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:dzOyDOQovqe2D9Res2hXzC+bQ3EAw2R7WlbGf4YCwME
+ Sr1QLABmW0PZsdwSWA/yLdSTBnxg3ggh83CijsU1yuigL5iswR
+ tE800a9SYkDV6BhFPCq/kRKOaVtQWgyoYy2T14Ei57OePpb85c
+ vq8FSiBoWaZN1yCbA7hQdrDGNnBtPns7UTUuxNN4rZKlUMdy13
+ 6S1NDZPQdwuDUQNJGSViea2hRbXEBfVEEv5pDPLdgj45Nhf053
+ lkNzevoWPTC3kqKc0ZVB1NzjE6vjrEXZKWfGLTEs1YnhF0336W
+ 6f7qVvRnzTVK2fCLDs64SS8UhDWSRUEJrYDBVxouWitTVAu6gm
+ +zlHMtDtPursNGaHaSQ9z0Yh1d0Stfb0swOqYWDF5Kqeir98O3
+ RTqFIPde8jr8i0PcpKQSpN2QWLWxhzLpEwTaJA80TMLIHOqhCI
+ YhRp4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To facilitate upcoming cleanup in twl stack.
-No functional changes.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/usb/otg/twl4030-usb.c | 46 ++++++++++++++++++++-----------------------
- 1 file changed, 21 insertions(+), 25 deletions(-)
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index f0d2e75..11b2a12 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -123,10 +123,10 @@
- #define PHY_CLK_CTRL_STS		0xFF
- #define PHY_DPLL_CLK			(1 << 0)
- 
--/* In module TWL4030_MODULE_PM_MASTER */
-+/* In module TWL_MODULE_PM_MASTER */
- #define STS_HW_CONDITIONS		0x0F
- 
--/* In module TWL4030_MODULE_PM_RECEIVER */
-+/* In module TWL_MODULE_PM_RECEIVER */
- #define VUSB_DEDICATED1			0x7D
- #define VUSB_DEDICATED2			0x7E
- #define VUSB1V5_DEV_GRP			0x71
-@@ -195,14 +195,14 @@ static int twl4030_i2c_write_u8_verify(struct twl4030_usb *twl,
- }
- 
- #define twl4030_usb_write_verify(twl, address, data)	\
--	twl4030_i2c_write_u8_verify(twl, TWL4030_MODULE_USB, (data), (address))
-+	twl4030_i2c_write_u8_verify(twl, TWL_MODULE_USB, (data), (address))
- 
- static inline int twl4030_usb_write(struct twl4030_usb *twl,
- 		u8 address, u8 data)
- {
- 	int ret = 0;
- 
--	ret = twl_i2c_write_u8(TWL4030_MODULE_USB, data, address);
-+	ret = twl_i2c_write_u8(TWL_MODULE_USB, data, address);
- 	if (ret < 0)
- 		dev_dbg(twl->dev,
- 			"TWL4030:USB:Write[0x%x] Error %d\n", address, ret);
-@@ -227,7 +227,7 @@ static inline int twl4030_readb(struct twl4030_usb *twl, u8 module, u8 address)
- 
- static inline int twl4030_usb_read(struct twl4030_usb *twl, u8 address)
- {
--	return twl4030_readb(twl, TWL4030_MODULE_USB, address);
-+	return twl4030_readb(twl, TWL_MODULE_USB, address);
- }
- 
- /*-------------------------------------------------------------------------*/
-@@ -264,8 +264,7 @@ static enum omap_musb_vbus_id_status
- 	 * signal is active, the OTG module is activated, and
- 	 * its interrupt may be raised (may wake the system).
- 	 */
--	status = twl4030_readb(twl, TWL4030_MODULE_PM_MASTER,
--			STS_HW_CONDITIONS);
-+	status = twl4030_readb(twl, TWL_MODULE_PM_MASTER, STS_HW_CONDITIONS);
- 	if (status < 0)
- 		dev_err(twl->dev, "USB link status err %d\n", status);
- 	else if (status & (BIT(7) | BIT(2))) {
-@@ -372,8 +371,7 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
- 		 * SLEEP. We work around this by clearing the bit after usv3v1
- 		 * is re-activated. This ensures that VUSB3V1 is really active.
- 		 */
--		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0,
--							VUSB_DEDICATED2);
-+		twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
- 		regulator_enable(twl->usb1v5);
- 		__twl4030_phy_power(twl, 1);
- 		twl4030_usb_write(twl, PHY_CLK_CTRL,
-@@ -419,50 +417,48 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
- static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- {
- 	/* Enable writing to power configuration registers */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
--			TWL4030_PM_MASTER_KEY_CFG1,
--			TWL4030_PM_MASTER_PROTECT_KEY);
-+	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
-+			 TWL4030_PM_MASTER_PROTECT_KEY);
- 
--	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
--			TWL4030_PM_MASTER_KEY_CFG2,
--			TWL4030_PM_MASTER_PROTECT_KEY);
-+	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG2,
-+			 TWL4030_PM_MASTER_PROTECT_KEY);
- 
- 	/* Keep VUSB3V1 LDO in sleep state until VBUS/ID change detected*/
--	/*twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);*/
-+	/*twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);*/
- 
- 	/* input to VUSB3V1 LDO is from VBAT, not VBUS */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x14, VUSB_DEDICATED1);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0x14, VUSB_DEDICATED1);
- 
- 	/* Initialize 3.1V regulator */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
- 
- 	twl->usb3v1 = regulator_get(twl->dev, "usb3v1");
- 	if (IS_ERR(twl->usb3v1))
- 		return -ENODEV;
- 
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB3V1_TYPE);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_TYPE);
- 
- 	/* Initialize 1.5V regulator */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
- 
- 	twl->usb1v5 = regulator_get(twl->dev, "usb1v5");
- 	if (IS_ERR(twl->usb1v5))
- 		goto fail1;
- 
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
- 
- 	/* Initialize 1.8V regulator */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
- 
- 	twl->usb1v8 = regulator_get(twl->dev, "usb1v8");
- 	if (IS_ERR(twl->usb1v8))
- 		goto fail2;
- 
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
-+	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
- 
- 	/* disable access to power configuration registers */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
--			TWL4030_PM_MASTER_PROTECT_KEY);
-+	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
-+			 TWL4030_PM_MASTER_PROTECT_KEY);
- 
- 	return 0;
- 
--- 
-1.8.0
+On Tue, Nov 13, 2012 at 11:45:55AM +0200, Terje Bergstr=C3=B6m wrote:
+> On 12.11.2012 23:55, Thierry Reding wrote:
+> > This commit adds a KMS driver for the Tegra20 SoC. This includes basic
+> > support for host1x and the two display controllers found on the Tegra20
+> > SoC. Each display controller can drive a separate RGB/LVDS output.
+>=20
+> I have tested this with further patches to enable display on my ventana
+> board.
 
+Thanks for testing!
+
+> My only problem is that we don't force CMA on, but we can add
+> that later.
+
+As I've already explained to Mark, this is enabled in the Tegra default
+configuration in a later patch.
+
+Thierry
+
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQohdyAAoJEN0jrNd/PrOh9NgP/Au9TEWPHfGFebm/7aiviYAS
+JJNM3GxCFBES8tH982vOSPYcOTwcAcIBoGjqspn9U1HQtExg3+kh6ynr9LQ/nv9d
+XsTsdnVGXR++o/L+550azzyE21ylk4vLWXAfPJ1nknu4BbUxyGhds1C9d9n7r7ra
+PznpU9FI6Bjq+5wwjemk7X6PR3ZmJofzh0hOdK6eUxTfNL3P2+upxJqrEGGrU+Q/
+6zgWG2HRWZTAtM91ZYCmLTNrXhYDEUHCDVt2quDhis/RqIh89beoqYlW9RxwX5e5
+txXcKZs5toBp5yCTMt1xksOvU2JuZq/7kb32f2N6hDpnIX5IjXMuU4HH+zPqX7wu
+2bVuOtdUdQrvQTIFnquu8+sXopG1pVpSdnBTRlinNtF9Le+4mhd3h1nrKUa9m6Fn
+Hyz+/tJRbWCMKTRn+yE6qKNFFuKSPPe3CdhOPdpLw4KsBf1kVrss/JSxhdClXWtG
+kjRVByqGAFAgO/eWe8IPLMEtEjoVxlSgKPi5weOVZShh+C+OwNanZWgOsZs0EtI+
+yFlhIZ56juVZl8C7OXiNaeWvw6Y7bbiXtzCk2hK75aIeWYTLBUDy5vI1bwaMB84L
+mOcSFej3bIPs5+h40XTcQFEklUDb/q3PO6ngAJJSokgZsIpz2KLKg3rmpTjr71bS
+yvMkJHY6tCDqv14E8EgF
+=FF4s
+-----END PGP SIGNATURE-----
+
+--rwEMma7ioTxnRzrJ--
