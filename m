@@ -1,82 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2KML43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:56:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50947 "EHLO mx2.suse.de"
+	id S1754043Ab2KMMBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 07:01:24 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56906 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab2KML42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:56:28 -0500
-Date: Tue, 13 Nov 2012 11:56:24 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+	id S1751628Ab2KMMBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 07:01:20 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-hexagon@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        <linux-parisc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-sh@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/19] mm: migrate: Introduce migrate_misplaced_page()
-Message-ID: <20121113115624.GZ8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <1352193295-26815-13-git-send-email-mgorman@suse.de>
- <20121113093644.GA21522@gmail.com>
- <20121113114344.GA26305@gmail.com>
+        Mike Frysinger <vapier@gentoo.org>, Richard Kuo <rkuo@codeaurora.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 1/1] arch Kconfig: remove references to IRQ_PER_CPU
+Date: Tue, 13 Nov 2012 11:59:08 +0000
+Message-ID: <1352807948-26920-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
+X-OriginalArrivalTime: 13 Nov 2012 11:59:42.0684 (UTC) FILETIME=[5DD0E9C0:01CDC196]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121113114344.GA26305@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2012_11_13_12_01_04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 12:43:44PM +0100, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > 
-> > > Note: This was originally based on Peter's patch "mm/migrate: Introduce
-> > > 	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
-> > > 	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
-> > > 	collection". The end result is barely recognisable so signed-offs
-> > > 	had to be dropped. If original authors are ok with it, I'll
-> > > 	re-add the signed-off-bys.
-> > > 
-> > > Add migrate_misplaced_page() which deals with migrating pages from
-> > > faults.
-> > > 
-> > > Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-> > > Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > ---
-> > >  include/linux/migrate.h |    8 ++++
-> > >  mm/migrate.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++-
-> > >  2 files changed, 110 insertions(+), 2 deletions(-)
-> > 
-> > That's a nice patch - the TASK_NUMA_FAULT approach in the 
-> > original patch was not very elegant.
-> > 
-> > I've started testing it to see how well your version works.
-> 
-> Hm, I'm seeing some instability - see the boot crash below. If I 
-> undo your patch it goes away.
-> 
+The IRQ_PER_CPU Kconfig symbol was removed in the following commit:
 
-Hah, I would not describe a "boot crash" as some instability. That's
-just outright broken :)
+Commit 6a58fb3bad099076f36f0f30f44507bc3275cdb6 ("genirq: Remove
+CONFIG_IRQ_PER_CPU") merged in v2.6.39-rc1.
 
-I've not built at tree with the latest of Peter's code yet so I don't
-know at this time which line it is BUG()ing on. However, it is *very*
-likely that this patch is not a drop-in replacement for your tree
-because IIRC, there are differences in how and when we call get_page().
-That is the likely source of the snag.
+But IRQ_PER_CPU wasn't removed from any of the architecture Kconfig
+files where it was defined or selected. It's completely unused so remove
+the remaining references.
 
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Richard Kuo <rkuo@codeaurora.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+---
+Based on v3.7-rc5.
+
+Compile tested defconfigs for bfin, ia64, mips, parisc, powerpc, sh, but
+not hexagon.
+
+Grepped entire tree to check no references to CONFIG_IRQ_PER_CPU, and
+grepped arch/ for Kconfig files referencing IRQ_PER_CPU.
+
+ arch/blackfin/Kconfig |    1 -
+ arch/hexagon/Kconfig  |    1 -
+ arch/ia64/Kconfig     |    1 -
+ arch/mips/Kconfig     |    1 -
+ arch/parisc/Kconfig   |    1 -
+ arch/powerpc/Kconfig  |    1 -
+ arch/sh/Kconfig       |    3 ---
+ 7 files changed, 0 insertions(+), 9 deletions(-)
+
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index b6f3ad5..c709715 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -38,7 +38,6 @@ config BLACKFIN
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_PROBE
+-	select IRQ_PER_CPU if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
+ 	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 0744f7d..800dd9c 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -12,7 +12,6 @@ config HEXAGON
+ 	# select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	# select ARCH_REQUIRE_GPIOLIB
+ 	# select HAVE_CLK
+-	# select IRQ_PER_CPU
+ 	# select GENERIC_PENDING_IRQ if SMP
+ 	select HAVE_IRQ_WORK
+ 	select GENERIC_ATOMIC64
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 3279646..00c2e88 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -29,7 +29,6 @@ config IA64
+ 	select ARCH_DISCARD_MEMBLOCK
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+-	select IRQ_PER_CPU
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index dba9390..d47de79 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2197,7 +2197,6 @@ source "mm/Kconfig"
+ config SMP
+ 	bool "Multi-Processing support"
+ 	depends on SYS_SUPPORTS_SMP
+-	select IRQ_PER_CPU
+ 	select USE_GENERIC_SMP_HELPERS
+ 	help
+ 	  This enables support for systems with more than one CPU. If you have
+diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+index 11def45..6d37987 100644
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -16,7 +16,6 @@ config PARISC
+ 	select BROKEN_RODATA
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PCI_IOMAP
+-	select IRQ_PER_CPU
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_STRNCPY_FROM_USER
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index a902a5c..721dd7b 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -125,7 +125,6 @@ config PPC
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select SPARSE_IRQ
+-	select IRQ_PER_CPU
+ 	select IRQ_DOMAIN
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_IRQ_SHOW_LEVEL
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index babc2b8..6f799ec 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -91,9 +91,6 @@ config GENERIC_CSUM
+ config GENERIC_HWEIGHT
+ 	def_bool y
+ 
+-config IRQ_PER_CPU
+-	def_bool y
+-
+ config GENERIC_GPIO
+ 	def_bool n
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7.6
+
+
