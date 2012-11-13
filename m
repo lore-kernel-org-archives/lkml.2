@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2KMXRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 18:17:46 -0500
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:63752 "EHLO
+	id S1755009Ab2KMXSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 18:18:09 -0500
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:63805 "EHLO
 	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab2KMXRp (ORCPT
+	with ESMTP id S1754339Ab2KMXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 18:17:45 -0500
+	Tue, 13 Nov 2012 18:18:07 -0500
 From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
         =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH 07/12] printk: let cont_print_text() reuse existing code
-Date: Wed, 14 Nov 2012 00:13:04 +0100
-Message-Id: <1352848389-23114-8-git-send-email-schnhrr@cs.tu-berlin.de>
+Subject: [PATCH 08/12] printk: refactor locking in console_unlock()
+Date: Wed, 14 Nov 2012 00:13:05 +0100
+Message-Id: <1352848389-23114-9-git-send-email-schnhrr@cs.tu-berlin.de>
 X-Mailer: git-send-email 1.8.0.316.g291341c.dirty
 In-Reply-To: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
 References: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
@@ -24,111 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functionality of cont_print_text() also exists within
-msg_print_text(). The only difference is that cont_print_text()
-currently fails to print timestamps for multi-line strings from the
-second line on.
+Currently, console_unlock() acquires and releases the logbuf_lock quite
+often, including saving and restoring the interrupt state. While we can
+do only so much about the former, because we should not block logging
+while writing to the console, the latter is unnecessary and can be
+avoided.
 
-In order to be able to use msg_print_text() from cont_print_text(),
-create a more general version msg_print_text_from() with the ability to
-start at a specific position within the message and to track the
-position.
+Still, whenever we released the logbuf_lock for a moment, other threads
+might have added new data that we must process. This might include the
+continuation buffer. That means, after we reacquire the lock, we must
+check the continuation buffer again. And, equally important, if the
+continuation buffer turns out to be empty, we must proceed to the
+check for remaining logged messages without dropping the lock.
+
+This resolves an issue where console message are output in the wrong order,
+because after the retry jump at the bottom the continuation buffer is not
+checked again, but left until another call to console_unlock().
 
 Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
 ---
- kernel/printk.c | 54 ++++++++++++++++++++++++++++--------------------------
- 1 file changed, 28 insertions(+), 26 deletions(-)
+This is not yet the final state I envision for this function, but it is
+a working middle step. That is, the loop in console_cont_flush() is
+rather ugly, and call_console_drivers() is still called from two places
+with the same code around. This calls for even more refactoring.
+
+Also, one issue still remains: we should check the continuation buffer
+also after printing all log messages, as we postpone printing the
+continuation buffer in certain situations. So there could possibly
+be something left.
+
+And one more: the retry check at the bottom should also include the
+continuation buffer.
+---
+ kernel/printk.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/printk.c b/kernel/printk.c
-index 988a8f5..7a961d4 100644
+index 7a961d4..e78bbd9 100644
 --- a/kernel/printk.c
 +++ b/kernel/printk.c
-@@ -876,8 +876,9 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
- 	return len;
- }
+@@ -1995,13 +1995,11 @@ void wake_up_klogd(void)
  
--static size_t msg_print_text(const struct log *msg, enum log_flags prev,
--			     bool syslog, char *buf, size_t size)
-+static size_t msg_print_text_from(const struct log *msg, size_t *from,
-+				  enum log_flags prev,
-+				  bool syslog, char *buf, size_t size)
+ static void console_cont_flush(char *text, size_t size)
  {
- 	const char *text = log_text(msg);
- 	size_t text_size = msg->text_len;
-@@ -891,6 +892,13 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
- 	if (!(msg->flags & LOG_NEWLINE))
- 		newline = false;
+-	unsigned long flags;
+ 	size_t len;
  
-+	if (from) {
-+		text += *from;
-+		text_size -= *from;
-+		if (*from)
-+			prefix = false;
-+	}
-+
- 	if (!(prev & LOG_NEWLINE) && prefix) {
- 		if (buf)
- 			buf[len] = '\n';
-@@ -933,9 +941,23 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
- 		text = next;
- 	} while (text);
- 
-+	if (from) {
-+		if (text)
-+			*from = text - log_text(msg);
-+		else
-+			*from = msg->text_len;
-+	}
-+
- 	return len;
- }
- 
-+static size_t msg_print_text(const struct log *msg,
-+			     enum log_flags prev,
-+			     bool syslog, char *buf, size_t size)
-+{
-+	return msg_print_text_from(msg, NULL, prev, syslog, buf, size);
-+}
-+
- static int syslog_print(char __user *buf, int size)
- {
- 	char *text;
-@@ -1452,32 +1474,12 @@ static bool cont_add(int facility, int level, enum log_flags flags,
- 
- static size_t cont_print_text(char *text, size_t size)
- {
--	size_t textlen = 0;
--	size_t len;
-+	size_t textlen = msg_print_text_from(&cont.msg, &cont.cons,
-+					     console_prev, false, text, size);
- 
--	if (cont.cons == 0 && (console_prev & LOG_NEWLINE ||
--			       cont.msg.flags & LOG_PREFIX)) {
--		if (!(console_prev & LOG_NEWLINE))
--			text[textlen++] = '\n';
--		textlen += print_time(cont.msg.ts_nsec, text + textlen);
--		size -= textlen;
--	}
+-	raw_spin_lock_irqsave(&logbuf_lock, flags);
 -
--	len = cont.msg.text_len - cont.cons;
--	if (len > 0) {
--		if (len+1 > size)
--			len = size-1;
--		memcpy(text + textlen, cont.buf + cont.cons, len);
--		textlen += len;
--		cont.cons = cont.msg.text_len;
--	}
--
--	if (cont.flushed) {
--		if (cont.msg.flags & LOG_NEWLINE)
--			text[textlen++] = '\n';
--		/* got everything, release buffer */
-+	if (cont.flushed)
- 		cont.msg.text_len = 0;
--	}
++again:
+ 	if (!cont.msg.text_len)
+-		goto out;
++		return;
+ 
+ 	/*
+ 	 * We still queue earlier records, likely because the console was
+@@ -2009,17 +2007,18 @@ static void console_cont_flush(char *text, size_t size)
+ 	 * did not flush any fragment so far, so just let it queue up.
+ 	 */
+ 	if (console_seq < log_next_seq && !cont.cons)
+-		goto out;
++		return;
+ 
+ 	len = cont_print_text(text, size);
++	if (!len)
++		return;
 +
- 	return textlen;
+ 	raw_spin_unlock(&logbuf_lock);
+ 	stop_critical_timings();
+ 	call_console_drivers(cont.msg.level, text, len);
+ 	start_critical_timings();
+-	local_irq_restore(flags);
+-	return;
+-out:
+-	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
++	raw_spin_lock(&logbuf_lock);
++	goto again;
  }
+ 
+ /**
+@@ -2051,15 +2050,15 @@ void console_unlock(void)
+ 
+ 	console_may_schedule = 0;
+ 
+-	/* flush buffered message fragment immediately to console */
+-	console_cont_flush(text, sizeof(text));
+ again:
++	raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 	for (;;) {
+ 		struct log *msg;
+ 		size_t len;
+ 		int level;
+ 
+-		raw_spin_lock_irqsave(&logbuf_lock, flags);
++		/* flush buffered message fragment immediately to console */
++		console_cont_flush(text, sizeof(text));
+ 
+ 		if (console_seq < log_first_seq) {
+ 			/* messages are gone, move to first one */
+@@ -2095,12 +2094,12 @@ skip:
+ 		console_idx = log_next(console_idx);
+ 		console_seq++;
+ 		console_prev = msg->flags;
+-		raw_spin_unlock(&logbuf_lock);
+ 
++		raw_spin_unlock(&logbuf_lock);
+ 		stop_critical_timings();	/* don't trace print latency */
+ 		call_console_drivers(level, text, len);
+ 		start_critical_timings();
+-		local_irq_restore(flags);
++		raw_spin_lock(&logbuf_lock);
+ 	}
+ 	console_locked = 0;
  
 -- 
 1.8.0.316.g291341c.dirty
