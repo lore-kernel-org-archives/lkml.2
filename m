@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab2KMRX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:23:29 -0500
+	id S932280Ab2KMRXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:23:45 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:37723 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab2KMROn (ORCPT
+	with ESMTP id S1755237Ab2KMROi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:14:43 -0500
+	Tue, 13 Nov 2012 12:14:38 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -16,10 +16,11 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 03/31] sched, numa, mm: Make find_busiest_queue() a method
-Date: Tue, 13 Nov 2012 18:13:26 +0100
-Message-Id: <1352826834-11774-4-git-send-email-mingo@kernel.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>
+Subject: [PATCH 01/31] mm/generic: Only flush the local TLB in ptep_set_access_flags()
+Date: Tue, 13 Nov 2012 18:13:24 +0100
+Message-Id: <1352826834-11774-2-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
@@ -27,70 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Rik van Riel <riel@redhat.com>
 
-Its a bit awkward but it was the least painful means of modifying the
-queue selection. Used in a later patch to conditionally use a random
-queue.
+The function ptep_set_access_flags() is only ever used to upgrade
+access permissions to a page - i.e. they make it less restrictive.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
+That means the only negative side effect of not flushing remote
+TLBs in this function is that other CPUs may incur spurious page
+faults, if they happen to access the same address, and still have
+a PTE with the old permissions cached in their TLB caches.
+
+Having another CPU maybe incur a spurious page fault is faster
+than always incurring the cost of a remote TLB flush, so replace
+the remote TLB flush with a purely local one.
+
+This should be safe on every architecture that correctly
+implements flush_tlb_fix_spurious_fault() to actually invalidate
+the local TLB entry that caused a page fault, as well as on
+architectures where the hardware invalidates TLB entries that
+cause page faults.
+
+In the unlikely event that you are hitting what appears to be
+an infinite loop of page faults, and 'git bisect' took you to
+this changeset, your architecture needs to implement
+flush_tlb_fix_spurious_fault() to actually flush the TLB entry.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-lfpez319yryvdhwqfqrh99f2@git.kernel.org
+Cc: Michel Lespinasse <walken@google.com>
+[ Changelog massage. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ mm/pgtable-generic.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a1..6ab627e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3063,6 +3063,9 @@ struct lb_env {
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
-+
-+	struct rq *		(*find_busiest_queue)(struct lb_env *,
-+						      struct sched_group *);
- };
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index e642627..d8397da 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -12,8 +12,8 @@
  
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
  /*
-@@ -4236,13 +4239,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
- 
- 	struct lb_env env = {
--		.sd		= sd,
--		.dst_cpu	= this_cpu,
--		.dst_rq		= this_rq,
--		.dst_grpmask    = sched_group_cpus(sd->groups),
--		.idle		= idle,
--		.loop_break	= sched_nr_migrate_break,
--		.cpus		= cpus,
-+		.sd		    = sd,
-+		.dst_cpu	    = this_cpu,
-+		.dst_rq		    = this_rq,
-+		.dst_grpmask        = sched_group_cpus(sd->groups),
-+		.idle		    = idle,
-+		.loop_break	    = sched_nr_migrate_break,
-+		.cpus		    = cpus,
-+		.find_busiest_queue = find_busiest_queue,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4261,7 +4265,7 @@ redo:
- 		goto out_balanced;
+- * Only sets the access flags (dirty, accessed, and
+- * writable). Furthermore, we know it always gets set to a "more
++ * Only sets the access flags (dirty, accessed), as well as write 
++ * permission. Furthermore, we know it always gets set to a "more
+  * permissive" setting, which allows most architectures to optimize
+  * this. We return whether the PTE actually changed, which in turn
+  * instructs the caller to do things like update__mmu_cache.  This
+@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 	int changed = !pte_same(*ptep, entry);
+ 	if (changed) {
+ 		set_pte_at(vma->vm_mm, address, ptep, entry);
+-		flush_tlb_page(vma, address);
++		flush_tlb_fix_spurious_fault(vma, address);
  	}
- 
--	busiest = find_busiest_queue(&env, group);
-+	busiest = env.find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+ 	return changed;
+ }
 -- 
 1.7.11.7
 
