@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab2KMFv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 00:51:59 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58201 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2KMFv6 (ORCPT
+	id S1753775Ab2KMF4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 00:56:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57745 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537Ab2KMF4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 00:51:58 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50A1DFE1.3070809@jp.fujitsu.com>
-Date: Tue, 13 Nov 2012 14:51:29 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 00:56:30 -0500
+Date: Tue, 13 Nov 2012 14:56:20 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Move chip reset to before register patch
+Message-ID: <20121113055618.GC18224@opensource.wolfsonmicro.com>
+References: <20121112175648.GA29044@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
-References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-3-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1352755122-25660-3-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wq9mPyueHGvFACwf"
+Content-Disposition: inline
+In-Reply-To: <20121112175648.GA29044@opensource.wolfsonmicro.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/13 6:17, Yinghai Lu wrote:
-> So make init_memory_mapping smaller and readable.
-> 
-> Suggested-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Reviewed-by: Pekka Enberg <penberg@kernel.org>
-> ---
->   arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
->   1 files changed, 26 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index aa5b0da..6d8e102 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
->   	return nr_range;
->   }
->   
-> -/*
-> - * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-> - * This runs before bootmem is initialized and gets pages directly from
-> - * the physical memory. To access them they are temporarily mapped.
-> - */
-> -unsigned long __init_refok init_memory_mapping(unsigned long start,
-> -					       unsigned long end)
-> +static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-> +				     unsigned long start,
-> +				     unsigned long end)
->   {
->   	unsigned long start_pfn, end_pfn;
-> -	unsigned long ret = 0;
->   	unsigned long pos;
-> -	struct map_range mr[NR_RANGE_MR];
-> -	int nr_range, i;
-> -
-> -	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
-> -	       start, end - 1);
-> -
-> -	memset(mr, 0, sizeof(mr));
-> -	nr_range = 0;
-> +	int i;
->   
->   	/* head if not big page alignment ? */
->   	start_pfn = start >> PAGE_SHIFT;
-> @@ -258,6 +246,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->   			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
->   			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
->   
-> +	return nr_range;
-> +}
-> +
-> +/*
-> + * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-> + * This runs before bootmem is initialized and gets pages directly from
-> + * the physical memory. To access them they are temporarily mapped.
-> + */
-> +unsigned long __init_refok init_memory_mapping(unsigned long start,
-> +					       unsigned long end)
-> +{
-> +	struct map_range mr[NR_RANGE_MR];
-> +	unsigned long ret = 0;
-> +	int nr_range, i;
-> +
-> +	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
-> +	       start, end - 1);
-> +
-> +	memset(mr, 0, sizeof(mr));
 
-> +	nr_range = 0;
+--wq9mPyueHGvFACwf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is unnecessary since it is set in the below.
+On Mon, Nov 12, 2012 at 05:56:48PM +0000, Charles Keepax wrote:
+> In the absence of a physical reset line the chip is reset by writing the
+> first register, this was done after the register patch was applied which
+> negates the settings applied in the register patch.
+>=20
+> This patch moves the reset to take place before the register patch is
+> applied.
 
-> +	nr_range = split_mem_range(mr, nr_range, start, end);
+No, we should never write to the chip until we have successfully
+identified it.  Do a sync or similar instead (we should be triggering
+this very soon afterwards via runtime PM anyway).
 
-Thanks,
-Yasuaki Ishimatsu
+--wq9mPyueHGvFACwf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +
->   	/*
->   	 * Find space for the kernel direct mapping tables.
->   	 *
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQoeDJAAoJELSic+t+oim9yrgP/3CkNx6T7UVk8WtF/akflsWZ
+nHV4+akHuFW3iLPinqzv3z4yaMYlO6CwuLfC91V476phkDcvuZ9MXFz/NWH0w2Oh
+MnOXJHo/9TBkhd3r9U05FQppX7JeCHo53SfAa/J3xdwXS6agMDsN60uTZPQCfMZu
+QYIaeBWwWZwvJk6wdTPb3ezovXuiFLCGOWYQb6YL4PiWRE9BC1yR3YaRb6n0+Hru
+fgptBTU2lHqxzwj4BBuDP48ltir5bnVcdSqmV8S0m+p/p0o6dcWzWnFy4irmfy3I
+ZCC5bl/ZlpKhtcIddJxd7PquwSB6D8ZJiuOUlZ5XY5xhvtfxBVvMSiQ/HxbmT20U
+bpz5ZSCRYPGMVrYg7G++r+cO1Wr2Gkhvj918f6HT3Z/KVDCuKpUmtqU55Zaozu3j
+W0I695dZ1dFlfbeLxV0XvKA7av3mes8w7qbTPc/Nar/aHnScVy8R8JAlZBOPtKa5
+13baTEuFsIVqCSa99RezkLhMSOG0SlK2ivLK6Vo6t55GndMXl951+ZjkvIMcDbP/
+2lkCHxIxerIFf35EoqpvRe5/gMfcPOVefKx6nm84gAw90dpXEia/uwVWCBX21P8E
+qx6WatK2VnDEQNh2dZFDeybtR8WV3AMCv6y9S9Etie0z1xhfQwetjKztulvdfT2Z
+HgYVdHpQtCbJmJlZCnsh
+=4i9s
+-----END PGP SIGNATURE-----
 
+--wq9mPyueHGvFACwf--
