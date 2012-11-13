@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab2KMIMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:12:44 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59545 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2KMIMn convert rfc822-to-8bit (ORCPT
+	id S1754492Ab2KMINZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:13:25 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16647 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab2KMINY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:12:43 -0500
+	Tue, 13 Nov 2012 03:13:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 13 Nov 2012 00:13:17 -0800
+Message-ID: <50A201DE.9090409@nvidia.com>
+Date: Tue, 13 Nov 2012 10:16:30 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CABawtvMtO5NR-j3zX2xxXfgZ_XxrCdF+k+n4jG3KyEVe=xYjjA@mail.gmail.com>
-References: <CABawtvNSYENtrJTaB5Vfd+j5MahE=xv4Ueb6-zmd1CHShuU0iQ@mail.gmail.com>
-	<alpine.DEB.2.00.1205222029590.28165@chino.kir.corp.google.com>
-	<CABawtvM-ZzFvT3LLb5V2bm52odeSyxeQwwvbVXgrNcMX5WMrbQ@mail.gmail.com>
-	<alpine.DEB.2.00.1205232142120.10366@chino.kir.corp.google.com>
-	<CABawtvMtO5NR-j3zX2xxXfgZ_XxrCdF+k+n4jG3KyEVe=xYjjA@mail.gmail.com>
-Date: Tue, 13 Nov 2012 16:12:42 +0800
-Message-ID: <CABawtvOC8grVSB6oXb1snsncuku+HtyaRjCUMkaiPaVfPurr7w@mail.gmail.com>
-Subject: Re: ACPI and NUMA guys, please help to check if this patch is OK
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, len.brown@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] drm: Add NVIDIA Tegra20 support
+References: <1352469579-3337-1-git-send-email-thierry.reding@avionic-design.de> <1352469579-3337-2-git-send-email-thierry.reding@avionic-design.de> <50A1FE01.5090808@nvidia.com> <20121113080323.GA15983@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121113080323.GA15983@avionic-0098.mockup.avionic-design.de>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-   I come back to suggest the above again because I hit the same issue
-on another type server and that took me sometime to find out what's
-wrong for no clear information when validating the SLIT. That patch
-will not invalidate the SRAT if SLIT is bad.  The patch will only
-suppress the optional SLIT table if the table has more or less
-PXM(locality) than SRAT.
+On 13.11.2012 10:03, Thierry Reding wrote:
+> That should be fixed with v2 I posted a few hours ago.
 
-[PATCH] drivers/acpi/numa.c: Add localities checking code against
-proximity domains to slit_valid()
+That's true.
 
- Some buggy BIOS/ACPI will set different number to SLIT localities and
-SRAT proximity domains,
- That will make NUMA configuration invalid and kernel will output
-information like following
+> Yes, Tegra30 support will follow in a separate patch. As for IOMMU
+> support it should eventually be made completely transparent, but I'm not
+> opposed to adding a patch with explicit IOMMU support back in if it
+> turns out that it can't be done transparently.
 
-NUMA:Warning:invalid distance parameter, from=-1 to=-1 distance=83
+The trouble with this is that the generic case demands that we support
+each device having a separate address space. But, on Tegra30 SMMU has
+only four address spaces, so in Tegra30 case we actually end up using
+the same address space for multiple devices.
 
-This patch adds some checking code to slit_valid() function in order
-to check theSLIT localities
-count against SRAT proximity domains number and give clear information
-about ACPI bug.
+Second problem is trying to avoid double mapping. With 2D acceleration,
+we need support for allocating buffers, and mapping them to DC, host1x
+and 2D. DMA Mapping API has a problem in that it doesn't allow just
+allocating - it forces mapping the buffer to a device at the same time.
+So, when 2D submit contains a reference to a dma-buf, the buffer has
+already been mapped to some device, but we don't have a good way of
+detecting that. We end up mapping it again, which is a performance
+killer and possibly a coherence problem.
 
-Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
----
- drivers/acpi/numa.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Fortunately this is all related to 2D acceleration, so we can defer both
+of these problems for now.
 
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index e56f3be..55c8a8e 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -161,6 +161,13 @@ static __init int slit_valid(struct acpi_table_slit *slit)
- {
-        int i, j;
-        int d = slit->locality_count;
-+       int pxd = nodes_weight(nodes_found_map);
-+       if (pxd != d) {
-+               printk(KERN_INFO "ACPI: BIOS bug! SLIT localities
-count %d doesn't equal SRAT proximity domains number %d\n",
-+                       d , pxd);
-+               return 0;
-+       }
-+
-        for (i = 0; i < d; i++) {
-                for (j = 0; j < d; j++)  {
-                        u8 val = slit->entry[d*i + j];
---
-1.7.1
+Best regards,
+Terje
 
-
-Thanks,
-Ethan
-
-On Thu, May 24, 2012 at 12:59 PM, ethan zhao <ethan.kernel@gmail.com> wrote:
-> That is OK，
-> Thanks
->
-> On Thu, May 24, 2012 at 12:45 PM, David Rientjes <rientjes@google.com> wrote:
->> On Thu, 24 May 2012, ethan zhao wrote:
->>
->>> David,
->>>     What we can do to help improving Linux OS is only about fatal
->>> error ? Can I do something to give more clear warning information and
->>> easy to find the root cause ?
->>>
->>
->> The warning you already quoted in your changelog is sufficient warning
->> that the SLIT is bad and it suppresses setting that distance.  Your
->> change, however, completely invalidates the SRAT if the number of
->> localities does not match the number of pxms.  We'd much rather simply
->> suppress the bad distance rather than invalidate the SRAT, especially
->> considering there is nothing in the ACPI spec that requires it.
