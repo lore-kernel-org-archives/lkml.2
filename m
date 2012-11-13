@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab2KMWpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:45:46 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46785 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab2KMWpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:45:44 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v3 2/2] i2c: i2c-ocores: Add support for the GRLIB port of the controller and custom getreg and setreg functions
-References: <1352834727-16368-1-git-send-email-andreas@gaisler.com>
-	<1352834727-16368-3-git-send-email-andreas@gaisler.com>
-Date: Tue, 13 Nov 2012 23:45:39 +0100
-In-Reply-To: <1352834727-16368-3-git-send-email-andreas@gaisler.com> (Andreas
-	Larsson's message of "Tue, 13 Nov 2012 20:25:27 +0100")
-Message-ID: <87sj8d86lo.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1755911Ab2KMWwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:52:22 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:41982 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045Ab2KMWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 17:52:20 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
+Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node objects
+Date: Tue, 13 Nov 2012 23:56:40 +0100
+Message-ID: <1957831.MvUm7YPtfp@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2586712.Jsv1H95qXQ@vostro.rjw.lan> <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andreas" == Andreas Larsson <andreas@gaisler.com> writes:
+On Tuesday, November 13, 2012 10:06:03 PM Moore, Robert wrote:
+> I may not quite understand what you are asking for, but I will try.
+> It seems like we already have much of what you want/need, so maybe
+> I'm missing something.
 
-Hi,
+I think all of the necessary pieces are there.
 
- Andreas> The registers in the GRLIB port of the controller are 32-bit
- Andreas> and in big endian byte order. The PRELOW and PREHIGH registers
- Andreas> are merged into one register. The subsequent registers have
- Andreas> their offset decreased accordingly. Hence the register access
- Andreas> needs to be handled in a non-standard manner using custom
- Andreas> getreg and setreg functions.
+> > So what I would like to have, in general terms, is something like
+> > acpi_walk_resources() split into three parts:
+> > 
+> >  (1) One that processes the _CRS output and creates a list of
+> >      struct acpi_resource objects for us to play with.  I suppose
+> >      it's OK if that's just a buffer filled with resource objects,
+> >      but a linked list might be more convenient.
+> > 
+> 
+> This sounds like AcpiGetCurrentResources. It executes _CRS and formats
+> the data into acpi_resource objects.
 
- Andreas> @@ -257,6 +300,14 @@ static int ocores_i2c_of_probe(struct platform_device *pdev,
- 
- Andreas>  	of_property_read_u32(pdev->dev.of_node, "reg-io-width",
- Andreas>  				&i2c->reg_io_width);
- Andreas> +
- Andreas> +	if (of_device_is_compatible(pdev->dev.of_node,
- Andreas> +				    "aeroflexgaisler,i2cmst")) {
- Andreas> +		dev_dbg(&pdev->dev, "GRLIB variant of i2c-ocores\n");
- Andreas> +		i2c->setreg = oc_setreg_grlib;
- Andreas> +		i2c->getreg = oc_getreg_grlib;
- Andreas> +	}
- Andreas> +
+Yes, it does.  However, it is not completely clear to me if/how the caller is
+supposed to prepare the buffer object pointed to by the second arg.
 
-Please also update the bindings documentation under
-Documentation/devicetree/bindings/i2c.
+If the buffer is initialized by AcpiGetCurrentResources, then that's what
+I need for (1).
 
-With this core you need to add both aeroflexgaisler,i2cmst and
-opencores,i2c-ocores to the compatible property, but the grlib variant
-is NOT compatible with i2c-ocores, so that's not really nice.
+> >  (2) One that allows us to access (read/write) resources in the
+> >      list returned by (1).  We don't need to open code walking
+> >      the list and I probably wouldn't event want to do that.  What
+> >      we need is to be able to walk the same list for a number of
+> >      times and possibly to modify values in the resource objects
+> >      if there are conflicts.
+> 
+> This sounds like AcpiWalkResources. I suppose a possible issue is that
+> currently, AcpiWalkResources actually invokes the _CRS, _PRS, or _AEI
+> method on behalf of the caller.
 
-Adding a type define (TYPE_OCORES / TYPE_GRLIB) and a 2nd of_device_id
-entry with .data = TYPE_GRLIB, and then using that in the probe routine
-would be nicer. Have a look at i2c-at91.c for an example of a driver
-doing something like that.
+Yes, that exactly is the problem.
+
+> It might make more sense to allow the caller to pass in the resource buffer
+> returned from a call to _CRS, etc.
+
+Yes! :-)
+
+> > 
+> >  (3) One allowing us to free the list returned by (1) if not needed
+> >      any more.
+> > 
+> 
+> AcpiGetCurrentResources: Currently, everything is returned in a single buffer
+> to minimize the number of allocations. A buffer you can free when you are
+> done with it.
+
+I suppose I should use ACPI_FREE(buffer.pointer) for that, but isn't it for the
+ACPICA's internal use only?
+
+Besides, I would prefer to be able to pass just "buffer" for freeing, without
+having to touch its internals.  No big deal, but it would be nicer. :-) 
+
+> I think I saw where you mentioned that you cannot copy this buffer because
+> of internal pointers to other areas of the buffer. Yes. However, we can build
+> linked lists all day if you really want them :-)
+
+I really won't care if I can pass a resource buffer to a "walker" routine. :-)
+
+> > And it would be great if we could take the list returned by (1), modify
+> > the resources in it and feed it back to _SRS (after conversion back to the
+> > format that _SRS understands).
+> > 
+> 
+> AcpiSetCurrentResources.
+> 
+> The AML debugger already has a command that illustrates the use of the
+> various resource interfaces, see dbcmds.c
+
+I will.
+
+Thanks,
+Rafael
+
 
 -- 
-Bye, Peter Korsgaard
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
