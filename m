@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab2KMWIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:08:18 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35304 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab2KMWIQ (ORCPT
+	id S1753832Ab2KMWJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:09:35 -0500
+Received: from nm2-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.66]:36644
+	"EHLO nm2-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752014Ab2KMWJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:08:16 -0500
-From: Dimitar Popov <dimitar.georgiev.popov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: DMA Errors from SATA Controller with 4G Memory Remapping Enabled
-Date: Tue, 13 Nov 2012 23:08:07 +0100
-Message-ID: <1871872.oE0GX69FUF@darkstar>
-User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 13 Nov 2012 17:09:34 -0500
+X-Yahoo-Newman-Id: 989503.5693.bm@smtp112.sbc.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vj.4sigVM1ndufycAmX8H8WJmjOvJXmETH8ABoR5aq4aEQ9
+ 4RvqFUQ05V7nozoHFD38xwZCdfUAGyNIoFu5U.L7fosrIi4vos7VzlN9uMLi
+ TNHQkrnVFoxTWg84LSoL0OeOnBgNP9jtLHQDpDWTk.mfjvvqxVey5apDyOea
+ 29lrNJn0I9e0zHzujZAD4Iug7jM27DwiZPR08VB5K4FVlbl25k7QtdOkk_sj
+ eeZbC8ooq.9BV7OusR03uwq24Y2BDXyFVXlnMXlkL5PxNUvNKrJu9BT5bLRi
+ 33H0eGxcNw4YTuE507yULrtGFsatuB3TqCXEkadbZrGXIRCvRZO.8l.ruPKV
+ D.TJGqghTKI0IQksAW4ffTgE44qBNH5Oz5sOZv0wF0QXQldZbFmKtBQ9nvlY
+ a.9cGzhIG7QtTyRSKZVTTp8OMapBPjuYyMvSkWjwql9LmNZfdmOuNvuNGGE9
+ 9rhxkQv9afpOgCmqm5L8RjmQAyhXMbQ--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+From: danielfsantos@att.net
+To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH v5 0/9] Cleanup & new features for compiler*.h and bug.h
+Date: Tue, 13 Nov 2012 16:09:19 -0600
+Message-Id: <1352844568-18826-1-git-send-email-daniel.santos@pobox.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-I have an old computer with motherboard ASUS SK8N with AMD Opteron 148 and 4 
-GiB of DDR400. There is an onboard SATA Promise RAID controller working in IDE 
-mode (i.e. not as RAID controller) with 2 SATA disks. In order to use all 4 
-GiB RAM I need to enable the "4G Memory Remapping" option from the BIOS. 
-However, if I do that I receive the following errors:
+ include/linux/bug.h           |   47 ++++++++++++++++++++++------------------
+ include/linux/compiler-gcc.h  |    3 ++
+ include/linux/compiler-gcc3.h |    8 +++---
+ include/linux/compiler-gcc4.h |   28 ++++++++++++------------
+ include/linux/compiler.h      |   32 +++++++++++++++++++++++++--
+ 5 files changed, 76 insertions(+), 42 deletions(-)
 
-ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-ata2.00: failed command: WRITE DMA
-[136B blob data]
-ata2.00: status: { DRDY }
-ata2: hard resetting link
-ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-ata2.00: configured for UDMA/133
-ata2.00: device reported invalid CHS sector 0
-sd 1:0:0:0: [sdb]  
-Result: hostbyte=0x00 driverbyte=0x08
-sd 1:0:0:0: [sdb]  
-Sense Key : 0xb [current] [descriptor]
-Descriptor sense data with sense descriptors (in hex):
-        72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00 
-        00 00 00 00 
-sd 1:0:0:0: [sdb]  
-ASC=0x0 ASCQ=0x0
-sd 1:0:0:0: [sdb] CDB: 
-cdb[0]=0x2a: 2a 00 00 2a 63 f0 00 00 08 00
-end_request: I/O error, dev sdb, sector 2778096
-btrfs: bdev /dev/sdb6 errs: wr 1, rd 0, flush 0, corrupt 0, gen 0
-ata2: EH complete
+Changes in v5:
+o Move BUILD_BUG* guts to a new compiletime_assert() macro in compiler.h.
+o Fix a double-evaluation problem.
+o Fix another bad macro definition when __CHECKER__ defined.
 
-I don't know if it is a bug in the BIOS or a kernel bug. Here some info (I'll 
-provide further info, if needed):
+Changes in v4:
+o Squash a minor commit (per Borislav Petkov)
+o Change some comment text (per Borislav Petkov)
+o Add some acks
 
-$ uname -a
-Linux darkstar 3.6.6-1-ARCH #1 SMP PREEMPT Mon Nov 5 11:57:22 CET 2012 x86_64 
-GNU/Linux
+This patch set is a dependency of the generic red-black tree patch set, which
+I have now split up into three smaller sets and is based off of linux-next.
 
-01:08.0 RAID bus controller: Promise Technology, Inc. PDC20378 (FastTrak 
-378/SATA 378) (rev 02)
-        Subsystem: ASUSTeK Computer Inc. K8V Deluxe/PC-DL Deluxe motherboard
-        Flags: bus master, 66MHz, medium devsel, latency 96, IRQ 19
-        I/O ports at dc00 [size=64]
-        I/O ports at d800 [size=16]
-        I/O ports at d400 [size=128]
-        Memory at fa9ff000 (32-bit, non-prefetchable) [size=4K]
-        Memory at fa9c0000 (32-bit, non-prefetchable) [size=128K]
-        Capabilities: [60] Power Management version 2
-        Kernel driver in use: sata_promise
+The major aim of this patch set is to cleanup compiler-gcc*.h and improve
+the manageability of of compiler features at various versions (when they
+are broken, etc.), add some needed features to bug.h and clean that up as
+well.
 
-Thank you in advance!
+compiler-gcc*.h
+o Introduce GCC_VERSION - (e.g., gcc 4.7.1 becomes 40701).
+o Reorder all features based upon the version introduced (readability).
+o Change all version checks to use GCC_VERSION.
+o Remove redundant __linktime_error macro.
+o Introduce compiletime_assert() macro.
 
-Regards,
-Dimitar
+bug.h
+o Improve BUILD_BUG_ON(expr) - now generates compile-time error post-gcc-4.4
+o Remove duplicate error messages in some cases.
+o Fix double-evaluation problem in BUILD_BUG_ON.
+o Fix bad macro definitions when using __CHECKER__.
+o Introduce BUILD_BUG_ON_MSG and clean up the implementations of the
+  BUILD_BUG* macros.
