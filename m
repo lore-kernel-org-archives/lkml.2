@@ -1,162 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2KMMts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 07:49:48 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:61349 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab2KMMtq (ORCPT
+	id S1754178Ab2KMMv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 07:51:28 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41648 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab2KMMv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 07:49:46 -0500
-Date: Tue, 13 Nov 2012 21:49:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
- index of first flushed entry
-Message-ID: <20121113124937.GA4360@barrios>
-References: <1351702597-10795-1-git-send-email-js1304@gmail.com>
- <1351702597-10795-5-git-send-email-js1304@gmail.com>
- <20121101050347.GD24883@bbox>
- <CAAmzW4P=YdFt9KFmHcQh=tJheuZuvZVojYGNTqfO4YDy+C8_1g@mail.gmail.com>
- <20121102224236.GB2070@barrios>
- <CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
+	Tue, 13 Nov 2012 07:51:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <14097.1352805150@warthog.procyon.org.uk>
+References: <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com>
+	<1378.1352379110@warthog.procyon.org.uk>
+	<14071.1352805065@warthog.procyon.org.uk>
+	<14097.1352805150@warthog.procyon.org.uk>
+Date: Tue, 13 Nov 2012 07:51:25 -0500
+Message-ID: <CA+5PVA4jHJeE6nZeZyqHnE9QtMvUGW-xGeKrizwATm96QTxeXQ@mail.gmail.com>
+Subject: Re: [GIT PULL] UAPI: perf fixes
+From: Josh Boyer <jwboyer@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: acme@ghostprotocols.net, mingo@kernel.org, tglx@linutronix.de,
+        bp@alien8.de, namhyung@gmail.com, torvalds@linux-foundation.org,
+        paulus@samba.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 09:30:57AM +0900, JoonSoo Kim wrote:
-> 2012/11/3 Minchan Kim <minchan@kernel.org>:
-> > Hi Joonsoo,
-> >
-> > On Sat, Nov 03, 2012 at 04:07:25AM +0900, JoonSoo Kim wrote:
-> >> Hello, Minchan.
-> >>
-> >> 2012/11/1 Minchan Kim <minchan@kernel.org>:
-> >> > On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
-> >> >> In current code, after flush_all_zero_pkmaps() is invoked,
-> >> >> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
-> >> >> return index of first flushed entry. With this index,
-> >> >> we can immediately map highmem page to virtual address represented by index.
-> >> >> So change return type of flush_all_zero_pkmaps()
-> >> >> and return index of first flushed entry.
-> >> >>
-> >> >> Additionally, update last_pkmap_nr to this index.
-> >> >> It is certain that entry which is below this index is occupied by other mapping,
-> >> >> therefore updating last_pkmap_nr to this index is reasonable optimization.
-> >> >>
-> >> >> Cc: Mel Gorman <mel@csn.ul.ie>
-> >> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >> >> Cc: Minchan Kim <minchan@kernel.org>
-> >> >> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> >> >>
-> >> >> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-> >> >> index ef788b5..97ad208 100644
-> >> >> --- a/include/linux/highmem.h
-> >> >> +++ b/include/linux/highmem.h
-> >> >> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
-> >> >>
-> >> >>  #ifdef CONFIG_HIGHMEM
-> >> >>  #include <asm/highmem.h>
-> >> >> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
-> >> >>
-> >> >>  /* declarations for linux/mm/highmem.c */
-> >> >>  unsigned int nr_free_highpages(void);
-> >> >> diff --git a/mm/highmem.c b/mm/highmem.c
-> >> >> index d98b0a9..b365f7b 100644
-> >> >> --- a/mm/highmem.c
-> >> >> +++ b/mm/highmem.c
-> >> >> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
-> >> >>       return virt_to_page(addr);
-> >> >>  }
-> >> >>
-> >> >> -static void flush_all_zero_pkmaps(void)
-> >> >> +static unsigned int flush_all_zero_pkmaps(void)
-> >> >>  {
-> >> >>       int i;
-> >> >> -     int need_flush = 0;
-> >> >> +     unsigned int index = PKMAP_INVALID_INDEX;
-> >> >>
-> >> >>       flush_cache_kmaps();
-> >> >>
-> >> >> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
-> >> >>                         &pkmap_page_table[i]);
-> >> >>
-> >> >>               set_page_address(page, NULL);
-> >> >> -             need_flush = 1;
-> >> >> +             if (index == PKMAP_INVALID_INDEX)
-> >> >> +                     index = i;
-> >> >>       }
-> >> >> -     if (need_flush)
-> >> >> +     if (index != PKMAP_INVALID_INDEX)
-> >> >>               flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
-> >> >> +
-> >> >> +     return index;
-> >> >>  }
-> >> >>
-> >> >>  /**
-> >> >> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
-> >> >>   */
-> >> >>  void kmap_flush_unused(void)
-> >> >>  {
-> >> >> +     unsigned int index;
-> >> >> +
-> >> >>       lock_kmap();
-> >> >> -     flush_all_zero_pkmaps();
-> >> >> +     index = flush_all_zero_pkmaps();
-> >> >> +     if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
-> >> >> +             last_pkmap_nr = index;
-> >> >
-> >> > I don't know how kmap_flush_unused is really fast path so how my nitpick
-> >> > is effective. Anyway,
-> >> > What problem happens if we do following as?
-> >> >
-> >> > lock()
-> >> > index = flush_all_zero_pkmaps();
-> >> > if (index != PKMAP_INVALID_INDEX)
-> >> >         last_pkmap_nr = index;
-> >> > unlock();
-> >> >
-> >> > Normally, last_pkmap_nr is increased with searching empty slot in
-> >> > map_new_virtual. So I expect return value of flush_all_zero_pkmaps
-> >> > in kmap_flush_unused normally become either less than last_pkmap_nr
-> >> > or last_pkmap_nr + 1.
-> >>
-> >> There is a case that return value of kmap_flush_unused() is larger
-> >> than last_pkmap_nr.
-> >
-> > I see but why it's problem? kmap_flush_unused returns larger value than
-> > last_pkmap_nr means that there is no free slot at below the value.
-> > So unconditional last_pkmap_nr update is vaild.
-> 
-> I think that this is not true.
-> Look at the slightly different example.
-> 
-> Assume last_pkmap = 20 and index 1-9, 12-19 is kmapped. 10, 11 is kunmapped.
-> 
-> do kmap_flush_unused() => flush index 10,11 => last_pkmap = 10;
-> do kunmap() with index 17
-> do kmap_flush_unused() => flush index 17 => last_pkmap = 17?
-> 
-> In this case, unconditional last_pkmap_nr update skip one kunmapped index.
-> So, conditional update is needed.
+On Tue, Nov 13, 2012 at 6:12 AM, David Howells <dhowells@redhat.com> wrote:
+> David Howells <dhowells@redhat.com> wrote:
+>
+>> Josh Boyer <jwboyer@gmail.com> wrote:
+>>
+>> > This patch seems to break building perf on ppc64.  It fails with:
+>>
+>> Hmmm...  Getting my hands on an ARM or ppc/ppc64 box running Fedora is a
+>> problem, and as far as I know, this needs to be built natively or maybe
+>> cross-compiled with a full environment (including graphics libs).
+>
+> Actually, having said that, it doesn't need to run Fedora specifically - only
+> a sufficiently recent environment that it can build a cutting-edge kernel.
 
-Thanks for pouinting out, Joonsoo.
-You're right. I misunderstood your flush_all_zero_pkmaps change.
-As your change, flush_all_zero_pkmaps returns first *flushed* free slot index.
-What's the benefit returning flushed flushed free slot index rather than free slot index?
-I think flush_all_zero_pkmaps should return first free slot because customer of
-flush_all_zero_pkmaps doesn't care whether it's just flushed or not.
-What he want is just free or not. In such case, we can remove above check and it makes
-flusha_all_zero_pkmaps more intuitive.
+You can just use koji scratch builds if you want to test Fedora kernels
+Either arm-koji or ppc-koji should work.  If you want actual access to a
+machine, I'm sure we can find one.
 
+The error that is hitting ARM and ppc before your patch seemed to also
+be hit with sparc and was fixed by David Miller with commit 776260818
+by just pointing to "../../arch/sparc/include/uapi/asm/unistd.h".  That
+might be a temporary solution.
 
--- 
-Kind Regards,
-Minchan Kim
+josh
