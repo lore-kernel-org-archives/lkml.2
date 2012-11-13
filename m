@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2KMMgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 07:36:14 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58380 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2KMMgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 07:36:12 -0500
-Message-ID: <50A23EB0.1060808@gmail.com>
-Date: Tue, 13 Nov 2012 20:36:00 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1753471Ab2KMMpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 07:45:21 -0500
+Received: from void.printf.net ([89.145.121.20]:53852 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab2KMMpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 07:45:19 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 3/3] mmc: sdhci: apply voltage range check only for non-fixed regulators
+References: <1352796533-12350-1-git-send-email-m.szyprowski@samsung.com>
+	<1352796533-12350-4-git-send-email-m.szyprowski@samsung.com>
+Date: Tue, 13 Nov 2012 07:45:07 -0500
+In-Reply-To: <1352796533-12350-4-git-send-email-m.szyprowski@samsung.com>
+	(Marek Szyprowski's message of "Tue, 13 Nov 2012 09:48:53 +0100")
+Message-ID: <87fw4dn030.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Steffen Klassert <steffen.klassert@secunet.com>
-CC: Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        NetDev <netdev@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/9] net: xfrm: use __this_cpu_read per-cpu helper
-References: <50A1A7C9.3060703@gmail.com> <20121113072101.GG22290@secunet.com> <50A213DF.1040103@gmail.com> <20121113104839.GJ22290@secunet.com>
-In-Reply-To: <20121113104839.GJ22290@secunet.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steffen Klassert said, at 2012/11/13 18:48:
-> 
-> Ok, so please add a commit message to describe your changes.
-> 
-> Thanks.
-> 
+Hi Marek,
 
-[PATCH v5] net: xfrm: use __this_cpu_read per-cpu helper
+On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> Fixed regulators cannot change their voltage, so disable all voltage range
+> checking for them, otherwise the driver fails to operate with fixed
+> regulators.
+>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-this_cpu_ptr/this_cpu_read is faster than per_cpu_ptr(p, smp_processor_id()) 
-and can reduce  memory accesses.
-The latter helper needs to find the offset for current cpu,
-and needs more assembler instructions which objdump shows in following. 
+Perhaps it's a good idea to mention that the regulator API is changing
+(being fixed) at the same time, and that's why this patch is necessary.
 
-this_cpu_ptr relocates and address. this_cpu_read() relocates the address
-and performs the fetch. this_cpu_read() saves you more instructions
-since it can do the relocation and the fetch in one instruction.
+> ---
+>  drivers/mmc/host/sdhci.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index c7851c0..6f6534e 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>  		regulator_enable(host->vmmc);
+>  
+>  #ifdef CONFIG_REGULATOR
+> -	if (host->vmmc) {
+> +	if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
+>  		ret = regulator_is_supported_voltage(host->vmmc, 3300000,
+>  			3300000);
+>  		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
 
-per_cpu_ptr(p, smp_processor_id())：
-  1e:   65 8b 04 25 00 00 00 00         mov    %gs:0x0,%eax
-  26:   48 98                           cltq
-  28:   31 f6                           xor    %esi,%esi
-  2a:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
-  31:   48 8b 04 c5 00 00 00 00         mov    0x0(,%rax,8),%rax
-  39:   c7 44 10 04 14 00 00 00         movl   $0x14,0x4(%rax,%rdx,1)
+What about other occasions where is_supported_voltage() is used, like
+this one -- is it necessary here too?
 
-this_cpu_ptr(p)
-  1e:   65 48 03 14 25 00 00 00 00      add    %gs:0x0,%rdx
-  27:   31 f6                           xor    %esi,%esi
-  29:   c7 42 04 14 00 00 00            movl   $0x14,0x4(%rdx)
-  30:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
+        else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
+                regulator_enable(host->vqmmc);
 
-Signed-off-by: Shan Wei <davidshan@tencent.com>
----
- net/xfrm/xfrm_ipcomp.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+Thanks,                
 
-diff --git a/net/xfrm/xfrm_ipcomp.c b/net/xfrm/xfrm_ipcomp.c
-index e5246fb..2906d52 100644
---- a/net/xfrm/xfrm_ipcomp.c
-+++ b/net/xfrm/xfrm_ipcomp.c
-@@ -276,18 +276,16 @@ static struct crypto_comp * __percpu *ipcomp_alloc_tfms(const char *alg_name)
- 	struct crypto_comp * __percpu *tfms;
- 	int cpu;
- 
--	/* This can be any valid CPU ID so we don't need locking. */
--	cpu = raw_smp_processor_id();
- 
- 	list_for_each_entry(pos, &ipcomp_tfms_list, list) {
- 		struct crypto_comp *tfm;
- 
--		tfms = pos->tfms;
--		tfm = *per_cpu_ptr(tfms, cpu);
-+		/* This can be any valid CPU ID so we don't need locking. */
-+		tfm = __this_cpu_read(*pos->tfms);
- 
- 		if (!strcmp(crypto_comp_name(tfm), alg_name)) {
- 			pos->users++;
--			return tfms;
-+			return pos->tfms;
- 		}
- 	}
- 
+- Chris.
 -- 
-1.7.1
-
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
