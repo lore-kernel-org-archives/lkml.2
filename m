@@ -1,109 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2KMUws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:52:48 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34207 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188Ab2KMUwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:52:46 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, Till Harbaum <till@harbaum.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH] i2c: i2c-tiny-usb: Add parameter for optional i2c-devices.
-Date: Tue, 13 Nov 2012 21:52:20 +0100
-Message-Id: <1352839940-7559-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <50A2AC28.7050304@ahsoftware.de>
-References: <50A2AC28.7050304@ahsoftware.de>
+	id S1755862Ab2KMUwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:52:19 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:41738 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754834Ab2KMUwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:52:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-acpi@vger.kernel.org
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        mathias.nyman@linux.intel.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 2/3 rev 2] ACPI / platform: Use common ACPI device resource parsing routines
+Date: Tue, 13 Nov 2012 21:55:34 +0100
+Message-ID: <4733383.f9kxETzVYn@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <5953163.ZajFIHZXph@vostro.rjw.lan>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2429141.J1r7BIpiiT@vostro.rjw.lan> <5953163.ZajFIHZXph@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible to define i2c-devices at the kernel command line
-or as a module parameter.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Format is devname1@addr1,devname2@addr2,...
+Use common routines in drivers/acpi/resource.c to parse ACPI device
+resources while creating platform device objects.
 
-Example for the kernel command line:
-
-   i2c-tiny-usb.devices=ds1307@0x68,pcf8563@0x51
-
-The devices will be probed using the standard probe mechanism,
-the definition of up to 8 devices is allowed.
-
-Cc: Till Harbaum <till@harbaum.org>
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/i2c/busses/i2c-tiny-usb.c | 40 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/acpi/acpi_platform.c |   89 +++++++++----------------------------------
+ 1 file changed, 20 insertions(+), 69 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-tiny-usb.c b/drivers/i2c/busses/i2c-tiny-usb.c
-index 0510636..2096092 100644
---- a/drivers/i2c/busses/i2c-tiny-usb.c
-+++ b/drivers/i2c/busses/i2c-tiny-usb.c
-@@ -40,6 +40,11 @@ module_param(delay, ushort, 0);
- MODULE_PARM_DESC(delay, "bit delay in microseconds "
- 		 "(default is 10us for 100kHz max)");
+Index: linux/drivers/acpi/acpi_platform.c
+===================================================================
+--- linux.orig/drivers/acpi/acpi_platform.c
++++ linux/drivers/acpi/acpi_platform.c
+@@ -29,21 +29,20 @@ static acpi_status acpi_platform_count_r
+ 						 void *data)
+ {
+ 	struct acpi_resource_extended_irq *acpi_xirq;
++	struct acpi_resource_irq *acpi_irq;
+ 	struct resource_info *ri = data;
  
-+#define MAX_OPTIONAL_I2C_DEVICES 8
-+static char *opt_devices[MAX_OPTIONAL_I2C_DEVICES];
-+module_param_array_named(devices, opt_devices, charp, NULL, 0);
-+MODULE_PARM_DESC(devices, "devname1@adr1,devname2@adr2,... (e.g. ds1307@0x68)");
-+
- static int usb_read(struct i2c_adapter *adapter, int cmd,
- 		    int value, int index, void *data, int len);
+ 	switch (res->type) {
+-	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+ 	case ACPI_RESOURCE_TYPE_IRQ:
+-		ri->n++;
++		acpi_irq = &res->data.irq;
++		ri->n += acpi_irq->interrupt_count;
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+ 		acpi_xirq = &res->data.extended_irq;
+ 		ri->n += acpi_xirq->interrupt_count;
+ 		break;
+-	case ACPI_RESOURCE_TYPE_ADDRESS32:
+-		if (res->data.address32.resource_type == ACPI_IO_RANGE)
+-			ri->n++;
+-		break;
++	default:
++		ri->n++;
+ 	}
  
-@@ -190,6 +195,11 @@ static int i2c_tiny_usb_probe(struct usb_interface *interface,
- 	struct i2c_tiny_usb *dev;
- 	int retval = -ENOMEM;
- 	u16 version;
-+	unsigned i;
-+	struct i2c_board_info i2c_info;
-+	uint addr;
-+	unsigned short i2c_addr[] = { 0, I2C_CLIENT_END };
-+	char *at;
+ 	return AE_OK;
+@@ -52,71 +51,26 @@ static acpi_status acpi_platform_count_r
+ static acpi_status acpi_platform_add_resources(struct acpi_resource *res,
+ 					       void *data)
+ {
+-	struct acpi_resource_fixed_memory32 *acpi_mem;
+-	struct acpi_resource_address32 *acpi_add32;
+-	struct acpi_resource_extended_irq *acpi_xirq;
+-	struct acpi_resource_irq *acpi_irq;
+ 	struct resource_info *ri = data;
+ 	struct resource *r;
+-	int irq, i;
+-
+-	switch (res->type) {
+-	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+-		acpi_mem = &res->data.fixed_memory32;
+-		r = &ri->res[ri->cur++];
+-
+-		r->start = acpi_mem->address;
+-		r->end = r->start + acpi_mem->address_length - 1;
+-		r->flags = IORESOURCE_MEM;
+-
+-		dev_dbg(ri->dev, "Memory32Fixed %pR\n", r);
+-		break;
+-
+-	case ACPI_RESOURCE_TYPE_ADDRESS32:
+-		acpi_add32 = &res->data.address32;
  
- 	dev_dbg(&interface->dev, "probing usb device\n");
- 
-@@ -236,6 +246,36 @@ static int i2c_tiny_usb_probe(struct usb_interface *interface,
- 	/* inform user about successful attachment to i2c layer */
- 	dev_info(&dev->adapter.dev, "connected i2c-tiny-usb device\n");
- 
-+	for (i = 0; opt_devices[i]; ++i) {
-+		at = strchr(opt_devices[i], '@');
-+		if (at == NULL) {
-+			dev_warn(&dev->adapter.dev,
-+				"address needed in device definition '%s'\n",
-+				opt_devices[i]);
-+			continue;
-+		}
-+		*at++ = 0;
-+		if (kstrtouint(at, 0, &addr) || addr >= I2C_CLIENT_END) {
-+			*--at = '@';
-+			dev_warn(&dev->adapter.dev,
-+				"wrong address in slave definition '%s'\n",
-+				opt_devices[i]);
-+			continue;
-+		}
-+		memset(&i2c_info, 0, sizeof(struct i2c_board_info));
-+		strlcpy(i2c_info.type, opt_devices[i], I2C_NAME_SIZE);
-+		i2c_addr[0] = addr;
-+		if (i2c_new_probed_device(&dev->adapter, &i2c_info, i2c_addr,
-+			NULL))
-+			dev_info(&dev->adapter.dev,
-+				"device %s at address 0x%02x registered\n",
-+				i2c_info.type, addr);
-+		else
-+			dev_warn(&dev->adapter.dev,
-+				"device %s at address 0x%02x not found\n",
-+				i2c_info.type, addr);
+-		if (acpi_add32->resource_type == ACPI_IO_RANGE) {
+-			r = &ri->res[ri->cur++];
+-			r->start = acpi_add32->minimum;
+-			r->end = r->start + acpi_add32->address_length - 1;
+-			r->flags = IORESOURCE_IO;
+-			dev_dbg(ri->dev, "Address32 %pR\n", r);
+-		}
+-		break;
+-
+-	case ACPI_RESOURCE_TYPE_IRQ:
+-		acpi_irq = &res->data.irq;
+-		r = &ri->res[ri->cur++];
+-
+-		irq = acpi_register_gsi(ri->dev,
+-					acpi_irq->interrupts[0],
+-					acpi_irq->triggering,
+-					acpi_irq->polarity);
+-
+-		r->start = r->end = irq;
+-		r->flags = IORESOURCE_IRQ;
+-
+-		dev_dbg(ri->dev, "IRQ %pR\n", r);
+-		break;
+-
+-	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+-		acpi_xirq = &res->data.extended_irq;
+-
+-		for (i = 0; i < acpi_xirq->interrupt_count; i++, ri->cur++) {
+-			r = &ri->res[ri->cur];
+-			irq = acpi_register_gsi(ri->dev,
+-						acpi_xirq->interrupts[i],
+-						acpi_xirq->triggering,
+-						acpi_xirq->polarity);
++	r = ri->res + ri->cur;
++	if (acpi_dev_resource_memory(res, r)
++	    || acpi_dev_resource_io(res, r)
++	    || acpi_dev_resource_address_space(res, r)
++	    || acpi_dev_resource_ext_address_space(res, r)) {
++		ri->cur++;
++		return AE_OK;
 +	}
-+
- 	return 0;
++	if (acpi_dev_resource_interrupt(res, 0, r)) {
++		int i;
  
-  error:
--- 
-1.7.11.7
-
+-			r->start = r->end = irq;
+-			r->flags = IORESOURCE_IRQ;
++		r++;
++		for (i = 1; acpi_dev_resource_interrupt(res, i, r); i++)
++			r++;
+ 
+-			dev_dbg(ri->dev, "Interrupt %pR\n", r);
+-		}
+-		break;
++		ri->cur += i;
+ 	}
+-
+ 	return AE_OK;
+ }
+ 
+@@ -165,9 +119,6 @@ struct platform_device *acpi_create_plat
+ 		goto out;
+ 	}
+ 
+-	if (WARN_ON(ri.n != ri.cur))
+-		goto out;
+-
+ 	/*
+ 	 * If the ACPI node has a parent and that parent has a physical device
+ 	 * attached to it, that physical device should be the parent of the
+@@ -189,7 +140,7 @@ struct platform_device *acpi_create_plat
+ 		mutex_unlock(&acpi_parent->physical_node_lock);
+ 	}
+ 	pdev = platform_device_register_resndata(parent, dev_name(&adev->dev),
+-						 -1, ri.res, ri.n, NULL, 0);
++						 -1, ri.res, ri.cur, NULL, 0);
+ 	if (IS_ERR(pdev)) {
+ 		dev_err(&adev->dev, "platform device creation failed: %ld\n",
+ 			PTR_ERR(pdev));
