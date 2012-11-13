@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab2KMRPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 12:15:31 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65052 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab2KMRPQ (ORCPT
+	id S932320Ab2KMRSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 12:18:13 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33061 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab2KMRPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 12:15:16 -0500
+	Tue, 13 Nov 2012 12:15:32 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -17,9 +17,9 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 16/31] numa, mm: Support NUMA hinting page faults from gup/gup_fast
-Date: Tue, 13 Nov 2012 18:13:39 +0100
-Message-Id: <1352826834-11774-17-git-send-email-mingo@kernel.org>
+Subject: [PATCH 23/31] sched, numa, mm, arch: Add variable locality exception
+Date: Tue, 13 Nov 2012 18:13:46 +0100
+Message-Id: <1352826834-11774-24-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352826834-11774-1-git-send-email-mingo@kernel.org>
 References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
@@ -27,90 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Introduce FOLL_NUMA to tell follow_page to check
-pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe to do
-so because it always invokes handle_mm_fault and retries the
-follow_page later.
+Some architectures (ab)use NUMA to represent different memory
+regions all cpu-local but of different latencies, such as SuperH.
 
-KVM secondary MMU page faults will trigger the NUMA hinting page
-faults through gup_fast -> get_user_pages -> follow_page ->
-handle_mm_fault.
+The naming comes from Mel Gorman.
 
-Other follow_page callers like KSM should not use FOLL_NUMA, or they
-would fail to get the pages if they use follow_page instead of
-get_user_pages.
-
-[ This patch was picked up from the AutoNUMA tree. ]
-
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
+Named-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
-[ ported to this tree. ]
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm.h |  1 +
- mm/memory.c        | 17 +++++++++++++++++
- 2 files changed, 18 insertions(+)
+ arch/sh/mm/Kconfig | 1 +
+ init/Kconfig       | 7 +++++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0025bf9..1821629 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1600,6 +1600,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_MLOCK	0x40	/* mark page as mlocked */
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
- #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
-+#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index cb8f992..0f7c852 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -111,6 +111,7 @@ config VSYSCALL
+ config NUMA
+ 	bool "Non Uniform Memory Access (NUMA) Support"
+ 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
++	select ARCH_WANT_NUMA_VARIABLE_LOCALITY
+ 	default n
+ 	help
+ 	  Some SH systems have many various memories scattered around
+diff --git a/init/Kconfig b/init/Kconfig
+index 6fdd6e3..ae412fd 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -696,6 +696,13 @@ config LOG_BUF_SHIFT
+ config HAVE_UNSTABLE_SCHED_CLOCK
+ 	bool
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index e3e8ab2..a660fd0 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1536,6 +1536,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
- 		goto out;
- 	}
-+	if ((flags & FOLL_NUMA) && pmd_numa(vma, *pmd))
-+		goto no_page_table;
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
- 			split_huge_page_pmd(mm, pmd);
-@@ -1565,6 +1567,8 @@ split_fallthrough:
- 	pte = *ptep;
- 	if (!pte_present(pte))
- 		goto no_page;
-+	if ((flags & FOLL_NUMA) && pte_numa(vma, pte))
-+		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
- 
-@@ -1716,6 +1720,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
- 	vm_flags &= (gup_flags & FOLL_FORCE) ?
- 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
++#
++# For architectures that (ab)use NUMA to represent different memory regions
++# all cpu-local but of different latencies, such as SuperH.
++#
++config ARCH_WANT_NUMA_VARIABLE_LOCALITY
++	bool
 +
-+	/*
-+	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
-+	 * would be called on PROT_NONE ranges. We must never invoke
-+	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
-+	 * page faults would unprotect the PROT_NONE ranges if
-+	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
-+	 * bitflag. So to avoid that, don't set FOLL_NUMA if
-+	 * FOLL_FORCE is set.
-+	 */
-+	if (!(gup_flags & FOLL_FORCE))
-+		gup_flags |= FOLL_NUMA;
-+
- 	i = 0;
- 
- 	do {
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	depends on EVENTFD
 -- 
 1.7.11.7
 
