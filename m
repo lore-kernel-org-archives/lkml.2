@@ -1,152 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab2KMUju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:39:50 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:41713 "EHLO ogre.sisk.pl"
+	id S1755866Ab2KMUq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:46:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755777Ab2KMUjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:39:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
-Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node objects
-Date: Tue, 13 Nov 2012 21:44:09 +0100
-Message-ID: <2586712.Jsv1H95qXQ@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346BC0694@ORSMSX101.amr.corp.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <20121113071208.GF31759@intel.com> <94F2FBAB4432B54E8AACC7DFDE6C92E346BC0694@ORSMSX101.amr.corp.intel.com>
+	id S1755830Ab2KMUq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:46:57 -0500
+Date: Tue, 13 Nov 2012 18:40:39 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Christian Ehrhardt <lk@c--e.de>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fix lapic time counter read for periodic mode
+Message-ID: <20121113204039.GA22112@amt.cnet>
+References: <20121111122528.GC19718@lisa.in-ulm.de>
+ <20121112213237.GA31377@amt.cnet>
+ <20121113075254.GA15071@lisa.in-ulm.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113075254.GA15071@lisa.in-ulm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 13, 2012 04:34:07 PM Moore, Robert wrote:
-> > I suppose we can just do acpi_get_current_resources() and play with 
-> > the buffer returned by it.  That won't be nice, but still better than 
-> > what we have.
+On Tue, Nov 13, 2012 at 08:52:54AM +0100, Christian Ehrhardt wrote:
 > 
-> A couple of the reasons we created the ACPICA resource manager was to:
-> 1) Simplify host access to the various resource fields, especially packed flags.
-> 2) Avoid alignment issues, especially on machines that don't support misaligned transfers.
-
-That's fine.
-
-> If there are issues with the current resource manager, we can discuss them.
-> But I would hope that you really don't want to be fussing around with the raw
-> data coming back from the AML.
-
-No, I don't. :-)
-
-I'd like to be able to do more things with struct acpi_resource objects.
-
-Pretty much the output of acpi_get_current_resources() is what I'm
-interested in, but there doesn't seem to be any convenient way to access
-things in the return buffer from the outside of ACPICA now.
-
-> It is not pretty and we have gone to some lengths to make the entire
-> conversion table-driven to minimize bugs and simplify maintenance.
-
-OK
-
-So what I would like to have, in general terms, is something like
-acpi_walk_resources() split into three parts:
-
- (1) One that processes the _CRS output and creates a list of
-     struct acpi_resource objects for us to play with.  I suppose
-     it's OK if that's just a buffer filled with resource objects,
-     but a linked list might be more convenient.
-
- (2) One that allows us to access (read/write) resources in the
-     list returned by (1).  We don't need to open code walking
-     the list and I probably wouldn't event want to do that.  What
-     we need is to be able to walk the same list for a number of
-     times and possibly to modify values in the resource objects
-     if there are conflicts.
-
- (3) One allowing us to free the list returned by (1) if not needed
-     any more.
-
-And it would be great if we could take the list returned by (1),
-modify the resources in it and feed it back to _SRS (after conversion
-back to the format that _SRS understands).
-
-Thanks,
-Rafael
-
-
-> > -----Original Message-----
-> > From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> > Sent: Monday, November 12, 2012 11:12 PM
-> > To: Rafael J. Wysocki
-> > Cc: mathias.nyman@linux.intel.com; linux-acpi@vger.kernel.org; linux-
-> > kernel@vger.kernel.org; lenb@kernel.org; Wysocki, Rafael J;
-> > broonie@opensource.wolfsonmicro.com; grant.likely@secretlab.ca;
-> > linus.walleij@linaro.org; khali@linux-fr.org; Bjorn Helgaas; Moore, Robert
-> > Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
-> > objects
-> > 
-> > On Mon, Nov 12, 2012 at 10:03:56PM +0100, Rafael J. Wysocki wrote:
-> > > > > +static acpi_status acpi_bus_add_resource(struct acpi_resource *res,
-> > > > > +					 void *context)
-> > > > > +{
-> > > > > +	struct list_head *list = context;
-> > > > > +	struct acpi_resource_list_entry *entry;
-> > > > > +
-> > > > > +	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-> > > > > +	if (!entry)
-> > > > > +		return AE_NO_MEMORY;
-> > > > > +
-> > > > > +	entry->resource = *res;
-> > > >
-> > > > This does not work well with all resource types - specifically those
-> > > > that contain pointers, like acpi_resource_gpio and
-> > acpi_resource_source.
-> > >
-> > > Good point.
-> > >
-> > > Well, this pretty much means we can't copy those things.
-> > 
-> > Yeah. I only noticed this yesterday when I tested the GPIO translation in
-> > a custom driver (since it uses the acpi_resource_gpio).
-> > 
-> > > > The memory for the resources gets freed once acpi_walk_resources() is
-> > done.
-> > >
-> > > I know that.
-> > >
-> > > Having to evaluate _CRS and creating a buffer, converting the output
-> > > into ACPI resources and so on every time we need to look into the
-> > > device's current resources is totally inefficient.  We _need_ to cache
-> > the _CRS output.
-> > 
-> > I agree and besides having adev->resources is much easier to use than
-> > calling acpi_walk_resources() everytime.
-> > 
-> > > Now, because of the pointers in certain types of resources, we can't
-> > > make copies of the resource objects used by acpi_walk_resources()
-> > > which makes that function totally unuseful to us.
-> > >
-> > > I suppose we can just do acpi_get_current_resources() and play with
-> > > the buffer returned by it.  That won't be nice, but still better than
-> > > what we have.
-> > 
-> > I don't know any better option.
-> > 
-> > Thanks.
+> Hi,
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> thanks for your reply.
+> 
+> On Mon, Nov 12, 2012 at 07:32:37PM -0200, Marcelo Tosatti wrote:
+> > > there is a bug in the emulation of the lapic time counter. In particular
+> > > what we are seeing is that the time counter of a periodic lapic timer
+> > > in the guest reads as zero 99% of the time. The patch below fixes that.
+> > > 
+> > > The emulation of the lapic timer is done with the help of a hires
+> > > timer that expires with the same frequency as the lapic counter.
+> > > New expiration times for a periodic timer are calculated incrementally
+> > > based on the last scheduled expiration time. This ensures long term
+> > > accuracy of the emulated timer close to that of the underlying clock.
+> > > 
+> > > The actual value of the lapic time counter is calculated from the
+> > > real time difference between current time and scheduled expiration time
+> > > of the hires timer. If this difference is negative, the hires timer
+> > > expired. For oneshot mode this is correctly translated into a zero value
+> > > for the time counter. However, in periodic mode we must use the negative
+> > > difference unmodified.
+> > > 
+> > >      regards   Christian
+> > > 
+> > > Fix lapic time counter read for periodic mode.
+> > 
+> > In periodic mode the hrtimer is rearmed once expired, see
+> > apic_timer_fn. So _get_remaining should return proper value
+> > even if the guest is not able to process timer interrupts. 
+> > 
+> > Can you describe your specific scenario in more detail?
+> 
+> In my specific case, the host is admittedly somewhat special as it
+> already is a rehosted version of linux, i.e. not running directly on
+> native hardware. It is still unclear if the host has sufficiently accurate
+> timer interrupts. This is most likely part of the problems we are seeing.
+> 
+> However, AFAICS apic_timer_fn is only called once per jiffy (at least in
+> some configurations). In particular, it is not called by
+> hrtimer_get_remaining. Thus depending on the frequency of the LAPIC timer
+> in the guest there might _several_ iterations that are missed. This can
+> probably be mitigated by a hires timer interrupts. However, I think
+> the problem is still there even in that case.
+> 
+> Additionally, the behaviour that I want to establish matches that of the
+> PIT timer (in a not completely obvious way, though).
+> 
+> Having said that the proposed patch in my first mail is incomplete, as
+> the mod_64 does not work correctly for negative values. A fixed version
+> is below.
+> 
+>      regards     Christian
+> 
+> Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+
+Alright. Please add a comment from the LAPIC documentation describing
+this behaviour (and a nice changelog). Thanks.
+
+> 
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 43e9fad..ec7242c 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -810,11 +810,22 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+>  	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
+>  		return 0;
+>  
+> +	/*
+> +	 * hrtimer_get_remaining returns the signed difference between
+> +	 * timer expiration time and current time. Keep negative return
+> +	 * values iff the the timer is periodic.
+> +	 */
+>  	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+> -	if (ktime_to_ns(remaining) < 0)
+> -		remaining = ktime_set(0, 0);
+> +	ns = ktime_to_ns(remaining);
+> +	if (unlikely(ns < 0)) {
+> +		if (apic_lvtt_period(apic))
+> +			ns = apic->lapic_timer.period -
+> +				mod_64(-ns, apic->lapic_timer.period);
+> +		else
+> +			ns = 0;
+> +	}
+>  
+> -	ns = mod_64(ktime_to_ns(remaining), apic->lapic_timer.period);
+> +	ns = mod_64(ns, apic->lapic_timer.period);
+>  	tmcct = div64_u64(ns,
+>  			 (APIC_BUS_CYCLE_NS * apic->divide_count));
+>  
