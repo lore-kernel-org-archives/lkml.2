@@ -1,96 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2KMChp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 21:37:45 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:52118 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab2KMChn (ORCPT
+	id S1753221Ab2KMCtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 21:49:15 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26079 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab2KMCtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 21:37:43 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: <linux-fsdevel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-References: <87objjcfp4.fsf@xmission.com>
-	<87625brr76.fsf@tucsk.pomaz.szeredi.hu>
-Date: Mon, 12 Nov 2012 18:37:33 -0800
-In-Reply-To: <87625brr76.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
-	of "Mon, 12 Nov 2012 12:33:33 +0100")
-Message-ID: <878va6i5xu.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 12 Nov 2012 21:49:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6894"; a="6251183"
+Message-ID: <50A1B50B.4020509@codeaurora.org>
+Date: Mon, 12 Nov 2012 18:48:43 -0800
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+LgbKEO/z4vb3XqX64/FXCHNeuhqmChm4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0115]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] userns: Support fuse interacting with multiple user namespaces
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dt/platform: Use cell-index for device naming if available
+References: <1352508532-19241-1-git-send-email-stepanm@codeaurora.org>    <509F0E56.6080806@gmail.com>    <CACxGe6s3gJ4fmhn9VBd1Fq8bH5S0_ejmE=KqVjYn20bT42wQ_Q@mail.gmail.com> <554191d69bc21a4b133fb876df84ff89.squirrel@www.codeaurora.org>
+In-Reply-To: <554191d69bc21a4b133fb876df84ff89.squirrel@www.codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
-
-> ebiederm@xmission.com (Eric W. Biederman) writes:
+On 11/11/2012 5:45 PM, Stepan Moskovchenko wrote:
 >
->> Use kuid_t and kgid_t in struct fuse_conn and struct fuse_mount_data.
+>> On Sun, Nov 11, 2012 at 2:32 AM, Rob Herring <robherring2@gmail.com>
+>> wrote:
+>>> On 11/09/2012 06:48 PM, Stepan Moskovchenko wrote:
+>>>> Use the cell-index property to construct names for platform
+>>>> devices, falling back on the existing scheme of using the
+>>>> device register address if cell-index is not specified.
+>>>>
+>>>> The cell-index property is a more useful device identifier,
+>>>> especially in systems containing several numbered instances
+>>>> of a particular hardware block, since it more easily
+>>>> illustrates how devices relate to each other.
+>>>>
+>>>> Additionally, userspace software may rely on the classic
+>>>> <name>.<id> naming scheme to access device attributes in
+>>>> sysfs, without having to know the physical addresses of
+>>>> that device on every platform the userspace software may
+>>>> support. Using cell-index for device naming allows the
+>>>> device addresses to be hidden from userspace and to be
+>>>> exposed by logical device number without having to rely on
+>>>> auxdata to perform name overrides. This allows userspace to
+>>>> make assumptions about which sysfs nodes map to which
+>>>> logical instance of a specific hardware block.
+>>>>
+>>>> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+>>>> ---
+>>>> I had also considered using something like the linux,label property to
+>>>> allow
+>>>> custom names for platform devices without resorting to auxdata, but the
+>>>> cell-index approach seems more in line with what cell-index was
+>>>> intended for
+>>>> and with what the pre-DT platform device naming scheme used to be.
+>>>> Please let
+>>>> me know if you think there is a better way to accomplish this.
+>>>>
+>>>> This is just being sent out as an RFC for now. If there are no
+>>>> objections, I
+>>>> will send this out as an official patch, along with (or combined with)
+>>>> a patch
+>>>> to fix up the device names in things like clock tables of any affected
+>>>> platforms.
+>>>
+>>> cell-index is basically deprecated. This has been discussed multiple
+>>> times in the past. You can use auxdata if you really need to have the
+>>> old name.
 >>
->> The connection between between a fuse filesystem and a fuse daemon is
->> established when a fuse filesystem is mounted and provided with a file
->> descriptor the fuse daemon created by opening /dev/fuse.
+>> Actually, I think it would be fine to use an /aliases entry to set the
+>> device name. That's the place to put global namespace information.
 >>
->> For now restrict the communication of uids and gids between the fuse
->> filesystem and the fuse daemon to the initial user namespace.
+>> g.
+>>
 >
-> Why?
+> Ah, thank you. I would prefer to stay away from auxdata, since it involves
+> placing more platform-specific data into the kernel, and it is my
+> understanding that auxdata is intended as a temporary measure. The
+> /aliases approach looks interesting, and I'll see what I can do with it -
+> hopefully I can have an RFC / patch soon. It looks like we would want an
+> "inverse" alias lookup- that is, we would need to know which alias
+> corresponds to a given node. Is it possible for a node to have multiple
+> aliases? If so, which shall we use to create the device name? Anyway, I
+> will further look into how these aliases work.
 >
-> I think far more logical would be to limit a single instance of the
-> filesystem and the daemon to an arbitrary but *single* namespace.
-> I.e. one fuse_conn <-> one user namespace.
->
-> Is there a reason to treat the initial namespace specially?
+> Steve
 
-Stepwise making this work.
+Hi Grant,
 
-The initial user namespace is special in that is the only user namespace
-you can currently mount a filesystem in.
+Looking through the alias code, I see that the stem and the alias ID are 
+stored and parsed separately. For the current way of using aliases, this 
+makes sense. However, can you please clarify what you meant by using an 
+/aliases entry to set the device name?
 
-My goal with the posted patch is to support users on the other side of
-the vfs that are in multiple user namespaces.  Which basically means
-accepting kuid_t and kgid_t values and converting them to uid_t and
-gid_t values where needed.
+The first and most straightforward approach would be to use the entire 
+alias name as the device name, making no distinction between the alias 
+stem and ID. However, since it is possible to have multiple aliases to 
+the same device, which of the aliases shall we use to construct the 
+device name? Additionally, this may cause possible problems for legacy 
+software that expects names in the format of <name>.<ID>, since '.' is 
+not a valid character for alias names as defined by the DT spec, 
+although strictly speaking this approach would successfully solve the 
+problem of giving devices predictable and controllable names.
 
-As for creating a version of fuse that can be mounted in different user
-namespaces and can communicate with the fuse daemon in the user
-namespace the filesystem was mounted in, I have a preliminary patch for
-that.  My goal with that patch is to support unprivileged mounts of fuse
-without the help of a suid root mount program.  But that patch is more
-involved and not quite ready yet.
+Another way an /aliases entry could be used to set the device name is to 
+have a <name>.<ID> naming scheme, where the name comes from node->name 
+(as is done in of_device_make_bus_id) and the ID gets queried using 
+of_alias_get_id(). We would need to create a new alias stem for this 
+purpose, and suppose that something like "platform" would work. The 
+name-setting code would then roughly look as follows:
 
-I want to get to the point that I can enable fuse and user namespaces at
-the same time (what this patch allows) and then put in the effort to
-fully take advantage of user namespaces.
++	alias_id = of_alias_get_id(node, "platform");
++	if (alias_id != -ENODEV) {
++		dev_set_name(dev, "%s.%d", node->name, alias_id);
++		return;
++	}
 
-Eric
+The downside to this approach is that it imposes the restriction that 
+device ID numbers now have to be unique throughout the system, whereas 
+before only the <name>.<ID> combinations had to be unique. This is the 
+result of only the ID number being present in the alias table, with each 
+such ID number having the "platform" stem, and the restriction that node 
+properties shall have unique names.
+
+A third possible solution is to use an alias stem prefix for defining 
+the device name. That is, the alias to set the device name would have 
+some prefix (such as "platform-" for example) and the aliases would look 
+something like platform-<name><ID>. The code to assign device names 
+would find the matching alias containing the "platform-" prefix, strip 
+the prefix, and use the resulting name and ID to construct the device 
+name. This approach would make it more obvious as to which of several 
+aliases is used to set the device name, but it imposes additional 
+structure on the stem names and causes any aliases starting with 
+"platform-" to become magical, which bothers me slightly.
+
+Do any of these describe what you intended when you suggested using the 
+/aliases node to set device names, or is there another approach that I 
+have missed? Can you please elaborate further?
+
+Thank you
+Steve
 
 
-
-
-
-
-
-
-
+-- 
+  The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+  hosted by The Linux Foundation
