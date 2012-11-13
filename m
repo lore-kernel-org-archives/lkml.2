@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab2KMS0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:26:04 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52238 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab2KMS0B convert rfc822-to-8bit (ORCPT
+	id S1755476Ab2KMS2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:28:55 -0500
+Received: from [216.32.181.184] ([216.32.181.184]:45085 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753967Ab2KMS2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:26:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,768,1344236400"; 
-   d="scan'208";a="219093827"
-From: "Li, Sibai" <sibai.li@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jason Gao <pkill.2012@gmail.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "ddutile@redhat.com" <ddutile@redhat.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Topic: SR-IOV problem with Intel 82599EB (not enough MMIO resources
- for SR-IOV)
-Thread-Index: AQHNwaQeM2H6P7Nnnk6rGhmSIf66+Jfn7aEQgACrVID//3vbcA==
-Date: Tue, 13 Nov 2012 18:25:58 +0000
-Message-ID: <A3A921390EAE4044940E99EBF13D97321AE21FBB@FMSMSX104.amr.corp.intel.com>
-References: <201211081915083774239@gmail.com>	<509B962C.6070002@gmail.com>
-	<C5551D9AAB213A418B7FD5E4A6F30A072D565E76@ORSMSX106.amr.corp.intel.com>
-	<CANmqhJDJXcbUxyt6YD6ktxZCDJ=VqiwhGXP+fLMukQr0o-XwxQ@mail.gmail.com>
-	<CAErSpo4xn9t=4yXGLdPQMtUJF=n38tYrMutAoj7NCsLUzQEbcg@mail.gmail.com>
-	<CANmqhJAjwP8CLEKpgsDbT-7+n=hf30LbYrTAu+qDH09LzETD4g@mail.gmail.com>
-	<A3A921390EAE4044940E99EBF13D97321AE21E15@FMSMSX104.amr.corp.intel.com>
- <CAE9FiQXnP2gpy9z6VNGSpimLkhDYKp6Qr=9nGZ9d-pKdohA4bw@mail.gmail.com>
-In-Reply-To: <CAE9FiQXnP2gpy9z6VNGSpimLkhDYKp6Qr=9nGZ9d-pKdohA4bw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.106]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Nov 2012 13:28:54 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(zz98dI103dK1432I4015Izz1de0h1202h1d1ah1d2ahzz17326ah8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+X-WSS-ID: 0MDFVB7-01-TV9-02
+X-M-MSG: 
+Date: Tue, 13 Nov 2012 12:28:17 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: <x86@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <herrmann.der.user@googlemail.com>
+Subject: Re: [PATCH 0/4] x86, cacheinfo: Use AMD topology extensions
+Message-ID: <20121113182817.GA14076@jshin-Toonie>
+References: <20121019085519.GC26718@alberich>
+ <20121106204756.GA12142@jshin-Toonie>
+ <e7f34d69-2cb0-4ae7-9501-58af69308461@email.android.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <e7f34d69-2cb0-4ae7-9501-58af69308461@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 07, 2012 at 10:48:35AM +0100, H. Peter Anvin wrote:
+> Too many of us at LCE right now...
 
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
-> Yinghai Lu
-> Sent: Tuesday, November 13, 2012 10:17 AM
-> To: Li, Sibai
-> Cc: Jason Gao; bhelgaas@google.com; Rose, Gregory V; ddutile@redhat.com;
-> Kirsher, Jeffrey T; linux-kernel; netdev; kvm; e1000-devel@lists.sourceforge.net;
-> linux-pci@vger.kernel.org
-> Subject: Re: SR-IOV problem with Intel 82599EB (not enough MMIO resources
-> for SR-IOV)
-> 
-> On Tue, Nov 13, 2012 at 8:04 AM, Li, Sibai <sibai.li@intel.com> wrote:
-> >
-> >>
-> >> Thank you very much,I try "pci=realloc" in Centos 6.3,and now it works for
-> me.
-> >>
-> >> thank you Sibai,Our server "Dell R710",its BIOS version is just
-> >> v.6.3.0 and release date is 07/24/2012,and I also configured
-> >> intel_iommu=on in the grub.conf file,but I can't find these IOMMU
-> >> options in "Device Drivers" in my
-> >> kernel(2.6.32-279) .config file , btw my os is Centos
-> >> 6.3(RHEL6.3),although the problem solved,I'd like to know what's your os
-> version ,kernel version?
-> >
-> > I am using RHEL6.3 with unstable kernel 3.7.0-rc
-> 
-> that means that config has
-> CONFIG_PCI_REALLOC_ENABLE_AUTO=y
-> 
-> So you don't need to append "pci=realloc"
-> 
-> Yinghai
+Hi, ping'ing once again, could you take a look at the patchset when
+you get the chance, and if no problems commit them into tip?
 
-Never append "pci=realloc" for both kernel 2.6.32.279 and kernel 3.5.0 above.
+Thanks!
+
+-Jacob
+
+
+> 
+> Jacob Shin <jacob.shin@amd.com> wrote:
+> 
+> >On Fri, Oct 19, 2012 at 10:55:19AM +0200, Andreas Herrmann wrote:
+> >> Hi,
+> >> 
+> >> Following patches modify cachinfo code to make use of AMD's topology
+> >> extension CPUID functions. Thus (hopefully) we can avoid CPU specific
+> >> modifications whenever cache topology changes.
+> >> 
+> >> Please apply.
+> >
+> >Acked-by: Jacob Shin <jacob.shin@amd.com>
+> >
+> >
+> >
+> >Ping ?
+> >
+> >Any feedback ? If not could we get it into tip ?
+> >
+> >Thank you,
+> >
+> >> 
+> >> 
+> >> Thanks,
+> >> 
+> >> Andreas
+> >> 
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe
+> >linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >> 
+> >> 
+> >> 
+> 
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
+> 
+
