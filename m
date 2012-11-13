@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2KMLqy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:46:54 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45770 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab2KMLqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:46:52 -0500
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: raven@themaw.net
-Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com
-Subject: [PATCH 2/2] autofs4: translate pids to the right namespace for the daemon
-References: <87sj8drafh.fsf@tucsk.pomaz.szeredi.hu>
-Date: Tue, 13 Nov 2012 12:49:04 +0100
-In-Reply-To: <87sj8drafh.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
-	of "Tue, 13 Nov 2012 12:48:02 +0100")
-Message-ID: <87obj1radr.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753912Ab2KMLui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:50:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50761 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab2KMLuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:50:37 -0500
+Date: Tue, 13 Nov 2012 11:50:32 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/19] mm: numa: Create basic numa page hinting
+ infrastructure
+Message-ID: <20121113115032.GY8218@suse.de>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <1352193295-26815-9-git-send-email-mgorman@suse.de>
+ <20121113102120.GD21522@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121113102120.GD21522@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, Nov 13, 2012 at 11:21:20AM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Note: This patch started as "mm/mpol: Create special PROT_NONE
+> > 	infrastructure" and preserves the basic idea but steals *very*
+> > 	heavily from "autonuma: numa hinting page faults entry points" for
+> > 	the actual fault handlers without the migration parts.	The end
+> > 	result is barely recognisable as either patch so all Signed-off
+> > 	and Reviewed-bys are dropped. If Peter, Ingo and Andrea are ok with
+> > 	this version, I will re-add the signed-offs-by to reflect the history.
+> 
+> Most of the changes you had to do here relates to the earlier 
+> decision to turn it all the NUMA protection fault demultiplexing 
+> and setup code into a per arch facility.
+> 
 
-The PID and the TGID of the process tringgering the mount are sent to the
-daemon.  Currently the global pid values are sent (ones valid in the initial pid
-namespace) but this is wrong if the autofs daemon itself is not running in the
-initial pid namespace.
+Yes.
 
-So send the pid values that are valid in the namespace of the autofs daemon.
+> On one hand I'm 100% fine with making the decision to *use* the 
+> new NUMA code per arch and explicitly opt-in - we already have 
+> such a Kconfig switch in our tree already. The decision whether 
+> to use any of this for an architecture must be considered and 
+> tested carefully.
+> 
 
-The namespace to use is taken from the oz_pgrp pid pointer, which was set at
-mount time to the mounting process' pid namespace.
+Agreed.
 
-If the pid translation fails (the triggering process is in an unrelated pid
-namespace) then the automount fails with ENOENT.
+> But given that most architectures will be just fine reusing the 
+> already existing generic PROT_NONE machinery, the far better 
+> approach is to do what we've been doing in generic kernel code 
+> for the last 10 years: offer a default generic version, and then 
+> to offer per arch hooks on a strict as-needed basis, if they 
+> want or need to do something weird ...
+> 
 
-Cc: Serge E. Hallyn <serue@us.ibm.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/autofs4/waitq.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-03944aae0b9cb4a36d091f275d2f2217447b27ec
-Index: linux-2.6/fs/autofs4/waitq.c
-===================================================================
---- linux-2.6.orig/fs/autofs4/waitq.c	2012-11-12 19:07:06.000000000 +0100
-+++ linux-2.6/fs/autofs4/waitq.c	2012-11-12 19:57:10.000000000 +0100
-@@ -354,11 +354,23 @@ int autofs4_wait(struct autofs_sb_info *
- 	struct qstr qstr;
- 	char *name;
- 	int status, ret, type;
-+	pid_t pid;
-+	pid_t tgid;
- 
- 	/* In catatonic mode, we don't wait for nobody */
- 	if (sbi->catatonic)
- 		return -ENOENT;
- 
-+	/*
-+	 * Try translating pids to the namespace of the daemon.
-+	 *
-+	 * Zero means failure: we are in an unrelated pid namespace.
-+	 */
-+	pid = task_pid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
-+	tgid = task_tgid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
-+	if (pid == 0 || tgid == 0)
-+		return -ENOENT;
-+
- 	if (!dentry->d_inode) {
- 		/*
- 		 * A wait for a negative dentry is invalid for certain
-@@ -424,8 +436,8 @@ int autofs4_wait(struct autofs_sb_info *
- 		wq->ino = autofs4_get_ino(sbi);
- 		wq->uid = current_uid();
- 		wq->gid = current_gid();
--		wq->pid = current->pid;
--		wq->tgid = current->tgid;
-+		wq->pid = pid;
-+		wq->tgid = tgid;
- 		wq->status = -EINTR; /* Status return if interrupted */
- 		wq->wait_ctr = 2;
- 		mutex_unlock(&sbi->wq_mutex);
+If they are *not* fine with it, it's a large retrofit because the PROT_NONE
+machinery has been hard-coded throughout. It also requires that anyone
+looking at the fault paths must remember at almost all times that PROT_NONE
+can also mean PROT_NUMA and it depends on context. While that's fine right
+now, it'll be harder to maintain in the future.
+
+> So why fork away this logic into per arch code so early and 
+> without explicit justification? It creates duplication artifacts 
+> all around and makes porting to a new 'sane' architecture 
+> harder.
+> 
+
+I agree that the duplication artifacts was a mistake. I can fix that but
+feel that the naming is fine and we shouldn't hard-code that
+change_prot_none() can actually mean change_prot_numa() if called from
+the right place.
+
+> Also, if there *are* per architecture concerns then I'd very 
+> much like to see that argued very explicitly, on a per arch 
+> basis, as it occurs, not obscured through thick "just in case" 
+> layers of abstraction ...
+> 
+
+Once there is a generic pte_numa handler for example, an arch-specific
+overriding of it should raise a red flag for closer inspection.
+
+-- 
+Mel Gorman
+SUSE Labs
