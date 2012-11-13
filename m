@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab2KMQx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:53:27 -0500
+	id S932132Ab2KMQxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:53:33 -0500
 Received: from smtp02.citrix.com ([66.165.176.63]:62714 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab2KMQxZ (ORCPT
+	with ESMTP id S1755322Ab2KMQx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:53:25 -0500
+	Tue, 13 Nov 2012 11:53:29 -0500
 X-IronPort-AV: E=Sophos;i="4.80,768,1344211200"; 
-   d="scan'208";a="214360198"
-Date: Tue, 13 Nov 2012 16:37:46 +0000
+   d="scan'208";a="214360207"
+Date: Tue, 13 Nov 2012 16:36:54 +0000
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: Yinghai Lu <yinghai@kernel.org>
@@ -19,10 +19,10 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 27/46] x86, mm: Add alloc_low_pages(num)
-In-Reply-To: <1352755122-25660-28-git-send-email-yinghai@kernel.org>
-Message-ID: <alpine.DEB.2.02.1211131637240.28049@kaball.uk.xensource.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-28-git-send-email-yinghai@kernel.org>
+Subject: Re: [PATCH 26/46] x86, mm, Xen: Remove mapping_pagetable_reserve()
+In-Reply-To: <1352755122-25660-27-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.DEB.2.02.1211131629230.28049@kaball.uk.xensource.com>
+References: <20121112193044.GA11615@phenom.dumpdata.com> <1352755122-25660-1-git-send-email-yinghai@kernel.org> <1352755122-25660-27-git-send-email-yinghai@kernel.org>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -31,110 +31,64 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 12 Nov 2012, Yinghai Lu wrote:
-> 32bit kmap mapping needs pages to be used for low to high.
-> At this point those pages are still from pgt_buf_* from BRK, so it is
-> ok now.
-> But we want to move early_ioremap_page_table_range_init() out of
-> init_memory_mapping() and only call it one time later, that will
-> make page_table_range_init/page_table_kmap_check/alloc_low_page to
-> use memblock to get page.
+> Page table area are pre-mapped now after
+> 	x86, mm: setup page table in top-down
+> 	x86, mm: Remove early_memremap workaround for page table accessing on 64bit
 > 
-> memblock allocation for pages are from high to low.
-> So will get panic from page_table_kmap_check() that has BUG_ON to do
-> ordering checking.
-> 
-> This patch add alloc_low_pages to make it possible to allocate serveral
-> pages at first, and hand out pages one by one from low to high.
-> 
-> -v2: add one line comment about xen requirements.
+> mapping_pagetable_reserve is not used anymore, so remove it.
 
-where is it?
+You should mention in the description of the patch that you are
+removing mask_rw_pte too.
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  arch/x86/mm/init.c        |   33 +++++++++++++++++++++------------
->  arch/x86/mm/mm_internal.h |    6 +++++-
->  2 files changed, 26 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 9d51af72..f5e0120 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
+The reason why you can do that safely is that you previously modified
+allow_low_page to always return pages that are already mapped, moreover
+xen_alloc_pte_init, xen_alloc_pmd_init, etc, will mark the page RO
+before hooking it into the pagetable automatically.
+
+[ ... ]
+
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index dcf5f2d..bbb883f 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1178,20 +1178,6 @@ static void xen_exit_mmap(struct mm_struct *mm)
 >  
->  static unsigned long min_pfn_mapped;
+>  static void xen_post_allocator_init(void);
 >  
-> -__ref void *alloc_low_page(void)
-> +__ref void *alloc_low_pages(unsigned int num)
->  {
->  	unsigned long pfn;
-> -	void *adr;
-> +	int i;
->  
+> -static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+> -{
+> -	/* reserve the range used */
+> -	native_pagetable_reserve(start, end);
+> -
+> -	/* set as RW the rest */
+> -	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
+> -			PFN_PHYS(pgt_buf_top));
+> -	while (end < PFN_PHYS(pgt_buf_top)) {
+> -		make_lowmem_page_readwrite(__va(end));
+> -		end += PAGE_SIZE;
+> -	}
+> -}
+> -
 >  #ifdef CONFIG_X86_64
->  	if (after_bootmem) {
-> -		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-> +		unsigned int order;
->  
-> -		return adr;
-> +		order = get_order((unsigned long)num << PAGE_SHIFT);
-> +		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
-> +						__GFP_ZERO, order);
->  	}
->  #endif
->  
-> -	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-> +	if ((pgt_buf_end + num) >= pgt_buf_top) {
->  		unsigned long ret;
->  		if (min_pfn_mapped >= max_pfn_mapped)
->  			panic("alloc_low_page: ran out of memory");
->  		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
->  					max_pfn_mapped << PAGE_SHIFT,
-> -					PAGE_SIZE, PAGE_SIZE);
-> +					PAGE_SIZE * num , PAGE_SIZE);
->  		if (!ret)
->  			panic("alloc_low_page: can not alloc memory");
-> -		memblock_reserve(ret, PAGE_SIZE);
-> +		memblock_reserve(ret, PAGE_SIZE * num);
->  		pfn = ret >> PAGE_SHIFT;
-> -	} else
-> -		pfn = pgt_buf_end++;
-> +	} else {
-> +		pfn = pgt_buf_end;
-> +		pgt_buf_end += num;
-> +	}
-> +
-> +	for (i = 0; i < num; i++) {
-> +		void *adr;
-> +
-> +		adr = __va((pfn + i) << PAGE_SHIFT);
-> +		clear_page(adr);
-> +	}
->  
-> -	adr = __va(pfn * PAGE_SIZE);
-> -	clear_page(adr);
-> -	return adr;
-> +	return __va(pfn << PAGE_SHIFT);
->  }
->  
->  /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
-> diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-> index b3f993a..7e3b88e 100644
-> --- a/arch/x86/mm/mm_internal.h
-> +++ b/arch/x86/mm/mm_internal.h
-> @@ -1,6 +1,10 @@
->  #ifndef __X86_MM_INTERNAL_H
->  #define __X86_MM_INTERNAL_H
->  
-> -void *alloc_low_page(void);
-> +void *alloc_low_pages(unsigned int num);
-> +static inline void *alloc_low_page(void)
-> +{
-> +	return alloc_low_pages(1);
-> +}
->  
->  #endif	/* __X86_MM_INTERNAL_H */
-> -- 
-> 1.7.7
-> 
+>  static void __init xen_cleanhighmap(unsigned long vaddr,
+>  				    unsigned long vaddr_end)
+> @@ -1503,19 +1489,6 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+>  #else /* CONFIG_X86_64 */
+>  static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+>  {
+> -	unsigned long pfn = pte_pfn(pte);
+> -
+> -	/*
+> -	 * If the new pfn is within the range of the newly allocated
+> -	 * kernel pagetable, and it isn't being mapped into an
+> -	 * early_ioremap fixmap slot as a freshly allocated page, make sure
+> -	 * it is RO.
+> -	 */
+> -	if (((!is_early_ioremap_ptep(ptep) &&
+> -			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
+> -			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
+> -		pte = pte_wrprotect(pte);
+> -
+>  	return pte;
+
+you should just get rid of mask_rw_pte completely
