@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab2KMLOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:14:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49280 "EHLO mx2.suse.de"
+	id S1755063Ab2KMLOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:14:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49303 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990Ab2KMLOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:14:06 -0500
+	id S1755044Ab2KMLOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:14:08 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 24/31] mm,generic: only flush the local TLB in ptep_set_access_flags
-Date: Tue, 13 Nov 2012 11:12:53 +0000
-Message-Id: <1352805180-1607-25-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/31] sched: numa: Make mempolicy home-node aware
+Date: Tue, 13 Nov 2012 11:12:55 +0000
+Message-Id: <1352805180-1607-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -25,64 +25,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The function ptep_set_access_flags is only ever used to upgrade
-access permissions to a page. That means the only negative side
-effect of not flushing remote TLBs is that other CPUs may incur
-spurious page faults, if they happen to access the same address,
-and still have a PTE with the old permissions cached in their
-TLB.
+Add another layer of fallback policy to make the home node concept
+useful from a memory allocation PoV.
 
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
+This changes the mpol order to:
 
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
+ - vma->vm_ops->get_policy	[if applicable]
+ - vma->vm_policy		[if applicable]
+ - task->mempolicy
+ - tsk_home_node() preferred	[NEW]
+ - default_policy
 
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault to actually flush the TLB entry.
+Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+facilitate efficient on-demand memory migration.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/pgtable-generic.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/uapi/linux/mempolicy.h |    9 ++++++++-
+ mm/mempolicy.c                 |   30 ++++++++++++++++++++----------
+ 2 files changed, 28 insertions(+), 11 deletions(-)
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e642627..d8397da 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -12,8 +12,8 @@
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index b25064f..bc7b611 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -69,7 +69,14 @@ enum mpol_rebind_step {
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
+ #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
+-#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
++#define MPOL_F_HOME	(1 << 4) /*
++				  * Migrate towards referencing node.
++				  * By building up stats on faults, the
++				  * scheduler will reinforce the choice
++				  * by identifying a home node and
++				  * queueing the task on that node
++				  * where possible.
++				  */
  
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-- * Only sets the access flags (dirty, accessed, and
-- * writable). Furthermore, we know it always gets set to a "more
-+ * Only sets the access flags (dirty, accessed), as well as write 
-+ * permission. Furthermore, we know it always gets set to a "more
-  * permissive" setting, which allows most architectures to optimize
-  * this. We return whether the PTE actually changed, which in turn
-  * instructs the caller to do things like update__mmu_cache.  This
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index f2111b7..076f8f8 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -126,9 +126,10 @@ static struct mempolicy *get_task_policy(struct task_struct *p)
+ 	int node;
+ 
+ 	if (!pol) {
+-		node = numa_node_id();
+-		if (node != -1)
+-			pol = &preferred_node_policy[node];
++		node = tsk_home_node(p);
++		if (node == -1)
++			node = numa_node_id();
++		pol = &preferred_node_policy[node];
+ 
+ 		/* preferred_node_policy is not initialised early in boot */
+ 		if (!pol->mode)
+@@ -2422,12 +2423,21 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 		BUG();
  	}
- 	return changed;
- }
+ 
+-	/*
+-	 * Moronic node selection policy. Migrate the page to the node that is
+-	 * currently referencing it
+-	 */
+-	if (pol->flags & MPOL_F_MORON)
+-		polnid = numa_node_id();
++	/* Migrate pages towards their home node or the referencing node */
++	if (pol->flags & MPOL_F_HOME) {
++		/*
++		 * Make a placement decision based on the home node.
++		 * NOTE: Potentially this can result in a remote->remote
++		 * copy but it's not migrated now the numa_fault will
++		 * be lost or accounted for incorrectly making it a rock
++		 * and a hard place.
++		 */
++		polnid = tsk_home_node(current);
++		if (polnid == -1) {
++			/* No home node, migrate to the referencing node */
++			polnid = numa_node_id();
++		}
++	}
+ 
+ 	if (curnid != polnid)
+ 		ret = polnid;
+@@ -2621,7 +2631,7 @@ void __init numa_policy_init(void)
+ 		preferred_node_policy[nid] = (struct mempolicy) {
+ 			.refcnt = ATOMIC_INIT(1),
+ 			.mode = MPOL_PREFERRED,
+-			.flags = MPOL_F_MOF | MPOL_F_MORON,
++			.flags = MPOL_F_MOF | MPOL_F_HOME,
+ 			.v = { .preferred_node = nid, },
+ 		};
+ 	}
 -- 
 1.7.9.2
 
