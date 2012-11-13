@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab2KMXqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 18:46:14 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:35465 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2KMXqN (ORCPT
+	id S1755995Ab2KMXvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 18:51:48 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33319 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab2KMXvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 18:46:13 -0500
+	Tue, 13 Nov 2012 18:51:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
- <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
- <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com> <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Nov 2012 15:45:51 -0800
-Message-ID: <CALCETrXSzNEdNEZaQqB93rpP9zXcBD4KRX_bjTAnzU6JEXcApg@mail.gmail.com>
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
-To: David Rientjes <rientjes@google.com>
-Cc: Marc Duponcheel <marc@offline.be>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20121113233226.GA25922@kroah.com>
+References: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
+	<20121113190123.GA32271@kroah.com>
+	<CAE7jHC8H1aB5ZOLC+brXKNvk-842_EUrJUOim5SV4B1h7i7r5g@mail.gmail.com>
+	<20121113230236.GA25569@kroah.com>
+	<CAE7jHC9EU=1VWG+quFZw=9b9GTh+TLzCQQvpS0qMKXNznVZZYA@mail.gmail.com>
+	<20121113233226.GA25922@kroah.com>
+Date: Wed, 14 Nov 2012 01:51:46 +0200
+X-Google-Sender-Auth: IUrLygyjRn4T6tWg2RwNFa51yIs
+Message-ID: <CAE7jHC-4HtaqBE6dKgZ4TEWQN8Lv+YajxZEyqZ+Y=oV80s-1RA@mail.gmail.com>
+Subject: Re: [PATCH] LDT - Linux Driver Template
+From: Constantine Shulyupin <const@makelinux.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, celinux-dev@lists.celinuxforum.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 3:41 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 13 Nov 2012, Andy Lutomirski wrote:
->
->> It just happened again.
->>
->> $ grep -E "compact_|thp_" /proc/vmstat
->> compact_blocks_moved 8332448774
->> compact_pages_moved 21831286
->> compact_pagemigrate_failed 211260
->> compact_stall 13484
->> compact_fail 6717
->> compact_success 6755
->> thp_fault_alloc 150665
->> thp_fault_fallback 4270
->> thp_collapse_alloc 19771
->> thp_collapse_alloc_failed 2188
->> thp_split 19600
->>
->
-> Two of the patches from the list provided at
-> http://marc.info/?l=linux-mm&m=135179005510688 are already in your 3.6.3
-> kernel:
->
->         mm: compaction: abort compaction loop if lock is contended or run too long
->         mm: compaction: acquire the zone->lock as late as possible
->
-> and all have not made it to the 3.6 stable kernel yet, so would it be
-> possible to try with 3.7-rc5 to see if it fixes the issue?  If so, it will
-> indicate that the entire series is a candidate to backport to 3.6.
+> Now I agree using the char interface isn't the most "obvious" and I have
+> a set of ideas/half-baked patches floating around that aim to clean it
+> up, but for now, I'd recommend just using the misc interface, it's
+> worlds simpler, makes sense, and handles all of the struct device work
+> for you automatically.
+OK. Thanks.
+Originally I've used only misc device and introduced dev region up on
+request. But it makes code too complicated.
+I also prefer to use only misc device in LDT.
 
-I'll try later on.  The last time I tried to boot 3.7 on this box, it
-failed impressively (presumably due to a localmodconfig bug, but I
-haven't tracked it down yet).
-
-I'm also not sure how reliably I can reproduce this.
-
---Andy
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Thank you
