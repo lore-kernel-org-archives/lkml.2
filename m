@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab2KMVwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:52:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54799 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2KMVww (ORCPT
+	id S1753410Ab2KMVyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:54:38 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64636 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab2KMVyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:52:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH V2 2/11] time: convert arch_gettimeoffset to a pointer
-Date: Tue, 13 Nov 2012 21:52:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: John Stultz <johnstul@us.ibm.com>, Russell King <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Mike Frysinger <vapier@gentoo.org>, Mikael Starvik <starvik@axis.com>,
-        Hirokazu Takata <takata@linux-m32r.org>
-References: <1352753462-2915-1-git-send-email-swarren@wwwdotorg.org> <50A16BD3.5010707@us.ibm.com> <50A27FF8.3080905@wwwdotorg.org>
-In-Reply-To: <50A27FF8.3080905@wwwdotorg.org>
+	Tue, 13 Nov 2012 16:54:37 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211132152.36668.arnd@arndb.de>
-X-Provags-ID: V02:K0:z3RhLfcAw87Nipe62IKfJaqTHj5y5fP6L05crVHlsL2
- hJZsu5b5ZgEre1KSNk6enXzHGgwebO6B4shjzta5gBftM2cB/G
- yRL/HZkn22tF5t1ZlFV1ySgfh/4dd94If+2LhvO9TsxKaAnydY
- DrXE+lbR6GdID6JRY6ir6VkZnwikcLJumJ0MwYxikxhEFYTOq9
- haGp9qDDgXOC+R6P+4jrAWg9VXQD3zbE8n0LCW7wwBsE6fPE27
- rUf69p/x5MXk5ESXoAzw61BOVEot6NSN0lP8HVuK6W4FccEzJk
- oRXNo6TblP8HR9BpKdC5jRHovxZ/pRtzLM0GFjFcfuscXxtZod
- BxAJV6MEv+ZHz28HeNcY=
+In-Reply-To: <50A2BD87.3060202@tilera.com>
+References: <1352840300-27814-1-git-send-email-simon.marchi@polymtl.ca> <50A2BD87.3060202@tilera.com>
+From: Simon Marchi <simon.marchi@polymtl.ca>
+Date: Tue, 13 Nov 2012 13:54:06 -0800
+X-Google-Sender-Auth: QE3h813z3xatl7N8Yub9riAVuWI
+Message-ID: <CAFXXi0kcGCqr-Ss5-Li9vXKCWyTh6Nvx+aAzVUZ1PZbZ=YZ2Pg@mail.gmail.com>
+Subject: Re: [PATCH] tilegx: request_irq with a non-null device name
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012, Stephen Warren wrote:
-> > One last thing to watch out for: If you're trying to build a kernel that
-> > mixes clocksource support with get_arch_timeoffset, you'll need to
-> > rework the #ifdef in update_wall_time(), since we currently assume with
-> > get_arch_timeoffset() that you're using tick + interpolation, so every
-> > call to update_wall_time() only moves time forward by one jiffy.
-> 
-> OK. I don't have any immediate plans to do that, although I wouldn't be
-> surprised if we (the ARM community in general) end up wanting to do that
-> at some point. It all depends on which ARM sub-architectures end up
-> getting converted to the multi-platform zImage support I guess.
+On Tue, Nov 13, 2012 at 1:37 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 11/13/2012 3:58 PM, Simon Marchi wrote:
+>> This patch simply makes the tilegx net driver call request_irq with a
+>> non-null name. It makes the output in /proc/interrupts more obvious, but
+>> also helps tools that don't expect to find null there.
+>>
+>> Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+>> ---
+>>  drivers/net/ethernet/tile/tilegx.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+>> index 4e98100..66e025a 100644
+>> --- a/drivers/net/ethernet/tile/tilegx.c
+>> +++ b/drivers/net/ethernet/tile/tilegx.c
+>> @@ -917,7 +917,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+>>       ingress_irq = rc;
+>>       tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
+>>       rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
+>> -                      0, NULL, NULL);
+>> +                      0, "tile_net", NULL);
+>
+> Good catch.  If you can change it to dev->name instead of "tile_net", feel
+> free to add my:
 
-IIRC the plan is to get rid of ARCH_USES_GETTIMEOFFSET in the long run,
-at least on ARM. Certainly for the platforms that are part of
-the multiplatform support. The only platforms remaining that currently
-use it are:
+I thought about that first, but it wouldn't be very logical. This
+module is loaded once and for all when the first network device is
+brought up, so this request_irq is for all the tile network
+interfaces. Suppose you "up" gbe0, "up" gbe1 and "down" gbe0, the
+device name would still be gbe0, even though it's down. That's why I
+opted for a generic name instead.
 
-* gemini
-* ebsa110
-* ep93xx
-* h720x
-* rpc
-* s3c24xx
-* s3c64xx
-* s5pc100
-* shark
+If you still want to go with dev->name I have no problem with that.
 
-Most of these are actually ARMv4 based and not maintained very actively.
-I'm pretty sure we can take care of ep93xx and the samsung platforms,
-which are the more active of the above.
-
-	Arnd
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
