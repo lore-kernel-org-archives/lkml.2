@@ -1,101 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2KMSM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:12:29 -0500
-Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:44223 "EHLO
-	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755175Ab2KMSM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:12:26 -0500
-Message-ID: <50A28D99.2000309@gentoo.org>
-Date: Tue, 13 Nov 2012 12:12:41 -0600
-From: Matthew Thode <prometheanfire@gentoo.org>
-Reply-To: prometheanfire@gentoo.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121030 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: iommu@lists.linux-foundation.org, joro@8bytes.org, cardoe@gentoo.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mthode@mthode.org, ddutile@redhat.com, bhelgaas@google.com,
-        dwmw2@infradead.org
-Subject: Re: [PATCH] intel-iommu: Fix lookup in add device
-References: <20121113172144.6783.37724.stgit@bling.home>
-In-Reply-To: <20121113172144.6783.37724.stgit@bling.home>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig30DD44203562B017129ADCC1"
+	id S1755542Ab2KMSQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:16:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab2KMSQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:16:00 -0500
+Message-ID: <1352830551.2233.18.camel@bling.home>
+Subject: Re: [RFC PATCH 3/6] VFIO: unregister IOMMU notifier on error
+ recovery path
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Yinghai Lu <yinghai@kernel.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>
+Date: Tue, 13 Nov 2012 11:15:51 -0700
+In-Reply-To: <1352555839-18961-3-git-send-email-jiang.liu@huawei.com>
+References: <1352555839-18961-1-git-send-email-jiang.liu@huawei.com>
+	 <1352555839-18961-3-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig30DD44203562B017129ADCC1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 11/13/2012 11:22 AM, Alex Williamson wrote:
-> We can't assume this device exists, fall back to the bridge itself.
->=20
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Tested-by: Matthew Thode <prometheanfire@gentoo.org>
-> Cc: stable@vger.kernel.org
+On Sat, 2012-11-10 at 21:57 +0800, Jiang Liu wrote:
+>  From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> On error recovery path in function vfio_create_group(), it should
+> unregister the IOMMU notifier for the new VFIO group. Otherwise it may
+> cause invalid memory access later when handling bus notifications.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 > ---
->  drivers/iommu/intel-iommu.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index d4a4cd4..0badfa4 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -4108,7 +4108,7 @@ static void swap_pci_ref(struct pci_dev **from, s=
-truct pci_dev *to)
->  static int intel_iommu_add_device(struct device *dev)
->  {
->  	struct pci_dev *pdev =3D to_pci_dev(dev);
-> -	struct pci_dev *bridge, *dma_pdev;
-> +	struct pci_dev *bridge, *dma_pdev =3D NULL;
->  	struct iommu_group *group;
->  	int ret;
-> =20
-> @@ -4122,7 +4122,7 @@ static int intel_iommu_add_device(struct device *=
-dev)
->  			dma_pdev =3D pci_get_domain_bus_and_slot(
->  						pci_domain_nr(pdev->bus),
->  						bridge->subordinate->number, 0);
-> -		else
-> +		if (!dma_pdev)
->  			dma_pdev =3D pci_dev_get(bridge);
->  	} else
->  		dma_pdev =3D pci_dev_get(pdev);
->=20
+>  drivers/vfio/vfio.c |   31 +++++++++++++++----------------
+>  1 file changed, 15 insertions(+), 16 deletions(-)
 
-I've tested this and it works just fine.
+This patch and patch 6/6 looks like good vfio fixes regardless of how we
+tackle the driver binding problem.  Please submit them separately.
+Thanks for the patches, I look forward to a solution here.  Thanks,
 
---=20
--- Matthew Thode (prometheanfire)
+Alex
+
+> 
+> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+> index 17830c9..3359ec2 100644
+> --- a/drivers/vfio/vfio.c
+> +++ b/drivers/vfio/vfio.c
+> @@ -191,6 +191,17 @@ static void vfio_container_put(struct vfio_container *container)
+>  	kref_put(&container->kref, vfio_container_release);
+>  }
+>  
+> +static void vfio_group_unlock_and_free(struct vfio_group *group)
+> +{
+> +	mutex_unlock(&vfio.group_lock);
+> +	/*
+> +	 * Unregister outside of lock.  A spurious callback is harmless now
+> +	 * that the group is no longer in vfio.group_list.
+> +	 */
+> +	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
+> +	kfree(group);
+> +}
+> +
+>  /**
+>   * Group objects - create, release, get, put, search
+>   */
+> @@ -229,8 +240,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+>  
+>  	minor = vfio_alloc_group_minor(group);
+>  	if (minor < 0) {
+> -		mutex_unlock(&vfio.group_lock);
+> -		kfree(group);
+> +		vfio_group_unlock_and_free(group);
+>  		return ERR_PTR(minor);
+>  	}
+>  
+> @@ -239,8 +249,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+>  		if (tmp->iommu_group == iommu_group) {
+>  			vfio_group_get(tmp);
+>  			vfio_free_group_minor(minor);
+> -			mutex_unlock(&vfio.group_lock);
+> -			kfree(group);
+> +			vfio_group_unlock_and_free(group);
+>  			return tmp;
+>  		}
+>  	}
+> @@ -249,8 +258,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
+>  			    group, "%d", iommu_group_id(iommu_group));
+>  	if (IS_ERR(dev)) {
+>  		vfio_free_group_minor(minor);
+> -		mutex_unlock(&vfio.group_lock);
+> -		kfree(group);
+> +		vfio_group_unlock_and_free(group);
+>  		return (struct vfio_group *)dev; /* ERR_PTR */
+>  	}
+>  
+> @@ -274,16 +282,7 @@ static void vfio_group_release(struct kref *kref)
+>  	device_destroy(vfio.class, MKDEV(MAJOR(vfio.devt), group->minor));
+>  	list_del(&group->vfio_next);
+>  	vfio_free_group_minor(group->minor);
+> -
+> -	mutex_unlock(&vfio.group_lock);
+> -
+> -	/*
+> -	 * Unregister outside of lock.  A spurious callback is harmless now
+> -	 * that the group is no longer in vfio.group_list.
+> -	 */
+> -	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
+> -
+> -	kfree(group);
+> +	vfio_group_unlock_and_free(group);
+>  }
+>  
+>  static void vfio_group_put(struct vfio_group *group)
 
 
---------------enig30DD44203562B017129ADCC1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQoo2iAAoJECRx6z5ArFrDM/oQANDRznWn1BAsuUMEVRgcgOGM
-Ezru9+I9baZeKxPOTFp+nmL3IWS/BS3nCFl3ALIZI/NMJUzOyYg9GtaHTOgHp4el
-58ZyzTqlS9yF2iadhErVIP7KsREQ42KFosYCr+Y4r00F37MgJztV9ag/c12Xp9gc
-AxeB7E7G9pqITMUKcKkx20qwm/Ygx/qIDD6uN7ZlW9dXOe11ziXQCnMQPs9u6i93
-OyiAp6KWmOn+noPei59aqXBk1jqz6F9T6CgAW4A7VVSfqvivLAV/IvwhDZQoGLEK
-j/fetcQDWDulhzV5YWpWi8G8A9DTlBZRiYAgoduUvwmDWSaXd465+142aWVVZaK0
-tFpzA7gkUHDxph+DmEAuAlQZeqNelRn/FtHtqeDckSlb9s9HlUzdxtIJWqh1QW4S
-dJN+vz3L56Mq6vA+JJHF4juoOI2Gh2oBqdgzaY2xG7/azbUlfkjodB3NWdaR4vAB
-0GE+5+HwPKwapZKdBz9Yee1L4x4F4WBGoP7c+DK8npRa4SqTUqi2vjnYIyV3QnJv
-YJkLU1QeJNY1FjkYh1j/DRNYPLbQ+/PXfDBV+ln9QY6AmCaqfUKjELf1WJ/6hSeQ
-GrUsMYiXFrOhnU/kqYtagZYDbaf8RFBLmHHuE2PMz++fuyWG5VTQvTLZ+h/Wtnxs
-vTKlb1OnyULwQZqCBtq2
-=G/Ba
------END PGP SIGNATURE-----
-
---------------enig30DD44203562B017129ADCC1--
