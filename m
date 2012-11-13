@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2KMLNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:13:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49223 "EHLO mx2.suse.de"
+	id S1754994Ab2KMLNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:13:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49212 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754874Ab2KMLNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:30 -0500
+	id S1753563Ab2KMLN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:13:29 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 23/31] x86: mm: drop TLB flush from ptep_set_access_flags
-Date: Tue, 13 Nov 2012 11:12:52 +0000
-Message-Id: <1352805180-1607-24-git-send-email-mgorman@suse.de>
+Subject: [PATCH 22/31] x86: mm: only do a local tlb flush in ptep_set_access_flags()
+Date: Tue, 13 Nov 2012 11:12:51 +0000
+Message-Id: <1352805180-1607-23-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
 References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
@@ -27,35 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-Intel has an architectural guarantee that the TLB entry causing
-a page fault gets invalidated automatically. This means
-we should be able to drop the local TLB invalidation.
+The function ptep_set_access_flags() is only ever invoked to set access
+flags or add write permission on a PTE.  The write bit is only ever set
+together with the dirty bit.
 
-Because of the way other areas of the page fault code work,
-chances are good that all x86 CPUs do this.  However, if
-someone somewhere has an x86 CPU that does not invalidate
-the TLB entry causing a page fault, this one-liner should
-be easy to revert.
+Because we only ever upgrade a PTE, it is safe to skip flushing entries on
+remote TLBs. The worst that can happen is a spurious page fault on other
+CPUs, which would flush that TLB entry.
+
+Lazily letting another CPU incur a spurious page fault occasionally is
+(much!) cheaper than aggressively flushing everybody else's TLB.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/mm/pgtable.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/mm/pgtable.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index be3bb46..7353de3 100644
+index 8573b83..be3bb46 100644
 --- a/arch/x86/mm/pgtable.c
 +++ b/arch/x86/mm/pgtable.c
-@@ -317,7 +317,6 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+@@ -301,6 +301,13 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 	free_page((unsigned long)pgd);
+ }
+ 
++/*
++ * Used to set accessed or dirty bits in the page table entries
++ * on other architectures. On x86, the accessed and dirty bits
++ * are tracked by hardware. However, do_wp_page calls this function
++ * to also make the pte writeable at the same time the dirty bit is
++ * set. In that case we do actually need to write the PTE.
++ */
+ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 			  unsigned long address, pte_t *ptep,
+ 			  pte_t entry, int dirty)
+@@ -310,7 +317,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
  	if (changed && dirty) {
  		*ptep = entry;
  		pte_update_defer(vma->vm_mm, address, ptep);
--		__flush_tlb_one(address);
+-		flush_tlb_page(vma, address);
++		__flush_tlb_one(address);
  	}
  
  	return changed;
