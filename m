@@ -1,47 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2KMITa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:19:30 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50217 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab2KMIT2 (ORCPT
+	id S1754562Ab2KMITp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:19:45 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43727 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab2KMITn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:19:28 -0500
-Date: Tue, 13 Nov 2012 00:19:25 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
- inotify_inode_mark
-In-Reply-To: <20121113080032.GF6511@moon>
-Message-ID: <alpine.DEB.2.00.1211130016240.18379@chino.kir.corp.google.com>
-References: <20121112101440.665694060@openvz.org> <20121112101845.839702715@openvz.org> <20121112165540.2ec39f50.akpm@linux-foundation.org> <20121113072057.GC6511@moon> <20121112234001.009b2ae3.akpm@linux-foundation.org> <20121113080032.GF6511@moon>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 13 Nov 2012 03:19:43 -0500
+Date: Tue, 13 Nov 2012 09:19:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/8] sched, numa, mm: Add adaptive NUMA affinity support
+Message-ID: <20121113081935.GB21386@gmail.com>
+References: <20121112160451.189715188@chello.nl>
+ <20121112161215.782018877@chello.nl>
+ <0000013af7130ad7-95edbaf9-d31d-4258-8fc0-013d152246a2-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013af7130ad7-95edbaf9-d31d-4258-8fc0-013d152246a2-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012, Cyrill Gorcunov wrote:
 
-> > The question is, how many `struct inotify_inode_mark's are instantiated
-> > system-wide?  Could be millions?
-> 
-> Well, hard to tell, to be fair. On my testing machine only apache has been
-> using inotify system as far as I remember, but for sure nothing except memory
-> limit the number of inotify. But I think if one running machine with millions
-> of inotify it's rather powerful machine with enough memory.
-> 
+* Christoph Lameter <cl@linux.com> wrote:
 
-Seems easy to determine if you boot with slub_nomerge on the command line 
-and then read /sys/kernel/slab/inotify_inode_mark/objects.  On my system, 
-that happens to be 210, but I'm sure you could come up with a realistic 
-synthetic workload to make it much higher.
+> > Using this, we can construct two per-task node-vectors, 
+> > 'S_i' and 'P_i' reflecting the amount of shared and 
+> > privately used pages of this task respectively. Pages for 
+> > which two consecutive 'hits' are of the same cpu are assumed 
+> > private and the others are shared.
+> 
+> The classification is per task? [...]
+
+Yes, exactly - access patterns are fundamentally and physically 
+per task, as a task can execute only on a single CPU at once. (I 
+say 'task' instead of 'thread' or 'process' because the new code 
+makes no distinction between threads and processes.)
+
+The new code maps out inter-task relationships, statistically. 
+
+So we are basically able to (statistically) approximate which 
+task relates to which other task in the system, based on their 
+memory access patterns alone: using a very compact metric and 
+matching scheduler rules and a (lazy) memory placement machinery 
+on the VM side.
+
+Say consider the following 10-task workload, where the scheduler 
+is able to figure out these relationships:
+
+  { A, B, C, D } dominantly share memory X with each other
+  { E, F, G, H } dominantly share memory Y with each other
+  { I }          uses memory privately
+  { J }          uses memory privately
+
+and the scheduler rules then try to converge these groups of 
+tasks ideally.
+
+[ The 'role' and grouping of tasks is not static but sampled and 
+  average based - so if a worker thread changes its role, the 
+  scheduler will adapt placement to that. ]
+
+[ A 'private task' is basically a special case for sharing 
+  memory: if a task only shares memory with itself. Its 
+  placement and spreading is easy. ]
+
+> [...] But most tasks have memory areas that are private and 
+> other areas where shared accesses occur. Can that be per 
+> memory area? [...]
+
+Do you mean per vma, and/or per mm?
+
+How would that work? Consider the above case:
+
+ - 12x CPU-intense threads and a large piece of shared memory
+
+ - 2x 4 threads are using two large shared memory area to 
+   calculate (one area for each group of threads)
+
+ - the 4 remaining processes aggregate and sort the results from
+   the 8 threads, in their own dominantly 'private' working set.
+
+how does per vma or per mm describe that properly? The whole 
+workload might be just within a single large vma within a JVM. 
+Or it might be implemented using processes and anonymous shared 
+memory.
+
+If you look at this from a 'per task access pattern and 
+inter-task working set relationship' perspective then the 
+resolution and optimization is natural: the 2x 4 threads should 
+be grouped together modulo capacity constraints, while the 
+remaining 4 'private memory' threads should be spread out over 
+the remaining capacity of the system.
+
+What matters is how tasks relate to each other as they perform 
+processing, not which APIs the workload uses to create tasks and 
+memory areas.
+
+The main constraint from a placement optimization complexity POV 
+is task->CPU placement: for NUMA workloads the main challenge - 
+and 80% of the code and much of the real meat of the feature - 
+is to categorize and place tasks properly.
+
+There might be much discussion about PROT_NONE and memory 
+migration details, but that is because the VM code is 5 times 
+larger than the scheduler code and due to that there's 5 times 
+more VM hackers than scheduler hackers ;-)
+
+In reality the main complexity of this problem [the placement 
+optimization problem portion] is a dominantly CPU/task scheduler 
+feature, and IMO rather fundamentally so: it's not an 
+implementation choice but derives from the Von Neumann model of 
+computing in essence.
+
+And that is why IMO the task based access pattern metric 
+implementaton is such a good fit in practice as well - and that 
+is why other approaches struggled getting a hold of the NUMA 
+problem.
+
+Thanks,
+
+	Ingo
