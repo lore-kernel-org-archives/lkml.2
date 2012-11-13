@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab2KMIcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:32:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49608 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754625Ab2KMIca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:32:30 -0500
-Date: Tue, 13 Nov 2012 17:32:23 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Tero Kristo <t-kristo@ti.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/13] MFD: twl-core: Convert to use regmap for I/O
-Message-ID: <20121113083222.GQ18224@opensource.wolfsonmicro.com>
-References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
- <1352795334-7406-4-git-send-email-peter.ujfalusi@ti.com>
+	id S1754317Ab2KMI3B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:29:01 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60093 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753366Ab2KMI26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:28:58 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/13] MFD: twl drivers: Convert to regmap IO and cleanups
+Date: Tue, 13 Nov 2012 09:28:41 +0100
+Message-ID: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rJ8inJ6ig7iY3YX9"
-Content-Disposition: inline
-In-Reply-To: <1352795334-7406-4-git-send-email-peter.ujfalusi@ti.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---rJ8inJ6ig7iY3YX9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This series converts the twl-core to use regmap for IO towards the chip.
+With the conversion to regmap IO we no longer need to allocate bigger buffer for
+writes.
+I have appended patches to this series to make some cleanups which will help in
+the future to further clean up the twl stack.
 
-On Tue, Nov 13, 2012 at 09:28:44AM +0100, Peter Ujfalusi wrote:
-> Remove the custom code to do I/O and replace it with standard regmap call=
-s.
->=20
-> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+The series depends on a regression fix patch for the twl-core:
+https://patchwork.kernel.org/patch/1679421/
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Regards,
+Peter
+---
+Peter Ujfalusi (13):
+  MFD: twl-core: Register twl4030-madc child only for twl4030 class
+  MFD: twl-core: Support for proper PWM drivers
+  MFD: twl-core: Convert to use regmap for I/O
+  MFD/rtc/gpio: twl: No need to allocate bigger buffer for write
+  MFD: twl-core: Clean up and correct child registration
+  mfd: twl: Remove unused TWL_MODULE definitions
+  mfd: twl: Convert module id definitions to enums
+  mfd: twl: Use decimal numbers for TWL6030_MODULE_IDs
+  MFD: twl-core: re-group the twl_mapping table for easier reading
+  mfd: twl4030-madc: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+  mfd: twl4030-power: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+  mfd: twl4030-irq: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+  mfd: twl-core: Change TWL4030_MODULE_* ids to TWL_MODULE_*
 
---rJ8inJ6ig7iY3YX9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ drivers/gpio/gpio-twl4030.c |  12 +--
+ drivers/mfd/twl-core.c      | 227 +++++++++++++++++++++++---------------------
+ drivers/mfd/twl4030-irq.c   |  10 +-
+ drivers/mfd/twl4030-madc.c  |  14 +--
+ drivers/mfd/twl4030-power.c | 124 ++++++++++--------------
+ drivers/mfd/twl6030-irq.c   |   4 +-
+ drivers/rtc/rtc-twl.c       |  32 +++----
+ include/linux/i2c/twl.h     |  73 +++++++-------
+ 8 files changed, 241 insertions(+), 255 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+1.8.0
 
-iQIcBAEBAgAGBQJQogWJAAoJELSic+t+oim9VdUP/0PPz7bZam2L+nwbVsze+imO
-6hxO53FNukm+GZolqXifUaFhTKnrGJPhD8vZPMzZAuF7VM+gz5dMSKuFQD8mhaBr
-K1l71bNWLp7kvLK9oTBTdB87yuc2BM7hcvyuNoliAWA2TvFq0z72uPeyPE8X+/9z
-KJDPdlFW4KmLPJShO8tsVNsB6MAgPlrlNZhLpqHAU08gD8vlbXlvbWqhnytyJFIw
-NcVqNV/zCwliPSvhL6Z6kdeo4yXezHUH3NJIOMUz4prr8D9f76zfuSYuLKDm9SP3
-IGmVyvbtPBM11f8MkCtbQhByzRNjUsHcOqK7RK3+vCao4Gik2usKaNTLsZEZKEJG
-XCAJ1uXYrNQUqk+ZkWMaubCU226BfJL/N6TRyBuWS6MCjrb3Uw/iK89j5QRpXa67
-GiswiL56ghWaBVT4otH+HtunmhFmiwZSuCY7abGF6CMRdf1lcs7vZAVlcdSk+hQY
-DYcZHnYk3JywDfjs7kS5Cc1UdiOlMb/9RupY5UwxIg+PyV4TDWS+Zz4/yPQJETju
-SINuY1X2eqE6dANOCM2Pvt/fe+mKaLIHAKtR7tGDRKKcpG4dAsb7QxnouEkI+7bM
-yl0lJWvDb6OdyYKv8bSBLStA6wV5Hgb1A1iHTMb5mgTYOa58nCb6+0GasFReEBgb
-rg1R8HZ2K79TUWws983E
-=axQW
------END PGP SIGNATURE-----
-
---rJ8inJ6ig7iY3YX9--
