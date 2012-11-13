@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2KMHh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:37:29 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2559 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2KMHh1 (ORCPT
+	id S1754102Ab2KMHkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:40:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49193 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab2KMHkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:37:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 12 Nov 2012 23:37:21 -0800
-Message-ID: <50A1F8AC.60709@nvidia.com>
-Date: Tue, 13 Nov 2012 15:37:16 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A0C3BF.90509@nvidia.com> <50A1CECA.3090804@nvidia.com> <20121113064135.GA31443@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121113064135.GA31443@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 13 Nov 2012 02:40:05 -0500
+Date: Mon, 12 Nov 2012 23:40:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
+ inotify_inode_mark
+Message-Id: <20121112234001.009b2ae3.akpm@linux-foundation.org>
+In-Reply-To: <20121113072057.GC6511@moon>
+References: <20121112101440.665694060@openvz.org>
+	<20121112101845.839702715@openvz.org>
+	<20121112165540.2ec39f50.akpm@linux-foundation.org>
+	<20121113072057.GC6511@moon>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 02:41 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Nov 13, 2012 at 12:38:34PM +0800, Mark Zhang wrote:
->> On 11/12/2012 05:39 PM, Mark Zhang wrote:
->>> On 11/09/2012 09:20 PM, Thierry Reding wrote:
-> [...]
->>>> @@ -1036,9 +1041,6 @@ static struct clk_duplicate tegra_clk_duplicates[] = {
->>>>         CLK_DUPLICATE("usbd",   "utmip-pad",    NULL),
->>>>         CLK_DUPLICATE("usbd",   "tegra-ehci.0", NULL),
->>>>         CLK_DUPLICATE("usbd",   "tegra-otg",    NULL),
->>>> -       CLK_DUPLICATE("hdmi",   "tegradc.0",    "hdmi"),
->>>> -       CLK_DUPLICATE("hdmi",   "tegradc.1",    "hdmi"),
->>>> -       CLK_DUPLICATE("host1x", "tegra_grhost", "host1x"),
->>>>         CLK_DUPLICATE("2d",     "tegra_grhost", "gr2d"),
->>>>         CLK_DUPLICATE("3d",     "tegra_grhost", "gr3d"),
->>>>         CLK_DUPLICATE("epp",    "tegra_grhost", "epp"),
->>>> @@ -1051,6 +1053,9 @@ static struct clk_duplicate tegra_clk_duplicates[] = {
->>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.1", "fast-clk"),
->>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
->>>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
->>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
->>>> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
->>>> +       CLK_DUPLICATE("pll_d_out0", "tegra-hdmi", "parent"),
->>>>  };
->>
->> Why we need this "CLK_DUPLICATE"? Set the clock parent of the dc
->> controllers to pll_p?
-> 
-> This was the method proposed by Stephen to abstract away the clock tree
-> differences between Tegra20 and Tegra30. The way this works is that we
-> can {devm_,}clk_get(&pdev->dev, "parent") in the display and HDMI
-> controllers' .probe() and it'll obtain the correct parent clock
-> independent of which version of Tegra is used.
-> 
+On Tue, 13 Nov 2012 11:20:57 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-Yes, after reading the corresponding codes in rgb.c & hdmi.c, I got how
-this works. It's better than our previous version, I mean, the version
-which we hard-code the clock parent setting logics in clock.c. But I
-wanna say, it looks weird if you don't read the code of drm driver.
+> > >  struct inotify_inode_mark {
+> > >  	struct fsnotify_mark fsn_mark;
+> > >  	int wd;
+> > > +#ifdef INOTIFY_USE_FHANDLE
+> > > +	__u8 fhandle[sizeof(struct file_handle) + MAX_HANDLE_SZ];
+> > > +#endif
+> > >  };
+> > 
+> > Whoa.  This adds 128+8 bytes to the inotify_inode_mark.  That's a lot of
+> > bloat, and there can be a lot of inotify_inode_mark's in the system?
+> 
+> Yes, that's why it's not turned on by default, only if is c/r turned on.
+> iirc I've been said that usually only about 40 bytes is used (in the tests
+> I met only 8 bytes). Letme re-check all things.
 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
-> 
+The question is, how many `struct inotify_inode_mark's are instantiated
+system-wide?  Could be millions?
+
+Dumb question: do we really need inotify_inode_mark.fhandle at all? 
+What prevents us from assembling this info on demand when ->show_fdinfo() is
+called?
+
+
