@@ -1,68 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab2KMN6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 08:58:38 -0500
-Received: from hosting.visp.net.lb ([194.146.153.11]:45991 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab2KMN6g (ORCPT
+	id S1754999Ab2KMOFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 09:05:12 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:60782 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab2KMOFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 08:58:36 -0500
+	Tue, 13 Nov 2012 09:05:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 13 Nov 2012 15:58:34 +0200
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: <jeffrey.t.kirsher@intel.com>, <jesse.brandeburg@intel.com>,
-        <bruce.w.allan@intel.com>, <carolyn.wyborny@intel.com>,
-        <donald.c.skidmore@intel.com>, <gregory.v.rose@intel.com>,
-        <peter.p.waskiewicz.jr@intel.com>, <alexander.h.duyck@intel.com>,
-        <john.ronciak@intel.com>, <e1000-devel@lists.sourceforge.net>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: e1000e on DH55HC stalling and kernel panic in 3.6.6
-Message-ID: <46948b0ae98fcae5d08fd9fe61fd2e47@visp.net.lb>
-User-Agent: VISP Webmail/0.8.1
+In-Reply-To: <1352600980.23129.5.camel@phoenix>
+References: <1352600980.23129.5.camel@phoenix>
+Date: Tue, 13 Nov 2012 15:05:09 +0100
+Message-ID: <CACRpkdYhP_Hv7TwrxkBCoSmAiWMB-re1cS-v_hBimxJVfg_DuA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: spear: Staticize non-exported symbols
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, Nov 11, 2012 at 3:29 AM, Axel Lin <axel.lin@ingics.com> wrote:
 
-I just tried to run latest kernel on my DH55HC motherboard latest 
-kernel 3.6.6 and got various network problems, such as network traffic 
-are stopping, and sometimes i am getting kernel panic.
-When traffic are stopping, ethtool -r eth0 sometimes helps.
-When i do ethtool -G eth0 rx NNN , sometimes it will give kernel panic, 
-but it is hard to reproduce.
+> They are not referenced outside of this file, make them static.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-I tried to capture panic on pictures, so will try to decode on what i 
-got photo, it is a nightmare, but sadly i dont have serial in hands to 
-get data over it.
+Applied with Viresh's ACK.
 
-skbuff: skb_over_panic: text:f86fc769 len:25807 put:25807 head:c1da1800 
-data:c1da1840 tail:0xc1da7d0f end:c1da1f40 dev:eth0
-kernel BUG at net/core/skbuff.c:127
-opcode: 0000 [#1] SMP
-Pid: 0 comm: swapper/6 Not tained 3.6.6-build-0063 #23
-EIP: 0060:[<c02e7980>] EFLAGS: 00010296 CPU:6
-EIP is at skb_put+0x83/0x8e
-
-There is registers and stack, let me know if you need specific fields
-
-Call trace:
-f86fc769 ? e1000_clean_rx_irq+0x1e1/0x2af [e1000e]
-f86fc769 e1000_clean_rx_irq+0x1e1/0x2af [e1000e]
-f86fcc73 e1000e_poll+0x6a/0x209 [e1000e]
-c02f1630 net_rx_action+0x90/0x15d
-c01302d5 __do_softirq+0x8a/-x13b
-c013024b ? local_bh_enable+0xd/0xd
-<IRQ>
-c0130504 irq_exit+0x41/0x91
-c0102c37 do_IRQ+0x79/0x8d
-
-There is also more data, let me know if you need it.
-
-
----
-Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
-
+Thanks!
+Linus Walleij
