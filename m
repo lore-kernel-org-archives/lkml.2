@@ -1,120 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab2KMAPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 19:15:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7060 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab2KMAPW (ORCPT
+	id S1753864Ab2KMARX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 19:17:23 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46105 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab2KMARV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 19:15:22 -0500
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5GM4hxtmu_IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=6uwSHAYG6wEA:10 a=-s1OEKRfaT0MLC4ILFMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352765720.18025.21.camel@gandalf.local.home>
-Subject: Re: getnstimeofday stuck for several milliseconds?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Date: Mon, 12 Nov 2012 19:15:20 -0500
-In-Reply-To: <50A18C0F.9000604@us.ibm.com>
-References: <50977DF5.60703@canonical.com> <50A18C0F.9000604@us.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Mon, 12 Nov 2012 19:17:21 -0500
+Message-ID: <50A1918E.1000809@wwwdotorg.org>
+Date: Mon, 12 Nov 2012 17:17:18 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, linux-tegra@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] NVIDIA Tegra DRM driver
+References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-12 at 15:53 -0800, John Stultz wrote:
+On 11/12/2012 02:55 PM, Thierry Reding wrote:
+> This second version of this patch series addresses all the comments
+> received so far. Most notably it takes advantage of the debugfs helpers
+> provided by the DRM core. Oddly enough this actually increases the line
+> count, but that's because the helpers don't fit with the subdevices
+> approach as implemented by this driver. However some quick discussions
+> with Rob Clark showed that Tegra DRM is not special in this respect but
+> other drivers may need the same functionality. Eventually the debugfs
+> code could be reworked on top of helpers that are better suited at the
+> design of embedded, multi-device DRM drivers.
+> 
+> Other than that there is some removal of code that was actually supposed
+> to go into a later patch because it has dependencies that haven't been
+> merged yet and some moving around of #defines and the device tree
+> bindings documentation. Finally the driver now uses the DRM core's
+> drm_compat_ioctl() instead of a custom and unimplemented (!) version.
 
-> Cc'ing Steven to see if he can't help understand whats going on here.
+The series,
 
-I don't trust the trace...
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
-
-The wake up happened on CPU 2
-
-pulseaud-2106    2d...    1us :   2106:109:R   + [003]  2115: 94:S <...>
-pulseaud-2106    2d...    2us+: try_to_wake_up <-default_wake_function
-
-
-    Xorg-1278    3d... 1038us : __switch_to_xtra <-__switch_to
-    Xorg-1278    3d... 1039us : memset <-__switch_to_xtra
-kworker/-37      3d... 1040us : finish_task_switch <-__schedule
-kworker/-37      3.... 1040us : _raw_spin_lock_irq <-worker_thread
-kworker/-37      3d... 1041us : need_more_worker <-worker_thread
-kworker/-37      3d... 1041us : process_one_work <-worker_thread
-kworker/-37      3.... 1042us : __wake_up <-wakeup_work_handler
-
-A millisecond goes by, Xorg is schedules out for kworker (which I'm sure
-is also less in priority). And we don't see any sign of need resched
-being set (N).
-
-kworker/-37      3d... 1082us : pick_next_task_idle <-__schedule
-  <idle>-0       3d... 1083us : finish_task_switch <-__schedule
-  <idle>-0       3.... 1083us : tick_nohz_idle_enter <-cpu_idle
-  <idle>-0       3.... 1084us : set_cpu_sd_state_idle <-tick_nohz_idle_enter
-  <idle>-0       3d... 1084us : __tick_nohz_idle_enter <-tick_nohz_idle_enter
-
-Idle is even scheduled in here!
-
-  <idle>-0       3d.h. 9047us : ttwu_do_wakeup <-ttwu_do_activate.constprop.86
-  <idle>-0       3d.h. 9048us : check_preempt_curr <-ttwu_do_wakeup
-  <idle>-0       3d.h. 9049us : resched_task <-check_preempt_curr
-  <idle>-0       3dNh. 9049us : task_woken_rt <-ttwu_do_wakeup
-  <idle>-0       3dNh. 9050us : ttwu_stat <-try_to_wake_up
-  <idle>-0       3dNh. 9050us : _raw_spin_unlock_irqrestore <-try_to_wake_up
-  <idle>-0       3dNh. 9051us : _raw_spin_lock <-__run_hrtimer
-
-During an interrupt (h), we see another wakeup (not sure what this was
-for), and the need resched is set (N).
-
-  <idle>-0       3dNh. 9053us : lapic_next_event <-clockevents_program_event
-  <idle>-0       3dNh. 9054us : irq_exit <-smp_apic_timer_interrupt
-  <idle>-0       3dN.. 9055us : idle_cpu <-irq_exit
-  <idle>-0       3dN.. 9055us : rcu_irq_exit <-irq_exit
-  <idle>-0       3dN.. 9056us : rcu_eqs_enter_common.isra.40 <-rcu_irq_exit
-  <idle>-0       3dN.. 9056us : rcu_prepare_for_idle <-rcu_eqs_enter_common.isra.40
-  <idle>-0       3.N.. 9057us : menu_reflect <-cpuidle_idle_call
-  <idle>-0       3.N.. 9058us : rcu_idle_exit <-cpu_idle
-  <idle>-0       3dN.. 9058us : rcu_eqs_exit_common.isra.38 <-rcu_idle_exit
-  <idle>-0       3dN.. 9059us : rcu_cleanup_after_idle <-rcu_eqs_exit_common.isra.38
-  <idle>-0       3dN.. 9059us : del_timer <-rcu_cleanup_after_idle
-  <idle>-0       3.N.. 9060us : tick_nohz_idle_exit <-cpu_idle
-  <idle>-0       3dN.. 9060us : ktime_get <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9061us : tick_do_update_jiffies64 <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9061us : update_cpu_load_nohz <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9061us : calc_load_exit_idle <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9062us : touch_softlockup_watchdog <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9062us : tick_nohz_restart <-tick_nohz_idle_exit
-  <idle>-0       3dN.. 9063us : hrtimer_cancel <-tick_nohz_restart
-  <idle>-0       3dN.. 9063us : hrtimer_try_to_cancel <-hrtimer_cancel
-
-We exit the interrupt and then do a lot of stuff with interrupts
-disabled? Oh, this looks like the exit from idle (rcu_idle_exit is
-there). It's doing clean up stuff here.
-
-
-  <idle>-0       3dN.. 9077us : _pick_next_task_rt <-pick_next_task_rt
-  <idle>-0       3dN.. 9078us : dequeue_pushable_task <-pick_next_task_rt
-  <idle>-0       3d... 9079us : probe_wakeup_sched_switch <-__schedule
-  <idle>-0       3d... 9079us :      0:120:R ==> [003]  2115: 94:R <...>
-
-Finally our task is scheduled. But this looks all screwed up to me. I
-bet the clocks are not in sync. Do a:
-
-echo global > /sys/kernel/debug/tracing/trace_clock
-
-and this will use a slower clock, but one that is in sync between CPUs.
-
-Also, enable the sched_switch and sched_wakeup trace points too.
-
-cd /sys/kernel/debug/tracing/events/sched
-echo 1 > sched_wakeup/enable
-echo 1 > sched_switch/enable
-
--- Steve
-
-
+(on the Harmony board's HDMI output; I'll test other boards/outputs later).
