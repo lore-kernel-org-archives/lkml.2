@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2KMKjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 05:39:16 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:40436 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab2KMKjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 05:39:14 -0500
+	id S1754827Ab2KMKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 05:44:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37108 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754783Ab2KMKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 05:44:14 -0500
+Date: Tue, 13 Nov 2012 12:37:57 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH] usb: otg: twl4030: Change TWL4030_MODULE_* ids to
+ TWL_MODULE_*
+Message-ID: <20121113103757.GE10951@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1352799818-22363-1-git-send-email-peter.ujfalusi@ti.com>
+ <20121113094722.GB10395@arwen.pp.htv.fi>
+ <50A220BF.7020901@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1352757066.32153.5@snotra>
-References: <CAMuHMdXE0yJNivpirGgx08zqLH2086ydeOU6zswXj-+zn8OsWQ@mail.gmail.com>
-	<1352757066.32153.5@snotra>
-Date: Tue, 13 Nov 2012 11:39:13 +0100
-X-Google-Sender-Auth: 03WikOETNFAecaWE0Xb9eTbVICs
-Message-ID: <CAMuHMdVytJ6YcDb1-MAaqwgTKXDLi3tJaVW3vh9aE5smNwJR=g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.7-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u5E4XgoOPWr4PD9E"
+Content-Disposition: inline
+In-Reply-To: <50A220BF.7020901@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
+--u5E4XgoOPWr4PD9E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 12, 2012 at 10:51 PM, Scott Wood <scottwood@freescale.com> wrote:
-> On 11/12/2012 03:02:46 PM, Geert Uytterhoeven wrote:
->> On Mon, Nov 12, 2012 at 9:58 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->> > JFYI, when comparing v3.7-rc5 to v3.7-rc4[3], the summaries are:
->> >   - build errors: +14/-4
->>
->> 14 regressions:
->>   + drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first
->> use in this function):  => 799:93
->
-> These reports would be more useful if the actual .config were provided,
-> rather than just saying "powerpc randconfig".
+Hi,
 
-This can be obtained from the kissb build system.
-[1] http://kisskb.ellerman.id.au/kisskb/head/5614/ (all 117 configs)
+On Tue, Nov 13, 2012 at 11:28:15AM +0100, Peter Ujfalusi wrote:
+> Hi Felipe,
+>=20
+> On 11/13/2012 10:47 AM, Felipe Balbi wrote:
+> > On Tue, Nov 13, 2012 at 10:43:38AM +0100, Peter Ujfalusi wrote:
+> >> To facilitate upcoming cleanup in twl stack.
+> >> No functional changes.
+> >>
+> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >=20
+> > I guess this one must go together with the rest of your series...
+>=20
+> I made the split between the patches and they are good to go in their sep=
+arate
+> ways to avoid cross tree hassle.
+> All of the defines were in place originally but they were used in non
+> consistent ways.
+> All of these will help in the future to clean up the twl core without bre=
+aking
+> the child drivers.
 
-> I doubt this particular one is a regression; it looks like the dependencies
+ok good. Unfortunately I have already sent this merge window's pull
+request to Greg so I'd have to delay this until v3.9. If that's ok with
+you, I can take it through my tree.
 
-Yeah, regressions in randconfigs can be misleading.
-Still, they're build failures.
+--=20
+balbi
 
-> have always been too weak (patch sent) and you're just comparing different
-> randomly-generated configs.
+--u5E4XgoOPWr4PD9E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks for your patch!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->> powerpc-randconfig
->>
->>   + error: relocation truncated to fit: R_PPC64_REL24 against symbol
->> `._mcount' defined in .text section in arch/powerpc/kernel/entry_64.o:
->> (.text+0x1ff9eb8) => (.text+0x1ffa274), (.text+0x1ff7840)
->>
->> powerpc-allyesconfig
->
->
-> It's been over 3 years since powerpc-allyesconfig built (it's just too big
-> for the relocation model the kernel uses) -- how is this a regression?
+iQIcBAEBAgAGBQJQoiMFAAoJEIaOsuA1yqREk24P/0i0bC0b8W15F3mglrzk0cVo
+DOaqwUIc92jz6FtMfpPTO2H9NhOCnkdZylaMJNakP9ONKZ7T7eWZ+h+gXO2Iamj9
+SX29uYgux3eTYSYsXLiLDxvAbzvHnEzSMA6r7ZMaiukMBeZR+cUiijsYSBXQhYvL
+Mux9Cde5UZP0x3MJNMfEryFiOKbrtNw3MSnSR/vNHfURUACc2ZoxZF6RklR24B30
+ZZbK1tf8Cxlk7SZ07tb5NLPBujDz4iI7hX789nWNLWsDDfbMrBi9UX2ghVfS38D4
+AocEH8wTwgexkazLh6qMvWiDU+uWXRkegdv6f7hO2rc0UZxB4cO9RI1BZsr6UN5E
+/YXIF/SaDrGHdUlVy2cTqcgCbgnfWMRLZJsBMbwbOqtaaIqIiwBwzMPrmIPTXgAW
+KGExxBmB5JaqHwEnVw4i27mbdIeVNl/XjmhQyqeP1fzV78QnpVaSzlybyTCY0jf2
+1TCvKDGIyAJF08Tenke8SjthvfUxIOJ2/4p90ch53COoE0Wx1cp6Y+kUExQTNntM
+o+SB3Mg289V/70mLRckLtdj0FHdLBgq6xZk5mrdLYB8cY5CkmhLQTSGc35oAKZtD
+YoZSMyX+bHvPPp5B00XfXlrLxNniHMzXG31h8RS5b35ytdOuveKNtyVNpb4uhoYn
+g7/LOTKNoLCQA5KL2DhF
+=OzIR
+-----END PGP SIGNATURE-----
 
-It's a regression because it didn't complain about ".mcount" in the
-previous run.
-
-But I'll start stripping them from the rc-incremental reports.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--u5E4XgoOPWr4PD9E--
