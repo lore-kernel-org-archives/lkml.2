@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab2KMDBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:01:54 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46691 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2KMDBw (ORCPT
+	id S1753851Ab2KMDCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:02:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44393 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752727Ab2KMDCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:01:52 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mhocko@suse.cz, glommer@parallels.com
-Subject: [PATCHSET cgroup/for-3.8] cgroup: allow ->post_create() to fail
-Date: Mon, 12 Nov 2012 19:01:27 -0800
-Message-Id: <1352775704-9023-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 12 Nov 2012 22:02:04 -0500
+Message-ID: <1352775711.16264.96.camel@deadeye.wl.decadent.org.uk>
+Subject: Missing signoff for 'module: fix out-by-one error in kallsyms'
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Nov 2012 03:01:51 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-VWIiC4bPInvRx2qLoTzF"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-This became a rather large patchset mostly because there are a lot of
-weirdities and subtle breakages in create/destroy/load/unload paths.
-The goal of the patchset is allowing ->post_create() to fail and
-renaming ->create/post_create/pre_destroy/destroy() to
-->css_alloc/css_online/css_offline/css_free().
+--=-VWIiC4bPInvRx2qLoTzF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patchset contains the following seventeen patches.
+This doesn't have anyone's Signed-off-by:
 
- 0001-cgroup-remove-incorrect-dget-dput-pair-in-cgroup_cre.patch
- 0002-cgroup-initialize-cgrp-allcg_node-in-init_cgroup_hou.patch
- 0003-cgroup-open-code-cgroup_create_dir.patch
- 0004-cgroup-create-directory-before-linking-while-creatin.patch
- 0005-cgroup-cgroup-dentry-isn-t-a-RCU-pointer.patch
- 0006-cgroup-remove-duplicate-RCU-free-on-struct-cgroup.patch
- 0007-cgroup-make-CSS_-flags-bit-masks-instead-of-bit-posi.patch
- 0008-cgroup-trivial-cleanup-for-cgroup_init-load_subsys.patch
- 0009-cgroup-lock-cgroup_mutex-in-cgroup_init_subsys.patch
- 0010-cgroup-fix-harmless-bugs-in-cgroup_load_subsys-fail-.patch
- 0011-cgroup-separate-out-cgroup_destroy_locked.patch
- 0012-cgroup-introduce-CSS_ONLINE-flag-and-on-offline_css-.patch
- 0013-cgroup-simplify-cgroup_load_subsys-failure-path.patch
- 0014-cgroup-use-mutex_trylock-when-grabbing-i_mutex-of-a-.patch
- 0015-cgroup-update-cgroup_create-failure-path.patch
- 0016-cgroup-allow-post_create-to-fail.patch
- 0017-cgroup-rename-create-post_create-pre_destroy-destroy.patch
+commit 59ef28b1f14899b10d6b2682c7057ca00a9a3f47
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Oct 25 10:49:25 2012 +1030
 
-0001 is a bugfix.  Tagged for -stable.  I don't I'll push it through
-for-3.7-fixes tho.  This has been broken forever and nobody reported
-anything yet.
+    module: fix out-by-one error in kallsyms
 
-0002-0011 are various fixes and cleanups to prepare for the following
-changes.  Each should be self-explanatory.
+It's a bit late to fix it now, but maybe some kind of an automatic check
+for this would be a good idea.
 
-0012-0015 are preparation patches more directly related to allowing
-failure of ->post_create().
+Rusty, can I have your signoff for stable?
 
-0016 allows ->post_create() to fail.
+Ben.
 
-0017 renames ops and updates documentation.
+--=20
+Ben Hutchings
+For every complex problem
+there is a solution that is simple, neat, and wrong.
 
-This patchst is on top of cgroup/for-3.8 and available on the
-following git branch.
+--=-VWIiC4bPInvRx2qLoTzF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-online-may-fail
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-and contains the following changes.
+iQIVAwUAUKG4H+e/yOyVhhEJAQo1+Q/+K/t2U7rgULoxzUJBf9DBN+gilN9ECf+E
+gEImFJ13X4pKynGUUgUVYtLKzx2A/xNq34IpUZTJEfGJZ0Mx/JDZgYfbpnl8zbM7
+u/hUlJbSFd3XQ/vGh0uMi7rPK+VyqFtRGjioFPZEBI9msNZnj6B6Y4GDlXxUuPsy
+A9tUxjUTeMRY1yF5TXkGSAagKP9eNAF2YKRjilrGu5QjRYnQogpvTU2kgkZTm1sH
+l+gsyRWCOsJUXsRyi/gQyuWSO0bCu55CXDiZnXs1QHa4CGeWzjTB951zkH2SkqOl
+4SmjxS9sxgkAk4qmqeUAiG3q6ft7Hup1r3YyrFzyeL7xFK4FBDZ7kUp/HGT5OLda
+aEVFjcvJvUvGbMyj0tZ5UtM2rLs00Jt5nbK40jvzu3T8LxelV5LNkWHzgL3SrK/C
+4f6SWKBljTLVRndkQ/DZ2MseYxlgR+HGuZypZR7JCxif/SUXAXHWyDn+WgacQXzw
+BFT50hHiyXCL2yiQQ5kffe2HPjh8P6AJYtMVnnXzX8UzGcr4QO9HFggfz9h72mHl
+iMAmZEx1Rm340CU90u8OULwg0O0Me8RZpMTnudkmm/dBI/Nb6/8Drt58AP18y2ak
+bbdM/HvP++R2OX0CqMvS4y4DS650T5RED3SEEc8BPnKHDAU5S+SavxyZ372OTc2c
+XrWcwzKALHg=
+=/fIc
+-----END PGP SIGNATURE-----
 
- Documentation/cgroups/cgroups.txt |   49 +++---
- block/blk-cgroup.c                |   14 -
- include/linux/cgroup.h            |   47 +++---
- kernel/cgroup.c                   |  288 +++++++++++++++++++++-----------------
- kernel/cgroup_freezer.c           |   22 +-
- kernel/cpuset.c                   |   10 -
- kernel/events/core.c              |    8 -
- kernel/sched/core.c               |   16 +-
- mm/hugetlb_cgroup.c               |   14 -
- mm/memcontrol.c                   |   12 -
- net/core/netprio_cgroup.c         |    8 -
- net/sched/cls_cgroup.c            |    8 -
- security/device_cgroup.c          |    8 -
- 13 files changed, 278 insertions(+), 226 deletions(-)
-
-Thanks.
-
---
-tejun
+--=-VWIiC4bPInvRx2qLoTzF--
