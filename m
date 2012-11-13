@@ -1,213 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab2KMJxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 04:53:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35225 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab2KMJxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 04:53:40 -0500
-Date: Tue, 13 Nov 2012 11:47:22 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH] usb: otg: twl4030: Change TWL4030_MODULE_* ids to
- TWL_MODULE_*
-Message-ID: <20121113094722.GB10395@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1352799818-22363-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1754658Ab2KMJy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 04:54:26 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:57618 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2KMJyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 04:54:24 -0500
+Date: Tue, 13 Nov 2012 10:54:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/19] mm: numa: pte_numa() and pmd_numa()
+Message-ID: <20121113095417.GB21522@gmail.com>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <1352193295-26815-6-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+pHx0qQiF2pBVqBT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352799818-22363-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1352193295-26815-6-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+pHx0qQiF2pBVqBT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 13, 2012 at 10:43:38AM +0100, Peter Ujfalusi wrote:
-> To facilitate upcoming cleanup in twl stack.
-> No functional changes.
->=20
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+* Mel Gorman <mgorman@suse.de> wrote:
 
-I guess this one must go together with the rest of your series...
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> Implement pte_numa and pmd_numa.
+> 
+> We must atomically set the numa bit and clear the present bit to
+> define a pte_numa or pmd_numa.
+> 
+> Once a pte or pmd has been set as pte_numa or pmd_numa, the next time
+> a thread touches a virtual address in the corresponding virtual range,
+> a NUMA hinting page fault will trigger. The NUMA hinting page fault
+> will clear the NUMA bit and set the present bit again to resolve the
+> page fault.
+> 
+> The expectation is that a NUMA hinting page fault is used as part
+> of a placement policy that decides if a page should remain on the
+> current node or migrated to a different node.
+> 
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 > ---
->  drivers/usb/otg/twl4030-usb.c | 46 ++++++++++++++++++++-----------------=
-------
->  1 file changed, 21 insertions(+), 25 deletions(-)
->=20
-> diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-> index f0d2e75..11b2a12 100644
-> --- a/drivers/usb/otg/twl4030-usb.c
-> +++ b/drivers/usb/otg/twl4030-usb.c
-> @@ -123,10 +123,10 @@
->  #define PHY_CLK_CTRL_STS		0xFF
->  #define PHY_DPLL_CLK			(1 << 0)
-> =20
-> -/* In module TWL4030_MODULE_PM_MASTER */
-> +/* In module TWL_MODULE_PM_MASTER */
->  #define STS_HW_CONDITIONS		0x0F
-> =20
-> -/* In module TWL4030_MODULE_PM_RECEIVER */
-> +/* In module TWL_MODULE_PM_RECEIVER */
->  #define VUSB_DEDICATED1			0x7D
->  #define VUSB_DEDICATED2			0x7E
->  #define VUSB1V5_DEV_GRP			0x71
-> @@ -195,14 +195,14 @@ static int twl4030_i2c_write_u8_verify(struct twl40=
-30_usb *twl,
->  }
-> =20
->  #define twl4030_usb_write_verify(twl, address, data)	\
-> -	twl4030_i2c_write_u8_verify(twl, TWL4030_MODULE_USB, (data), (address))
-> +	twl4030_i2c_write_u8_verify(twl, TWL_MODULE_USB, (data), (address))
-> =20
->  static inline int twl4030_usb_write(struct twl4030_usb *twl,
->  		u8 address, u8 data)
+>  arch/x86/include/asm/pgtable.h |   65 ++++++++++++++++++++++++++++++++++++++--
+>  include/asm-generic/pgtable.h  |   12 ++++++++
+>  2 files changed, 75 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+> index a1f780d..e075d57 100644
+> --- a/arch/x86/include/asm/pgtable.h
+> +++ b/arch/x86/include/asm/pgtable.h
+> @@ -404,7 +404,8 @@ static inline int pte_same(pte_t a, pte_t b)
+>  
+>  static inline int pte_present(pte_t a)
 >  {
->  	int ret =3D 0;
-> =20
-> -	ret =3D twl_i2c_write_u8(TWL4030_MODULE_USB, data, address);
-> +	ret =3D twl_i2c_write_u8(TWL_MODULE_USB, data, address);
->  	if (ret < 0)
->  		dev_dbg(twl->dev,
->  			"TWL4030:USB:Write[0x%x] Error %d\n", address, ret);
-> @@ -227,7 +227,7 @@ static inline int twl4030_readb(struct twl4030_usb *t=
-wl, u8 module, u8 address)
-> =20
->  static inline int twl4030_usb_read(struct twl4030_usb *twl, u8 address)
->  {
-> -	return twl4030_readb(twl, TWL4030_MODULE_USB, address);
-> +	return twl4030_readb(twl, TWL_MODULE_USB, address);
+> -	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
+> +	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
+> +			       _PAGE_NUMA);
 >  }
-> =20
->  /*----------------------------------------------------------------------=
----*/
-> @@ -264,8 +264,7 @@ static enum omap_musb_vbus_id_status
->  	 * signal is active, the OTG module is activated, and
->  	 * its interrupt may be raised (may wake the system).
+>  
+>  static inline int pte_hidden(pte_t pte)
+> @@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
+>  	 * the _PAGE_PSE flag will remain set at all times while the
+>  	 * _PAGE_PRESENT bit is clear).
 >  	 */
-> -	status =3D twl4030_readb(twl, TWL4030_MODULE_PM_MASTER,
-> -			STS_HW_CONDITIONS);
-> +	status =3D twl4030_readb(twl, TWL_MODULE_PM_MASTER, STS_HW_CONDITIONS);
->  	if (status < 0)
->  		dev_err(twl->dev, "USB link status err %d\n", status);
->  	else if (status & (BIT(7) | BIT(2))) {
-> @@ -372,8 +371,7 @@ static void twl4030_phy_power(struct twl4030_usb *twl=
-, int on)
->  		 * SLEEP. We work around this by clearing the bit after usv3v1
->  		 * is re-activated. This ensures that VUSB3V1 is really active.
->  		 */
-> -		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0,
-> -							VUSB_DEDICATED2);
-> +		twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
->  		regulator_enable(twl->usb1v5);
->  		__twl4030_phy_power(twl, 1);
->  		twl4030_usb_write(twl, PHY_CLK_CTRL,
-> @@ -419,50 +417,48 @@ static void twl4030_phy_resume(struct twl4030_usb *=
-twl)
->  static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+> -	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+> +	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
+> +				 _PAGE_NUMA);
+> +}
+> +
+> +#ifdef CONFIG_BALANCE_NUMA
+> +/*
+> + * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
+> + * same bit too). It's set only when _PAGE_PRESET is not set and it's
+> + * never set if _PAGE_PRESENT is set.
+> + *
+> + * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
+> + * fault triggers on those regions if pte/pmd_numa returns true
+> + * (because _PAGE_PRESENT is not set).
+> + */
+> +static inline int pte_numa(pte_t pte)
+> +{
+> +	return (pte_flags(pte) &
+> +		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
+> +}
+> +
+> +static inline int pmd_numa(pmd_t pmd)
+> +{
+> +	return (pmd_flags(pmd) &
+> +		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
+> +}
+> +#endif
+> +
+> +/*
+> + * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
+> + * because they're called by the NUMA hinting minor page fault. If we
+> + * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
+> + * would be forced to set it later while filling the TLB after we
+> + * return to userland. That would trigger a second write to memory
+> + * that we optimize away by setting _PAGE_ACCESSED here.
+> + */
+> +static inline pte_t pte_mknonnuma(pte_t pte)
+> +{
+> +	pte = pte_clear_flags(pte, _PAGE_NUMA);
+> +	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
+> +}
+> +
+> +static inline pmd_t pmd_mknonnuma(pmd_t pmd)
+> +{
+> +	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
+> +	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
+> +}
+> +
+> +static inline pte_t pte_mknuma(pte_t pte)
+> +{
+> +	pte = pte_set_flags(pte, _PAGE_NUMA);
+> +	return pte_clear_flags(pte, _PAGE_PRESENT);
+> +}
+> +
+> +static inline pmd_t pmd_mknuma(pmd_t pmd)
+> +{
+> +	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
+> +	return pmd_clear_flags(pmd, _PAGE_PRESENT);
+>  }
+>  
+>  static inline int pmd_none(pmd_t pmd)
+> @@ -479,6 +536,10 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
+>  
+>  static inline int pmd_bad(pmd_t pmd)
 >  {
->  	/* Enable writing to power configuration registers */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
-> -			TWL4030_PM_MASTER_KEY_CFG1,
-> -			TWL4030_PM_MASTER_PROTECT_KEY);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG1,
-> +			 TWL4030_PM_MASTER_PROTECT_KEY);
-> =20
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
-> -			TWL4030_PM_MASTER_KEY_CFG2,
-> -			TWL4030_PM_MASTER_PROTECT_KEY);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, TWL4030_PM_MASTER_KEY_CFG2,
-> +			 TWL4030_PM_MASTER_PROTECT_KEY);
-> =20
->  	/* Keep VUSB3V1 LDO in sleep state until VBUS/ID change detected*/
-> -	/*twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);*/
-> +	/*twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);*/
-> =20
->  	/* input to VUSB3V1 LDO is from VBAT, not VBUS */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x14, VUSB_DEDICATED1);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0x14, VUSB_DEDICATED1);
-> =20
->  	/* Initialize 3.1V regulator */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
-> =20
->  	twl->usb3v1 =3D regulator_get(twl->dev, "usb3v1");
->  	if (IS_ERR(twl->usb3v1))
->  		return -ENODEV;
-> =20
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB3V1_TYPE);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_TYPE);
-> =20
->  	/* Initialize 1.5V regulator */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
-> =20
->  	twl->usb1v5 =3D regulator_get(twl->dev, "usb1v5");
->  	if (IS_ERR(twl->usb1v5))
->  		goto fail1;
-> =20
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
-> =20
->  	/* Initialize 1.8V regulator */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
-> =20
->  	twl->usb1v8 =3D regulator_get(twl->dev, "usb1v8");
->  	if (IS_ERR(twl->usb1v8))
->  		goto fail2;
-> =20
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
-> =20
->  	/* disable access to power configuration registers */
-> -	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
-> -			TWL4030_PM_MASTER_PROTECT_KEY);
-> +	twl_i2c_write_u8(TWL_MODULE_PM_MASTER, 0,
-> +			 TWL4030_PM_MASTER_PROTECT_KEY);
-> =20
->  	return 0;
-> =20
-> --=20
-> 1.8.0
->=20
+> +#ifdef CONFIG_BALANCE_NUMA
+> +	if (pmd_numa(pmd))
+> +		return 0;
+> +#endif
+>  	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
+>  }
+>  
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index b36ce40..896667e 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -554,6 +554,18 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+>  #endif
+>  }
+>  
+> +#ifndef CONFIG_BALANCE_NUMA
+> +static inline int pte_numa(pte_t pte)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline int pmd_numa(pmd_t pmd)
+> +{
+> +	return 0;
+> +}
+> +#endif /* CONFIG_BALANCE_NUMA */
+> +
 
---=20
-balbi
+Hm, this overcomplicates things quite a bit and adds arch 
+specific code, and there's no explanation given for that 
+approach that I can see?
 
---+pHx0qQiF2pBVqBT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Basically, what's wrong with the generic approach that numa/core 
+has:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ __weak bool pte_numa(struct vm_area_struct *vma, pte_t pte)
 
-iQIcBAEBAgAGBQJQohcqAAoJEIaOsuA1yqRErNQP/RIwnYrD8POcAeEvoEdsijH1
-2NQXQ6L1mV53rSe9JtWNhhF/J/kikbkhaG3VyGbDiApfuOw7TKBSq+iVKiFNLdKv
-PufetH7AwcVfDKxIekAhUrchQPg9FVFj53Zd5pqYTki5aqwwlQhtv4rFo8sWjUxV
-xJ5YDwprBpO9U3XPQJgnBfnF/dkaBZS2GfaIxVea9xOBV+UI5FVZi0Wf1zAEUzq0
-YAojOsCod6+aFJRgIS0zFBEwZtfQNDai52iRKT3GYPq+a9GcO6lfP81VyEvBFkPz
-kIZw0BM3W4UzwQNPykEKhXiO5Oh5PBxzCXE5991Xa03IDkFsA0xC3+2qqqmfLI6W
-dL5upM416wCUI58K28tzi29nOAiE8PijZP7XHVu/Q6vzLinKtB2xM59DRZFt3UFb
-zq3MY1Nlic5757lJEc+O+j3Zmi+LG9PAkYJc2ykISRBPTNufZFTc51JjyTNZyRfV
-2tbusRZ7a+rdBrdVE7mvLfk5pe9CtwA0Yans7qrJ7o3Ry5P+RjE/HvFFPKydt9kz
-76bwp4IbRXS2aprk1b3X6oMNyzSUkDuQFuc/C3yby45qQC+bM1Q25F/ZM4hjpIgo
-8HnJICxYMDekOwA8e28sQXUxO5b1TEv+2fVqI97KGYoku0oyAlTj/OWtElijUvCE
-ctiMdZnLlXc8MLI43Qqu
-=/nvN
------END PGP SIGNATURE-----
+[see the full function below.]
 
---+pHx0qQiF2pBVqBT--
+Then we can reuse existing protection-changing functionality and 
+keep it all tidy.
+
+an architecture that wants to do something special could 
+possibly override it in the future - but we want to keep the 
+generic logic in generic code.
+
+Thanks,
+
+	Ingo
+
+------------>
+__weak bool pte_numa(struct vm_area_struct *vma, pte_t pte)
+{
+	/*
+	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
+	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
+	 * VMAs should never get here, because the fault handling code
+	 * will notice that the VMA has no read or write permissions.
+	 *
+	 * This means we cannot get 'special' PROT_NONE faults from genuine
+	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
+	 * tracking.
+	 *
+	 * Neither case is really interesting for our current use though so we
+	 * don't care.
+	 */
+	if (pte_same(pte, pte_modify(pte, vma->vm_page_prot)))
+		return false;
+
+	return pte_same(pte, pte_modify(pte, vma_prot_none(vma)));
+}
+
