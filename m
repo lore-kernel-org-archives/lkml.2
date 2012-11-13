@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab2KMQpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 11:45:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60452 "EHLO
+	id S1755339Ab2KMQpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 11:45:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60457 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754095Ab2KMQp3 (ORCPT
+	by vger.kernel.org with ESMTP id S1755301Ab2KMQpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 11:45:29 -0500
+	Tue, 13 Nov 2012 11:45:32 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@opensource.wolfsonmicro.com
 Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/3] ASoC: arizona: Add support for multiplexer with no associated mixer
-Date: Tue, 13 Nov 2012 16:40:32 +0000
-Message-Id: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3] ASoC: wm5102: Remove mixer widgets on the ASRC
+Date: Tue, 13 Nov 2012 16:40:33 +0000
+Message-Id: <1352824834-11224-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Asynchronous Sample Rate Converters on the wm5102/wm5110 have no
-mixer attached to their input, but they do allow the input to be
-selected from a number of sources via a multiplexer. Currently the
-platform assumes the presence of 4 multiplexers and a mixer for each
-block.
-
-This patch adds support multiplexed single input blocks into the Arizona
-platform.
+There is no mixer attached to the ASRC on the wm5102 only a multiplexer
+to select the source for the single input line. This change correctly
+defines this in the wm5102 CODEC driver.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- sound/soc/codecs/arizona.h |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+ sound/soc/codecs/wm5102.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/sound/soc/codecs/arizona.h b/sound/soc/codecs/arizona.h
-index 5a09127..f1c0ec9 100644
---- a/sound/soc/codecs/arizona.h
-+++ b/sound/soc/codecs/arizona.h
-@@ -94,33 +94,30 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
- 	const struct snd_kcontrol_new name##_mux =	\
- 		SOC_DAPM_VALUE_ENUM("Route", name##_enum)
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index f27527b..28a57cc5 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -280,10 +280,10 @@ ARIZONA_MIXER_ENUMS(AIF2TX2, ARIZONA_AIF2TX2MIX_INPUT_1_SOURCE);
+ ARIZONA_MIXER_ENUMS(AIF3TX1, ARIZONA_AIF3TX1MIX_INPUT_1_SOURCE);
+ ARIZONA_MIXER_ENUMS(AIF3TX2, ARIZONA_AIF3TX2MIX_INPUT_1_SOURCE);
  
-+#define ARIZONA_MUX_ENUMS(name, base_reg) \
-+	static ARIZONA_MUX_ENUM_DECL(name##_enum, base_reg);      \
-+	static ARIZONA_MUX_CTL_DECL(name)
-+
- #define ARIZONA_MIXER_ENUMS(name, base_reg) \
--	static ARIZONA_MUX_ENUM_DECL(name##_in1_enum, base_reg);      \
--	static ARIZONA_MUX_ENUM_DECL(name##_in2_enum, base_reg + 2);  \
--	static ARIZONA_MUX_ENUM_DECL(name##_in3_enum, base_reg + 4);  \
--	static ARIZONA_MUX_ENUM_DECL(name##_in4_enum, base_reg + 6);  \
--	static ARIZONA_MUX_CTL_DECL(name##_in1); \
--	static ARIZONA_MUX_CTL_DECL(name##_in2); \
--	static ARIZONA_MUX_CTL_DECL(name##_in3); \
--	static ARIZONA_MUX_CTL_DECL(name##_in4)
-+	ARIZONA_MUX_ENUMS(name##_in1, base_reg);     \
-+	ARIZONA_MUX_ENUMS(name##_in2, base_reg + 2); \
-+	ARIZONA_MUX_ENUMS(name##_in3, base_reg + 4); \
-+	ARIZONA_MUX_ENUMS(name##_in4, base_reg + 6)
+-ARIZONA_MIXER_ENUMS(ASRC1L, ARIZONA_ASRC1LMIX_INPUT_1_SOURCE);
+-ARIZONA_MIXER_ENUMS(ASRC1R, ARIZONA_ASRC1RMIX_INPUT_1_SOURCE);
+-ARIZONA_MIXER_ENUMS(ASRC2L, ARIZONA_ASRC2LMIX_INPUT_1_SOURCE);
+-ARIZONA_MIXER_ENUMS(ASRC2R, ARIZONA_ASRC2RMIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ASRC1L, ARIZONA_ASRC1LMIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ASRC1R, ARIZONA_ASRC1RMIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ASRC2L, ARIZONA_ASRC2LMIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ASRC2R, ARIZONA_ASRC2RMIX_INPUT_1_SOURCE);
  
- #define ARIZONA_DSP_AUX_ENUMS(name, base_reg) \
--	static ARIZONA_MUX_ENUM_DECL(name##_aux1_enum, base_reg);	\
--	static ARIZONA_MUX_ENUM_DECL(name##_aux2_enum, base_reg + 8);	\
--	static ARIZONA_MUX_ENUM_DECL(name##_aux3_enum, base_reg + 16);	\
--	static ARIZONA_MUX_ENUM_DECL(name##_aux4_enum, base_reg + 24);	\
--	static ARIZONA_MUX_ENUM_DECL(name##_aux5_enum, base_reg + 32);	\
--	static ARIZONA_MUX_ENUM_DECL(name##_aux6_enum, base_reg + 40);	\
--	static ARIZONA_MUX_CTL_DECL(name##_aux1); \
--	static ARIZONA_MUX_CTL_DECL(name##_aux2); \
--	static ARIZONA_MUX_CTL_DECL(name##_aux3); \
--	static ARIZONA_MUX_CTL_DECL(name##_aux4); \
--	static ARIZONA_MUX_CTL_DECL(name##_aux5); \
--	static ARIZONA_MUX_CTL_DECL(name##_aux6)
-+	ARIZONA_MUX_ENUMS(name##_aux1, base_reg);	\
-+	ARIZONA_MUX_ENUMS(name##_aux2, base_reg + 8);	\
-+	ARIZONA_MUX_ENUMS(name##_aux3, base_reg + 16);	\
-+	ARIZONA_MUX_ENUMS(name##_aux4, base_reg + 24);	\
-+	ARIZONA_MUX_ENUMS(name##_aux5, base_reg + 32);	\
-+	ARIZONA_MUX_ENUMS(name##_aux6, base_reg + 40)
+ ARIZONA_MIXER_ENUMS(DSP1L, ARIZONA_DSP1LMIX_INPUT_1_SOURCE);
+ ARIZONA_MIXER_ENUMS(DSP1R, ARIZONA_DSP1RMIX_INPUT_1_SOURCE);
+@@ -538,10 +538,10 @@ ARIZONA_MIXER_WIDGETS(AIF2TX2, "AIF2TX2"),
+ ARIZONA_MIXER_WIDGETS(AIF3TX1, "AIF3TX1"),
+ ARIZONA_MIXER_WIDGETS(AIF3TX2, "AIF3TX2"),
  
- #define ARIZONA_MUX(name, ctrl) \
- 	SND_SOC_DAPM_VALUE_MUX(name, SND_SOC_NOPM, 0, 0, ctrl)
+-ARIZONA_MIXER_WIDGETS(ASRC1L, "ASRC1L"),
+-ARIZONA_MIXER_WIDGETS(ASRC1R, "ASRC1R"),
+-ARIZONA_MIXER_WIDGETS(ASRC2L, "ASRC2L"),
+-ARIZONA_MIXER_WIDGETS(ASRC2R, "ASRC2R"),
++ARIZONA_MUX_WIDGETS(ASRC1L, "ASRC1L"),
++ARIZONA_MUX_WIDGETS(ASRC1R, "ASRC1R"),
++ARIZONA_MUX_WIDGETS(ASRC2L, "ASRC2L"),
++ARIZONA_MUX_WIDGETS(ASRC2R, "ASRC2R"),
  
-+#define ARIZONA_MUX_WIDGETS(name, name_str) \
-+	ARIZONA_MUX(name_str " Input", &name##_mux)
-+
- #define ARIZONA_MIXER_WIDGETS(name, name_str)	\
- 	ARIZONA_MUX(name_str " Input 1", &name##_in1_mux), \
- 	ARIZONA_MUX(name_str " Input 2", &name##_in2_mux), \
-@@ -138,6 +135,9 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
- 	ARIZONA_MUX(name_str " Aux 5", &name##_aux5_mux), \
- 	ARIZONA_MUX(name_str " Aux 6", &name##_aux6_mux)
+ WM_ADSP2("DSP1", 0),
  
-+#define ARIZONA_MUX_ROUTES(name) \
-+	ARIZONA_MIXER_INPUT_ROUTES(name " Input")
-+
- #define ARIZONA_MIXER_ROUTES(widget, name) \
- 	{ widget, NULL, name " Mixer" },         \
- 	{ name " Mixer", NULL, name " Input 1" }, \
+@@ -730,10 +730,10 @@ static const struct snd_soc_dapm_route wm5102_dapm_routes[] = {
+ 	ARIZONA_MIXER_ROUTES("LHPF3", "LHPF3"),
+ 	ARIZONA_MIXER_ROUTES("LHPF4", "LHPF4"),
+ 
+-	ARIZONA_MIXER_ROUTES("ASRC1L", "ASRC1L"),
+-	ARIZONA_MIXER_ROUTES("ASRC1R", "ASRC1R"),
+-	ARIZONA_MIXER_ROUTES("ASRC2L", "ASRC2L"),
+-	ARIZONA_MIXER_ROUTES("ASRC2R", "ASRC2R"),
++	ARIZONA_MUX_ROUTES("ASRC1L"),
++	ARIZONA_MUX_ROUTES("ASRC1R"),
++	ARIZONA_MUX_ROUTES("ASRC2L"),
++	ARIZONA_MUX_ROUTES("ASRC2R"),
+ 
+ 	ARIZONA_DSP_ROUTES("DSP1"),
+ 
 -- 
 1.7.2.5
 
