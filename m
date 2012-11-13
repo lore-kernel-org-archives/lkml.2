@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab2KMHbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:31:53 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48043 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab2KMHbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:31:52 -0500
-Message-ID: <1352791901.3947.1.camel@phoenix>
-Subject: [PATCH] pinctrl: spear: Fix the logic of setting reg in
- pmx_init_gpio_pingroup_addr
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 13 Nov 2012 15:31:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1754013Ab2KMHdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:33:18 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51342 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab2KMHdQ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 13 Nov 2012 02:33:16 -0500
+Message-Id: <50A205C902000078000A7ECF@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 13 Nov 2012 07:33:13 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andrew Cooks" <acooks@gmail.com>,
+        "Bjorn Helgaas (supporter:PCI SUBSYSTEM)" <bhelgaas@google.com>
+Cc: "open list" <linux-kernel@vger.kernel.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] Add missing license for ioapic module.
+References: <1352781547-9433-1-git-send-email-acooks@gmail.com>
+In-Reply-To: <1352781547-9433-1-git-send-email-acooks@gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does not work if count > 1, fix it.
+>>> On 13.11.12 at 05:39, Andrew Cooks <acooks@gmail.com> wrote:
+> config PCI_IOAPIC turned into a tristate in commit 
+> b95a7bd700466c10fda84acbd33f70cf66ec91ce, but no module license is specified. 
+> This adds the missing module license.
+> 
+> Signed-off-by: Andrew Cooks <acooks@gmail.com>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/spear/pinctrl-spear.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Acked-by: Jan Beulich <jbeulich@suse.com>
 
-diff --git a/drivers/pinctrl/spear/pinctrl-spear.c b/drivers/pinctrl/spear/pinctrl-spear.c
-index f9483ae..107780c 100644
---- a/drivers/pinctrl/spear/pinctrl-spear.c
-+++ b/drivers/pinctrl/spear/pinctrl-spear.c
-@@ -86,10 +86,10 @@ void __devinit
- pmx_init_gpio_pingroup_addr(struct spear_gpio_pingroup *gpio_pingroup,
- 		unsigned count, u16 reg)
- {
--	int i = 0, j = 0;
-+	int i, j;
- 
--	for (; i < count; i++)
--		for (; j < gpio_pingroup[i].nmuxregs; j++)
-+	for (i = 0; i < count; i++)
-+		for (j = 0; j < gpio_pingroup[i].nmuxregs; j++)
- 			gpio_pingroup[i].muxregs[j].reg = reg;
- }
- 
--- 
-1.7.9.5
+> ---
+>  drivers/pci/ioapic.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+> index 205af8d..22436f7 100644
+> --- a/drivers/pci/ioapic.c
+> +++ b/drivers/pci/ioapic.c
+> @@ -125,3 +125,5 @@ static void __exit ioapic_exit(void)
+>  
+>  module_init(ioapic_init);
+>  module_exit(ioapic_exit);
+> +
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.7.1
 
 
 
