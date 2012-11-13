@@ -1,57 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab2KMUsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 15:48:33 -0500
-Received: from void.printf.net ([89.145.121.20]:44681 "EHLO void.printf.net"
+	id S1755881Ab2KMUwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 15:52:22 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:41747 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755680Ab2KMUsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 15:48:32 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Trey Ramsay <tramsay@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Rich Rattanni <rattanni@gmail.com>,
-        Radovan Lekanovic <lekanovic@gmail.com>
-Subject: Re: drivers/mmc/card/block.c infinite loop in mmc_blk_err_check waiting on R1_READY_FOR_DATA
-References: <50917DB7.6040503@linux.vnet.ibm.com>
-	<87k3u6id1j.fsf@octavius.laptop.org>
-	<50A2A08D.5000601@linux.vnet.ibm.com>
-Date: Tue, 13 Nov 2012 15:48:24 -0500
-In-Reply-To: <50A2A08D.5000601@linux.vnet.ibm.com> (Trey Ramsay's message of
-	"Tue, 13 Nov 2012 13:33:33 -0600")
-Message-ID: <87k3tpkz53.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1754824Ab2KMUwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 15:52:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-acpi@vger.kernel.org
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        mathias.nyman@linux.intel.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3/3 rev 2] ACPI: Centralized processing of ACPI device resources
+Date: Tue, 13 Nov 2012 21:56:12 +0100
+Message-ID: <25072250.maaM7eVGUT@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <5953163.ZajFIHZXph@vostro.rjw.lan>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2429141.J1r7BIpiiT@vostro.rjw.lan> <5953163.ZajFIHZXph@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trey,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On Tue, Nov 13 2012, Trey Ramsay wrote:
-> Thanks Chris. Any idea how long the timeout should be? It could
-> cause problems if we timeout to early. This what I have so far with a
-> 10 minute timeout. The code is based off of v3.7-rc3
+Currently, whoever wants to use ACPI device resources has to call
+acpi_walk_resources() to browse the buffer returned by the _CRS
+method for the given device and create filters passed to that
+routine to apply to the individual resource items.  This generally
+is cumbersome, time-consuming and inefficient.  Moreover, it may
+be problematic if resource conflicts need to be resolved, because
+the different users of _CRS will need to do that in a consistent
+way.  However, if there are resource conflicts, the ACPI core
+should be able to resolve them centrally instead of relying on
+various users of acpi_walk_resources() to handle them correctly
+together.
 
-Ten minutes sounds excessive, which is actually fine for our purpose; I
-don't think we need to make the value tunable.  Thanks!  Please can you:
+For this reason, introduce a new function, acpi_dev_get_resources(),
+that can be used by subsystems to obtain a list of struct resource
+objects corresponding to the ACPI device resources returned by
+_CRS and, if necessary, to apply additional preprocessing routine
+to the ACPI resources before converting them to the struct resource
+format.
 
-* resend in plain text instead of HTML, with no line-wrapping corrupting
-  the patch
+Make the ACPI code that creates platform device objects use
+acpi_dev_get_resources() for resource processing instead of executing
+acpi_walk_resources() twice by itself, which causes it to be much
+more straightforward and easier to follow.
 
-* include a commit message and "Signed-off-by" (see SubmittingPatches
-  in the Documentation/ directory)
+In the future, acpi_dev_get_resources() can be extended to meet
+the needs of the ACPI PNP subsystem and other users of _CRS in
+the kernel.
 
-* change the pr_err()s to include the MMC hostname, and give an English
-  description of the error instead of the line number -- most users
-  don't have their kernel source available to find line numbers in.
-  Something like "Card stuck in programming state!" sounds good.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/acpi_platform.c |   94 +++++-------------------------
+ drivers/acpi/resource.c      |  134 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h         |   10 +++
+ 3 files changed, 161 insertions(+), 77 deletions(-)
 
-After that, I'll merge the patch for testing.
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Index: linux/include/linux/acpi.h
+===================================================================
+--- linux.orig/include/linux/acpi.h
++++ linux/include/linux/acpi.h
+@@ -261,6 +261,16 @@ unsigned long acpi_dev_irq_flags(u8 trig
+ bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
+ 				 struct resource *res);
+ 
++struct resource_list_entry {
++	struct list_head node;
++	struct resource res;
++};
++
++void acpi_dev_free_resource_list(struct list_head *list);
++int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
++			   int (*preproc)(struct acpi_resource *, void *),
++			   void *preproc_data);
++
+ int acpi_check_resource_conflict(const struct resource *res);
+ 
+ int acpi_check_region(resource_size_t start, resource_size_t n,
+Index: linux/drivers/acpi/resource.c
+===================================================================
+--- linux.orig/drivers/acpi/resource.c
++++ linux/drivers/acpi/resource.c
+@@ -26,6 +26,7 @@
+ #include <linux/device.h>
+ #include <linux/export.h>
+ #include <linux/ioport.h>
++#include <linux/slab.h>
+ 
+ #ifdef CONFIG_X86
+ #define valid_IRQ(i) (((i) != 0) && ((i) != 2))
+@@ -391,3 +392,136 @@ bool acpi_dev_resource_interrupt(struct
+ 	return true;
+ }
+ EXPORT_SYMBOL_GPL(acpi_dev_resource_interrupt);
++
++/**
++ * acpi_dev_free_resource_list - Free resource from %acpi_dev_get_resources().
++ * @list: The head of the resource list to free.
++ */
++void acpi_dev_free_resource_list(struct list_head *list)
++{
++	struct resource_list_entry *rentry, *re;
++
++	list_for_each_entry_safe(rentry, re, list, node) {
++		list_del(&rentry->node);
++		kfree(rentry);
++	}
++}
++EXPORT_SYMBOL_GPL(acpi_dev_free_resource_list);
++
++struct res_proc_context {
++	struct list_head *list;
++	int (*preproc)(struct acpi_resource *, void *);
++	void *preproc_data;
++	int count;
++	int error;
++};
++
++static acpi_status acpi_dev_new_resource_entry(struct resource *r,
++					       struct res_proc_context *c)
++{
++	struct resource_list_entry *rentry;
++
++	rentry = kmalloc(sizeof(*rentry), GFP_KERNEL);
++	if (!rentry) {
++		c->error = -ENOMEM;
++		return AE_NO_MEMORY;
++	}
++	INIT_LIST_HEAD(&rentry->node);
++	rentry->res = *r;
++	list_add_tail(&rentry->node, c->list);
++	c->count++;
++	return AE_OK;
++}
++
++static acpi_status acpi_dev_process_resource(struct acpi_resource *ares,
++					     void *context)
++{
++	struct res_proc_context *c = context;
++	struct resource r;
++	int i;
++
++	if (c->preproc) {
++		int ret;
++
++		ret = c->preproc(ares, c->preproc_data);
++		if (ret < 0) {
++			c->error = ret;
++			return AE_ABORT_METHOD;
++		} else if (ret > 0) {
++			return AE_OK;
++		}
++	}
++
++	memset(&r, 0, sizeof(r));
++
++	if (acpi_dev_resource_memory(ares, &r)
++	    || acpi_dev_resource_io(ares, &r)
++	    || acpi_dev_resource_address_space(ares, &r)
++	    || acpi_dev_resource_ext_address_space(ares, &r))
++		return acpi_dev_new_resource_entry(&r, c);
++
++	for (i = 0; acpi_dev_resource_interrupt(ares, i, &r); i++) {
++		acpi_status status;
++
++		status = acpi_dev_new_resource_entry(&r, c);
++		if (ACPI_FAILURE(status))
++			return status;
++	}
++
++	return AE_OK;
++}
++
++/**
++ * acpi_dev_get_resources - Get current resources of a device.
++ * @adev: ACPI device node to get the resources for.
++ * @list: Head of the resultant list of resources (must be empty).
++ * @preproc: The caller's preprocessing routine.
++ * @preproc_data: Pointer passed to the caller's preprocessing routine.
++ *
++ * Evaluate the _CRS method for the given device node and process its output by
++ * (1) executing the @preproc() rountine provided by the caller, passing the
++ * resource pointer and @preproc_data to it as arguments, for each ACPI resource
++ * returned and (2) converting all of the returned ACPI resources into struct
++ * resource objects if possible.  If the return value of @preproc() in step (1)
++ * is different from 0, step (2) is not applied to the given ACPI resource and
++ * if that value is negative, the whole processing is aborted and that value is
++ * returned as the final error code.
++ *
++ * The resultant struct resource objects are put on the list pointed to by
++ * @list, that must be empty initially, as members of struct resource_list_entry
++ * objects.  Callers of this routine should use %acpi_dev_free_resource_list() to
++ * free that list.
++ *
++ * The number of resources in the output list is returned on success, an error
++ * code reflecting the error condition is returned otherwise.
++ */
++int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
++			   int (*preproc)(struct acpi_resource *, void *),
++			   void *preproc_data)
++{
++	struct res_proc_context c;
++	acpi_handle not_used;
++	acpi_status status;
++
++	if (!adev || !adev->handle || !list_empty(list))
++		return -EINVAL;
++
++	status = acpi_get_handle(adev->handle, METHOD_NAME__CRS, &not_used);
++	if (ACPI_FAILURE(status))
++		return 0;
++
++	c.list = list;
++	c.preproc = preproc;
++	c.preproc_data = preproc_data;
++	c.count = 0;
++	c.error = 0;
++	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
++				     acpi_dev_process_resource, &c);
++	if (ACPI_FAILURE(status)) {
++		acpi_dev_free_resource_list(list);
++		return c.error ? c.error : -EIO;
++	}
++
++	return c.count;
++}
++EXPORT_SYMBOL_GPL(acpi_dev_get_resources);
+Index: linux/drivers/acpi/acpi_platform.c
+===================================================================
+--- linux.orig/drivers/acpi/acpi_platform.c
++++ linux/drivers/acpi/acpi_platform.c
+@@ -19,61 +19,6 @@
+ 
+ ACPI_MODULE_NAME("platform");
+ 
+-struct resource_info {
+-	struct device *dev;
+-	struct resource *res;
+-	size_t n, cur;
+-};
+-
+-static acpi_status acpi_platform_count_resources(struct acpi_resource *res,
+-						 void *data)
+-{
+-	struct acpi_resource_extended_irq *acpi_xirq;
+-	struct acpi_resource_irq *acpi_irq;
+-	struct resource_info *ri = data;
+-
+-	switch (res->type) {
+-	case ACPI_RESOURCE_TYPE_IRQ:
+-		acpi_irq = &res->data.irq;
+-		ri->n += acpi_irq->interrupt_count;
+-		break;
+-	case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+-		acpi_xirq = &res->data.extended_irq;
+-		ri->n += acpi_xirq->interrupt_count;
+-		break;
+-	default:
+-		ri->n++;
+-	}
+-
+-	return AE_OK;
+-}
+-
+-static acpi_status acpi_platform_add_resources(struct acpi_resource *res,
+-					       void *data)
+-{
+-	struct resource_info *ri = data;
+-	struct resource *r;
+-
+-	r = ri->res + ri->cur;
+-	if (acpi_dev_resource_memory(res, r)
+-	    || acpi_dev_resource_io(res, r)
+-	    || acpi_dev_resource_address_space(res, r)
+-	    || acpi_dev_resource_ext_address_space(res, r)) {
+-		ri->cur++;
+-		return AE_OK;
+-	}
+-	if (acpi_dev_resource_interrupt(res, 0, r)) {
+-		int i;
+-
+-		r++;
+-		for (i = 1; acpi_dev_resource_interrupt(res, i, r); i++)
+-			r++;
+-
+-		ri->cur += i;
+-	}
+-	return AE_OK;
+-}
+-
+ /**
+  * acpi_create_platform_device - Create platform device for ACPI device node
+  * @adev: ACPI device node to create a platform device for.
+@@ -89,35 +34,31 @@ struct platform_device *acpi_create_plat
+ 	struct platform_device *pdev = NULL;
+ 	struct acpi_device *acpi_parent;
+ 	struct device *parent = NULL;
+-	struct resource_info ri;
+-	acpi_status status;
++	struct resource_list_entry *rentry;
++	struct list_head resource_list;
++	struct resource *resources;
++	int count;
+ 
+ 	/* If the ACPI node already has a physical device attached, skip it. */
+ 	if (adev->physical_node_count)
+ 		return NULL;
+ 
+-	memset(&ri, 0, sizeof(ri));
+-	/* First, count the resources. */
+-	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
+-				     acpi_platform_count_resources, &ri);
+-	if (ACPI_FAILURE(status) || !ri.n)
++	INIT_LIST_HEAD(&resource_list);
++	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
++	if (count <= 0)
+ 		return NULL;
+ 
+-	/* Next, allocate memory for all the resources and populate it. */
+-	ri.dev = &adev->dev;
+-	ri.res = kzalloc(ri.n * sizeof(struct resource), GFP_KERNEL);
+-	if (!ri.res) {
+-		dev_err(&adev->dev,
+-			"failed to allocate memory for resources\n");
++	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
++	if (!resources) {
++		dev_err(&adev->dev, "No memory for resources\n");
++		acpi_dev_free_resource_list(&resource_list);
+ 		return NULL;
+ 	}
++	count = 0;
++	list_for_each_entry(rentry, &resource_list, node)
++		resources[count++] = rentry->res;
+ 
+-	status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
+-				     acpi_platform_add_resources, &ri);
+-	if (ACPI_FAILURE(status)) {
+-		dev_err(&adev->dev, "failed to walk resources\n");
+-		goto out;
+-	}
++	acpi_dev_free_resource_list(&resource_list);
+ 
+ 	/*
+ 	 * If the ACPI node has a parent and that parent has a physical device
+@@ -140,7 +81,7 @@ struct platform_device *acpi_create_plat
+ 		mutex_unlock(&acpi_parent->physical_node_lock);
+ 	}
+ 	pdev = platform_device_register_resndata(parent, dev_name(&adev->dev),
+-						 -1, ri.res, ri.cur, NULL, 0);
++						 -1, resources, count, NULL, 0);
+ 	if (IS_ERR(pdev)) {
+ 		dev_err(&adev->dev, "platform device creation failed: %ld\n",
+ 			PTR_ERR(pdev));
+@@ -150,8 +91,7 @@ struct platform_device *acpi_create_plat
+ 			dev_name(&pdev->dev));
+ 	}
+ 
+- out:
+-	kfree(ri.res);
++	kfree(resources);
+ 	return pdev;
+ }
+ 
