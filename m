@@ -1,111 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab2KMWA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 17:00:58 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34577 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750832Ab2KMWA5 (ORCPT
+	id S1753727Ab2KMWB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 17:01:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37916 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab2KMWB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 17:00:57 -0500
-Message-ID: <1352844053.15747.111.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: [GIT PULL] EFI changes for v3.8
-From: Matt Fleming <matt@console-pimps.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>
-Date: Tue, 13 Nov 2012 22:00:53 +0000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 17:01:58 -0500
+Date: Tue, 13 Nov 2012 14:01:44 -0800
+From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
+Message-ID: <tip-27d3a8a26ada7660116fdd6830096008c063ee96@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20121019090209.GG26718@alberich>
+References: <20121019090209.GG26718@alberich>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cacheinfo:
+  Base cache sharing info on CPUID 0x8000001d on AMD
+Git-Commit-ID: 27d3a8a26ada7660116fdd6830096008c063ee96
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 14:01:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Commit-ID:  27d3a8a26ada7660116fdd6830096008c063ee96
+Gitweb:     http://git.kernel.org/tip/27d3a8a26ada7660116fdd6830096008c063ee96
+Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
+AuthorDate: Fri, 19 Oct 2012 11:02:09 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 13 Nov 2012 11:22:31 -0800
 
-The following changes since commit 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c:
+x86, cacheinfo: Base cache sharing info on CPUID 0x8000001d on AMD
 
-  x86: efi: Turn off efi_enabled after setup on mixed fw/kernel (2012-10-25 19:09:40 +0100)
+The patch is based on a patch submitted by Hans Rosenfeld.
+See http://marc.info/?l=linux-kernel&m=133908777200931
 
-are available in the git repository at:
+Note that  CPUID Fn8000_001D_EAX slightly differs to Intel's CPUID function 4.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.8
+Bits 14-25 contain NumSharingCache. Actual number of cores sharing
+           this cache. SW to add value of one to get result.
 
-for you to fetch changes up to fdafa1c8261d4fe2350e63e8dd315bfd58674455:
+The corresponding bits on Intel are defined as "maximum number of threads
+sharing this cache" (with a "plus 1" encoding).
 
-  Merge branch 'next' (2012-11-13 21:30:02 +0000)
+Thus a different method to determine which cores are sharing a cache
+level has to be used.
 
-----------------------------------------------------------------
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Link: http://lkml.kernel.org/r/20121019090209.GG26718@alberich
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   41 +++++++++++++++++++++-----------
+ 1 files changed, 27 insertions(+), 14 deletions(-)
 
-EFI updates for v3.8
-
-  * A new EFI variable filesystem, efivarfs, which addresses the
-    shortcomings of the old sysfs EFI variable code.
-
-  * We now switch to a 1:1 mapped pagetable for all virtual EFI
-    calls. This is actually a workaround for an ASUS firmware bug
-    which expects the physical mappings to still be around at runtime.
-
-  * Because of the above fix Jan's patch to use EFI for the platform
-    wall clock can be re-applied (it was originally reverted because
-    it broke some ASUS machines).
-
-----------------------------------------------------------------
-Andy Whitcroft (5):
-      efivarfs: efivarfs_file_read ensure we free data in error paths
-      efivarfs: efivarfs_create() ensure we drop our reference on inode on error
-      efivarfs: efivarfs_fill_super() fix inode reference counts
-      efivarfs: efivarfs_fill_super() ensure we free our temporary name
-      efivarfs: efivarfs_fill_super() ensure we clean up correctly on error
-
-Jan Beulich (1):
-      x86-64/efi: Use EFI to deal with platform wall clock (again)
-
-Jeremy Kerr (3):
-      efi: Handle deletions and size changes in efivarfs_write_file
-      efivarfs: Implement exclusive access for {get,set}_variable
-      efi: Clarify GUID length calculations
-
-Lee, Chun-Yi (1):
-      efi: add efivars kobject to efi sysfs folder
-
-Matt Fleming (11):
-      efivarfs: Add documentation for the EFI variable filesystem
-      x86, mm: Include the entire kernel memory map in trampoline_pgd
-      x86, efi: 1:1 pagetable mapping for virtual EFI calls
-      efivarfs: Return an error if we fail to read a variable
-      efivarfs: Replace magic number with sizeof(attributes)
-      efivarfs: Add unique magic number
-      efivarfs: Make 'datasize' unsigned long
-      efivarfs: Return a consistent error when efivarfs_get_inode() fails
-      efivarfs: Fix return value of efivarfs_file_write()
-      efivarfs: Use query_variable_info() to limit kmalloc()
-      Merge branch 'next'
-
-Matthew Garrett (1):
-      efi: Add support for a UEFI variable filesystem
-
-Xiaoyan Zhang (1):
-      x86/kernel: remove tboot 1:1 page table creation code
-
- Documentation/filesystems/00-INDEX     |   2 +
- Documentation/filesystems/efivarfs.txt |  16 +
- arch/x86/include/asm/efi.h             |  28 +-
- arch/x86/kernel/tboot.c                |  78 +----
- arch/x86/mm/init_64.c                  |   9 +-
- arch/x86/mm/ioremap.c                  | 105 +++++++
- arch/x86/mm/pageattr.c                 |  10 +-
- arch/x86/platform/efi/efi.c            |  29 +-
- arch/x86/platform/efi/efi_64.c         |  15 +
- arch/x86/realmode/init.c               |  17 +-
- drivers/firmware/efivars.c             | 513 ++++++++++++++++++++++++++++++++-
- include/linux/efi.h                    |   9 +-
- include/uapi/linux/magic.h             |   1 +
- init/main.c                            |   8 +-
- 14 files changed, 714 insertions(+), 126 deletions(-)
- create mode 100644 Documentation/filesystems/efivarfs.txt
-
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index cd2e1cc..fe9edec 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -750,37 +750,50 @@ static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
+ static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
+ {
+ 	struct _cpuid4_info *this_leaf;
+-	int ret, i, sibling;
+-	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	int i, sibling;
+ 
+-	ret = 0;
+-	if (index == 3) {
+-		ret = 1;
+-		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
++	if (cpu_has_topoext) {
++		unsigned int apicid, nshared, first, last;
++
++		if (!per_cpu(ici_cpuid4_info, cpu))
++			return 0;
++
++		this_leaf = CPUID4_INFO_IDX(cpu, index);
++		nshared = this_leaf->base.eax.split.num_threads_sharing + 1;
++		apicid = cpu_data(cpu).apicid;
++		first = apicid - (apicid % nshared);
++		last = first + nshared - 1;
++
++		for_each_online_cpu(i) {
++			apicid = cpu_data(i).apicid;
++			if ((apicid < first) || (apicid > last))
++				continue;
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
+ 			this_leaf = CPUID4_INFO_IDX(i, index);
+-			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+-				if (!cpu_online(sibling))
++
++			for_each_online_cpu(sibling) {
++				apicid = cpu_data(sibling).apicid;
++				if ((apicid < first) || (apicid > last))
+ 					continue;
+ 				set_bit(sibling, this_leaf->shared_cpu_map);
+ 			}
+ 		}
+-	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
+-		ret = 1;
+-		for_each_cpu(i, cpu_sibling_mask(cpu)) {
++	} else if (index == 3) {
++		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
+ 			this_leaf = CPUID4_INFO_IDX(i, index);
+-			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
++			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+ 				if (!cpu_online(sibling))
+ 					continue;
+ 				set_bit(sibling, this_leaf->shared_cpu_map);
+ 			}
+ 		}
+-	}
++	} else
++		return 0;
+ 
+-	return ret;
++	return 1;
+ }
+ 
+ static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
