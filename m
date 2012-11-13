@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab2KMVIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 16:08:45 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4313 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722Ab2KMVIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 16:08:43 -0500
-Date: Tue, 13 Nov 2012 22:08:35 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Till Harbaum <till@harbaum.org>
-Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
-  for bus-drivers.
-Message-ID: <20121113220835.111a178a@endymion.delvare>
-In-Reply-To: <50A2AC28.7050304@ahsoftware.de>
-References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de>
-	<20121113195533.6db71716@endymion.delvare>
-	<50A2AC28.7050304@ahsoftware.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755893Ab2KMVLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 16:11:06 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34220 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755846Ab2KMVLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 16:11:04 -0500
+Date: Tue, 13 Nov 2012 16:10:41 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list error
+ handling
+Message-ID: <20121113211041.GB1543@cmpxchg.org>
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
+ <1351251453-6140-4-git-send-email-mhocko@suse.cz>
+ <508E8B95.406@parallels.com>
+ <20121029150022.a595b866.akpm@linux-foundation.org>
+ <20121030103559.GA7394@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030103559.GA7394@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
-
-On Tue, 13 Nov 2012 21:23:04 +0100, Alexander Holler wrote:
-> Am 13.11.2012 19:55, schrieb Jean Delvare:
-> > On Tue, 13 Nov 2012 19:06:07 +0100, Alexander Holler wrote:
-> >> This makes it possible to define i2c-devices at the kernel command line
-> >> or as a module parameter for bus-drivers which want to offer such
-> >> an functionality.
-> >>
-> >> Drivers which are using it will have the a parameter named
-> >> devices with format devname1@addr1,devname2@addr2,...
-> >> e.g. devices=ds1307@0x68,pcf8563@0x51
-> >
-> > No, no, no. We did that 10 years ago, killed all the code 3 years ago
-> > [1], let's not do the same mistake again, please. We have a sysfs
-> > interface for instantiating clients dynamically from user-space, it's
-> > way more powerful and flexible than your proposal. Just try plugging two
+On Tue, Oct 30, 2012 at 11:35:59AM +0100, Michal Hocko wrote:
+> On Mon 29-10-12 15:00:22, Andrew Morton wrote:
+> > On Mon, 29 Oct 2012 17:58:45 +0400
+> > Glauber Costa <glommer@parallels.com> wrote:
+> > 
+> > > > + * move charges to its parent or the root cgroup if the group has no
+> > > > + * parent (aka use_hierarchy==0).
+> > > > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
+> > > > + * mem_cgroup_move_account fails) the failure is always temporary and
+> > > > + * it signals a race with a page removal/uncharge or migration. In the
+> > > > + * first case the page is on the way out and it will vanish from the LRU
+> > > > + * on the next attempt and the call should be retried later.
+> > > > + * Isolation from the LRU fails only if page has been isolated from
+> > > > + * the LRU since we looked at it and that usually means either global
+> > > > + * reclaim or migration going on. The page will either get back to the
+> > > > + * LRU or vanish.
+> > > 
+> > > I just wonder for how long can it go in the worst case?
+> > 
+> > If the kernel is uniprocessor and the caller is SCHED_FIFO: ad infinitum!
 > 
-> So how do I define a device, e.g. an RTC which I want to have alive 
-> before userland starts? Currently imho not possible.
-
-If your system relies on a an RTC clock chip hanging off an USB-to-I2C
-adapter, I'd say your design is very wrong to start with. I can only
-suppose (hope!) you are doing that during some development phase and
-the final hardware design is totally different.
-
-If you need I2C devices to be instantiated early in the boot process,
-this would typically be done by platform code. This is going to be a
-little difficult with i2c-tiny-usb as it was definitely not meant to
-host system-critical chips. But you can probably get it to work if you
-try hard enough (in particular by allowing i2c-tiny-usb to claim
-specific i2c bus number(s).) If you want your development system to
-mimic the final hardware as closely as possible, this is the best
-approach anyway.
-
-> > different i2c-tiny-usb adapters on the same system and see the new code
-> > instantiate the wrong devices...
+> You are right, if the rmdir (resp. echo > force_empty) at SCHED_FIFO
+> races with put_page (on a shared page) which gets preempted after
+> put_page_testzero and before __page_cache_release then we are screwed:
 > 
-> I know about that, but it probes
-
-It probes in the sense "check if a device is present", not in the sense
-"check if the device there is really what the user told me." So very
-easy to get wrong. Plus there is no universal probe method on I2C,
-i2c_new_probed_device() uses a default heuristic which may not only
-fail to detect a device's presence, but may even heavily confuse the
-device in question. Usage of i2c_new_probed_device() should be limited
-to very specific cases.
-
-> and you don't have to use that parameter at all.
-
-This has never been a good reason to accept every piece of code into
-the kernel.
-
-> I think some people can think for their self, 
-> especially those how would use such a parameter.
-
-This isn't the point. At least this is not my point. My point is, if we
-let every developer add its own custom way of instantiating I2C devices
-to fit their specific need of the day (and this is just one example
-amongst others), we will end up with too many ways to achieve roughly
-the same, and in the long run the duplicate code will diverge, bugs
-will crop in, and we'll end up with an unmaintainable mess.
-
-> > [1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=7f508118b1c1f9856a1c899a2bd4867a962b0225
+> 						put_page(page)
+> 						  put_page_testzero
+> 						  <preempted and page still on LRU>
+> mem_cgroup_force_empty_list
+>   page = list_entry(list->prev, struct page, lru);
+>   mem_cgroup_move_parent(page)
+>     get_page_unless_zero <fails>
+>   cond_resched() <scheduled again>
 > 
-> I think my patch looks nicier.
+> The race window is really small but it is definitely possible. I am not
+> happy about this state and it should be probably mentioned in the
+> patch description but I do not see any way around (except for hacks like
+> sched_setscheduler for the current which is, ehm...) and still keep
+> do_not_fail contract here.
+> 
+> Can we consider this as a corner case (it is much easier to kill a
+> machine with SCHED_FIFO than this anyway) or the concern is really
+> strong and we should come with a solution before this can get merged?
 
-Certainly, that's not terribly difficult. The code we got rid of at
-that time was horrid :( And the commit above was only the tip of the
-Halloween iceberg.
+Wouldn't the much bigger race window be reclaim having the page
+isolated and SCHED_FIFO preventing it from putback?
 
-I am not questioning the quality of your code, I did not even look at
-it. I'm questioning the pertinence of adding yet another way to
-instantiate i2c devices when we already have 4 which made everybody
-else happy for the past 3 years AFAIK.
+I also don't think this is a new class of problem, though.
 
--- 
-Jean Delvare
+Would it make sense to stick a wait_on_page_locked() in there just so
+that we don't busy spin on a page under migration/reclaim?
