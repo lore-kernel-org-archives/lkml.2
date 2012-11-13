@@ -1,106 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2KMHpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 02:45:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40361 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753594Ab2KMHp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 02:45:27 -0500
-Date: Tue, 13 Nov 2012 08:45:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 01/13] HID: hid-input: export hidinput_calc_abs_res
-In-Reply-To: <1352306256-12180-2-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211130845080.15877@pobox.suse.cz>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com> <1352306256-12180-2-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754111Ab2KMHqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 02:46:08 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3282 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab2KMHqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 02:46:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 12 Nov 2012 23:45:58 -0800
+Message-ID: <50A1FAB0.8040700@nvidia.com>
+Date: Tue, 13 Nov 2012 15:45:52 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: tegra: Add Tegra30 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-3-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1352467202-27903-3-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Benjamin Tissoires wrote:
-
-> Exporting the function allows us to calculate the resolution in third
-> party drivers like hid-multitouch.
-> This patch also complete the function with additional valid axes.
+On 11/09/2012 09:20 PM, Thierry Reding wrote:
+> This commit adds the host1x node along with its children to the Tegra30
+> DTSI. Furthermore the OF auxiliary data table is updated to have proper
+> names assigned to the platform devices instantiated from the device
+> tree. Moreover, the clocks required by host1x and the two display
+> controllers are setup and initialized.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 > ---
->  drivers/hid/hid-input.c      | 9 ++++++++-
->  drivers/hid/hid-multitouch.c | 1 +
->  include/linux/hid.h          | 1 +
->  3 files changed, 10 insertions(+), 1 deletion(-)
+>  arch/arm/boot/dts/tegra30.dtsi            | 87 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-tegra/board-dt-tegra30.c    | 10 ++++
+>  arch/arm/mach-tegra/tegra30_clocks_data.c | 11 ++--
+>  3 files changed, 104 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 10248cf..f5b1d57 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
->   * Only exponent 1 length units are processed. Centimeters and inches are
->   * converted to millimeters. Degrees are converted to radians.
->   */
-> -static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
-> +__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  {
->  	__s32 unit_exponent = field->unit_exponent;
->  	__s32 logical_extents = field->logical_maximum -
-> @@ -229,6 +229,12 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	case ABS_X:
->  	case ABS_Y:
->  	case ABS_Z:
-> +	case ABS_MT_POSITION_X:
-> +	case ABS_MT_POSITION_Y:
-> +	case ABS_MT_TOOL_X:
-> +	case ABS_MT_TOOL_Y:
-> +	case ABS_MT_TOUCH_MAJOR:
-> +	case ABS_MT_TOUCH_MINOR:
->  		if (field->unit == 0x11) {		/* If centimeters */
->  			/* Convert to millimeters */
->  			unit_exponent += 1;
-> @@ -283,6 +289,7 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	/* Calculate resolution */
->  	return logical_extents / physical_extents;
->  }
-> +EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
->  
->  #ifdef CONFIG_HID_BATTERY_STRENGTH
->  static enum power_supply_property hidinput_battery_props[] = {
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 3eb02b9..9f64e36 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -298,6 +298,7 @@ static void set_abs(struct input_dev *input, unsigned int code,
->  	int fmax = field->logical_maximum;
->  	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
->  	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
-> +	input_abs_set_res(input, code, hidinput_calc_abs_res(field, code));
->  }
->  
->  static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 7e1f37d..9edb06c 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -743,6 +743,7 @@ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
->  int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
->  struct hid_field *hidinput_get_led_field(struct hid_device *hid);
->  unsigned int hidinput_count_leds(struct hid_device *hid);
-> +__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
->  void hid_output_report(struct hid_report *report, __u8 *data);
->  struct hid_device *hid_allocate_device(void);
->  struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
-> -- 
-> 1.7.11.7
+> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+> index b8e33c3..529fdb8 100644
+> --- a/arch/arm/boot/dts/tegra30.dtsi
+> +++ b/arch/arm/boot/dts/tegra30.dtsi
+> @@ -4,6 +4,93 @@
+>         compatible = "nvidia,tegra30";
+>         interrupt-parent = <&intc>;
 > 
+> +       host1x {
+> +               compatible = "nvidia,tegra30-host1x", "simple-bus";
+> +               reg = <0x50000000 0x00024000>;
+> +               interrupts = <0 65 0x04   /* mpcore syncpt */
+> +                             0 67 0x04>; /* mpcore general */
+> +
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +
+> +               ranges = <0x54000000 0x54000000 0x04000000>;
+> +
+> +               mpe {
+> +                       compatible = "nvidia,tegra30-mpe";
+> +                       reg = <0x54040000 0x00040000>;
+> +                       interrupts = <0 68 0x04>;
+> +               };
+> +
+> +               vi {
+> +                       compatible = "nvidia,tegra30-vi";
+> +                       reg = <0x54080000 0x00040000>;
+> +                       interrupts = <0 69 0x04>;
+> +               };
+> +
+> +               epp {
+> +                       compatible = "nvidia,tegra30-epp";
+> +                       reg = <0x540c0000 0x00040000>;
+> +                       interrupts = <0 70 0x04>;
+> +               };
+> +
+> +               isp {
+> +                       compatible = "nvidia,tegra30-isp";
+> +                       reg = <0x54100000 0x00040000>;
+> +                       interrupts = <0 71 0x04>;
+> +               };
+> +
+> +               gr2d {
+> +                       compatible = "nvidia,tegra30-gr2d";
+> +                       reg = <0x54140000 0x00040000>;
+> +                       interrupts = <0 72 0x04>;
+> +               };
+> +
+> +               gr3d {
+> +                       compatible = "nvidia,tegra30-gr3d";
+> +                       reg = <0x54180000 0x00040000>;
+> +               };
+> +
+> +               dc@54200000 {
+> +                       compatible = "nvidia,tegra30-dc";
+> +                       reg = <0x54200000 0x00040000>;
+> +                       interrupts = <0 73 0x04>;
+> +
+> +                       rgb {
+> +                               status = "disabled";
+> +                       };
+> +               };
+> +
+> +               dc@54240000 {
+> +                       compatible = "nvidia,tegra30-dc";
+> +                       reg = <0x54240000 0x00040000>;
+> +                       interrupts = <0 74 0x04>;
+> +
+> +                       rgb {
+> +                               status = "disabled";
+> +                       };
+> +               };
+> +
+> +               hdmi {
+> +                       compatible = "nvidia,tegra30-hdmi";
+> +                       reg = <0x54280000 0x00040000>;
+> +                       interrupts = <0 75 0x04>;
+> +                       status = "disabled";
+> +               };
+> +
+> +               tvo {
+> +                       compatible = "nvidia,tegra30-tvo";
+> +                       reg = <0x542c0000 0x00040000>;
+> +                       interrupts = <0 76 0x04>;
+> +                       status = "disabled";
+> +               };
+> +
+> +               dsi {
+> +                       compatible = "nvidia,tegra30-dsi";
+> +                       reg = <0x54300000 0x00040000>;
+> +                       status = "disabled";
+> +               };
+> +       };
+> +
+>         timer@50004600 {
+>                 compatible = "arm,cortex-a9-twd-timer";
+>                 reg = <0x50040600 0x20>;
+> diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+> index cd30338..ff21107 100644
+> --- a/arch/arm/mach-tegra/board-dt-tegra30.c
+> +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+> @@ -57,6 +57,12 @@ struct of_dev_auxdata tegra30_auxdata_lookup[] __initdata = {
+>         OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DA00, "spi_tegra.3", NULL),
+>         OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DC00, "spi_tegra.4", NULL),
+>         OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DE00, "spi_tegra.5", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-host1x", 0x50000000, "tegra-host1x", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-dc", 0x54200000, "tegra-dc.0", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-dc", 0x54240000, "tegra-dc.1", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-hdmi", 0x54280000, "tegra-hdmi", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-dsi", 0x54300000, "tegra-dsi", NULL),
+> +       OF_DEV_AUXDATA("nvidia,tegra30-tvo", 0x542c0000, "tegra-tvo", NULL),
+>         {}
+>  };
+> 
+> @@ -82,6 +88,10 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+>         { "sbc4",       "pll_p",        100000000,      false},
+>         { "sbc5",       "pll_p",        100000000,      false},
+>         { "sbc6",       "pll_p",        100000000,      false},
+> +       { "host1x",     "pll_c",        144000000,      false},
+> +       { "disp1",      "pll_p",        74000000,       false},
+> +       { "disp2",      "pll_d2_out0",  148500000,      false},
+> +       { "hdmi",       "pll_d2_out0",  148500000,      false},
+>         { NULL,         NULL,           0,              0},
+>  };
+> 
+> diff --git a/arch/arm/mach-tegra/tegra30_clocks_data.c b/arch/arm/mach-tegra/tegra30_clocks_data.c
+> index 7bc8b1d..210b8a4 100644
+> --- a/arch/arm/mach-tegra/tegra30_clocks_data.c
+> +++ b/arch/arm/mach-tegra/tegra30_clocks_data.c
+> @@ -1132,14 +1132,14 @@ PERIPH_CLK(2d,          "2d",                   NULL,   21,     0x15c,  520000000, mux_pllm_pllc_pllp_plla,     MUX
+>  PERIPH_CLK(vi_sensor,  "tegra_camera",         "vi_sensor",    20,     0x1a8,  150000000, mux_pllm_pllc_pllp_plla,     MUX | DIV_U71 | PERIPH_NO_RESET);
+>  PERIPH_CLK(epp,                "epp",                  NULL,   19,     0x16c,  520000000, mux_pllm_pllc_pllp_plla,     MUX | DIV_U71 | DIV_U71_INT);
+>  PERIPH_CLK(mpe,                "mpe",                  NULL,   60,     0x170,  520000000, mux_pllm_pllc_pllp_plla,     MUX | DIV_U71 | DIV_U71_INT);
+> -PERIPH_CLK(host1x,     "host1x",               NULL,   28,     0x180,  260000000, mux_pllm_pllc_pllp_plla,     MUX | DIV_U71 | DIV_U71_INT);
+> +PERIPH_CLK(host1x,     "tegra-host1x",         NULL,   28,     0x180,  260000000, mux_pllm_pllc_pllp_plla,     MUX | DIV_U71 | DIV_U71_INT);
+>  PERIPH_CLK(cve,                "cve",                  NULL,   49,     0x140,  250000000, mux_pllp_plld_pllc_clkm,     MUX | DIV_U71); /* requires min voltage */
+>  PERIPH_CLK(tvo,                "tvo",                  NULL,   49,     0x188,  250000000, mux_pllp_plld_pllc_clkm,     MUX | DIV_U71); /* requires min voltage */
+>  PERIPH_CLK(dtv,                "dtv",                  NULL,   79,     0x1dc,  250000000, mux_clk_m,                   0);
+> -PERIPH_CLK(hdmi,       "hdmi",                 NULL,   51,     0x18c,  148500000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8 | DIV_U71);
+> +PERIPH_CLK(hdmi,       "tegra-hdmi",                   NULL,   51,     0x18c,  148500000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8 | DIV_U71);
+>  PERIPH_CLK(tvdac,      "tvdac",                NULL,   53,     0x194,  220000000, mux_pllp_plld_pllc_clkm,     MUX | DIV_U71); /* requires min voltage */
+> -PERIPH_CLK(disp1,      "tegradc.0",            NULL,   27,     0x138,  600000000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8);
+> -PERIPH_CLK(disp2,      "tegradc.1",            NULL,   26,     0x13c,  600000000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8);
+> +PERIPH_CLK(disp1,      "tegra-dc.0",           NULL,   27,     0x138,  600000000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8);
+> +PERIPH_CLK(disp2,      "tegra-dc.1",           NULL,   26,     0x13c,  600000000, mux_pllp_pllm_plld_plla_pllc_plld2_clkm,     MUX | MUX8);
+>  PERIPH_CLK(usbd,       "fsl-tegra-udc",        NULL,   22,     0,      480000000, mux_clk_m,                   0); /* requires min voltage */
+>  PERIPH_CLK(usb2,       "tegra-ehci.1",         NULL,   58,     0,      480000000, mux_clk_m,                   0); /* requires min voltage */
+>  PERIPH_CLK(usb3,       "tegra-ehci.2",         NULL,   59,     0,      480000000, mux_clk_m,                   0); /* requires min voltage */
+> @@ -1337,6 +1337,9 @@ struct clk_duplicate tegra_clk_duplicates[] = {
+>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
+>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
+>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.4", "fast-clk"),
+> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
+> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
+> +       CLK_DUPLICATE("pll_d2_out0", "tegra-hdmi", "parent"),
+>  };
 
--- 
-Jiri Kosina
-SUSE Labs
+The tegra-dc.1's parent should be pll_d2_out0.
+
+> 
+>  struct clk *tegra_ptr_clks[] = {
+> --
+> 1.8.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
