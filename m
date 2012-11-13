@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2KMDFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Nov 2012 22:05:42 -0500
+	id S1754341Ab2KMDCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Nov 2012 22:02:16 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:65334 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2KMDCR (ORCPT
+	with ESMTP id S1753873Ab2KMDCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Nov 2012 22:02:17 -0500
+	Mon, 12 Nov 2012 22:02:11 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, containers@lists.linux-foundation.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mhocko@suse.cz, glommer@parallels.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/17] cgroup: create directory before linking while creating a new cgroup
-Date: Mon, 12 Nov 2012 19:01:31 -0800
-Message-Id: <1352775704-9023-5-git-send-email-tj@kernel.org>
+Cc: mhocko@suse.cz, glommer@parallels.com, Tejun Heo <tj@kernel.org>,
+        stable@vger.kernel.org
+Subject: [PATCH 01/17] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
+Date: Mon, 12 Nov 2012 19:01:28 -0800
+Message-Id: <1352775704-9023-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352775704-9023-1-git-send-email-tj@kernel.org>
 References: <1352775704-9023-1-git-send-email-tj@kernel.org>
@@ -21,108 +22,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While creating a new cgroup, cgroup_create() links the newly allocated
-cgroup into various places before trying to create its directory.
-Because cgroup life-cycle is tied to the vfs objects, this makes it
-impossible to use cgroup_rmdir() for rolling back creation - the
-removal logic depends on having full vfs objects.
+cgroup_create_dir() does weird dancing with dentry refcnt.  On
+success, it gets and then puts it achieving nothing.  On failure, it
+puts but there isn't no matching get anywhere leading to the following
+oops if cgroup_create_file() fails for whatever reason.
 
-This patch moves directory creation above linking and collect linking
-operations to one place.  This allows directory creation failure to
-share error exit path with css allocation failures and any failure
-sites afterwards (to be added later) can use cgroup_rmdir() logic to
-undo creation.
+  ------------[ cut here ]------------
+  kernel BUG at /work/os/work/fs/dcache.c:552!
+  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in:
+  CPU 2
+  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
+  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
+  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
+  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
+  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
+  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
+  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
+  Stack:
+   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
+   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
+   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
+  Call Trace:
+   [<ffffffff811cc889>] done_path_create+0x19/0x50
+   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
+   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
+   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
+  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
+  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+   RSP <ffff88001a3ebef8>
+  ---[ end trace 1277bcfd9561ddb0 ]---
 
-It also removes the need to check whether cgroup->dentry is %NULL in
-cgroup_path.  If a cgroup is visible, its dentry is guaranteed to be
-visible too.
-
-Note that this also makes the memory barriers around cgroup->dentry,
-which currently is misleadingly using RCU operations, unnecessary.
-This will be handled in the next patch.
-
-While at it, locking BUG_ON() on i_mutex is converted to
-lockdep_assert_held().
+Fix it by dropping the unnecessary dget/dput() pair.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org
 ---
- kernel/cgroup.c | 32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
+ kernel/cgroup.c | 2 --
+ 1 file changed, 2 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b042673..40707cd 100644
+index 0f8fa6a..d0803f0 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1760,7 +1760,7 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
- 	struct dentry *dentry = rcu_dereference_check(cgrp->dentry,
- 						      cgroup_lock_is_held());
- 
--	if (!dentry || cgrp == dummytop) {
-+	if (cgrp == dummytop) {
- 		/*
- 		 * Inactive subsystems have no dentry for their root
- 		 * cgroup
-@@ -4112,15 +4112,22 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		}
+@@ -2684,9 +2684,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
+ 		dentry->d_fsdata = cgrp;
+ 		inc_nlink(parent->d_inode);
+ 		rcu_assign_pointer(cgrp->dentry, dentry);
+-		dget(dentry);
  	}
+-	dput(dentry);
  
--	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
--	root->number_of_cgroups++;
--
-+	/*
-+	 * Create directory.  cgroup_create_file() returns with the new
-+	 * directory locked on success so that it can be populated without
-+	 * dropping cgroup_mutex.
-+	 */
- 	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
- 	if (err < 0)
--		goto err_remove;
-+		goto err_destroy;
-+	lockdep_assert_held(&dentry->d_inode->i_mutex);
- 
-+	/* allocation complete, commit to creation */
- 	dentry->d_fsdata = cgrp;
- 	rcu_assign_pointer(cgrp->dentry, dentry);
-+	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
-+	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
-+	root->number_of_cgroups++;
- 
- 	for_each_subsys(root, ss) {
- 		/* each css holds a ref to the cgroup's dentry */
-@@ -4131,11 +4138,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			ss->post_create(cgrp);
- 	}
- 
--	/* The cgroup directory was pre-locked for us */
--	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
--
--	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
--
- 	err = cgroup_populate_dir(cgrp, true, root->subsys_mask);
- 	/* If err < 0, we have a half-filled directory - oh well ;) */
- 
-@@ -4144,20 +4146,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 
- 	return 0;
- 
-- err_remove:
--
--	list_del_rcu(&cgrp->sibling);
--	root->number_of_cgroups--;
--
-- err_destroy:
--
-+err_destroy:
- 	for_each_subsys(root, ss) {
- 		if (cgrp->subsys[ss->subsys_id])
- 			ss->destroy(cgrp);
- 	}
--
- 	mutex_unlock(&cgroup_mutex);
--
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
- err_free:
+ 	return error;
+ }
 -- 
 1.7.11.7
 
