@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2KMIBC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 03:01:02 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4293 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab2KMIA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 03:00:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 13 Nov 2012 00:00:54 -0800
-Message-ID: <50A1FE2F.8000107@nvidia.com>
-Date: Tue, 13 Nov 2012 16:00:47 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A1FA7C.4010507@nvidia.com> <20121113075247.GB8409@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121113075247.GB8409@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754183Ab2KMIBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 03:01:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16643 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753247Ab2KMIBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 03:01:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,764,1344236400"; 
+   d="scan'208";a="248249980"
+Subject: [PATCH] genirq: Fix the case of irqflag with IRQF_SHARED and
+ IRQF_NO_THREAD
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Nov 2012 01:02:55 +0800
+Message-ID: <1352826175.15558.1662.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 03:52 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Nov 13, 2012 at 03:45:00PM +0800, Mark Zhang wrote:
->> On 11/09/2012 09:20 PM, Thierry Reding wrote:
->>> @@ -116,6 +122,9 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
->>>         { "sbc2",       "pll_p",        100000000,      false },
->>>         { "sbc3",       "pll_p",        100000000,      false },
->>>         { "sbc4",       "pll_p",        100000000,      false },
->>> +       { "host1x",     "pll_c",        144000000,      false },
->>> +       { "disp1",      "pll_p",        600000000,      false },
->>> +       { "disp2",      "pll_p",        600000000,      false },
->>
->> I think here the parent of disp2 should be "pll_d_out0", not "pll_p".
->> Right now pll_p has not a proper clock setting to make 148.5MHz 1080p
->> HDMI happy. In addition, you add the 297MHz in pll_d frequency table
->> next and I think this is for disp2 has a proper clock rate to support HDMI.
-> [...]
->>> @@ -1051,6 +1053,9 @@ static struct clk_duplicate tegra_clk_duplicates[] = {
->>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.1", "fast-clk"),
->>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.2", "fast-clk"),
->>>         CLK_DUPLICATE("pll_p_out3", "tegra-i2c.3", "fast-clk"),
->>> +       CLK_DUPLICATE("pll_p", "tegra-dc.0", "parent"),
->>> +       CLK_DUPLICATE("pll_p", "tegra-dc.1", "parent"),
->>> +       CLK_DUPLICATE("pll_d_out0", "tegra-hdmi", "parent"),
->>>  };
->>
->> The same with my above comments, the tegra-dc.1's parent should be
->> pll_d_out0.
-> 
-> The way this works is that for HDMI it is required that the DC and HDMI
-> blocks have the same parent. So what really happens is that once you
-> setup one of the DCs to work with HDMI, its clock will automatically be
-> reparented to the HDMI parent clock, which in this case is "pll_d_out0".
-> 
 
-Are you sure about this? Is this a hardware feature? I know the dc and
-hdmi controller should have the same clock parent but I think this
-should be ensured by device driver...
+When one shared irq is requested as below:
+req1: request_irq(irqnb, cb1, IRQF_SHARED, ...);
+then:
+req2: request_irq(irqnb, cb2, IRQF_SHARED|IRQF_NO_THREAD, ...);
 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
-> 
+Both req1 and req2 will be successful.
+
+But if we passed threadirqs in commandline, and executing req1 and req2,
+the req2 will fail. The reason is req1 without IRQF_NO_THREAD, then
+the IRQF_ONESHOT will be added into flag, while req2 will has no IRQS_ONESHOT
+flag, it cause type mismatch case for shared interrupt.
+
+Here add the check of agreeing on NO_THREAD, to make sure the req1/req2
+can work well for both scenerio.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/irq/manage.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 4c69326..dda0f26 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -971,7 +971,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 		 */
+ 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+ 		    ((old->flags ^ new->flags) & IRQF_TRIGGER_MASK) ||
+-		    ((old->flags ^ new->flags) & IRQF_ONESHOT))
++		    ((old->flags ^ new->flags) & IRQF_ONESHOT) ||
++		    ((old->flags ^ new->flags) & IRQF_NO_THREAD))
+ 			goto mismatch;
+ 
+ 		/* All handlers must agree on per-cpuness */
+-- 
+1.7.0.4
+
+
+
