@@ -1,50 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab2KMSsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 13:48:46 -0500
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:44760 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2KMSso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 13:48:44 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjmxANuUolBV5h1yPGdsb2JhbABEhTEjhQC4JgIBfhkBAQEBHxkNJ4IeAQEEATocIwULCANGFCUKGogXCqorkDIUjQ+BfoJ8YQOVe4V7jTk
-X-IronPort-AV: E=Sophos;i="4.80,768,1344204000"; 
-   d="scan'208";a="151440620"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 13 Nov 2012 19:55:05 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] HID: hid-multitouch: support for hovering
- devices
-Message-ID: <20121113185505.GA3641@polaris.bitmath.org>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
- <1352306256-12180-12-git-send-email-benjamin.tissoires@gmail.com>
- <20121113164239.GA712@polaris.bitmath.org>
- <CAN+gG=EbAdfOG_vwt2uamV+JcAKLFqM=zTo9oRQ9RLayrpdsoA@mail.gmail.com>
- <20121113180453.GA3622@polaris.bitmath.org>
- <CAN+gG=HyDrr7mWsYGFue_xuzX0xm45n1EDpsDgU1RKJ8SkuP9Q@mail.gmail.com>
+	id S1755608Ab2KMSsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 13:48:51 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34198 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab2KMSss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 13:48:48 -0500
+Date: Tue, 13 Nov 2012 13:48:35 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 21/31] sched, numa, mm: Implement THP migration
+Message-ID: <20121113184835.GH10092@cmpxchg.org>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+ <1352826834-11774-22-git-send-email-mingo@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN+gG=HyDrr7mWsYGFue_xuzX0xm45n1EDpsDgU1RKJ8SkuP9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352826834-11774-22-git-send-email-mingo@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I just intend to force the update of the distance value at the
-> beginning of the touch.
-> This is just to send a coherent state when the finger goes in range,
-> and to make sure that user-space application do not rely on the
-> undefined value (0) whereas the kernel thought it was set to 1.
+[Put Hugh back on CC]
 
-Right, so we use EVIOCGMTSLOTS. This "problem" occurs with
-ABS_MT_ORIENTATION as well.
+What happened to Hugh's fixes to the LRU handling?  I believe it was
+racy beyond affecting memcg, it's just that memcg code had a BUG_ON in
+the right place to point it out.
 
-Thanks,
-Henrik
+On Tue, Nov 13, 2012 at 06:13:44PM +0100, Ingo Molnar wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Add THP migration for the NUMA working set scanning fault case.
+> 
+> It uses the page lock to serialize. No migration pte dance is
+> necessary because the pte is already unmapped when we decide
+> to migrate.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Link: http://lkml.kernel.org/n/tip-yv9vbiz2s455zxq1ffzx3fye@git.kernel.org
+> [ Significant fixes and changelog. ]
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  mm/huge_memory.c | 131 +++++++++++++++++++++++++++++++++++++++++++------------
+>  mm/migrate.c     |   2 +-
+>  2 files changed, 103 insertions(+), 30 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index c4c0a57..931caf4 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -742,12 +742,13 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			   unsigned int flags, pmd_t entry)
+>  {
+>  	unsigned long haddr = address & HPAGE_PMD_MASK;
+> +	struct page *new_page = NULL;
+>  	struct page *page = NULL;
+> -	int node;
+> +	int node, lru;
+>  
+>  	spin_lock(&mm->page_table_lock);
+>  	if (unlikely(!pmd_same(*pmd, entry)))
+> -		goto out_unlock;
+> +		goto unlock;
+>  
+>  	if (unlikely(pmd_trans_splitting(entry))) {
+>  		spin_unlock(&mm->page_table_lock);
+> @@ -755,45 +756,117 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		return;
+>  	}
+>  
+> -#ifdef CONFIG_NUMA
+>  	page = pmd_page(entry);
+> -	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+> +	if (page) {
+> +		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+>  
+> -	get_page(page);
+> -	spin_unlock(&mm->page_table_lock);
+> +		get_page(page);
+> +		node = mpol_misplaced(page, vma, haddr);
+> +		if (node != -1)
+> +			goto migrate;
+> +	}
+>  
+> -	/*
+> -	 * XXX should we serialize against split_huge_page ?
+> -	 */
+> +fixup:
+> +	/* change back to regular protection */
+> +	entry = pmd_modify(entry, vma->vm_page_prot);
+> +	set_pmd_at(mm, haddr, pmd, entry);
+> +	update_mmu_cache_pmd(vma, address, entry);
+>  
+> -	node = mpol_misplaced(page, vma, haddr);
+> -	if (node == -1)
+> -		goto do_fixup;
+> +unlock:
+> +	spin_unlock(&mm->page_table_lock);
+> +	if (page)
+> +		put_page(page);
+>  
+> -	/*
+> -	 * Due to lacking code to migrate thp pages, we'll split
+> -	 * (which preserves the special PROT_NONE) and re-take the
+> -	 * fault on the normal pages.
+> -	 */
+> -	split_huge_page(page);
+> -	put_page(page);
+>  	return;
+>  
+> -do_fixup:
+> +migrate:
+> +	spin_unlock(&mm->page_table_lock);
+> +
+> +	lock_page(page);
+>  	spin_lock(&mm->page_table_lock);
+> -	if (unlikely(!pmd_same(*pmd, entry)))
+> -		goto out_unlock;
+> -#endif
+> +	if (unlikely(!pmd_same(*pmd, entry))) {
+> +		spin_unlock(&mm->page_table_lock);
+> +		unlock_page(page);
+> +		put_page(page);
+> +		return;
+> +	}
+> +	spin_unlock(&mm->page_table_lock);
+>  
+> -	/* change back to regular protection */
+> -	entry = pmd_modify(entry, vma->vm_page_prot);
+> -	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
+> -		update_mmu_cache_pmd(vma, address, entry);
+> +	new_page = alloc_pages_node(node,
+> +	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
+> +	    HPAGE_PMD_ORDER);
+>  
+> -out_unlock:
+> +	if (!new_page)
+> +		goto alloc_fail;
+> +
+> +	lru = PageLRU(page);
+> +
+> +	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
+> +		goto alloc_fail;
+> +
+> +	if (!trylock_page(new_page))
+> +		BUG();
+> +
+> +	/* anon mapping, we can simply copy page->mapping to the new page: */
+> +	new_page->mapping = page->mapping;
+> +	new_page->index = page->index;
+> +
+> +	migrate_page_copy(new_page, page);
+> +
+> +	WARN_ON(PageLRU(new_page));
+> +
+> +	spin_lock(&mm->page_table_lock);
+> +	if (unlikely(!pmd_same(*pmd, entry))) {
+> +		spin_unlock(&mm->page_table_lock);
+> +		if (lru)
+> +			putback_lru_page(page);
+> +
+> +		unlock_page(new_page);
+> +		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
+> +		new_page->mapping = NULL;
+> +		put_page(new_page);		/* Free it */
+> +
+> +		unlock_page(page);
+> +		put_page(page);			/* Drop the local reference */
+> +
+> +		return;
+> +	}
+> +
+> +	entry = mk_pmd(new_page, vma->vm_page_prot);
+> +	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+> +	entry = pmd_mkhuge(entry);
+> +
+> +	page_add_new_anon_rmap(new_page, vma, haddr);
+> +
+> +	set_pmd_at(mm, haddr, pmd, entry);
+> +	update_mmu_cache_pmd(vma, address, entry);
+> +	page_remove_rmap(page);
+>  	spin_unlock(&mm->page_table_lock);
+> -	if (page)
+> +
+> +	put_page(page);			/* Drop the rmap reference */
+> +
+> +	if (lru)
+> +		put_page(page);		/* drop the LRU isolation reference */
+> +
+> +	unlock_page(new_page);
+> +	unlock_page(page);
+> +	put_page(page);			/* Drop the local reference */
+> +
+> +	return;
+> +
+> +alloc_fail:
+> +	if (new_page)
+> +		put_page(new_page);
+> +
+> +	unlock_page(page);
+> +
+> +	spin_lock(&mm->page_table_lock);
+> +	if (unlikely(!pmd_same(*pmd, entry))) {
+>  		put_page(page);
+> +		page = NULL;
+> +		goto unlock;
+> +	}
+> +	goto fixup;
+>  }
+>  
+>  int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 3299949..72d1056 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -417,7 +417,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
+>   */
+>  void migrate_page_copy(struct page *newpage, struct page *page)
+>  {
+> -	if (PageHuge(page))
+> +	if (PageHuge(page) || PageTransHuge(page))
+>  		copy_huge_page(newpage, page);
+>  	else
+>  		copy_highpage(newpage, page);
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
