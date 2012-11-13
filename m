@@ -1,68 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab2KMFNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 00:13:42 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58137 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510Ab2KMFMg (ORCPT
+	id S1754518Ab2KMFRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 00:17:52 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:58597
+	"EHLO na01-by2-obe.mail.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752509Ab2KMFRv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 00:12:36 -0500
-Message-ID: <50A1D6C3.2010108@wwwdotorg.org>
-Date: Mon, 12 Nov 2012 22:12:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 13 Nov 2012 00:17:51 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -5
+X-BigFish: PS-5(zz98dI9371I542M1432I1447Izz1de0h1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0l1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>
+Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+Thread-Topic: [PATCH 1/1] mm: Export a function to read vm_committed_as
+Thread-Index: AQHNv7DISCAw0NqBFkOLHpdn/+FFI5fj6u+AgABoguCAAm2CAIAAAQFAgAAaioCAAF/JoA==
+Date: Tue, 13 Nov 2012 05:16:33 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E3E07D@BL2PRD0310MB375.namprd03.prod.outlook.com>
+References: <1352600728-17766-1-git-send-email-kys@microsoft.com>
+ <alpine.DEB.2.00.1211101830250.18494@chino.kir.corp.google.com>
+ <426367E2313C2449837CD2DE46E7EAF930E35B45@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <alpine.DEB.2.00.1211121349130.23347@chino.kir.corp.google.com>
+ <426367E2313C2449837CD2DE46E7EAF930E39FBC@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <c04bb062-bbce-4980-b2b3-fbbb18e64b66@default>
+In-Reply-To: <c04bb062-bbce-4980-b2b3-fbbb18e64b66@default>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [207.46.92.17]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jonas Gorski <jonas.gorski@gmail.com>
-CC: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        John Crispin <blogic@openwrt.org>, Maxime Bizon <mbizon@freebox.fr>,
-        Florian Fainelli <florian@openwrt.org>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] MIPS: BCM63XX: add empty Device Trees for all supported
- boards
-References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com> <1352638249-29298-15-git-send-email-jonas.gorski@gmail.com>
-In-Reply-To: <1352638249-29298-15-git-send-email-jonas.gorski@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: BL2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ORACLE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(51704002)(24454001)(13464001)(51914002)(74502001)(47776002)(47446002)(49866001)(31966008)(6806001)(53806001)(50466001)(54356001)(76482001)(47976001)(50986001)(46102001)(74662001)(5343635001)(23726001)(54316001)(47736001)(46406002)(33656001)(44976002)(4396001)(51856001)(16676001)(55846005);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 06640999CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2012 05:50 AM, Jonas Gorski wrote:
-> Add empty board files for all boards supported by the legacy board
-> support.
 
-> diff --git a/arch/mips/bcm63xx/dts/96328avng.dts b/arch/mips/bcm63xx/dts/96328avng.dts
 
-> +/ {
-> +	model = "96328avng";
-> +	compatible = "96328avng";
+> -----Original Message-----
+> From: Dan Magenheimer [mailto:dan.magenheimer@oracle.com]
+> Sent: Monday, November 12, 2012 6:32 PM
+> To: KY Srinivasan; David Rientjes; Konrad Wilk
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org;
+> yinghan@google.com
+> Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+> 
+> > From: KY Srinivasan [mailto:kys@microsoft.com]
+> > Sent: Monday, November 12, 2012 3:58 PM
+> > To: David Rientjes
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org;
+> > olaf@aepfle.de; apw@canonical.com; andi@firstfloor.org; akpm@linux-
+> foundation.org; linux-mm@kvack.org;
+> > kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org;
+> yinghan@google.com; Dan Magenheimer
+> > Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+> >
+> > > -----Original Message-----
+> > > From: David Rientjes [mailto:rientjes@google.com]
+> > > Sent: Monday, November 12, 2012 4:54 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> > > kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org;
+> > > yinghan@google.com
+> > > Subject: RE: [PATCH 1/1] mm: Export a function to read vm_committed_as
+> > >
+> > > On Sun, 11 Nov 2012, KY Srinivasan wrote:
+> > >
+> > > > Thanks for the prompt response. For the Linux balloon driver for Hyper-V, I
+> > > need access
+> > > > to the metric that reflects the system wide memory commitment made by
+> the
+> > > guest kernel.
+> > > > In the Hyper-V case, this information is one of the many metrics used to
+> drive
+> > > the policy engine
+> > > > on the host. Granted, the interface name I have chosen here could be more
+> > > generic; how about
+> > > > read_mem_commit_info(void). I am open to suggestions here.
+> > > >
+> > >
+> > > I would suggest vm_memory_committed() and there shouldn't be a
+> comment
+> > > describing that this is just a wrapper for modules to read
+> > > vm_committed_as, that's apparent from the implementation: it should be
+> > > describing exactly what this value represents and why it is a useful
+> > > metric (at least in the case that you're concerned about).
+> >
+> > Will do; thanks.
+> > >
+> > > > With regards to making changes to the Xen self ballooning code, I would like
+> to
+> > > separate that patch
+> > > > from the patch that implements the exported mechanism to access the
+> > > memory commitment information.
+> > >
+> > > Why?  Is xen using it for a different inference?
+> >
+> > I think it is good to separate these patches. Dan (copied here) wrote the code
+> for the
+> > Xen self balloon driver. If it is ok with him I can submit the patch for Xen as well.
+> 
+> Hi KY --
+> 
+> If I understand correctly, this would be only a cosmetic (function renaming)
+> change
+> to the Xen selfballooning code.  If so, then I will be happy to Ack when I
+> see the patch.  However, Konrad (konrad.wilk@oracle.com) is the maintainer
+> for all Xen code so you should ask him... and (from previous painful experience)
+> it can be difficult to sync even very simple interdependent changes going through
+> different maintainers without breaking linux-next.  So I can't offer any
+> help with that process, only commiseration. :-(
+> 
+> Dan
+> 
 
-The board should be compatible with both the board name and the SoC on
-the board. I know that right now the MIPS code is choosing the DT to use
-based on the board name, but I think it's more typical to pass an
-explicit DT to the kernel, and then choose the kernel support to execute
-based on the compatible value (certainly this is the case on ARM and I
-assume other architectures too). That would require the DT content to
-include the SoC name in the compatible property, so that the kernel
-support didn't then need to contain a table of all supported board names.
+Dan,
 
-> +	ubus@10000000 {
-> +
-> +	};
+Thank you. I will send the patches out soon.
 
-Do you need to include this empty node in each file? I guess it gets
-added to in the next patch so it's not a big deal though.
+Regards,
 
-> diff --git a/arch/mips/bcm63xx/dts/Kconfig b/arch/mips/bcm63xx/dts/Kconfig
+K. Y
 
-> +config BOARD_96328AVNG
-> +	bool "96328avng reference board"
-> +	select BCM63XX_CPU_6328
-
-Why not simply compile all DTs whenever the SoC support is enabled? I
-suppose you're trying to avoid packing all the DTs into the kernel
-image. Does it make more sense to amend the MIPS kernel boot process so
-that a single user-/firmware-selected DT is passed to the kernel, rather
-than packing the DTs into the kernel and selecting one?
