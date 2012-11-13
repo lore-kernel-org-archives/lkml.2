@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab2KMLV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 06:21:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49022 "EHLO mx2.suse.de"
+	id S1754867Ab2KMLYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 06:24:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49852 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab2KMLNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 06:13:06 -0500
+	id S1751600Ab2KMLYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 06:24:15 -0500
+Date: Tue, 13 Nov 2012 11:24:10 +0000
 From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/31] mm: compaction: Add scanned and isolated counters for compaction
-Date: Tue, 13 Nov 2012 11:12:32 +0000
-Message-Id: <1352805180-1607-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352805180-1607-1-git-send-email-mgorman@suse.de>
-References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/19] mm: numa: pte_numa() and pmd_numa()
+Message-ID: <20121113112410.GW8218@suse.de>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <1352193295-26815-6-git-send-email-mgorman@suse.de>
+ <20121113095417.GB21522@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121113095417.GB21522@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction already has tracepoints to count scanned and isolated pages
-but it requires that ftrace be enabled and if that information has to be
-written to disk then it can be disruptive. This patch adds vmstat counters
-for compaction called compact_migrate_scanned, compact_free_scanned and
-compact_isolated.
+Hi Ingo,
 
-With these counters, it is possible to define a basic cost model for
-compaction. This approximates of how much work compaction is doing and can
-be compared that with an oprofile showing TLB misses and see if the cost of
-compaction is being offset by THP for example. Minimally a compaction patch
-can be evaluated in terms of whether it increases or decreases cost. The
-basic cost model looks like this
+On Tue, Nov 13, 2012 at 10:54:17AM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Implement pte_numa and pmd_numa.
+> > 
+> > <Changlog SNIP>
+> > ---
+> >  arch/x86/include/asm/pgtable.h |   65 ++++++++++++++++++++++++++++++++++++++--
+> >  include/asm-generic/pgtable.h  |   12 ++++++++
+> >  2 files changed, 75 insertions(+), 2 deletions(-)
+> > 
+> > <Patch SNIP>
+> 
+> Hm, this overcomplicates things quite a bit and adds arch 
+> specific code, and there's no explanation given for that 
+> approach that I can see?
+> 
 
-Fundamental unit u:	a word	sizeof(void *)
+So there are two possible problems here - the PTE flag naming and how
+it's implemented.
 
-Ca  = cost of struct page access = sizeof(struct page) / u
+On the PTE flag naming front, the changelog explains the disadvantages
+to using PROT_NONE and this arrangement allows an architecture to make a
+better decision if one is available. The relevant parts of the changelog are
 
-Cmc = Cost migrate page copy = (Ca + PAGE_SIZE/u) * 2
-Cmf = Cost migrate failure   = Ca * 2
-Ci  = Cost page isolation    = (Ca + Wi)
-	where Wi is a constant that should reflect the approximate
-	cost of the locking operation.
+	_PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE (but
+	it could also use a different bitflag, it's up to the architecture
+	to decide).
 
-Csm = Cost migrate scanning = Ca
-Csf = Cost free    scanning = Ca
+and
 
-Overall cost =	(Csm * compact_migrate_scanned) +
-	      	(Csf * compact_free_scanned)    +
-	      	(Ci  * compact_isolated)	+
-		(Cmc * pgmigrate_success)	+
-		(Cmf * pgmigrate_failed)
+	Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
+	things: it requires us to ensure the code paths executed by
+	_PAGE_PROTNONE remains mutually exclusive to the code paths executed
+	by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and _PAGE_PROTNONE
+	to step into each other toes.
 
-Where the values are read from /proc/vmstat.
+so I'd like to keep that. Any major objections?
 
-This is very basic and ignores certain costs such as the allocation cost
-to do a migrate page copy but any improvement to the model would still
-use the same vmstat counters.
+> Basically, what's wrong with the generic approach that numa/core 
+> has:
+> 
+>  __weak bool pte_numa(struct vm_area_struct *vma, pte_t pte)
+> 
+> [see the full function below.]
+> 
+> Then we can reuse existing protection-changing functionality and 
+> keep it all tidy.
+> 
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- include/linux/vm_event_item.h |    2 ++
- mm/compaction.c               |    8 ++++++++
- mm/vmstat.c                   |    3 +++
- 3 files changed, 13 insertions(+)
+I very much like this idea of this approach. Superficially I see nothing
+wrong with it. I just didn't think of it when I was trying to resolve
+the two trees together.
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 8aa7cb9..a1f750b 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -42,6 +42,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
- #endif
- #ifdef CONFIG_COMPACTION
-+		COMPACTMIGRATE_SCANNED, COMPACTFREE_SCANNED,
-+		COMPACTISOLATED,
- 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
- #endif
- #ifdef CONFIG_HUGETLB_PAGE
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 2c077a7..aee7443 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -356,6 +356,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	if (blockpfn == end_pfn)
- 		update_pageblock_skip(cc, valid_page, total_isolated, false);
- 
-+	count_vm_events(COMPACTFREE_SCANNED, nr_scanned);
-+	if (total_isolated)
-+		count_vm_events(COMPACTISOLATED, total_isolated);
-+
- 	return total_isolated;
- }
- 
-@@ -646,6 +650,10 @@ next_pageblock:
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
-+	count_vm_events(COMPACTMIGRATE_SCANNED, nr_scanned);
-+	if (nr_isolated)
-+		count_vm_events(COMPACTISOLATED, nr_isolated);
-+
- 	return low_pfn;
- }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 89a7fd6..3a067fa 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -779,6 +779,9 @@ const char * const vmstat_text[] = {
- 	"pgmigrate_fail",
- #endif
- #ifdef CONFIG_COMPACTION
-+	"compact_migrate_scanned",
-+	"compact_free_scanned",
-+	"compact_isolated",
- 	"compact_stall",
- 	"compact_fail",
- 	"compact_success",
+> an architecture that wants to do something special could 
+> possibly override it in the future - but we want to keep the 
+> generic logic in generic code.
+> 
+
+Sensible and probably less mess in the future.
+
+> __weak bool pte_numa(struct vm_area_struct *vma, pte_t pte)
+> {
+
+I'll lift this and see can it be modified to use _PAGE_NUMA instead of
+hard-coding for PROT_NONE.  Of course if you beat me to it and send a patch,
+that'd be cool too :)
+
+Thanks!
+
 -- 
-1.7.9.2
-
+Mel Gorman
+SUSE Labs
