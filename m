@@ -1,135 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2KMPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 10:00:59 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47900 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2KMPA6 (ORCPT
+	id S1755041Ab2KMPCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 10:02:10 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54760 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab2KMPCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 10:00:58 -0500
-From: Rob Clark <rob.clark@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Rob Clark <rob@ti.com>
-Subject: [PATCH] ARM: add get_user() support for 8 byte types
-Date: Tue, 13 Nov 2012 09:00:54 -0600
-Message-Id: <1352818854-10958-1-git-send-email-rob.clark@linaro.org>
-X-Mailer: git-send-email 1.8.0
+	Tue, 13 Nov 2012 10:02:08 -0500
+Date: Wed, 14 Nov 2012 00:01:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
+ index of first flushed entry
+Message-ID: <20121113150159.GA5296@barrios>
+References: <1351702597-10795-1-git-send-email-js1304@gmail.com>
+ <1351702597-10795-5-git-send-email-js1304@gmail.com>
+ <20121101050347.GD24883@bbox>
+ <CAAmzW4P=YdFt9KFmHcQh=tJheuZuvZVojYGNTqfO4YDy+C8_1g@mail.gmail.com>
+ <20121102224236.GB2070@barrios>
+ <CAAmzW4MoXExAMxxJTGehBEY76nUjkSsJ66L0C+sZsnAQANA+Lw@mail.gmail.com>
+ <20121113124937.GA4360@barrios>
+ <CAAmzW4Oz6pAsF7cA6Q5Hvr3Md8dsZtaaX8k_HaJcP+9=iBb3nQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4Oz6pAsF7cA6Q5Hvr3Md8dsZtaaX8k_HaJcP+9=iBb3nQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Clark <rob@ti.com>
+On Tue, Nov 13, 2012 at 11:12:28PM +0900, JoonSoo Kim wrote:
+> 2012/11/13 Minchan Kim <minchan@kernel.org>:
+> > On Tue, Nov 13, 2012 at 09:30:57AM +0900, JoonSoo Kim wrote:
+> >> 2012/11/3 Minchan Kim <minchan@kernel.org>:
+> >> > Hi Joonsoo,
+> >> >
+> >> > On Sat, Nov 03, 2012 at 04:07:25AM +0900, JoonSoo Kim wrote:
+> >> >> Hello, Minchan.
+> >> >>
+> >> >> 2012/11/1 Minchan Kim <minchan@kernel.org>:
+> >> >> > On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
+> >> >> >> In current code, after flush_all_zero_pkmaps() is invoked,
+> >> >> >> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
+> >> >> >> return index of first flushed entry. With this index,
+> >> >> >> we can immediately map highmem page to virtual address represented by index.
+> >> >> >> So change return type of flush_all_zero_pkmaps()
+> >> >> >> and return index of first flushed entry.
+> >> >> >>
+> >> >> >> Additionally, update last_pkmap_nr to this index.
+> >> >> >> It is certain that entry which is below this index is occupied by other mapping,
+> >> >> >> therefore updating last_pkmap_nr to this index is reasonable optimization.
+> >> >> >>
+> >> >> >> Cc: Mel Gorman <mel@csn.ul.ie>
+> >> >> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> >> >> Cc: Minchan Kim <minchan@kernel.org>
+> >> >> >> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >> >> >>
+> >> >> >> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+> >> >> >> index ef788b5..97ad208 100644
+> >> >> >> --- a/include/linux/highmem.h
+> >> >> >> +++ b/include/linux/highmem.h
+> >> >> >> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+> >> >> >>
+> >> >> >>  #ifdef CONFIG_HIGHMEM
+> >> >> >>  #include <asm/highmem.h>
+> >> >> >> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
+> >> >> >>
+> >> >> >>  /* declarations for linux/mm/highmem.c */
+> >> >> >>  unsigned int nr_free_highpages(void);
+> >> >> >> diff --git a/mm/highmem.c b/mm/highmem.c
+> >> >> >> index d98b0a9..b365f7b 100644
+> >> >> >> --- a/mm/highmem.c
+> >> >> >> +++ b/mm/highmem.c
+> >> >> >> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
+> >> >> >>       return virt_to_page(addr);
+> >> >> >>  }
+> >> >> >>
+> >> >> >> -static void flush_all_zero_pkmaps(void)
+> >> >> >> +static unsigned int flush_all_zero_pkmaps(void)
+> >> >> >>  {
+> >> >> >>       int i;
+> >> >> >> -     int need_flush = 0;
+> >> >> >> +     unsigned int index = PKMAP_INVALID_INDEX;
+> >> >> >>
+> >> >> >>       flush_cache_kmaps();
+> >> >> >>
+> >> >> >> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
+> >> >> >>                         &pkmap_page_table[i]);
+> >> >> >>
+> >> >> >>               set_page_address(page, NULL);
+> >> >> >> -             need_flush = 1;
+> >> >> >> +             if (index == PKMAP_INVALID_INDEX)
+> >> >> >> +                     index = i;
+> >> >> >>       }
+> >> >> >> -     if (need_flush)
+> >> >> >> +     if (index != PKMAP_INVALID_INDEX)
+> >> >> >>               flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+> >> >> >> +
+> >> >> >> +     return index;
+> >> >> >>  }
+> >> >> >>
+> >> >> >>  /**
+> >> >> >> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
+> >> >> >>   */
+> >> >> >>  void kmap_flush_unused(void)
+> >> >> >>  {
+> >> >> >> +     unsigned int index;
+> >> >> >> +
+> >> >> >>       lock_kmap();
+> >> >> >> -     flush_all_zero_pkmaps();
+> >> >> >> +     index = flush_all_zero_pkmaps();
+> >> >> >> +     if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
+> >> >> >> +             last_pkmap_nr = index;
+> >> >> >
+> >> >> > I don't know how kmap_flush_unused is really fast path so how my nitpick
+> >> >> > is effective. Anyway,
+> >> >> > What problem happens if we do following as?
+> >> >> >
+> >> >> > lock()
+> >> >> > index = flush_all_zero_pkmaps();
+> >> >> > if (index != PKMAP_INVALID_INDEX)
+> >> >> >         last_pkmap_nr = index;
+> >> >> > unlock();
+> >> >> >
+> >> >> > Normally, last_pkmap_nr is increased with searching empty slot in
+> >> >> > map_new_virtual. So I expect return value of flush_all_zero_pkmaps
+> >> >> > in kmap_flush_unused normally become either less than last_pkmap_nr
+> >> >> > or last_pkmap_nr + 1.
+> >> >>
+> >> >> There is a case that return value of kmap_flush_unused() is larger
+> >> >> than last_pkmap_nr.
+> >> >
+> >> > I see but why it's problem? kmap_flush_unused returns larger value than
+> >> > last_pkmap_nr means that there is no free slot at below the value.
+> >> > So unconditional last_pkmap_nr update is vaild.
+> >>
+> >> I think that this is not true.
+> >> Look at the slightly different example.
+> >>
+> >> Assume last_pkmap = 20 and index 1-9, 12-19 is kmapped. 10, 11 is kunmapped.
+> >>
+> >> do kmap_flush_unused() => flush index 10,11 => last_pkmap = 10;
+> >> do kunmap() with index 17
+> >> do kmap_flush_unused() => flush index 17 => last_pkmap = 17?
+> >>
+> >> In this case, unconditional last_pkmap_nr update skip one kunmapped index.
+> >> So, conditional update is needed.
+> >
+> > Thanks for pouinting out, Joonsoo.
+> > You're right. I misunderstood your flush_all_zero_pkmaps change.
+> > As your change, flush_all_zero_pkmaps returns first *flushed* free slot index.
+> > What's the benefit returning flushed flushed free slot index rather than free slot index?
+> 
+> If flush_all_zero_pkmaps() return free slot index rather than first
+> flushed free slot,
+> we need another comparison like as 'if pkmap_count[i] == 0' and
+> need another local variable for determining whether flush is occurred or not.
+> I want to minimize these overhead and churning of the code, although
+> they are negligible.
+> 
+> > I think flush_all_zero_pkmaps should return first free slot because customer of
+> > flush_all_zero_pkmaps doesn't care whether it's just flushed or not.
+> > What he want is just free or not. In such case, we can remove above check and it makes
+> > flusha_all_zero_pkmaps more intuitive.
+> 
+> Yes, it is more intuitive, but as I mentioned above, it need another comparison,
+> so with that, a benefit which prevent to re-iterate when there is no
+> free slot, may be disappeared.
 
-A new atomic modeset/pageflip ioctl being developed in DRM requires
-get_user() to work for 64bit types (in addition to just put_user()).
+If you're very keen on the performance, why do you have such code?
+You can remove below branch if you were keen on the performance.
 
-v1: original
-v2: pass correct size to check_uaccess, and better handling of narrowing
-    double word read with __get_user_xb() (Russell King's suggestion)
+diff --git a/mm/highmem.c b/mm/highmem.c
+index c8be376..44a88dd 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -114,7 +114,7 @@ static unsigned int flush_all_zero_pkmaps(void)
+ 
+        flush_cache_kmaps();
+ 
+-       for (i = 0; i < LAST_PKMAP; i++) {
++       for (i = LAST_PKMAP - 1; i >= 0; i--) {
+                struct page *page;
+ 
+                /*
+@@ -141,8 +141,7 @@ static unsigned int flush_all_zero_pkmaps(void)
+                pte_clear(&init_mm, PKMAP_ADDR(i), &pkmap_page_table[i]);
+ 
+                set_page_address(page, NULL);
+-               if (index == PKMAP_INVALID_INDEX)
+-                       index = i;
++               index = i;
+        }
+        if (index != PKMAP_INVALID_INDEX)
+                flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
 
-Signed-off-by: Rob Clark <rob@ti.com>
----
- arch/arm/include/asm/uaccess.h | 18 +++++++++++++++++-
- arch/arm/lib/getuser.S         | 17 ++++++++++++++++-
- 2 files changed, 33 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-index 7e1f760..e2236ad 100644
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -100,6 +100,7 @@ static inline void set_fs(mm_segment_t fs)
- extern int __get_user_1(void *);
- extern int __get_user_2(void *);
- extern int __get_user_4(void *);
-+extern int __get_user_8(void *);
- 
- #define __GUP_CLOBBER_1	"lr", "cc"
- #ifdef CONFIG_CPU_USE_DOMAINS
-@@ -108,6 +109,7 @@ extern int __get_user_4(void *);
- #define __GUP_CLOBBER_2 "lr", "cc"
- #endif
- #define __GUP_CLOBBER_4	"lr", "cc"
-+#define __GUP_CLOBBER_8	"lr", "cc"
- 
- #define __get_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
-@@ -118,11 +120,19 @@ extern int __get_user_4(void *);
- 		: "0" (__p), "r" (__l)					\
- 		: __GUP_CLOBBER_##__s)
- 
-+/* narrowing a double-word get into a single 32bit word register: */
-+#ifdef BIG_ENDIAN
-+#define __get_user_xb(__r2,__p,__e,__l,__s)				\
-+	__get_user_x(__r2,(uintptr_t)__p + 4,__e,__l,__s)
-+#else
-+#define __get_user_xb __get_user_x
-+#endif
-+
- #define __get_user_check(x,p)							\
- 	({								\
- 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
--		register unsigned long __r2 asm("r2");			\
-+		register typeof(x) __r2 asm("r2");			\
- 		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
-@@ -135,6 +145,12 @@ extern int __get_user_4(void *);
- 		case 4:							\
- 			__get_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
-+		case 8:							\
-+			if (sizeof((x)) < 8)				\
-+				__get_user_xb(__r2, __p, __e, __l, 4);	\
-+			else						\
-+				__get_user_x(__r2, __p, __e, __l, 8);	\
-+			break;						\
- 		default: __e = __get_user_bad(); break;			\
- 		}							\
- 		x = (typeof(*(p))) __r2;				\
-diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
-index 9b06bb4..ed98707 100644
---- a/arch/arm/lib/getuser.S
-+++ b/arch/arm/lib/getuser.S
-@@ -18,7 +18,7 @@
-  * Inputs:	r0 contains the address
-  *		r1 contains the address limit, which must be preserved
-  * Outputs:	r0 is the error code
-- *		r2 contains the zero-extended value
-+ *		r2, r3 contains the zero-extended value
-  *		lr corrupted
-  *
-  * No other registers must be altered.  (see <asm/uaccess.h>
-@@ -66,6 +66,19 @@ ENTRY(__get_user_4)
- 	mov	pc, lr
- ENDPROC(__get_user_4)
- 
-+ENTRY(__get_user_8)
-+	check_uaccess r0, 8, r1, r2, __get_user_bad
-+#ifdef CONFIG_THUMB2_KERNEL
-+5: TUSER(ldr)	r2, [r0]
-+6: TUSER(ldr)	r3, [r0, #4]
-+#else
-+5: TUSER(ldr)	r2, [r0], #4
-+6: TUSER(ldr)	r3, [r0]
-+#endif
-+	mov	r0, #0
-+	mov	pc, lr
-+ENDPROC(__get_user_8)
-+
- __get_user_bad:
- 	mov	r2, #0
- 	mov	r0, #-EFAULT
-@@ -77,4 +90,6 @@ ENDPROC(__get_user_bad)
- 	.long	2b, __get_user_bad
- 	.long	3b, __get_user_bad
- 	.long	4b, __get_user_bad
-+	.long	5b, __get_user_bad
-+	.long	6b, __get_user_bad
- .popsection
+Anyway, if you have the concern of performance, Okay let's give up making code clear
+although I didn't see any report about kmap perfomance. Instead, please consider above
+optimization because you have already broken what you mentioned.
+If we can't make function clear, another method for it is to add function comment. Please.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.8.0
-
+Kind Regards,
+Minchan Kim
