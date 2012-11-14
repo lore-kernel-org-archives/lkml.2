@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2KNBmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 20:42:35 -0500
-Received: from 79.132.231.86.static.edpnet.net ([79.132.231.86]:34241 "EHLO
-	mail.offline.be" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2KNBme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 20:42:34 -0500
-X-Greylist: delayed 748 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Nov 2012 20:42:34 EST
-Date: Wed, 14 Nov 2012 02:22:34 +0100
-From: Marc Duponcheel <marc@offline.be>
-To: David Rientjes <rientjes@google.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Marc Duponcheel <marc@offline.be>
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
-Message-ID: <20121114012234.GB8152@offline.be>
-Reply-To: Marc Duponcheel <marc@offline.be>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
- <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
- <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
- <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
- <CALCETrXSzNEdNEZaQqB93rpP9zXcBD4KRX_bjTAnzU6JEXcApg@mail.gmail.com>
- <alpine.DEB.2.00.1211131553170.17623@chino.kir.corp.google.com>
+	id S1756171Ab2KNBps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 20:45:48 -0500
+Received: from spam1.webland.se ([91.207.112.90]:52858 "EHLO spam1.webland.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756063Ab2KNBpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 20:45:47 -0500
+From: Arvid Brodin <Arvid.Brodin@xdin.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Cyrill Gorcunov" <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] fs/proc: Add process text segment md5-summing
+Thread-Topic: [PATCH] fs/proc: Add process text segment md5-summing
+Thread-Index: AQHNwUTUqn3lr7PkbEaV3fGGkgsdL5fogDmA
+Date: Wed, 14 Nov 2012 01:45:46 +0000
+Message-ID: <50A2F7C9.2030006@xdin.com>
+References: <50A16BD0.7030600@xdin.com>
+ <20121112150325.2516a0bf.akpm@linux-foundation.org>
+ <871ufyjli4.fsf@xmission.com>
+In-Reply-To: <871ufyjli4.fsf@xmission.com>
+Accept-Language: sv-SE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120410
+ Thunderbird/8.0
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <67E74A8B4ABC2D4F817CAEA09BC93F4D@redbull.xdin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211131553170.17623@chino.kir.corp.google.com>
-Organization: OFFLINE
-X-uname: Linux 3.6.6-gentoo x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAE1jqxs019178
 
- Hi all, please let me know if there is are patches you want me to try.
-
- FWIW time did not stand still and I run 3.6.6 now.
-
-
-On 2012 Nov 13, #David Rientjes wrote:
-> On Tue, 13 Nov 2012, Andy Lutomirski wrote:
+On 2012-11-13 03:16, Eric W. Biederman wrote:
+> To add another nail in the coffin.
 > 
-> > >> $ grep -E "compact_|thp_" /proc/vmstat
-> > >> compact_blocks_moved 8332448774
-> > >> compact_pages_moved 21831286
-> > >> compact_pagemigrate_failed 211260
-> > >> compact_stall 13484
-> > >> compact_fail 6717
-> > >> compact_success 6755
-> > >> thp_fault_alloc 150665
-> > >> thp_fault_fallback 4270
-> > >> thp_collapse_alloc 19771
-> > >> thp_collapse_alloc_failed 2188
-> > >> thp_split 19600
-> > >>
-> > >
-> > > Two of the patches from the list provided at
-> > > http://marc.info/?l=linux-mm&m=135179005510688 are already in your 3.6.3
-> > > kernel:
-> > >
-> > >         mm: compaction: abort compaction loop if lock is contended or run too long
-> > >         mm: compaction: acquire the zone->lock as late as possible
-> > >
-> > > and all have not made it to the 3.6 stable kernel yet, so would it be
-> > > possible to try with 3.7-rc5 to see if it fixes the issue?  If so, it will
-> > > indicate that the entire series is a candidate to backport to 3.6.
-> > 
-> > I'll try later on.  The last time I tried to boot 3.7 on this box, it
-> > failed impressively (presumably due to a localmodconfig bug, but I
-> > haven't tracked it down yet).
-> > 
-> > I'm also not sure how reliably I can reproduce this.
-> > 
+> You can do this with ptrace or with /proc/<pid>/mem without a kernel
+> patch.
 > 
-> The challenge goes out to Marc too since he reported this issue on 3.6.2 
-> but we haven't heard back yet on the success of the backport (although 
-> it's probably easier to try 3.7-rc5 since there are some conflicts to 
-> resolve).
+> To make this safe would need a ptrace_may_acces(PTRACE_MODE_READ)
+> permission check.  At which point not doing this with ptrace just adds
+> up to extra kernel maintenance for no real point.
 
---
- Marc Duponcheel
- Velodroomstraat 74 - 2600 Berchem - Belgium
- +32 (0)478 68.10.91 - marc@offline.be
+If my client still wants to run text segment checks, even after the
+criticism of the idea behind the patch, the above should prove very
+handy. Thanks!
+
+
+-- 
+Arvid Brodin | Consultant (Linux)
+XDIN AB | KnarrarnÃ¤sgatan 7 | SE-164 40 Kista | Sweden | xdin.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
