@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2KNCim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:38:42 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37267 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932489Ab2KNCdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:33:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
-   d="scan'208";a="217413906"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan Dan De Ven" <arjan@linux.intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Chen Gong" <gong.chen@linux.intel.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
-Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v10 03/14] x86, topology: Don't offline CPU0 if any PIC irq can not be migrated out of it
-Date: Tue, 13 Nov 2012 11:32:40 -0800
-Message-Id: <1352835171-3958-4-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
-References: <1352835171-3958-1-git-send-email-fenghua.yu@intel.com>
+	id S932512Ab2KNCpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:45:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45256 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932452Ab2KNCpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 21:45:38 -0500
+Date: Wed, 14 Nov 2012 11:45:31 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
+Message-ID: <20121114024529.GN4415@opensource.wolfsonmicro.com>
+References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com>
+ <1352646721-8350-2-git-send-email-ldewangan@nvidia.com>
+ <20121113074623.GL18224@opensource.wolfsonmicro.com>
+ <50A287F2.4070008@nvidia.com>
+ <20121114012217.GE4415@opensource.wolfsonmicro.com>
+ <50A30381.3000609@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kK1uqZGE6pgsGNyR"
+Content-Disposition: inline
+In-Reply-To: <50A30381.3000609@nvidia.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is enabled
-by default.
+--kK1uqZGE6pgsGNyR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug feature is not
-enabled by default. The kernel parameter cpu0_hotplug can enable CPU0 hotplug
-feature at boot.
+On Tue, Nov 13, 2012 at 09:35:45PM -0500, Laxman Dewangan wrote:
 
-Currently the feature is supported on Intel platforms only.
+> Yes, this is not a good idea, We will need support for wakeup
+> without wakeup registers.
+> Probably we need to add one more parameter, wake enable to control
+> without wake_base.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/kernel/topology.c |   50 +++++++++++++++++++++++++++++++++++++------
- 1 files changed, 43 insertions(+), 7 deletions(-)
+This does not seem sensible.  Why would this be optional if it is
+useful?  In any case, what you're doing in the driver here is clearly
+not the way forward.
 
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 76ee977..0e7b4a7 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -30,23 +30,59 @@
- #include <linux/mmzone.h>
- #include <linux/init.h>
- #include <linux/smp.h>
-+#include <linux/irq.h>
- #include <asm/cpu.h>
- 
- static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+
-+#ifdef CONFIG_BOOTPARAM_HOTPLUG_CPU0
-+static int cpu0_hotpluggable = 1;
-+#else
-+static int cpu0_hotpluggable;
-+static int __init enable_cpu0_hotplug(char *str)
-+{
-+	cpu0_hotpluggable = 1;
-+	return 1;
-+}
-+
-+__setup("cpu0_hotplug", enable_cpu0_hotplug);
-+#endif
-+
- int __ref arch_register_cpu(int num)
- {
-+	struct cpuinfo_x86 *c = &cpu_data(num);
-+
-+	/*
-+	 * Currently CPU0 is only hotpluggable on Intel platforms. Other
-+	 * vendors can add hotplug support later.
-+	 */
-+	if (c->x86_vendor != X86_VENDOR_INTEL)
-+		cpu0_hotpluggable = 0;
-+
- 	/*
--	 * CPU0 cannot be offlined due to several
--	 * restrictions and assumptions in kernel. This basically
--	 * doesn't add a control file, one cannot attempt to offline
--	 * BSP.
-+	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-+	 * depends on BSP. PIC interrupts depend on BSP.
- 	 *
--	 * Also certain PCI quirks require not to enable hotplug control
--	 * for all CPU's.
-+	 * If the BSP depencies are under control, one can tell kernel to
-+	 * enable BSP hotplug. This basically adds a control file and
-+	 * one can attempt to offline BSP.
- 	 */
--	if (num)
-+	if (num == 0 && cpu0_hotpluggable) {
-+		unsigned int irq;
-+		/*
-+		 * We won't take down the boot processor on i386 if some
-+		 * interrupts only are able to be serviced by the BSP in PIC.
-+		 */
-+		for_each_active_irq(irq) {
-+			if (!IO_APIC_IRQ(irq) && irq_has_action(irq)) {
-+				cpu0_hotpluggable = 0;
-+				break;
-+			}
-+		}
-+	}
-+	if (num || cpu0_hotpluggable)
- 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
- 
- 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
--- 
-1.7.2
+> >>There is 2 sets of registers which need to be configure, MASK and
+> >>LINE enable.
+> >So what does the second one do?
 
+> The MASK register used for updating status register when interrupt
+> occurs and LINE register used to pass the status to actual interrupt
+> line.
+
+So this sounds like the LINE register is actually the mask register
+which is the opposite way around...  please describe this stuff in the
+comments anyway.
+
+--kK1uqZGE6pgsGNyR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQowXCAAoJELSic+t+oim9fToP/2m7XB/c3SdyaFwAHw/b6f7c
+49yvmtqc7txLRQMHmbt4MA8wEavc+PFVtWHboc/9im2kuC6SaW4wr+wUQyxcd/z8
+58lhT//DEmdpb2pY0bj+iZfDau3nUlqjLzSRUVHAv1sqCD+/rK9JxlW98A4EOht+
+ayRS4V7OyHs77qyAFEt+wTiC1CafWyw3Y/hZ7JAH37VlZqKmKDwu0LZAIRAIjS/6
+eR1J+ljqQ4lUNuWby+tJBEfkjJEUmhxwKg3cwuHaAsh9suj9mkQnYiNGWHFh0VBS
+mZUz+laEyWk8njIHtNeMbsC6otMVSlyZDdScMr9ZTzddko42dDIpaZZ25E2agGMH
+CMavr1jgFvusEqK8MoMC4DJnKk2Zv/5fX2f0CsUxMb8yDP1QyOguTQrQSKIR8GpH
+Q528yrrpdo9X+BXGXtXdVsNXHwlPYalk70Ri/srs3RHgTUdp1rWI3YTCkkhAzS7f
+Go1KVxKa2m1FGcHgVZjOhv0+i9bYy8uBerOC+M/mPlvAodZ58Qpl46YR3SZYY3s5
+KeRJelKTvkpNvDDbc77CC5ZyOa56i9dHcu+Vx5vSD4wu+ljUZleIb60TY+9xyM96
+BPAr9VX0nVqnJinLvkmJVMmbwALQssepZ4CzK/Oc4q42ej+avQfEmpqGqkNseEk1
+D0pNfMdGGvAnjFvoOlJa
+=0J3t
+-----END PGP SIGNATURE-----
+
+--kK1uqZGE6pgsGNyR--
