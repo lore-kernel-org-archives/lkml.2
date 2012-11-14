@@ -1,107 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423571Ab2KNWld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:41:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45457 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab2KNWlc (ORCPT
+	id S933206Ab2KNWmt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:42:49 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40741 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933178Ab2KNWmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:41:32 -0500
-Date: Wed, 14 Nov 2012 13:25:45 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-209efae12981f3d2d694499b761def10895c078c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1352835171-3958-6-git-send-email-fenghua.yu@intel.com>
-References: <1352835171-3958-6-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86, hotplug, suspend:
-  Online CPU0 for suspend or hibernate
-Git-Commit-ID: 209efae12981f3d2d694499b761def10895c078c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Nov 2012 17:42:47 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:41:26 -0800 (PST)
+In-Reply-To: <20121114.173304.405703188822325414.davem@davemloft.net>
+References: <1352932107-14782-1-git-send-email-grant.likely@secretlab.ca> <20121114.173304.405703188822325414.davem@davemloft.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 14 Nov 2012 22:42:26 +0000
+X-Google-Sender-Auth: 2Yv80vACjBD31BmxTx8-VF7uPfU
+Message-ID: <CACxGe6vGVK1BQ8Zw+AH3_zSCsCLVfNENb-Qwn45tb+zwC9Mheg@mail.gmail.com>
+Subject: Re: [PATCH] drivers/of: Constify device_node->name and ->path_component_name
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        sparclinux@vger.kernel.org, benh@kernel.crashing.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  209efae12981f3d2d694499b761def10895c078c
-Gitweb:     http://git.kernel.org/tip/209efae12981f3d2d694499b761def10895c078c
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Tue, 13 Nov 2012 11:32:42 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Nov 2012 09:39:49 -0800
+On Wed, Nov 14, 2012 at 10:33 PM, David Miller <davem@davemloft.net> wrote:
+>
+> You're making other changes here, such as the kstrdup() stuff,
+> seperate that into another patch.
 
-x86, hotplug, suspend: Online CPU0 for suspend or hibernate
+It's part of the same change. The original code was allocating a
+buffer, saving the pointer in the name field and then modifying it.
+Making the code to a kstrdup() gets rid of modifying the const buffer.
 
-Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't
-be executed if CPU0 is detected offline. To make suspend or hibernate and
-further resume succeed, CPU0 must be online.
+g.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1352835171-3958-6-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/power/cpu.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
-
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 218cdb1..adde775 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -237,3 +237,47 @@ void restore_processor_state(void)
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
- #endif
-+
-+/*
-+ * When bsp_check() is called in hibernate and suspend, cpu hotplug
-+ * is disabled already. So it's unnessary to handle race condition between
-+ * cpumask query and cpu hotplug.
-+ */
-+static int bsp_check(void)
-+{
-+	if (cpumask_first(cpu_online_mask) != 0) {
-+		pr_warn("CPU0 is offline.\n");
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-+			   void *ptr)
-+{
-+	int ret = 0;
-+
-+	switch (action) {
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		ret = bsp_check();
-+		break;
-+	default:
-+		break;
-+	}
-+	return notifier_from_errno(ret);
-+}
-+
-+static int __init bsp_pm_check_init(void)
-+{
-+	/*
-+	 * Set this bsp_pm_callback as lower priority than
-+	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-+	 * earlier to disable cpu hotplug before bsp online check.
-+	 */
-+	pm_notifier(bsp_pm_callback, -INT_MAX);
-+	return 0;
-+}
-+
-+core_initcall(bsp_pm_check_init);
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
