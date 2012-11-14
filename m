@@ -1,698 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab2KNJmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:42:35 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59949 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932813Ab2KNJm3 (ORCPT
+	id S932883Ab2KNJmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:42:37 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:55082 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932815Ab2KNJmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:42:29 -0500
+	Wed, 14 Nov 2012 04:42:31 -0500
 From: Jan Glauber <jang@linux.vnet.ibm.com>
 To: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
         schwidefsky@de.ibm.com, Jan Glauber <jang@linux.vnet.ibm.com>
-Subject: [RFC PATCH 02/10] s390/pci: CLP interface
-Date: Wed, 14 Nov 2012 10:41:34 +0100
-Message-Id: <7f039b46ee6c655d806cd2c484e334cceeecc720.1352719877.git.jang@linux.vnet.ibm.com>
+Subject: [RFC PATCH 03/10] s390/bitops: find leftmost bit instruction support
+Date: Wed, 14 Nov 2012 10:41:35 +0100
+Message-Id: <33336ef626db644eb40f0840ad33f4f46010ff6e.1352719878.git.jang@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-x-cbid: 12111409-0542-0000-0000-00000392809C
+x-cbid: 12111409-6892-0000-0000-000003880BF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLP instructions are used to query the firmware about detected PCI
-functions, the attributes of those functions and to enable or disable
-a PCI function. The CLP interface is the equivalent to a PCI bus scan.
+The flogr instruction scans a bitmap starting from the leftmost bit.
+Implement support for these bitops. This could be useful to scan
+bitmaps like an interrupt vector set by the hardware starting
+at the leftmost bit.
 
 Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
 ---
- arch/s390/include/asm/clp.h     |  28 ++++
- arch/s390/include/asm/pci.h     |   7 +
- arch/s390/include/asm/pci_clp.h | 182 +++++++++++++++++++++++
- arch/s390/pci/Makefile          |   2 +-
- arch/s390/pci/pci.c             |  28 ++++
- arch/s390/pci/pci_clp.c         | 317 ++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 563 insertions(+), 1 deletion(-)
- create mode 100644 arch/s390/include/asm/clp.h
- create mode 100644 arch/s390/include/asm/pci_clp.h
- create mode 100644 arch/s390/pci/pci_clp.c
+ arch/s390/include/asm/bitops.h | 81 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 81 insertions(+)
 
-diff --git a/arch/s390/include/asm/clp.h b/arch/s390/include/asm/clp.h
-new file mode 100644
-index 0000000..6c3aecc
---- /dev/null
-+++ b/arch/s390/include/asm/clp.h
-@@ -0,0 +1,28 @@
-+#ifndef _ASM_S390_CLP_H
-+#define _ASM_S390_CLP_H
-+
-+/* CLP common request & response block size */
-+#define CLP_BLK_SIZE			(PAGE_SIZE * 2)
-+
-+struct clp_req_hdr {
-+	u16 len;
-+	u16 cmd;
-+} __packed;
-+
-+struct clp_rsp_hdr {
-+	u16 len;
-+	u16 rsp;
-+} __packed;
-+
-+/* CLP Response Codes */
-+#define CLP_RC_OK			0x0010	/* Command request successfully */
-+#define CLP_RC_CMD			0x0020	/* Command code not recognized */
-+#define CLP_RC_PERM			0x0030	/* Command not authorized */
-+#define CLP_RC_FMT			0x0040	/* Invalid command request format */
-+#define CLP_RC_LEN			0x0050	/* Invalid command request length */
-+#define CLP_RC_8K			0x0060	/* Command requires 8K LPCB */
-+#define CLP_RC_RESNOT0			0x0070	/* Reserved field not zero */
-+#define CLP_RC_NODATA			0x0080	/* No data available */
-+#define CLP_RC_FC_UNKNOWN		0x0100	/* Function code not recognized */
-+
-+#endif
-diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
-index 5e286ce..079b7e2 100644
---- a/arch/s390/include/asm/pci.h
-+++ b/arch/s390/include/asm/pci.h
-@@ -8,6 +8,7 @@
- 
- #include <asm-generic/pci.h>
- #include <asm-generic/pci-dma-compat.h>
-+#include <asm/pci_clp.h>
- 
- #define PCIBIOS_MIN_IO		0x1000
- #define PCIBIOS_MIN_MEM		0x10000000
-@@ -76,6 +77,12 @@ void zpci_stop_device(struct zpci_dev *);
- void zpci_free_device(struct zpci_dev *);
- int zpci_scan_device(struct zpci_dev *);
- 
-+/* CLP */
-+int clp_find_pci_devices(void);
-+int clp_add_pci_device(u32, u32, int);
-+int clp_enable_fh(struct zpci_dev *, u8);
-+int clp_disable_fh(struct zpci_dev *);
-+
- /* Helpers */
- struct zpci_dev *get_zdev(struct pci_dev *);
- struct zpci_dev *get_zdev_by_fid(u32);
-diff --git a/arch/s390/include/asm/pci_clp.h b/arch/s390/include/asm/pci_clp.h
-new file mode 100644
-index 0000000..e97163e
---- /dev/null
-+++ b/arch/s390/include/asm/pci_clp.h
-@@ -0,0 +1,182 @@
-+#ifndef _ASM_S390_PCI_CLP_H
-+#define _ASM_S390_PCI_CLP_H
-+
-+#include <asm/clp.h>
-+
-+/*
-+ * Call Logical Processor - Command Codes
-+ */
-+#define CLP_LIST_PCI		0x0002
-+#define CLP_QUERY_PCI_FN	0x0003
-+#define CLP_QUERY_PCI_FNGRP	0x0004
-+#define CLP_SET_PCI_FN		0x0005
-+
-+/* PCI function handle list entry */
-+struct clp_fh_list_entry {
-+	u16 device_id;
-+	u16 vendor_id;
-+	u32 config_state :  1;
-+	u32		 : 31;
-+	u32 fid;		/* PCI function id */
-+	u32 fh;			/* PCI function handle */
-+} __packed;
-+
-+#define CLP_RC_SETPCIFN_FH	0x0101	/* Invalid PCI fn handle */
-+#define CLP_RC_SETPCIFN_FHOP	0x0102	/* Fn handle not valid for op */
-+#define CLP_RC_SETPCIFN_DMAAS	0x0103	/* Invalid DMA addr space */
-+#define CLP_RC_SETPCIFN_RES	0x0104	/* Insufficient resources */
-+#define CLP_RC_SETPCIFN_ALRDY	0x0105	/* Fn already in requested state */
-+#define CLP_RC_SETPCIFN_ERR	0x0106	/* Fn in permanent error state */
-+#define CLP_RC_SETPCIFN_RECPND	0x0107	/* Error recovery pending */
-+#define CLP_RC_SETPCIFN_BUSY	0x0108	/* Fn busy */
-+#define CLP_RC_LISTPCI_BADRT	0x010a  /* Resume token not recognized */
-+#define CLP_RC_QUERYPCIFG_PFGID	0x010b  /* Unrecognized PFGID */
-+
-+/* request or response block header length */
-+#define LIST_PCI_HDR_LEN	32
-+
-+/* Number of function handles fitting in response block */
-+#define CLP_FH_LIST_NR_ENTRIES				\
-+	((CLP_BLK_SIZE - 2 * LIST_PCI_HDR_LEN)		\
-+		/ sizeof(struct clp_fh_list_entry))
-+
-+#define CLP_SET_ENABLE_PCI_FN	0	/* Yes, 0 enables it */
-+#define CLP_SET_DISABLE_PCI_FN	1	/* Yes, 1 disables it */
-+
-+#define CLP_UTIL_STR_LEN	64
-+
-+/* List PCI functions request */
-+struct clp_req_list_pci {
-+	struct clp_req_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u64 resume_token;
-+	u64 reserved2;
-+} __packed;
-+
-+/* List PCI functions response */
-+struct clp_rsp_list_pci {
-+	struct clp_rsp_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u64 resume_token;
-+	u32 reserved2;
-+	u16 max_fn;
-+	u8 reserved3;
-+	u8 entry_size;
-+	struct clp_fh_list_entry fh_list[CLP_FH_LIST_NR_ENTRIES];
-+} __packed;
-+
-+/* Query PCI function request */
-+struct clp_req_query_pci {
-+	struct clp_req_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u32 fh;				/* function handle */
-+	u32 reserved2;
-+	u64 reserved3;
-+} __packed;
-+
-+/* Query PCI function response */
-+struct clp_rsp_query_pci {
-+	struct clp_rsp_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u16 vfn;			/* virtual fn number */
-+	u16			:  7;
-+	u16 util_str_avail	:  1;	/* utility string available? */
-+	u16 pfgid		:  8;	/* pci function group id */
-+	u32 fid;			/* pci function id */
-+	u8 bar_size[PCI_BAR_COUNT];
-+	u16 pchid;
-+	u32 bar[PCI_BAR_COUNT];
-+	u64 reserved2;
-+	u64 sdma;			/* start dma as */
-+	u64 edma;			/* end dma as */
-+	u64 reserved3[6];
-+	u8 util_str[CLP_UTIL_STR_LEN];	/* utility string */
-+} __packed;
-+
-+/* Query PCI function group request */
-+struct clp_req_query_pci_grp {
-+	struct clp_req_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u32			: 24;
-+	u32 pfgid		:  8;	/* function group id */
-+	u32 reserved2;
-+	u64 reserved3;
-+} __packed;
-+
-+/* Query PCI function group response */
-+struct clp_rsp_query_pci_grp {
-+	struct clp_rsp_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u16			:  4;
-+	u16 noi			: 12;	/* number of interrupts */
-+	u8 version;
-+	u8			:  6;
-+	u8 frame		:  1;
-+	u8 refresh		:  1;	/* TLB refresh mode */
-+	u16 reserved2;
-+	u16 mui;
-+	u64 reserved3;
-+	u64 dasm;			/* dma address space mask */
-+	u64 msia;			/* MSI address */
-+	u64 reserved4;
-+	u64 reserved5;
-+} __packed;
-+
-+/* Set PCI function request */
-+struct clp_req_set_pci {
-+	struct clp_req_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u32 fh;				/* function handle */
-+	u16 reserved2;
-+	u8 oc;				/* operation controls */
-+	u8 ndas;			/* number of dma spaces */
-+	u64 reserved3;
-+} __packed;
-+
-+/* Set PCI function response */
-+struct clp_rsp_set_pci {
-+	struct clp_rsp_hdr hdr;
-+	u32 fmt			:  4;	/* cmd request block format */
-+	u32			: 28;
-+	u64 reserved1;
-+	u32 fh;				/* function handle */
-+	u32 reserved3;
-+	u64 reserved4;
-+} __packed;
-+
-+/* Combined request/response block structures used by clp insn */
-+struct clp_req_rsp_list_pci {
-+	struct clp_req_list_pci request;
-+	struct clp_rsp_list_pci response;
-+} __packed;
-+
-+struct clp_req_rsp_set_pci {
-+	struct clp_req_set_pci request;
-+	struct clp_rsp_set_pci response;
-+} __packed;
-+
-+struct clp_req_rsp_query_pci {
-+	struct clp_req_query_pci request;
-+	struct clp_rsp_query_pci response;
-+} __packed;
-+
-+struct clp_req_rsp_query_pci_grp {
-+	struct clp_req_query_pci_grp request;
-+	struct clp_rsp_query_pci_grp response;
-+} __packed;
-+
-+#endif
-diff --git a/arch/s390/pci/Makefile b/arch/s390/pci/Makefile
-index 78a1344..1afd68c 100644
---- a/arch/s390/pci/Makefile
-+++ b/arch/s390/pci/Makefile
-@@ -2,4 +2,4 @@
- # Makefile for the s390 PCI subsystem.
- #
- 
--obj-$(CONFIG_PCI)	+= pci.o
-+obj-$(CONFIG_PCI)	+= pci.o pci_clp.o
-diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 0b80ac7..70f6c56 100644
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -29,6 +29,7 @@
- 
- #include <asm/facility.h>
- #include <asm/pci_insn.h>
-+#include <asm/pci_clp.h>
- 
- #define DEBUG				/* enable pr_debug */
- 
-@@ -436,6 +437,20 @@ static void zpci_free_domain(struct zpci_dev *zdev)
- 	spin_unlock(&zpci_domain_lock);
+diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
+index 6f57389..1542293 100644
+--- a/arch/s390/include/asm/bitops.h
++++ b/arch/s390/include/asm/bitops.h
+@@ -640,6 +640,87 @@ static inline unsigned long find_first_bit(const unsigned long * addr,
  }
+ #define find_first_bit find_first_bit
  
-+int zpci_enable_device(struct zpci_dev *zdev)
-+{
-+	int rc;
-+
-+	rc = clp_enable_fh(zdev, ZPCI_NR_DMA_SPACES);
-+	if (rc)
-+		goto out;
-+	pr_info("Enabled fh: 0x%x fid: 0x%x\n", zdev->fh, zdev->fid);
-+	return 0;
-+out:
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(zpci_enable_device);
-+
- int zpci_create_device(struct zpci_dev *zdev)
- {
- 	int rc;
-@@ -455,8 +470,15 @@ int zpci_create_device(struct zpci_dev *zdev)
- 	if (zdev->state == ZPCI_FN_STATE_STANDBY)
- 		return 0;
- 
-+	rc = zpci_enable_device(zdev);
-+	if (rc)
-+		goto out_start;
- 	return 0;
- 
-+out_start:
-+	mutex_lock(&zpci_list_lock);
-+	list_del(&zdev->entry);
-+	mutex_unlock(&zpci_list_lock);
- out_bus:
- 	zpci_free_domain(zdev);
- out:
-@@ -489,6 +511,7 @@ int zpci_scan_device(struct zpci_dev *zdev)
- 	return 0;
- 
- out:
-+	clp_disable_fh(zdev);
- 	return -EIO;
- }
- EXPORT_SYMBOL_GPL(zpci_scan_device);
-@@ -547,9 +570,14 @@ static int __init pci_base_init(void)
- 	if (rc)
- 		goto out_mem;
- 
-+	rc = clp_find_pci_devices();
-+	if (rc)
-+		goto out_find;
-+
- 	zpci_scan_devices();
- 	return 0;
- 
-+out_find:
- 	zpci_mem_exit();
- out_mem:
- 	return rc;
-diff --git a/arch/s390/pci/pci_clp.c b/arch/s390/pci/pci_clp.c
-new file mode 100644
-index 0000000..291da1a
---- /dev/null
-+++ b/arch/s390/pci/pci_clp.c
-@@ -0,0 +1,317 @@
 +/*
-+ * Copyright IBM Corp. 2012
-+ *
-+ * Author(s):
-+ *   Jan Glauber <jang@linux.vnet.ibm.com>
++ * Big endian variant whichs starts bit counting from left using
++ * the flogr (find leftmost one) instruction.
 + */
-+
-+#define COMPONENT "zPCI"
-+#define pr_fmt(fmt) COMPONENT ": " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/pci.h>
-+#include <asm/pci_clp.h>
-+
-+/*
-+ * Call Logical Processor
-+ * Retry logic is handled by the caller.
-+ */
-+static inline u8 clp_instr(void *req)
++static inline unsigned long __flo_word(unsigned long nr, unsigned long val)
 +{
-+	u64 ilpm;
-+	u8 cc;
++	register unsigned long bit asm("2") = val;
++	register unsigned long out asm("3");
 +
 +	asm volatile (
-+		"	.insn	rrf,0xb9a00000,%[ilpm],%[req],0x0,0x2\n"
-+		"	ipm	%[cc]\n"
-+		"	srl	%[cc],28\n"
-+		: [cc] "=d" (cc), [ilpm] "=d" (ilpm)
-+		: [req] "a" (req)
-+		: "cc", "memory");
-+	return cc;
-+}
-+
-+static void *clp_alloc_block(void)
-+{
-+	struct page *page = alloc_pages(GFP_KERNEL, get_order(CLP_BLK_SIZE));
-+	return (page) ? page_address(page) : NULL;
-+}
-+
-+static void clp_free_block(void *ptr)
-+{
-+	free_pages((unsigned long) ptr, get_order(CLP_BLK_SIZE));
-+}
-+
-+static void clp_store_query_pci_fngrp(struct zpci_dev *zdev,
-+				      struct clp_rsp_query_pci_grp *response)
-+{
-+	switch (response->version) {
-+	case 1:
-+		zdev->max_bus_speed = PCIE_SPEED_5_0GT;
-+		break;
-+	default:
-+		zdev->max_bus_speed = PCI_SPEED_UNKNOWN;
-+		break;
-+	}
-+}
-+
-+static int clp_query_pci_fngrp(struct zpci_dev *zdev, u8 pfgid)
-+{
-+	struct clp_req_rsp_query_pci_grp *rrb;
-+	int rc;
-+
-+	rrb = clp_alloc_block();
-+	if (!rrb)
-+		return -ENOMEM;
-+
-+	memset(rrb, 0, sizeof(*rrb));
-+	rrb->request.hdr.len = sizeof(rrb->request);
-+	rrb->request.hdr.cmd = CLP_QUERY_PCI_FNGRP;
-+	rrb->response.hdr.len = sizeof(rrb->response);
-+	rrb->request.pfgid = pfgid;
-+
-+	rc = clp_instr(rrb);
-+	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK)
-+		clp_store_query_pci_fngrp(zdev, &rrb->response);
-+	else {
-+		pr_err("Query PCI FNGRP failed with response: %x  cc: %d\n",
-+			rrb->response.hdr.rsp, rc);
-+		rc = -EIO;
-+	}
-+	clp_free_block(rrb);
-+	return rc;
-+}
-+
-+static int clp_store_query_pci_fn(struct zpci_dev *zdev,
-+				  struct clp_rsp_query_pci *response)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_BAR_COUNT; i++) {
-+		zdev->bars[i].val = le32_to_cpu(response->bar[i]);
-+		zdev->bars[i].size = response->bar_size[i];
-+	}
-+	zdev->pchid = response->pchid;
-+	zdev->pfgid = response->pfgid;
-+	return 0;
-+}
-+
-+static int clp_query_pci_fn(struct zpci_dev *zdev, u32 fh)
-+{
-+	struct clp_req_rsp_query_pci *rrb;
-+	int rc;
-+
-+	rrb = clp_alloc_block();
-+	if (!rrb)
-+		return -ENOMEM;
-+
-+	memset(rrb, 0, sizeof(*rrb));
-+	rrb->request.hdr.len = sizeof(rrb->request);
-+	rrb->request.hdr.cmd = CLP_QUERY_PCI_FN;
-+	rrb->response.hdr.len = sizeof(rrb->response);
-+	rrb->request.fh = fh;
-+
-+	rc = clp_instr(rrb);
-+	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK) {
-+		rc = clp_store_query_pci_fn(zdev, &rrb->response);
-+		if (rc)
-+			goto out;
-+		if (rrb->response.pfgid)
-+			rc = clp_query_pci_fngrp(zdev, rrb->response.pfgid);
-+	} else {
-+		pr_err("Query PCI failed with response: %x  cc: %d\n",
-+			 rrb->response.hdr.rsp, rc);
-+		rc = -EIO;
-+	}
-+out:
-+	clp_free_block(rrb);
-+	return rc;
-+}
-+
-+int clp_add_pci_device(u32 fid, u32 fh, int configured)
-+{
-+	struct zpci_dev *zdev;
-+	int rc;
-+
-+	zdev = zpci_alloc_device();
-+	if (IS_ERR(zdev))
-+		return PTR_ERR(zdev);
-+
-+	zdev->fh = fh;
-+	zdev->fid = fid;
-+
-+	/* Query function properties and update zdev */
-+	rc = clp_query_pci_fn(zdev, fh);
-+	if (rc)
-+		goto error;
-+
-+	if (configured)
-+		zdev->state = ZPCI_FN_STATE_CONFIGURED;
-+	else
-+		zdev->state = ZPCI_FN_STATE_STANDBY;
-+
-+	rc = zpci_create_device(zdev);
-+	if (rc)
-+		goto error;
-+	return 0;
-+
-+error:
-+	zpci_free_device(zdev);
-+	return rc;
++		"	.insn	rre,0xb9830000,%[bit],%[bit]\n"
++		: [bit] "+d" (bit), [out] "=d" (out) : : "cc");
++	return nr + bit;
 +}
 +
 +/*
-+ * Enable/Disable a given PCI function defined by its function handle.
++ * 64 bit special left bitops format:
++ * order in memory:
++ *    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
++ *    10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
++ *    20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
++ *    30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
++ * after that follows the next long with bit numbers
++ *    40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f
++ *    50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f
++ *    60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f
++ *    70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f
++ * The reason for this bit ordering is the fact that
++ * the hardware sets bits in a bitmap starting at bit 0
++ * and we don't want to scan the bitmap from the 'wrong
++ * end'.
 + */
-+static int clp_set_pci_fn(u32 *fh, u8 nr_dma_as, u8 command)
++static inline unsigned long find_first_bit_left(const unsigned long *addr,
++						unsigned long size)
 +{
-+	struct clp_req_rsp_set_pci *rrb;
-+	int rc, retries = 1000;
++	unsigned long bytes, bits;
 +
-+	rrb = clp_alloc_block();
-+	if (!rrb)
-+		return -ENOMEM;
-+
-+	do {
-+		memset(rrb, 0, sizeof(*rrb));
-+		rrb->request.hdr.len = sizeof(rrb->request);
-+		rrb->request.hdr.cmd = CLP_SET_PCI_FN;
-+		rrb->response.hdr.len = sizeof(rrb->response);
-+		rrb->request.fh = *fh;
-+		rrb->request.oc = command;
-+		rrb->request.ndas = nr_dma_as;
-+
-+		rc = clp_instr(rrb);
-+		if (rrb->response.hdr.rsp == CLP_RC_SETPCIFN_BUSY) {
-+			retries--;
-+			if (retries < 0)
-+				break;
-+			msleep(1);
-+		}
-+	} while (rrb->response.hdr.rsp == CLP_RC_SETPCIFN_BUSY);
-+
-+	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK)
-+		*fh = rrb->response.fh;
-+	else {
-+		pr_err("Set PCI FN failed with response: %x  cc: %d\n",
-+			rrb->response.hdr.rsp, rc);
-+		rc = -EIO;
-+	}
-+	clp_free_block(rrb);
-+	return rc;
-+}
-+
-+int clp_enable_fh(struct zpci_dev *zdev, u8 nr_dma_as)
-+{
-+	u32 fh = zdev->fh;
-+	int rc;
-+
-+	rc = clp_set_pci_fn(&fh, nr_dma_as, CLP_SET_ENABLE_PCI_FN);
-+	if (!rc)
-+		/* Success -> store enabled handle in zdev */
-+		zdev->fh = fh;
-+	return rc;
-+}
-+
-+int clp_disable_fh(struct zpci_dev *zdev)
-+{
-+	u32 fh = zdev->fh;
-+	int rc;
-+
-+	if (!zdev_enabled(zdev))
++	if (!size)
 +		return 0;
-+
-+	dev_info(&zdev->pdev->dev, "disabling fn handle: 0x%x\n", fh);
-+	rc = clp_set_pci_fn(&fh, 0, CLP_SET_DISABLE_PCI_FN);
-+	if (!rc)
-+		/* Success -> store disabled handle in zdev */
-+		zdev->fh = fh;
-+	else
-+		dev_err(&zdev->pdev->dev,
-+			"Failed to disable fn handle: 0x%x\n", fh);
-+	return rc;
++	bytes = __ffs_word_loop(addr, size);
++	bits = __flo_word(bytes * 8, __load_ulong_be(addr, bytes));
++	return (bits < size) ? bits : size;
 +}
 +
-+static void clp_check_pcifn_entry(struct clp_fh_list_entry *entry)
++static inline int find_next_bit_left(const unsigned long *addr,
++				     unsigned long size,
++				     unsigned long offset)
 +{
-+	int present, rc;
++	const unsigned long *p;
++	unsigned long bit, set;
 +
-+	if (!entry->vendor_id)
-+		return;
-+
-+	/* TODO: be a little bit more scalable */
-+	present = zpci_fid_present(entry->fid);
-+
-+	if (present)
-+		pr_debug("%s: device %x already present\n", __func__, entry->fid);
-+
-+	/* skip already used functions */
-+	if (present && entry->config_state)
-+		return;
-+
-+	/* aev 306: function moved to stand-by state */
-+	if (present && !entry->config_state) {
-+		/*
-+		 * The handle is already disabled, that means no iota/irq freeing via
-+		 * the firmware interfaces anymore. Need to free resources manually
-+		 * (DMA memory, debug, sysfs)...
-+		 */
-+		zpci_stop_device(get_zdev_by_fid(entry->fid));
-+		return;
++	if (offset >= size)
++		return size;
++	bit = offset & (__BITOPS_WORDSIZE - 1);
++	offset -= bit;
++	size -= offset;
++	p = addr + offset / __BITOPS_WORDSIZE;
++	if (bit) {
++		set = __flo_word(0, *p & (~0UL << bit));
++		if (set >= size)
++			return size + offset;
++		if (set < __BITOPS_WORDSIZE)
++			return set + offset;
++		offset += __BITOPS_WORDSIZE;
++		size -= __BITOPS_WORDSIZE;
++		p++;
 +	}
-+
-+	rc = clp_add_pci_device(entry->fid, entry->fh, entry->config_state);
-+	if (rc)
-+		pr_err("Failed to add fid: 0x%x\n", entry->fid);
++	return offset + find_first_bit_left(p, size);
 +}
 +
-+int clp_find_pci_devices(void)
-+{
-+	struct clp_req_rsp_list_pci *rrb;
-+	u64 resume_token = 0;
-+	int entries, i, rc;
++#define for_each_set_bit_left(bit, addr, size)				\
++	for ((bit) = find_first_bit_left((addr), (size));		\
++	     (bit) < (size);						\
++	     (bit) = find_next_bit_left((addr), (size), (bit) + 1))
 +
-+	rrb = clp_alloc_block();
-+	if (!rrb)
-+		return -ENOMEM;
++/* same as for_each_set_bit() but use bit as value to start with */
++#define for_each_set_bit_left_cont(bit, addr, size)			\
++	for ((bit) = find_next_bit_left((addr), (size), (bit));		\
++	     (bit) < (size);						\
++	     (bit) = find_next_bit_left((addr), (size), (bit) + 1))
 +
-+	do {
-+		memset(rrb, 0, sizeof(*rrb));
-+		rrb->request.hdr.len = sizeof(rrb->request);
-+		rrb->request.hdr.cmd = CLP_LIST_PCI;
-+		/* store as many entries as possible */
-+		rrb->response.hdr.len = CLP_BLK_SIZE - LIST_PCI_HDR_LEN;
-+		rrb->request.resume_token = resume_token;
-+
-+		/* Get PCI function handle list */
-+		rc = clp_instr(rrb);
-+		if (rc || rrb->response.hdr.rsp != CLP_RC_OK) {
-+			pr_err("List PCI failed with response: 0x%x  cc: %d\n",
-+				rrb->response.hdr.rsp, rc);
-+			rc = -EIO;
-+			goto out;
-+		}
-+
-+		WARN_ON_ONCE(rrb->response.entry_size !=
-+			sizeof(struct clp_fh_list_entry));
-+
-+		entries = (rrb->response.hdr.len - LIST_PCI_HDR_LEN) /
-+			rrb->response.entry_size;
-+		pr_info("Detected number of PCI functions: %u\n", entries);
-+
-+		/* Store the returned resume token as input for the next call */
-+		resume_token = rrb->response.resume_token;
-+
-+		for (i = 0; i < entries; i++)
-+			clp_check_pcifn_entry(&rrb->response.fh_list[i]);
-+	} while (resume_token);
-+
-+	pr_debug("Maximum number of supported PCI functions: %u\n",
-+		rrb->response.max_fn);
-+out:
-+	clp_free_block(rrb);
-+	return rc;
-+}
+ /**
+  * find_next_zero_bit - find the first zero bit in a memory region
+  * @addr: The address to base the search on
 -- 
 1.7.12.4
 
