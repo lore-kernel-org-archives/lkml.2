@@ -1,119 +1,698 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab2KNJlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:41:04 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:41548 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab2KNJk6 (ORCPT
+	id S964797Ab2KNJmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:42:35 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59949 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813Ab2KNJm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:40:58 -0500
-Date: Wed, 14 Nov 2012 10:40:50 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Till Harbaum <till@harbaum.org>
-Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
-  for bus-drivers.
-Message-ID: <20121114104050.79df8cd9@endymion.delvare>
-In-Reply-To: <50A2DA0C.3090507@ahsoftware.de>
-References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de>
-	<20121113195533.6db71716@endymion.delvare>
-	<50A2AC28.7050304@ahsoftware.de>
-	<20121113220835.111a178a@endymion.delvare>
-	<50A2BAA2.6090009@ahsoftware.de>
-	<20121113224246.768bf734@endymion.delvare>
-	<50A2DA0C.3090507@ahsoftware.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 04:42:29 -0500
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, Jan Glauber <jang@linux.vnet.ibm.com>
+Subject: [RFC PATCH 02/10] s390/pci: CLP interface
+Date: Wed, 14 Nov 2012 10:41:34 +0100
+Message-Id: <7f039b46ee6c655d806cd2c484e334cceeecc720.1352719877.git.jang@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
+References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
+In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
+References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
+x-cbid: 12111409-0542-0000-0000-00000392809C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 00:38:52 +0100, Alexander Holler wrote:
-> Am 13.11.2012 22:42, schrieb Jean Delvare:
-> > Question is, what will you do the day someone wants to instantiate a
-> > device for which the default probing mechanism doesn't work?
-> 
-> Do you solve all problems you and others might have in the future 
-> already now?
+CLP instructions are used to query the firmware about detected PCI
+functions, the attributes of those functions and to enable or disable
+a PCI function. The CLP interface is the equivalent to a PCI bus scan.
 
-Not all. But at least I try to avoid artificial limitations when
-writing new code and to anticipate misbehavior in use cases other than
-my own. I also try to learn from our past collective mistakes (starting
-with my own.)
+Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+---
+ arch/s390/include/asm/clp.h     |  28 ++++
+ arch/s390/include/asm/pci.h     |   7 +
+ arch/s390/include/asm/pci_clp.h | 182 +++++++++++++++++++++++
+ arch/s390/pci/Makefile          |   2 +-
+ arch/s390/pci/pci.c             |  28 ++++
+ arch/s390/pci/pci_clp.c         | 317 ++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 563 insertions(+), 1 deletion(-)
+ create mode 100644 arch/s390/include/asm/clp.h
+ create mode 100644 arch/s390/include/asm/pci_clp.h
+ create mode 100644 arch/s390/pci/pci_clp.c
 
-For clarity: it doesn't matter if new code doesn't cover all possible
-present and future use cases, but it should not allow users to screw up
-their system, and it should be possible to extend it to other
-foreseeable use cases without breaking compatibility or making the code
-unmaintainable or the interface ugly and confusing.
-
-> > Plus you don't address the main issues. Your syntax gives you no way to
-> > support two i2c-tiny-usb adapters with different chips at a specific
-> > address. The sysfs interface supports such a setup. Also instantiating
-> 
-> It isn't possible to do such, because the only ID available for 
-> i2c-busses is given them at runtime. So people have to live with that 
-> imho artificially problem, if they use my patch. I don't have any other 
-> solution until the numbering is predictable. But I assume you already 
-> know all that, otherwise you wouldn't have mentioned it.
-
-The problem is inherent to external, hot-plug I2C adapters. You can't
-predict their bus number, and actually you can't even always predict
-their name. In the case of usb-tiny-i2c, you may be able to look-up the
-bus number from the adapter name, but you won't be able to always
-differentiate between two adapters, if they are connected to paired USB
-ports.
-
-This is a design issue with the i2c-tiny-usb hardware in the first
-place. If it is needed to differentiate between adapters, their would
-need to be a locally unique ID in every adapter, which the kernel can
-query. I suppose this was not deemed necessary at design time, as most
-people will only connect one such adapter at a time to their system.
-
-So I would agree that the problem I pointed out probably doesn't exist
-in practice. Still, the limitation should at least be documented.
-
-> > the wrong devices is worse than instating a device that doesn't exist
-> > at all. So the use of i2c_new_probed_device() here will randomly help
-> > in a limited number of cases and randomly be problematic in others.
-> > Hard to justify...
-> 
-> So would you be satisfied if I would make the syntax more complicated by 
-> adding something which would allow them to define if the devices gets 
-> probed? E.g. dev1@addr1,dev2@addr2.noprobe,... ?
-
-No. I would be more satisfied (although still not thinking your code
-should make it into the kernel - but I am no longer the one to decide)
-if you did use i2c_new_device() instead of i2c_new_probed_device(). You
-said yourself that this module parameter was for users who knew what
-they were doing.
-
-> > I am not familiar with RTC constraints. What is so important about it
-> > that it can't wait for user-space? It'll have to wait for the USB and
-> > I2C stacks to initialize anyway, so it won't be available at the very
-> > early stages of the boot.
-> 
-> Try playing with a system which does have the wrong time. There is so 
-> much stuff which depends on the correct time, it is just a pain if the 
-> time is wrong or even the same across multiple system starts. And even 
-> if you know that, you might e.g. forget it and will use git to send some 
-> email and patches with erroneous times. But that is just an example.
-
-I have already experienced this and yes, it is a pain. But I would
-think that a system designed without a RTC in the first place has
-another way of getting its time correct at boot time, for example NTP.
-As I understand it the RTC chip is only there to set the system time at
-boot, right, the actual timekeeping during run-time is still done by the
-CPU?
-
-> And as I said, there might some other devices you might want or need in 
-> the future before usespace starts, so it solves a problem as the one 
-> above which I didn't have solved. ;)
-
-Or maybe this will never happen.
-
+diff --git a/arch/s390/include/asm/clp.h b/arch/s390/include/asm/clp.h
+new file mode 100644
+index 0000000..6c3aecc
+--- /dev/null
++++ b/arch/s390/include/asm/clp.h
+@@ -0,0 +1,28 @@
++#ifndef _ASM_S390_CLP_H
++#define _ASM_S390_CLP_H
++
++/* CLP common request & response block size */
++#define CLP_BLK_SIZE			(PAGE_SIZE * 2)
++
++struct clp_req_hdr {
++	u16 len;
++	u16 cmd;
++} __packed;
++
++struct clp_rsp_hdr {
++	u16 len;
++	u16 rsp;
++} __packed;
++
++/* CLP Response Codes */
++#define CLP_RC_OK			0x0010	/* Command request successfully */
++#define CLP_RC_CMD			0x0020	/* Command code not recognized */
++#define CLP_RC_PERM			0x0030	/* Command not authorized */
++#define CLP_RC_FMT			0x0040	/* Invalid command request format */
++#define CLP_RC_LEN			0x0050	/* Invalid command request length */
++#define CLP_RC_8K			0x0060	/* Command requires 8K LPCB */
++#define CLP_RC_RESNOT0			0x0070	/* Reserved field not zero */
++#define CLP_RC_NODATA			0x0080	/* No data available */
++#define CLP_RC_FC_UNKNOWN		0x0100	/* Function code not recognized */
++
++#endif
+diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
+index 5e286ce..079b7e2 100644
+--- a/arch/s390/include/asm/pci.h
++++ b/arch/s390/include/asm/pci.h
+@@ -8,6 +8,7 @@
+ 
+ #include <asm-generic/pci.h>
+ #include <asm-generic/pci-dma-compat.h>
++#include <asm/pci_clp.h>
+ 
+ #define PCIBIOS_MIN_IO		0x1000
+ #define PCIBIOS_MIN_MEM		0x10000000
+@@ -76,6 +77,12 @@ void zpci_stop_device(struct zpci_dev *);
+ void zpci_free_device(struct zpci_dev *);
+ int zpci_scan_device(struct zpci_dev *);
+ 
++/* CLP */
++int clp_find_pci_devices(void);
++int clp_add_pci_device(u32, u32, int);
++int clp_enable_fh(struct zpci_dev *, u8);
++int clp_disable_fh(struct zpci_dev *);
++
+ /* Helpers */
+ struct zpci_dev *get_zdev(struct pci_dev *);
+ struct zpci_dev *get_zdev_by_fid(u32);
+diff --git a/arch/s390/include/asm/pci_clp.h b/arch/s390/include/asm/pci_clp.h
+new file mode 100644
+index 0000000..e97163e
+--- /dev/null
++++ b/arch/s390/include/asm/pci_clp.h
+@@ -0,0 +1,182 @@
++#ifndef _ASM_S390_PCI_CLP_H
++#define _ASM_S390_PCI_CLP_H
++
++#include <asm/clp.h>
++
++/*
++ * Call Logical Processor - Command Codes
++ */
++#define CLP_LIST_PCI		0x0002
++#define CLP_QUERY_PCI_FN	0x0003
++#define CLP_QUERY_PCI_FNGRP	0x0004
++#define CLP_SET_PCI_FN		0x0005
++
++/* PCI function handle list entry */
++struct clp_fh_list_entry {
++	u16 device_id;
++	u16 vendor_id;
++	u32 config_state :  1;
++	u32		 : 31;
++	u32 fid;		/* PCI function id */
++	u32 fh;			/* PCI function handle */
++} __packed;
++
++#define CLP_RC_SETPCIFN_FH	0x0101	/* Invalid PCI fn handle */
++#define CLP_RC_SETPCIFN_FHOP	0x0102	/* Fn handle not valid for op */
++#define CLP_RC_SETPCIFN_DMAAS	0x0103	/* Invalid DMA addr space */
++#define CLP_RC_SETPCIFN_RES	0x0104	/* Insufficient resources */
++#define CLP_RC_SETPCIFN_ALRDY	0x0105	/* Fn already in requested state */
++#define CLP_RC_SETPCIFN_ERR	0x0106	/* Fn in permanent error state */
++#define CLP_RC_SETPCIFN_RECPND	0x0107	/* Error recovery pending */
++#define CLP_RC_SETPCIFN_BUSY	0x0108	/* Fn busy */
++#define CLP_RC_LISTPCI_BADRT	0x010a  /* Resume token not recognized */
++#define CLP_RC_QUERYPCIFG_PFGID	0x010b  /* Unrecognized PFGID */
++
++/* request or response block header length */
++#define LIST_PCI_HDR_LEN	32
++
++/* Number of function handles fitting in response block */
++#define CLP_FH_LIST_NR_ENTRIES				\
++	((CLP_BLK_SIZE - 2 * LIST_PCI_HDR_LEN)		\
++		/ sizeof(struct clp_fh_list_entry))
++
++#define CLP_SET_ENABLE_PCI_FN	0	/* Yes, 0 enables it */
++#define CLP_SET_DISABLE_PCI_FN	1	/* Yes, 1 disables it */
++
++#define CLP_UTIL_STR_LEN	64
++
++/* List PCI functions request */
++struct clp_req_list_pci {
++	struct clp_req_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u64 resume_token;
++	u64 reserved2;
++} __packed;
++
++/* List PCI functions response */
++struct clp_rsp_list_pci {
++	struct clp_rsp_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u64 resume_token;
++	u32 reserved2;
++	u16 max_fn;
++	u8 reserved3;
++	u8 entry_size;
++	struct clp_fh_list_entry fh_list[CLP_FH_LIST_NR_ENTRIES];
++} __packed;
++
++/* Query PCI function request */
++struct clp_req_query_pci {
++	struct clp_req_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u32 fh;				/* function handle */
++	u32 reserved2;
++	u64 reserved3;
++} __packed;
++
++/* Query PCI function response */
++struct clp_rsp_query_pci {
++	struct clp_rsp_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u16 vfn;			/* virtual fn number */
++	u16			:  7;
++	u16 util_str_avail	:  1;	/* utility string available? */
++	u16 pfgid		:  8;	/* pci function group id */
++	u32 fid;			/* pci function id */
++	u8 bar_size[PCI_BAR_COUNT];
++	u16 pchid;
++	u32 bar[PCI_BAR_COUNT];
++	u64 reserved2;
++	u64 sdma;			/* start dma as */
++	u64 edma;			/* end dma as */
++	u64 reserved3[6];
++	u8 util_str[CLP_UTIL_STR_LEN];	/* utility string */
++} __packed;
++
++/* Query PCI function group request */
++struct clp_req_query_pci_grp {
++	struct clp_req_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u32			: 24;
++	u32 pfgid		:  8;	/* function group id */
++	u32 reserved2;
++	u64 reserved3;
++} __packed;
++
++/* Query PCI function group response */
++struct clp_rsp_query_pci_grp {
++	struct clp_rsp_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u16			:  4;
++	u16 noi			: 12;	/* number of interrupts */
++	u8 version;
++	u8			:  6;
++	u8 frame		:  1;
++	u8 refresh		:  1;	/* TLB refresh mode */
++	u16 reserved2;
++	u16 mui;
++	u64 reserved3;
++	u64 dasm;			/* dma address space mask */
++	u64 msia;			/* MSI address */
++	u64 reserved4;
++	u64 reserved5;
++} __packed;
++
++/* Set PCI function request */
++struct clp_req_set_pci {
++	struct clp_req_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u32 fh;				/* function handle */
++	u16 reserved2;
++	u8 oc;				/* operation controls */
++	u8 ndas;			/* number of dma spaces */
++	u64 reserved3;
++} __packed;
++
++/* Set PCI function response */
++struct clp_rsp_set_pci {
++	struct clp_rsp_hdr hdr;
++	u32 fmt			:  4;	/* cmd request block format */
++	u32			: 28;
++	u64 reserved1;
++	u32 fh;				/* function handle */
++	u32 reserved3;
++	u64 reserved4;
++} __packed;
++
++/* Combined request/response block structures used by clp insn */
++struct clp_req_rsp_list_pci {
++	struct clp_req_list_pci request;
++	struct clp_rsp_list_pci response;
++} __packed;
++
++struct clp_req_rsp_set_pci {
++	struct clp_req_set_pci request;
++	struct clp_rsp_set_pci response;
++} __packed;
++
++struct clp_req_rsp_query_pci {
++	struct clp_req_query_pci request;
++	struct clp_rsp_query_pci response;
++} __packed;
++
++struct clp_req_rsp_query_pci_grp {
++	struct clp_req_query_pci_grp request;
++	struct clp_rsp_query_pci_grp response;
++} __packed;
++
++#endif
+diff --git a/arch/s390/pci/Makefile b/arch/s390/pci/Makefile
+index 78a1344..1afd68c 100644
+--- a/arch/s390/pci/Makefile
++++ b/arch/s390/pci/Makefile
+@@ -2,4 +2,4 @@
+ # Makefile for the s390 PCI subsystem.
+ #
+ 
+-obj-$(CONFIG_PCI)	+= pci.o
++obj-$(CONFIG_PCI)	+= pci.o pci_clp.o
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 0b80ac7..70f6c56 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -29,6 +29,7 @@
+ 
+ #include <asm/facility.h>
+ #include <asm/pci_insn.h>
++#include <asm/pci_clp.h>
+ 
+ #define DEBUG				/* enable pr_debug */
+ 
+@@ -436,6 +437,20 @@ static void zpci_free_domain(struct zpci_dev *zdev)
+ 	spin_unlock(&zpci_domain_lock);
+ }
+ 
++int zpci_enable_device(struct zpci_dev *zdev)
++{
++	int rc;
++
++	rc = clp_enable_fh(zdev, ZPCI_NR_DMA_SPACES);
++	if (rc)
++		goto out;
++	pr_info("Enabled fh: 0x%x fid: 0x%x\n", zdev->fh, zdev->fid);
++	return 0;
++out:
++	return rc;
++}
++EXPORT_SYMBOL_GPL(zpci_enable_device);
++
+ int zpci_create_device(struct zpci_dev *zdev)
+ {
+ 	int rc;
+@@ -455,8 +470,15 @@ int zpci_create_device(struct zpci_dev *zdev)
+ 	if (zdev->state == ZPCI_FN_STATE_STANDBY)
+ 		return 0;
+ 
++	rc = zpci_enable_device(zdev);
++	if (rc)
++		goto out_start;
+ 	return 0;
+ 
++out_start:
++	mutex_lock(&zpci_list_lock);
++	list_del(&zdev->entry);
++	mutex_unlock(&zpci_list_lock);
+ out_bus:
+ 	zpci_free_domain(zdev);
+ out:
+@@ -489,6 +511,7 @@ int zpci_scan_device(struct zpci_dev *zdev)
+ 	return 0;
+ 
+ out:
++	clp_disable_fh(zdev);
+ 	return -EIO;
+ }
+ EXPORT_SYMBOL_GPL(zpci_scan_device);
+@@ -547,9 +570,14 @@ static int __init pci_base_init(void)
+ 	if (rc)
+ 		goto out_mem;
+ 
++	rc = clp_find_pci_devices();
++	if (rc)
++		goto out_find;
++
+ 	zpci_scan_devices();
+ 	return 0;
+ 
++out_find:
+ 	zpci_mem_exit();
+ out_mem:
+ 	return rc;
+diff --git a/arch/s390/pci/pci_clp.c b/arch/s390/pci/pci_clp.c
+new file mode 100644
+index 0000000..291da1a
+--- /dev/null
++++ b/arch/s390/pci/pci_clp.c
+@@ -0,0 +1,317 @@
++/*
++ * Copyright IBM Corp. 2012
++ *
++ * Author(s):
++ *   Jan Glauber <jang@linux.vnet.ibm.com>
++ */
++
++#define COMPONENT "zPCI"
++#define pr_fmt(fmt) COMPONENT ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/pci.h>
++#include <asm/pci_clp.h>
++
++/*
++ * Call Logical Processor
++ * Retry logic is handled by the caller.
++ */
++static inline u8 clp_instr(void *req)
++{
++	u64 ilpm;
++	u8 cc;
++
++	asm volatile (
++		"	.insn	rrf,0xb9a00000,%[ilpm],%[req],0x0,0x2\n"
++		"	ipm	%[cc]\n"
++		"	srl	%[cc],28\n"
++		: [cc] "=d" (cc), [ilpm] "=d" (ilpm)
++		: [req] "a" (req)
++		: "cc", "memory");
++	return cc;
++}
++
++static void *clp_alloc_block(void)
++{
++	struct page *page = alloc_pages(GFP_KERNEL, get_order(CLP_BLK_SIZE));
++	return (page) ? page_address(page) : NULL;
++}
++
++static void clp_free_block(void *ptr)
++{
++	free_pages((unsigned long) ptr, get_order(CLP_BLK_SIZE));
++}
++
++static void clp_store_query_pci_fngrp(struct zpci_dev *zdev,
++				      struct clp_rsp_query_pci_grp *response)
++{
++	switch (response->version) {
++	case 1:
++		zdev->max_bus_speed = PCIE_SPEED_5_0GT;
++		break;
++	default:
++		zdev->max_bus_speed = PCI_SPEED_UNKNOWN;
++		break;
++	}
++}
++
++static int clp_query_pci_fngrp(struct zpci_dev *zdev, u8 pfgid)
++{
++	struct clp_req_rsp_query_pci_grp *rrb;
++	int rc;
++
++	rrb = clp_alloc_block();
++	if (!rrb)
++		return -ENOMEM;
++
++	memset(rrb, 0, sizeof(*rrb));
++	rrb->request.hdr.len = sizeof(rrb->request);
++	rrb->request.hdr.cmd = CLP_QUERY_PCI_FNGRP;
++	rrb->response.hdr.len = sizeof(rrb->response);
++	rrb->request.pfgid = pfgid;
++
++	rc = clp_instr(rrb);
++	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK)
++		clp_store_query_pci_fngrp(zdev, &rrb->response);
++	else {
++		pr_err("Query PCI FNGRP failed with response: %x  cc: %d\n",
++			rrb->response.hdr.rsp, rc);
++		rc = -EIO;
++	}
++	clp_free_block(rrb);
++	return rc;
++}
++
++static int clp_store_query_pci_fn(struct zpci_dev *zdev,
++				  struct clp_rsp_query_pci *response)
++{
++	int i;
++
++	for (i = 0; i < PCI_BAR_COUNT; i++) {
++		zdev->bars[i].val = le32_to_cpu(response->bar[i]);
++		zdev->bars[i].size = response->bar_size[i];
++	}
++	zdev->pchid = response->pchid;
++	zdev->pfgid = response->pfgid;
++	return 0;
++}
++
++static int clp_query_pci_fn(struct zpci_dev *zdev, u32 fh)
++{
++	struct clp_req_rsp_query_pci *rrb;
++	int rc;
++
++	rrb = clp_alloc_block();
++	if (!rrb)
++		return -ENOMEM;
++
++	memset(rrb, 0, sizeof(*rrb));
++	rrb->request.hdr.len = sizeof(rrb->request);
++	rrb->request.hdr.cmd = CLP_QUERY_PCI_FN;
++	rrb->response.hdr.len = sizeof(rrb->response);
++	rrb->request.fh = fh;
++
++	rc = clp_instr(rrb);
++	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK) {
++		rc = clp_store_query_pci_fn(zdev, &rrb->response);
++		if (rc)
++			goto out;
++		if (rrb->response.pfgid)
++			rc = clp_query_pci_fngrp(zdev, rrb->response.pfgid);
++	} else {
++		pr_err("Query PCI failed with response: %x  cc: %d\n",
++			 rrb->response.hdr.rsp, rc);
++		rc = -EIO;
++	}
++out:
++	clp_free_block(rrb);
++	return rc;
++}
++
++int clp_add_pci_device(u32 fid, u32 fh, int configured)
++{
++	struct zpci_dev *zdev;
++	int rc;
++
++	zdev = zpci_alloc_device();
++	if (IS_ERR(zdev))
++		return PTR_ERR(zdev);
++
++	zdev->fh = fh;
++	zdev->fid = fid;
++
++	/* Query function properties and update zdev */
++	rc = clp_query_pci_fn(zdev, fh);
++	if (rc)
++		goto error;
++
++	if (configured)
++		zdev->state = ZPCI_FN_STATE_CONFIGURED;
++	else
++		zdev->state = ZPCI_FN_STATE_STANDBY;
++
++	rc = zpci_create_device(zdev);
++	if (rc)
++		goto error;
++	return 0;
++
++error:
++	zpci_free_device(zdev);
++	return rc;
++}
++
++/*
++ * Enable/Disable a given PCI function defined by its function handle.
++ */
++static int clp_set_pci_fn(u32 *fh, u8 nr_dma_as, u8 command)
++{
++	struct clp_req_rsp_set_pci *rrb;
++	int rc, retries = 1000;
++
++	rrb = clp_alloc_block();
++	if (!rrb)
++		return -ENOMEM;
++
++	do {
++		memset(rrb, 0, sizeof(*rrb));
++		rrb->request.hdr.len = sizeof(rrb->request);
++		rrb->request.hdr.cmd = CLP_SET_PCI_FN;
++		rrb->response.hdr.len = sizeof(rrb->response);
++		rrb->request.fh = *fh;
++		rrb->request.oc = command;
++		rrb->request.ndas = nr_dma_as;
++
++		rc = clp_instr(rrb);
++		if (rrb->response.hdr.rsp == CLP_RC_SETPCIFN_BUSY) {
++			retries--;
++			if (retries < 0)
++				break;
++			msleep(1);
++		}
++	} while (rrb->response.hdr.rsp == CLP_RC_SETPCIFN_BUSY);
++
++	if (!rc && rrb->response.hdr.rsp == CLP_RC_OK)
++		*fh = rrb->response.fh;
++	else {
++		pr_err("Set PCI FN failed with response: %x  cc: %d\n",
++			rrb->response.hdr.rsp, rc);
++		rc = -EIO;
++	}
++	clp_free_block(rrb);
++	return rc;
++}
++
++int clp_enable_fh(struct zpci_dev *zdev, u8 nr_dma_as)
++{
++	u32 fh = zdev->fh;
++	int rc;
++
++	rc = clp_set_pci_fn(&fh, nr_dma_as, CLP_SET_ENABLE_PCI_FN);
++	if (!rc)
++		/* Success -> store enabled handle in zdev */
++		zdev->fh = fh;
++	return rc;
++}
++
++int clp_disable_fh(struct zpci_dev *zdev)
++{
++	u32 fh = zdev->fh;
++	int rc;
++
++	if (!zdev_enabled(zdev))
++		return 0;
++
++	dev_info(&zdev->pdev->dev, "disabling fn handle: 0x%x\n", fh);
++	rc = clp_set_pci_fn(&fh, 0, CLP_SET_DISABLE_PCI_FN);
++	if (!rc)
++		/* Success -> store disabled handle in zdev */
++		zdev->fh = fh;
++	else
++		dev_err(&zdev->pdev->dev,
++			"Failed to disable fn handle: 0x%x\n", fh);
++	return rc;
++}
++
++static void clp_check_pcifn_entry(struct clp_fh_list_entry *entry)
++{
++	int present, rc;
++
++	if (!entry->vendor_id)
++		return;
++
++	/* TODO: be a little bit more scalable */
++	present = zpci_fid_present(entry->fid);
++
++	if (present)
++		pr_debug("%s: device %x already present\n", __func__, entry->fid);
++
++	/* skip already used functions */
++	if (present && entry->config_state)
++		return;
++
++	/* aev 306: function moved to stand-by state */
++	if (present && !entry->config_state) {
++		/*
++		 * The handle is already disabled, that means no iota/irq freeing via
++		 * the firmware interfaces anymore. Need to free resources manually
++		 * (DMA memory, debug, sysfs)...
++		 */
++		zpci_stop_device(get_zdev_by_fid(entry->fid));
++		return;
++	}
++
++	rc = clp_add_pci_device(entry->fid, entry->fh, entry->config_state);
++	if (rc)
++		pr_err("Failed to add fid: 0x%x\n", entry->fid);
++}
++
++int clp_find_pci_devices(void)
++{
++	struct clp_req_rsp_list_pci *rrb;
++	u64 resume_token = 0;
++	int entries, i, rc;
++
++	rrb = clp_alloc_block();
++	if (!rrb)
++		return -ENOMEM;
++
++	do {
++		memset(rrb, 0, sizeof(*rrb));
++		rrb->request.hdr.len = sizeof(rrb->request);
++		rrb->request.hdr.cmd = CLP_LIST_PCI;
++		/* store as many entries as possible */
++		rrb->response.hdr.len = CLP_BLK_SIZE - LIST_PCI_HDR_LEN;
++		rrb->request.resume_token = resume_token;
++
++		/* Get PCI function handle list */
++		rc = clp_instr(rrb);
++		if (rc || rrb->response.hdr.rsp != CLP_RC_OK) {
++			pr_err("List PCI failed with response: 0x%x  cc: %d\n",
++				rrb->response.hdr.rsp, rc);
++			rc = -EIO;
++			goto out;
++		}
++
++		WARN_ON_ONCE(rrb->response.entry_size !=
++			sizeof(struct clp_fh_list_entry));
++
++		entries = (rrb->response.hdr.len - LIST_PCI_HDR_LEN) /
++			rrb->response.entry_size;
++		pr_info("Detected number of PCI functions: %u\n", entries);
++
++		/* Store the returned resume token as input for the next call */
++		resume_token = rrb->response.resume_token;
++
++		for (i = 0; i < entries; i++)
++			clp_check_pcifn_entry(&rrb->response.fh_list[i]);
++	} while (resume_token);
++
++	pr_debug("Maximum number of supported PCI functions: %u\n",
++		rrb->response.max_fn);
++out:
++	clp_free_block(rrb);
++	return rc;
++}
 -- 
-Jean Delvare
+1.7.12.4
+
