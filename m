@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab2KNRjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:39:35 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42314 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2KNRje (ORCPT
+	id S933065Ab2KNRkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:40:31 -0500
+Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:36868 "EHLO
+	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2KNRka convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:39:34 -0500
-Date: Wed, 14 Nov 2012 17:39:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/3] introduce static_vm for ARM-specific static
-	mapped area
-Message-ID: <20121114173928.GK3290@n2100.arm.linux.org.uk>
-References: <1352912154-16210-1-git-send-email-js1304@gmail.com>
+	Wed, 14 Nov 2012 12:40:30 -0500
+From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: [RFC] staging: ste_rmi4: merge into the main kernel tree
+Thread-Topic: [RFC] staging: ste_rmi4: merge into the main kernel tree
+Thread-Index: AQHNwo8ZLxFuveX6UkK/mNwkyTKwrA==
+Date: Wed, 14 Nov 2012 17:40:12 +0000
+Message-ID: <CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
+ <20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
+ <20121113175309.GA3601@polaris.bitmath.org> 
+Accept-Language: en-US, zh-TW
+Content-Language: zh-HK
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.25.72.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352912154-16210-1-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 01:55:51AM +0900, Joonsoo Kim wrote:
-> In current implementation, we used ARM-specific flag, that is,
-> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> The purpose of static mapped area is to re-use static mapped area when
-> entire physical address range of the ioremap request can be covered
-> by this area.
-> 
-> This implementation causes needless overhead for some cases.
+Hi Henrik and all,
 
-In what cases?
+As I know, currently there is no synaptics RMI4 touchscreen driver in the
+main tree. In order to support our customers effectively, is it able to merge
+staging ste_rmi4 driver into the main kernel.org tree? If it is accepted, should
+I send a patch for this change?
 
-> We unnecessarily iterate vmlist for finding matched area even if there
-> is no static mapped area. And if there are some static mapped areas,
-> iterating whole vmlist is not preferable.
+Any advice is greatly appreciated!
 
-Why not?  Please put some explanation into your message rather than
-just statements making unexplained assertions.
-
-> Another reason for doing this work is for removing architecture dependency
-> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
-> structure for vmalloc layer. Some codes for debugging and stat inevitably
-> use vmlist and vmlist_lock. But it is preferable that they are used outside
-> of vmalloc.c as least as possible.
-
-The vmalloc layer is also made available for ioremap use, and it is
-intended that architectures hook into this for ioremap support.
+Alexandra Chin
