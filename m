@@ -1,217 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab2KNDE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:04:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31247 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab2KNDE5 (ORCPT
+	id S932565Ab2KNDFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:05:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57682 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932478Ab2KNDFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:04:57 -0500
-X-Authority-Analysis: v=2.0 cv=RoZH3VaK c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ueNZMrm-JmMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ZtitcL5Qm7IA:10 a=WTJdmG3rAAAA:8 a=QyXUC8HyAAAA:8 a=d8lIWgEgSppnsl-WOP8A:9 a=PUjeQqilurYA:10 a=nsF78Xlgl7EA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352862293.18025.52.camel@gandalf.local.home>
-Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
-From: Steven Rostedt <rostedt@goodmis.org>
-To: shuah.khan@hp.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable <stable@vger.kernel.org>
-Cc: roland@purestorage.com, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
-Date: Tue, 13 Nov 2012 22:04:53 -0500
-In-Reply-To: <1352859923.7889.2.camel@lorien2>
-References: <20111204185444.411298317@goodmis.org>
-	 <20111204190008.804987080@goodmis.org> <1352859923.7889.2.camel@lorien2>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 22:05:14 -0500
+Date: Wed, 14 Nov 2012 12:04:14 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
+Message-ID: <20121114030412.GO4415@opensource.wolfsonmicro.com>
+References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com>
+ <1352646721-8350-2-git-send-email-ldewangan@nvidia.com>
+ <20121113074623.GL18224@opensource.wolfsonmicro.com>
+ <50A287F2.4070008@nvidia.com>
+ <20121114012217.GE4415@opensource.wolfsonmicro.com>
+ <50A30381.3000609@nvidia.com>
+ <20121114024529.GN4415@opensource.wolfsonmicro.com>
+ <50A30986.1000507@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s9kDAZ2EyO0AcRYa"
+Content-Disposition: inline
+In-Reply-To: <50A30986.1000507@nvidia.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-13 at 19:25 -0700, Shuah Khan wrote:
-> On Sun, 2011-12-04 at 13:54 -0500, Steven Rostedt wrote:
-> > From: Roland Dreier <roland@purestorage.com>
-> > 
-> > When unbinding a device so that I could pass it through to a KVM VM, I
-> > got the lockdep report below.  It looks like a legitimate lock
-> > ordering problem:
-> 
-> Did this patch not make it into stable releases other than 3.1. I
-> couldn't find it in any other stable tress prior to 3.1.
 
-Ah, this was done in the early stable-rt releases. Where we took
-mainline fixes as long as they were in tglx's tree. But today the
-stable-rt tree waits for mainline fixes to come in via the stable tree
-so we don't do something like this. That is, miss getting a fix into
-stable.  Yeah, this should be added to 3.0. (looks to be already in 3.2
-and 3.4).
+--s9kDAZ2EyO0AcRYa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Nov 13, 2012 at 10:01:26PM -0500, Laxman Dewangan wrote:
 
-Greg,
+> >This does not seem sensible.  Why would this be optional if it is
+> >useful?  In any case, what you're doing in the driver here is clearly
+> >not the way forward.
 
-Can you add the following commit to the 3.0 stable tree. We've had this
-in v3.0-rt for some time now. :-/
+> I was thinking  of adding wake_enable in struct regmap_irq_chip and
+> decide the wake support based on the value if wake_enable true or
+> wake_base is non-zero. then wake support should be enable.
+> The wake register write will happen only when wake_base is non-zero.
 
-commit 3e7abe2556b583e87dabda3e0e6178a67b20d06f
-Author: Roland Dreier <roland@purestorage.com>
-Date:   Wed Jul 20 06:22:21 2011 -0700
+But to repeat my question why would this be optional?
 
-    intel-iommu: Fix AB-BA lockdep report
-    
-Thanks,
+--s9kDAZ2EyO0AcRYa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> -- Shuah 
-> > 
-> >  - domain_context_mapping_one() takes iommu->lock and calls
-> >    iommu_support_dev_iotlb(), which takes device_domain_lock (inside
-> >    iommu->lock).
-> > 
-> >  - domain_remove_one_dev_info() starts by taking device_domain_lock
-> >    then takes iommu->lock inside it (near the end of the function).
-> > 
-> > So this is the classic AB-BA deadlock.  It looks like a safe fix is to
-> > simply release device_domain_lock a bit earlier, since as far as I can
-> > tell, it doesn't protect any of the stuff accessed at the end of
-> > domain_remove_one_dev_info() anyway.
-> > 
-> > BTW, the use of device_domain_lock looks a bit unsafe to me... it's
-> > at least not obvious to me why we aren't vulnerable to the race below:
-> > 
-> >   iommu_support_dev_iotlb()
-> >                                           domain_remove_dev_info()
-> > 
-> >   lock device_domain_lock
-> >     find info
-> >   unlock device_domain_lock
-> > 
-> >                                           lock device_domain_lock
-> >                                             find same info
-> >                                           unlock device_domain_lock
-> > 
-> >                                           free_devinfo_mem(info)
-> > 
-> >   do stuff with info after it's free
-> > 
-> > However I don't understand the locking here well enough to know if
-> > this is a real problem, let alone what the best fix is.
-> > 
-> > Anyway here's the full lockdep output that prompted all of this:
-> > 
-> >      =======================================================
-> >      [ INFO: possible circular locking dependency detected ]
-> >      2.6.39.1+ #1
-> >      -------------------------------------------------------
-> >      bash/13954 is trying to acquire lock:
-> >       (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-> > 
-> >      but task is already holding lock:
-> >       (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-> > 
-> >      which lock already depends on the new lock.
-> > 
-> >      the existing dependency chain (in reverse order) is:
-> > 
-> >      -> #1 (device_domain_lock){-.-...}:
-> >             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-> >             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-> >             [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
-> >             [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
-> >             [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
-> >             [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
-> >             [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
-> >             [<ffffffff81002165>] do_one_initcall+0x45/0x190
-> >             [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
-> >             [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
-> > 
-> >      -> #0 (&(&iommu->lock)->rlock){......}:
-> >             [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-> >             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-> >             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-> >             [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-> >             [<ffffffff812f8b42>] device_notifier+0x72/0x90
-> >             [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-> >             [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-> >             [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-> >             [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-> >             [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-> >             [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-> >             [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-> >             [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-> >             [<ffffffff8117569e>] vfs_write+0xce/0x190
-> >             [<ffffffff811759e4>] sys_write+0x54/0xa0
-> >             [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-> > 
-> >      other info that might help us debug this:
-> > 
-> >      6 locks held by bash/13954:
-> >       #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_file+0x44/0x170
-> >       #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+0xcd/0x170
-> >       #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] driver_unbind+0x9b/0xc0
-> >       #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] device_release_driver+0x27/0x50
-> >       #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>] __blocking_notifier_call_chain+0x5f/0xb0
-> >       #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-> > 
-> >      stack backtrace:
-> >      Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
-> >      Call Trace:
-> >       [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
-> >       [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-> >       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-> >       [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
-> >       [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-> >       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-> >       [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-> >       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-> >       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-> >       [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-> >       [<ffffffff812f8b42>] device_notifier+0x72/0x90
-> >       [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-> >       [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-> >       [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-> >       [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-> >       [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-> >       [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-> >       [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-> >       [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-> >       [<ffffffff8117569e>] vfs_write+0xce/0x190
-> >       [<ffffffff811759e4>] sys_write+0x54/0xa0
-> >       [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-> > 
-> > Signed-off-by: Roland Dreier <roland@purestorage.com>
-> > Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> > ---
-> >  drivers/pci/intel-iommu.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-> > index 8c2564d..bc05a51 100644
-> > --- a/drivers/pci/intel-iommu.c
-> > +++ b/drivers/pci/intel-iommu.c
-> > @@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
-> >  			found = 1;
-> >  	}
-> >  
-> > +	spin_unlock_irqrestore(&device_domain_lock, flags);
-> > +
-> >  	if (found == 0) {
-> >  		unsigned long tmp_flags;
-> >  		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
-> > @@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
-> >  			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
-> >  		}
-> >  	}
-> > -
-> > -	spin_unlock_irqrestore(&device_domain_lock, flags);
-> >  }
-> >  
-> >  static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
-> 
+iQIcBAEBAgAGBQJQownUAAoJELSic+t+oim9F+kP/A/DluaSXB7s46B6MVZ7Wv4F
+FZFgS7ql1HVsTpfI88p5pvqM+q5RUG2bXpkmNUWe/sPz87Y+T5CPQdsMtwqwaJwf
+LUj01rL/UZpiEJb8ESmEty5xxAcHIJ2AKiteN7IEHUnRTtC4wvMcnmU6dQycgv2j
+YjIi9SFQxjfHOawPMJHN6qFkt0kBXwboKE5WPRhQX0jU6dQH1od2BfIj0RxqLlHQ
+h7qWE760Bd7pB1TYwPazP9hKGNS++zsw0HtrSnCqtToAsecSaNgtCwLKnKzJefsj
+Uk3xEsya942WVc0DjZVCnHP34okSkgZ0i5iOdjr07glS2d9la3z1QtkTcFHtRvOq
+EApX7UQrt1KqeO62TcNgNhMXOffW520/VSPJuxJ9bb2sln8m0Oh3VlH+46cMCH1Z
+QZ6tbAJxAyWTjHeBpZvHS92MnRbogMc1QaY/OVyNGvr3+xb9vYCYlkzkMdxoxCAN
+I4tM7DxE5nNIsjvSgFWLLpXLLagdVcwLLRpDrfBWlrjo4WOzPdySj1sDBV2/OnaB
+q5bfC/cp+y2gNgJjihxVJe+33aJc6j7r48AWUyrh2ROVmAR2yjs9kEnFaK1bUzLC
+OAZAwKAQeQtRPfxsVklh9sB8UgenfokIVCy2xQg7fPn8p9YQ/AyjrdT/GAeHbfUw
+IdxFx38Vt2dwseS5oVHG
+=B9yn
+-----END PGP SIGNATURE-----
 
-
+--s9kDAZ2EyO0AcRYa--
