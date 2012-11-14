@@ -1,134 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2KNOwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:52:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61617 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab2KNOwK (ORCPT
+	id S964803Ab2KNOx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:53:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57725 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab2KNOxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:52:10 -0500
-Message-ID: <50A3B013.4030207@gmail.com>
-Date: Wed, 14 Nov 2012 22:52:03 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 14 Nov 2012 09:53:53 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Jianguo Wu <wujianguo@huawei.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset
- 7f1290f2f2a4d
-References: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com> <20121106124315.79deb2bc.akpm@linux-foundation.org>
-In-Reply-To: <20121106124315.79deb2bc.akpm@linux-foundation.org>
+In-Reply-To: <CAMuHMdXu2VJhB+1uFApeBrYS3t2cfpPMaTz12F=A_FNJB1Q60w@mail.gmail.com>
+References: <ADE657CA350FB648AAC2C43247A983F00206B25884B1@AUSP01VMBX24.collaborationhost.net>
+ <CAErSpo6WG2R_8sa=rOmAOci-3iFpDs2NFzNkZYxDnD2oTiMQJg@mail.gmail.com>
+ <20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au> <CAMuHMdXu2VJhB+1uFApeBrYS3t2cfpPMaTz12F=A_FNJB1Q60w@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 14 Nov 2012 07:53:31 -0700
+Message-ID: <CAErSpo6p09BJo=3tFp7f8StLT9avYdqiecGm8FxyQnWUm+pfiw@mail.gmail.com>
+Subject: Re: [PATCH] Centralise CONFIG_ARCH_NO_VIRT_TO_BUS
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 04:43 AM, Andrew Morton wrote:
-> On Tue, 6 Nov 2012 09:31:57 +0800
-> Jiang Liu <jiang.liu@huawei.com> wrote:
-> 
->> Changeset 7f1290f2f2 tries to fix a issue when calculating
->> zone->present_pages, but it causes a regression to 32bit systems with
->> HIGHMEM. With that changeset, function reset_zone_present_pages()
->> resets all zone->present_pages to zero, and fixup_zone_present_pages()
->> is called to recalculate zone->present_pages when boot allocator frees
->> core memory pages into buddy allocator. Because highmem pages are not
->> freed by bootmem allocator, all highmem zones' present_pages becomes
->> zero.
+On Tue, Nov 13, 2012 at 3:32 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Mon, Nov 12, 2012 at 10:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index 366ec06..9bc00e7 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -271,6 +271,13 @@ config ARCH_WANT_OLD_COMPAT_IPC
+>>         select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+>>         bool
 >>
->> Actually there's no need to recalculate present_pages for highmem zone
->> because bootmem allocator never allocates pages from them. So fix the
->> regression by skipping highmem in function reset_zone_present_pages()
->> and fixup_zone_present_pages().
->>
->> ...
->>
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
->>  	for_each_node_state(nid, N_HIGH_MEMORY) {
->>  		for (i = 0; i < MAX_NR_ZONES; i++) {
->>  			z = NODE_DATA(nid)->node_zones + i;
->> -			z->present_pages = 0;
->> +			if (!is_highmem(z))
->> +				z->present_pages = 0;
->>  		}
->>  	}
->>  }
->> @@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
->>  
->>  	for (i = 0; i < MAX_NR_ZONES; i++) {
->>  		z = NODE_DATA(nid)->node_zones + i;
->> +		if (is_highmem(z))
->> +			continue;
->> +
->>  		zone_start_pfn = z->zone_start_pfn;
->>  		zone_end_pfn = zone_start_pfn + z->spanned_pages;
->> -
->> -		/* if the two regions intersect */
->>  		if (!(zone_start_pfn >= end_pfn	|| zone_end_pfn <= start_pfn))
->>  			z->present_pages += min(end_pfn, zone_end_pfn) -
->>  					    max(start_pfn, zone_start_pfn);
-> 
-> This ...  isn't very nice.  It is embeds within
-> reset_zone_present_pages() and fixup_zone_present_pages() knowledge
-> about their caller's state.  Or, more specifically, it is emebedding
-> knowledge about the overall state of the system when these functions
-> are called.
-> 
-> I mean, a function called "reset_zone_present_pages" should reset
-> ->present_pages!
-> 
-> The fact that fixup_zone_present_page() has multiple call sites makes
-> this all even more risky.  And what are the interactions between this
-> and memory hotplug?
-> 
-> Can we find a cleaner fix?
-> 
-> Please tell us more about what's happening here.  Is it the case that
-> reset_zone_present_pages() is being called *after* highmem has been
-> populated?  If so, then fixup_zone_present_pages() should work
-> correctly for highmem?  Or is it the case that highmem hasn't yet been
-> setup?  IOW, what is the sequence of operations here?
-> 
-> Is the problem that we're *missing* a call to
-> fixup_zone_present_pages(), perhaps?  If we call
-> fixup_zone_present_pages() after highmem has been populated,
-> fixup_zone_present_pages() should correctly fill in the highmem zone's
-> ->present_pages?
-Hi Andrew,
-	Sorry for the late response:(
-	I have done more investigations according to your suggestions. Currently
-we have only called fixup_zone_present_pages() for memory freed by bootmem
-allocator and missed HIGHMEM pages. We could also call fixup_zone_present_pages()
-for HIGHMEM pages, but that will need to change arch specific code for x86, powerpc,
-sparc, microblaze, arm, mips, um and tile etc. Seems a little overhead.
-	And sadly enough, I found the quick fix is still incomplete. The original
-patch still have another issue that, reset_zone_present_pages() is only called
-for IA64, so it will cause trouble for other arches which make use of "bootmem.c".
-	Then I feel a little guilty and tried to find a cleaner solution without
-touching arch specific code. But things are more complex than my expectation and
-I'm still working on that.
-	So how about totally reverting the changeset 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
-and I will post another version once I found a cleaner way?
-	Thanks!
-	Gerry
+>> +config ARCH_NO_VIRT_TO_BUS
+>> +       bool
+>> +       help
+>> +         An architecture should select this if it cannot (or will not)
+>> +         implement virt_to_bus().  All new architectures should probably
+>> +         select this.
+>
+> Don't we typically put the burden of selecting Kconfig flags for deprecated
+> features on the existing architectures that provide the deprecated features?
+>
+> I.e. shouldn't it be ARCH_HAS_VIRT_TO_BUS, selected by the architectures
+> that need it, instead?
 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+I like this idea.
