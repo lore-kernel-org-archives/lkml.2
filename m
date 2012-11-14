@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2KNJi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:38:57 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40634 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab2KNJiz (ORCPT
+	id S932851Ab2KNJjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:39:36 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53401 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932776Ab2KNJjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:38:55 -0500
-Date: Wed, 14 Nov 2012 13:38:49 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
- inotify_inode_mark
-Message-ID: <20121114093849.GE16685@moon>
-References: <20121112101440.665694060@openvz.org>
- <2176466.A8PC9hQJK4@deuteros>
- <20121113152846.GJ7808@moon>
- <4242534.oR1fYvhZDe@deuteros>
+	Wed, 14 Nov 2012 04:39:33 -0500
+Date: Wed, 14 Nov 2012 09:39:31 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: lrg@ti.com, ldewangan@nvidia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regulator: core: Avoid deadlock when
+	regulator_register fails
+Message-ID: <20121114093931.GA23525@opensource.wolfsonmicro.com>
+References: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com> <20121106111256.GA2512@opensource.wolfsonmicro.com> <20121106113138.GB10080@opensource.wolfsonmicro.com> <20121113163040.GA19089@opensource.wolfsonmicro.com> <20121113232537.GA27212@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4242534.oR1fYvhZDe@deuteros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121113232537.GA27212@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 09:20:51AM +0000, Tvrtko Ursulin wrote:
-> On Tuesday 13 November 2012 19:28:46 Cyrill Gorcunov wrote:
-> > On Tue, Nov 13, 2012 at 03:02:22PM +0000, Tvrtko Ursulin wrote:
-> > > Perhaps there could be a different way, where you could use additional
-> > > space only when it is actually used at runtime. But as I said, I am not
-> > > following closely.
-> > 
-> > Unfortunatelly at moment I see no way how to make it in on-demand fashion.
-> 
-> You could not use a pointer and then allocate your buffers on the check point 
-> operation, freeing on restore?
+When regulator_register fails and exits through the scrub path the
+regulator_put function was called whilst holding the
+regulator_list_mutex, causing deadlock.
 
-The problem is not allocating the memory itself but rather the time when the
-information needed (ie the dentry) is available. The only moment when we can
-use dentry of the target file/directory is at inotify_new_watch, that's why
-i need to compose fhandle that early. At any later point we simply have no
-dentry to use.
+This patch adds a private version of the regulator_put function which
+can be safely called whilst holding the mutex, replacing the
+aforementioned call.
 
-	Cyrill
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/core.c |   28 +++++++++++++++++-----------
+ 1 files changed, 17 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 1a35251..390e173 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1381,22 +1381,14 @@ struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
+ }
+ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
+ 
+-/**
+- * regulator_put - "free" the regulator source
+- * @regulator: regulator source
+- *
+- * Note: drivers must ensure that all regulator_enable calls made on this
+- * regulator source are balanced by regulator_disable calls prior to calling
+- * this function.
+- */
+-void regulator_put(struct regulator *regulator)
++/* Locks held by regulator_put() */
++static void _regulator_put(struct regulator *regulator)
+ {
+ 	struct regulator_dev *rdev;
+ 
+ 	if (regulator == NULL || IS_ERR(regulator))
+ 		return;
+ 
+-	mutex_lock(&regulator_list_mutex);
+ 	rdev = regulator->rdev;
+ 
+ 	debugfs_remove_recursive(regulator->debugfs);
+@@ -1412,6 +1404,20 @@ void regulator_put(struct regulator *regulator)
+ 	rdev->exclusive = 0;
+ 
+ 	module_put(rdev->owner);
++}
++
++/**
++ * regulator_put - "free" the regulator source
++ * @regulator: regulator source
++ *
++ * Note: drivers must ensure that all regulator_enable calls made on this
++ * regulator source are balanced by regulator_disable calls prior to calling
++ * this function.
++ */
++void regulator_put(struct regulator *regulator)
++{
++	mutex_lock(&regulator_list_mutex);
++	_regulator_put(regulator);
+ 	mutex_unlock(&regulator_list_mutex);
+ }
+ EXPORT_SYMBOL_GPL(regulator_put);
+@@ -3450,7 +3456,7 @@ unset_supplies:
+ 
+ scrub:
+ 	if (rdev->supply)
+-		regulator_put(rdev->supply);
++		_regulator_put(rdev->supply);
+ 	if (rdev->ena_gpio)
+ 		gpio_free(rdev->ena_gpio);
+ 	kfree(rdev->constraints);
+-- 
+1.7.2.5
+
