@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab2KNCfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:35:37 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49037 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452Ab2KNCfC (ORCPT
+	id S932683Ab2KNCfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:35:50 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13779 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932452Ab2KNCfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:35:02 -0500
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>, Ido Yariv <ido@wizery.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: [PATCH v4 0/2] OMAP: iommu: hwmod, reset handling and runtime PM
-Date: Tue, 13 Nov 2012 20:34:47 -0600
-Message-Id: <1352860489-19960-1-git-send-email-omar.luna@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 13 Nov 2012 21:35:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Nov 2012 18:35:46 -0800
+Message-ID: <50A30381.3000609@nvidia.com>
+Date: Tue, 13 Nov 2012 21:35:45 -0500
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
+References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com> <1352646721-8350-2-git-send-email-ldewangan@nvidia.com> <20121113074623.GL18224@opensource.wolfsonmicro.com> <50A287F2.4070008@nvidia.com> <20121114012217.GE4415@opensource.wolfsonmicro.com>
+In-Reply-To: <20121114012217.GE4415@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are needed for remoteproc to work on OMAP4.
+On 11/13/2012 08:22 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Nov 13, 2012 at 11:18:34PM +0530, Laxman Dewangan wrote:
+>> On Tuesday 13 November 2012 01:16 PM, Mark Brown wrote:
+>>> I'm not sure your wake_base setting is sane here - this is expected to
+>>> be a register.  If it is a register why is it not a #define?
+>> There is no wake register. Here I kept for the incerease the wake
+>> conut so that irq_set_irq_wake() can be called.
+> So you want to write to random registers in the chip instead...  that
+> doesn't seem like a terribly clever idea.
 
-Introduced iommu hwmod support for OMAP3 (iva, isp) and
-OMAP4 (ipu, dsp), along with the corresponding runtime PM
-and routines to deassert reset lines, enable/disable clocks
-and configure sysc registers.
+Yes, this is not a good idea, We will need support for wakeup without 
+wakeup registers.
+Probably we need to add one more parameter, wake enable to control 
+without wake_base.
 
-For this series I dropped the patches already included in
-mainline, along with cleanup and refactoring patches for save and
-restore of mmu context, and DT bindings.
 
-Due to single Image support, I rebased these on top of k3.7-rc5 and
-DEPEND on:
+>
+>> I think it is also not correct after change
+>> regmap: irq: initialize all irqs to wake disabled
+>> I need to set the irq_wake(0 without the register.
+> I can't really parse any of the above, sorry.
+>
+>> There is 2 sets of registers which need to be configure, MASK and
+>> LINE enable.
+> So what does the second one do?
 
-[PATCH v5 0/6] Move rest of omap-iommu to live in drivers/iommu
-http://thread.gmane.org/gmane.linux.kernel/1387788
 
-Minor rebasing might be needed if these are included on top of
-linux-omap, since they are affected by changes on headers being
-moved to include/linux/platform_data and arch/arm/mach-omap2.
+The MASK register used for updating status register when interrupt 
+occurs and LINE register used to pass the status to actual interrupt line.
+As per datasheet:
 
-Omar Ramirez Luna (2):
-  ARM: OMAP3/4: iommu: migrate to hwmod framework
-  ARM: OMAP3/4: iommu: adapt to runtime pm
+When INT_MSK_LINE [i] is set to 1, the associated interrupt number i is 
+INT line masked, which means that no interrupt is generated on the INT line.
+When INT_MSK_LINE [i] is set to 0, the associated interrupt number i is  
+line enabled: An interrupt is generated on the INT line.
+In any case, the INT_STS [i] status bit may or may not be updated, only 
+linked to the INT_MSK_STS [i] configuration register bit.
 
- arch/arm/mach-omap2/devices.c            |    2 +-
- arch/arm/mach-omap2/omap-iommu.c         |  167 +++++++-----------------------
- drivers/iommu/omap-iommu.c               |   68 +++++++------
- drivers/iommu/omap-iommu.h               |    3 -
- drivers/iommu/omap-iommu2.c              |   36 -------
- include/linux/platform_data/iommu-omap.h |    9 ++-
- 6 files changed, 82 insertions(+), 203 deletions(-)
 
--- 
-1.7.4.1
-
+When INT_MSK_STS [i] is set to 1, the associated interrupt number i is
+status masked, which means that no interrupt is stored in the INT_STS 
+[i]status bit. Note that no interrupt number i is generated on the INT 
+line, even if the INT_MSK_LINE [i] register bit is set to 0.
+When INT_MSK_STS [i] is set to 0, the associated interrupt number i is 
+status enabled: An interrupt status is updated in the INT_STS [i] register.
+The interrupt may or may not be generated on the INT line, depending on 
+the INT_MSK_LINE [i] configuration register bit.
