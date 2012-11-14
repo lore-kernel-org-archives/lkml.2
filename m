@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2KNDVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:21:40 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47619 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab2KNDVi (ORCPT
+	id S932561Ab2KNDeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:34:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39143 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139Ab2KNDeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:21:38 -0500
-Message-ID: <50A30E0F.7000408@huawei.com>
-Date: Wed, 14 Nov 2012 11:20:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 13 Nov 2012 22:34:08 -0500
+Date: Tue, 13 Nov 2012 19:34:44 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: shuah.khan@hp.com, stable <stable@vger.kernel.org>, roland@purestorage.com,
+        linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
+Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
+Message-ID: <20121114033444.GA29560@kroah.com>
+References: <20111204185444.411298317@goodmis.org>
+ <20111204190008.804987080@goodmis.org>
+ <1352859923.7889.2.camel@lorien2>
+ <1352862293.18025.52.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
-        <glommer@parallels.com>
-Subject: Re: [PATCH 04/17] cgroup: create directory before linking while creating
- a new cgroup
-References: <1352775704-9023-1-git-send-email-tj@kernel.org> <1352775704-9023-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1352775704-9023-5-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352862293.18025.52.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/13 11:01, Tejun Heo wrote:
-> While creating a new cgroup, cgroup_create() links the newly allocated
-> cgroup into various places before trying to create its directory.
-> Because cgroup life-cycle is tied to the vfs objects, this makes it
-> impossible to use cgroup_rmdir() for rolling back creation - the
-> removal logic depends on having full vfs objects.
+On Tue, Nov 13, 2012 at 10:04:53PM -0500, Steven Rostedt wrote:
+> On Tue, 2012-11-13 at 19:25 -0700, Shuah Khan wrote:
+> > On Sun, 2011-12-04 at 13:54 -0500, Steven Rostedt wrote:
+> > > From: Roland Dreier <roland@purestorage.com>
+> > > 
+> > > When unbinding a device so that I could pass it through to a KVM VM, I
+> > > got the lockdep report below.  It looks like a legitimate lock
+> > > ordering problem:
+> > 
+> > Did this patch not make it into stable releases other than 3.1. I
+> > couldn't find it in any other stable tress prior to 3.1.
 > 
-> This patch moves directory creation above linking and collect linking
-> operations to one place.  This allows directory creation failure to
-> share error exit path with css allocation failures and any failure
-> sites afterwards (to be added later) can use cgroup_rmdir() logic to
-> undo creation.
+> Ah, this was done in the early stable-rt releases. Where we took
+> mainline fixes as long as they were in tglx's tree. But today the
+> stable-rt tree waits for mainline fixes to come in via the stable tree
+> so we don't do something like this. That is, miss getting a fix into
+> stable.  Yeah, this should be added to 3.0. (looks to be already in 3.2
+> and 3.4).
 > 
-
-> It also removes the need to check whether cgroup->dentry is %NULL in
-> cgroup_path.  If a cgroup is visible, its dentry is guaranteed to be
-> visible too.
 > 
-
-I'm afraid this isn't safe.
-
-The cgroup is visible to a controller soon after ss->create(), and then
-the controller might call cgroup_path() while cgrp->dentry is still NULL.
-
-This can happen for cpu cgroup I think, and in fact the NULL check was
-added for this reason IIRC.
-
-> Note that this also makes the memory barriers around cgroup->dentry,
-> which currently is misleadingly using RCU operations, unnecessary.
-> This will be handled in the next patch.
+> Greg,
 > 
-> While at it, locking BUG_ON() on i_mutex is converted to
-> lockdep_assert_held().
+> Can you add the following commit to the 3.0 stable tree. We've had this
+> in v3.0-rt for some time now. :-/
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/cgroup.c | 32 +++++++++++++-------------------
->  1 file changed, 13 insertions(+), 19 deletions(-)
+> commit 3e7abe2556b583e87dabda3e0e6178a67b20d06f
+> Author: Roland Dreier <roland@purestorage.com>
+> Date:   Wed Jul 20 06:22:21 2011 -0700
+> 
+>     intel-iommu: Fix AB-BA lockdep report
 
+I had to edit the path to the file, but it looks like it applies
+properly now, thanks.
+
+greg k-h
