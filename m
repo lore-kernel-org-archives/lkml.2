@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab2KNI6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 03:58:38 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37935 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130Ab2KNI6h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 03:58:37 -0500
-From: Dimitar Popov <dimitar.georgiev.popov@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: DMA Errors from SATA Controller with 4G Memory Remapping Enabled
-Date: Wed, 14 Nov 2012 09:58:33 +0100
-Message-ID: <1572001.X28n9jtBC3@darkstar>
-User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121113223421.7129577d@pyramind.ukuu.org.uk>
-References: <1871872.oE0GX69FUF@darkstar> <20121113223421.7129577d@pyramind.ukuu.org.uk>
+	id S1754991Ab2KNJCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:02:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab2KNJCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 04:02:20 -0500
+Date: Wed, 14 Nov 2012 10:02:13 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@localhost
+To: Jens Axboe <axboe@kernel.dk>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jmoyer@redhat.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
+In-Reply-To: <50A27892.1030800@kernel.dk>
+Message-ID: <alpine.LFD.2.00.1211140951380.3577@localhost>
+References: <1352824065-6734-1-git-send-email-lczerner@redhat.com> <50A27892.1030800@kernel.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012 22:34:21 Alan Cox wrote:
-> On Tue, 13 Nov 2012 23:08:07 +0100
-> 
-> Dimitar Popov <dimitar.georgiev.popov@gmail.com> wrote:
-> > Hi all,
-> > 
-> > I have an old computer with motherboard ASUS SK8N with AMD Opteron 148 and
-> > 4 GiB of DDR400. There is an onboard SATA Promise RAID controller working
-> > in IDE mode (i.e. not as RAID controller) with 2 SATA disks. In order to
-> > use all 4 GiB RAM I need to enable the "4G Memory Remapping" option from
-> > the BIOS.
-> > However, if I do that I receive the following errors:
-> Pretty sure I know what that is as it's come up befor but the person
-> reporting it vanished without testing fixes.
-> 
-> Can you run tests on a fix
+On Tue, 13 Nov 2012, Jens Axboe wrote:
 
-Yes, I can run tests - it is easily reproducible: I just need to start writing 
-on one of the disks. (sorry for the two messages)
+> Date: Tue, 13 Nov 2012 09:42:58 -0700
+> From: Jens Axboe <axboe@kernel.dk>
+> To: Lukas Czerner <lczerner@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+>     jmoyer@redhat.com, akpm@linux-foundation.org
+> Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
+> 
+> > @@ -489,6 +491,12 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+> >  		goto out;
+> >  	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+> >  		goto out;
+> > +	if (lo->lo_bio_count >= q->nr_congestion_on) {
+> > +		spin_unlock_irq(&lo->lo_lock);
+> > +		wait_event(lo->lo_req_wait, lo->lo_bio_count <
+> > +			   q->nr_congestion_off);
+> > +		spin_lock_irq(&lo->lo_lock);
+> > +	}
+> 
+> This makes me nervous. You are reading lo_bio_count outside the lock. If
+> you race with the prepare_to_wait() and condition check in
+> __wait_event(), then you will sleep forever.
+
+Hi Jens,
+
+I am sorry for being dense, but I do not see how this would be
+possible. The only place we increase the lo_bio_count is after that
+piece of code (possibly after the wait). Moreover every time we're
+decreasing the lo_bio_count and it is smaller than nr_congestion_off
+we will wake_up().
+
+That's how wait_event/wake_up is supposed to be used, right ?
+
+Thanks!
+-Lukas
+
+> 
+> md has private helpers for this, seems it would be a good idea to move
+> these into the regular wait includes and use them here too.
+> 
+> 
