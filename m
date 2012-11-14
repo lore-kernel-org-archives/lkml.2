@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422920Ab2KNNlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 08:41:06 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:44772 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753176Ab2KNNlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 08:41:04 -0500
-Message-ID: <1352900468.9388.20.camel@joe-AO722>
-Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
-From: Joe Perches <joe@perches.com>
-To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Cc: "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "Luis R . Rodriguez" <rodrigue@qca.qualcomm.com>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Nov 2012 05:41:08 -0800
-In-Reply-To: <1352895463-22851-2-git-send-email-qca_vkondrat@qca.qualcomm.com>
-References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com>
-	 <1352895463-22851-2-git-send-email-qca_vkondrat@qca.qualcomm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1422930Ab2KNNpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 08:45:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47785 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422757Ab2KNNpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 08:45:32 -0500
+Date: Wed, 14 Nov 2012 14:45:30 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch 3/4] mm, oom: remove redundant sleep in pagefault oom
+ handler
+Message-ID: <20121114134530.GC4929@dhcp22.suse.cz>
+References: <alpine.DEB.2.00.1211140111190.32125@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1211140113200.32125@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211140113200.32125@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-14 at 14:17 +0200, Vladimir Kondratiev wrote:
-> Introduce debug_hex_dump() that can be dynamically controlled, similar to
-> pr_debug.
+On Wed 14-11-12 01:15:25, David Rientjes wrote:
+> out_of_memory() will already cause current to schedule if it has not been
+> killed, so doing it again in pagefault_out_of_memory() is redundant.
+> Remove it.
+> 
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-(added Jason Baron, Jim Cromie, GregKH and lkml to cc's)
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-[]
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-[]
-> @@ -220,6 +220,20 @@ extern void dump_stack(void) __cold;
->  	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
->  #endifD
->  
-> +#if defined(CONFIG_DYNAMIC_DEBUG)
-> +#define debug_hex_dump(prefix_str, prefix_type, rowsize,	\
-> +		       groupsize, buf, len, ascii)		\
-> +		       dynamic_hex_dump(prefix_str, prefix_type,\
-> +					rowsize, groupsize, buf,\
-> +					len, ascii)
-> +#else
-> +#define debug_hex_dump(prefix_str, prefix_type, rowsize,	\
-> +		       groupsize, buf, len, ascii)		\
-> +		       print_hex_dump(KERN_DEBUG, prefix_str,	\
-> +				      prefix_type, rowsize,	\
-> +				      groupsize, buf, len, ascii)
-> +#endif
+> ---
+>  mm/oom_kill.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -683,5 +683,4 @@ void pagefault_out_of_memory(void)
+>  		out_of_memory(NULL, 0, 0, NULL, false);
+>  		clear_zonelist_oom(zonelist, GFP_KERNEL);
+>  	}
+> -	schedule_timeout_killable(1);
+>  }
 
-These should be in a different location after print_hex_dump
-is declared. Also for #defines, the indentation doesn't
-need to be so deep.
-
-#if defined(CONFIG_DYNAMIC_DEBUG)
-#define debug_hex_dump(prefix_str, prefix_type, rowsize,	\
-		       groupsize, buf, len, ascii)		\
-	dynamic_hex_dump(prefix_str, prefix_type,		\
-			 rowsize, groupsize, buf, len, ascii)
-#else
-#define debug_hex_dump(prefix_str, prefix_type, rowsize,	\
-		       groupsize, buf, len, ascii)		\
-	print_hex_dump(KERN_DEBUG, prefix_str, prefix_type,	\
-		       rowsize, groupsize, buf, len, ascii)
-#endif
-
-A better option might be to convert print_hex_dump_bytes()
-to dynamic_debug as that's already KERN_DEBUG.  That
-could be simpler overall and it makes existing calls
-become dynamic as well.
-
+-- 
+Michal Hocko
+SUSE Labs
