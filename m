@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab2KNFvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:51:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55331 "EHLO
+	id S1756370Ab2KNFvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:51:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55329 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932428Ab2KNFvS (ORCPT
+	by vger.kernel.org with ESMTP id S932411Ab2KNFvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:51:18 -0500
-Message-Id: <20121114053936.526288450@decadent.org.uk>
+Message-Id: <20121114053937.083509587@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:52 +0000
+Date: Wed, 14 Nov 2012 05:39:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rhys <rhyspuk@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [ 19/82] drm/i915: fix overlay on i830M
+        Ivan Shugov <ivan.shugov@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [ 23/82] ARM: at91: at91sam9g10: fix SOC type detection
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,81 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ivan Shugov <ivan.shugov@gmail.com>
 
-commit a9193983f4f292a82a00c72971c17ec0ee8c6c15 upstream.
+commit 3d9a0183dd3423353e9e363bcc261c1220d05f9f upstream.
 
-The overlay on the i830M has a peculiar failure mode: It works the
-first time around after boot-up, but consistenly hangs the second time
-it's used.
+Newer at91sam9g10 SoC revision can't be detected, so the kernel can't boot with
+this kind of kernel panic:
+"AT91: Impossible to detect the SOC type"
 
-Chris Wilson has dug out a nice errata:
+CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
+CPU: VIVT data cache, VIVT instruction cache
+Machine: Atmel AT91SAM9G10-EK
+Ignoring tag cmdline (using the default kernel command line)
+bootconsole [earlycon0] enabled
+Memory policy: ECC disabled, Data cache writeback
+Kernel panic - not syncing: AT91: Impossible to detect the SOC type
+[<c00133d4>] (unwind_backtrace+0x0/0xe0) from [<c02366dc>] (panic+0x78/0x1cc)
+[<c02366dc>] (panic+0x78/0x1cc) from [<c02fa35c>] (at91_map_io+0x90/0xc8)
+[<c02fa35c>] (at91_map_io+0x90/0xc8) from [<c02f9860>] (paging_init+0x564/0x6d0)
+[<c02f9860>] (paging_init+0x564/0x6d0) from [<c02f7914>] (setup_arch+0x464/0x704)
+[<c02f7914>] (setup_arch+0x464/0x704) from [<c02f44f8>] (start_kernel+0x6c/0x2d4)
+[<c02f44f8>] (start_kernel+0x6c/0x2d4) from [<20008040>] (0x20008040)
 
-"1.5.12 Clock Gating Disable for Display Register
-Address Offset:	06200h–06203h
+The reason for this is that the Debug Unit Chip ID Register has changed between
+Engineering Sample and definitive revision of the SoC. Changing the check of
+cidr to socid will address the problem. We do not integrate this check to the
+list just above because we also have to make sure that the extended id is
+disregarded.
 
-"Bit 3
-Ovrunit Clock Gating Disable.
-0 = Clock gating controlled by unit enabling logic
-1 = Disable clock gating function
-DevALM Errata ALM049: Overlay Clock Gating Must be Disabled:  Overlay
-& L2 Cache clock gating must be disabled in order to prevent device
-hangs when turning off overlay.SW must turn off Ovrunit clock gating
-(6200h) and L2 Cache clock gating (C8h)."
-
-Now I've nowhere found that 0xc8 register and hence couldn't apply the
-l2 cache workaround. But I've remembered that part of the magic that
-the OVERLAY_ON/OFF commands are supposed to do is to rearrange cache
-allocations so that the overlay scaler has some scratch space.
-
-And while pondering how that could explain the hang the 2nd time we
-enable the overlay, I've remembered that the old ums overlay code did
-_not_ issue the OVERLAY_OFF cmd.
-
-And indeed, disabling the OFF cmd results in the overlay working
-flawlessly, so I guess we can workaround the lack of the above
-workaround by simply never disabling the overlay engine once it's
-enabled.
-
-Note that we have the first part of the above w/a already implemented
-in i830_init_clock_gating - leave that as-is to avoid surprises.
-
-v2: Add a comment in the code.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47827
-Tested-by: Rhys <rhyspuk@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/intel_ring_emit(ring, /OUT_RING(/]
+Signed-off-by: Ivan Shugov <ivan.shugov@gmail.com>
+[nicolas.ferre@atmel.com: change commit message]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_overlay.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/arm/mach-at91/setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -428,9 +428,17 @@ static int intel_overlay_off(struct inte
- 	OUT_RING(flip_addr);
- 	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
- 	/* turn overlay off */
--	OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
--	OUT_RING(flip_addr);
--	OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	if (IS_I830(dev)) {
-+		/* Workaround: Don't disable the overlay fully, since otherwise
-+		 * it dies on the next OVERLAY_ON cmd. */
-+		OUT_RING(MI_NOOP);
-+		OUT_RING(MI_NOOP);
-+		OUT_RING(MI_NOOP);
-+	} else {
-+		OUT_RING(MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
-+		OUT_RING(flip_addr);
-+		OUT_RING(MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	}
- 	ADVANCE_LP_RING();
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index da9881b..6a3d4bb 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -151,7 +151,7 @@ static void __init soc_detect(u32 dbgu_base)
+ 	}
  
- 	return intel_overlay_do_wait_request(overlay, request,
+ 	/* at91sam9g10 */
+-	if ((cidr & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
++	if ((socid & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
+ 		at91_soc_initdata.type = AT91_SOC_SAM9G10;
+ 		at91_boot_soc = at91sam9261_soc;
+ 	}
 
 
