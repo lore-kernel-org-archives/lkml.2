@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422874Ab2KNQ1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 11:27:50 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57538 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932664Ab2KNQ1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 11:27:48 -0500
-From: Gernot Vormayr <gvormayr@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Gernot Vormayr <gvormayr@gmail.com>
-Subject: [PATCH 1/1] block: Fix id of xsysace with missing port-number
-Date: Wed, 14 Nov 2012 17:27:28 +0100
-Message-Id: <1352910448-14866-1-git-send-email-gvormayr@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S964850Ab2KNQ3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 11:29:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964820Ab2KNQ3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 11:29:07 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <50A39627.6020809@imgtec.com>
+References: <50A39627.6020809@imgtec.com> <50A0D634.20005@synopsys.com> <C2D7FE5348E1B147BCA15975FBA230750D9832@in01wembx1.internal.synopsys.com> <509251CA.8050008@synopsys.com> <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>,<8419.1352387261@warthog.procyon.org.uk> <14356.1352416788@warthog.procyon.org.uk> <9377.1352726040@warthog.procyon.org.uk>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: dhowells@redhat.com, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [arc-linux-dev] Re: UAPI for new arches (was Re: [GIT PULL] User API Disintegrate: Preparatory patches)
+Date: Wed, 14 Nov 2012 16:28:57 +0000
+Message-ID: <17758.1352910537@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since id is u32 the comparsion < 0 will fail. The right way
-would be to check the return value of of_property_read_u32
+James Hogan <james.hogan@imgtec.com> wrote:
 
-Tested on ml507 board.
+> The disintegration scripts strip out the #ifdef __KERNEL__ from the
+> headers in both uapi/ and the old directories. However there are still a
+> bunch of unexported headers through the tree which have #ifdef
+> __KERNEL__ in them, usually guarding the entire file (just grep
+> __KERNEL__ in arch/).
+> 
+> Is this something that you're already planning to eliminate? We have a
+> few in the metag tree too, and now that uapi/ is nicely separated I'm
+> not sure if it's worth removing the __KERNEL__ guards or keeping them to
+> match other architectures.
 
-Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
----
- drivers/block/xsysace.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I would like to remove the __KERNEL__ guards from KAPI files - they should not
+be necessary there.
 
-diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index 1a17e33..b115e1f 100644
---- a/drivers/block/xsysace.c
-+++ b/drivers/block/xsysace.c
-@@ -1162,8 +1162,7 @@ static int __devinit ace_probe(struct platform_device *dev)
- 	dev_dbg(&dev->dev, "ace_probe(%p)\n", dev);
- 
- 	/* device id and bus width */
--	of_property_read_u32(dev->dev.of_node, "port-number", &id);
--	if (id < 0)
-+	if (of_property_read_u32(dev->dev.of_node, "port-number", &id))
- 		id = 0;
- 	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
- 		bus_width = ACE_BUS_WIDTH_8;
--- 
-1.7.9.5
+In the UAPI files, it will, unfortunately, be necessary to keep some of the
+__KERNEL__ guards that remain.
 
+David
