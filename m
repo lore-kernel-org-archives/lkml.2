@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab2KNFxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:53:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55295 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756426Ab2KNFvL (ORCPT
+	id S1756542Ab2KNFxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:53:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58915 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab2KNFxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:11 -0500
-Message-Id: <20121114053937.769633291@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:01 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Antonio Quartulli <ordex@autistici.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 28/82] mac80211: fix SSID copy on IBSS JOIN
-In-Reply-To: <20121114053933.726869752@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Nov 2012 00:53:49 -0500
+Date: Tue, 13 Nov 2012 21:53:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Linus <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Hugh Dickins <hughd@google.com>
+Subject: Re: linux-next: Tree for Nov 14
+Message-Id: <20121113215345.680e1f8e.akpm@linux-foundation.org>
+In-Reply-To: <20121113213742.292f3ace.akpm@linux-foundation.org>
+References: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
+	<20121113213742.292f3ace.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 13 Nov 2012 21:37:42 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
 
-------------------
+> It would help if the old sched/numa code wasn't in -next while you're
+> away.
 
-From: Antonio Quartulli <ordex@autistici.org>
+Now I think about it, that's going to be hard.  If I integrate against
+tomorrow's -next, the mmotm patches will be against next+schednuma. 
+Then you'll need to unintegrate them - effectively redo them against
+mainline.
 
-commit badecb001a310408d3473b1fc2ed5aefd0bc92a9 upstream.
+That won't be toooo hard, but there are some tricky bits.  Is there a way
+I can extract a schednuma-free -next tomorrow?  That way I can do the wrangling.
 
-The 'ssid' field of the cfg80211_ibss_params is a u8 pointer and
-its length is likely to be less than IEEE80211_MAX_SSID_LEN most
-of the time.
-
-This patch fixes the ssid copy in ieee80211_ibss_join() by using
-the SSID length to prevent it from reading beyond the string.
-
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-[rewrapped commit message, small rewording]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- net/mac80211/ibss.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
-index 5f3620f..bf87c70 100644
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -1108,7 +1108,7 @@ int ieee80211_ibss_join(struct ieee80211_sub_if_data *sdata,
- 	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
- 	sdata->u.ibss.ibss_join_req = jiffies;
- 
--	memcpy(sdata->u.ibss.ssid, params->ssid, IEEE80211_MAX_SSID_LEN);
-+	memcpy(sdata->u.ibss.ssid, params->ssid, params->ssid_len);
- 	sdata->u.ibss.ssid_len = params->ssid_len;
- 
- 	mutex_unlock(&sdata->u.ibss.mtx);
-
-
+This thing really has been a pain ;(  I've been uncharacteristically
+patient!
