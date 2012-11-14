@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab2KNWSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:18:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab2KNWSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:18:49 -0500
-Date: Wed, 14 Nov 2012 14:18:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree (akpm
- tree related)
-Message-Id: <20121114141847.fab752c2.akpm@linux-foundation.org>
-In-Reply-To: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
-References: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1423509Ab2KNWTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:19:05 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50041 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945910Ab2KNWTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 17:19:01 -0500
+Date: Wed, 14 Nov 2012 16:18:26 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] char/tpm: simplify duration calculation and
+ eliminate sparse warning.
+Message-ID: <20121114221826.GC533@ennui.austin.ibm.com>
+References: <1352759838-27175-1-git-send-email-peterhuewe@gmx.de>
+ <1352759838-27175-2-git-send-email-peterhuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352759838-27175-2-git-send-email-peterhuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111422-5112-0000-0000-00000E929420
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Nov 2012 15:09:57 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi all,
+On Mon, Nov 12, 2012 at 11:37:18PM +0100, Peter Huewe wrote:
+> This patch changes the semantics of the duration calculation for an
+> ordinal, by masking out the higher bits of a tpm command, which specify
+> whether it's an TPM_PROTECTED_COMMAND, TPM_UNPROTECTED_COMMAND,
+> TPM_CONNECTION_COMMAND, TPM_CONNECTION_COMMAND, TPM_VENDOR_COMMAND.
+> (See TPM Main Spec Part 2 Section 17 for details).
 > 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
+> For all TPM_PROTECTED and TPM_CONNECTION commands the results are
+> unchanged.
+> The TPM_UNPROTECTED commands are TSS commands and thus irrelevant as
+> they are not sent to the tpm.
+> For vendor commands the semantics change for ordinals 10 and 11 but
+> they were probably wrong anyway.
 > 
-> arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area':
-> arch/sparc/kernel/sys_sparc_64.c:92:16: error: unused variable 'start_addr' [-Werror=unused-variable]
-> arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area_topdown':
-> arch/sparc/kernel/sys_sparc_64.c:194:20: error: 'do_colour_align' undeclared (first use in this function)
-
-s/colour/color/
-
-> arch/sparc/kernel/sys_sparc_64.c:194:20: note: each undeclared identifier is reported only once for each function it appears in
-> arch/sparc/kernel/sys_sparc_64.c:194:51: error: 'shm_align_mask' undeclared (first use in this function)
-
-This one has me puzzled.  I *think* we should be using
-
-info.align_mask = do_colour_align ? (PAGE_MASK & SHMLBA) : 0;
-info.align_offset = (pgoff << PAGE_SHIFT) & (SHMLBA-1);
-
-or similar.   It needs more work.
-		
-> Caused by commit "mm: use vm_unmapped_area() on sparc64 architecture".  I
-> have reverted that commit for today (and the following fix patch).
+> For everything else which has the ordinal set to 10 or 11 the semantics
+> change as it now uses TPM_UNDEFINED instead of TPM_SHORT which was
+> probably wrong anyway (but irrelevant as not defined by the standard).
 > 
-> arch/sparc/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown':
-> arch/sparc/mm/hugetlbpage.c:63:25: error: unused variable 'vma' [-Werror=unused-variable]
+> This patch also gets rid of the (false positive) sparse warning:
+>  drivers/char/tpm/tpm.c:360 tpm_calc_ordinal_duration() error: buffer
+>  overflow 'tpm_protected_ordinal_duration' 12 <= 243
+
+  I'm not seeing this sparse warning, how did you get it?
+
+Thanks,
+Kent
+
 > 
-> Caused by commit "mm: use vm_unmapped_area() in hugetlbfs on sparc64
-> architecture".  I have reverted that commit for today.
-
-I'll drop
-
-mm-use-vm_unmapped_area-on-sparc64-architecture.patch
-mm-use-vm_unmapped_area-on-sparc64-architecture-fix.patch
-mm-use-vm_unmapped_area-in-hugetlbfs-on-sparc64-architecture.patch
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+>  drivers/char/tpm/tpm.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index 9e3c529..a455d11 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -40,8 +40,9 @@ enum tpm_duration {
+>  };
+> 
+>  #define TPM_MAX_ORDINAL 243
+> -#define TPM_MAX_PROTECTED_ORDINAL 12
+> -#define TPM_PROTECTED_ORDINAL_MASK 0xFF
+> +#define TCS_MAX_ORDINAL 12
+> +#define TPM_PROTECTED_COMMAND 0x00
+> +#define TPM_CONNECTION_COMMAND 0x40
+> 
+>  /*
+>   * Bug workaround - some TPM's don't flush the most
+> @@ -336,13 +337,11 @@ unsigned long tpm_calc_ordinal_duration(struct tpm_chip *chip,
+>  {
+>  	int duration_idx = TPM_UNDEFINED;
+>  	int duration = 0;
+> +	u8 category = (ordinal >> 24) & 0xFF;
+> 
+> -	if (ordinal < TPM_MAX_ORDINAL)
+> +	if ((category == TPM_PROTECTED_COMMAND && ordinal < TPM_MAX_ORDINAL) ||
+> +	    (category == TPM_CONNECTION_COMMAND && ordinal < TCS_MAX_ORDINAL))
+>  		duration_idx = tpm_ordinal_duration[ordinal];
+> -	else if ((ordinal & TPM_PROTECTED_ORDINAL_MASK) <
+> -		 TPM_MAX_PROTECTED_ORDINAL)
+> -		duration_idx =
+> -		    tpm_ordinal_duration[ordinal & TPM_PROTECTED_ORDINAL_MASK];
+> 
+>  	if (duration_idx != TPM_UNDEFINED)
+>  		duration = chip->vendor.duration[duration_idx];
+> -- 
+> 1.7.8.6
+> 
 
