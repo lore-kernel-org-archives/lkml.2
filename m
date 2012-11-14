@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422922Ab2KNNdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 08:33:03 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38809 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422869Ab2KNNdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 08:33:01 -0500
-Date: Wed, 14 Nov 2012 17:32:53 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
- inotify_inode_mark
-Message-ID: <20121114133253.GM16685@moon>
-References: <20121112101440.665694060@openvz.org>
- <2105540.yeyMVrW4mH@deuteros>
- <50A36ED5.4080505@parallels.com>
- <2092535.8S9EcgmZCZ@deuteros>
- <50A37692.1010500@parallels.com>
- <20121114124549.GB23604@fieldses.org>
- <20121114130347.GJ16685@moon>
- <20121114132622.GC23604@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121114132622.GC23604@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422911Ab2KNNh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 08:37:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16674 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422805Ab2KNNhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 08:37:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,250,1352102400"; 
+   d="scan'208";a="219493495"
+Message-ID: <1352900114.5254.3.camel@yhuang-mobile.sh.intel.com>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
+ forbidden
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Wed, 14 Nov 2012 21:35:14 +0800
+In-Reply-To: <2028148.7b9pFIymgn@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
+	 <1352855308.7176.232.camel@yhuang-dev> <2028148.7b9pFIymgn@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 08:26:22AM -0500, J. Bruce Fields wrote:
-> On Wed, Nov 14, 2012 at 05:03:47PM +0400, Cyrill Gorcunov wrote:
-> > On Wed, Nov 14, 2012 at 07:45:49AM -0500, J. Bruce Fields wrote:
-> > > > 
-> > > > We can try going this route, what do you think?
+On Wed, 2012-11-14 at 10:52 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 14, 2012 09:08:28 AM Huang Ying wrote:
+> > On Tue, 2012-11-13 at 11:10 -0500, Alan Stern wrote:
+> > > On Tue, 13 Nov 2012, Huang Ying wrote:
 > > > 
-> > > I still don't understand why you need a dentry to get the filehandle.
-> > > The current api may ask for one, but it shouldn't really be necessary
-> > > (assuming you don't want parent directory information encoded in the
-> > > filehandle, which I hope you don't).
+> > > > > This is not quite right.  Consider a device that is in runtime suspend 
+> > > > > when a system sleep starts.  When the system sleep ends, the device 
+> > > > > will be resumed but the PM core will still think its state is 
+> > > > > SUSPENDED.  The subsystem has to tell the PM core that the device is 
+> > > > > now ACTIVE.  Currently, subsystems do this by calling 
+> > > > > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
+> > > > > your scheme this wouldn't work; the pm_runtime_set_active call would 
+> > > > > fail because the device was !forbidden.
+> > > > 
+> > > > Thanks for your information.  For this specific situation, is it
+> > > > possible to call pm_runtime_resume() or pm_request_resume() for the
+> > > > device?
+> > > 
+> > > No, because the device already is at full power.  The subsystem just
+> > > needs to tell the PM core that it is.
+> > > 
+> > > > > > PM.  Device can always work with full power.
+> > > > > 
+> > > > > It can't if the parent is in SUSPEND.  If necessary, the user can write 
+> > > > > "on" to the parent's power/control attribute first.
+> > > > 
+> > > > Is it possible to call pm_runtime_set_active() for the parent if the
+> > > > parent is disabled and SUSPENDED.
+> > > 
+> > > Doing that is possible, but it might not work.  The parent might
+> > > actually be at low power; calling pm_runtime_set_active wouldn't change
+> > > the physical power level.  Basically, it's not safe to assume anything
+> > > about devices that are disabled for runtime PM.
+> > > 
+> > > > It appears that there is race condition between this and the
+> > > > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable sequence
+> > > > you mentioned ealier.
+> > > > 
+> > > > thread 1			thread 2
+> > > > pm_runtime_disable
+> > > > pm_runtime_set_active
+> > > > 				pm_runtime_allow
+> > > > 				  pm_runtime_set_suspended
+> > > > pm_runtime_enable
+> > > 
+> > > This can't happen in the situation I described earlier because during
+> > > system sleep transitions, no other user threads are allowed to run.  
+> > > All of them except the one actually carrying out the transition are
+> > > frozen.
 > > 
-> > As far as I know we don't need parent encoded. So Bruce, you think
-> > to modify exportfs instead to work with inode directly?
+> > Thanks for your kind explanation.
+> > 
+> > After talking with you, my feeling is that the disabled state is obscure
+> > and error-prone.  So I suggest not to use it if possible.  Maybe we can
+> > 
+> >  - make changes suggested by Alan to make disabled state better.
 > 
-> Looks like the filesystem encode_fh method just takes inodes (with the
-> parent inode allowed to be NULL), so all you'd need would be a version
-> of exportfs_encode_fh that took an inode.
+> What changes specifically do you mean to be precise?
+
+I mean the following changes from Alan's email.
+
+        pm_runtime_set_suspended should fail if dev->power.runtime_auto
+        is clear.
+
+        pm_runtime_forbid should call pm_runtime_set_active if
+        dev->power.disable_depth > 0.  (This would run into a problem
+        if the parent is suspended and disabled.  Maybe 
+        pm_runtime_forbid should fail when this happens.)
+
+For the second one, is it possible that the device is really in low
+power state when pm_runtime_forbid is called?  That situation is hard to
+deal with too.
+
+> >  - use Rafael's solution to solve this specific issue, and avoid the
+> > usage of disabled state here.
 > 
-> (Worst case, if that didn't work, you could fake up a dentry with
-> something like d_obtain_alias, but better not to if it's not necessary.)
+> Well, I think that the PCI subsystem should just enable runtime PM for
+> all devices upfront and keep it enabled going forward.
+> 
+> My patch is incomplete, however, because it doesn't deal with probe/remove
+> correctly at this point (which Alan pointed out earlier in the thread).
 
-Yeah, I'll update the series, test it and show ther results. Thanks!
+Yes.
 
-	Cyrill
+Best Regards,
+Huang Ying
+
+
