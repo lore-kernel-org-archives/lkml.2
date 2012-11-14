@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2KNKB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:01:57 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38671 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752187Ab2KNKB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:01:56 -0500
-Date: Wed, 14 Nov 2012 19:01:49 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lrg@ti.com, ldewangan@nvidia.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regulator: core: Avoid deadlock when
- regulator_register fails
-Message-ID: <20121114100147.GH7407@opensource.wolfsonmicro.com>
-References: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com>
- <20121106111256.GA2512@opensource.wolfsonmicro.com>
- <20121106113138.GB10080@opensource.wolfsonmicro.com>
- <20121113163040.GA19089@opensource.wolfsonmicro.com>
- <20121113232537.GA27212@opensource.wolfsonmicro.com>
- <20121114093931.GA23525@opensource.wolfsonmicro.com>
+	id S1161046Ab2KNKCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:02:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38765 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab2KNKB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 05:01:58 -0500
+Date: Wed, 14 Nov 2012 10:01:54 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Marc Duponcheel <marc@offline.be>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
+Message-ID: <20121114100154.GI8218@suse.de>
+References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
+ <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
+ <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
+ <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/Gk0KcsbyUMelFU1"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121114093931.GA23525@opensource.wolfsonmicro.com>
-X-Cookie: Advancement in position.
+In-Reply-To: <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 13, 2012 at 03:41:02PM -0800, David Rientjes wrote:
+> On Tue, 13 Nov 2012, Andy Lutomirski wrote:
+> 
+> > It just happened again.
+> > 
+> > $ grep -E "compact_|thp_" /proc/vmstat
+> > compact_blocks_moved 8332448774
+> > compact_pages_moved 21831286
+> > compact_pagemigrate_failed 211260
+> > compact_stall 13484
+> > compact_fail 6717
+> > compact_success 6755
+> > thp_fault_alloc 150665
+> > thp_fault_fallback 4270
+> > thp_collapse_alloc 19771
+> > thp_collapse_alloc_failed 2188
+> > thp_split 19600
+> > 
+> 
+> Two of the patches from the list provided at
+> http://marc.info/?l=linux-mm&m=135179005510688 are already in your 3.6.3 
+> kernel:
+> 
+> 	mm: compaction: abort compaction loop if lock is contended or run too long
+> 	mm: compaction: acquire the zone->lock as late as possible
+> 
+> and all have not made it to the 3.6 stable kernel yet, so would it be 
+> possible to try with 3.7-rc5 to see if it fixes the issue?  If so, it will 
+> indicate that the entire series is a candidate to backport to 3.6.
 
---/Gk0KcsbyUMelFU1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks David once again.
 
-On Wed, Nov 14, 2012 at 09:39:31AM +0000, Charles Keepax wrote:
-> When regulator_register fails and exits through the scrub path the
-> regulator_put function was called whilst holding the
-> regulator_list_mutex, causing deadlock.
+The full list of compaction-related patches I believe are necessary for
+this particular problem are
 
-Applied, thanks.
+e64c5237cf6ff474cb2f3f832f48f2b441dd9979 mm: compaction: abort compaction loop if lock is contended or run too long
+3cc668f4e30fbd97b3c0574d8cac7a83903c9bc7 mm: compaction: move fatal signal check out of compact_checklock_irqsave
+661c4cb9b829110cb68c18ea05a56be39f75a4d2 mm: compaction: Update try_to_compact_pages()kerneldoc comment
+2a1402aa044b55c2d30ab0ed9405693ef06fb07c mm: compaction: acquire the zone->lru_lock as late as possible
+f40d1e42bb988d2a26e8e111ea4c4c7bac819b7e mm: compaction: acquire the zone->lock as late as possible
+753341a4b85ff337487b9959c71c529f522004f4 revert "mm: have order > 0 compaction start off where it left"
+bb13ffeb9f6bfeb301443994dfbf29f91117dfb3 mm: compaction: cache if a pageblock was scanned and no pages were isolated
+c89511ab2f8fe2b47585e60da8af7fd213ec877e mm: compaction: Restart compaction from near where it left off
+62997027ca5b3d4618198ed8b1aba40b61b1137b mm: compaction: clear PG_migrate_skip based on compaction and reclaim activity
+0db63d7e25f96e2c6da925c002badf6f144ddf30 mm: compaction: correct the nr_strict va isolated check for CMA
 
-> Cc: Laxman Dewangan <ldewangan@nvidia.com>
+If we can get confirmation that these fix the problem in 3.6 kernels then
+I can backport them to -stable. This fixing a problem where "many processes
+stall, all in an isolation-related function". This started happening after
+lumpy reclaim was removed because we depended on that to aggressively
+reclaim with less compaction. Now compaction is depended upon more.
 
-Please avoid doing this.  I know a lot of people do but it makes for
-hand editing of the commit log to remove it.
+The full 3.7-rc5 kernel has a different problem on top of this and it's
+important the problems do not get conflacted. It has these fixes *but*
+GFP_NO_KSWAPD has been removed and there is a patch that scales reclaim
+with THP failures that is causing problem. With them, kswapd can get
+stuck in a 100% loop where it is neither reclaiming nor reaching its exit
+conditions. The correct fix would be to identify why this happens but I
+have not got around to it yet. To test with 3.7-rc5 then apply either
 
---/Gk0KcsbyUMelFU1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+1) https://lkml.org/lkml/2012/11/5/308
+2) https://lkml.org/lkml/2012/11/12/113
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+or
 
-iQIcBAEBAgAGBQJQo2wCAAoJELSic+t+oim9eQ0P/3WnBu8Eg4wYJhYjiaGcfqMm
-FDyavxX5qPi9DD4GU98zGE0e5trWvMQCM2iMu8NGY0aeTFZXYoGPOpbE9fkH8u7G
-Z6qX94a3HIqOuiQKbKYtfvFxA2NemZnRNgP58aSgk1Pd/H7lX8qDMHGWPAsR6bEF
-zeP3Whl5dJwnjBGFMuA/Pd4UlXLBwBGGfGwNVTPtKYChG/Pvu9f4zKW0B23H5AJP
-7pAFHCq9BBp7Es776vtjRGHOMYeNoilEaTFuQDpk4OO/4kUAcvjRZwlMMSg5mi+5
-WcRLGLK+GfseJ99NTto5DiX6C1ur8MJRlcOvhAggZGoD86QRDrCgmAj5YO3TCjJm
-fLnV9evnqQVy8m7qVQdvE8Zh7xUmI9Zf/a2UeFdgqeCAhzIiSh+qGJP8v8oQS5m1
-Zj/3zj+Exf+sZj9Gfmy1g7c/Rjw/Y9y/TAcx+uNxUC2YgLbAZyOQXhTV+Svciy0m
-N4kw19sv8oin0or/PRF7DAk91Zo2BFILTCnPAQLHbHQRZ/OWhy4jydm4scXSy4PG
-u4u2U/76VVT1RA/ver/vqV+Qg4HnUJi9FN6/Ih1c7PA+zTLIgIlF9CZQ0G51tB68
-abroZqtrBttWuNujbAovesD8vwRSyjdl62bDYs4PZuxkOo8x7bfNXSdFrzK/F3C8
-sFeaOKM+l2Z0ffApnk3v
-=bXvk
------END PGP SIGNATURE-----
+1) https://lkml.org/lkml/2012/11/5/308
+3) https://lkml.org/lkml/2012/11/12/151
 
---/Gk0KcsbyUMelFU1--
+on top of 3.7-rc5. So it's a lot of work but there are three tests I'm
+interested in hearing about. The results of each determine what happens
+in -stable or mainline
+
+Test 1: 3.6 + the last of commits above	(should fix processes stick in isolate)
+Test 2: 3.7-rc5 + (1+2) above (should fix kswapd stuck at 100%)
+Test 3: 3.7-rc5 + (1+3) above (should fix kswapd stuck at 100% but better)
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
