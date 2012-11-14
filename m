@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422897Ab2KNP7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 10:59:47 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38882 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422641Ab2KNP7o (ORCPT
+	id S1423063Ab2KNP76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 10:59:58 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48781 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422874Ab2KNP7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:59:44 -0500
+	Wed, 14 Nov 2012 10:59:52 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 03/14] HID: core: fix unit exponent parsing
-Date: Wed, 14 Nov 2012 16:59:15 +0100
-Message-Id: <1352908766-4492-4-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v4 07/14] HID: hid-multitouch: support T and C for win8 devices
+Date: Wed, 14 Nov 2012 16:59:19 +0100
+Message-Id: <1352908766-4492-8-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,110 +23,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HID spec details special values for the HID field unit exponent.
-Basically, the range [0x8..0xf] correspond to [-8..-1], so this is
-a standard two's complement on a half-byte.
+Win8 input specification clarifies the X and Y sent by devices.
+It distincts the position where the user wants to Touch (T) from
+the center of the ellipsoide (C). This patch enable supports for this
+distinction in hid-multitouch.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hid/hid-core.c  | 16 +++++++++++++++-
- drivers/hid/hid-input.c | 13 +++++++++----
- include/linux/hid.h     |  1 +
- 3 files changed, 25 insertions(+), 5 deletions(-)
+ drivers/hid/hid-multitouch.c | 46 +++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 3d0da29..9da3007 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index ae57b8f..54367f4 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -54,7 +54,7 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_NO_AREA		(1 << 9)
  
- static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
- {
-+	__u32 raw_value;
- 	switch (item->tag) {
- 	case HID_GLOBAL_ITEM_TAG_PUSH:
+ struct mt_slot {
+-	__s32 x, y, p, w, h;
++	__s32 x, y, cx, cy, p, w, h;
+ 	__s32 contactid;	/* the device ContactID assigned to this slot */
+ 	bool touch_state;	/* is the touch valid? */
+ };
+@@ -323,6 +323,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	struct mt_device *td = hid_get_drvdata(hdev);
+ 	struct mt_class *cls = &td->mtclass;
+ 	int code;
++	struct hid_usage *prev_usage = NULL;
  
-@@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
- 		return 0;
+ 	/* Only map fields from TouchScreen or TouchPad collections.
+ 	* We need to ignore fields that belong to other collections
+@@ -345,23 +346,42 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	if (field->physical == HID_DG_STYLUS)
+ 		return -1;
  
- 	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
--		parser->global.unit_exponent = item_sdata(item);
-+		/* Units exponent negative numbers are given through a
-+		 * two's complement.
-+		 * See "6.2.2.7 Global Items" for more information. */
-+		raw_value = item_udata(item);
-+		if (!(raw_value & 0xfffffff0))
-+			parser->global.unit_exponent = hid_snto32(raw_value, 4);
-+		else
-+			parser->global.unit_exponent = raw_value;
- 		return 0;
- 
- 	case HID_GLOBAL_ITEM_TAG_UNIT:
-@@ -865,6 +873,12 @@ static s32 snto32(__u32 value, unsigned n)
- 	return value & (1 << (n - 1)) ? value | (-1 << n) : value;
- }
- 
-+s32 hid_snto32(__u32 value, unsigned n)
-+{
-+	return snto32(value, n);
-+}
-+EXPORT_SYMBOL_GPL(hid_snto32);
++	if (usage->usage_index)
++		prev_usage = &field->usage[usage->usage_index - 1];
 +
- /*
-  * Convert a signed 32-bit integer to a signed n-bit integer.
-  */
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 67044f3..7015080 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -192,7 +192,6 @@ static int hidinput_setkeycode(struct input_dev *dev,
- 	return -EINVAL;
- }
+ 	switch (usage->hid & HID_USAGE_PAGE) {
  
--
- /**
-  * hidinput_calc_abs_res - calculate an absolute axis resolution
-  * @field: the HID report field to calculate resolution for
-@@ -235,17 +234,23 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	case ABS_MT_TOOL_Y:
- 	case ABS_MT_TOUCH_MAJOR:
- 	case ABS_MT_TOUCH_MINOR:
--		if (field->unit == 0x11) {		/* If centimeters */
-+		if (field->unit & 0xffffff00)		/* Not a length */
-+			return 0;
-+		unit_exponent += hid_snto32(field->unit >> 4, 4) - 1;
-+		switch (field->unit & 0xf) {
-+		case 0x1:				/* If centimeters */
- 			/* Convert to millimeters */
- 			unit_exponent += 1;
--		} else if (field->unit == 0x13) {	/* If inches */
-+			break;
-+		case 0x3:				/* If inches */
- 			/* Convert to millimeters */
- 			prev = physical_extents;
- 			physical_extents *= 254;
- 			if (physical_extents < prev)
- 				return 0;
- 			unit_exponent -= 1;
--		} else {
-+			break;
-+		default:
- 			return 0;
- 		}
- 		break;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 9edb06c..a110a3e 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -754,6 +754,7 @@ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
- void hid_disconnect(struct hid_device *hid);
- const struct hid_device_id *hid_match_id(struct hid_device *hdev,
- 					 const struct hid_device_id *id);
-+s32 hid_snto32(__u32 value, unsigned n);
+ 	case HID_UP_GENDESK:
+ 		switch (usage->hid) {
+ 		case HID_GD_X:
+-			hid_map_usage(hi, usage, bit, max,
++			if (prev_usage && (prev_usage->hid == usage->hid)) {
++				hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOOL_X);
++				set_abs(hi->input, ABS_MT_TOOL_X, field,
++					cls->sn_move);
++			} else {
++				hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_X);
+-			set_abs(hi->input, ABS_MT_POSITION_X, field,
+-				cls->sn_move);
++				set_abs(hi->input, ABS_MT_POSITION_X, field,
++					cls->sn_move);
++			}
++
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_GD_Y:
+-			hid_map_usage(hi, usage, bit, max,
++			if (prev_usage && (prev_usage->hid == usage->hid)) {
++				hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOOL_Y);
++				set_abs(hi->input, ABS_MT_TOOL_Y, field,
++					cls->sn_move);
++			} else {
++				hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_Y);
+-			set_abs(hi->input, ABS_MT_POSITION_Y, field,
+-				cls->sn_move);
++				set_abs(hi->input, ABS_MT_POSITION_Y, field,
++					cls->sn_move);
++			}
++
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -502,6 +522,8 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
  
- /**
-  * hid_map_usage - map usage input bits
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
++			input_event(input, EV_ABS, ABS_MT_TOOL_X, s->cx);
++			input_event(input, EV_ABS, ABS_MT_TOOL_Y, s->cy);
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+ 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
+ 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
+@@ -553,10 +575,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+ 			td->curdata.p = value;
+ 			break;
+ 		case HID_GD_X:
+-			td->curdata.x = value;
++			if (usage->code == ABS_MT_TOOL_X)
++				td->curdata.cx = value;
++			else
++				td->curdata.x = value;
+ 			break;
+ 		case HID_GD_Y:
+-			td->curdata.y = value;
++			if (usage->code == ABS_MT_TOOL_Y)
++				td->curdata.cy = value;
++			else
++				td->curdata.y = value;
+ 			break;
+ 		case HID_DG_WIDTH:
+ 			td->curdata.w = value;
 -- 
 1.8.0
 
