@@ -1,70 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945993Ab2KNXTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 18:19:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53182 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab2KNXTb (ORCPT
+	id S1423550Ab2KNXWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 18:22:06 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61356 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab2KNXWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 18:19:31 -0500
-Date: Wed, 14 Nov 2012 23:24:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/Sandy Bridge: reserve pages when integrated
- graphics is present
-Message-ID: <20121114232443.5c07b205@pyramind.ukuu.org.uk>
-In-Reply-To: <20121114135534.653b70dd@jbarnes-desktop>
-References: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20121114211905.503f3701@pyramind.ukuu.org.uk>
-	<20121114135534.653b70dd@jbarnes-desktop>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 18:22:05 -0500
+Date: Wed, 14 Nov 2012 15:22:03 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 06/11] thp: change split_huge_page_pmd() interface
+In-Reply-To: <1352300463-12627-7-git-send-email-kirill.shutemov@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1211141516570.22537@chino.kir.corp.google.com>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-7-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 13:55:34 -0800
-Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
 
-> On Wed, 14 Nov 2012 21:19:05 +0000
-> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> 
-> > On Wed, 14 Nov 2012 20:43:31 +0000
-> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > 
-> > > SNB graphics devices have a bug that prevent them from accessing certain
-> > > memory ranges, namely anything below 1M and in the pages listed in the
-> > > table.  So reserve those at boot if set detect a SNB gfx device on the
-> > > CPU to avoid GPU hangs.
-> > 
-> > What happens if the other addresses map to an external memory object - eg
-> > a PCI device which is a legitimate DMA source for video overlay etc ?
-> 
-> Other addresses as in the 5 pages high in the address space?  I'm not
-> sure how to do what I want with memblock, doesn't it just allocate RAM
-> not I/O space?... /me looks at the memblock API
-> 
-> Or do you mean if we map GTT pages to point at some non-RAM region will
-> SNB gfx be able to decode them?  If that's the question, then I think
-> the answer is no, but I don't have enough detail on the hw bug to be
-> certain.
-> 
-> > I assume this is just for GPU fetches from main memory ?
-> 
-> AIUI, it's an address decoder bug, so it would affect any fetch by the
-> GPU through its memory interface glue.
+> diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+> index f734bb2..677a599 100644
+> --- a/Documentation/vm/transhuge.txt
+> +++ b/Documentation/vm/transhuge.txt
+> @@ -276,7 +276,7 @@ unaffected. libhugetlbfs will also work fine as usual.
+>  == Graceful fallback ==
+>  
+>  Code walking pagetables but unware about huge pmds can simply call
+> -split_huge_page_pmd(mm, pmd) where the pmd is the one returned by
+> +split_huge_page_pmd(vma, pmd, addr) where the pmd is the one returned by
+>  pmd_offset. It's trivial to make the code transparent hugepage aware
+>  by just grepping for "pmd_offset" and adding split_huge_page_pmd where
+>  missing after pmd_offset returns the pmd. Thanks to the graceful
+> @@ -299,7 +299,7 @@ diff --git a/mm/mremap.c b/mm/mremap.c
+>  		return NULL;
+>  
+>  	pmd = pmd_offset(pud, addr);
+> -+	split_huge_page_pmd(mm, pmd);
+> ++	split_huge_page_pmd(vma, pmd, addr);
+>  	if (pmd_none_or_clear_bad(pmd))
+>  		return NULL;
+>  
+> diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+> index 5c9687b..1dfe69c 100644
+> --- a/arch/x86/kernel/vm86_32.c
+> +++ b/arch/x86/kernel/vm86_32.c
+> @@ -182,7 +182,7 @@ static void mark_screen_rdonly(struct mm_struct *mm)
+>  	if (pud_none_or_clear_bad(pud))
+>  		goto out;
+>  	pmd = pmd_offset(pud, 0xA0000);
+> -	split_huge_page_pmd(mm, pmd);
+> +	split_huge_page_pmd_mm(mm, 0xA0000, pmd);
+>  	if (pmd_none_or_clear_bad(pmd))
+>  		goto out;
+>  	pte = pte_offset_map_lock(mm, pmd, 0xA0000, &ptl);
 
-Well the extreme case (and I suspect one we don't care about too much in
-reality) is a box with a PCI/E or similar MMIO graphics device which is
-taking part in Dave Airlie's wonderous new graphics architecture so being
-rendered into or fetched by the Intel GPU and whose PCI/E space is mapped
-crossing one of those addresses.
+Why not be consistent and make this split_huge_page_pmd_mm(mm, pmd, addr)?
 
-The other case of concern would be if the Intel IOMMU had mappings there
-that were then touched in some way by the GPU ?
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 90c63f9..291a0d1 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -643,7 +643,7 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+>  	spinlock_t *ptl;
+>  	struct page *page;
+>  
+> -	split_huge_page_pmd(walk->mm, pmd);
+> +	split_huge_page_pmd(vma, addr, pmd);
 
-Alan
+Ah, it's because the change to the documentation is wrong: the format is 
+actually split_huge_page_pmd(vma, addr, pmd).
+
+>  	if (pmd_trans_unstable(pmd))
+>  		return 0;
+>  
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index b31cb7d..856f080 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -91,12 +91,14 @@ extern int handle_pte_fault(struct mm_struct *mm,
+>  			    struct vm_area_struct *vma, unsigned long address,
+>  			    pte_t *pte, pmd_t *pmd, unsigned int flags);
+>  extern int split_huge_page(struct page *page);
+> -extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+> -#define split_huge_page_pmd(__mm, __pmd)				\
+> +extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+> +		unsigned long address, pmd_t *pmd);
+> +#define split_huge_page_pmd(__vma, __address, __pmd)			\
+>  	do {								\
+>  		pmd_t *____pmd = (__pmd);				\
+>  		if (unlikely(pmd_trans_huge(*____pmd)))			\
+> -			__split_huge_page_pmd(__mm, ____pmd);		\
+> +			__split_huge_page_pmd(__vma, __address,		\
+> +					____pmd);			\
+>  	}  while (0)
+>  #define wait_split_huge_page(__anon_vma, __pmd)				\
+>  	do {								\
+> @@ -106,6 +108,8 @@ extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+>  		       pmd_trans_huge(*____pmd));			\
+>  	} while (0)
+> +extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
+> +		pmd_t *pmd);
+>  #if HPAGE_PMD_ORDER > MAX_ORDER
+>  #error "hugepages can't be allocated by the buddy allocator"
+>  #endif
+> @@ -173,10 +177,12 @@ static inline int split_huge_page(struct page *page)
+>  {
+>  	return 0;
+>  }
+> -#define split_huge_page_pmd(__mm, __pmd)	\
+> +#define split_huge_page_pmd(__vma, __address, __pmd)	\
+>  	do { } while (0)
+>  #define wait_split_huge_page(__anon_vma, __pmd)	\
+>  	do { } while (0)
+> +#define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
+> +	do { } while (0)
+>  #define compound_trans_head(page) compound_head(page)
+>  static inline int hugepage_madvise(struct vm_area_struct *vma,
+>  				   unsigned long *vm_flags, int advice)
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 05490b3..90e651c 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -2509,19 +2509,23 @@ static int khugepaged(void *none)
+>  	return 0;
+>  }
+>  
+> -void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
+> +void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
+> +		pmd_t *pmd)
+>  {
+>  	struct page *page;
+> +	unsigned long haddr = address & HPAGE_PMD_MASK;
+> 
+
+Just do
+
+	struct mm_struct *mm = vma->vm_mm;
+
+here and it makes everything else simpler.
+ 
+> -	spin_lock(&mm->page_table_lock);
+> +	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
+> +
+> +	spin_lock(&vma->vm_mm->page_table_lock);
+>  	if (unlikely(!pmd_trans_huge(*pmd))) {
+> -		spin_unlock(&mm->page_table_lock);
+> +		spin_unlock(&vma->vm_mm->page_table_lock);
+>  		return;
+>  	}
+>  	page = pmd_page(*pmd);
+>  	VM_BUG_ON(!page_count(page));
+>  	get_page(page);
+> -	spin_unlock(&mm->page_table_lock);
+> +	spin_unlock(&vma->vm_mm->page_table_lock);
+>  
+>  	split_huge_page(page);
+>  
