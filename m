@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab2KNF7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:59:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55177 "EHLO
+	id S1756338Ab2KNFur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55154 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756318Ab2KNFut (ORCPT
+	by vger.kernel.org with ESMTP id S1756315Ab2KNFun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:49 -0500
-Message-Id: <20121114053940.780944643@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:43 -0500
+Message-Id: <20121114053941.728271535@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:23 +0000
+Date: Wed, 14 Nov 2012 05:40:30 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 50/82] target: Avoid integer overflow in se_dev_align_max_sectors()
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [ 57/82] hwmon: (w83627ehf) Force initial bank selection
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,57 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 3e03989b5868acf69a391a424dc71fcd6cc48167 upstream.
+commit 3300fb4f88688029fff8dfb9ec0734f6e4cba3e7 upstream.
 
-The expression (max_sectors * block_size) might overflow a u32
-(indeed, since iblock sets max_hw_sectors to UINT_MAX, it is
-guaranteed to overflow and end up with a much-too-small result in many
-common cases).  Fix this by doing an equivalent calculation that
-doesn't require multiplication.
+Don't assume bank 0 is selected at device probe time. This may not be
+the case. Force bank selection at first register access to guarantee
+that we read the right registers upon driver loading.
 
-While we're touching this code, avoid splitting a printk format across
-two lines and use pr_info(...) instead of printk(KERN_INFO ...).
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_device.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/hwmon/w83627ehf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -835,20 +835,20 @@ int se_dev_check_shutdown(struct se_devi
+diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+index 1821b74..de3c7e0 100644
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -2083,6 +2083,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ 	mutex_init(&data->lock);
+ 	mutex_init(&data->update_lock);
+ 	data->name = w83627ehf_device_names[sio_data->kind];
++	data->bank = 0xff;		/* Force initial bank selection */
+ 	platform_set_drvdata(pdev, data);
  
- u32 se_dev_align_max_sectors(u32 max_sectors, u32 block_size)
- {
--	u32 tmp, aligned_max_sectors;
-+	u32 aligned_max_sectors;
-+	u32 alignment;
- 	/*
- 	 * Limit max_sectors to a PAGE_SIZE aligned value for modern
- 	 * transport_allocate_data_tasks() operation.
- 	 */
--	tmp = rounddown((max_sectors * block_size), PAGE_SIZE);
--	aligned_max_sectors = (tmp / block_size);
--	if (max_sectors != aligned_max_sectors) {
--		printk(KERN_INFO "Rounding down aligned max_sectors from %u"
--				" to %u\n", max_sectors, aligned_max_sectors);
--		return aligned_max_sectors;
--	}
-+	alignment = max(1ul, PAGE_SIZE / block_size);
-+	aligned_max_sectors = rounddown(max_sectors, alignment);
- 
--	return max_sectors;
-+	if (max_sectors != aligned_max_sectors)
-+		pr_info("Rounding down aligned max_sectors from %u to %u\n",
-+			max_sectors, aligned_max_sectors);
-+
-+	return aligned_max_sectors;
- }
- 
- void se_dev_set_default_attribs(
+ 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
 
 
