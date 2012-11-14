@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab2KNGAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:00:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55168 "EHLO
+	id S1756359Ab2KNGBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:01:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55139 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756326Ab2KNFuq (ORCPT
+	by vger.kernel.org with ESMTP id S1751723Ab2KNFuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:46 -0500
-Message-Id: <20121114053941.324289506@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:40 -0500
+Message-Id: <20121114053941.459089122@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:27 +0000
+Date: Wed, 14 Nov 2012 05:40:28 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 54/82] ALSA: hda: Cirrus: Fix coefficient index for beep configuration
+        Daniel J Blueman <daniel@quora.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 55/82] ALSA: HDA: Fix digital microphone on CS420x
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,29 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: Daniel J Blueman <daniel@quora.org>
 
-commit 5a83b4b5a391f07141b157ac9daa51c409e71ab5 upstream.
+commit 16337e028a6dae9fbdd718c0d42161540a668ff3 upstream.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Correctly enable the digital microphones with the right bits in the
+right coeffecient registers on Cirrus CS4206/7 codecs. It also
+prevents misconfiguring ADC1/2.
+
+This fixes the digital mic on the Macbook Pro 10,1/Retina.
+
+Based-on-patch-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_cirrus.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_cirrus.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/sound/pci/hda/patch_cirrus.c b/sound/pci/hda/patch_cirrus.c
-index 61a7113..3b7d67a 100644
 --- a/sound/pci/hda/patch_cirrus.c
 +++ b/sound/pci/hda/patch_cirrus.c
-@@ -1107,7 +1107,7 @@ static const struct hda_verb cs_coef_init_verbs[] = {
- 	  | 0x0400 /* Disable Coefficient Auto increment */
- 	  )},
- 	/* Beep */
--	{0x11, AC_VERB_SET_COEF_INDEX, IDX_DAC_CFG},
-+	{0x11, AC_VERB_SET_COEF_INDEX, IDX_BEEP_CFG},
- 	{0x11, AC_VERB_SET_PROC_COEF, 0x0007}, /* Enable Beep thru DAC1/2/3 */
+@@ -93,8 +93,8 @@ enum {
+ #define CS420X_VENDOR_NID	0x11
+ #define CS_DIG_OUT1_PIN_NID	0x10
+ #define CS_DIG_OUT2_PIN_NID	0x15
+-#define CS_DMIC1_PIN_NID	0x12
+-#define CS_DMIC2_PIN_NID	0x0e
++#define CS_DMIC1_PIN_NID	0x0e
++#define CS_DMIC2_PIN_NID	0x12
  
- 	{} /* terminator */
+ /* coef indices */
+ #define IDX_SPDIF_STAT		0x0000
+@@ -1088,14 +1088,18 @@ static void init_input(struct hda_codec
+ 			cs_automic(codec);
+ 
+ 		coef = 0x000a; /* ADC1/2 - Digital and Analog Soft Ramp */
++		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		coef = cs_vendor_coef_get(codec, IDX_BEEP_CFG);
+ 		if (is_active_pin(codec, CS_DMIC2_PIN_NID))
+-			coef |= 0x0500; /* DMIC2 2 chan on, GPIO1 off */
++			coef |= 1 << 4; /* DMIC2 2 chan on, GPIO1 off */
+ 		if (is_active_pin(codec, CS_DMIC1_PIN_NID))
+-			coef |= 0x1800; /* DMIC1 2 chan on, GPIO0 off
++			coef |= 1 << 3; /* DMIC1 2 chan on, GPIO0 off
+ 					 * No effect if SPDIF_OUT2 is
+ 					 * selected in IDX_SPDIF_CTL.
+ 					*/
+-		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		cs_vendor_coef_set(codec, IDX_BEEP_CFG, coef);
+ 	}
+ }
+ 
 
 
