@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945948Ab2KNW6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:58:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38350 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945923Ab2KNW6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:58:50 -0500
-Date: Wed, 14 Nov 2012 14:58:48 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
- approaches low water mark
-Message-Id: <20121114145848.8224e8b0.akpm@linux-foundation.org>
-In-Reply-To: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
-References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933224Ab2KNXFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 18:05:50 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:44534 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932216Ab2KNXFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 18:05:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Thu, 15 Nov 2012 00:10:09 +0100
+Message-ID: <37583314.JAxoSZqTsM@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 09:59:42 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-
-> It has been observed that system tends to keep a lot of CMA free pages
-> even in very high memory pressure use cases. The CMA fallback for movable
-> pages is used very rarely, only when system is completely pruned from
-> MOVABLE pages, what usually means that the out-of-memory even will be
-> triggered very soon. To avoid such situation and make better use of CMA
-> pages, a heuristics is introduced which turns on CMA fallback for movable
-> pages when the real number of free pages (excluding CMA free pages)
-> approaches low water mark.
+On Wednesday, November 14, 2012 04:45:01 PM Alan Stern wrote:
+> On Wed, 14 Nov 2012, Rafael J. Wysocki wrote:
 > 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  mm/page_alloc.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
+> > > This has the side effect that when a driver unbinds, it can't leave the 
+> > > device in a special low-power state.  The device will always end up in 
+> > > the generic low-power state supported by the PCI core.
+> > 
+> > Well, I'm not sure I'd like that.
+> > 
+> > Let's just go back even one step more and think what we'd like to have in
+> > general terms and then how to implement it. :-)
+> > 
+> > Suppose that pci_pm_init() calls pm_runtime_enable() for all devices (in
+> > addition to what it does currently).  The runtime PM status of each device is
+> > RPM_SUSPENDED at this point.  Then:
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index fcb9719..90b51f3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1076,6 +1076,15 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
->  {
->  	struct page *page;
->  
-> +#ifdef CONFIG_CMA
-> +	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
-> +	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
-> +
-> +	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
-> +	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
-> +		migratetype = MIGRATE_CMA;
-> +#endif /* CONFIG_CMA */
-> +
->  retry_reserve:
->  	page = __rmqueue_smallest(zone, order, migratetype);
+> Wait a moment.  When the device is detected and initialized, it is in
+> D0, right?  Currently we don't care much because the device starts out
+> disabled for runtime PM.  But now you are going to enable it.  While
+> the device is enabled, its runtime status should match the physical
+> power level.
 
-erk, this is right on the page allocator hotpath.  Bad.
+OK
 
-At the very least, we could code it so it is not quite so dreadfully
-inefficient:
+> This means the initialization routine would have to call
+> pm_runtime_set_active() before pm_runtime_enable().  If you then wanted
+> to change the status to RPM_SUSPENDED, you would actually have to put
+> the device into D3 by calling pm_runtime_suspend() (or maybe
+> pm_runtime_schedule_suspend() to give drivers some time to get loaded 
+> and bind).
 
-	if (migratetype == MIGRATE_MOVABLE) {
-		unsigned long nr_cma_free;
+No, I don't want that.  It may be RPM_ACTIVE all the time as long as the
+device doesn't have a driver.  Which probably would even make things
+simpler. :-)
 
-		nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
-		if (nr_cma_free) {
-			unsigned long nr_free;
+> > (1) We want to keep the current semantics during probe, i.e. the device should
+> >     (a) be RPM_ACTIVE and (b) have usage_count == (user space usage_count + 1)
+> >     right before ddi->drv->probe() is executed.
+> 
+> In theory the usage_count could be higher and then adjusted back after
+> the probe is finished, if that would make anything easier.
 
-			nr_free = zone_page_state(zone, NR_FREE_PAGES);
+No, it wouldn't, because of (5).  Suppose that the driver wants to suspend
+the device directly from .probe() and the user space doesn't mind.  We can't
+prevent that from being doable.
 
-			if (nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
-				migratetype = MIGRATE_CMA;
-		}
-	}
+> > (2) We don't want the driver's PM callbacks to be run before ddi->drv->probe().
+> >     There's a question if we want the bus type's PM callbacks to be run at
+> >     that point, but they are not run currently and IMO we shouldn't change
+> >     that.
+> 
+> The device is supposed to be in D0 when it is probed.  Since we are
+> assuming that initialization is now going to leave it in D3, there's no
+> choice -- you _have_ to invoke pci_pm_runtime_resume(), which would
+> invoke the driver's callback, which we don't want.
 
-but it still looks pretty bad.
+Let's say the device will stay in D0 after the initialization and then
+we'll require that it be in D0 if .probe() fails or after .remove().
+
+The only thing we'll need to do before .probe() in that case is to
+bump up the usage counter and then to bump it down if .probe() fails
+(and after .remove()).
+
+The only problem we have in that case are buggy drivers that leave
+devices in, say, D3cold after a failing .probe().  That doesn't
+seem to be avoidable, though.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
