@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161080Ab2KNKJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:09:10 -0500
-Received: from claranet-outbound-smtp04.uk.clara.net ([195.8.89.37]:49042 "EHLO
-	claranet-outbound-smtp04.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161008Ab2KNKJI (ORCPT
+	id S1161086Ab2KNKJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:09:56 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50583 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161008Ab2KNKJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:09:08 -0500
-From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into inotify_inode_mark
-Date: Wed, 14 Nov 2012 10:08:51 +0000
-Message-ID: <2105540.yeyMVrW4mH@deuteros>
-User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <20121114095812.GF16685@moon>
-References: <20121112101440.665694060@openvz.org> <19056257.kzSp6roqV4@deuteros> <20121114095812.GF16685@moon>
+	Wed, 14 Nov 2012 05:09:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [178.83.130.250]
+Date: Wed, 14 Nov 2012 11:09:52 +0100
+Message-ID: <CAKMK7uG+txQf8ZX78jvNZAU_vUhkX3tryrSbK91iHfueVt=hvw@mail.gmail.com>
+Subject: Regression due to "mm: fix-up zone present pages"
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>, "Lu, HuaX" <huax.lu@intel.com>,
+        "Sun, Yi" <yi.sun@intel.com>, "Jin, Gordon" <gordon.jin@intel.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, "Luck, Tony" <tony.luck@intel.com>,
+        Mel Gorman <mel@csn.ul.ie>, Yinghai Lu <yinghai@kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 November 2012 13:58:12 Cyrill Gorcunov wrote:
-> On Wed, Nov 14, 2012 at 09:50:55AM +0000, Tvrtko Ursulin wrote:
-> > > > You could not use a pointer and then allocate your buffers on the
-> > > > check
-> > > > point operation, freeing on restore?
-> > > 
-> > > The problem is not allocating the memory itself but rather the time when
-> > > the information needed (ie the dentry) is available. The only moment
-> > > when we can use dentry of the target file/directory is at
-> > > inotify_new_watch, that's why i need to compose fhandle that early. At
-> > > any later point we simply have no dentry to use.
-> > 
-> > But you do not fundamentally need the dentry to restore a watch, right?
-> 
-> dentry only needed to encode the file handle.
-> 
-> > Couldn't you restore, creating a new restore path if needed, using the
-> > inode which is pinned anyway while the watch exists?
-> 
-> plain inode is not enough as far as i can tell, iow i don't see the way
-> to restore path from inode solely. or there something i miss?
+Hi all,
 
-I don't know, as I said I was not following this at all until now. Just 
-throwing in ideas.
+Our QA noticed a regression in one of our i915/GEM testcases in 3.7:
 
-I thought, since inotify does not use the path or dentry outside the system 
-call at all, perhaps you need a different entry point allowing you to restore 
-the watch using the inode or something. Assuming life time of objects and 
-stuff in C&R world would allow you that. Since you don't need the full path, 
-just something 64 bytes long, I assumed that could be the case.
- 
-Regards,
+https://bugs.freedesktop.org/show_bug.cgi?id=56859
 
-Tvrtko
+Direct link to dmesg of the machine:
+https://bugs.freedesktop.org/attachment.cgi?id=70052 Note that the
+machine is 32bit, which seems to be important since Chris Wilson
+confirmed the bug on his 32bit Sandybridge machine, whereas mine here
+with a 64bit kernel works flawlessly.
 
+The testcase is gem_tiled_swapping:
+
+http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/tree/tests/gem_tiled_swapping.c
+
+Quick high-level description of the workload:
+
+It allocates a working set larger than available memory, then fills it
+by writing it through the gpu gart (required to get a linear view of
+tiled buffers) and afterwards reads it to check whether anything got
+corrupted. Since the working set is too large to fit into ram, this
+will force all buffers through swap. We've written this testcase to
+exercise the reswizzle swapin path since some platforms have a tiling
+layout depending upon physical pfn (awesome feature btw), but not snb.
+So within the kernel this workload simply grabs the backing storage
+from shmemfs with shmem_read_mapping_page_gfp and then binds them into
+the gpu pagetables (the GTT). This happens in the i915_gem_fault
+fucntion. Unbinding in this workload happens either directly (if the
+gem code can't get enough memory) or through our shrinker
+(i915_gem_inactive_shrink). Swapout is then left to shmemfs to handle.
+All the above stuff is in drivers/gpu/drm/i915_gem.c
+
+Testcase fails because it detects a mismatch between what has been
+written and what has been read back.
+
+Our qa people bisected the regression to
+
+commit 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+Author: Jianguo Wu <wujianguo@huawei.com>
+Date:   Mon Oct 8 16:33:06 2012 -0700
+
+    mm: fix-up zone present pages
+
+and confirmed the revert on top of the latest drm-intel-nightly branch
+(which is based on top of 3.7-rc2 and contains the -next stuff for
+3.8). They've also tested the for-QA branch which had latest Linus
+upstream merged in, which did not fix the problem. For reference the
+intel trees are at (but I don't think it matters really that it's not
+plain upstream, nothing really changed in the relevant i915/gem paths
+compared to upstream):
+
+http://cgit.freedesktop.org/~danvet/drm-intel
+
+I have no idea how that early boot zone init fix could even corrupt
+swapping in such a fashion, so ideas highly welcome. QA people are
+cc'ed, and hopefully I haven't missed anyone else on the cc list.
+
+Yours, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
