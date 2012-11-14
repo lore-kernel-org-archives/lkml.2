@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2KNBIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 20:08:32 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63665 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120Ab2KNBIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 20:08:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
-   d="scan'208";a="168057990"
-Message-ID: <1352855308.7176.232.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Wed, 14 Nov 2012 09:08:28 +0800
-In-Reply-To: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932276Ab2KNBKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 20:10:52 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54061 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932161Ab2KNBKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 20:10:51 -0500
+Date: Wed, 14 Nov 2012 10:10:43 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 3/3] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+Message-ID: <20121114011042.GC4415@opensource.wolfsonmicro.com>
+References: <1352796533-12350-1-git-send-email-m.szyprowski@samsung.com>
+ <1352796533-12350-4-git-send-email-m.szyprowski@samsung.com>
+ <87fw4dn030.fsf@octavius.laptop.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
+Content-Disposition: inline
+In-Reply-To: <87fw4dn030.fsf@octavius.laptop.org>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-13 at 11:10 -0500, Alan Stern wrote:
-> On Tue, 13 Nov 2012, Huang Ying wrote:
-> 
-> > > This is not quite right.  Consider a device that is in runtime suspend 
-> > > when a system sleep starts.  When the system sleep ends, the device 
-> > > will be resumed but the PM core will still think its state is 
-> > > SUSPENDED.  The subsystem has to tell the PM core that the device is 
-> > > now ACTIVE.  Currently, subsystems do this by calling 
-> > > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
-> > > your scheme this wouldn't work; the pm_runtime_set_active call would 
-> > > fail because the device was !forbidden.
-> > 
-> > Thanks for your information.  For this specific situation, is it
-> > possible to call pm_runtime_resume() or pm_request_resume() for the
-> > device?
-> 
-> No, because the device already is at full power.  The subsystem just
-> needs to tell the PM core that it is.
-> 
-> > > > PM.  Device can always work with full power.
-> > > 
-> > > It can't if the parent is in SUSPEND.  If necessary, the user can write 
-> > > "on" to the parent's power/control attribute first.
-> > 
-> > Is it possible to call pm_runtime_set_active() for the parent if the
-> > parent is disabled and SUSPENDED.
-> 
-> Doing that is possible, but it might not work.  The parent might
-> actually be at low power; calling pm_runtime_set_active wouldn't change
-> the physical power level.  Basically, it's not safe to assume anything
-> about devices that are disabled for runtime PM.
-> 
-> > It appears that there is race condition between this and the
-> > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable sequence
-> > you mentioned ealier.
-> > 
-> > thread 1			thread 2
-> > pm_runtime_disable
-> > pm_runtime_set_active
-> > 				pm_runtime_allow
-> > 				  pm_runtime_set_suspended
-> > pm_runtime_enable
-> 
-> This can't happen in the situation I described earlier because during
-> system sleep transitions, no other user threads are allowed to run.  
-> All of them except the one actually carrying out the transition are
-> frozen.
 
-Thanks for your kind explanation.
+--oJ71EGRlYNjSvfq7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-After talking with you, my feeling is that the disabled state is obscure
-and error-prone.  So I suggest not to use it if possible.  Maybe we can
+On Tue, Nov 13, 2012 at 07:45:07AM -0500, Chris Ball wrote:
+> On Tue, Nov 13 2012, Marek Szyprowski wrote:
+> > Fixed regulators cannot change their voltage, so disable all voltage range
+> > checking for them, otherwise the driver fails to operate with fixed
+> > regulators.
 
- - make changes suggested by Alan to make disabled state better.
- - use Rafael's solution to solve this specific issue, and avoid the
-usage of disabled state here.
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Best Regards,
-Huang Ying
+> Perhaps it's a good idea to mention that the regulator API is changing
+> (being fixed) at the same time, and that's why this patch is necessary.
 
+This should be totally unrelated to any externally visible change in the
+regulator API, if anything I would expect fixes in the API to *improve*
+the ability of clients to work with fixed voltage regulators.  What's
+missing here is some explanation as to what the problem is and how it's
+being fixed.
 
+As I understand it this should really be a workaround for hardware which
+runs cards at out of spec voltages; we have a fixed voltage regulator
+which claims to not support any of the voltages that are in spec (due to
+this being what the hardware does) so if we try to use the voltage
+management stuff in the MMC API it gets upset.  As a workaround if we
+can't change the voltage we just ignore the voltage aspects of the API.
+
+--oJ71EGRlYNjSvfq7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQou6gAAoJELSic+t+oim9T5MP/02aQy+TIolpJeCNOGDIY1wC
+Lvzelv4UVUoF5LEUPyQkXbm5hlbLe0EI2Ctol4Ll3IP++qDWVfi90LUzc/zUonzh
+2h0GwJswhVSmzsDBxvTmKO775oqWNs2LDApJGyNoYQ633eknFQSzlr8xHRT1+C+P
+Zar9Q7WMulOZaP/L+UwNIZWYjoslxQgPICilXhxg1k97gabpj+2/Et1YpQCJg/Kg
+FP9z2CvwXenWk7hYpeKUmHusDyGNoWtAytd5VmQEEWM+8uFe8wucQ7+zxNttTGDx
++wfDEQ5iYHNcVvJPsaVOfG+fhGUDO2qJL+Z4rzLnKdLf2NTcYIwysZZxRZuwU7Fw
+Lc9Y/Y3VBonzqiMfLU3OqiVUZ6SZk5vhU50zw1JuCrjqJWUYaNLW3I8bZyo1hIij
+mIC7kiGeHf+W1eP5ko9R622dwgtoW2rw1uzYIDavUp8ao7uvIjrSP7QkV5a0PWs0
+4ipnG0uujjqB8kWQwaw4TFHH3vM9cV4sSsGFQ07R1rMfSO+mKubCQUAccpmKHsMv
+RF/MusXYGK7xsIcsKi07LtayxP0fZL+PrjNc0SwO0bOdSx/SSVfSqy70vtHeQOOm
+8dPy36OrzHqEJljcia8iMpJYrVUu6Xe8Nh9PQlavkNjlN1OVOBBvPjMVjv3jGSFt
+nnM0mxS2SkXyTxq8fKmX
+=nkFo
+-----END PGP SIGNATURE-----
+
+--oJ71EGRlYNjSvfq7--
