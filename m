@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab2KNWAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:00:39 -0500
-Received: from fieldses.org ([174.143.236.118]:38916 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933112Ab2KNWAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:00:38 -0500
-Date: Wed, 14 Nov 2012 17:00:36 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com
-Subject: Re: [RFC PATCH v2 00/15] NFSd state containerization
-Message-ID: <20121114220036.GD539@fieldses.org>
-References: <20121114152018.4708.63125.stgit@localhost.localdomain>
+	id S1423499Ab2KNWH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:07:28 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45825 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423412Ab2KNWH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 17:07:27 -0500
+Date: Wed, 14 Nov 2012 16:06:47 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Mathias Leblanc <mathias.leblanc@st.com>
+Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>, tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Jean-Luc Blanc <jean-luc.blanc@st.com>
+Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+Message-ID: <20121114220647.GA533@ennui.austin.ibm.com>
+References: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121114152018.4708.63125.stgit@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111422-4834-0000-0000-000000716490
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 06:20:59PM +0300, Stanislav Kinsbursky wrote:
-> This patch set is my first attempt to containerize NFSv4 state - i.e. make it
-> works in networks namespace context.
-> I admit, that some of this new code could be partially rewritten during future
-> NFSd containerization.
-> But the overall idea look more or less correct to me.
-> So, the main things here are:
-> 1) making nfs4_client network namespace aware.
-> 2) Allocating all hashes (except file_hashtbl and reclaim_str_hashtbl) per
-> network namespace context on NFSd start (not init) and destroying on NFSd
-> state shutdown.
-> 3) Allocating of reclaim_str_hashtbl on legacy tracker start and destroying on
-> legacy tracker stop.
-> 4) Moving of client_lru and close_lru lists to per-net data.
-> 5) Making lundromat network namespace aware.
+Hi Mathias,
 
-These look OK and pass my tests.  Jeff, do the revised recovery bits
-look OK?
+On Wed, Nov 14, 2012 at 03:31:42PM +0100, Mathias Leblanc wrote:
+>  * STMicroelectronics version 1.2.0, Copyright (C) 2010
+>  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
+>  * This is free software, and you are welcome to redistribute it
+>  * under certain conditions.
+> 
+> This is the driver for TPM chip from ST Microelectronics.
+> 
+> If you have a TPM security chip from STMicroelectronics working with
+> an I2C, in menuconfig or .config choose the tpm driver on
+> device --> tpm and activate the protocol of your choice before compiling
+> the kernel.
+> The driver will be accessible from within Linux.
+> 
+> Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
 
-Have you done any testing?
+  Getting some build errors here:
 
-It'd be interesting, for example, to know if there are any pynfs that
-fail against the server in a non-init network namespace, but pass
-normally.
+drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘__check_interrupts’:
+drivers/char/tpm/tpm_stm_st33_i2c.c:615:1: warning: return from
+incompatible pointer type [enabled by default]
+drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘__check_power_mgt’:
+drivers/char/tpm/tpm_stm_st33_i2c.c:619:1: warning: return from
+incompatible pointer type [enabled by default]
+drivers/char/tpm/tpm_stm_st33_i2c.c: In function ‘tpm_st33_i2c_probe’:
+drivers/char/tpm/tpm_stm_st33_i2c.c:725:3: warning: suggest parentheses
+around arithmetic in operand of ‘|’ [-Wparentheses]
+drivers/char/tpm/tpm_stm_st33_i2c.c: In function
+‘tpm_st33_i2c_pm_suspend’:
+drivers/char/tpm/tpm_stm_st33_i2c.c:826:3: error: too many arguments to
+function ‘tpm_pm_suspend’
+In file included from drivers/char/tpm/tpm_stm_st33_i2c.h:55:0,
+                 from drivers/char/tpm/tpm_stm_st33_i2c.c:35:
+		 drivers/char/tpm/tpm.h:326:12: note: declared here
+		 drivers/char/tpm/tpm_stm_st33_i2c.c: In function
+		 ‘tpm_st33_i2c_pm_resume’:
+		 drivers/char/tpm/tpm_stm_st33_i2c.c:855:3: error:
+		 implicit declaration of function
+		 ‘tpm_continue_selftest’
+		 [-Werror=implicit-function-declaration]
 
---b.
+[cut]
+> +/*
+> + * _wait_for_interrupt_serirq_timeout
+> + * @param: tpm, the chip description
+> + * @param: timeout, the timeout of the interrupt
+> + * @return: the status of the interruption.
+> + */
+> +static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
+> +						unsigned long timeout)
+> +{
+> +	int status;
+> +	struct i2c_client *client;
+> +	struct st33zp24_platform_data *pin_infos;
+> +
+> +	client = (struct i2c_client *) chip->vendor.iobase;
+> +	pin_infos = client->dev.platform_data;
+> +
+> +	status = wait_for_completion_interruptible_timeout(
+> +					&pin_infos->irq_detection,
+> +						timeout);
 
-> 
-> v2:
-> 1) Rebased on current nfsd-next.
-> 2) Legacy tracker init become clearer.
-> 
-> The following series implements...
-> 
-> ---
-> 
-> Stanislav Kinsbursky (15):
->       nfsd: use service net instead of hard-coded net where possible
->       nfsd: make nfs4_client network namespace dependent
->       nfsd: make reclaim_str_hashtbl allocated per net
->       nfsd: make conf_id_hashtbl allocated per net
->       nfsd: make conf_name_tree per net
->       nfsd: make unconf_id_hashtbl allocated per net
->       nfsd: make unconf_name_tree per net
->       nfsd: make ownerstr_hashtbl allocated per net
->       nfsd: make lockowner_ino_hashtbl allocated per net
->       nfsd: make sessionid_hashtbl allocated per net
->       nfsd: make client_lru list per net
->       nfsd: make close_lru list per net
->       nfsd: use service net instead of hard-coded init_net
->       nfsd: pass nfsd_net instead of net to grace enders
->       nfsd: make laundromat network namespace aware
-> 
-> 
->  fs/nfsd/netns.h        |   43 +++++
->  fs/nfsd/nfs4callback.c |    2 
->  fs/nfsd/nfs4proc.c     |   13 +
->  fs/nfsd/nfs4recover.c  |  102 ++++++++---
->  fs/nfsd/nfs4state.c    |  450 +++++++++++++++++++++++++++---------------------
->  fs/nfsd/state.h        |   17 +-
->  fs/nfsd/xdr4.h         |    2 
->  7 files changed, 389 insertions(+), 240 deletions(-)
-> 
+  status should be a long here.
+
+[cut]
+> +
+> +	if (client == NULL) {
+> +		pr_info("client is NULL. exiting.\n");
+> +		err = -ENODEV;
+> +		goto end;
+> +	}
+> +
+> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+> +		pr_info("client not i2c capable\n");
+> +		err = -ENODEV;
+> +		goto end;
+> +	}
+> +
+> +	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
+> +	if (!chip) {
+> +		pr_info("fail chip\n");
+
+  Please use dev_info() in place of pr_info().
+
+Thanks,
+Kent
+
