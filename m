@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2KNFyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:54:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55299 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756459Ab2KNFvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756483Ab2KNFvL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Nov 2012 00:51:11 -0500
-Message-Id: <20121114053937.358038488@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55257 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756426Ab2KNFvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 00:51:07 -0500
+Message-Id: <20121114053938.731103602@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:58 +0000
+Date: Wed, 14 Nov 2012 05:40:08 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Javier Cardona <javier@cozybit.com>,
-        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 25/82] mac80211: Only process mesh config header on frames that RA_MATCH
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 35/82] floppy: properly handle failure on add_disk loop
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,41 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Javier Cardona <javier@cozybit.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit 555cb715be8ef98b8ec362b23dfc254d432a35b1 upstream.
+commit d60e7ec18c3fb2cbf90969ccd42889eb2d03aef9 upstream.
 
-Doing otherwise is wrong, and may wreak havoc on the mpp tables,
-specially if the frame is encrypted.
+On floppy initialization, if something failed inside the loop we call
+add_disk, there was no cleanup of previous iterations in the error
+handling.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Signed-off-by: Javier Cardona <javier@cozybit.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: we have a large block conditional on
- IEEE80211_RX_RA_MATCH rather than a goto conditional on the opposite,
- so delete the condition]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1895,7 +1895,8 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
- 	    mesh_rmc_check(hdr->addr3, mesh_hdr, rx->sdata))
- 		return RX_DROP_MONITOR;
+ drivers/block/floppy.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4305,7 +4305,7 @@ static int __init floppy_init(void)
  
--	if (!ieee80211_is_data(hdr->frame_control))
-+	if (!ieee80211_is_data(hdr->frame_control) ||
-+	    !(status->rx_flags & IEEE80211_RX_RA_MATCH))
- 		return RX_CONTINUE;
+ 		err = platform_device_register(&floppy_device[drive]);
+ 		if (err)
+-			goto out_flush_work;
++			goto out_remove_drives;
  
- 	if (!mesh_hdr->ttl)
-@@ -1941,7 +1942,7 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
+ 		err = device_create_file(&floppy_device[drive].dev,
+ 					 &dev_attr_cmos);
+@@ -4323,6 +4323,15 @@ static int __init floppy_init(void)
  
- 	mesh_hdr->ttl--;
- 
--	if (status->rx_flags & IEEE80211_RX_RA_MATCH) {
-+	{
- 		if (!mesh_hdr->ttl)
- 			IEEE80211_IFSTA_MESH_CTR_INC(&rx->sdata->u.mesh,
- 						     dropped_frames_ttl);
+ out_unreg_platform_dev:
+ 	platform_device_unregister(&floppy_device[drive]);
++out_remove_drives:
++	while (drive--) {
++		if ((allowed_drive_mask & (1 << drive)) &&
++		    fdc_state[FDC(drive)].version != FDC_NONE) {
++			del_gendisk(disks[drive]);
++			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
++			platform_device_unregister(&floppy_device[drive]);
++		}
++	}
+ out_flush_work:
+ 	flush_work_sync(&floppy_work);
+ 	if (atomic_read(&usage_count))
 
 
