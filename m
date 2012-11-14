@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161124Ab2KNKrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:47:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:26858 "EHLO relay.sw.ru"
+	id S1161132Ab2KNKsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:48:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16157 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932836Ab2KNKrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:47:07 -0500
-Message-ID: <50A37692.1010500@parallels.com>
-Date: Wed, 14 Nov 2012 14:46:42 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into inotify_inode_mark
-References: <20121112101440.665694060@openvz.org> <2105540.yeyMVrW4mH@deuteros> <50A36ED5.4080505@parallels.com> <2092535.8S9EcgmZCZ@deuteros>
-In-Reply-To: <2092535.8S9EcgmZCZ@deuteros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932836Ab2KNKsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 05:48:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,249,1352102400"; 
+   d="asc'?scan'208";a="219435461"
+Message-ID: <1352890119.20481.3.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 074/193] drivers/mtd/devices: remove CONFIG_EXPERIMENTAL
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Richard Weinberger <richard@nod.at>
+Date: Wed, 14 Nov 2012 12:48:39 +0200
+In-Reply-To: <CAGXu5jL6rP=YQfgDhGNhcq4nGLj6Tjzv-XgxQXBTk4EReriySg@mail.gmail.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	 <1351022666-6960-75-git-send-email-keescook@chromium.org>
+	 <1352734564.2262.7.camel@sauron.fi.intel.com>
+	 <CAGXu5jJ2XMB+hhzH0MFY3=tkF+iFY8srbKbvy6RMxdrnb0-FYA@mail.gmail.com>
+	 <1352796571.2262.50.camel@sauron.fi.intel.com>
+	 <CAGXu5jL6rP=YQfgDhGNhcq4nGLj6Tjzv-XgxQXBTk4EReriySg@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-GSCK9CLruIMmCV6Jy1Zq"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 02:38 PM, Tvrtko Ursulin wrote:
-> On Wednesday 14 November 2012 14:13:41 Pavel Emelyanov wrote:
->> On 11/14/2012 02:08 PM, Tvrtko Ursulin wrote:
->>> On Wednesday 14 November 2012 13:58:12 Cyrill Gorcunov wrote:
->>>> On Wed, Nov 14, 2012 at 09:50:55AM +0000, Tvrtko Ursulin wrote:
->>>>>>> You could not use a pointer and then allocate your buffers on the
->>>>>>> check
->>>>>>> point operation, freeing on restore?
->>>>>>
->>>>>> The problem is not allocating the memory itself but rather the time
->>>>>> when
->>>>>> the information needed (ie the dentry) is available. The only moment
->>>>>> when we can use dentry of the target file/directory is at
->>>>>> inotify_new_watch, that's why i need to compose fhandle that early. At
->>>>>> any later point we simply have no dentry to use.
->>>>>
->>>>> But you do not fundamentally need the dentry to restore a watch, right?
->>>>
->>>> dentry only needed to encode the file handle.
->>>>
->>>>> Couldn't you restore, creating a new restore path if needed, using the
->>>>> inode which is pinned anyway while the watch exists?
->>>>
->>>> plain inode is not enough as far as i can tell, iow i don't see the way
->>>> to restore path from inode solely. or there something i miss?
->>>
->>> I don't know, as I said I was not following this at all until now. Just
->>> throwing in ideas.
->>>
->>> I thought, since inotify does not use the path or dentry outside the
->>> system
->>> call at all, perhaps you need a different entry point allowing you to
->>> restore the watch using the inode or something. Assuming life time of
->>> objects and stuff in C&R world would allow you that. Since you don't need
->>> the full path, just something 64 bytes long, I assumed that could be the
->>> case.
->>
->> Well, the kernel already has all the API we need but one -- it shows us
->> _nothing_ about the inode being watched. And we'd appreciate any
->> information about it. Even the ino:dev pair would work. We propose to show
->> the handle because we believe, that such API is better that ino:dev. You
->> can get the handle, call the open_by_handle_at right at once and get much
->> much more information about the inode with any other API (e.g. calling
->> fstat() will give you the ino:dev pair). Having just ino:dev pair at hands
->> is not that flexible.
-> 
-> How much space does a typical file system need to encode a handle? Am I right 
-> that for must it is just a few bytes? (I just glanced at the code so I might 
-> be wrong.) In which case, could the handle buffer be allocated dynamically 
-> depending on the underlying filesystem? Perhaps adding a facility to query a 
-> filesystem about its maximum handle buffer needs? Do you think the saving 
-> would justify this extra work?
 
-Well, the MAX_HANDLE_SZ is taken from NFSv4 and is 128 bytes which is quite
-big for inotify extension indeed. The good news is that this amount of bytes
-seem to be required for the most descriptive fhandle -- with info about parent,
-etc. We don't need such, we can live with shorter handle, people said that
-40 bytes was enough for that.
+--=-GSCK9CLruIMmCV6Jy1Zq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-However, your idea about determining the handle size dynamically seems promising.
-As far as I can see from the code we can call for encode_fh with size equals zero
-and filesystem would report back the amount of bytes it requires for a handle.
+On Tue, 2012-11-13 at 09:58 -0800, Kees Cook wrote:
+> Cool, great. I CCed you on a few of the patches in the series; should
+> I just push this one mtd, or all the ones that you're CCed on?
 
-We can try going this route, what do you think?
+Please, carry all those touching "drivers/mtd" of them in your tree,
+thanks!
 
-> Regards,
-> 
-> Tvrtko
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Thanks,
-Pavel
+--=-GSCK9CLruIMmCV6Jy1Zq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQo3cHAAoJECmIfjd9wqK0P9gP/iuH0j/S/6OuzNHSbwBSX8I7
+vOrFPB43NIGPGDFvAeLM0NclIvKhHR608WZxVoOXV/tQeOwHivVwsHyS8z8f9co7
+AlcmZ6oIa0HFNn9e2yEhIdBsF35xlRmjmV+9XGIhjMRTJXEDaqPWjEsrg1Uji5Ew
+Z7GHcotK5srDscWubqj5Z5kJAwvCH+N57i72c1d2BLGBjU/nlwx1hEaHasFEp2EG
++Ca7qNz7yNn0OsWQcbvkCXIFdZ0N5GR1JCGLtzxUPAcdkQ0erOgfZEXk5LKhSafU
+QFYlfeirT4ROesaviTSXBuNccWs6Ocsh7sBky2rnA+6598oifGk9PTcPdVe740rC
+2Pas3XNN7dnpZ6utcAgYYe+0k28x8SS8hiWreeNfVB3Tf2AbNuF0Z3mIUUpyBGnn
++VQSyEvAm5CaGbb6whC8xG62ACU8GxX+89BBMwQ3kYOtAp0ZCEaHYXuZU6sLk6sS
+5yRaWjQrvZWUHrCYDCQxyp3wDkDbNvG5BTM+V8dYbHdVh0V2FevbcmbJN2PP6kw1
+rLHN2Dss097Y4Ewo/3yrVpF4Ip0fKVT9SBvcv+teWe4KbrYnztiGSuxTfbA3Ujp2
+1y4r4o7UsB6f6TwdXewWxHrg5M1qamu1qNhW8x4o+8f/R6MHQm+K0si655za+Bz9
+mk5+PXTO7uVGzfjVspyb
+=vUGq
+-----END PGP SIGNATURE-----
+
+--=-GSCK9CLruIMmCV6Jy1Zq--
+
