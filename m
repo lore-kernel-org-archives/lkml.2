@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2KNGBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:01:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55139 "EHLO
+	id S1756642Ab2KNGBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:01:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55141 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751723Ab2KNFuk (ORCPT
+	by vger.kernel.org with ESMTP id S1752719Ab2KNFuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:40 -0500
-Message-Id: <20121114053941.459089122@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:39 -0500
+Message-Id: <20121114053941.590830243@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:28 +0000
+Date: Wed, 14 Nov 2012 05:40:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel@quora.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 55/82] ALSA: HDA: Fix digital microphone on CS420x
+        Takashi Iwai <tiwai@suse.de>, Robin Kreis <r.kreis@uni-bremen.de>
+Subject: [ 56/82] ALSA: hda - Force to reset IEC958 status bits for AD codecs
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,59 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel@quora.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 16337e028a6dae9fbdd718c0d42161540a668ff3 upstream.
+commit ae24c3191ba2ab03ec6b4be323e730e00404b4b6 upstream.
 
-Correctly enable the digital microphones with the right bits in the
-right coeffecient registers on Cirrus CS4206/7 codecs. It also
-prevents misconfiguring ADC1/2.
+Several bug reports suggest that the forcibly resetting IEC958 status
+bits is required for AD codecs to get the SPDIF output working
+properly after changing streams.
 
-This fixes the digital mic on the Macbook Pro 10,1/Retina.
+Original fix credit to Javeed Shaikh.
 
-Based-on-patch-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Daniel J Blueman <daniel@quora.org>
+BugLink: https://bugs.launchpad.net/ubuntu/+source/alsa-driver/+bug/359361
+
+Reported-by: Robin Kreis <r.kreis@uni-bremen.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_cirrus.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -93,8 +93,8 @@ enum {
- #define CS420X_VENDOR_NID	0x11
- #define CS_DIG_OUT1_PIN_NID	0x10
- #define CS_DIG_OUT2_PIN_NID	0x15
--#define CS_DMIC1_PIN_NID	0x12
--#define CS_DMIC2_PIN_NID	0x0e
-+#define CS_DMIC1_PIN_NID	0x0e
-+#define CS_DMIC2_PIN_NID	0x12
- 
- /* coef indices */
- #define IDX_SPDIF_STAT		0x0000
-@@ -1088,14 +1088,18 @@ static void init_input(struct hda_codec
- 			cs_automic(codec);
- 
- 		coef = 0x000a; /* ADC1/2 - Digital and Analog Soft Ramp */
-+		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
-+
-+		coef = cs_vendor_coef_get(codec, IDX_BEEP_CFG);
- 		if (is_active_pin(codec, CS_DMIC2_PIN_NID))
--			coef |= 0x0500; /* DMIC2 2 chan on, GPIO1 off */
-+			coef |= 1 << 4; /* DMIC2 2 chan on, GPIO1 off */
- 		if (is_active_pin(codec, CS_DMIC1_PIN_NID))
--			coef |= 0x1800; /* DMIC1 2 chan on, GPIO0 off
-+			coef |= 1 << 3; /* DMIC1 2 chan on, GPIO0 off
- 					 * No effect if SPDIF_OUT2 is
- 					 * selected in IDX_SPDIF_CTL.
- 					*/
--		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
-+
-+		cs_vendor_coef_set(codec, IDX_BEEP_CFG, coef);
- 	}
- }
- 
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index cdd43ea..1eeba73 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -545,6 +545,7 @@ static int ad198x_build_pcms(struct hda_codec *codec)
+ 	if (spec->multiout.dig_out_nid) {
+ 		info++;
+ 		codec->num_pcms++;
++		codec->spdif_status_reset = 1;
+ 		info->name = "AD198x Digital";
+ 		info->pcm_type = HDA_PCM_TYPE_SPDIF;
+ 		info->stream[SNDRV_PCM_STREAM_PLAYBACK] = ad198x_pcm_digital_playback;
 
 
