@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab2KNFuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55030 "EHLO
+	id S1756273Ab2KNFue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55028 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754251Ab2KNFuV (ORCPT
+	by vger.kernel.org with ESMTP id S1754197Ab2KNFuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:50:21 -0500
-Message-Id: <20121114053944.309397179@decadent.org.uk>
+Message-Id: <20121114053944.453037235@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:49 +0000
+Date: Wed, 14 Nov 2012 05:40:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 76/82] ipv6: send unsolicited neighbour advertisements to  all-nodes
+        Tyler Hicks <tyhicks@canonical.com>,
+        Stefan Beller <stefanbeller@googlemail.com>,
+        John Johansen <john.johansen@canonical.com>
+Subject: [ 77/82] eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,41 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
+commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
 
-As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
-unsolicited neighbour advertisements should be sent to the all-nodes
-multicast address.
+When the eCryptfs mount options do not include '-o acl', but the lower
+filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
+flipped on in the eCryptfs super block flags. This flag is what the VFS
+checks in do_last() when deciding if the current umask should be applied
+to a newly created inode's mode or not. When a default POSIX ACL mask is
+set on a directory, the current umask is incorrectly applied to new
+inodes created in the directory. This patch ignores the MS_POSIXACL flag
+passed into ecryptfs_mount() and sets the flag on the eCryptfs super
+block depending on the flag's presence on the lower super block.
 
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Additionally, it is incorrect to allow a writeable eCryptfs mount on top
+of a read-only lower mount. This missing check did not allow writes to
+the read-only lower mount because permissions checks are still performed
+on the lower filesystem's objects but it is best to simply not allow a
+rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
+mount is valid and still allowed.
+
+https://launchpad.net/bugs/1009207
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Stefan Beller <stefanbeller@googlemail.com>
+Cc: John Johansen <john.johansen@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ndisc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/ecryptfs/main.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-index 0cb78d7..9ffc37f 100644
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -606,7 +606,7 @@ static void ndisc_send_unsol_na(struct net_device *dev)
- {
- 	struct inet6_dev *idev;
- 	struct inet6_ifaddr *ifa;
--	struct in6_addr mcaddr;
-+	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 6895493..df217dc 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -505,7 +505,6 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 		goto out;
+ 	}
  
- 	idev = in6_dev_get(dev);
- 	if (!idev)
-@@ -614,7 +614,6 @@ static void ndisc_send_unsol_na(struct net_device *dev)
+-	s->s_flags = flags;
+ 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
+ 	if (rc)
+ 		goto out1;
+@@ -541,6 +540,15 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 	}
  
- 	read_lock_bh(&idev->lock);
- 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
--		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
- 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
- 			      /*router=*/ !!idev->cnf.forwarding,
- 			      /*solicited=*/ false, /*override=*/ true,
+ 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
++
++	/**
++	 * Set the POSIX ACL flag based on whether they're enabled in the lower
++	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
++	 * Allow a ro eCryptfs mount even when the lower mount is rw.
++	 */
++	s->s_flags = flags & ~MS_POSIXACL;
++	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
++
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
 
 
