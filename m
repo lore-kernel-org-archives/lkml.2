@@ -1,78 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422772Ab2KNMcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:32:52 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:3257 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422701Ab2KNMcu convert rfc822-to-8bit (ORCPT
+	id S1422768Ab2KNMgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:36:06 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50635 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422709Ab2KNMgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:32:50 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Dmitry Kravkov" <dmitry@broadcom.com>
-To: "Joseph Gasparakis" <joseph.gasparakis@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Peter P Waskiewicz Jr" <peter.p.waskiewicz.jr@intel.com>
-Subject: RE: [PATCH v2 3/3] ipgre: capture inner headers during
- encapsulation
-Thread-Topic: [PATCH v2 3/3] ipgre: capture inner headers during
- encapsulation
-Thread-Index: AQHNwIFfjS07kFqZdUGeKYYT2Lp9RZfpRtsQ
-Date: Wed, 14 Nov 2012 12:32:39 +0000
-Message-ID: <504C9EFCA2D0054393414C9CB605C37F1BF5CF1C@SJEXCHMB06.corp.ad.broadcom.com>
-References: <1352689450-4092-1-git-send-email-joseph.gasparakis@intel.com>
-In-Reply-To: <1352689450-4092-1-git-send-email-joseph.gasparakis@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
-MIME-Version: 1.0
-X-WSS-ID: 7CBD51711QK2429103-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Nov 2012 07:36:04 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH] mmc: Standardise capability type
+Date: Wed, 14 Nov 2012 12:35:51 +0000
+Message-Id: <1352896551-17948-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
-> On Behalf Of Joseph Gasparakis
-> Sent: Monday, November 12, 2012 5:04 AM
-> To: davem@davemloft.net; shemminger@vyatta.com; chrisw@sous-sol.org
-> Cc: Joseph Gasparakis; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Peter P Waskiewicz Jr
-> Subject: [PATCH v2 3/3] ipgre: capture inner headers during encapsulation
-> 
-> Populating the inner header pointers of skb for ipgre
-> This patch has been compile-tested only.
-> 
-> v2 Makes sure that checksumming does not take place if the offload flag is set in
-> the skb's netdev features
-> 
-> Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> ---
->  net/ipv4/ip_gre.c | 15 ++++++++++++++-
->  1 file changed, 14 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-> index 7240f8e..e35ed52 100644
-> --- a/net/ipv4/ip_gre.c
-> +++ b/net/ipv4/ip_gre.c
-> @@ -766,8 +766,10 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff
-> *skb, struct net_device *dev
->  	int    gre_hlen;
->  	__be32 dst;
->  	int    mtu;
-> +	unsigned int offset;
-> 
-> -	if (skb->ip_summed == CHECKSUM_PARTIAL &&
-> +	if (!(skb->dev->features & NETIF_F_HW_CSUM_ENC_BIT) &&
+There are discrepancies with regards to how MMC capabilities
+are carried throughout the subsystem. Let's standardise them
+to elevate any confusion.
 
- You should test for NETIF_F_HW_CSUM_ENC and not for NETIF_F_HW_CSUM_ENC_BIT
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mmc/core/mmc.c                  |    2 +-
+ include/linux/mmc/dw_mmc.h              |    4 ++--
+ include/linux/mmc/host.h                |    4 ++--
+ include/linux/mmc/sdhci.h               |    4 ++--
+ include/linux/platform_data/pxa_sdhci.h |    4 ++--
+ 5 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 7cc4638..8c2fa80 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -239,7 +239,7 @@ static void mmc_select_card_type(struct mmc_card *card)
+ {
+ 	struct mmc_host *host = card->host;
+ 	u8 card_type = card->ext_csd.raw_card_type & EXT_CSD_CARD_TYPE_MASK;
+-	unsigned int caps = host->caps, caps2 = host->caps2;
++	u32 caps = host->caps, caps2 = host->caps2;
+ 	unsigned int hs_max_dtr = 0;
+ 
+ 	if (card_type & EXT_CSD_CARD_TYPE_26)
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 7c6a113..f825379 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -229,8 +229,8 @@ struct dw_mci_board {
+ 	u32 quirks; /* Workaround / Quirk flags */
+ 	unsigned int bus_hz; /* Clock speed at the cclk_in pad */
+ 
+-	unsigned int caps;	/* Capabilities */
+-	unsigned int caps2;	/* More capabilities */
++	u32 caps;	/* Capabilities */
++	u32 caps2;	/* More capabilities */
+ 	/*
+ 	 * Override fifo depth. If 0, autodetect it from the FIFOTH register,
+ 	 * but note that this may not be reliable after a bootloader has used
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 7abb0e1..37442b2 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -211,7 +211,7 @@ struct mmc_host {
+ #define MMC_VDD_34_35		0x00400000	/* VDD voltage 3.4 ~ 3.5 */
+ #define MMC_VDD_35_36		0x00800000	/* VDD voltage 3.5 ~ 3.6 */
+ 
+-	unsigned long		caps;		/* Host capabilities */
++	u32			caps;		/* Host capabilities */
+ 
+ #define MMC_CAP_4_BIT_DATA	(1 << 0)	/* Can the host do 4 bit transfers */
+ #define MMC_CAP_MMC_HIGHSPEED	(1 << 1)	/* Can do MMC high-speed timing */
+@@ -241,7 +241,7 @@ struct mmc_host {
+ #define MMC_CAP_CMD23		(1 << 30)	/* CMD23 supported. */
+ #define MMC_CAP_HW_RESET	(1 << 31)	/* Hardware reset */
+ 
+-	unsigned int		caps2;		/* More host capabilities */
++	u32			caps2;		/* More host capabilities */
+ 
+ #define MMC_CAP2_BOOTPART_NOACC	(1 << 0)	/* Boot partition no access */
+ #define MMC_CAP2_CACHE_CTRL	(1 << 1)	/* Allow cache control */
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index fa8529a..c76b4a3 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -157,8 +157,8 @@ struct sdhci_host {
+ 
+ 	struct timer_list timer;	/* Timer for timeouts */
+ 
+-	unsigned int caps;	/* Alternative CAPABILITY_0 */
+-	unsigned int caps1;	/* Alternative CAPABILITY_1 */
++	u32 caps;		/* Alternative CAPABILITY_0 */
++	u32 caps1;		/* Alternative CAPABILITY_1 */
+ 
+ 	unsigned int            ocr_avail_sdio;	/* OCR bit masks */
+ 	unsigned int            ocr_avail_sd;
+diff --git a/include/linux/platform_data/pxa_sdhci.h b/include/linux/platform_data/pxa_sdhci.h
+index 59acd98..0d75008 100644
+--- a/include/linux/platform_data/pxa_sdhci.h
++++ b/include/linux/platform_data/pxa_sdhci.h
+@@ -48,8 +48,8 @@ struct sdhci_pxa_platdata {
+ 	unsigned int	ext_cd_gpio;
+ 	bool		ext_cd_gpio_invert;
+ 	unsigned int	max_speed;
+-	unsigned int	host_caps;
+-	unsigned int	host_caps2;
++	u32		host_caps;
++	u32		host_caps2;
+ 	unsigned int	quirks;
+ 	unsigned int	pm_caps;
+ };
+-- 
+1.7.9.5
 
