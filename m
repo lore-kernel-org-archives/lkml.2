@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab2KNReo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:34:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50054 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932978Ab2KNRem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:34:42 -0500
-Date: Wed, 14 Nov 2012 09:34:23 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-5d6d578c170bb280db5d4779f666e456f4f82ec5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jbeulich@suse.com, matt.fleming@intel.com, JBeulich@suse.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@suse.com, matt.fleming@intel.com, JBeulich@suse.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <509A9E6002000078000A7079@nat28.tlf.novell.com>
-References: <509A9E6002000078000A7079@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/efi] x86, efi:
-  Check table header length in efi_bgrt_init()
-Git-Commit-ID: 5d6d578c170bb280db5d4779f666e456f4f82ec5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933039Ab2KNRgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:36:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932978Ab2KNRgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 12:36:54 -0500
+Date: Wed, 14 Nov 2012 18:37:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/9] uprobes: flush cache after xol write
+Message-ID: <20121114173717.GA19466@redhat.com>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-6-git-send-email-rabin@rab.in> <20121015165756.GA11737@redhat.com> <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com> <20121025145839.GB26929@redhat.com> <20121026055239.GA4862@in.ibm.com> <20121026163951.GA17742@redhat.com> <20121029053522.GC3400@in.ibm.com> <20121103163301.GA9496@redhat.com> <20121104142927.GA4087@in.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 09:34:29 -0800 (PST)
+In-Reply-To: <20121104142927.GA4087@in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5d6d578c170bb280db5d4779f666e456f4f82ec5
-Gitweb:     http://git.kernel.org/tip/5d6d578c170bb280db5d4779f666e456f4f82ec5
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Wed, 7 Nov 2012 16:46:08 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Nov 2012 08:49:34 -0800
+On 11/04, Ananth N Mavinakayanahalli wrote:
+>
+> On Sat, Nov 03, 2012 at 05:33:01PM +0100, Oleg Nesterov wrote:
+> >
+> > [PATCH] uprobes: flush cache after xol write
+> >
+> > From: Rabin Vincent <rabin@rab.in>
+> >
+> > Flush the cache so that the instructions written to the XOL area are
+> > visible.
+> >
+> > Signed-off-by: Rabin Vincent <rabin@rab.in>
+>
+> Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-x86, efi: Check table header length in efi_bgrt_init()
+Thanks Ananth.
 
-Header length should be validated for all ACPI tables before accessing
-any non-header field.
+I assume that Srikar and Rabin agree, applied as 65b6ecc038
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/509A9E6002000078000A7079@nat28.tlf.novell.com
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/efi/efi-bgrt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > --- x/kernel/events/uprobes.c
+> > +++ x/kernel/events/uprobes.c
+> > @@ -1199,6 +1199,11 @@ static unsigned long xol_get_insn_slot(s
+> >  	vaddr = kmap_atomic(area->page);
+> >  	memcpy(vaddr + offset, uprobe->arch.insn, MAX_UINSN_BYTES);
+> >  	kunmap_atomic(vaddr);
+> > +	/*
+> > +	 * We probably need flush_icache_user_range() but it needs vma.
+> > +	 * This should work on supported architectures too.
+> > +	 */
+> > +	flush_dcache_page(area->page);
+> >
+> >  	return current->utask->xol_vaddr;
+> >  }
 
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index f6a0c1b..d9c1b95 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -39,6 +39,8 @@ void efi_bgrt_init(void)
- 	if (ACPI_FAILURE(status))
- 		return;
- 
-+	if (bgrt_tab->header.length < sizeof(*bgrt_tab))
-+		return;
- 	if (bgrt_tab->version != 1)
- 		return;
- 	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
