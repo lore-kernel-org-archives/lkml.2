@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2KNFu1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55034 "EHLO
+	id S1756238Ab2KNGDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:03:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55078 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753023Ab2KNFuW (ORCPT
+	by vger.kernel.org with ESMTP id S1751881Ab2KNFu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:22 -0500
-Message-Id: <20121114053944.174312334@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:26 -0500
+Message-Id: <20121114053942.803321723@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:48 +0000
+Date: Wed, 14 Nov 2012 05:40:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Leblond <eric@regit.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 75/82] af-packet: fix oops when socket is not present
+        Takamori Yamaguchi <takamori.yamaguchi@jp.sony.com>,
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 65/82] mm: bugfix: set current->reclaim_state to NULL while returning from
+ kswapd()
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,48 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Leblond <eric@regit.org>
+From: Takamori Yamaguchi <takamori.yamaguchi@jp.sony.com>
 
-[ Upstream commit a3d744e995d2b936c500585ae39d99ee251c89b4 ]
+commit b0a8cc58e6b9aaae3045752059e5e6260c0b94bc upstream.
 
-Due to a NULL dereference, the following patch is causing oops
-in normal trafic condition:
+In kswapd(), set current->reclaim_state to NULL before returning, as
+current->reclaim_state holds reference to variable on kswapd()'s stack.
 
-commit c0de08d04215031d68fa13af36f347a6cfa252ca
-Author: Eric Leblond <eric@regit.org>
-Date:   Thu Aug 16 22:02:58 2012 +0000
+In rare cases, while returning from kswapd() during memory offlining,
+__free_slab() and freepages() can access the dangling pointer of
+current->reclaim_state.
 
-    af_packet: don't emit packet on orig fanout group
-
-This buggy patch was a feature fix and has reached most stable
-branches.
-
-When skb->sk is NULL and when packet fanout is used, there is a
-crash in match_fanout_group where skb->sk is accessed.
-This patch fixes the issue by returning false as soon as the
-socket is NULL: this correspond to the wanted behavior because
-the kernel as to resend the skb to all the listening socket in
-this case.
-
-Signed-off-by: Eric Leblond <eric@regit.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takamori Yamaguchi <takamori.yamaguchi@jp.sony.com>
+Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index f500a69..480be72 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1633,7 +1633,7 @@ static inline int deliver_skb(struct sk_buff *skb,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2624edc..8b055e9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3017,6 +3017,8 @@ static int kswapd(void *p)
+ 						&balanced_classzone_idx);
+ 		}
+ 	}
++
++	current->reclaim_state = NULL;
+ 	return 0;
+ }
  
- static inline bool skb_loop_sk(struct packet_type *ptype, struct sk_buff *skb)
- {
--	if (ptype->af_packet_priv == NULL)
-+	if (!ptype->af_packet_priv || !skb->sk)
- 		return false;
- 
- 	if (ptype->id_match)
 
 
