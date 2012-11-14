@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2KNFv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:51:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55326 "EHLO
+	id S932663Ab2KNFv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:51:28 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55333 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932395Ab2KNFvS (ORCPT
+	by vger.kernel.org with ESMTP id S932432Ab2KNFvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:18 -0500
-Message-Id: <20121114053937.222484592@decadent.org.uk>
+	Wed, 14 Nov 2012 00:51:19 -0500
+Message-Id: <20121114053936.662345761@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:57 +0000
+Date: Wed, 14 Nov 2012 05:39:53 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bo Shen <voice.shen@atmel.com>, Jean Delvare <khali@linux-fr.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [ 24/82] ARM: at91/i2c: change id to let i2c-gpio work
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>, Peter Ross <pross@xvid.org>
+Subject: [ 20/82] drm/i915: fixup infoframe support for sdvo
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,97 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 7840487cd6298f9f931103b558290d8d98d41c49 upstream.
+commit 81014b9d0b55fb0b48f26cd2a943359750d532db upstream.
 
-The i2c core driver will turn the platform device ID to busnum
-When using platfrom device ID as -1, it means dynamically assigned
-the busnum. When writing code, we need to make sure the busnum,
-and call i2c_register_board_info(int busnum, ...) to register device
-if using -1, we do not know the value of busnum
+At least the worst offenders:
+- SDVO specifies that the encoder should compute the ecc. Testing also
+  shows that we must not send the ecc field, so copy the dip_infoframe
+  struct to a temporay place and avoid the ecc field. This way the avi
+  infoframe is exactly 17 bytes long, which agrees with what the spec
+  mandates as a minimal storage capacity (with the ecc field it would
+  be 18 bytes).
+- Only 17 when sending the avi infoframe. The SDVO spec explicitly
+  says that sending more data than what the device announces results
+  in undefined behaviour.
+- Add __attribute__((packed)) to the avi and spd infoframes, for
+  otherwise they're wrongly aligned. Noticed because the avi infoframe
+  ended up being 18 bytes large instead of 17. We haven't noticed this
+  yet because we don't use the uint16_t fields yet (which are the only
+  ones that would be wrongly aligned).
 
-In order to solve this issue, set the platform device ID as a fix number
-Here using 0 to match the busnum used in i2c_regsiter_board_info()
+This regression has been introduce by
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+3c17fe4b8f40a112a85758a9ab2aebf772bdd647 is the first bad commit
+commit 3c17fe4b8f40a112a85758a9ab2aebf772bdd647
+Author: David Härdeman <david@hardeman.nu>
+Date:   Fri Sep 24 21:44:32 2010 +0200
+
+    i915: enable AVI infoframe for intel_hdmi.c [v4]
+
+Patch tested on my g33 with a sdvo hdmi adaptor.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
+Tested-by: Peter Ross <pross@xvid.org> (G35 SDVO-HDMI)
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/intel_drv.h  |    4 ++--
+ drivers/gpu/drm/i915/intel_sdvo.c |   11 +++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-index a563189..7cd8053 100644
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -479,7 +479,7 @@ static struct i2c_gpio_platform_data pdata = {
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index d51f27f..3e09188 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -280,12 +280,12 @@ struct dip_infoframe {
+ 			uint16_t bottom_bar_start;
+ 			uint16_t left_bar_end;
+ 			uint16_t right_bar_start;
+-		} avi;
++		} __attribute__ ((packed)) avi;
+ 		struct {
+ 			uint8_t vn[8];
+ 			uint8_t pd[16];
+ 			uint8_t sdi;
+-		} spd;
++		} __attribute__ ((packed)) spd;
+ 		uint8_t payload[27];
+ 	} __attribute__ ((packed)) body;
+ } __attribute__((packed));
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 7d3f238..125228e 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -887,17 +887,24 @@ static bool intel_sdvo_set_avi_infoframe(struct intel_sdvo *intel_sdvo)
+ 	};
+ 	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
+ 	uint8_t set_buf_index[2] = { 1, 0 };
+-	uint64_t *data = (uint64_t *)&avi_if;
++	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
++	uint64_t *data = (uint64_t *)sdvo_data;
+ 	unsigned i;
  
- static struct platform_device at91rm9200_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ 	intel_dip_infoframe_csum(&avi_if);
  
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index a76b868..44385a4 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -389,7 +389,7 @@ static struct i2c_gpio_platform_data pdata = {
++	/* sdvo spec says that the ecc is handled by the hw, and it looks like
++	 * we must not send the ecc field, either. */
++	memcpy(sdvo_data, &avi_if, 3);
++	sdvo_data[3] = avi_if.checksum;
++	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
++
+ 	if (!intel_sdvo_set_value(intel_sdvo,
+ 				  SDVO_CMD_SET_HBUF_INDEX,
+ 				  set_buf_index, 2))
+ 		return false;
  
- static struct platform_device at91sam9260_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
-diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-index 9752f17..0256a00 100644
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -285,7 +285,7 @@ static struct i2c_gpio_platform_data pdata = {
- 
- static struct platform_device at91sam9261_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index 8dde220..23b6384 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -567,7 +567,7 @@ static struct i2c_gpio_platform_data pdata = {
- 
- static struct platform_device at91sam9263_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index d6ca054..3d2c81d 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -314,7 +314,7 @@ static struct i2c_gpio_platform_data pdata = {
- 
- static struct platform_device at91sam9rl_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
+-	for (i = 0; i < sizeof(avi_if); i += 8) {
++	for (i = 0; i < sizeof(sdvo_data); i += 8) {
+ 		if (!intel_sdvo_set_value(intel_sdvo,
+ 					  SDVO_CMD_SET_HBUF_DATA,
+ 					  data, 8))
 
 
