@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423261Ab2KNS5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:57:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18525 "EHLO
+	id S1423298Ab2KNS5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:57:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18591 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423130Ab2KNS5g (ORCPT
+	with ESMTP id S1423130Ab2KNS5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 13:57:36 -0500
+	Wed, 14 Nov 2012 13:57:43 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
@@ -14,166 +14,285 @@ To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         akpm@linux-foundation.org, mgorman@suse.de
 Cc: fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-Date: Wed, 14 Nov 2012 13:57:06 -0500
-Message-Id: <1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 4/8] cleancache: Make cleancache_init use a pointer for the ops
+Date: Wed, 14 Nov 2012 13:57:08 -0500
+Message-Id: <1352919432-9699-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
 References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+Instead of using a backend_registered to determine whether
+a backend is enabled. This allows us to remove the
+backend_register check and just do 'if (cleancache_ops)'
 
-With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-built/loaded as modules rather than built-in and enabled by a boot parameter,
-this patch provides "lazy initialization", allowing backends to register to
-frontswap even after swapon was run. Before a backend registers all calls
-to init are recorded and the creation of tmem_pools delayed until a backend
-registers or until a frontswap put is attempted.
-
-Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-Signed-off-by: Andor Daam <andor.daam@googlemail.com>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v1: Fixes per Seth Jennings suggestions]
-[v2: Removed FRONTSWAP_HAS_.. ]
-[v3: Fix up per Bob Liu <lliubbo@gmail.com> recommendations]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- mm/frontswap.c |   66 +++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 56 insertions(+), 10 deletions(-)
+ drivers/staging/ramster/zcache-main.c |    8 +++---
+ drivers/staging/zcache/zcache-main.c  |    8 +++---
+ drivers/xen/tmem.c                    |    6 ++--
+ include/linux/cleancache.h            |    2 +-
+ mm/cleancache.c                       |   43 +++++++++++++++-----------------
+ 5 files changed, 32 insertions(+), 35 deletions(-)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 2890e67..ba58157 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
- static inline void inc_frontswap_failed_stores(void) { }
- static inline void inc_frontswap_invalidates(void) { }
- #endif
-+
-+/*
-+ * When no backend is registered all calls to init are registered and
-+ * remembered but fail to create tmem_pools. When a backend registers with
-+ * frontswap the previous calls to init are executed to create tmem_pools
-+ * and set the respective poolids.
-+ * While no backend is registered all "puts", "gets" and "flushes" are
-+ * ignored or fail.
-+ */
-+static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
-+static bool backend_registered __read_mostly;
-+
- /*
-  * Register operations for frontswap, returning previous thus allowing
-  * detection of multiple backends and possible nesting.
-@@ -87,9 +99,19 @@ static inline void inc_frontswap_invalidates(void) { }
- struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
- {
- 	struct frontswap_ops old = frontswap_ops;
-+	int i;
+diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+index 6c8959d..ed99170 100644
+--- a/drivers/staging/ramster/zcache-main.c
++++ b/drivers/staging/ramster/zcache-main.c
+@@ -1495,9 +1495,9 @@ static struct cleancache_ops zcache_cleancache_ops = {
+ 	.init_fs = zcache_cleancache_init_fs
+ };
  
- 	frontswap_ops = *ops;
- 	frontswap_enabled = true;
-+
-+	for (i = 0; i < MAX_SWAPFILES; i++) {
-+		if (test_and_clear_bit(i, need_init))
-+			(*frontswap_ops.init)(i);
-+	}
-+	/* We MUST have backend_registered called _after_ the frontswap_init's
-+ 	 * have been called. Otherwise __frontswap_store might fail. */
-+	barrier();
-+	backend_registered = true;
+-struct cleancache_ops zcache_cleancache_register_ops(void)
++struct cleancache_ops *zcache_cleancache_register_ops(void)
+ {
+-	struct cleancache_ops old_ops =
++	struct cleancache_ops *old_ops =
+ 		cleancache_register_ops(&zcache_cleancache_ops);
+ 
+ 	return old_ops;
+@@ -1781,7 +1781,7 @@ static int __init zcache_init(void)
+ 	}
+ 	zbud_init();
+ 	if (zcache_enabled && !disable_cleancache) {
+-		struct cleancache_ops old_ops;
++		struct cleancache_ops *old_ops;
+ 
+ 		register_shrinker(&zcache_shrinker);
+ 		old_ops = zcache_cleancache_register_ops();
+@@ -1791,7 +1791,7 @@ static int __init zcache_init(void)
+ 		pr_info("%s: cleancache: ignorenonactive = %d\n",
+ 			namestr, !disable_cleancache_ignore_nonactive);
+ #endif
+-		if (old_ops.init_fs != NULL)
++		if (old_ops)
+ 			pr_warn("%s: cleancache_ops overridden\n", namestr);
+ 	}
+ 	if (zcache_enabled && !disable_frontswap) {
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 3db38cb..f9ab874 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1811,9 +1811,9 @@ static struct cleancache_ops zcache_cleancache_ops = {
+ 	.init_fs = zcache_cleancache_init_fs
+ };
+ 
+-struct cleancache_ops zcache_cleancache_register_ops(void)
++struct cleancache_ops *zcache_cleancache_register_ops(void)
+ {
+-	struct cleancache_ops old_ops =
++	struct cleancache_ops *old_ops =
+ 		cleancache_register_ops(&zcache_cleancache_ops);
+ 
+ 	return old_ops;
+@@ -2048,14 +2048,14 @@ static int __init zcache_init(void)
+ 
+ #ifdef CONFIG_CLEANCACHE
+ 	if (zcache_enabled && use_cleancache) {
+-		struct cleancache_ops old_ops;
++		struct cleancache_ops *old_ops;
+ 
+ 		zbud_init();
+ 		register_shrinker(&zcache_shrinker);
+ 		old_ops = zcache_cleancache_register_ops();
+ 		pr_info("zcache: cleancache enabled using kernel "
+ 			"transcendent memory and compression buddies\n");
+-		if (old_ops.init_fs != NULL)
++		if (old_ops)
+ 			pr_warning("zcache: cleancache_ops overridden");
+ 	}
+ #endif
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 4b02c07..15e776c 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -236,7 +236,7 @@ static int __init no_cleancache(char *s)
+ }
+ __setup("nocleancache", no_cleancache);
+ 
+-static struct cleancache_ops __initdata tmem_cleancache_ops = {
++static struct cleancache_ops tmem_cleancache_ops = {
+ 	.put_page = tmem_cleancache_put_page,
+ 	.get_page = tmem_cleancache_get_page,
+ 	.invalidate_page = tmem_cleancache_flush_page,
+@@ -392,9 +392,9 @@ static int __init xen_tmem_init(void)
+ 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
+ 	if (tmem_enabled && use_cleancache) {
+ 		char *s = "";
+-		struct cleancache_ops old_ops =
++		struct cleancache_ops *old_ops =
+ 			cleancache_register_ops(&tmem_cleancache_ops);
+-		if (old_ops.init_fs != NULL)
++		if (old_ops)
+ 			s = " (WARNING: cleancache_ops overridden)";
+ 		printk(KERN_INFO "cleancache enabled, RAM provided by "
+ 				 "Xen Transcendent Memory%s\n", s);
+diff --git a/include/linux/cleancache.h b/include/linux/cleancache.h
+index 42e55de..3af5ea8 100644
+--- a/include/linux/cleancache.h
++++ b/include/linux/cleancache.h
+@@ -33,7 +33,7 @@ struct cleancache_ops {
+ 	void (*invalidate_fs)(int);
+ };
+ 
+-extern struct cleancache_ops
++extern struct cleancache_ops *
+ 	cleancache_register_ops(struct cleancache_ops *ops);
+ extern void __cleancache_init_fs(struct super_block *);
+ extern void __cleancache_init_shared_fs(char *, struct super_block *);
+diff --git a/mm/cleancache.c b/mm/cleancache.c
+index 318a0ad..95f6618 100644
+--- a/mm/cleancache.c
++++ b/mm/cleancache.c
+@@ -32,7 +32,7 @@ EXPORT_SYMBOL(cleancache_enabled);
+  * cleancache_ops is set by cleancache_ops_register to contain the pointers
+  * to the cleancache "backend" implementation functions.
+  */
+-static struct cleancache_ops cleancache_ops __read_mostly;
++static struct cleancache_ops *cleancache_ops __read_mostly;
+ 
+ /*
+  * Counters available via /sys/kernel/debug/frontswap (if debugfs is
+@@ -63,27 +63,24 @@ static int fs_poolid_map[MAX_INITIALIZABLE_FS];
+ static int shared_fs_poolid_map[MAX_INITIALIZABLE_FS];
+ 
+ static char *uuids[MAX_INITIALIZABLE_FS];
+-static bool __read_mostly backend_registered;
+ 
+ /*
+  * register operations for cleancache, returning previous thus allowing
+  * detection of multiple backends and possible nesting
+  */
+-struct cleancache_ops cleancache_register_ops(struct cleancache_ops *ops)
++struct cleancache_ops *cleancache_register_ops(struct cleancache_ops *ops)
+ {
+-	struct cleancache_ops old = cleancache_ops;
++	struct cleancache_ops *old = cleancache_ops;
+ 	int i;
+ 
+-	cleancache_ops = *ops;
+-
+-	backend_registered = true;
+ 	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+ 		if (fs_poolid_map[i] == FS_NO_BACKEND)
+-			fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
++			fs_poolid_map[i] = ops->init_fs(PAGE_SIZE);
+ 		if (shared_fs_poolid_map[i] == FS_NO_BACKEND)
+-			shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
++			shared_fs_poolid_map[i] = ops->init_shared_fs
+ 					(uuids[i], PAGE_SIZE);
+ 	}
++	cleancache_ops = ops;
  	return old;
  }
- EXPORT_SYMBOL(frontswap_register_ops);
-@@ -119,10 +141,17 @@ void __frontswap_init(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
+ EXPORT_SYMBOL(cleancache_register_ops);
+@@ -96,8 +93,8 @@ void __cleancache_init_fs(struct super_block *sb)
+ 	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+ 		if (fs_poolid_map[i] == FS_UNKNOWN) {
+ 			sb->cleancache_poolid = i + FAKE_FS_POOLID_OFFSET;
+-			if (backend_registered)
+-				fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
++			if (cleancache_ops)
++				fs_poolid_map[i] = cleancache_ops->init_fs(PAGE_SIZE);
+ 			else
+ 				fs_poolid_map[i] = FS_NO_BACKEND;
+ 			break;
+@@ -115,8 +112,8 @@ void __cleancache_init_shared_fs(char *uuid, struct super_block *sb)
+ 		if (shared_fs_poolid_map[i] == FS_UNKNOWN) {
+ 			sb->cleancache_poolid = i + FAKE_SHARED_FS_POOLID_OFFSET;
+ 			uuids[i] = uuid;
+-			if (backend_registered)
+-				shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
++			if (cleancache_ops)
++				shared_fs_poolid_map[i] = cleancache_ops->init_shared_fs
+ 						(uuid, PAGE_SIZE);
+ 			else
+ 				shared_fs_poolid_map[i] = FS_NO_BACKEND;
+@@ -178,7 +175,7 @@ int __cleancache_get_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
  
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.init(type);
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.init)(type);
-+	}
-+	else {
-+		BUG_ON(type > MAX_SWAPFILES);
-+		set_bit(type, need_init);
-+	}
-+
+-	if (!backend_registered) {
++	if (!cleancache_ops) {
+ 		cleancache_failed_gets++;
+ 		goto out;
+ 	}
+@@ -193,7 +190,7 @@ int __cleancache_get_page(struct page *page)
+ 		goto out;
+ 
+ 	if (pool_id >= 0)
+-		ret = (*cleancache_ops.get_page)(pool_id,
++		ret = cleancache_ops->get_page(pool_id,
+ 				key, page->index, page);
+ 	if (ret == 0)
+ 		cleancache_succ_gets++;
+@@ -216,7 +213,7 @@ void __cleancache_put_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!backend_registered) {
++	if (!cleancache_ops) {
+ 		cleancache_puts++;
+ 		return;
+ 	}
+@@ -230,7 +227,7 @@ void __cleancache_put_page(struct page *page)
+ 
+ 	if (pool_id >= 0 &&
+ 		cleancache_get_key(page->mapping->host, &key) >= 0) {
+-		(*cleancache_ops.put_page)(pool_id, key, page->index, page);
++		cleancache_ops->put_page(pool_id, key, page->index, page);
+ 		cleancache_puts++;
+ 	}
  }
- EXPORT_SYMBOL(__frontswap_init);
+@@ -248,7 +245,7 @@ void __cleancache_invalidate_page(struct address_space *mapping,
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
  
-@@ -147,6 +176,11 @@ int __frontswap_store(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
+-	if (!backend_registered)
++	if (!cleancache_ops)
+ 		return;
  
-+	if (!backend_registered) {
-+		inc_frontswap_failed_stores();
-+		return ret;
-+	}
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -186,6 +220,9 @@ int __frontswap_load(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
+ 	if (fake_pool_id >= 0) {
+@@ -258,7 +255,7 @@ void __cleancache_invalidate_page(struct address_space *mapping,
  
-+	if (!backend_registered)
-+		return ret;
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -209,6 +246,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
- {
- 	struct swap_info_struct *sis = swap_info[type];
+ 		VM_BUG_ON(!PageLocked(page));
+ 		if (cleancache_get_key(mapping->host, &key) >= 0) {
+-			(*cleancache_ops.invalidate_page)(pool_id,
++			cleancache_ops->invalidate_page(pool_id,
+ 					key, page->index);
+ 			cleancache_invalidates++;
+ 		}
+@@ -277,7 +274,7 @@ void __cleancache_invalidate_inode(struct address_space *mapping)
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
  
-+	if (!backend_registered)
-+		return;
-+
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
-@@ -226,12 +266,15 @@ void __frontswap_invalidate_area(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
+-	if (!backend_registered)
++	if (!cleancache_ops)
+ 		return;
  
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.invalidate_area(type);
--	atomic_set(&sis->frontswap_pages, 0);
--	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.invalidate_area)(type);
-+		atomic_set(&sis->frontswap_pages, 0);
-+		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	}
-+	clear_bit(type, need_init);
+ 	if (fake_pool_id < 0)
+@@ -286,7 +283,7 @@ void __cleancache_invalidate_inode(struct address_space *mapping)
+ 	pool_id = get_poolid_from_fake(fake_pool_id);
+ 
+ 	if (pool_id >= 0 && cleancache_get_key(mapping->host, &key) >= 0)
+-		(*cleancache_ops.invalidate_inode)(pool_id, key);
++		cleancache_ops->invalidate_inode(pool_id, key);
  }
- EXPORT_SYMBOL(__frontswap_invalidate_area);
+ EXPORT_SYMBOL(__cleancache_invalidate_inode);
  
-@@ -364,6 +407,9 @@ static int __init init_frontswap(void)
- 	debugfs_create_u64("invalidates", S_IRUGO,
- 				root, &frontswap_invalidates);
- #endif
-+	bitmap_zero(need_init, MAX_SWAPFILES);
-+
-+	frontswap_enabled = 1;
- 	return 0;
+@@ -312,8 +309,8 @@ void __cleancache_invalidate_fs(struct super_block *sb)
+ 		fs_poolid_map[index] = FS_UNKNOWN;
+ 	}
+ 	sb->cleancache_poolid = -1;
+-	if (backend_registered)
+-		(*cleancache_ops.invalidate_fs)(old_poolid);
++	if (cleancache_ops)
++		cleancache_ops->invalidate_fs(old_poolid);
  }
+ EXPORT_SYMBOL(__cleancache_invalidate_fs);
  
 -- 
 1.7.7.6
