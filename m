@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161202Ab2KNMMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:12:42 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57277 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161153Ab2KNMMl (ORCPT
+	id S1161205Ab2KNMOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:14:07 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64808 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161153Ab2KNMOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:12:41 -0500
+	Wed, 14 Nov 2012 07:14:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <50A1D4E4.50308@wwwdotorg.org>
+In-Reply-To: <50A1D54E.2090406@wwwdotorg.org>
 References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
- <1352638249-29298-11-git-send-email-jonas.gorski@gmail.com> <50A1D4E4.50308@wwwdotorg.org>
+ <1352638249-29298-12-git-send-email-jonas.gorski@gmail.com> <50A1D54E.2090406@wwwdotorg.org>
 From: Jonas Gorski <jonas.gorski@gmail.com>
-Date: Wed, 14 Nov 2012 13:12:20 +0100
-Message-ID: <CAOiHx==UhqBWMAgqGaVM+P=eUueq1uKTDUaTg+ROsHYitUi+MQ@mail.gmail.com>
-Subject: Re: [RFC] MIPS: BCM63XX: switch to common clock and Device Tree
+Date: Wed, 14 Nov 2012 13:13:44 +0100
+Message-ID: <CAOiHx=n7kqnnu51ObiPMeBtVYNX0n+xiBkk8FOJ0EQ5nQRbD9A@mail.gmail.com>
+Subject: Re: [RFC] MIPS: BCM63XX: register GPIO controller through Device Tree
 To: Stephen Warren <swarren@wwwdotorg.org>
 Cc: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         John Crispin <blogic@openwrt.org>, Maxime Bizon <mbizon@freebox.fr>,
@@ -26,29 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2012 06:04, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On 13 November 2012 06:06, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > On 11/11/2012 05:50 AM, Jonas Gorski wrote:
->> Switch BCM63XX to the common clock framework and use clkdev for
->> providing clock name lookups for non-DT devices.
+>> Register the GPIO controller through Device Tree and add the
+>> appropriate values in the include files.
 >>
->> Clocks can have a frequency and gate-bit, or none, in case they
->> are just provided for drivers expecting them to be present.
+>> Since we can't register a platform driver at this early stage move the
+>> direct call to bcm63xx_gpio_init from prom_init to an arch initcall.
 >
->> diff --git a/Documentation/devicetree/bindings/clock/bcm63xx-clock.txt b/Documentation/devicetree/bindings/clock/bcm63xx-clock.txt
+>> diff --git a/Documentation/devicetree/bindings/gpio/bcm63xx-gpio.txt b/Documentation/devicetree/bindings/gpio/bcm63xx-gpio.txt
 >
-> A very minor nit, but it might be nice to add the DT binding
-> documentation before (or as part of) the patches that use them (code
-> that parses them, or using the bindings in .dts files)
+>> +- #gpio-cells: Must be <2>. The first cell is the GPIO pin, and
+>> +  the second one the standard linux flags.
 >
-> Of course, I'm relying on my email receive order, to judge this since
-> the patch numbering didn't come through, so perhaps the patches are
-> already set up this way...
+> Also here, I think you want to explicitly document the flag values here
+> so the bindings don't rely on the Linux kernel code. I don't think
+> there's a standard central file which documents them though, although I
+> vaguely recall some discussion to create add them to gpio.txt?
 
-No you are right, the bindings are being added earlier. I move it to
-the patch adding the (then still unused) binding to the dts(i) files.
-I'd rather not split it up completely, and add it with the binding
-usage together so it's easier to spot if I do something with the
-bindings that contradicts the documentation or is missing ;-).
+I'll add some more description. And yes there isn't, and I can't
+comment about that since I just joined devicetree-discuss a few days
+ago. It would be nice to have them there. Maybe I'll add a reference
+to gpio.txt and see if I can come up with an acceptable description
+for the flags.
 
 
 Jonas
