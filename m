@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166Ab2KNWJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:09:53 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44990 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933141Ab2KNWJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:09:52 -0500
-Date: Wed, 14 Nov 2012 14:09:49 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 01/11] thp: huge zero page: basic preparation
-In-Reply-To: <1352300463-12627-2-git-send-email-kirill.shutemov@linux.intel.com>
-Message-ID: <alpine.DEB.2.00.1211141407120.13515@chino.kir.corp.google.com>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-2-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1423497Ab2KNWMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:12:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933152Ab2KNWMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 17:12:35 -0500
+Message-ID: <50A41583.6060709@redhat.com>
+Date: Wed, 14 Nov 2012 17:04:51 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/2] change_protection(): Count the number of pages affected
+References: <1352883029-7885-1-git-send-email-mingo@kernel.org> <CA+55aFz_JnoR73O46YWhZn2A4t_CSUkGzMMprCUpvR79TVMCEQ@mail.gmail.com> <50A3E659.9060804@redhat.com> <CA+55aFy1d6pO5Ut15G7tbsQBXr1f5UyEvaQ_O5vMYFcy6wLwfg@mail.gmail.com>
+In-Reply-To: <CA+55aFy1d6pO5Ut15G7tbsQBXr1f5UyEvaQ_O5vMYFcy6wLwfg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
+On 11/14/2012 03:52 PM, Linus Torvalds wrote:
+> On Wed, Nov 14, 2012 at 10:43 AM, Rik van Riel <riel@redhat.com> wrote:
+>>
+>>>    - even *more* aggressive: if the bits become strictly more
+>>> restrictive
+>
+> sorry, this was meant to be "permissive", not restrictive.
 
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled
-> with zeros.
-> 
-> For now let's allocate the page on hugepage_init(). We'll switch to lazy
-> allocation later.
-> 
-> We are not going to map the huge zero page until we can handle it
-> properly on all code paths.
-> 
-> is_huge_zero_{pfn,pmd}() functions will be used by following patches to
-> check whether the pfn/pmd is huge zero page.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> My mistake - the point is that if we're changing to a strictly more
+> permissive mode, the old state of the page tables and TLB's are
+> perfectly "valid", they are just unnecessarily strict. So we'll take a
+> fault on some accesses, but that's fine - we can fix things up at
+> fault time.
 
-Acked-by: David Rientjes <rientjes@google.com>
+The patches I sent in a few weeks ago do that for do_wp_page,
+but I can see how we want the same for mprotect...
 
-> ---
->  mm/huge_memory.c |   30 ++++++++++++++++++++++++++++++
->  1 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 40f17c3..e5ce979 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -47,6 +47,7 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
->  /* during fragmentation poll the hugepage allocator once every minute */
->  static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
->  static struct task_struct *khugepaged_thread __read_mostly;
-> +static unsigned long huge_zero_pfn __read_mostly;
->  static DEFINE_MUTEX(khugepaged_mutex);
->  static DEFINE_SPINLOCK(khugepaged_mm_lock);
->  static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
-> @@ -159,6 +160,29 @@ static int start_khugepaged(void)
->  	return err;
->  }
->  
-> +static int init_huge_zero_page(void)
+> The question then becomes what the access patterns are. The fault
+> overhead may well dawrf any TLB flush costs, but it depends on whether
+> people tend to do large mprotect() and then just actually change a few
+> pages, or whether mprotect() users often then touch all of the area..
 
-Could be __init, but this gets switched over to lazy allocation later in 
-the series so probably not worth it.
+If we keep a counter of faults-after-mprotect, we may be able
+to figure out automatically what behaviour would be best.
+
+Of course, that gets us into premature optimization, so it is
+probably best to do the simple thing for now.
+
+-- 
+All rights reversed
