@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422780Ab2KNMiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:38:52 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57647 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422749Ab2KNMiu (ORCPT
+	id S1422783Ab2KNMlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:41:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48171 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422749Ab2KNMlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:38:50 -0500
-Message-ID: <50A390CC.9000208@ahsoftware.de>
-Date: Wed, 14 Nov 2012 13:38:36 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 14 Nov 2012 07:41:36 -0500
+Date: Wed, 14 Nov 2012 15:41:11 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: YAMANE Toshiaki <yamanetoshi@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Devendra Naga <devendra.aaru@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging/serqt_usb2: refactor qt_read_bulk_callback()
+ in serqt_usb2.c
+Message-ID: <20121114124110.GG11515@mwanda>
+References: <1352496782-7246-1-git-send-email-yamanetoshi@gmail.com>
+ <1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Till Harbaum <till@harbaum.org>
-Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
- for bus-drivers.
-References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de> <20121113195533.6db71716@endymion.delvare> <50A2AC28.7050304@ahsoftware.de> <20121113220835.111a178a@endymion.delvare> <50A2BAA2.6090009@ahsoftware.de> <20121113224246.768bf734@endymion.delvare> <50A2DA0C.3090507@ahsoftware.de> <20121114104050.79df8cd9@endymion.delvare>
-In-Reply-To: <20121114104050.79df8cd9@endymion.delvare>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, Nov 10, 2012 at 06:33:56AM +0900, YAMANE Toshiaki wrote:
+> Modified to eliminate the deep nesting and redundant description.
+> 
+> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+> ---
+>  drivers/staging/serqt_usb2/serqt_usb2.c |  147 +++++++++++++++++--------------
+>  1 file changed, 80 insertions(+), 67 deletions(-)
+> 
+> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
+> index 9bc8923..0395bdf 100644
+> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
+> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+> @@ -291,22 +291,89 @@ static void qt_interrupt_callback(struct urb *urb)
+>  	/* FIXME */
+>  }
+>  
+> +static int qt_status_change(unsigned int limit,
+> +			    unsigned char *data,
+> +			    int i,
+> +			    struct quatech_port *qt_port,
+> +			    struct usb_serial_port *port)
+> +{
+> +	void (*fn)(struct quatech_port *, unsigned char);
+> +
+> +	if (0x00 == data[i + 2]) {
+> +		dev_dbg(&port->dev, "Line status status.\n");
+> +		fn = ProcessLineStatus;
+> +	} else {
+> +		dev_dbg(&port->dev, "Modem status status.\n");
+> +		fn = ProcessModemStatus;
+> +	}
+> +
+> +	if (i > limit) {
 
-Am 14.11.2012 10:40, schrieb Jean Delvare:
+Why can't we test whether i == (RxCount - 3) earlier and handle
+the errors there?  That way we wouldn't need to pass the limit
+variable.
 
->> It isn't possible to do such, because the only ID available for
->> i2c-busses is given them at runtime. So people have to live with that
->> imho artificially problem, if they use my patch. I don't have any other
->> solution until the numbering is predictable. But I assume you already
->> know all that, otherwise you wouldn't have mentioned it.
->
-> The problem is inherent to external, hot-plug I2C adapters. You can't
-> predict their bus number, and actually you can't even always predict
-> their name. In the case of usb-tiny-i2c, you may be able to look-up the
-> bus number from the adapter name, but you won't be able to always
-> differentiate between two adapters, if they are connected to paired USB
-> ports.
->
-> This is a design issue with the i2c-tiny-usb hardware in the first
-> place. If it is needed to differentiate between adapters, their would
-> need to be a locally unique ID in every adapter, which the kernel can
-> query. I suppose this was not deemed necessary at design time, as most
-> people will only connect one such adapter at a time to their system.
+In fact, this whole function is sort of nasty.  We start by doing
+a switch (data[i + 2]) { then we combine the 0x00 and 0x01 and call
+this function which separates them out and sets a function pointer
+and then calls the function point?  Get rid of this whole function.
 
-Actually many of the available USB devices (e.g. many usb-serials) don't 
-offer a unique ID by themself. That isn't just a problem of the 
-i2c-tiny-usb. But in contrast to other solutions, it shouldn't be very 
-hard to give those adapters a unique ID. As the whole SUB solution is 
-just software (and open source), one likely just would to write some 
-small piece of additional code.
+You shouldn't need to use function pointers to do this; that's too
+many levels of abstraction.
 
-> I have already experienced this and yes, it is a pain. But I would
-> think that a system designed without a RTC in the first place has
-> another way of getting its time correct at boot time, for example NTP.
-> As I understand it the RTC chip is only there to set the system time at
-> boot, right, the actual timekeeping during run-time is still done by the
-> CPU?
+> +		dev_dbg(&port->dev,
+> +			"Illegal escape seuences in received data\n");
+> +		return 0;
+> +	}
+> +
+> +	(*fn)(qt_port, data[i + 3]);
+> +
+> +	return 1;
+> +}
+> +
 
-Whatever those people which want to us it decide. If I didn't want to 
-help other people by offering them some small documentation about how to 
-build such theirself, I wouldn't have taken the usual and almost 
-unavoidable pain trying feed some silly patches into the kernel. ;)
+[snip]
 
-Anyway, maybe Till Harbaum will like that solution and won't get blocked 
-by you. And maybe in some years we will see how many other bus-drivers 
-have adopted the same solution. In fact the in-driver solution was my 
-first one and I've thought others might be interested too, so I've moved 
-the few lines from the driver itself into the i2c-core before I sent the 
-patches. Unfortunately a waste of time.
+>  	if (urb->status) {
+>  		qt_port->ReadBulkStopped = 1;
+> -		dev_dbg(&urb->dev->dev, "%s - nonzero write bulk status received: %d\n",
+> +		dev_dbg(&urb->dev->dev,
+> +			"%s - nonzero write bulk status received: %d\n",
+>  			__func__, urb->status);
 
-Regards,
+Don't mix in these unrelated 80 character limit changes.
 
-Alexander
+regards,
+dan carpenter
 
