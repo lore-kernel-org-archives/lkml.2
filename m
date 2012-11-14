@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab2KNFyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:54:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58043 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab2KNFyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:54:47 -0500
-From: AnilKumar Ch <anilkumar@ti.com>
-To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
-CC: <linux-kernel@vger.kernel.org>, AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH RESEND] regulator: tps65910: fix BUG_ON() shown with vrtc regulator
-Date: Wed, 14 Nov 2012 11:24:39 +0530
-Message-ID: <1352872479-25462-1-git-send-email-anilkumar@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756565Ab2KNFzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:55:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55280 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756470Ab2KNFvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 00:51:09 -0500
+Message-Id: <20121114053938.038709059@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Wed, 14 Nov 2012 05:40:03 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 30/82] mac80211: check management frame header length
+In-Reply-To: <20121114053933.726869752@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix BUG_ON() error if tps65910 VRTC regulator is used with out
-rdev->desc->volt_table data. Recent changes in regulator core driver
-which add support for "regulator_list_voltage_table" have BUG_ON() if
-regulator descriptor do not have voltage table information. This patch
-adds the voltage table information to fix the issue.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+------------------
+
+From: Johannes Berg <johannes.berg@intel.com>
+
+commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
+
+Due to pskb_may_pull() checking the skb length, all
+non-management frames are checked on input whether
+their 802.11 header is fully present. Also add that
+check for management frames and remove a check that
+is now duplicate. This prevents accessing skb data
+beyond the frame end.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/regulator/tps65910-regulator.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/mac80211/rx.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 793adda..1d2dd18 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -38,6 +38,11 @@ static const unsigned int VIO_VSEL_table[] = {
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1457,7 +1457,6 @@ ieee80211_rx_h_defragment(struct ieee802
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
- /* VSEL tables for TPS65910 specific LDOs and dcdc's */
+ 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   (rx->skb)->len < 24 ||
+ 		   is_multicast_ether_addr(hdr->addr1))) {
+ 		/* not fragmented */
+ 		goto out;
+@@ -2875,10 +2874,15 @@ static void __ieee80211_rx_handle_packet
+ 		     test_bit(SCAN_OFF_CHANNEL, &local->scanning)))
+ 		status->rx_flags |= IEEE80211_RX_IN_SCAN;
  
-+/* supported VRTC voltages in microvolts */
-+static const unsigned int VRTC_VSEL_table[] = {
-+	1800000,
-+};
-+
- /* supported VDD3 voltages in microvolts */
- static const unsigned int VDD3_VSEL_table[] = {
- 	5000000,
-@@ -95,6 +100,8 @@ static struct tps_info tps65910_regs[] = {
- 	{
- 		.name = "vrtc",
- 		.vin_name = "vcc7",
-+		.n_voltages = ARRAY_SIZE(VRTC_VSEL_table),
-+		.voltage_table = VRTC_VSEL_table,
- 		.enable_time_us = 2200,
- 	},
- 	{
--- 
-1.7.9.5
+-	if (ieee80211_is_mgmt(fc))
+-		err = skb_linearize(skb);
+-	else
++	if (ieee80211_is_mgmt(fc)) {
++		/* drop frame if too short for header */
++		if (skb->len < ieee80211_hdrlen(fc))
++			err = -ENOBUFS;
++		else
++			err = skb_linearize(skb);
++	} else {
+ 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
++	}
+ 
+ 	if (err) {
+ 		dev_kfree_skb(skb);
+
 
