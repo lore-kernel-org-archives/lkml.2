@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab2KNRkb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:40:31 -0500
-Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:36868 "EHLO
-	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2KNRka convert rfc822-to-8bit (ORCPT
+	id S1423144Ab2KNRrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:47:07 -0500
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:35817 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423096Ab2KNRrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:40:30 -0500
-From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: [RFC] staging: ste_rmi4: merge into the main kernel tree
-Thread-Topic: [RFC] staging: ste_rmi4: merge into the main kernel tree
-Thread-Index: AQHNwo8ZLxFuveX6UkK/mNwkyTKwrA==
-Date: Wed, 14 Nov 2012 17:40:12 +0000
-Message-ID: <CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
- <20121113175309.GA3601@polaris.bitmath.org> 
-Accept-Language: en-US, zh-TW
-Content-Language: zh-HK
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.25.72.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Nov 2012 12:47:05 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiqkAAPYo1BV5h1yPGdsb2JhbABEhVaFAbdkA4EAGQEBAQEfGQ0ngh4BAQU6HBMBDxAIAxguFA0YChoTh3gDE7FfDYlUFIswaXKEWWEDlCeBVIV7g06BaogB
+X-IronPort-AV: E=Sophos;i="4.83,252,1352070000"; 
+   d="scan'208";a="445840526"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 14 Nov 2012 18:53:33 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 09/14] Input: introduce EV_MSC Timestamp
+Message-ID: <20121114175333.GA4804@polaris.bitmath.org>
+References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1352908766-4492-10-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352908766-4492-10-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik and all,
+On Wed, Nov 14, 2012 at 04:59:21PM +0100, Benjamin Tissoires wrote:
+> Some devices provides the actual timestamp (hid_dg_scan_time in win8 ones)
+> computed by the hardware itself. This value is global to the frame and is
+> not specific to the multitouch protocol.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
 
-As I know, currently there is no synaptics RMI4 touchscreen driver in the
-main tree. In order to support our customers effectively, is it able to merge
-staging ste_rmi4 driver into the main kernel.org tree? If it is accepted, should
-I send a patch for this change?
+Does not directly apply to 3.7 due to the uapi changes, but trivial enough.
 
-Any advice is greatly appreciated!
-
-Alexandra Chin
+Henrik
