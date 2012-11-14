@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423533Ab2KNW0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:26:35 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:45977 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423518Ab2KNW0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:26:34 -0500
-Message-ID: <50A41A85.9090800@linaro.org>
-Date: Wed, 14 Nov 2012 14:26:13 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S2992435Ab2KNW1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:27:32 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57306 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933163Ab2KNW1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 17:27:30 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com> <1350408232.2336.42.camel@laptop> <509DB632.7070305@linaro.org> <1352840337.18025.43.camel@gandalf.local.home>
-In-Reply-To: <1352840337.18025.43.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111422-5112-0000-0000-00000E92A079
+In-Reply-To: <20121114221544.GA3083@elliptictech.com>
+References: <1351796580-20600-1-git-send-email-nbowler@elliptictech.com>
+	<20121114130500.250dd5b8.akpm@linux-foundation.org>
+	<20121114221544.GA3083@elliptictech.com>
+Date: Wed, 14 Nov 2012 23:27:29 +0100
+Message-ID: <CAFLxGvyXwbwWYnrRA1qza2+CEO_pL=rC82=CkfGOSHNVyA5x+g@mail.gmail.com>
+Subject: Re: [PATCH] scatterlist: don't BUG when we can trivially return a
+ proper error.
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 12:58 PM, Steven Rostedt wrote:
-> On Fri, 2012-11-09 at 18:04 -0800, John Stultz wrote:
->> On 10/16/2012 10:23 AM, Peter Zijlstra wrote:
->>> I've no problem with adding CLOCK_PERF (or another/better name).
->> Hrm. I'm not excited about exporting that sort of internal kernel
->> details to userland.
+On Wed, Nov 14, 2012 at 11:15 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> On 2012-11-14 13:05 -0800, Andrew Morton wrote:
+>> On Thu,  1 Nov 2012 15:03:00 -0400
+>> Nick Bowler <nbowler@elliptictech.com> wrote:
 >>
->> The behavior and expectations from sched_clock() has changed over the
->> years, so I'm not sure its wise to export it, since we'd have to
->> preserve its behavior from then on.
+>> > There is absolutely no reason to crash the kernel when we have a
+>> > perfectly good return value already available to use for conveying
+>> > failure status.
 >>
->> Also I worry that it will be abused in the same way that direct TSC
->> access is, where the seemingly better performance from the more
->> careful/correct CLOCK_MONOTONIC would cause developers to write fragile
->> userland code that will break when moved from one machine to the next.
+>> Yes, I suppose that's true.  I don't see a case for BUGging the kernel
+>> here.
+> [...]
+>> > -   BUG_ON(nents > max_ents);
+>> > +   if (WARN_ON_ONCE(nents > max_ents))
+>> > +           return -E2BIG;
+>> >  #endif
 >>
->> I'd probably rather perf output timestamps to userland using sane clocks
->> (CLOCK_MONOTONIC), rather then trying to introduce a new time domain to
->> userland.   But I probably could be convinced I'm wrong.
-> I'm surprised that perf has its own clock anyway. But I would like to
-> export the tracing clocks. We have three (well four) of them:
+>> OK, pet peeve: if this E2BIG gets returned to userspace, our poor user
+>> will look it up and see "Argument list too long; used when the
+>> arguments passed to a new program being executed with one of the exec
+>> functions occupy too much memory space".  He then gets to spend half a
+>> day reviewing his code's exec() callsites!
+>>
+>> See?  Although the error's name sounds like a nice match to the
+>> internal state, it isn't really a match at all and our use of it is
+>> misleading.
+>>
+>> Unfortunately there is no EKERNELSCREWEDUP,
 >
-> trace_clock_local() which is defined to be a very fast clock but may not
-> be synced with other cpus (basically, it just calls sched_clock).
+> Well, maybe we should add it! :P
 >
-> trace_clock() which is not totally serialized, but also not totally off
-> (between local and global). This uses local_clock() which is the same
-> thing that perf_clock() uses.
+>> so we usually use EINVAL.
 >
-> trace_clock_global() which is a monotonic clock across CPUs. It's much
-> slower than the above, but works well when you require synced
-> timestamps.
->
-> There's also trace_clock_counter() which isn't even a clock :-)  It's
-> just a incremental atomic counter that goes up every time it's called.
-> This is the most synced clock, but is absolutely meaningless for
-> timestamps. It's just a way to show ordered events.
+> Fair enough.  I will prepare v2.  But perhaps EOPNOTSUPP would be a
+> better fit?
 
-Oof. This is getting uglier. I'd really prefer not to expose all these 
-different internal clocks out userland. Especially via clock_gettime().
+IMHO this would be even more confusing...
 
-thanks
--john
-
+-- 
+Thanks,
+//richard
