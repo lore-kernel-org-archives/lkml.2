@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423010Ab2KNNsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 08:48:04 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63267 "EHLO
+	id S1422997Ab2KNNsC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 08:48:02 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60479 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422959Ab2KNNrz (ORCPT
+	with ESMTP id S1422757Ab2KNNr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 08:47:55 -0500
+	Wed, 14 Nov 2012 08:47:56 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Lee Jones <lee.jones@linaro.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org
-Subject: [PATCH 4/5] Input: Enable STMPE keypad driver for Device Tree
-Date: Wed, 14 Nov 2012 13:47:16 +0000
-Message-Id: <1352900837-20759-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 5/5] Documentation: Describe bindings for STMPE Keypad driver
+Date: Wed, 14 Nov 2012 13:47:17 +0000
+Message-Id: <1352900837-20759-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
 References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
@@ -22,11 +22,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows the STMPE driver to be successfully probed and
-initialised when Device Tree support is enabled. Besides the usual
-platform data changes, we also separate the process of filling in
-the 'in use' pin bitmap, as we have to extract the information from
-Device Tree in the DT boot case.
+Here we add the required documentation for the STMPE Device
+Tree bindings. It describes all of the bindings currently
+supported by the driver.
 
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-input@vger.kernel.org
@@ -34,117 +32,55 @@ Acked-by: Arnd Bergmann <arnd@arndb.de>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
- drivers/mfd/stmpe.c                   |    1 +
- 2 files changed, 59 insertions(+), 9 deletions(-)
+ .../devicetree/bindings/input/stmpe-keypad.txt     |   39 ++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/stmpe-keypad.txt
 
-diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
-index 470a877..4ae01d5 100644
---- a/drivers/input/keyboard/stmpe-keypad.c
-+++ b/drivers/input/keyboard/stmpe-keypad.c
-@@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
- 			      (plat->debounce_ms << 1));
- }
- 
-+static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
-+				struct stmpe_keypad *keypad,
-+				struct stmpe_keypad_platform_data *plat)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	unsigned int proplen;
-+	const __be32 *prop;
-+	int i;
+diff --git a/Documentation/devicetree/bindings/input/stmpe-keypad.txt b/Documentation/devicetree/bindings/input/stmpe-keypad.txt
+new file mode 100644
+index 0000000..1b97222
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/stmpe-keypad.txt
+@@ -0,0 +1,39 @@
++* STMPE Keypad
 +
-+	if (np) {
-+		prop = of_get_property(np, "linux,keymap", &proplen);
-+		if (!prop) {
-+			dev_err(&pdev->dev,
-+				"linux,keymap property not defined\n");
-+			return -EINVAL;
-+		}
++Required properties:
++ - compatible               : "st,stmpe-keypad"
++ - linux,keymap             : See ./matrix-keymap.txt
 +
-+		for (i = 0; i < proplen / sizeof(u32); i++) {
-+			unsigned int key = be32_to_cpup(prop + i);
++Optional properties:
++ - debounce-interval        : Debouncing interval time in milliseconds
++ - st,scan-count            : Scanning cycles elapsed before key data is updated
++ - st,no-autorepeat         : If specified device will not autorepeat
 +
-+			keypad->cols |= 1 << KEY_COL(key);
-+			keypad->rows |= 1 << KEY_ROW(key);
-+		}
-+	} else {
-+		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
-+			unsigned int key = plat->keymap_data->keymap[i];
++Example:
 +
-+			keypad->cols |= 1 << KEY_COL(key);
-+			keypad->rows |= 1 << KEY_ROW(key);
-+		}
-+	}
++	stmpe_keypad {
++		compatible = "st,stmpe-keypad";
 +
-+	return 0;
-+}
++		debounce-interval = <64>;
++		st,scan-count = <8>;
++		st,no-autorepeat;
 +
-+static void __devinit stmpe_keypad_of_probe(struct device_node *np,
-+				struct stmpe_keypad_platform_data *plat)
-+{
-+	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
-+	of_property_read_u32(np, "st,scan-count", &plat->scan_count);
-+
-+	if (of_get_property(np, "st,no-autorepeat", NULL))
-+		plat->no_autorepeat = true;
-+}
-+
- static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
- {
- 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
- 	struct stmpe_keypad_platform_data *plat;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct stmpe_keypad *keypad;
- 	struct input_dev *input;
- 	int ret;
- 	int irq;
--	int i;
- 
- 	plat = stmpe->pdata->keypad;
--	if (!plat)
--		return -ENODEV;
-+	if (!plat) {
-+		if (np) {
-+			plat = devm_kzalloc(&pdev->dev,
-+					sizeof(*plat), GFP_KERNEL);
-+			if (!plat)
-+				return -ENOMEM;
-+
-+			stmpe_keypad_of_probe(np, plat);
-+		} else
-+			return -ENODEV;
-+	}
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
-@@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
- 	if (!plat->no_autorepeat)
- 		__set_bit(EV_REP, input->evbit);
- 
--	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
--		unsigned int key = plat->keymap_data->keymap[i];
--
--		keypad->cols |= 1 << KEY_COL(key);
--		keypad->rows |= 1 << KEY_ROW(key);
--	}
-+	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
- 
- 	keypad->stmpe = stmpe;
- 	keypad->plat = plat;
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index ba157d4..b03cc64 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
- 
- static struct mfd_cell stmpe_keypad_cell = {
- 	.name		= "stmpe-keypad",
-+	.of_compatible  = "st,stmpe-keypad",
- 	.resources	= stmpe_keypad_resources,
- 	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
- };
++		linux,keymap = <0x205006b
++				0x4010074
++				0x3050072
++				0x1030004
++				0x502006a
++				0x500000a
++				0x5008b
++				0x706001c
++				0x405000b
++				0x6070003
++				0x3040067
++				0x303006c
++				0x60400e7
++				0x602009e
++				0x4020073
++				0x5050002
++				0x4030069
++				0x3020008>;
++	};
 -- 
 1.7.9.5
 
