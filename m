@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab2KNJJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:09:30 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19938 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab2KNJJH convert rfc822-to-8bit (ORCPT
+	id S1755050Ab2KNJOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:14:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36405 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab2KNJOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:09:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 14 Nov 2012 01:09:02 -0800
-From: Philip Rakity <prakity@nvidia.com>
-To: Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "lrg@ti.com" <lrg@ti.com>, Kevin Liu <keyuan.liu@gmail.com>
-Date: Wed, 14 Nov 2012 10:08:57 +0100
-Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-Thread-Topic: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-Thread-Index: Ac3CR68sS+gnd2cvRgep8lfvDuZV9g==
-Message-ID: <6D68C9EB-485C-44E8-B6C3-A988C12EFF0A@nvidia.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
- <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
- <20121114072855.GF7407@opensource.wolfsonmicro.com>
- <CADz5_gLb5ZRHLZHw1sDDWzu4QgOR7JXnaRMEXxETNzVsu1Wq1A@mail.gmail.com>
- <20121114084105.GG7407@opensource.wolfsonmicro.com>
- <CADz5_gJDHeZNoWRF18YJKY3kT1vN0=d-eLcP1wgWxYhLNnbpDQ@mail.gmail.com>
-In-Reply-To: <CADz5_gJDHeZNoWRF18YJKY3kT1vN0=d-eLcP1wgWxYhLNnbpDQ@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 14 Nov 2012 04:14:16 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: linus.walleij@linaro.org
+Cc: axel.lin@ingics.com, spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] Pinctrl: SPEAr: Plgpio: Don't call prepare/unprepare on request/free
+Date: Wed, 14 Nov 2012 14:44:07 +0530
+Message-Id: <2773e9204be54157c49811ed2d98a0de352e9c19.1352884427.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+SPEAr SoC's don't do anything in clk_prepare() of plgpio driver, so there is no
+need to call this routine multiple times. Just call it once at probe.
 
-On Nov 14, 2012, at 8:57 AM, Kevin Liu <keyuan.liu@gmail.com> wrote:
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Hi Linus,
 
-> 2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->> On Wed, Nov 14, 2012 at 04:36:28PM +0800, Kevin Liu wrote:
->>> 2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->> 
->>>> Should this be regulator_set_voltage_tol()?  Otherwise it'd be good to
->>>> explain where the numbers come from.
->> 
->>> In SD physical layer spec 3.01 chapter 6.6.1, the threshold level for
->>> voltage range is defined as below:
->>> Vdd(min) = 2.7V while Vdd(max) = 3.6V.
->>> The card should work within the voltage range.
->> 
->>> If you are afraid the voltage value is too aggressive, maybe we can
->>> use regulator_set_voltage_tol() to set a smaller range.
->>> But which range should be reasonable?
->> 
->> The above makes total sense - thanks!  I just wasn't aware that the
->> range was specified in this fashion in the spec.  Might be worth a
->> comment in the code if you need to respin.
-> 
-> Sure, I will update the patch. Thanks!
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch is rebased over https://lkml.org/lkml/2012/11/14/220
 
+ drivers/pinctrl/spear/pinctrl-plgpio.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-re-read spec.  Please apply Kevin;s patch.
+diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+index cf6d9c2..5aebbf7 100644
+--- a/drivers/pinctrl/spear/pinctrl-plgpio.c
++++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+@@ -213,7 +213,7 @@ static int plgpio_request(struct gpio_chip *chip, unsigned offset)
+ 		return ret;
+ 
+ 	if (!IS_ERR(plgpio->clk)) {
+-		ret = clk_prepare_enable(plgpio->clk);
++		ret = clk_enable(plgpio->clk);
+ 		if (ret)
+ 			goto err0;
+ 	}
+@@ -244,7 +244,7 @@ static int plgpio_request(struct gpio_chip *chip, unsigned offset)
+ 
+ err1:
+ 	if (!IS_ERR(plgpio->clk))
+-		clk_disable_unprepare(plgpio->clk);
++		clk_disable(plgpio->clk);
+ err0:
+ 	pinctrl_free_gpio(gpio);
+ 	return ret;
+@@ -275,7 +275,7 @@ static void plgpio_free(struct gpio_chip *chip, unsigned offset)
+ 
+ disable_clk:
+ 	if (!IS_ERR(plgpio->clk))
+-		clk_disable_unprepare(plgpio->clk);
++		clk_disable(plgpio->clk);
+ 
+ 	pinctrl_free_gpio(gpio);
+ }
+@@ -584,10 +584,18 @@ static int __devinit plgpio_probe(struct platform_device *pdev)
+ 	plgpio->chip.dev = &pdev->dev;
+ 	plgpio->chip.owner = THIS_MODULE;
+ 
++	if (!IS_ERR(plgpio->clk)) {
++		ret = clk_prepare(plgpio->clk);
++		if (ret) {
++			dev_err(&pdev->dev, "clk prepare failed\n");
++			return ret;
++		}
++	}
++
+ 	ret = gpiochip_add(&plgpio->chip);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to add gpio chip\n");
+-		return ret;
++		goto unprepare_clk;
+ 	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
+@@ -629,6 +637,9 @@ remove_gpiochip:
+ 	dev_info(&pdev->dev, "Remove gpiochip\n");
+ 	if (gpiochip_remove(&plgpio->chip))
+ 		dev_err(&pdev->dev, "unable to remove gpiochip\n");
++unprepare_clk:
++	if (!IS_ERR(plgpio->clk))
++		clk_unprepare(plgpio->clk);
+ 
+ 	return ret;
+ }
+-- 
+1.7.12.rc2.18.g61b472e
 
-Reviewed-by: Philip Rakity <prakity@nvidia.com>
