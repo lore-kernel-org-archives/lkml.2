@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946011Ab2KNXeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 18:34:07 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55976 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945974Ab2KNXeE (ORCPT
+	id S1946019Ab2KNXez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 18:34:55 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39221 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945916Ab2KNXex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 18:34:04 -0500
-Message-ID: <50A42A5E.5070905@linux.vnet.ibm.com>
-Date: Thu, 15 Nov 2012 07:33:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 14 Nov 2012 18:34:53 -0500
+Message-ID: <50A42A91.2000202@ahsoftware.de>
+Date: Thu, 15 Nov 2012 00:34:41 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        qemu-devel@nongnu.org, owasserm@redhat.com, quintela@redhat.com,
-        pbonzini@redhat.com, chegu_vinod@hp.com, yamahata@valinux.co.jp
-Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
-References: <50978DFE.1000005@linux.vnet.ibm.com> <20121112231032.GB5798@amt.cnet> <20121114003350.d6e8ff85658fccbf41183f05@gmail.com> <20121114144410.GB7054@amt.cnet>
-In-Reply-To: <20121114144410.GB7054@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+To: "till@harbaum.org" <till@harbaum.org>
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
+ for bus-drivers.
+References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de>  <20121113195533.6db71716@endymion.delvare> <50A2AC28.7050304@ahsoftware.de>  <20121113220835.111a178a@endymion.delvare> <50A2BAA2.6090009@ahsoftware.de>  <20121113224246.768bf734@endymion.delvare> <50A2DA0C.3090507@ahsoftware.de>  <20121114104050.79df8cd9@endymion.delvare>   <50A390CC.9000208@ahsoftware.de> <1352920954.19432.2.camel@Nokia-N900>
+In-Reply-To: <1352920954.19432.2.camel@Nokia-N900>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12111423-5140-0000-0000-0000025CDD8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 10:44 PM, Marcelo Tosatti wrote:
-> On Wed, Nov 14, 2012 at 12:33:50AM +0900, Takuya Yoshikawa wrote:
->> Ccing live migration developers who should be interested in this work,
->>
->> On Mon, 12 Nov 2012 21:10:32 -0200
->> Marcelo Tosatti <mtosatti@redhat.com> wrote:
->>
->>> On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
->>>> Do not drop large spte until it can be insteaded by small pages so that
->>>> the guest can happliy read memory through it
->>>>
->>>> The idea is from Avi:
->>>> | As I mentioned before, write-protecting a large spte is a good idea,
->>>> | since it moves some work from protect-time to fault-time, so it reduces
->>>> | jitter.  This removes the need for the return value.
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
->>>>  1 files changed, 9 insertions(+), 25 deletions(-)
->>>
->>> Its likely that other 4k pages are mapped read-write in the 2mb range 
->>> covered by a read-only 2mb map. Therefore its not entirely useful to
->>> map read-only. 
->>>
->>> Can you measure an improvement with this change?
->>
->> What we discussed at KVM Forum last week was about the jitter we could
->> measure right after starting live migration: both Isaku and Chegu reported
->> such jitter.
->>
->> So if this patch reduces such jitter for some real workloads, by lazily
->> dropping largepage mappings and saving read faults until that point, that
->> would be very nice!
->>
->> But sadly, what they measured included interactions with the outside of the
->> guest, and the main cause was due to the big QEMU lock problem, they guessed.
->> The order is so different that an improvement by a kernel side effort may not
->> be seen easily.
->>
->> FWIW: I am now changing the initial write protection by
->> kvm_mmu_slot_remove_write_access() to rmap based as I proposed at KVM Forum.
->> ftrace said that 1ms was improved to 250-350us by the change for 10GB guest.
->> My code still drops largepage mappings, so the initial write protection time
->> itself may not be a such big issue here, I think.
->>
->> Again, if we can eliminate read faults to such an extent that guests can see
->> measurable improvement, that should be very nice!
->>
->> Any thoughts?
->>
->> Thanks,
->> 	Takuya
-> 
-> OK, makes sense. I'm worried about shadow / oos interactions 
-> with large read-only mappings (trying to remember what was the 
-> case exactly, it might be non-existant now).
+Am 14.11.2012 20:22, schrieb till@harbaum.org:
+> Hi,
+>
+> i have seen i2c chips going nuts because some probing actually affected the chips state. So i fully agree with Jean here.
 
-Marcelo, i guess commit 38187c830cab84daecb41169948467f1f19317e3 is what you
-mentioned, but i do not know how it can "Simplifies out of sync shadow."  :(
+I'm fully aware of that.
 
+> I2C just isn't meant to be used for hot plugging. And so isn't the i2c-tiny-usb. It's more a hacking and testing device and is e.g. very convenient to test i2c client drivers or to test some new i2c hardware. But i have never had a need for this before user land was available. And once it is you can really do any magic you want using e.g. udev and sysfs.
+
+So I conclude you don't accept my patch too.
+
+> Also if you really need some chip to be available at boot time, then usb isn't for you. Usb can take pretty long to enumerate etc and you can never be sure when exactly a device shows up on the usb bus. You'd thus additionally need some means of blocking the entire boot process if you want to enforce that. E.g. the kernel can wait for boot disks to appear for exactly this reason. But it wouldn't make much sense to delay the boot for less cruicial things. Boot time is a critical thing and only the most important things are supposed to have a negative impact on that.
+
+Some people are booting from USB, including the small server this mail 
+goes through. I wonder why you consider the boot time a critical thing. 
+This device isn't meant for some industrial (embedded) application. And 
+most people are booting only seldom their desktop (not to speak about 
+servers).
+
+
+> If you wan't an i2c device to be available at boot time, then you might consider to connect it to some non-volatile i2c bus. I am pretty sure the raspberry pi has one.
+
+I don't have a Rasberry Pi and I don't need one.
+
+Sorry, but think all of you have the impression I'm a dumb kid, playing 
+with some silly hardware. How does that come? I might be even older than 
+you. ;)
+
+Anyway, if someone of you is curious why I've undergone all the pain 
+trying to submit a simple patch, here you can find a first draft:
+
+http://ahsoftware.de/usb-rtc/
+
+Regards,
+
+Alexander
