@@ -1,210 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422988Ab2KNOUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:20:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44940 "EHLO mga11.intel.com"
+	id S1422975Ab2KNOYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:24:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49519 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422661Ab2KNOUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:20:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,250,1352102400"; 
-   d="scan'208";a="248975174"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
-Subject: RE: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
- objects
-Thread-Topic: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
- objects
-Thread-Index: AQHNwRiioOP9jIS+5UWx2cJd20NobJfn4E6AgAAVKMCAAM23gP//j3MwgACVkwD//6+HIIAA/kkAgAAD2oD//8m+IA==
-Date: Wed, 14 Nov 2012 14:20:00 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346BD8CD0@ORSMSX101.amr.corp.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E346BC08EB@ORSMSX101.amr.corp.intel.com>
- <5571446.V5xhWp9giY@vostro.rjw.lan> <4910900.pJ82TKumIi@vostro.rjw.lan>
-In-Reply-To: <4910900.pJ82TKumIi@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1422661Ab2KNOYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 09:24:15 -0500
+Date: Wed, 14 Nov 2012 16:17:42 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Xi Wang <xi.wang@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Felipe Balbi <balbi@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-geode@lists.infradead.org>
+Subject: Re: [PATCH v2] mm: fix null dev in dma_pool_create()
+Message-ID: <20121114141742.GC24736@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+ <50A2BE19.7000604@gmail.com>
+ <20121113165847.4dcf968c.akpm@linux-foundation.org>
+ <50A3313D.1000809@gmail.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E13BgyNx05feLLmH"
+Content-Disposition: inline
+In-Reply-To: <50A3313D.1000809@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAEEKBmo022676
 
-> And I can define acpi_free_buffer() in the Linux-specific code too.
-> 
-> Thanks,
-> Rafael
+--E13BgyNx05feLLmH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll be glad to add an ACPI_FREE_BUFFER macro, although we've had complaints over the years that ACPICA uses too many macros. (Not so many complaints in the last 5 years, however.)
+Hi,
 
-Bob
+On Wed, Nov 14, 2012 at 12:50:53AM -0500, Xi Wang wrote:
+> * drivers/usb/gadget/amd5536udc.c (2)
+>=20
+> Use dev->gadget.dev or dev->pdev->dev for dma_pool_create()?  Also move
+> the init_dma_pools() call after the assignments in udc_pci_probe().
 
+Makes sense to me. Do you want to provide a patch ? Make sure to Cc
+myself and linux-usb ;-)
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Wednesday, November 14, 2012 1:33 AM
-> To: Moore, Robert
-> Cc: Mika Westerberg; mathias.nyman@linux.intel.com; linux-
-> acpi@vger.kernel.org; linux-kernel@vger.kernel.org; lenb@kernel.org;
-> Wysocki, Rafael J; broonie@opensource.wolfsonmicro.com;
-> grant.likely@secretlab.ca; linus.walleij@linaro.org; khali@linux-fr.org;
-> Bjorn Helgaas; Zheng, Lv
-> Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
-> objects
-> 
-> On Wednesday, November 14, 2012 10:18:46 AM Rafael J. Wysocki wrote:
-> > On Wednesday, November 14, 2012 02:23:51 AM Moore, Robert wrote:
-> > > Rafael,
-> > >
-> > > I sounds like with a few changes, we can enhance this mechanism to
-> > > be more useful to you and others. Some comments below. I need to
-> > > look at the code in question a bit more, but I see no insurmountable
-> issues.
-> >
-> > Great, thanks!
-> >
-> >
-> > > > -----Original Message-----
-> > > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > > Sent: Tuesday, November 13, 2012 2:57 PM
-> > > > To: Moore, Robert
-> > > > Cc: Mika Westerberg; mathias.nyman@linux.intel.com; linux-
-> > > > acpi@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > > lenb@kernel.org; Wysocki, Rafael J;
-> > > > broonie@opensource.wolfsonmicro.com;
-> > > > grant.likely@secretlab.ca; linus.walleij@linaro.org;
-> > > > khali@linux-fr.org; Bjorn Helgaas; Zheng, Lv
-> > > > Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device
-> > > > node objects
-> > > >
-> > > > On Tuesday, November 13, 2012 10:06:03 PM Moore, Robert wrote:
-> > > > > I may not quite understand what you are asking for, but I will
-> try.
-> > > > > It seems like we already have much of what you want/need, so
-> > > > > maybe I'm missing something.
-> > > >
-> > > > I think all of the necessary pieces are there.
-> > > >
-> > > > > > So what I would like to have, in general terms, is something
-> > > > > > like
-> > > > > > acpi_walk_resources() split into three parts:
-> > > > > >
-> > > > > >  (1) One that processes the _CRS output and creates a list of
-> > > > > >      struct acpi_resource objects for us to play with.  I
-> suppose
-> > > > > >      it's OK if that's just a buffer filled with resource
-> objects,
-> > > > > >      but a linked list might be more convenient.
-> > > > > >
-> > > > >
-> > > > > This sounds like AcpiGetCurrentResources. It executes _CRS and
-> > > > > formats the data into acpi_resource objects.
-> > > >
-> > > > Yes, it does.  However, it is not completely clear to me if/how
-> > > > the caller is supposed to prepare the buffer object pointed to by
-> the second arg.
-> > > >
-> > > > If the buffer is initialized by AcpiGetCurrentResources, then
-> > > > that's what I need for (1).
-> > >
-> > >
-> > > It looks to me that at least AcpiGetCurrentResources does not
-> > > actually ever allocate a buffer for the resource template, it
-> > > expects the caller to eventually provide one of at least the size of
-> the returned resource template.
-> > >
-> > > This is really quite a bit out-of-date as far as the memory allocation
-> model.
-> > > It should also support the option to just allocate the buffer of the
-> > > appropriate size before returning it to the caller.
-> >
-> > Yes, that would be really useful.
-> >
-> > Ideally, I'd like to be able to pass a pointer to an uninitialized
-> > buffer structure to it (or to a wrapper around it) and get a buffer
-> > full of struct acpi_resource objects (if _CRS returns any) back from
-> > it. :-)
-> 
-> Of course, I can add such a wrapper in the Linux-specific code just fine.
-> 
-> 
-> > > > > >  (2) One that allows us to access (read/write) resources in the
-> > > > > >      list returned by (1).  We don't need to open code walking
-> > > > > >      the list and I probably wouldn't event want to do that.
-> What
-> > > > > >      we need is to be able to walk the same list for a number of
-> > > > > >      times and possibly to modify values in the resource objects
-> > > > > >      if there are conflicts.
-> > > > >
-> > > > > This sounds like AcpiWalkResources. I suppose a possible issue
-> > > > > is that currently, AcpiWalkResources actually invokes the _CRS,
-> > > > > _PRS, or _AEI method on behalf of the caller.
-> > > >
-> > > > Yes, that exactly is the problem.
-> > > >
-> > > > > It might make more sense to allow the caller to pass in the
-> > > > > resource buffer returned from a call to _CRS, etc.
-> > > >
-> > > > Yes! :-)
-> > >
-> > >
-> > > I'll take a closer look at this tomorrow.
-> >
-> > Cool, thanks!
-> >
-> >
-> > > > > >  (3) One allowing us to free the list returned by (1) if not
-> needed
-> > > > > >      any more.
-> > > > > >
-> > > > >
-> > > > > AcpiGetCurrentResources: Currently, everything is returned in a
-> > > > > single buffer to minimize the number of allocations. A buffer
-> > > > > you can free when you are done with it.
-> > > >
-> > > > I suppose I should use ACPI_FREE(buffer.pointer) for that, but
-> > > > isn't it for the ACPICA's internal use only?
-> > > >
-> > > > Besides, I would prefer to be able to pass just "buffer" for
-> > > > freeing, without having to touch its internals.  No big deal, but
-> > > > it would be nicer. :-)
-> > >
-> > >
-> > > The ACPI_BUFFER type is in fact a public type that is meant to
-> > > return both the buffer and the (actual) length. You will find many
-> > > instances of
-> > > ACPI_FREE(buffer.pointer) within existing linux code, since it also
-> > > used for objects returned by control method execution/object
-> evaluation.
-> >
-> > Well, I suppose I only wanted to say that acpi_free_buffer(buffer)
-> > would look a bit more straightforward than ACPI_FREE(buffer.pointer).
-> > :-)
-> 
-> And I can define acpi_free_buffer() in the Linux-specific code too.
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+balbi
+
+--E13BgyNx05feLLmH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQo6gGAAoJEIaOsuA1yqREJesP/20t0otDuiBsJNFqKYzBMWtZ
+I3q5ceyFe3cU4ZTdTwZ5zBnRhpbge11Os0pKAPsUJZSn3U9R6qDdE7gonCXorV0B
+UfZ5ao7EaG7CQ/m0Xfh/V0EXEMlFKHQQTSu8HBkxzvr+4SZLs566OO36ehMt7tP/
+4BZ1o18vTkCWLeCOWbS1H7qiL8KjG+jRQcWXmD9zHlXafShBOMAXTb9UHO0T/WCf
+F5KICQYxWTPs8//9m3rJ63Dkmvzd7UvycgaZx9MVCig4N3ptP7XXlyHmrCIdfbcq
+ww6OnRr10QO+kGJMAw5MVtpUPC2+OR07zkhpF3SkTyWY/qaILzo5RdO3i0eyTgqF
+722bR1x1DkcIK7zfHNgwcyw13OAyj1PK50oGoBze9c1nbS3UmhpG4gXGFY0otCri
+tLgevxfSgLyDuRWE5xOG7rWl8DHZJKOlKvt3+q26/rTHPVIm85W5xh+SmEOR3+Qn
+p3/PuCzRIHmHO6HdBM4qfcjtgeQJWLtxcly9TGROlYxTnOAKB22A49trFlY7DrwT
+rPmb4HC50+zJ8CFYBs0wvxd9Z69ufGoj/jYaYmUqrC6seHl7iB3EL7/uFBji9CKB
+PkZ3tj14xwsQ02aW1werNUgbgexT4nqH5HHiYZtIg4hFdqbKey4A+Gxbk8j1Wwph
+d1WLxFPzOaNovMA0262m
+=slHS
+-----END PGP SIGNATURE-----
+
+--E13BgyNx05feLLmH--
