@@ -1,112 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423324Ab2KNUJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:09:56 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43245 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423139Ab2KNUJy (ORCPT
+	id S1423292Ab2KNUP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:15:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46052 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab2KNUP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:09:54 -0500
+	Wed, 14 Nov 2012 15:15:58 -0500
+Message-ID: <50A3FBFA.3080008@wwwdotorg.org>
+Date: Wed, 14 Nov 2012 13:15:54 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121114124110.GG11515@mwanda>
-References: <1352496782-7246-1-git-send-email-yamanetoshi@gmail.com>
-	<1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
-	<20121114124110.GG11515@mwanda>
-Date: Thu, 15 Nov 2012 05:09:53 +0900
-Message-ID: <CAOTypNTpwpYEJ4=euz1YJEOm1NMMxsv8ksiyOCVLjJaicZsnzg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] staging/serqt_usb2: refactor qt_read_bulk_callback()
- in serqt_usb2.c
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Devendra Naga <devendra.aaru@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A357D3.9080002@nvidia.com> <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de> <50A3712E.7000104@nvidia.com> <20121114105406.GA31455@avionic-0098.mockup.avionic-design.de> <50A3C485.7080704@wwwdotorg.org> <20121114200415.GA10335@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121114200415.GA10335@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 9:41 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Nov 10, 2012 at 06:33:56AM +0900, YAMANE Toshiaki wrote:
->> Modified to eliminate the deep nesting and redundant description.
->>
->> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
->> ---
->>  drivers/staging/serqt_usb2/serqt_usb2.c |  147 +++++++++++++++++--------------
->>  1 file changed, 80 insertions(+), 67 deletions(-)
->>
->> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
->> index 9bc8923..0395bdf 100644
->> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
->> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
->> @@ -291,22 +291,89 @@ static void qt_interrupt_callback(struct urb *urb)
->>       /* FIXME */
->>  }
->>
->> +static int qt_status_change(unsigned int limit,
->> +                         unsigned char *data,
->> +                         int i,
->> +                         struct quatech_port *qt_port,
->> +                         struct usb_serial_port *port)
->> +{
->> +     void (*fn)(struct quatech_port *, unsigned char);
->> +
->> +     if (0x00 == data[i + 2]) {
->> +             dev_dbg(&port->dev, "Line status status.\n");
->> +             fn = ProcessLineStatus;
->> +     } else {
->> +             dev_dbg(&port->dev, "Modem status status.\n");
->> +             fn = ProcessModemStatus;
->> +     }
->> +
->> +     if (i > limit) {
->
-> Why can't we test whether i == (RxCount - 3) earlier and handle
-> the errors there?  That way we wouldn't need to pass the limit
-> variable.
->
-> In fact, this whole function is sort of nasty.  We start by doing
-> a switch (data[i + 2]) { then we combine the 0x00 and 0x01 and call
-> this function which separates them out and sets a function pointer
-> and then calls the function point?  Get rid of this whole function.
->
-> You shouldn't need to use function pointers to do this; that's too
-> many levels of abstraction.
->
->> +             dev_dbg(&port->dev,
->> +                     "Illegal escape seuences in received data\n");
->> +             return 0;
->> +     }
->> +
->> +     (*fn)(qt_port, data[i + 3]);
->> +
->> +     return 1;
->> +}
->> +
->
-> [snip]
->
->>       if (urb->status) {
->>               qt_port->ReadBulkStopped = 1;
->> -             dev_dbg(&urb->dev->dev, "%s - nonzero write bulk status received: %d\n",
->> +             dev_dbg(&urb->dev->dev,
->> +                     "%s - nonzero write bulk status received: %d\n",
->>                       __func__, urb->status);
->
-> Don't mix in these unrelated 80 character limit changes.
+On 11/14/2012 01:04 PM, Thierry Reding wrote:
+...
+> According to tegra20_clocks_data.c, the maximum clock frequency
+> for host1x is 166 MHz, so 216 is probably not a good idea. 150 MHz
+> sounds sensible, though.
 
-Dan-san,
-
-Thanks for your follow-ups.
-I will try to resend this patch.
-
-
-
--- 
-
-Regards,
-
-YAMANE Toshiaki
+As a general rule, I wouldn't rely on the upstream clock driver to
+specify accurate maximum clock rates at the moment. Our downstream
+kernel is more likely to be accurate. Still, upstream might be correct
+here already...
