@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab2KNWSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:18:37 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34152 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152Ab2KNWSf (ORCPT
+	id S933204Ab2KNWSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:18:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38210 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933155Ab2KNWSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:18:35 -0500
-Date: Wed, 14 Nov 2012 14:18:33 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 02/11] thp: zap_huge_pmd(): zap huge zero pmd
-In-Reply-To: <1352300463-12627-3-git-send-email-kirill.shutemov@linux.intel.com>
-Message-ID: <alpine.DEB.2.00.1211141416550.13515@chino.kir.corp.google.com>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-3-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 Nov 2012 17:18:49 -0500
+Date: Wed, 14 Nov 2012 14:18:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+Message-Id: <20121114141847.fab752c2.akpm@linux-foundation.org>
+In-Reply-To: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
+References: <20121109150957.4f274fa7b3a75c9baaa1b7ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
+On Fri, 9 Nov 2012 15:09:57 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Hi all,
 > 
-> We don't have a real page to zap in huge zero page case. Let's just
-> clear pmd and remove it from tlb.
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
 > 
+> arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area':
+> arch/sparc/kernel/sys_sparc_64.c:92:16: error: unused variable 'start_addr' [-Werror=unused-variable]
+> arch/sparc/kernel/sys_sparc_64.c: In function 'arch_get_unmapped_area_topdown':
+> arch/sparc/kernel/sys_sparc_64.c:194:20: error: 'do_colour_align' undeclared (first use in this function)
 
-s/real/mapped/
+s/colour/color/
 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> arch/sparc/kernel/sys_sparc_64.c:194:20: note: each undeclared identifier is reported only once for each function it appears in
+> arch/sparc/kernel/sys_sparc_64.c:194:51: error: 'shm_align_mask' undeclared (first use in this function)
 
-Acked-by: David Rientjes <rientjes@google.com>
+This one has me puzzled.  I *think* we should be using
+
+info.align_mask = do_colour_align ? (PAGE_MASK & SHMLBA) : 0;
+info.align_offset = (pgoff << PAGE_SHIFT) & (SHMLBA-1);
+
+or similar.   It needs more work.
+		
+> Caused by commit "mm: use vm_unmapped_area() on sparc64 architecture".  I
+> have reverted that commit for today (and the following fix patch).
+> 
+> arch/sparc/mm/hugetlbpage.c: In function 'hugetlb_get_unmapped_area_topdown':
+> arch/sparc/mm/hugetlbpage.c:63:25: error: unused variable 'vma' [-Werror=unused-variable]
+> 
+> Caused by commit "mm: use vm_unmapped_area() in hugetlbfs on sparc64
+> architecture".  I have reverted that commit for today.
+
+I'll drop
+
+mm-use-vm_unmapped_area-on-sparc64-architecture.patch
+mm-use-vm_unmapped_area-on-sparc64-architecture-fix.patch
+mm-use-vm_unmapped_area-in-hugetlbfs-on-sparc64-architecture.patch
+
