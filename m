@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab2KNHaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:30:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44125 "EHLO
+	id S1756628Ab2KNHas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:30:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44137 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2KNHaW (ORCPT
+	with ESMTP id S1750869Ab2KNHar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:30:22 -0500
-Date: Tue, 13 Nov 2012 23:28:10 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-8dfec403e39b7c37fd6e8813bacc01da1e1210ab@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+	Wed, 14 Nov 2012 02:30:47 -0500
+Date: Tue, 13 Nov 2012 23:30:10 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-1e82574d1db1451f137cb520f21b9176f05284c9@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1352130579-13451-5-git-send-email-jolsa@redhat.com>
-References: <1352130579-13451-5-git-send-email-jolsa@redhat.com>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1352273234-28912-4-git-send-email-namhyung@kernel.org>
+References: <1352273234-28912-4-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Removing 'optional' field
-Git-Commit-ID: 8dfec403e39b7c37fd6e8813bacc01da1e1210ab
+Subject: [tip:perf/core] perf tools: Fix detection of stack area
+Git-Commit-ID: 1e82574d1db1451f137cb520f21b9176f05284c9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,143 +31,64 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:28:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:30:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8dfec403e39b7c37fd6e8813bacc01da1e1210ab
-Gitweb:     http://git.kernel.org/tip/8dfec403e39b7c37fd6e8813bacc01da1e1210ab
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 5 Nov 2012 16:49:39 +0100
+Commit-ID:  1e82574d1db1451f137cb520f21b9176f05284c9
+Gitweb:     http://git.kernel.org/tip/1e82574d1db1451f137cb520f21b9176f05284c9
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 7 Nov 2012 16:27:11 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 5 Nov 2012 14:03:59 -0300
+CommitDate: Thu, 8 Nov 2012 11:59:32 -0300
 
-perf tests: Removing 'optional' field
+perf tools: Fix detection of stack area
 
-Since we allow multiple values in event field assignment, there's no
-need for 'optional' field.. old version removal leftover.
+Output of /proc/<pid>/maps contains helpful information to anonymous
+mappings like stack, heap, ...  For the case of stack, it can show
+multiple stack area for each thread in the process:
 
-Adding some comments into attr.py script regarding the test event load.
+  $ cat /proc/$(pidof gnome-shell)/maps | grep stack
+  7fe019946000-7fe01a146000 rw-p 00000000 00:00 0          [stack:1624]
+  7fe040e32000-7fe041632000 rw-p 00000000 00:00 0          [stack:1451]
+  7fe041643000-7fe041e43000 rw-p 00000000 00:00 0          [stack:1450]
+  7fe04204b000-7fe04284b000 rw-p 00000000 00:00 0          [stack:1449]
+  7fe042a7e000-7fe04327e000 rw-p 00000000 00:00 0          [stack:1446]
+  7fe0432ff000-7fe043aff000 rw-p 00000000 00:00 0          [stack:1445]
+  7fe043b00000-7fe044300000 rw-p 00000000 00:00 0          [stack:1444]
+  7fe044301000-7fe044b01000 rw-p 00000000 00:00 0          [stack:1443]
+  7fe044b02000-7fe045302000 rw-p 00000000 00:00 0          [stack:1442]
+  7fe045303000-7fe045b03000 rw-p 00000000 00:00 0          [stack:1441]
+  7fe045b04000-7fe046304000 rw-p 00000000 00:00 0          [stack:1440]
+  7fe046305000-7fe046b05000 rw-p 00000000 00:00 0          [stack:1439]
+  7fe046b06000-7fe047306000 rw-p 00000000 00:00 0          [stack:1438]
+  7fff4b16f000-7fff4b190000 rw-p 00000000 00:00 0          [stack]
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+However perf only knew about the main thread's.  Fix it.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352130579-13451-5-git-send-email-jolsa@redhat.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1352273234-28912-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/attr.c           |    2 --
- tools/perf/tests/attr.py          |   29 ++++++++++++++++++-----------
- tools/perf/tests/attr/base-record |    1 -
- tools/perf/tests/attr/base-stat   |    1 -
- 4 files changed, 18 insertions(+), 15 deletions(-)
+ tools/perf/util/map.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 6fa84b7..6e2feee 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -126,8 +126,6 @@ static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
- 	WRITE_ASS(sample_regs_user,   "llu");
- 	WRITE_ASS(sample_stack_user,  PRIu32);
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9b40c44..5791878 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -24,7 +24,7 @@ static inline int is_anon_memory(const char *filename)
  
--	__WRITE_ASS(optional, "d", 0);
--
- 	fclose(file);
- 	return 0;
+ static inline int is_no_dso_memory(const char *filename)
+ {
+-	return !strcmp(filename, "[stack]") ||
++	return !strncmp(filename, "[stack", 6) ||
+ 	       !strcmp(filename, "[heap]");
  }
-diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
-index 28c0481..9b25b33c 100644
---- a/tools/perf/tests/attr.py
-+++ b/tools/perf/tests/attr.py
-@@ -75,6 +75,7 @@ class Event(dict):
-         self.add(data)
  
-     def compare_data(self, a, b):
-+        # Allow multiple values in assignment separated by '|'
-         a_list = a.split('|')
-         b_list = b.split('|')
- 
-@@ -96,12 +97,17 @@ class Event(dict):
-                 return False
-         return True
- 
--    def is_optional(self):
--        if self['optional'] == '1':
--            return True
--        else:
--            return False
--
-+# Test file description needs to have following sections:
-+# [config]
-+#   - just single instance in file
-+#   - needs to specify:
-+#     'command' - perf command name
-+#     'args'    - special command arguments
-+#     'ret'     - expected command return value (0 by default)
-+#
-+# [eventX:base]
-+#   - one or multiple instances in file
-+#   - expected values assignments
- class Test(object):
-     def __init__(self, path, options):
-         parser = ConfigParser.SafeConfigParser()
-@@ -135,11 +141,15 @@ class Test(object):
-         parser_event = ConfigParser.SafeConfigParser()
-         parser_event.read(path)
- 
-+        # The event record section header contains 'event' word,
-+        # optionaly followed by ':' allowing to load 'parent
-+        # event' first as a base
-         for section in filter(self.is_event, parser_event.sections()):
- 
-             parser_items = parser_event.items(section);
-             base_items   = {}
- 
-+            # Read parent event if there's any
-             if (':' in section):
-                 base = section[section.index(':') + 1:]
-                 parser_base = ConfigParser.SafeConfigParser()
-@@ -177,11 +187,10 @@ class Test(object):
-                 else:
-                     log.debug("    ->FAIL");
- 
--            log.info("    match: [%s] optional(%d) matches %s" %
--                      (exp_name, exp_event.is_optional(), str(exp_list)))
-+            log.info("    match: [%s] matches %s" % (exp_name, str(exp_list)))
- 
-             # we did not any matching event - fail
--            if (not exp_list) and (not exp_event.is_optional()):
-+            if (not exp_list):
-                 raise Fail(self, 'match failure');
- 
-             match[exp_name] = exp_list
-@@ -194,8 +203,6 @@ class Test(object):
-             if (group == ''):
-                 continue
- 
--            # XXX group matching does not account for
--            # optional events as above matching does
-             for res_name in match[exp_name]:
-                 res_group = result[res_name].group
-                 if res_group not in match[group]:
-diff --git a/tools/perf/tests/attr/base-record b/tools/perf/tests/attr/base-record
-index 8262794..f1485d8 100644
---- a/tools/perf/tests/attr/base-record
-+++ b/tools/perf/tests/attr/base-record
-@@ -37,4 +37,3 @@ config2=0
- branch_sample_type=0
- sample_regs_user=0
- sample_stack_user=0
--optional=0
-diff --git a/tools/perf/tests/attr/base-stat b/tools/perf/tests/attr/base-stat
-index 46f8851..4bd79a8 100644
---- a/tools/perf/tests/attr/base-stat
-+++ b/tools/perf/tests/attr/base-stat
-@@ -37,4 +37,3 @@ config2=0
- branch_sample_type=0
- sample_regs_user=0
- sample_stack_user=0
--optional=0
