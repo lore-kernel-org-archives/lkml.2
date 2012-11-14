@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab2KNFyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:54:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55287 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756478Ab2KNFvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:10 -0500
-Message-Id: <20121114053937.652708298@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:00 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 27/82] gpiolib: Dont return -EPROBE_DEFER to sysfs, or for invalid gpios
-In-Reply-To: <20121114053933.726869752@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1756557Ab2KNFyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:54:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58043 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756504Ab2KNFyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 00:54:47 -0500
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
+CC: <linux-kernel@vger.kernel.org>, AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH RESEND] regulator: tps65910: fix BUG_ON() shown with vrtc regulator
+Date: Wed, 14 Nov 2012 11:24:39 +0530
+Message-ID: <1352872479-25462-1-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Fix BUG_ON() error if tps65910 VRTC regulator is used with out
+rdev->desc->volt_table data. Recent changes in regulator core driver
+which add support for "regulator_list_voltage_table" have BUG_ON() if
+regulator descriptor do not have voltage table information. This patch
+adds the voltage table information to fix the issue.
 
-------------------
-
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-
-commit ad2fab36d7922401c4576fb7ea9b21a47a29a17f upstream.
-
-gpios requested with invalid numbers, or gpios requested from userspace via sysfs
-should not try to be deferred on failure.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
 ---
- drivers/gpio/gpiolib.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/regulator/tps65910-regulator.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 5d6c71e..1c8d9e3 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -623,9 +623,11 @@ static ssize_t export_store(struct class *class,
- 	 */
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 793adda..1d2dd18 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -38,6 +38,11 @@ static const unsigned int VIO_VSEL_table[] = {
  
- 	status = gpio_request(gpio, "sysfs");
--	if (status < 0)
-+	if (status < 0) {
-+		if (status == -EPROBE_DEFER)
-+			status = -ENODEV;
- 		goto done;
--
-+	}
- 	status = gpio_export(gpio, true);
- 	if (status < 0)
- 		gpio_free(gpio);
-@@ -1191,8 +1193,10 @@ int gpio_request(unsigned gpio, const char *label)
+ /* VSEL tables for TPS65910 specific LDOs and dcdc's */
  
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
--	if (!gpio_is_valid(gpio))
-+	if (!gpio_is_valid(gpio)) {
-+		status = -EINVAL;
- 		goto done;
-+	}
- 	desc = &gpio_desc[gpio];
- 	chip = desc->chip;
- 	if (chip == NULL)
-
++/* supported VRTC voltages in microvolts */
++static const unsigned int VRTC_VSEL_table[] = {
++	1800000,
++};
++
+ /* supported VDD3 voltages in microvolts */
+ static const unsigned int VDD3_VSEL_table[] = {
+ 	5000000,
+@@ -95,6 +100,8 @@ static struct tps_info tps65910_regs[] = {
+ 	{
+ 		.name = "vrtc",
+ 		.vin_name = "vcc7",
++		.n_voltages = ARRAY_SIZE(VRTC_VSEL_table),
++		.voltage_table = VRTC_VSEL_table,
+ 		.enable_time_us = 2200,
+ 	},
+ 	{
+-- 
+1.7.9.5
 
