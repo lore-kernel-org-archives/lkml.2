@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992440Ab2KNWuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:50:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61296 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933183Ab2KNWu3 (ORCPT
+	id S1945948Ab2KNW6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:58:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38350 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945923Ab2KNW6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:50:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <50A3F06F.20809@wwwdotorg.org>
-References: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
- <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
- <CAK5ve-L=SBFEfoY8oKYYb-dFCWf=-Eb-qMFdWdiBO3wfaR3tDA@mail.gmail.com> <50A3F06F.20809@wwwdotorg.org>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 14 Nov 2012 14:50:07 -0800
-Message-ID: <CAK5ve-KbZJJHSrL8vuAwU2C1DQ4tTD8DwC2=4N830iALv-a9EA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] Add documentation for tca6507 devicetree bindings.
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 Nov 2012 17:58:50 -0500
+Date: Wed, 14 Nov 2012 14:58:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] mm: cma: allocate pages from CMA if NR_FREE_PAGES
+ approaches low water mark
+Message-Id: <20121114145848.8224e8b0.akpm@linux-foundation.org>
+In-Reply-To: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+References: <1352710782-25425-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 11:26 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/13/2012 06:05 PM, Bryan Wu wrote:
->> It looks fine to me, but I need a DT maintainer's ack. Stephen, could
->> you help on this. I will merge this patch via my tree.
->
-> I'm not actually a DT maintainer; I CC'd Grant and Rob.
+On Mon, 12 Nov 2012 09:59:42 +0100
+Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
-Sure, thanks for this.
+> It has been observed that system tends to keep a lot of CMA free pages
+> even in very high memory pressure use cases. The CMA fallback for movable
+> pages is used very rarely, only when system is completely pruned from
+> MOVABLE pages, what usually means that the out-of-memory even will be
+> triggered very soon. To avoid such situation and make better use of CMA
+> pages, a heuristics is introduced which turns on CMA fallback for movable
+> pages when the real number of free pages (excluding CMA free pages)
+> approaches low water mark.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  mm/page_alloc.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index fcb9719..90b51f3 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1076,6 +1076,15 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>  {
+>  	struct page *page;
+>  
+> +#ifdef CONFIG_CMA
+> +	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
+> +	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
+> +
+> +	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
+> +	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
+> +		migratetype = MIGRATE_CMA;
+> +#endif /* CONFIG_CMA */
+> +
+>  retry_reserve:
+>  	page = __rmqueue_smallest(zone, order, migratetype);
 
-> Marek probably wants to repost the whole patch to them. Comments below.
->
->>> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-> ...
->>> +LED sub-node properties:
-> ...
->>> +  string defining the trigger assigned to the LED.  Current triggers are:
->>> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
->>> +                 system
->>> +    "default-on" - LED will turn on
->>> +    "heartbeat" - LED "double" flashes at a load average based rate
->>> +    "ide-disk" - LED indicates disk activity
->>> +    "timer" - LED flashes at a fixed, configurable rate
->
-> It would be useful to point at a single canonical document that
-> describes the triggers, rather than duplicating the list into every binding.
->
+erk, this is right on the page allocator hotpath.  Bad.
 
-Yeah, actually I saw several leds related DT binding txt are similar
-and probably based on Documentation/devicetree/bindings/gpio/led.txt.
-It's good to have a common one. Marek, are you going to do this? Thanks.
+At the very least, we could code it so it is not quite so dreadfully
+inefficient:
 
-> Aside from that, I think this looks reasonable.
->
-> Oh, looking at Documentation/devicetree/bindings/gpio/led.txt, should a
-> default-state property be supported?
+	if (migratetype == MIGRATE_MOVABLE) {
+		unsigned long nr_cma_free;
 
-I'm not sure about this for ti,tca6507 and it really depends on the
-driver implementation. But we can add this later.
+		nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
+		if (nr_cma_free) {
+			unsigned long nr_free;
 
--Bryan
+			nr_free = zone_page_state(zone, NR_FREE_PAGES);
+
+			if (nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
+				migratetype = MIGRATE_CMA;
+		}
+	}
+
+but it still looks pretty bad.
