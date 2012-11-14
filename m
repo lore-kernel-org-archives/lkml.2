@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab2KNGdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:33:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51575 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752655Ab2KNGdN (ORCPT
+	id S1756267Ab2KNGdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:33:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43098 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab2KNGdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 01:33:13 -0500
-Date: Wed, 14 Nov 2012 15:33:05 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] regulator: tps65910: fix BUG_ON() shown with vrtc
- regulator
-Message-ID: <20121114063303.GD7407@opensource.wolfsonmicro.com>
-References: <1352872479-25462-1-git-send-email-anilkumar@ti.com>
- <20121114061913.GB7407@opensource.wolfsonmicro.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA6B07A@DBDE01.ent.ti.com>
+	Wed, 14 Nov 2012 01:33:43 -0500
+Date: Tue, 13 Nov 2012 22:32:09 -0800
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-acddedfba0df1e47fa99035a04661082b679ee9c@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        eranian@gmail.com, namhyung@kernel.org, bp@amd64.org,
+        avagin@openvz.org, jolsa@redhat.com, dhowells@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        avagin@openvz.org, bp@amd64.org, namhyung@kernel.org,
+        eranian@gmail.com, jolsa@redhat.com, fweisbec@gmail.com,
+        dhowells@redhat.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <20121030084600.GB8245@gmail.com>
+References: <20121030084600.GB8245@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Speed up the perf build time by simplifying the perf --version string generation
+Git-Commit-ID: acddedfba0df1e47fa99035a04661082b679ee9c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13EA6B07A@DBDE01.ent.ti.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 22:32:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  acddedfba0df1e47fa99035a04661082b679ee9c
+Gitweb:     http://git.kernel.org/tip/acddedfba0df1e47fa99035a04661082b679ee9c
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Tue, 30 Oct 2012 09:46:00 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 31 Oct 2012 12:17:49 -0200
 
---KdquIMZPjGJQvRdI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+perf tools: Speed up the perf build time by simplifying the perf --version string generation
 
-On Wed, Nov 14, 2012 at 06:25:15AM +0000, AnilKumar, Chimata wrote:
-> On Wed, Nov 14, 2012 at 11:49:14, Mark Brown wrote:
+Building perf is pretty slow on trees that have a lot of commits
+relative to the nearest Git tag. This slowness manifests itself during
+version string generation:
 
-> > This is already applied...  got dropped from -next for a day for some
-> > reason but it's there.  When resending please do say why.
+ $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
 
-> Sorry for the noise (My bad missed the version change details). I have
-> checked in regulator/for-next tree and not found, so resend the patch
-> thanks for you time.
+ Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
 
-Sure, no problem - the thing about saying why you're reposting is more
-for future reference, if you follow my advice and repost when you think
-something got forgotten or lost.
+       2.857503976 seconds time elapsed                                          ( +-  0.22% )
 
---KdquIMZPjGJQvRdI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The build can be even slower than that, when one over NFS volumes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The reason for the slowness is that util/PERF-VERSION-GEN uses "git
+describe" to generate the string, which has to count the "number of
+commits distance" from the nearest tag - the ".1458." count in the
+output above. For that Git had to extract and decompress 1458 Git
+objects, which takes time and bandwidth.
 
-iQIcBAEBAgAGBQJQozpRAAoJELSic+t+oim9oEoP/j2Cmre7NVwYlrAeahLYk+PB
-BfbaB0CQr4G56pFj81eTW2rdD41ap97wQrYDLEEaG8YTBuxXrvZ4EhQuh6kSD36V
-2bmVZeYTGIVbAYGu+vBsCmw4jku4lti6a4kl9h70UL83dbnEDIyDqPHGtluNYYEs
-nLmMpjleyjtqQH8RGqdtYIUCL7TShfssYRmDwKtxIApxsZBlOnHbh9Vdk45P7yVg
-ETLDylzp2UTkBm8Zx/CkCR2dFJVjmG7XhevBUqCSj/b1UzJzl5TM45ykb8/zeJk7
-IgnOVozG07hJ0lGG2vJbXtgUyFHQ0YpkrEKQwLqkDlxe3Aebf4QLFSTQ5JTnuHfF
-O+e6WugoLOU1DGxMjlbIipvIaYN7Qd5wLDV8MBVpmtPvIAjh2Jrf+4iIlSxExzJa
-bBrYRCUwoN9V3HNayP4W1VYe+O4bPqOcOiY4NHDd9ROzWcqt3EBniywZYZzUTy/3
-CTrQU1i/KTFgWlTC9WZxDMo/b3UGXgrU/SnF7CrYp8lFM6EQCgLZB8W507lA3Lgw
-2irbMx2eBbxofZJik+Nr5+P79qjJGVum9yem286/z9cCdYTtAzPel/YDzK4N6DMl
-ylXsz3f0wcNMX6/i9trOF60FjTVipHSoG4WA0W47xpAGtxq0NCZy0vjo0vjhh6RZ
-Icp1TnznFA+jMkrwGfqE
-=3RRD
------END PGP SIGNATURE-----
+But this "number of commits" value is mostly irrelevant in practice. We
+either want to know an approximate tag name, or we want to know the
+precise sha1.
 
---KdquIMZPjGJQvRdI--
+So this patch simplifies the version string to:
+
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+
+which speeds up the version string generation script by an order of
+magnitude:
+
+ $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+
+ Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+
+       0.307633559 seconds time elapsed                                          ( +-  0.84% )
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Borislav Petkov <bp@amd64.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20121030084600.GB8245@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/PERF-VERSION-GEN |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 95264f3..f6e8ee2 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -12,7 +12,7 @@ LF='
+ # First check if there is a .git to get the version from git describe
+ # otherwise try to get the version from the kernel makefile
+ if test -d ../../.git -o -f ../../.git &&
+-	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
++	VN=$(echo $(git tag -l "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
+ 	case "$VN" in
+ 	*$LF*) (exit 1) ;;
+ 	v[0-9]*)
