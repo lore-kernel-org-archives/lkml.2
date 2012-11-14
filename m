@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423089Ab2KNQpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 11:45:35 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9419 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422671Ab2KNQpd (ORCPT
+	id S1161259Ab2KNQre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 11:47:34 -0500
+Received: from zmail.sgconsulting.it ([174.143.207.116]:51578 "EHLO
+	zmail.sgconsulting.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964820Ab2KNQrd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 11:45:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 14 Nov 2012 08:45:27 -0800
-Message-ID: <50A3CAA3.2060908@nvidia.com>
-Date: Wed, 14 Nov 2012 18:45:23 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 14 Nov 2012 11:47:33 -0500
+Date: Wed, 14 Nov 2012 16:48:47 +0000 (UTC)
+From: Forconi <forconi@wavecomm.it>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <624976355.1341772.1352911727159.JavaMail.root@zmail.sgconsulting.it>
+In-Reply-To: <20121114115255.2dfaefc9@pyramind.ukuu.org.uk>
+Subject: Re: KMS Framebuffer on Intel N2600 (GMA3600)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A357D3.9080002@nvidia.com> <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de> <50A3712E.7000104@nvidia.com> <20121114105406.GA31455@avionic-0098.mockup.avionic-design.de> <50A3C485.7080704@wwwdotorg.org>
-In-Reply-To: <50A3C485.7080704@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [213.243.236.19]
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - GC23 (Win)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.11.2012 18:19, Stephen Warren wrote:
-> I'd rather initialize it explicitly. If setting it to 216MHz works
-> fine as Terje indicated, we may as well just do that.
+Hi Alan,
+first of all, thanks for your support.
 
-I'd prefer explicit setting, too.
+> So the panel backlight register is set to indicate that the
+> brightness
+> will be handled by the firmware in some other way and not by the
+> graphics.
+> Do you have ACPI backlight support in your kernel ? Do you have the
+> LVDS
+> panel enabled in the BIOS ?
 
-> I suspect the issue with the original code:
+This backlight problem appears only when I run linux with KMS framebuffer,
+when I run linux without KMS framebuffer, the backlight is always on.
+
+Yes, I have ACPI enabled and ACPI backlight enabled, but running:
+echo 100 > /sys/class/backlight/psb-bl/brightness
+won't change anything.
+In the BIOS there isn't any section relative to Video or LVDS settings.
+
+But, in the end, this means that the driver si correctly loaded and the 
+framebuffer is running but the panel backlight is off?
+In other words, I can't see anything only because the backlight is off?
+
+> It could be the value hasn't been initialised when it should have
+> been,
+> it could be your hardware has some other interface for this.
 > 
->> { "host1x",     "pll_c",        144000000,      false },
+> If you look at cdv_device.c you'll see cdv_get_max_backlight() checks
+> for
+> this case. If you can find out what the value should be then you can
+> substitute
 > 
-> ... is that perhaps the requested 144MHz can't be generated from
-> pll_c's 600MHz rate, since there's a simple U7.1 divider there (you
-> could get 120, 133.333, 150), so the clock ends up being programmed to
-> some incorrect value. In the pll_p/216MHz case, pll_p is programmed to
-> generate 216MHz anyway, so requesting the same rate for host1x yields
-> a divider of 1 exactly which works fine.
+>         if (max == 0) {
+>                 DRM_DEBUG_KMS("LVDS Panel PWM value is 0!\n");
+>                 /* i915 does this, I believe which means that we
+>                 should
+>                  * smash PWM control as firmware will take control of
+>                  it.
+>         	return 1;
+>         }
+> 
+> 
+> with
+> 	if (max == 0)
+> 		max = max_value << 16;
+> 
+> and test that case. If that doesn't work then probably the backlight
+> is
+> wired some other way. If ACPI handles it you may be able to handle it
+> that way. If it's a custom driver interface in Windows you may have a
+> problem.
+> 
+> Alan
+> 
 
-I could try the values you proposed tomorrow when I get back to office.
-I believe we've always kept host1x under non-fractional dividers, so I'd
-like to try 150MHz on Ventana and 150MHz and 300MHz on Cardhu.
+I don't know which could be the maximum value, there are any standard values
+for backlight settings? I could try setting some values and see what happens...
 
-600MHz sounds pretty high for PLLC on Tegra20. For Tegra30 it would be
-understandable. In internal kernel I believe we have lower rate for
-Tegra20 PLLC. Do we have anything running from PLLC in Tegra20 upstream
-kernel?
 
-Terje
+
+Thanks again for your help.
+
+Regards,
+Samuele.
+
+
+-- 
+Ing. Samuele Forconi
+Responsabile Sviluppo SW
+WaveComm S.r.l.
+Sede legale: Via Donizetti 25, 53011 Castellina in Chianti (SI)
+Sede operativa: Loc. Belvedere - Ingresso 2, 53034 Colle Val d'Elsa (SI)
+Phone: (39) 0577 043101
+Fax: (39) 0577 043101
+Mobile: (39) 347 5899717
+Skype: samueleforconi
+E-mail: forconi@wavecomm.it
+URL: www.wavecomm.it
+
+_____________________________________________________________________________________________
+
+Ai sensi del D. Lgs. n.196 del 30/06/2003, questo messaggio ed ogni suo allegato sono confidenziali e ad uso esclusivo del destinatario, il quale è l'unico autorizzato ad usarlo, copiarlo e, sotto la propria responsabilità, diffonderlo. Se il ricevente non è il destinatario diretto del presente messaggio, è pregato di contattare l'originario mittente e di cancellare questo messaggio ed ogni suo allegato dal sistema di posta. Se il ricevente non è il destinatario diretto del presente messaggio, sono vietati l'uso, la riproduzione, e la stampa di questo messaggio e di ogni suo allegato, nonché la diffusione del loro contenuto a qualsiasi altro soggetto.
+
+For the D. Lgs. n.196 of 30/06/2003, this message and any attachment are confidential and privileged for the the recipient identified above, who only may use, copy and, under his/her responsibility, further disseminate it. If you are not the intended recipient, please contact the sender and delete this message and any attachment from your system. If you are not the intended recipient you must not use, copy or print this message or attachment or disclose the contents to any other person.
