@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab2KNGHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:07:02 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55001 "EHLO
+	id S1756604Ab2KNGHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:07:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54950 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753076Ab2KNFuJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751804Ab2KNFuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:09 -0500
-Message-Id: <20121114053944.984466125@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:01 -0500
+Message-Id: <20121114053936.389927320@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:54 +0000
+Date: Wed, 14 Nov 2012 05:39:51 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 81/82] r8169: use unlimited DMA burst for TX
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 18/82] cfg80211: fix antenna gain handling
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,64 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
+commit c4a9fafc77a5318f5ed26c509bbcddf03e18c201 upstream.
 
-The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
-a box where this prevents the interface from using the gigabit line to its full
-potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
+No driver initializes chan->max_antenna_gain to something sensible, and
+the only place where it is being used right now is inside ath9k. This
+leads to ath9k potentially using less tx power than it can use, which can
+decrease performance/range in some rare cases.
 
-The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
-(XID 0c900880). TSO is enabled.
+Rather than going through every single driver, this patch initializes
+chan->orig_mag in wiphy_register(), ignoring whatever value the driver
+left in there. If a driver for some reason wishes to limit it independent
+from regulatory rulesets, it can do so internally.
 
-I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
-on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
-'7'=unlimited). This chart shows the results:
-http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
-
-Interesting points:
- - With the current DMA burst limit (1024):
-   - at the default MTU=1500 I get only 842 Mbit/s.
-   - when going from small MTU, the performance rises monotonically with
-     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
-     a sudden drop to 762 MBit/s from which the throughput rises monotonically
-     again with further MTU increases.
- - With a smaller DMA burst limit (512):
-   - there's a similar peak at MTU=1076 and another one at MTU=564.
- - With unlimited DMA burst:
-   - at the default MTU=1500 I get nice 940 Mbit/s.
-   - the throughput rises monotonically with increasing MTU with no strange
-     peaks.
-
-Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
-limit plus 52. Why 52? Because:
-  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
-
-The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
-except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
-CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
-i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
-the smaller burst limit, or if any other versions have similar requirements.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/realtek/r8169.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/wireless/core.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -77,7 +77,7 @@ static const int multicast_filter_limit
- #define MAC_ADDR_LEN	6
- 
- #define MAX_READ_REQUEST_SHIFT	12
--#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
-+#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
- #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
- #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
- 
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index 443d4d7..3f72530 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -526,8 +526,7 @@ int wiphy_register(struct wiphy *wiphy)
+ 		for (i = 0; i < sband->n_channels; i++) {
+ 			sband->channels[i].orig_flags =
+ 				sband->channels[i].flags;
+-			sband->channels[i].orig_mag =
+-				sband->channels[i].max_antenna_gain;
++			sband->channels[i].orig_mag = INT_MAX;
+ 			sband->channels[i].orig_mpwr =
+ 				sband->channels[i].max_power;
+ 			sband->channels[i].band = band;
 
 
