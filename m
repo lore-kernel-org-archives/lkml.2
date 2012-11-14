@@ -1,147 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab2KNEkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 23:40:00 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48240 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab2KNEj7 (ORCPT
+	id S1750978Ab2KNFHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:07:15 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:53174 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2KNFHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 23:39:59 -0500
-X-AuditID: 9c930197-b7b45ae000000e9e-01-50a3209c4bef
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf tools: Don't check configuration on make clean
-Date: Wed, 14 Nov 2012 13:39:50 +0900
-Message-Id: <1352867990-658-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 14 Nov 2012 00:07:13 -0500
+Message-ID: <50A326FF.6060502@gmail.com>
+Date: Tue, 13 Nov 2012 23:07:11 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Possible disk failure
+References: <1352865261.18025.61.camel@gandalf.local.home>
+In-Reply-To: <1352865261.18025.61.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 11/13/2012 09:54 PM, Steven Rostedt wrote:
+> Hi Jens,
+>
+> Since you helped me out before, I'm going to ask for some more help ;-)
+>
+> I just recently purchased a new workstation from HP, and after fighting
+> with getting grub2 working the way I want, I kicked off a ktest run to
+> create a true min config. It basically disables options from the .config
+> file until it finds a .config that that boots but will fail if you
+> disable any of the configs that are set.
+>
+> Anyway, in the middle of this test, I started getting these nasty ata
+> errors again (like the ones I got with the failed HD that you helped me
+> out with on G+). But this is a brand new spanking machine (with a new
+> HD), but I could have gotten a lemon.
+>
+> Anyway, the full dmesg is at:
+>
+> http://rostedt.homelinux.com/private/bxtest-ata-fail-dmesg
 
-Current perf build process checks various system configuration on
-invocation to make.  But this is not needed just for cleaning.
+The important part being:
 
-To do that, move some of python related variables out of conditional
-since 'clean' target needs them.  Normal path should not be affected
-by this.
+[   11.974811] ata1.00: exception Emask 0x0 SAct 0x1 SErr 0x0 action 0x0
+[   11.982816] ata1.00: irq_stat 0x40000008
+[   11.987512] ata1.00: failed command: READ FPDMA QUEUED
+[   11.993407] ata1.00: cmd 60/08:00:00:20:92/00:00:07:00:00/40 tag 0 
+ncq 4096 in
+[   11.993407]          res 41/40:00:04:20:92/00:00:07:00:00/40 Emask 
+0x409 (media error) <F>
+[   12.010367] ata1.00: status: { DRDY ERR }
+[   12.015146] ata1.00: error: { UNC }
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Documentation/Makefile |  2 ++
- tools/perf/Makefile               | 28 ++++++++++++++++------------
- 2 files changed, 18 insertions(+), 12 deletions(-)
+..
 
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index ef6d22e879eb..f6e5901c8f5f 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -222,10 +222,12 @@ install-pdf: pdf
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
- 
-+ifneq ($(MAKECMDGOALS),clean)
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
- 
- -include $(OUTPUT)PERF-VERSION-FILE
-+endif
- 
- #
- # Determine "include::" file references in asciidoc files.
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a7c6aa8d4a8b..128a448ede65 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -153,6 +153,7 @@ INSTALL = install
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
- 
-+ifneq ($(MAKECMDGOALS),clean)
- -include config/feature-tests.mak
- 
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
-@@ -178,6 +179,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
- 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
- 	BASIC_CFLAGS += -I.
- endif
-+endif # MAKECMDGOALS != clean
- 
- # Guard against environment variables
- BUILTIN_OBJS =
-@@ -202,11 +204,19 @@ endif
- LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
- TE_LIB := -L$(TE_PATH) -ltraceevent
- 
-+export LIBTRACEEVENT
-+
-+# python extension build directories
-+PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
-+PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
-+PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
-+export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
-+
-+python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
-+
- PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
- PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
- 
--export LIBTRACEEVENT
--
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
-@@ -482,6 +492,7 @@ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
- #
- # Platform specific tweaks
- #
-+ifneq ($(MAKECMDGOALS),clean)
- 
- # We choose to avoid "if .. else if .. else .. endif endif"
- # because maintaining the nesting to match is a pain.  If
-@@ -679,7 +690,7 @@ disable-python = $(eval $(disable-python_code))
- define disable-python_code
-   BASIC_CFLAGS += -DNO_LIBPYTHON
-   $(if $(1),$(warning No $(1) was found))
--  $(warning Python support won't be built)
-+  $(warning Python support will not be built)
- endef
- 
- override PYTHON := \
-@@ -687,19 +698,10 @@ override PYTHON := \
- 
- ifndef PYTHON
-   $(call disable-python,python interpreter)
--  python-clean :=
- else
- 
-   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
--  # python extension build directories
--  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
--  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
--  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
--  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
--
--  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
--
-   ifdef NO_LIBPYTHON
-     $(call disable-python)
-   else
-@@ -815,6 +817,8 @@ ifdef ASCIIDOC8
- 	export ASCIIDOC8
- endif
- 
-+endif # MAKECMDGOALS != clean
-+
- # Shell quote (do not use $(call) to accommodate ancient setups);
- 
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
--- 
-1.7.11.7
+[   16.527065] end_request: I/O error, dev sda, sector 127016964
+
+i.e. the drive reported an uncorrected read error on sector 127016964.
+
+>
+> And here's a smartctl dump:
+>
+> [root@bxtest ~]# smartctl --all /dev/sda
+> smartctl 5.43 2012-06-30 r3573 [x86_64-linux-3.5.5-custom] (local build)
+> Copyright (C) 2002-12 by Bruce Allen, http://smartmontools.sourceforge.net
+>
+> === START OF INFORMATION SECTION ===
+> Model Family:     Western Digital Caviar Blue Serial ATA
+> Device Model:     WDC WD5000AAKX-60U6AA0
+> Serial Number:    WD-WCC2EF801545
+> LU WWN Device Id: 5 0014ee 25ccb70a0
+> Firmware Version: 18.01H18
+> User Capacity:    500,107,862,016 bytes [500 GB]
+> Sector Size:      512 bytes logical/physical
+> Device is:        In smartctl database [for details use: -P show]
+> ATA Version is:   8
+> ATA Standard is:  Exact ATA specification draft version not indicated
+> Local Time is:    Tue Nov 13 17:48:40 2012 EST
+> SMART support is: Available - device has SMART capability.
+> SMART support is: Enabled
+>
+> === START OF READ SMART DATA SECTION ===
+> SMART overall-health self-assessment test result: PASSED
+>
+> General SMART Values:
+> Offline data collection status:  (0x80)	Offline data collection activity
+> 					was never started.
+> 					Auto Offline Data Collection: Enabled.
+> Self-test execution status:      (  40)	The self-test routine was interrupted
+> 					by the host with a hard or soft reset.
+> Total time to complete Offline
+> data collection: 		( 7860) seconds.
+> Offline data collection
+> capabilities: 			 (0x5b) SMART execute Offline immediate.
+> 					Auto Offline data collection on/off support.
+> 					Suspend Offline collection upon new
+> 					command.
+> 					Offline surface scan supported.
+> 					Self-test supported.
+> 					No Conveyance Self-test supported.
+> 					Selective Self-test supported.
+> SMART capabilities:            (0x0003)	Saves SMART data before entering
+> 					power-saving mode.
+> 					Supports SMART auto save timer.
+> Error logging capability:        (0x01)	Error logging supported.
+> 					General Purpose Logging supported.
+> Short self-test routine
+> recommended polling time: 	 (   2) minutes.
+> Extended self-test routine
+> recommended polling time: 	 (  80) minutes.
+> SCT capabilities: 	       (0x303f)	SCT Status supported.
+> 					SCT Error Recovery Control supported.
+> 					SCT Feature Control supported.
+> 					SCT Data Table supported.
+>
+> SMART Attributes Data Structure revision number: 16
+> Vendor Specific SMART Attributes with Thresholds:
+> ID# ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE      UPDATED  WHEN_FAILED RAW_VALUE
+>    1 Raw_Read_Error_Rate     0x002f   200   200   051    Pre-fail  Always       -       78
+>    3 Spin_Up_Time            0x0027   143   142   021    Pre-fail  Always       -       3850
+>    4 Start_Stop_Count        0x0032   100   100   000    Old_age   Always       -       138
+>    5 Reallocated_Sector_Ct   0x0033   200   200   140    Pre-fail  Always       -       0
+>    7 Seek_Error_Rate         0x002f   100   253   051    Pre-fail  Always       -       0
+>    9 Power_On_Hours          0x0032   100   100   000    Old_age   Always       -       43
+>   10 Spin_Retry_Count        0x0033   100   100   051    Pre-fail  Always       -       0
+>   11 Calibration_Retry_Count 0x0032   100   100   000    Old_age   Always       -       0
+>   12 Power_Cycle_Count       0x0032   100   100   000    Old_age   Always       -       136
+> 184 End-to-End_Error        0x0033   100   100   097    Pre-fail  Always       -       0
+> 187 Reported_Uncorrect      0x0032   022   022   000    Old_age   Always       -       78
+> 188 Command_Timeout         0x0032   094   094   000    Old_age   Always       -       6
+> 190 Airflow_Temperature_Cel 0x0022   074   067   040    Old_age   Always       -       26 (Min/Max 26/27)
+> 192 Power-Off_Retract_Count 0x0032   200   200   000    Old_age   Always       -       123
+> 193 Load_Cycle_Count        0x0032   200   200   000    Old_age   Always       -       14
+> 196 Reallocated_Event_Count 0x0032   200   200   000    Old_age   Always       -       0
+> 197 Current_Pending_Sector  0x0032   200   200   000    Old_age   Always       -       1
+
+So it looks like the drive reports there's 1 sector that will be 
+reallocated once it gets rewritten. It could be that the drive is 
+actually OK but that sector just got mis-written (due to a hard 
+power-off while it was being written, perhaps) and will be fine once it 
+gets written successfully.
+
+You could try using hdparm commands to overwrite that sector, or just 
+boot from a live CD, zero out the entire disk with "dd if=/dev/zero 
+of=/dev/sda" and try a reinstall. If the drives go away and a long SMART 
+self test reports no errors, the drive is likely OK. If not, a 
+replacement is likely in order.
+
+> 198 Offline_Uncorrectable   0x0030   100   253   000    Old_age   Offline      -       0
+> 199 UDMA_CRC_Error_Count    0x0032   200   200   000    Old_age   Always       -       0
+> 200 Multi_Zone_Error_Rate   0x0008   100   253   000    Old_age   Offline      -       0
+>
+> SMART Error Log Version: 1
+> No Errors Logged
+>
+> SMART Self-test log structure revision number 1
+> Num  Test_Description    Status                  Remaining  LifeTime(hours)  LBA_of_first_error
+> # 1  Extended offline    Interrupted (host reset)      80%         1         -
+>
+> SMART Selective self-test log data structure revision number 1
+>   SPAN  MIN_LBA  MAX_LBA  CURRENT_TEST_STATUS
+>      1        0        0  Not_testing
+>      2        0        0  Not_testing
+>      3        0        0  Not_testing
+>      4        0        0  Not_testing
+>      5        0        0  Not_testing
+> Selective self-test flags (0x0):
+>    After scanning selected spans, do NOT read-scan remainder of disk.
+> If Selective self-test is pending on power-up, resume after 0 minute delay.
+>
+> [root@bxtest ~]#
+>
+>
+> Any help would be appreciated. Is this HD a lemon (need to return it?)
+> or did something else go wrong that is fixable.
+>
+> Thanks!
+>
+> -- Steve
+>
 
