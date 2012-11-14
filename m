@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075Ab2KNUSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:18:30 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55760 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2KNUS2 (ORCPT
+	id S933079Ab2KNUWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:22:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:56297 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab2KNUWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:18:28 -0500
-Message-ID: <50A3FC90.7030105@wwwdotorg.org>
-Date: Wed, 14 Nov 2012 13:18:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 14 Nov 2012 15:22:07 -0500
+Date: Wed, 14 Nov 2012 21:21:54 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+Message-ID: <20121114202154.GA10742@avionic-0098.mockup.avionic-design.de>
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
+ <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
+ <50A357D3.9080002@nvidia.com>
+ <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de>
+ <50A3712E.7000104@nvidia.com>
+ <20121114105406.GA31455@avionic-0098.mockup.avionic-design.de>
+ <50A3C485.7080704@wwwdotorg.org>
+ <20121114200415.GA10335@avionic-0098.mockup.avionic-design.de>
+ <50A3FBFA.3080008@wwwdotorg.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Michal Marek <mmarek@suse.cz>, David Gibson <david@gibson.dropbear.id.au>,
-        Jon Loeliger <jdl@jdl.com>, Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V6 2/2] kbuild: run the pre-processor on *.dts files
-References: <1352753907-3316-1-git-send-email-swarren@wwwdotorg.org> <1352753907-3316-2-git-send-email-swarren@wwwdotorg.org> <20121114192548.59F093E0B7C@localhost>
-In-Reply-To: <20121114192548.59F093E0B7C@localhost>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <50A3FBFA.3080008@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:d/3f+AAbruwWEJKFr1JU8juvP0TlV+2EnM8jD699Og+
+ bm+Z8hGMNVr4HGSyMNYo8B0WoEAh0yIAypgS9vKJ9rnCHjSb/t
+ SKwusOJTTEA9Nl6R2TdWEBMTBB2mJEgtT1Ks7SfljrNkaTD8Re
+ qYh+Tv+luJdQqiLY55OLAirt2fD+c9UMjrEIw9EnQQZeRZlTXH
+ zasoTJnpTaaUuiwzUdg34zc9A6yVhE7C/rzSINTYYE68K49GOU
+ c37MCOKhVC6APBER7QUnoM5GoUn8awFI2opX0TMtrySY+muato
+ ozXwP5BwDFQw/44fyrSzTQj7KiZPEt11Mue+zRIydEmC+oRDcl
+ iCGTh3tyXY+Fz6p2o46QxOE+nZ5t5is2FNrycidPZVFAm1T/Bp
+ 3xD5RCVrUkL3rwpx7k9iA8QKuJhBGc/9zg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 12:25 PM, Grant Likely wrote:
-> On Mon, 12 Nov 2012 13:58:27 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Modify cmd_dtc to run the C pre-processor on the input .dts file before
->> passing it to dtc for final compilation. This allows the use of #define
->> and #include within the .dts file.
 
-> Ugh, I'm definitely nervous about turning this on because of the long
-> term implications so I'm going to punt on actually making a decision
-> about it for the momemnt. However, I do have a question...
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm. So how do we get to a decision on this then?
+On Wed, Nov 14, 2012 at 01:15:54PM -0700, Stephen Warren wrote:
+> On 11/14/2012 01:04 PM, Thierry Reding wrote:
+> ...
+> > According to tegra20_clocks_data.c, the maximum clock frequency
+> > for host1x is 166 MHz, so 216 is probably not a good idea. 150 MHz
+> > sounds sensible, though.
+>=20
+> As a general rule, I wouldn't rely on the upstream clock driver to
+> specify accurate maximum clock rates at the moment. Our downstream
+> kernel is more likely to be accurate. Still, upstream might be correct
+> here already...
 
->> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
->> index 425578e..33432f4 100644
->> --- a/scripts/Makefile.lib
->> +++ b/scripts/Makefile.lib
->> @@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
->>  $(obj)/%.dtb: $(src)/dts/%.dts FORCE
->>  	$(call if_changed_dep,dtc)
->>  
->> +dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
->> +
->> +quiet_cmd_dtc_cpp = DTC+CPP $@
->> +cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
->> +	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
->> +
->> +$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
->> +	$(call if_changed_dep,dtc_cpp)
-> 
-> Why this instead of a "%.dts: %.dtsp" rule? Then the exact same dtc rule
-> gets used in both cases.
-> 
-> The .dtb rule is probably already rather oddball in that it puts the
-> output one directory below the input. That probably should be cleaned
-> up.
+I just checked and the downstream kernel has the same maximum clock rate
+for host1x.
 
-I was a little nervous about potentially having some *.dts be primary
-source files, and others be derived from *.dtsp (assuming that we
-convert platforms to this new feature as desired, rather than en-mass).
-It seems like it'd just cause confusion; people might just end up
-accidentally editing a *.dts that was generated without realizing it.
+Thierry
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQo/1iAAoJEN0jrNd/PrOhXoAQALgpuiHcv+T300NZYeS2vcR2
+IFC0mKyPx0y4mZ2ox0OnlMuX8+fwmtlI74MkSfk8NsA5yqeKpzDOD9kX3LmBNky8
+K5PocUVAvX7K3Ke/U6fqBxU6TEEPv647KNI/NMknxtEu5rV83Al/c/nys5IREmv+
+9H4wODSaiOx74+WGix/H6z2bGnzc/Dezrrsbqe7B4fPRv+/Ld/P9pJBBH+LUzVYP
+RRRwMO0uxgXzuDeGIfW4T/+bDuzELkzYk2TAItr4aL8561JMt2BzGGhIK8hvOnDv
+E7p14Yhlc/AVy8tKS1LwU9cicgC/D06cyOyysgZFuNj7Pw8SCFsxgpRAwFsg4AI+
+hRiL9mU7ocLeiR/Cbn+Vj+LiO6itoRqpotWF5D3dNd2LMMevEozAkcqttflpBwhQ
+R6s4bUVGNndOVheI7M26AchCIks7KAkAhQwtRdbYO5oa+Onsa/Q+4bI+6bNMscoj
+Ym34p0ENJ2t+dxn0pJaVsbJO09e+aUtTUqmzXEXvCZ5liRuirYwTJnjQDFiqt+Bb
+RhcREjJ3TRsE+gywQ1dEsbB3NynBx+iosaCE6mtAGd9EGb0omCWSTAaN2dPPDocw
+6xpke8caW9zp8Cd+fxuSW/VoS6CXzxLsBLzqCUTq/NyeUiI9KtEjtlHePbvQowfU
+aaFPBh0h0baw63xxjHUy
+=gqkf
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
