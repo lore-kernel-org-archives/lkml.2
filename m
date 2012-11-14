@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422808Ab2KNMp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:45:56 -0500
-Received: from fieldses.org ([174.143.236.118]:38520 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422695Ab2KNMpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:45:54 -0500
-Date: Wed, 14 Nov 2012 07:45:49 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into
- inotify_inode_mark
-Message-ID: <20121114124549.GB23604@fieldses.org>
-References: <20121112101440.665694060@openvz.org>
- <2105540.yeyMVrW4mH@deuteros>
- <50A36ED5.4080505@parallels.com>
- <2092535.8S9EcgmZCZ@deuteros>
- <50A37692.1010500@parallels.com>
+	id S1422797Ab2KNMs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:48:27 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43273 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422711Ab2KNMsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 07:48:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A37692.1010500@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201211141218.02105.arnd@arndb.de>
+References: <201211141218.02105.arnd@arndb.de>
+Date: Wed, 14 Nov 2012 13:48:22 +0100
+X-Google-Sender-Auth: l63bSXYTGHUiSPrzljujRuc4tAw
+Message-ID: <CAMuHMdW3uBWgJfftFxnf8qySBmqSRDRhoivBdk6Zsc+cC2Sitg@mail.gmail.com>
+Subject: Re: new architectures, time_t __kernel_long_t
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, Vineet.Gupta1@synopsys.com,
+        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 02:46:42PM +0400, Pavel Emelyanov wrote:
-> Well, the MAX_HANDLE_SZ is taken from NFSv4 and is 128 bytes which is quite
-> big for inotify extension indeed. The good news is that this amount of bytes
-> seem to be required for the most descriptive fhandle
+On Wed, Nov 14, 2012 at 1:18 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The other types that are used as 64 bit on x32 are ino_t, nlink_t,
+> size_t, ssize_t, ptrdiff_t, and off_t.
+>
+> Obviously, we want to use 64-bit off_t, but this is achieved already
+> through loff_t, which is used in all places in the asm-generic
+> ABI anyway (the syscalls using off_t are stripped out). I don't
 
-That 128-byte constant is just the protocol-defined maximum.
+Indeed.
 
-In practice my memory is that no existing filesystems require NFSv4 for
-exports, so they all fit in the NFSv3 64-byte limit.  (But I seem to
-recall the NFSv2 32-byte limit being too small in some cases.)
+> think we want to have the other ones set to 64 bit on ARC or Meta,
+> although I'm not 100% sure about ino_t and nlink_t.
 
-> -- with info about parent, etc. We don't need such, we can live with
-> shorter handle, people said that 40 bytes was enough for that.
-> 
-> However, your idea about determining the handle size dynamically seems
-> promising.  As far as I can see from the code we can call for
-> encode_fh with size equals zero and filesystem would report back the
-> amount of bytes it requires for a handle.
-> 
-> We can try going this route, what do you think?
+Is ino_t related to inode numbers stored in on-disk file system metadata?
 
-I still don't understand why you need a dentry to get the filehandle.
-The current api may ask for one, but it shouldn't really be necessary
-(assuming you don't want parent directory information encoded in the
-filehandle, which I hope you don't).
+Currently, nlink_t is unconditionally __u32, even on 64-bit.
 
---b.
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
