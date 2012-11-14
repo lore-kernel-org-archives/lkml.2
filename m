@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2KNHwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:52:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50136 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab2KNHvC (ORCPT
+	id S1756743Ab2KNHwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:52:30 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45136 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756694Ab2KNHw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:51:02 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 3/6] staging: line6: drop unused CONFIG_LINE6_USB_DUMP_CTRL
-Date: Wed, 14 Nov 2012 08:50:43 +0100
-Message-Id: <1352879446-23195-4-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
-References: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
+	Wed, 14 Nov 2012 02:52:28 -0500
+Date: Wed, 14 Nov 2012 08:52:22 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 00/31] Latest numa/core patches, v15
+Message-ID: <20121114075222.GA3522@gmail.com>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org>
+ <20121113175428.GF8218@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121113175428.GF8218@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/Kconfig | 9 ---------
- 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/staging/line6/Kconfig b/drivers/staging/line6/Kconfig
-index a5ded12..2101799 100644
---- a/drivers/staging/line6/Kconfig
-+++ b/drivers/staging/line6/Kconfig
-@@ -23,15 +23,6 @@ menuconfig LINE6_USB
- 
- if LINE6_USB
- 
--config LINE6_USB_DUMP_CTRL
--	bool "dump control messages"
--	default n
--	help
--	  Say Y here to write control messages sent to and received from
--	  Line6 devices to the syslog.
--
--	  If unsure, say N.
--
- config LINE6_USB_DUMP_MIDI
- 	bool "dump MIDI messages"
- 	default n
--- 
-1.8.0
+* Mel Gorman <mgorman@suse.de> wrote:
 
+> On Tue, Nov 13, 2012 at 06:13:23PM +0100, Ingo Molnar wrote:
+> > Hi,
+> > 
+> > This is the latest iteration of our numa/core tree, which
+> > implements adaptive NUMA affinity balancing.
+> > 
+> > Changes in this version:
+> > 
+> >     https://lkml.org/lkml/2012/11/12/315
+> > 
+> > Performance figures:
+> > 
+> >     https://lkml.org/lkml/2012/11/12/330
+> > 
+> > Any review feedback, comments and test results are welcome!
+> > 
+> 
+> For the purposes of review and testing, this is going to be 
+> hard to pick apart and compare. It doesn't apply against 
+> 3.7-rc5 [...]
+
+Because the scheduler changes are highly non-trivial it's on top 
+of the scheduler tree:
+
+   git pull git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched/core
+
+I just tested the patches, they all apply cleanly, with zero 
+fuzz and offsets.
+
+Thanks,
+
+	Ingo
