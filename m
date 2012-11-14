@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423562Ab2KNWiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:38:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45399 "EHLO
+	id S1423567Ab2KNWkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:40:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45433 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423427Ab2KNWiS (ORCPT
+	with ESMTP id S933178Ab2KNWkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:38:18 -0500
-Date: Wed, 14 Nov 2012 13:33:14 -0800
+	Wed, 14 Nov 2012 17:40:10 -0500
+Date: Wed, 14 Nov 2012 13:27:55 -0800
 From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-41bfa818b30d595b1d9feee8eb8baee9befff44b@git.kernel.org>
+Message-ID: <tip-42e78e9719aa0c76711e2731b19c90fe5ae05278@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1352835171-3958-13-git-send-email-fenghua.yu@intel.com>
-References: <1352835171-3958-13-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1352835171-3958-8-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-8-git-send-email-fenghua.yu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86, hotplug:
-  Handle retrigger irq by the first available CPU
-Git-Commit-ID: 41bfa818b30d595b1d9feee8eb8baee9befff44b
+Subject: [tip:x86/bsp-hotplug] x86-64, hotplug: Add start_cpu0()
+  entry point to head_64.S
+Git-Commit-ID: 42e78e9719aa0c76711e2731b19c90fe5ae05278
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,45 +28,54 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:38:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:40:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  41bfa818b30d595b1d9feee8eb8baee9befff44b
-Gitweb:     http://git.kernel.org/tip/41bfa818b30d595b1d9feee8eb8baee9befff44b
+Commit-ID:  42e78e9719aa0c76711e2731b19c90fe5ae05278
+Gitweb:     http://git.kernel.org/tip/42e78e9719aa0c76711e2731b19c90fe5ae05278
 Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Tue, 13 Nov 2012 11:32:49 -0800
+AuthorDate: Tue, 13 Nov 2012 11:32:44 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Nov 2012 09:39:55 -0800
+CommitDate: Wed, 14 Nov 2012 09:39:51 -0800
 
-x86, hotplug: Handle retrigger irq by the first available CPU
+x86-64, hotplug: Add start_cpu0() entry point to head_64.S
 
-The first cpu in irq cfg->domain is likely to be CPU 0 and may not be available
-when CPU 0 is offline. Instead of using CPU 0 to handle retriggered irq, we use
-first available CPU which is online and in this irq's domain.
+start_cpu0() is defined in head_64.S for 64-bit. The function sets up stack and
+jumps to start_secondary() for CPU0 wake up.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1352835171-3958-13-git-send-email-fenghua.yu@intel.com
+Link: http://lkml.kernel.org/r/1352835171-3958-8-git-send-email-fenghua.yu@intel.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/kernel/head_64.S | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1817fa9..f78fc2b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2199,9 +2199,11 @@ static int ioapic_retrigger_irq(struct irq_data *data)
- {
- 	struct irq_cfg *cfg = data->chip_data;
- 	unsigned long flags;
-+	int cpu;
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 94bf9cc..980053c 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -252,6 +252,22 @@ ENTRY(secondary_startup_64)
+ 	pushq	%rax		# target address in negative space
+ 	lretq
  
- 	raw_spin_lock_irqsave(&vector_lock, flags);
--	apic->send_IPI_mask(cpumask_of(cpumask_first(cfg->domain)), cfg->vector);
-+	cpu = cpumask_first_and(cfg->domain, cpu_online_mask);
-+	apic->send_IPI_mask(cpumask_of(cpu), cfg->vector);
- 	raw_spin_unlock_irqrestore(&vector_lock, flags);
- 
- 	return 1;
++#ifdef CONFIG_HOTPLUG_CPU
++/*
++ * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
++ * up already except stack. We just set up stack here. Then call
++ * start_secondary().
++ */
++ENTRY(start_cpu0)
++	movq stack_start(%rip),%rsp
++	movq	initial_code(%rip),%rax
++	pushq	$0		# fake return address to stop unwinder
++	pushq	$__KERNEL_CS	# set correct cs
++	pushq	%rax		# target address in negative space
++	lretq
++ENDPROC(start_cpu0)
++#endif
++
+ 	/* SMP bootup changes these two */
+ 	__REFDATA
+ 	.align	8
