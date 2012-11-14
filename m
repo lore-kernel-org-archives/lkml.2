@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab2KNLI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 06:08:26 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52167 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2KNLIY (ORCPT
+	id S1161150Ab2KNLNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 06:13:18 -0500
+Received: from claranet-outbound-smtp03.uk.clara.net ([195.8.89.36]:59843 "EHLO
+	claranet-outbound-smtp03.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752390Ab2KNLNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 06:08:24 -0500
-Date: Wed, 14 Nov 2012 11:13:12 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Constantine Shulyupin <const@MakeLinux.com>
-Cc: linux-kernel@vger.kernel.org, celinux-dev@lists.celinuxforum.org,
-        gregkh@linuxfoundation.org, Tim Bird <tim.bird@am.sony.com>,
-        Baruch Siach <baruch@tkos.co.il>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Selim TEMUR <selimtemur@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] LDT - Linux Driver Template
-Message-ID: <20121114111312.13c8ea82@pyramind.ukuu.org.uk>
-In-Reply-To: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
-References: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 06:13:16 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into inotify_inode_mark
+Date: Wed, 14 Nov 2012 11:12:59 +0000
+Message-ID: <5758501.NTghZx9OdD@deuteros>
+User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <50A378C0.70406@parallels.com>
+References: <20121112101440.665694060@openvz.org> <1491483.8kFV7tRC1p@deuteros> <50A378C0.70406@parallels.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doing this is the past has always led to obsolete stale broken examples
-because they are not actively in use and maintained. Far better to work
-from actual live in use driver code.
+On Wednesday 14 November 2012 14:56:00 Pavel Emelyanov wrote:
+> >>> How much space does a typical file system need to encode a handle? Am I
+> >>> right that for must it is just a few bytes? (I just glanced at the code
+> >>> so I might be wrong.) In which case, could the handle buffer be
+> >>> allocated
+> >>> dynamically depending on the underlying filesystem? Perhaps adding a
+> >>> facility to query a filesystem about its maximum handle buffer needs? Do
+> >>> you think the saving would justify this extra work?
+> >> 
+> >> Well, the MAX_HANDLE_SZ is taken from NFSv4 and is 128 bytes which is
+> >> quite
+> >> big for inotify extension indeed. The good news is that this amount of
+> >> bytes seem to be required for the most descriptive fhandle -- with info
+> >> about parent, etc. We don't need such, we can live with shorter handle,
+> >> people said that 40 bytes was enough for that.
+> >> 
+> >> However, your idea about determining the handle size dynamically seems
+> >> promising. As far as I can see from the code we can call for encode_fh
+> >> with
+> >> size equals zero and filesystem would report back the amount of bytes it
+> >> requires for a handle.
+> >> 
+> >> We can try going this route, what do you think?
+> > 
+> > Sounds much better since that would only add one pointer to the watch
+> > structure in the normal case.
+> > 
+> > Also at checkpoint time it will use only a few bytes (compared to 64) for
+> > the encode buffer for most filesystems. This part is probably not that
+> > important but still a win.
+> 
+> No, the thing is -- we need to know the handle _before_ we start checkpoint.
+> More exactly -- at the time the inotify_add_watch is called. So the memory
+> save would be not that big.
 
-Alan
+Ah yes, I forgot about that. But the saving is quite solid as Cyrill already 
+wrote.
+
+It is still a bit unfortunate you have to have handles allocated all the time 
+just because C&R is compiled in. There is no way you could ask the filesystem 
+to create you one on demand. What would you need? Just the superblock and 
+inode, or more?
+
+Regards,
+
+Tvrtko
 
