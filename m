@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422783Ab2KNMlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:41:37 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48171 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422749Ab2KNMlg (ORCPT
+	id S1422788Ab2KNMmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:42:39 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36909 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422749Ab2KNMmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:41:36 -0500
-Date: Wed, 14 Nov 2012 15:41:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: YAMANE Toshiaki <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Devendra Naga <devendra.aaru@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] staging/serqt_usb2: refactor qt_read_bulk_callback()
- in serqt_usb2.c
-Message-ID: <20121114124110.GG11515@mwanda>
-References: <1352496782-7246-1-git-send-email-yamanetoshi@gmail.com>
- <1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
+	Wed, 14 Nov 2012 07:42:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Date: Wed, 14 Nov 2012 13:42:37 +0100
+Message-ID: <CAN5d0gJVrf7OtTNOoJa_9LMy_RuR97OAWcSwMD8x22dNRfEY-g@mail.gmail.com>
+Subject: RTC-CMOS ALARM fields always resetted on reboot on x86
+From: Andy Hirsh <andhirsh@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 10, 2012 at 06:33:56AM +0900, YAMANE Toshiaki wrote:
-> Modified to eliminate the deep nesting and redundant description.
-> 
-> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/serqt_usb2/serqt_usb2.c |  147 +++++++++++++++++--------------
->  1 file changed, 80 insertions(+), 67 deletions(-)
-> 
-> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-> index 9bc8923..0395bdf 100644
-> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
-> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-> @@ -291,22 +291,89 @@ static void qt_interrupt_callback(struct urb *urb)
->  	/* FIXME */
->  }
->  
-> +static int qt_status_change(unsigned int limit,
-> +			    unsigned char *data,
-> +			    int i,
-> +			    struct quatech_port *qt_port,
-> +			    struct usb_serial_port *port)
-> +{
-> +	void (*fn)(struct quatech_port *, unsigned char);
-> +
-> +	if (0x00 == data[i + 2]) {
-> +		dev_dbg(&port->dev, "Line status status.\n");
-> +		fn = ProcessLineStatus;
-> +	} else {
-> +		dev_dbg(&port->dev, "Modem status status.\n");
-> +		fn = ProcessModemStatus;
-> +	}
-> +
-> +	if (i > limit) {
+Hi all
 
-Why can't we test whether i == (RxCount - 3) earlier and handle
-the errors there?  That way we wouldn't need to pass the limit
-variable.
+I'm having a strange behaviour with the RTC upgrading from kernel
+2.6.32/2.6.34 to 2.6.38.8 on x86:
 
-In fact, this whole function is sort of nasty.  We start by doing
-a switch (data[i + 2]) { then we combine the 0x00 and 0x01 and call
-this function which separates them out and sets a function pointer
-and then calls the function point?  Get rid of this whole function.
+the rtc_cmos alarm time&date fields are always set to 00:00:00
+1970-01-01 after the boot process...
 
-You shouldn't need to use function pointers to do this; that's too
-many levels of abstraction.
+eg:
 
-> +		dev_dbg(&port->dev,
-> +			"Illegal escape seuences in received data\n");
-> +		return 0;
-> +	}
-> +
-> +	(*fn)(qt_port, data[i + 3]);
-> +
-> +	return 1;
-> +}
-> +
+cat /proc/driver/rtc  before reboot:
 
-[snip]
+rtc_time        : 12:07:11
+rtc_date        : 2012-11-14
+alrm_time       : 09:01:20
+alrm_date       : 2012-11-15
+alarm_IRQ       : no
+alrm_pending    : no
+24hr            : yes
+periodic_IRQ    : no
+update_IRQ      : no
+HPET_emulated   : yes
+BCD             : yes
+DST_enable      : no
+periodic_freq   : 1024
+batt_status     : okay
 
->  	if (urb->status) {
->  		qt_port->ReadBulkStopped = 1;
-> -		dev_dbg(&urb->dev->dev, "%s - nonzero write bulk status received: %d\n",
-> +		dev_dbg(&urb->dev->dev,
-> +			"%s - nonzero write bulk status received: %d\n",
->  			__func__, urb->status);
+after reboot:
 
-Don't mix in these unrelated 80 character limit changes.
+rtc_time        : 12:15:39
+rtc_date        : 2012-11-14
+alrm_time       : 00:00:00
+alrm_date       : 1970-01-01
+alarm_IRQ       : no
+alrm_pending    : no
+24hr            : yes
+periodic_IRQ    : no
+update_IRQ      : no
+HPET_emulated   : yes
+BCD             : yes
+DST_enable      : no
+periodic_freq   : 1024
+batt_status     : okay
 
-regards,
-dan carpenter
+during the boot process, the kernel reports:
 
+...
+rtc_cmos 00:03: RTC can wake from S4
+rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
+rtc0: alarms up to one month, y3k, 114 bytes nvram, hpet irqs
+...
+
+with kernels 2.6.32.5 or 2.6.34.5 there are no problems... alarms
+date&time values are not resetted.
+
+     thanks a lot for any ideas...
+
+             andy
