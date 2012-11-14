@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab2KNVzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 16:55:06 -0500
-Received: from 173-254-64-10.unifiedlayer.com ([173.254.64.10]:60196 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with SMTP id S933125Ab2KNVzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 16:55:04 -0500
-Date: Wed, 14 Nov 2012 13:55:34 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/Sandy Bridge: reserve pages when integrated
- graphics is present
-Message-ID: <20121114135534.653b70dd@jbarnes-desktop>
-In-Reply-To: <20121114211905.503f3701@pyramind.ukuu.org.uk>
-References: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20121114211905.503f3701@pyramind.ukuu.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S933148Ab2KNWAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:00:39 -0500
+Received: from fieldses.org ([174.143.236.118]:38916 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933112Ab2KNWAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 17:00:38 -0500
+Date: Wed, 14 Nov 2012 17:00:36 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Subject: Re: [RFC PATCH v2 00/15] NFSd state containerization
+Message-ID: <20121114220036.GD539@fieldses.org>
+References: <20121114152018.4708.63125.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121114152018.4708.63125.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 21:19:05 +0000
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Wed, Nov 14, 2012 at 06:20:59PM +0300, Stanislav Kinsbursky wrote:
+> This patch set is my first attempt to containerize NFSv4 state - i.e. make it
+> works in networks namespace context.
+> I admit, that some of this new code could be partially rewritten during future
+> NFSd containerization.
+> But the overall idea look more or less correct to me.
+> So, the main things here are:
+> 1) making nfs4_client network namespace aware.
+> 2) Allocating all hashes (except file_hashtbl and reclaim_str_hashtbl) per
+> network namespace context on NFSd start (not init) and destroying on NFSd
+> state shutdown.
+> 3) Allocating of reclaim_str_hashtbl on legacy tracker start and destroying on
+> legacy tracker stop.
+> 4) Moving of client_lru and close_lru lists to per-net data.
+> 5) Making lundromat network namespace aware.
 
-> On Wed, 14 Nov 2012 20:43:31 +0000
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+These look OK and pass my tests.  Jeff, do the revised recovery bits
+look OK?
+
+Have you done any testing?
+
+It'd be interesting, for example, to know if there are any pynfs that
+fail against the server in a non-init network namespace, but pass
+normally.
+
+--b.
+
 > 
-> > SNB graphics devices have a bug that prevent them from accessing certain
-> > memory ranges, namely anything below 1M and in the pages listed in the
-> > table.  So reserve those at boot if set detect a SNB gfx device on the
-> > CPU to avoid GPU hangs.
+> v2:
+> 1) Rebased on current nfsd-next.
+> 2) Legacy tracker init become clearer.
 > 
-> What happens if the other addresses map to an external memory object - eg
-> a PCI device which is a legitimate DMA source for video overlay etc ?
-
-Other addresses as in the 5 pages high in the address space?  I'm not
-sure how to do what I want with memblock, doesn't it just allocate RAM
-not I/O space?... /me looks at the memblock API
-
-Or do you mean if we map GTT pages to point at some non-RAM region will
-SNB gfx be able to decode them?  If that's the question, then I think
-the answer is no, but I don't have enough detail on the hw bug to be
-certain.
-
-> I assume this is just for GPU fetches from main memory ?
-
-AIUI, it's an address decoder bug, so it would affect any fetch by the
-GPU through its memory interface glue.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> The following series implements...
+> 
+> ---
+> 
+> Stanislav Kinsbursky (15):
+>       nfsd: use service net instead of hard-coded net where possible
+>       nfsd: make nfs4_client network namespace dependent
+>       nfsd: make reclaim_str_hashtbl allocated per net
+>       nfsd: make conf_id_hashtbl allocated per net
+>       nfsd: make conf_name_tree per net
+>       nfsd: make unconf_id_hashtbl allocated per net
+>       nfsd: make unconf_name_tree per net
+>       nfsd: make ownerstr_hashtbl allocated per net
+>       nfsd: make lockowner_ino_hashtbl allocated per net
+>       nfsd: make sessionid_hashtbl allocated per net
+>       nfsd: make client_lru list per net
+>       nfsd: make close_lru list per net
+>       nfsd: use service net instead of hard-coded init_net
+>       nfsd: pass nfsd_net instead of net to grace enders
+>       nfsd: make laundromat network namespace aware
+> 
+> 
+>  fs/nfsd/netns.h        |   43 +++++
+>  fs/nfsd/nfs4callback.c |    2 
+>  fs/nfsd/nfs4proc.c     |   13 +
+>  fs/nfsd/nfs4recover.c  |  102 ++++++++---
+>  fs/nfsd/nfs4state.c    |  450 +++++++++++++++++++++++++++---------------------
+>  fs/nfsd/state.h        |   17 +-
+>  fs/nfsd/xdr4.h         |    2 
+>  7 files changed, 389 insertions(+), 240 deletions(-)
+> 
