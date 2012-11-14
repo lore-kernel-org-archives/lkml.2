@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2KNHMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:12:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43745 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2KNHMt (ORCPT
+	id S1754238Ab2KNHNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:13:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35421 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2KNHNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:12:49 -0500
-Date: Tue, 13 Nov 2012 23:11:54 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-813105858a85c9a98fc686fbe6788dc217cc9ab3@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1351634526-1516-15-git-send-email-jolsa@redhat.com>
-References: <1351634526-1516-15-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add attr record raw test
-Git-Commit-ID: 813105858a85c9a98fc686fbe6788dc217cc9ab3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Nov 2012 02:13:24 -0500
+Message-ID: <50A34485.1080803@ti.com>
+Date: Wed, 14 Nov 2012 08:13:09 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Bryan Wu <cooloney@gmail.com>
+CC: Richard Purdie <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 1/3] leds: leds-pwm: Convert to use devm_get_pwm
+References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-2-git-send-email-peter.ujfalusi@ti.com> <CAK5ve-JDCSSOKHQG-F1RoDii62=-DiPevaD6SafndYVvOgB6Fw@mail.gmail.com>
+In-Reply-To: <CAK5ve-JDCSSOKHQG-F1RoDii62=-DiPevaD6SafndYVvOgB6Fw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:11:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  813105858a85c9a98fc686fbe6788dc217cc9ab3
-Gitweb:     http://git.kernel.org/tip/813105858a85c9a98fc686fbe6788dc217cc9ab3
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 30 Oct 2012 23:01:55 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 5 Nov 2012 14:02:07 -0300
+Hi Bryan,
 
-perf tests: Add attr record raw test
+On 11/14/2012 02:14 AM, Bryan Wu wrote:
+>> diff --git a/include/linux/leds_pwm.h b/include/linux/leds_pwm.h
+>> index 33a0711..a65e964 100644
+>> --- a/include/linux/leds_pwm.h
+>> +++ b/include/linux/leds_pwm.h
+>> @@ -7,7 +7,7 @@
+>>  struct led_pwm {
+>>         const char      *name;
+>>         const char      *default_trigger;
+>> -       unsigned        pwm_id;
+>> +       unsigned        pwm_id __deprecated;
+> 
+> I suggest we remove this later, we can provide patches from this from
+> platform data of board file. And I think this patch is good for me to
+> merge, will do it soon.
 
-Adding test to validate perf_event_attr data for command:
-  'record -R'
+Yes, we can remove it in 3.9. I marked it as deprecated for now to avoid
+breakage - if any - in 3.8.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-15-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- .../attr/{test-record-data => test-record-raw}     |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/tests/attr/test-record-data b/tools/perf/tests/attr/test-record-raw
-similarity index 51%
-copy from tools/perf/tests/attr/test-record-data
-copy to tools/perf/tests/attr/test-record-raw
-index 6627c3e..4a8ef25 100644
---- a/tools/perf/tests/attr/test-record-data
-+++ b/tools/perf/tests/attr/test-record-raw
-@@ -1,8 +1,7 @@
- [config]
- command = record
--args    = -d kill >/dev/null 2>&1
-+args    = -R kill >/dev/null 2>&1
- 
- [event:base-record]
- sample_period=4000
--sample_type=271
--mmap_data=1
-+sample_type=1415
+Thank you,
+Péter
