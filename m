@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423128Ab2KNRiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:38:01 -0500
-Received: from fieldses.org ([174.143.236.118]:52214 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932978Ab2KNRiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:38:00 -0500
-Date: Wed, 14 Nov 2012 12:37:58 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, oleg@redhat.com, rientjes@google.com,
-        tvrtko.ursulin@onelan.co.uk, Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 6/7] fs, exportfs: Add exportfs_encode_inode_fh helper
-Message-ID: <20121114173757.GJ23604@fieldses.org>
-References: <20121114151937.344922058@openvz.org>
- <20121114152239.840001980@openvz.org>
+	id S933057Ab2KNRjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:39:35 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42314 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2KNRje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 12:39:34 -0500
+Date: Wed, 14 Nov 2012 17:39:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 0/3] introduce static_vm for ARM-specific static
+	mapped area
+Message-ID: <20121114173928.GK3290@n2100.arm.linux.org.uk>
+References: <1352912154-16210-1-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121114152239.840001980@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352912154-16210-1-git-send-email-js1304@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 07:19:43PM +0400, Cyrill Gorcunov wrote:
-> We will need this helper in the next patch to
-> provide a file handle for inotify marks in
-> /proc/pid/fdinfo output.
+On Thu, Nov 15, 2012 at 01:55:51AM +0900, Joonsoo Kim wrote:
+> In current implementation, we used ARM-specific flag, that is,
+> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> The purpose of static mapped area is to re-use static mapped area when
+> entire physical address range of the ioremap request can be covered
+> by this area.
 > 
-> The patch is rather providing the way to use inodes
-> directly when dentry is not available (like in case
-> of inotify system).
+> This implementation causes needless overhead for some cases.
 
-Looks OK to me.--b.
+In what cases?
 
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: Andrey Vagin <avagin@openvz.org>
-> CC: Al Viro <viro@ZenIV.linux.org.uk>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: James Bottomley <jbottomley@parallels.com>
-> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Matthew Helsley <matt.helsley@gmail.com>
-> CC: "J. Bruce Fields" <bfields@fieldses.org>
-> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> CC: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-> ---
->  fs/exportfs/expfs.c      |   19 ++++++++++++++-----
->  include/linux/exportfs.h |    2 ++
->  2 files changed, 16 insertions(+), 5 deletions(-)
-> Index: linux-2.6.git/fs/exportfs/expfs.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/exportfs/expfs.c
-> +++ linux-2.6.git/fs/exportfs/expfs.c
-> @@ -341,10 +341,21 @@ static int export_encode_fh(struct inode
->  	return type;
->  }
->  
-> +int exportfs_encode_inode_fh(struct inode *inode, struct fid *fid,
-> +			     int *max_len, struct inode *parent)
-> +{
-> +	const struct export_operations *nop = inode->i_sb->s_export_op;
-> +
-> +	if (nop && nop->encode_fh)
-> +		return nop->encode_fh(inode, fid->raw, max_len, parent);
-> +
-> +	return export_encode_fh(inode, fid, max_len, parent);
-> +}
-> +EXPORT_SYMBOL_GPL(exportfs_encode_inode_fh);
-> +
->  int exportfs_encode_fh(struct dentry *dentry, struct fid *fid, int *max_len,
->  		int connectable)
->  {
-> -	const struct export_operations *nop = dentry->d_sb->s_export_op;
->  	int error;
->  	struct dentry *p = NULL;
->  	struct inode *inode = dentry->d_inode, *parent = NULL;
-> @@ -357,10 +368,8 @@ int exportfs_encode_fh(struct dentry *de
->  		 */
->  		parent = p->d_inode;
->  	}
-> -	if (nop && nop->encode_fh)
-> -		error = nop->encode_fh(inode, fid->raw, max_len, parent);
-> -	else
-> -		error = export_encode_fh(inode, fid, max_len, parent);
-> +
-> +	error = exportfs_encode_inode_fh(inode, fid, max_len, parent);
->  	dput(p);
->  
->  	return error;
-> Index: linux-2.6.git/include/linux/exportfs.h
-> ===================================================================
-> --- linux-2.6.git.orig/include/linux/exportfs.h
-> +++ linux-2.6.git/include/linux/exportfs.h
-> @@ -177,6 +177,8 @@ struct export_operations {
->  	int (*commit_metadata)(struct inode *inode);
->  };
->  
-> +extern int exportfs_encode_inode_fh(struct inode *inode, struct fid *fid,
-> +				    int *max_len, struct inode *parent);
->  extern int exportfs_encode_fh(struct dentry *dentry, struct fid *fid,
->  	int *max_len, int connectable);
->  extern struct dentry *exportfs_decode_fh(struct vfsmount *mnt, struct fid *fid,
-> 
+> We unnecessarily iterate vmlist for finding matched area even if there
+> is no static mapped area. And if there are some static mapped areas,
+> iterating whole vmlist is not preferable.
+
+Why not?  Please put some explanation into your message rather than
+just statements making unexplained assertions.
+
+> Another reason for doing this work is for removing architecture dependency
+> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+> structure for vmalloc layer. Some codes for debugging and stat inevitably
+> use vmlist and vmlist_lock. But it is preferable that they are used outside
+> of vmalloc.c as least as possible.
+
+The vmalloc layer is also made available for ioremap use, and it is
+intended that architectures hook into this for ioremap support.
