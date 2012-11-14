@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423111Ab2KNQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 11:01:28 -0500
+	id S1423122Ab2KNQBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 11:01:50 -0500
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:38882 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423016Ab2KNP74 (ORCPT
+	with ESMTP id S1423000Ab2KNP7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:59:56 -0500
+	Wed, 14 Nov 2012 10:59:54 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 10/14] Input: mt: add input_mt_is_used
-Date: Wed, 14 Nov 2012 16:59:22 +0100
-Message-Id: <1352908766-4492-11-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v4 09/14] Input: introduce EV_MSC Timestamp
+Date: Wed, 14 Nov 2012 16:59:21 +0100
+Message-Id: <1352908766-4492-10-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,45 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extracts the test (slot->frame == mt->frame) so that it can
-be used in third party drivers.
+Some devices provides the actual timestamp (hid_dg_scan_time in win8 ones)
+computed by the hardware itself. This value is global to the frame and is
+not specific to the multitouch protocol.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/input-mt.c | 2 +-
- include/linux/input/mt.h | 6 ++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ Documentation/input/event-codes.txt | 11 +++++++++++
+ include/linux/input.h               |  1 +
+ 2 files changed, 12 insertions(+)
 
-diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-index c0ec7d4..475b9d4 100644
---- a/drivers/input/input-mt.c
-+++ b/drivers/input/input-mt.c
-@@ -247,7 +247,7 @@ void input_mt_sync_frame(struct input_dev *dev)
+diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
+index 53305bd..f1ea2c6 100644
+--- a/Documentation/input/event-codes.txt
++++ b/Documentation/input/event-codes.txt
+@@ -196,6 +196,17 @@ EV_MSC:
+ EV_MSC events are used for input and output events that do not fall under other
+ categories.
  
- 	if (mt->flags & INPUT_MT_DROP_UNUSED) {
- 		for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
--			if (s->frame == mt->frame)
-+			if (input_mt_is_used(mt, s))
- 				continue;
- 			input_mt_slot(dev, s - mt->slots);
- 			input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
-diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
-index cc5cca7..2e86bd0 100644
---- a/include/linux/input/mt.h
-+++ b/include/linux/input/mt.h
-@@ -69,6 +69,12 @@ static inline bool input_mt_is_active(const struct input_mt_slot *slot)
- 	return input_mt_get_value(slot, ABS_MT_TRACKING_ID) >= 0;
- }
- 
-+static inline bool input_mt_is_used(const struct input_mt *mt,
-+				    const struct input_mt_slot *slot)
-+{
-+	return slot->frame == mt->frame;
-+}
++A few EV_MSC codes have special meaning:
 +
- int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
- 			unsigned int flags);
- void input_mt_destroy_slots(struct input_dev *dev);
++* MSC_TIMESTAMP:
++  - Used to report the number of microseconds since the last reset. This event
++    should be coded as an uint32 value, which is allowed to wrap around with
++    no special consequence. It is assumed that the time difference between two
++    consecutive events is reliable on a reasonable time scale (hours).
++    A reset to zero can happen, in which case the time since the last event is
++    unknown.  If the device does not provide this information, the driver must
++    not provide it to user space.
++
+ EV_LED:
+ ----------
+ EV_LED events are used for input and output to set and query the state of
+diff --git a/include/linux/input.h b/include/linux/input.h
+index ba48743..25354f3 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -858,6 +858,7 @@ struct input_keymap_entry {
+ #define MSC_GESTURE		0x02
+ #define MSC_RAW			0x03
+ #define MSC_SCAN		0x04
++#define MSC_TIMESTAMP		0x05
+ #define MSC_MAX			0x07
+ #define MSC_CNT			(MSC_MAX+1)
+ 
 -- 
 1.8.0
 
