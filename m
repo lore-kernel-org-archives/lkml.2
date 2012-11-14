@@ -1,149 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422728Ab2KNMGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:06:40 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:48150 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755341Ab2KNMGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:06:38 -0500
-Message-ID: <50A38936.2010406@parallels.com>
-Date: Wed, 14 Nov 2012 16:06:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1422726Ab2KNMH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:07:29 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:65020 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab2KNMH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 07:07:28 -0500
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Sasha Levin <sasha.levin@oracle.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v6 28/29] slub: slub-specific propagation changes.
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-29-git-send-email-glommer@parallels.com> <509A83F8.6040402@oracle.com> <509B5673.8020801@parallels.com> <509C7A77.3020206@gmail.com>
-In-Reply-To: <509C7A77.3020206@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1352719094.10405.18.camel@sakura.staff.proxad.net>
+References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com> <1352719094.10405.18.camel@sakura.staff.proxad.net>
+From: Jonas Gorski <jonas.gorski@gmail.com>
+Date: Wed, 14 Nov 2012 13:07:07 +0100
+Message-ID: <CAOiHx==1UxrmxB5kyeDQPF4HBYxY9h4Ha8mWErwm6znX=y75OA@mail.gmail.com>
+Subject: Re: [RFC] MIPS: BCM63XX: add initial Device Tree support
+To: mbizon@freebox.fr
+Cc: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+        John Crispin <blogic@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 07:37 AM, Sasha Levin wrote:
-> On 11/08/2012 01:51 AM, Glauber Costa wrote:
->> On 11/07/2012 04:53 PM, Sasha Levin wrote:
->>> On 11/01/2012 08:07 AM, Glauber Costa wrote:
->>>> SLUB allows us to tune a particular cache behavior with sysfs-based
->>>> tunables.  When creating a new memcg cache copy, we'd like to preserve
->>>> any tunables the parent cache already had.
->>>>
->>>> This can be done by tapping into the store attribute function provided
->>>> by the allocator. We of course don't need to mess with read-only
->>>> fields. Since the attributes can have multiple types and are stored
->>>> internally by sysfs, the best strategy is to issue a ->show() in the
->>>> root cache, and then ->store() in the memcg cache.
->>>>
->>>> The drawback of that, is that sysfs can allocate up to a page in
->>>> buffering for show(), that we are likely not to need, but also can't
->>>> guarantee. To avoid always allocating a page for that, we can update the
->>>> caches at store time with the maximum attribute size ever stored to the
->>>> root cache. We will then get a buffer big enough to hold it. The
->>>> corolary to this, is that if no stores happened, nothing will be
->>>> propagated.
->>>>
->>>> It can also happen that a root cache has its tunables updated during
->>>> normal system operation. In this case, we will propagate the change to
->>>> all caches that are already active.
->>>>
->>>> Signed-off-by: Glauber Costa <glommer@parallels.com>
->>>> CC: Christoph Lameter <cl@linux.com>
->>>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->>>> CC: Michal Hocko <mhocko@suse.cz>
->>>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>>> CC: Johannes Weiner <hannes@cmpxchg.org>
->>>> CC: Suleiman Souhlal <suleiman@google.com>
->>>> CC: Tejun Heo <tj@kernel.org>
->>>> ---
->>>
->>> Hi guys,
->>>
->>> This patch is making lockdep angry! *bark bark*
->>>
->>> [  351.935003] ======================================================
->>> [  351.937693] [ INFO: possible circular locking dependency detected ]
->>> [  351.939720] 3.7.0-rc4-next-20121106-sasha-00008-g353b62f #117 Tainted: G        W
->>> [  351.942444] -------------------------------------------------------
->>> [  351.943528] trinity-child13/6961 is trying to acquire lock:
->>> [  351.943528]  (s_active#43){++++.+}, at: [<ffffffff812f9e11>] sysfs_addrm_finish+0x31/0x60
->>> [  351.943528]
->>> [  351.943528] but task is already holding lock:
->>> [  351.943528]  (slab_mutex){+.+.+.}, at: [<ffffffff81228a42>] kmem_cache_destroy+0x22/0xe0
->>> [  351.943528]
->>> [  351.943528] which lock already depends on the new lock.
->>> [  351.943528]
->>> [  351.943528]
->>> [  351.943528] the existing dependency chain (in reverse order) is:
->>> [  351.943528]
->>> -> #1 (slab_mutex){+.+.+.}:
->>> [  351.960334]        [<ffffffff8118536a>] lock_acquire+0x1aa/0x240
->>> [  351.960334]        [<ffffffff83a944d9>] __mutex_lock_common+0x59/0x5a0
->>> [  351.960334]        [<ffffffff83a94a5f>] mutex_lock_nested+0x3f/0x50
->>> [  351.960334]        [<ffffffff81256a6e>] slab_attr_store+0xde/0x110
->>> [  351.960334]        [<ffffffff812f820a>] sysfs_write_file+0xfa/0x150
->>> [  351.960334]        [<ffffffff8127a220>] vfs_write+0xb0/0x180
->>> [  351.960334]        [<ffffffff8127a540>] sys_pwrite64+0x60/0xb0
->>> [  351.960334]        [<ffffffff83a99298>] tracesys+0xe1/0xe6
->>> [  351.960334]
->>> -> #0 (s_active#43){++++.+}:
->>> [  351.960334]        [<ffffffff811825af>] __lock_acquire+0x14df/0x1ca0
->>> [  351.960334]        [<ffffffff8118536a>] lock_acquire+0x1aa/0x240
->>> [  351.960334]        [<ffffffff812f9272>] sysfs_deactivate+0x122/0x1a0
->>> [  351.960334]        [<ffffffff812f9e11>] sysfs_addrm_finish+0x31/0x60
->>> [  351.960334]        [<ffffffff812fa369>] sysfs_remove_dir+0x89/0xd0
->>> [  351.960334]        [<ffffffff819e1d96>] kobject_del+0x16/0x40
->>> [  351.960334]        [<ffffffff8125ed40>] __kmem_cache_shutdown+0x40/0x60
->>> [  351.960334]        [<ffffffff81228a60>] kmem_cache_destroy+0x40/0xe0
->>> [  351.960334]        [<ffffffff82b21058>] mon_text_release+0x78/0xe0
->>> [  351.960334]        [<ffffffff8127b3b2>] __fput+0x122/0x2d0
->>> [  351.960334]        [<ffffffff8127b569>] ____fput+0x9/0x10
->>> [  351.960334]        [<ffffffff81131b4e>] task_work_run+0xbe/0x100
->>> [  351.960334]        [<ffffffff81110742>] do_exit+0x432/0xbd0
->>> [  351.960334]        [<ffffffff81110fa4>] do_group_exit+0x84/0xd0
->>> [  351.960334]        [<ffffffff8112431d>] get_signal_to_deliver+0x81d/0x930
->>> [  351.960334]        [<ffffffff8106d5aa>] do_signal+0x3a/0x950
->>> [  351.960334]        [<ffffffff8106df1e>] do_notify_resume+0x3e/0x90
->>> [  351.960334]        [<ffffffff83a993aa>] int_signal+0x12/0x17
->>> [  351.960334]
+On 12 November 2012 12:18, Maxime Bizon <mbizon@freebox.fr> wrote:
+> On Sun, 2012-11-11 at 13:50 +0100, Jonas Gorski wrote:
+>
+>> This patch series adds initial Device Tree support to BCM63XX by adding
+>> bindings for interrupts, GPIOs and clocks to Device Tree. Finally it adds
+>> one "real" user, the serial driver, to the device tree boards.
+>
+>>  51 files changed, 1993 insertions(+), 392 deletions(-)
+>
+> I've already said what I think privately to you but I will do it again
+>
+> The bcm63xx code base is IMO quite clean. It does not suffer from code
+> duplication, and god it would have taken far less time to write it the
+> "bad" way.
 
-First: Sorry I took so long, I had some problems in my way back from
-Spain...
+The non-DT way of defining boards will not go away soon - see how all
+changes are done with keeping "backward" compatibility in mind: I
+don't remove the old device registration code, I don't remove any
+fields from the board struct, I added compatibility dts for when there
+is only a board struct, no board specific dts file.
 
-I just managed to reproduce it, by following the callchain. In summary:
+> We have only *one* register file for all the SOCs, only the different
+> bits are visible.
+>
+> We can even build a single kernel that support all SOCs/boards.
 
-1) when we store an attribute, we will call sysfs_get_active(), that
-will hold the sd->dep_map lock, where 'sd' is the specific dirent.
+That's not going to change with Device Tree, and I'm trying my best to
+keep this.
 
-2) ->store() is called with that held.
+> So what's the *point* of this ?
 
-3) ->store() will hold the slab_mutex
+Not having to update board_bcm963xx.{c,h} because some vendor decided
+to add e.g. a previously unused gpio-bitbanged device. Not having to
+modify the kernel but just attach a (externally build) dtb to the
+kernel to support a new board. Ideally in the far future even using a
+CFE provided dtb. I'm sure there are more reasons.
 
-4) While destroying the cache, with the slab_mutex held, we will
-eventually get to kobject_put(), that deep down in the callchain will
-resort to sysfs_addrm_finish, that can hold that lock again.
+> You *cannot* abstract hardware, you just can't guess now what the next
+> SOC peculiarity will be.
 
-In summary, creating a kmem limited memcg, storing an argument in the
-global cache, and then deleting the memcg should trigger this. The funny
-thing is that I had a test exactly like this in which it didn't trigger,
-and now I know why: I was storing attributes for "dentry", which can
-stay around for longer until it completely runs out of objects, which
-will depend on the vmscan shrinkers kicking in. storing to a more short
-lived cache will easily trigger this - Thanks!
+And nobody wants to do that. But - as Kevin already mentioned - it
+would be nice if we get similar SoCs we already know about supported
+with the same code; or at least , like BCM33xx, BCM68xx or maybe even
+BCM7xxx (never looked at them, so I can't tell how viable that is).
 
-During __kmem_cache_create, we drop the slab_mutex around
-sysfs_slab_add. Although the justification for that is a bit different,
-I think this is generally sane and the same could be done here.
+>> Quoting your patch "BCM63XX: switch to common clock and Device Tree"
+>
+> +Required properties:
+> +- compatible: one of
+> +  a) "brcm,bcm63xx-clock"
+> +  Standard BCM63XX clock.
+>
+> cool a nice abstraction, one register bit = one clock
+>
+> +  b) "brcm,bcm63xx-sar-clock"
+> +  SAR/ATM clock, which requires a reset of the SAR/ATM block.
+> +  c) "brcm,bcm63xx-enetsw-clock"
+> +  Generic ethernet switch clock, which requires a reset of the block.
+> +  d) "brcm,bcm6368-enetsw-clock"
+> +  BCM6368 ethernet switch clock, which requires additional clocks to be
+> +  enabled during reset.
+>
+> oops that abstraction did not fly because after enabling this particular
+> clock on this SOC you also need to toggle other bits.
 
-I will send a patch for this - and other issues - shortly.
+These special clocks are so that the original behaviour of the clocks
+is kept.  I'd rather argue that the reset code does not belong into
+the clock code, and is actually the responsibility of the driver. It
+would make the clock code much simpler.
 
-Thanks again, Sasha.
+There will be exactly one consumer each for the enetsw/sar clocks; the
+drivers themselves. And since the drivers itself aren't upstream yet,
+it should be no problem modifying them to reset the cores instead of
+relying on the clock code to do that for them. then we can implement
+the reset call abstract enough so the entsw just expects a list of
+clocks through DT that need to be enabled during reset - without
+having to care about which exact clocks these are (and it will be zero
+except for two SoCs).
+
+
+What would you suggest? Please no "don't use Device Tree", as I don't
+think we can avoid that. I'm struggling to find something you are fine
+with.
+
+> that list is going to get longer and longer and at the end won't mean anything.
+
+BCM681x needs additional special handling, yes, but that's it
+currently. Neither BCM6362 nor BCM63168 have/need this. And there is
+no problem adding new support code in the kernel as needed. Nobody
+expects older kernels to work with newer SoCs. But as stated earlier,
+older kernels should work with newer boards.
+
+> and this is supposed to be a *STABLE* API
+>
+> We don't add syscall everyday, because we have to support them forever.
+> Why would it be ok to add such abstractions that prevent further code
+> refactoring because they are fixed in stone ?
+
+I wouldn't treat this as stable until we got it into a satisfactory
+state with everything supported. Heck, I wouldn't even treat this as
+stable until Broadcom ships it in their SDKs to customers with CFEs
+providing DTBs to the kernel.
+
+What do you want to do, keep it out of the kernel until everything is
+supported, working and "polished up", then posting a big patch bomb? I
+don't think this will work well and will just cause pain for everyone.
+
+
+Jonas
