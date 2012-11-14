@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161046Ab2KNKCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:02:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38765 "EHLO mx2.suse.de"
+	id S1161057Ab2KNKDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:03:47 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:43268 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab2KNKB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:01:58 -0500
-Date: Wed, 14 Nov 2012 10:01:54 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Marc Duponcheel <marc@offline.be>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
-Message-ID: <20121114100154.GI8218@suse.de>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
- <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
- <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
- <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
+	id S1161008Ab2KNKDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 05:03:45 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org, mathias.nyman@linux.intel.com,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        khali@linux-fr.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 0/3 rev 2] Centralized parsing of ACPI device resources
+Date: Wed, 14 Nov 2012 11:08:06 +0100
+Message-ID: <2248327.u9oE2tplEW@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121114095232.GN31759@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <5953163.ZajFIHZXph@vostro.rjw.lan> <20121114095232.GN31759@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 03:41:02PM -0800, David Rientjes wrote:
-> On Tue, 13 Nov 2012, Andy Lutomirski wrote:
+On Wednesday, November 14, 2012 11:52:32 AM Mika Westerberg wrote:
+> On Tue, Nov 13, 2012 at 09:51:39PM +0100, Rafael J. Wysocki wrote:
+> > Updated series, taking the Mika's feedback into account, follows.  There are
+> > bug fixes in [1/3], [2/3] is unchanged and the new [3/3] is a replacement, done
+> > in a different way because of some ACPICA limitations I didn't realize before.
 > 
-> > It just happened again.
-> > 
-> > $ grep -E "compact_|thp_" /proc/vmstat
-> > compact_blocks_moved 8332448774
-> > compact_pages_moved 21831286
-> > compact_pagemigrate_failed 211260
-> > compact_stall 13484
-> > compact_fail 6717
-> > compact_success 6755
-> > thp_fault_alloc 150665
-> > thp_fault_fallback 4270
-> > thp_collapse_alloc 19771
-> > thp_collapse_alloc_failed 2188
-> > thp_split 19600
-> > 
+> I've now tested this series on my ACPI 5 enabled test machine and
+> everything works fine - I can see the platform devices and that they have
+> the ACPI handle attached.
 > 
-> Two of the patches from the list provided at
-> http://marc.info/?l=linux-mm&m=135179005510688 are already in your 3.6.3 
-> kernel:
+> For the whole series,
 > 
-> 	mm: compaction: abort compaction loop if lock is contended or run too long
-> 	mm: compaction: acquire the zone->lock as late as possible
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> and all have not made it to the 3.6 stable kernel yet, so would it be 
-> possible to try with 3.7-rc5 to see if it fixes the issue?  If so, it will 
-> indicate that the entire series is a candidate to backport to 3.6.
+> (testing has been limited on one ACPI 5 machine, though).
 
-Thanks David once again.
+OK, thanks!
 
-The full list of compaction-related patches I believe are necessary for
-this particular problem are
+> I guess I can start preparing the GPIO/SPI/I2C patches soon ;-)
 
-e64c5237cf6ff474cb2f3f832f48f2b441dd9979 mm: compaction: abort compaction loop if lock is contended or run too long
-3cc668f4e30fbd97b3c0574d8cac7a83903c9bc7 mm: compaction: move fatal signal check out of compact_checklock_irqsave
-661c4cb9b829110cb68c18ea05a56be39f75a4d2 mm: compaction: Update try_to_compact_pages()kerneldoc comment
-2a1402aa044b55c2d30ab0ed9405693ef06fb07c mm: compaction: acquire the zone->lru_lock as late as possible
-f40d1e42bb988d2a26e8e111ea4c4c7bac819b7e mm: compaction: acquire the zone->lock as late as possible
-753341a4b85ff337487b9959c71c529f522004f4 revert "mm: have order > 0 compaction start off where it left"
-bb13ffeb9f6bfeb301443994dfbf29f91117dfb3 mm: compaction: cache if a pageblock was scanned and no pages were isolated
-c89511ab2f8fe2b47585e60da8af7fd213ec877e mm: compaction: Restart compaction from near where it left off
-62997027ca5b3d4618198ed8b1aba40b61b1137b mm: compaction: clear PG_migrate_skip based on compaction and reclaim activity
-0db63d7e25f96e2c6da925c002badf6f144ddf30 mm: compaction: correct the nr_strict va isolated check for CMA
+Yes, please. :-)
 
-If we can get confirmation that these fix the problem in 3.6 kernels then
-I can backport them to -stable. This fixing a problem where "many processes
-stall, all in an isolation-related function". This started happening after
-lumpy reclaim was removed because we depended on that to aggressively
-reclaim with less compaction. Now compaction is depended upon more.
+Thanks,
+Rafael
 
-The full 3.7-rc5 kernel has a different problem on top of this and it's
-important the problems do not get conflacted. It has these fixes *but*
-GFP_NO_KSWAPD has been removed and there is a patch that scales reclaim
-with THP failures that is causing problem. With them, kswapd can get
-stuck in a 100% loop where it is neither reclaiming nor reaching its exit
-conditions. The correct fix would be to identify why this happens but I
-have not got around to it yet. To test with 3.7-rc5 then apply either
-
-1) https://lkml.org/lkml/2012/11/5/308
-2) https://lkml.org/lkml/2012/11/12/113
-
-or
-
-1) https://lkml.org/lkml/2012/11/5/308
-3) https://lkml.org/lkml/2012/11/12/151
-
-on top of 3.7-rc5. So it's a lot of work but there are three tests I'm
-interested in hearing about. The results of each determine what happens
-in -stable or mainline
-
-Test 1: 3.6 + the last of commits above	(should fix processes stick in isolate)
-Test 2: 3.7-rc5 + (1+2) above (should fix kswapd stuck at 100%)
-Test 3: 3.7-rc5 + (1+3) above (should fix kswapd stuck at 100% but better)
-
-Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
