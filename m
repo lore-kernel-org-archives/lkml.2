@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab2KNCsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:48:18 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53373 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab2KNCsP (ORCPT
+	id S932549Ab2KNCtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:49:24 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:63442 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab2KNCtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:48:15 -0500
-Message-ID: <50A30652.1020208@ahsoftware.de>
-Date: Wed, 14 Nov 2012 03:47:46 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121002 Thunderbird/15.0.1
+	Tue, 13 Nov 2012 21:49:23 -0500
+Message-ID: <50A306AA.9000308@gmail.com>
+Date: Tue, 13 Nov 2012 20:49:14 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Till Harbaum <till@harbaum.org>
-Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
- for bus-drivers.
-References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de> <20121113195533.6db71716@endymion.delvare> <50A2AC28.7050304@ahsoftware.de> <20121113220835.111a178a@endymion.delvare> <50A2BAA2.6090009@ahsoftware.de> <20121113224246.768bf734@endymion.delvare>
-In-Reply-To: <20121113224246.768bf734@endymion.delvare>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pawel.sikora@agmk.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, arekm@pld-linux.org,
+        baggins@pld-linux.org
+Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule)
+References: <56378024.A3Kec8xZj0@pawels> <1539324.MIArxLN8tE@pawels> <3023364.Bjpo0brdul@pawels> <2413953.H7iie8v1th@pawels> <50A302C9.2060800@linux.vnet.ibm.com>
+In-Reply-To: <50A302C9.2060800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/13/2012 08:32 PM, Michael Wang wrote:
+> On 11/13/2012 05:40 PM, Paweł Sikora wrote:
+>> On Monday 12 of November 2012 13:33:39 Paweł Sikora wrote:
+>>> On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
+>>>> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
+>>>>> On 11/12/2012 03:16 PM, Paweł Sikora wrote:
+>>>>>> On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
+>>>>>>> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
+>>>>>>>> Hi,
+>>>>>>>>
+>>>>>>>> during playing with new ups i've caught an nice oops on reboot:
+>>>>>>>>
+>>>>>>>> http://imgbin.org/index.php?page=image&id=10253
+>>>>>>>>
+>>>>>>>> probably the upstream is also affected.
+>>>>>>>
+>>>>>>> Hi, Paweł
+>>>>>>>
+>>>>>>> Are you using a clean 3.6.6 without any modify?
+>>>>>>
+>>>>>> yes, pure 3.6.6 form git tree with modular config.
+>>>>>>
+>>>>>>> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
+>>>>>>> any design on switch itself back later(or the time is too long), are you
+>>>>>>> accidentally using some bad designed module?
+>>>>>>
+>>>>>> hmm, hard to say. mostly all modules are loaded automatically by kernel.
+>>>>>
+>>>>> Could you please provide the whole dmesg in text? your picture lost the
+>>>>> print info of the hung task.
+>>>>
+>>>> i've grabbed the console via rs232 but there's no more info (see attached txt).
+>>>
+>>> hmm, i have one observation.
+>>>
+>>> during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
+>>> afaics this file descriptor points to vnc log file on a remote machine, e.g.:
+>>>
+>>> # ps aux|grep xfwm4
+>>> eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4
+>>>
+>>> # readlink -m /proc/1748/fd/1
+>>> /remote/dragon/ahome/eda/.vnc/odra:11.log
+>>>
+>>> # mount|grep ahome
+>>> dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
+>>>
+>>>
+>>> so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
+>>> and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
+>>>
+>>
+>> ok, now i have full sysrq+w backtraces from shutdown process. i hope i'll help you.
+>
+> This can only tell us what's the task in UNINTERRUPTABLE state, but with
+> out time info, we can't find out which one is the hung task...
 
-Am 13.11.2012 22:42, schrieb Jean Delvare:
-
-> Plus you don't address the main issues. Your syntax gives you no way to
-> support two i2c-tiny-usb adapters with different chips at a specific
-> address. The sysfs interface supports such a setup. Also instantiating
-> the wrong devices is worse than instating a device that doesn't exist
-> at all. So the use of i2c_new_probed_device() here will randomly help
-> in a limited number of cases and randomly be problematic in others.
-> Hard to justify...
-
-As you seem to have a solution for multiple devices of the same type by
-using sysfs, how to do you decide which one to use? You might be able to
-probe just one, but my simple mind currently doesn't come up with a
-solution which device one has to probe. Just because I'm curious... ;)
-
-Regards,
-
-Alexander
-
+Probably all of the ones in D state waiting on NFS are the issue - but 
+as I understand it, with modern kernels processes are supposed to be 
+killable while waiting on NFS I/O. Maybe there's a bug that affects 
+this, though?
