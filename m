@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422931Ab2KNPS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 10:18:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:6770 "EHLO relay.sw.ru"
+	id S1422989Ab2KNPTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 10:19:11 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43978 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab2KNPS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:18:56 -0500
-Subject: [PATCH v2 06/15] nfsd: make unconf_id_hashtbl allocated per net
+	id S1422677Ab2KNPTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 10:19:07 -0500
+Subject: [PATCH v2 08/15] nfsd: make ownerstr_hashtbl allocated per net
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Wed, 14 Nov 2012 18:21:31 +0300
-Message-ID: <20121114152131.4708.86778.stgit@localhost.localdomain>
+Date: Wed, 14 Nov 2012 18:21:41 +0300
+Message-ID: <20121114152141.4708.33413.stgit@localhost.localdomain>
 In-Reply-To: <20121114152018.4708.63125.stgit@localhost.localdomain>
 References: <20121114152018.4708.63125.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,8 +23,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hash holds nfs4_clients info, which are network namespace aware.
-So let's make it allocated per network namespace.
+This hash holds open owner state and closely associated with nfs4_clients
+info, which are network namespace aware. So let's make it allocated per
+network namespace too.
 
 Note: this hash can be allocated in per-net operations. But it looks
 better to allocate it on nfsd state start and thus don't waste resources
@@ -33,127 +34,173 @@ if server is not running.
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
  fs/nfsd/netns.h     |    1 +
- fs/nfsd/nfs4state.c |   25 +++++++++++++++----------
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ fs/nfsd/nfs4state.c |   41 ++++++++++++++++++++++++++---------------
+ 2 files changed, 27 insertions(+), 15 deletions(-)
 
 diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index afd9116..1ff781f 100644
+index 1e76030..46cca94 100644
 --- a/fs/nfsd/netns.h
 +++ b/fs/nfsd/netns.h
-@@ -55,6 +55,7 @@ struct nfsd_net {
- 	int reclaim_str_hashtbl_size;
- 	struct list_head *conf_id_hashtbl;
+@@ -60,6 +60,7 @@ struct nfsd_net {
  	struct rb_root conf_name_tree;
-+	struct list_head *unconf_id_hashtbl;
+ 	struct list_head *unconf_id_hashtbl;
+ 	struct rb_root unconf_name_tree;
++	struct list_head *ownerstr_hashtbl;
  };
  
  extern int nfsd_net_id;
 diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index ff03573..b967804 100644
+index c38fea9..2333d15 100644
 --- a/fs/nfsd/nfs4state.c
 +++ b/fs/nfsd/nfs4state.c
-@@ -415,7 +415,6 @@ static unsigned int clientstr_hashval(const char *name)
-  *
-  * All of the above fields are protected by the client_mutex.
-  */
--static struct list_head	unconf_id_hashtbl[CLIENT_HASH_SIZE];
- static struct rb_root unconf_name_tree;
- static struct list_head client_lru;
- static struct list_head close_lru;
-@@ -1369,11 +1368,12 @@ static void
- add_to_unconfirmed(struct nfs4_client *clp)
+@@ -176,8 +176,6 @@ static unsigned int ownerstr_hashval(u32 clientid, struct xdr_netobj *ownername)
+ 	return ret & OWNER_HASH_MASK;
+ }
+ 
+-static struct list_head	ownerstr_hashtbl[OWNER_HASH_SIZE];
+-
+ /* hash table for nfs4_file */
+ #define FILE_HASH_BITS                   8
+ #define FILE_HASH_SIZE                  (1 << FILE_HASH_BITS)
+@@ -2428,7 +2426,9 @@ static inline void *alloc_stateowner(struct kmem_cache *slab, struct xdr_netobj
+ 
+ static void hash_openowner(struct nfs4_openowner *oo, struct nfs4_client *clp, unsigned int strhashval)
  {
- 	unsigned int idhashval;
+-	list_add(&oo->oo_owner.so_strhash, &ownerstr_hashtbl[strhashval]);
++	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
++
++	list_add(&oo->oo_owner.so_strhash, &nn->ownerstr_hashtbl[strhashval]);
+ 	list_add(&oo->oo_perclient, &clp->cl_openowners);
+ }
+ 
+@@ -2486,13 +2486,14 @@ same_owner_str(struct nfs4_stateowner *sop, struct xdr_netobj *owner,
+ }
+ 
+ static struct nfs4_openowner *
+-find_openstateowner_str(unsigned int hashval, struct nfsd4_open *open, bool sessions)
++find_openstateowner_str(unsigned int hashval, struct nfsd4_open *open,
++			bool sessions, struct nfsd_net *nn)
+ {
+ 	struct nfs4_stateowner *so;
+ 	struct nfs4_openowner *oo;
+ 	struct nfs4_client *clp;
+ 
+-	list_for_each_entry(so, &ownerstr_hashtbl[hashval], so_strhash) {
++	list_for_each_entry(so, &nn->ownerstr_hashtbl[hashval], so_strhash) {
+ 		if (!so->so_is_open_owner)
+ 			continue;
+ 		if (same_owner_str(so, &open->op_owner, &open->op_clientid)) {
+@@ -2648,7 +2649,7 @@ nfsd4_process_open1(struct nfsd4_compound_state *cstate,
+ 		return nfserr_jukebox;
+ 
+ 	strhashval = ownerstr_hashval(clientid->cl_id, &open->op_owner);
+-	oo = find_openstateowner_str(strhashval, open, cstate->minorversion);
++	oo = find_openstateowner_str(strhashval, open, cstate->minorversion, nn);
+ 	open->op_openowner = oo;
+ 	if (!oo) {
+ 		clp = find_confirmed_client(clientid, cstate->minorversion,
+@@ -3976,8 +3977,9 @@ static void hash_lockowner(struct nfs4_lockowner *lo, unsigned int strhashval, s
+ 	struct inode *inode = open_stp->st_file->fi_inode;
+ 	unsigned int inohash = lockowner_ino_hashval(inode,
+ 			clp->cl_clientid.cl_id, &lo->lo_owner.so_owner);
 +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
  
- 	clear_bit(NFSD4_CLIENT_CONFIRMED, &clp->cl_flags);
- 	add_clp_to_name_tree(clp, &unconf_name_tree);
- 	idhashval = clientid_hashval(clp->cl_clientid.cl_id);
--	list_add(&clp->cl_idhash, &unconf_id_hashtbl[idhashval]);
-+	list_add(&clp->cl_idhash, &nn->unconf_id_hashtbl[idhashval]);
- 	renew_client(clp);
+-	list_add(&lo->lo_owner.so_strhash, &ownerstr_hashtbl[strhashval]);
++	list_add(&lo->lo_owner.so_strhash, &nn->ownerstr_hashtbl[strhashval]);
+ 	list_add(&lo->lo_owner_ino_hash, &lockowner_ino_hashtbl[inohash]);
+ 	list_add(&lo->lo_perstateid, &open_stp->st_lockowners);
+ }
+@@ -4458,7 +4460,7 @@ nfsd4_release_lockowner(struct svc_rqst *rqstp,
+ 	status = nfserr_locks_held;
+ 	INIT_LIST_HEAD(&matches);
+ 
+-	list_for_each_entry(sop, &ownerstr_hashtbl[hashval], so_strhash) {
++	list_for_each_entry(sop, &nn->ownerstr_hashtbl[hashval], so_strhash) {
+ 		if (sop->so_is_open_owner)
+ 			continue;
+ 		if (!same_owner_str(sop, owner, clid))
+@@ -4614,13 +4616,14 @@ static void release_openowner_sop(struct nfs4_stateowner *sop)
  }
  
-@@ -1409,12 +1409,12 @@ find_confirmed_client(clientid_t *clid, bool sessions, struct nfsd_net *nn)
- }
- 
- static struct nfs4_client *
--find_unconfirmed_client(clientid_t *clid, bool sessions)
-+find_unconfirmed_client(clientid_t *clid, bool sessions, struct nfsd_net *nn)
+ static int nfsd_release_n_owners(u64 num, bool is_open_owner,
+-				void (*release_sop)(struct nfs4_stateowner *))
++				void (*release_sop)(struct nfs4_stateowner *),
++				struct nfsd_net *nn)
  {
- 	struct nfs4_client *clp;
- 	unsigned int idhashval = clientid_hashval(clid->cl_id);
+ 	int i, count = 0;
+ 	struct nfs4_stateowner *sop, *next;
  
--	list_for_each_entry(clp, &unconf_id_hashtbl[idhashval], cl_idhash) {
-+	list_for_each_entry(clp, &nn->unconf_id_hashtbl[idhashval], cl_idhash) {
- 		if (same_clid(&clp->cl_clientid, clid)) {
- 			if ((bool)clp->cl_minorversion != sessions)
- 				return NULL;
-@@ -1799,7 +1799,7 @@ nfsd4_create_session(struct svc_rqst *rqstp,
- 		goto out_free_session;
- 
- 	nfs4_lock_state();
--	unconf = find_unconfirmed_client(&cr_ses->clientid, true);
-+	unconf = find_unconfirmed_client(&cr_ses->clientid, true, nn);
- 	conf = find_confirmed_client(&cr_ses->clientid, true, nn);
- 
- 	if (conf) {
-@@ -2143,7 +2143,7 @@ nfsd4_destroy_clientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *csta
- 	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 
- 	nfs4_lock_state();
--	unconf = find_unconfirmed_client(&dc->clientid, true);
-+	unconf = find_unconfirmed_client(&dc->clientid, true, nn);
- 	conf = find_confirmed_client(&dc->clientid, true, nn);
- 
- 	if (conf) {
-@@ -2280,7 +2280,7 @@ nfsd4_setclientid_confirm(struct svc_rqst *rqstp,
- 	nfs4_lock_state();
- 
- 	conf = find_confirmed_client(clid, false, nn);
--	unconf = find_unconfirmed_client(clid, false);
-+	unconf = find_unconfirmed_client(clid, false, nn);
- 	/*
- 	 * We try hard to give out unique clientid's, so if we get an
- 	 * attempt to confirm the same clientid with a different cred,
-@@ -4720,9 +4720,6 @@ nfs4_state_init(void)
+ 	for (i = 0; i < OWNER_HASH_SIZE; i++) {
+-		list_for_each_entry_safe(sop, next, &ownerstr_hashtbl[i], so_strhash) {
++		list_for_each_entry_safe(sop, next, &nn->ownerstr_hashtbl[i], so_strhash) {
+ 			if (sop->so_is_open_owner != is_open_owner)
+ 				continue;
+ 			release_sop(sop);
+@@ -4634,9 +4637,10 @@ static int nfsd_release_n_owners(u64 num, bool is_open_owner,
+ void nfsd_forget_locks(u64 num)
  {
- 	int i;
+ 	int count;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
  
--	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
--		INIT_LIST_HEAD(&unconf_id_hashtbl[i]);
+ 	nfs4_lock_state();
+-	count = nfsd_release_n_owners(num, false, release_lockowner_sop);
++	count = nfsd_release_n_owners(num, false, release_lockowner_sop, nn);
+ 	nfs4_unlock_state();
+ 
+ 	printk(KERN_INFO "NFSD: Forgot %d locks", count);
+@@ -4645,9 +4649,10 @@ void nfsd_forget_locks(u64 num)
+ void nfsd_forget_openowners(u64 num)
+ {
+ 	int count;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	nfs4_lock_state();
+-	count = nfsd_release_n_owners(num, true, release_openowner_sop);
++	count = nfsd_release_n_owners(num, true, release_openowner_sop, nn);
+ 	nfs4_unlock_state();
+ 
+ 	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
+@@ -4721,9 +4726,6 @@ nfs4_state_init(void)
+ 	for (i = 0; i < FILE_HASH_SIZE; i++) {
+ 		INIT_LIST_HEAD(&file_hashtbl[i]);
+ 	}
+-	for (i = 0; i < OWNER_HASH_SIZE; i++) {
+-		INIT_LIST_HEAD(&ownerstr_hashtbl[i]);
 -	}
- 	unconf_name_tree = RB_ROOT;
- 	for (i = 0; i < SESSION_HASH_SIZE; i++)
- 		INIT_LIST_HEAD(&sessionid_hashtbl[i]);
-@@ -4769,14 +4766,21 @@ static int nfs4_state_start_net(struct net *net)
+ 	for (i = 0; i < LOCKOWNER_INO_HASH_SIZE; i++)
+ 		INIT_LIST_HEAD(&lockowner_ino_hashtbl[i]);
+ 	INIT_LIST_HEAD(&close_lru);
+@@ -4765,16 +4767,24 @@ static int nfs4_state_start_net(struct net *net)
  			CLIENT_HASH_SIZE, GFP_KERNEL);
- 	if (!nn->conf_id_hashtbl)
- 		goto err;
-+	nn->unconf_id_hashtbl = kmalloc(sizeof(struct list_head) *
-+			CLIENT_HASH_SIZE, GFP_KERNEL);
-+	if (!nn->unconf_id_hashtbl)
-+		goto err_unconf_id;
+ 	if (!nn->unconf_id_hashtbl)
+ 		goto err_unconf_id;
++	nn->ownerstr_hashtbl = kmalloc(sizeof(struct list_head) *
++			OWNER_HASH_SIZE, GFP_KERNEL);
++	if (!nn->ownerstr_hashtbl)
++		goto err_ownerstr;
  
  	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
  		INIT_LIST_HEAD(&nn->conf_id_hashtbl[i]);
-+		INIT_LIST_HEAD(&nn->unconf_id_hashtbl[i]);
+ 		INIT_LIST_HEAD(&nn->unconf_id_hashtbl[i]);
  	}
++	for (i = 0; i < OWNER_HASH_SIZE; i++)
++		INIT_LIST_HEAD(&nn->ownerstr_hashtbl[i]);
  	nn->conf_name_tree = RB_ROOT;
+ 	nn->unconf_name_tree = RB_ROOT;
  
  	return 0;
  
-+err_unconf_id:
-+	kfree(nn->conf_id_hashtbl);
- err:
- 	return -ENOMEM;
- }
-@@ -4794,6 +4798,7 @@ __nfs4_state_shutdown_net(struct net *net)
- 			destroy_client(clp);
- 		}
- 	}
++err_ownerstr:
 +	kfree(nn->unconf_id_hashtbl);
+ err_unconf_id:
+ 	kfree(nn->conf_id_hashtbl);
+ err:
+@@ -4805,6 +4815,7 @@ __nfs4_state_shutdown_net(struct net *net)
+ 		destroy_client(clp);
+ 	}
+ 
++	kfree(nn->ownerstr_hashtbl);
+ 	kfree(nn->unconf_id_hashtbl);
  	kfree(nn->conf_id_hashtbl);
  }
- 
 
