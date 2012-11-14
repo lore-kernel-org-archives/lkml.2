@@ -1,91 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab2KNA6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:58:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57304 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052Ab2KNA6t (ORCPT
+	id S932226Ab2KNBCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 20:02:00 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56762 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052Ab2KNBB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:58:49 -0500
-Date: Tue, 13 Nov 2012 16:58:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm: fix null dev in dma_pool_create()
-Message-Id: <20121113165847.4dcf968c.akpm@linux-foundation.org>
-In-Reply-To: <50A2BE19.7000604@gmail.com>
-References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
-	<50A2BE19.7000604@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 20:01:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Nov 2012 17:01:37 -0800
+Message-ID: <CAK5ve-KJXDeYnwawzbYSds5joZ6kmJNmGNJ23ehRe8yrXiN3Cw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] leds/tca6507: Add support for devicetree.
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012 16:39:37 -0500
-Xi Wang <xi.wang@gmail.com> wrote:
-
-> A few drivers invoke dma_pool_create() with a null dev.  Note that dev
-> is dereferenced in dev_to_node(dev), causing a null pointer dereference.
-> 
-> A long term solution is to disallow null dev.  Once the drivers are
-> fixed, we can simplify the core code here.  For now we add WARN_ON(!dev)
-> to notify the driver maintainers and avoid the null pointer dereference.
-> 
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-
-I'm not sure that I really suggested doing this :(
-
-> --- a/mm/dmapool.c
-> +++ b/mm/dmapool.c
-> @@ -135,6 +135,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
->  {
->  	struct dma_pool *retval;
->  	size_t allocation;
-> +	int node;
->  
->  	if (align == 0) {
->  		align = 1;
-> @@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
->  		return NULL;
->  	}
->  
-> -	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
-> +	node = WARN_ON(!dev) ? -1 : dev_to_node(dev);
+On Mon, Nov 12, 2012 at 1:25 PM, Marek Belisko
+<marek.belisko@open-nandra.com> wrote:
+> Support added only for leds (not for gpio's).
+>
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+>
+> Changes from v2:
+> - change compatible property to "ti,tca6507"
+> - add documentation for linux,default-trigger
+>
+> Changes from v1:
+> - return proper error value not NULL from tca6507_led_dt_init()
+> - remove empty lines
+> - remove kfree()
+>
+>  drivers/leds/leds-tca6507.c |   70 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 67 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+> index dabcf7a..fdc1ea6 100644
+> --- a/drivers/leds/leds-tca6507.c
+> +++ b/drivers/leds/leds-tca6507.c
+> @@ -667,6 +667,66 @@ static void tca6507_remove_gpio(struct tca6507_chip *tca)
+>  }
+>  #endif /* CONFIG_GPIOLIB */
+>
+> +#ifdef CONFIG_OF
+> +static struct tca6507_platform_data * __devinit tca6507_led_dt_init(struct i2c_client *client)
+> +{
+> +       struct device_node *np = client->dev.of_node, *child;
+> +       struct tca6507_platform_data *pdata;
+> +       struct led_info *tca_leds;
+> +       int count = 0;
 > +
-> +	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
->  	if (!retval)
->  		return retval;
+> +       for_each_child_of_node(np, child)
+> +               count++;
+> +       if (!count)
+> +               return ERR_PTR(-ENODEV);
+> +
+> +       if (count > NUM_LEDS)
+> +               return ERR_PTR(-ENODEV);
+> +
+> +       tca_leds = devm_kzalloc(&client->dev, sizeof(struct led_info) * NUM_LEDS, GFP_KERNEL);
 
-We know there are a few scruffy drivers which are passing in dev==0. 
+I guess it should be 'sizeof(struct led_info) * count' instead of
+'sizeof(struct led_info) * NUM_LEDS'
 
-Those drivers don't oops because nobody is testing them on NUMA
-systems.
+> +       if (!tca_leds)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       for_each_child_of_node(np, child) {
+> +               struct led_info led;
+> +               u32 reg;
+> +               int ret;
+> +
+> +               led.name = of_get_property(child, "label", NULL) ? : child->name;
+> +               led.default_trigger =
+> +                       of_get_property(child, "linux,default-trigger", NULL);
+> +
+> +               ret = of_property_read_u32(child, "reg", &reg);
+> +
+one more empty line
 
-With this patch, the kernel will now cause runtime warnings to be
-emitted from those drivers.  Even on non-NUMA systems.
+> +               if (ret != 0)
+> +                       continue;
 
+you can put one empty line here,
+> +               tca_leds[reg] = led;
+> +       }
+> +       pdata = devm_kzalloc(&client->dev, sizeof(struct tca6507_platform_data), GFP_KERNEL);
+> +       if (!pdata) {
 
-This is a problem!  What will happen is that this code will get
-released by Linus and will propagate to users mainly via distros and
-eventually end-user bug reports will trickle back saying "hey, I got
-this warning".  Slowly people will fix the scruffy drivers and those
-fixes will propagate out from Linus's tree into -stable and then into
-distros and then into the end-users hands.
+no need {} here for just one line of this scope.
 
-This is *terribly* inefficient!  It's a lot of work for a lot of people
-and it involves long delays.
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+remove this.
 
-So let's not do any of that!  Let us try to get those scruffy drivers
-fixed up *before* we add this warning.
+> +
+> +       pdata->leds.leds = tca_leds;
+> +       pdata->leds.num_leds = NUM_LEDS;
 
-As a nice side-effect of that work, we can then clean up the dmapool
-code so it doesn't need to worry about handling the dev==0 special
-case.
+I think it should '= count' instead of '= NUM_LEDS'.
 
-So.  To start this off, can you please generate a list of the offending
-drivers?  Then we can hunt down the maintainers and we'll see what can be
-done.
-
+> +
+> +       return pdata;
+> +}
+> +
+> +static const struct of_device_id of_tca6507_leds_match[] = {
+> +       { .compatible = "ti,tca6507", },
+> +       {},
+> +};
+> +
+> +#else
+> +static int __devinit tca6507_led_dt_init(struct i2c_client *client, struct tca6507_platform_data *data)
+> +{
+> +       return -1;
+> +}
+> +
+> +#define of_tca6507_leds_match NULL
+> +#endif
+> +
+>  static int __devinit tca6507_probe(struct i2c_client *client,
+>                                    const struct i2c_device_id *id)
+>  {
+> @@ -683,9 +743,12 @@ static int __devinit tca6507_probe(struct i2c_client *client,
+>                 return -EIO;
+>
+>         if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
+> -               dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> -                       NUM_LEDS);
+> -               return -ENODEV;
+> +               pdata = tca6507_led_dt_init(client);
+> +               if (IS_ERR(pdata)) {
+> +                       dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> +                               NUM_LEDS);
+> +                       return PTR_ERR(pdata);
+> +               }
+>         }
+>         tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
+>         if (!tca)
+> @@ -750,6 +813,7 @@ static struct i2c_driver tca6507_driver = {
+>         .driver   = {
+>                 .name    = "leds-tca6507",
+>                 .owner   = THIS_MODULE,
+> +               .of_match_table = of_tca6507_leds_match,
+>         },
+>         .probe    = tca6507_probe,
+>         .remove   = __devexit_p(tca6507_remove),
+> --
+> 1.7.9.5
+>
