@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945936Ab2KNWdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:33:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60090 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945915Ab2KNWds (ORCPT
+	id S1945951Ab2KNWdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:33:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45301 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945915Ab2KNWdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:33:48 -0500
-Date: Wed, 14 Nov 2012 14:33:44 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 03/11] thp: copy_huge_pmd(): copy huge zero page
-In-Reply-To: <1352300463-12627-4-git-send-email-kirill.shutemov@linux.intel.com>
-Message-ID: <alpine.DEB.2.00.1211141433150.13515@chino.kir.corp.google.com>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-4-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 14 Nov 2012 17:33:50 -0500
+Date: Wed, 14 Nov 2012 13:32:12 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-e7c6d2368362461d1c9e5d58bedbed9c3862b607@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1352835171-3958-12-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-12-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/bsp-hotplug] x86, hotplug:
+  The first online processor saves the MTRR state
+Git-Commit-ID: e7c6d2368362461d1c9e5d58bedbed9c3862b607
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:33:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
+Commit-ID:  e7c6d2368362461d1c9e5d58bedbed9c3862b607
+Gitweb:     http://git.kernel.org/tip/e7c6d2368362461d1c9e5d58bedbed9c3862b607
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Tue, 13 Nov 2012 11:32:48 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 14 Nov 2012 09:39:55 -0800
 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index ff834ea..0d903bf 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -701,6 +701,18 @@ static inline struct page *alloc_hugepage(int defrag)
->  }
->  #endif
->  
-> +static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
-> +		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
-> +{
-> +	pmd_t entry;
-> +	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
-> +	entry = pmd_wrprotect(entry);
-> +	entry = pmd_mkhuge(entry);
-> +	set_pmd_at(mm, haddr, pmd, entry);
-> +	pgtable_trans_huge_deposit(mm, pgtable);
-> +	mm->nr_ptes++;
-> +}
-> +
->  int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  			       unsigned long address, pmd_t *pmd,
->  			       unsigned int flags)
-> @@ -778,6 +790,11 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->  		pte_free(dst_mm, pgtable);
->  		goto out_unlock;
->  	}
-> +	if (is_huge_zero_pmd(pmd)) {
-> +		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
-> +		ret = 0;
-> +		goto out_unlock;
-> +	}
+x86, hotplug: The first online processor saves the MTRR state
 
-You said in the introduction message in this series that you still allow 
-splitting of the pmd, so why no check for pmd_trans_splitting() before 
-this?
+Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
+offline when mtrr_save_state() is called.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1352835171-3958-12-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mtrr/main.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 6b96110..e4c1a41 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -695,11 +695,16 @@ void mtrr_ap_init(void)
+ }
+ 
+ /**
+- * Save current fixed-range MTRR state of the BSP
++ * Save current fixed-range MTRR state of the first cpu in cpu_online_mask.
+  */
+ void mtrr_save_state(void)
+ {
+-	smp_call_function_single(0, mtrr_save_fixed_ranges, NULL, 1);
++	int first_cpu;
++
++	get_online_cpus();
++	first_cpu = cpumask_first(cpu_online_mask);
++	smp_call_function_single(first_cpu, mtrr_save_fixed_ranges, NULL, 1);
++	put_online_cpus();
+ }
+ 
+ void set_mtrr_aps_delayed_init(void)
