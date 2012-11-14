@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423419Ab2KNUnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:43:39 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55263 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755287Ab2KNUne (ORCPT
+	id S932364Ab2KNUom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:44:42 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46838 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423338Ab2KNUnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:43:34 -0500
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86/Sandy Bridge: reserve pages when integrated graphics is present
-Date: Wed, 14 Nov 2012 20:43:31 +0000
-Message-Id: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 14 Nov 2012 15:43:39 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 6/7] tools/power turbostat: prevent infinite loop on migration error path
+Date: Wed, 14 Nov 2012 15:43:23 -0500
+Message-Id: <883d5d681f426eb42ad65d805cfc138dea986b6c.1352925508.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+References: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+In-Reply-To: <39300ffb9b6666714c60735cf854e1280e4e75f4.1352925508.git.len.brown@intel.com>
+References: <39300ffb9b6666714c60735cf854e1280e4e75f4.1352925508.git.len.brown@intel.com>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SNB graphics devices have a bug that prevent them from accessing certain
-memory ranges, namely anything below 1M and in the pages listed in the
-table.  So reserve those at boot if set detect a SNB gfx device on the
-CPU to avoid GPU hangs.
+From: Len Brown <len.brown@intel.com>
 
-Stephane Marchesin had a similar patch to the page allocator awhile
-back, but rather than reserving pages up front, it leaked them at
-allocation time.
+Turbostat assumed if it can't migrate to a CPU, then the CPU
+must have gone off-line and turbostat should re-initialize
+with the new topology.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+But if turbostat can not migrate because it is restricted by
+a cpuset, then it will fail to migrate even after re-initialization,
+resulting in an infinite loop.
+
+Spit out a warning when we can't migrate
+and endure only 2 re-initialize cycles in a row
+before giving up and exiting.
+
+Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/kernel/setup.c |   72 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+ tools/power/x86/turbostat/turbostat.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 468e98d..bb9fabe 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -614,6 +614,75 @@ static __init void reserve_ibft_region(void)
- 
- static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
- 
-+static bool __init snb_gfx_workaround_needed(void)
-+{
-+	int i;
-+	u16 vendor, devid;
-+	u16 snb_ids[] = {
-+		0x0102,
-+		0x0112,
-+		0x0122,
-+		0x0106,
-+		0x0116,
-+		0x0126,
-+		0x010a,
-+	};
-+
-+	/* Assume no if something weird is going on with PCI */
-+	if (!early_pci_allowed())
-+		return false;
-+
-+	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
-+	if (vendor != 0x8086)
-+		return false;
-+
-+	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
-+	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
-+		if (devid == snb_ids[i])
-+			return true;
-+
-+	return false;
-+}
-+
-+static void __init trim_snb_ranges(void)
-+{
-+ 	/*
-+	 * Sandy Bridge graphics has trouble with certain ranges, exclude
-+	 * them from allocation.
-+	 */
-+	if (snb_gfx_workaround_needed()) {
-+		unsigned long bad_ranges[] = {
-+			0x20050000,
-+			0x20110000,
-+			0x20130000,
-+			0x20138000,
-+			0x40004000,
-+		};
-+		phys_addr_t mem;
-+		int i;
-+
-+		printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
-+
-+		for (;;) {
-+			mem = memblock_find_in_range(0, 1<<20, PAGE_SIZE,
-+						     PAGE_SIZE);
-+			if (!mem)
-+				break;
-+			memblock_reserve(mem, PAGE_SIZE);
-+			printk(KERN_DEBUG "reserved 0x%08lx\n", mem);
-+		}
-+
-+		for (i = 0; i < ARRAY_SIZE(bad_ranges); i++) {
-+			if (!memblock_reserve(bad_ranges[i], PAGE_SIZE))
-+				printk(KERN_DEBUG "reserved 0x%08lx\n",
-+				       bad_ranges[i]);
-+			else
-+				printk(KERN_DEBUG "failed to reserve 0x%08lx\n",
-+				       bad_ranges[i]);
-+		}
-+	}
-+}
-+
- static void __init trim_bios_range(void)
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index 3c063a0..77e76b1 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -656,8 +656,10 @@ int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
  {
- 	/*
-@@ -634,6 +703,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
+ 	int cpu = t->cpu_id;
+ 
+-	if (cpu_migrate(cpu))
++	if (cpu_migrate(cpu)) {
++		fprintf(stderr, "Could not migrate to CPU %d\n", cpu);
+ 		return -1;
++	}
+ 
+ 	t->tsc = rdtsc();	/* we are running on local CPU of interest */
+ 
+@@ -1088,15 +1090,22 @@ int mark_cpu_present(int cpu)
+ void turbostat_loop()
+ {
+ 	int retval;
++	int restarted = 0;
+ 
+ restart:
++	restarted++;
 +
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
- }
+ 	retval = for_all_cpus(get_counters, EVEN_COUNTERS);
+ 	if (retval < -1) {
+ 		exit(retval);
+ 	} else if (retval == -1) {
++		if (restarted > 1) {
++			exit(retval);
++		}
+ 		re_initialize();
+ 		goto restart;
+ 	}
++	restarted = 0;
+ 	gettimeofday(&tv_even, (struct timezone *)NULL);
  
-@@ -912,6 +982,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_real_mode();
- 
-+	trim_snb_ranges();
-+
- 	init_gbpages();
- 
- 	/* max_pfn_mapped is updated here */
+ 	while (1) {
 -- 
-1.7.9.5
+1.8.0
 
