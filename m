@@ -1,103 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab2KNOr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:47:56 -0500
-Received: from ns.iliad.fr ([212.27.33.1]:37055 "EHLO ns.iliad.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab2KNOry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:47:54 -0500
-Message-ID: <1352904472.13818.66.camel@sakura.staff.proxad.net>
-Subject: Re: [RFC] MIPS: BCM63XX: add initial Device Tree support
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Jonas Gorski <jonas.gorski@gmail.com>
-Cc: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        John Crispin <blogic@openwrt.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 Nov 2012 15:47:52 +0100
-In-Reply-To: <CAOiHx==1UxrmxB5kyeDQPF4HBYxY9h4Ha8mWErwm6znX=y75OA@mail.gmail.com>
-References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
-	 <1352719094.10405.18.camel@sakura.staff.proxad.net>
-	 <CAOiHx==1UxrmxB5kyeDQPF4HBYxY9h4Ha8mWErwm6znX=y75OA@mail.gmail.com>
-Organization: Freebox
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S932623Ab2KNOwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:52:12 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61617 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab2KNOwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 09:52:10 -0500
+Message-ID: <50A3B013.4030207@gmail.com>
+Date: Wed, 14 Nov 2012 22:52:03 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Jianguo Wu <wujianguo@huawei.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset
+ 7f1290f2f2a4d
+References: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com> <20121106124315.79deb2bc.akpm@linux-foundation.org>
+In-Reply-To: <20121106124315.79deb2bc.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, 2012-11-14 at 13:07 +0100, Jonas Gorski wrote:
-
-Thanks for addressing my concerns
-
-> > We can even build a single kernel that support all SOCs/boards.
+On 11/07/2012 04:43 AM, Andrew Morton wrote:
+> On Tue, 6 Nov 2012 09:31:57 +0800
+> Jiang Liu <jiang.liu@huawei.com> wrote:
 > 
-> That's not going to change with Device Tree, and I'm trying my best to
-> keep this.
+>> Changeset 7f1290f2f2 tries to fix a issue when calculating
+>> zone->present_pages, but it causes a regression to 32bit systems with
+>> HIGHMEM. With that changeset, function reset_zone_present_pages()
+>> resets all zone->present_pages to zero, and fixup_zone_present_pages()
+>> is called to recalculate zone->present_pages when boot allocator frees
+>> core memory pages into buddy allocator. Because highmem pages are not
+>> freed by bootmem allocator, all highmem zones' present_pages becomes
+>> zero.
+>>
+>> Actually there's no need to recalculate present_pages for highmem zone
+>> because bootmem allocator never allocates pages from them. So fix the
+>> regression by skipping highmem in function reset_zone_present_pages()
+>> and fixup_zone_present_pages().
+>>
+>> ...
+>>
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
+>>  	for_each_node_state(nid, N_HIGH_MEMORY) {
+>>  		for (i = 0; i < MAX_NR_ZONES; i++) {
+>>  			z = NODE_DATA(nid)->node_zones + i;
+>> -			z->present_pages = 0;
+>> +			if (!is_highmem(z))
+>> +				z->present_pages = 0;
+>>  		}
+>>  	}
+>>  }
+>> @@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
+>>  
+>>  	for (i = 0; i < MAX_NR_ZONES; i++) {
+>>  		z = NODE_DATA(nid)->node_zones + i;
+>> +		if (is_highmem(z))
+>> +			continue;
+>> +
+>>  		zone_start_pfn = z->zone_start_pfn;
+>>  		zone_end_pfn = zone_start_pfn + z->spanned_pages;
+>> -
+>> -		/* if the two regions intersect */
+>>  		if (!(zone_start_pfn >= end_pfn	|| zone_end_pfn <= start_pfn))
+>>  			z->present_pages += min(end_pfn, zone_end_pfn) -
+>>  					    max(start_pfn, zone_start_pfn);
+> 
+> This ...  isn't very nice.  It is embeds within
+> reset_zone_present_pages() and fixup_zone_present_pages() knowledge
+> about their caller's state.  Or, more specifically, it is emebedding
+> knowledge about the overall state of the system when these functions
+> are called.
+> 
+> I mean, a function called "reset_zone_present_pages" should reset
+> ->present_pages!
+> 
+> The fact that fixup_zone_present_page() has multiple call sites makes
+> this all even more risky.  And what are the interactions between this
+> and memory hotplug?
+> 
+> Can we find a cleaner fix?
+> 
+> Please tell us more about what's happening here.  Is it the case that
+> reset_zone_present_pages() is being called *after* highmem has been
+> populated?  If so, then fixup_zone_present_pages() should work
+> correctly for highmem?  Or is it the case that highmem hasn't yet been
+> setup?  IOW, what is the sequence of operations here?
+> 
+> Is the problem that we're *missing* a call to
+> fixup_zone_present_pages(), perhaps?  If we call
+> fixup_zone_present_pages() after highmem has been populated,
+> fixup_zone_present_pages() should correctly fill in the highmem zone's
+> ->present_pages?
+Hi Andrew,
+	Sorry for the late response:(
+	I have done more investigations according to your suggestions. Currently
+we have only called fixup_zone_present_pages() for memory freed by bootmem
+allocator and missed HIGHMEM pages. We could also call fixup_zone_present_pages()
+for HIGHMEM pages, but that will need to change arch specific code for x86, powerpc,
+sparc, microblaze, arm, mips, um and tile etc. Seems a little overhead.
+	And sadly enough, I found the quick fix is still incomplete. The original
+patch still have another issue that, reset_zone_present_pages() is only called
+for IA64, so it will cause trouble for other arches which make use of "bootmem.c".
+	Then I feel a little guilty and tried to find a cleaner solution without
+touching arch specific code. But things are more complex than my expectation and
+I'm still working on that.
+	So how about totally reverting the changeset 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+and I will post another version once I found a cleaner way?
+	Thanks!
+	Gerry
 
-DT is said to be the solution to achieve this goal on ARM. I was just
-pointing out that we already have this today.
-
-> Not having to update board_bcm963xx.{c,h} because some vendor decided
-> to add e.g. a previously unused gpio-bitbanged device. Not having to
-> modify the kernel but just attach a (externally build) dtb to the
-> kernel to support a new board. Ideally in the far future even using a
-> CFE provided dtb. I'm sure there are more reasons.
-
-Put the board description in DT, but please leave the SOC out and don't
-try to describe them with DT, that's too preliminary.
-
-Let's support more SOCs first, we cannot generalize on what we don't
-know.
-
-> And nobody wants to do that. But - as Kevin already mentioned - it
-> would be nice if we get similar SoCs we already know about supported
-> with the same code; or at least , like BCM33xx, BCM68xx or maybe even
-> BCM7xxx (never looked at them, so I can't tell how viable that is).
-
-DT is not the key here
-
-code reuse/refactoring is
-
-> These special clocks are so that the original behaviour of the clocks
-> is kept.  I'd rather argue that the reset code does not belong into
-> the clock code, and is actually the responsibility of the driver. It
-> would make the clock code much simpler.
-
-and IMO would make the driver code uglier. You don't read clock code
-everyday, it's boring, you do read/change driver code much more often.
-
-> What would you suggest? Please no "don't use Device Tree", as I don't
-> think we can avoid that. I'm struggling to find something you are fine
-
-As I said in my original email, I don't think bcm63xx codebase suffers
-from any problem similar to what caused Linus' rant about ARM few years
-ago.
-
-Did someone threaten to stop merging our patches if we don't use DT ?
-
-> I wouldn't treat this as stable until we got it into a satisfactory
-> state with everything supported. Heck, I wouldn't even treat this as
-> stable until Broadcom ships it in their SDKs to customers with CFEs
-> providing DTBs to the kernel.
-
-DT will succeed if chip designers start thinking the other way around:
-making new chip backward compatible with existing code or DT bindings.
-If that does not happen, we just moving C struct/arrays into another
-format with no added benefits.
-
-So we have to call it stable, otherwise there is no incentive to use
-them.
-
-And I just hate stable interfaces (which developer doesn't ?), they
-require more maintenance/testing if you're serious about your work.
-
--- 
-Maxime
-
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
