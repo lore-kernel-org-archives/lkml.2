@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964799Ab2KNJP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:15:29 -0500
+	id S964815Ab2KNJPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:15:35 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38870 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab2KNJPY (ORCPT
+	with ESMTP id S964801Ab2KNJPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:15:24 -0500
-Date: Wed, 14 Nov 2012 01:15:22 -0800 (PST)
+	Wed, 14 Nov 2012 04:15:30 -0500
+Date: Wed, 14 Nov 2012 01:15:28 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>,
+        x86@kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [patch 2/4] mm, oom: cleanup pagefault oom handler
+Subject: [patch 4/4] mm, oom: remove statically defined arch functions of
+ same name
 In-Reply-To: <alpine.DEB.2.00.1211140111190.32125@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1211140113020.32125@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1211140113480.32125@chino.kir.corp.google.com>
 References: <alpine.DEB.2.00.1211140111190.32125@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -26,86 +33,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To lock the entire system from parallel oom killing, it's possible to
-pass in a zonelist with all zones rather than using
-for_each_populated_zone() for the iteration.  This obsoletes
-try_set_system_oom() and clear_system_oom() so that they can be removed.
+out_of_memory() is a globally defined function to call the oom killer.
+x86, sh, and powerpc all use a function of the same name within file
+scope in their respective fault.c unnecessarily.  Inline the functions
+into the pagefault handlers to clean the code up.
 
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- mm/oom_kill.c |   49 +++++++------------------------------------------
- 1 files changed, 7 insertions(+), 42 deletions(-)
+ arch/powerpc/mm/fault.c |   27 ++++++++++++---------------
+ arch/sh/mm/fault.c      |   19 +++++++------------
+ arch/x86/mm/fault.c     |   23 ++++++++---------------
+ 3 files changed, 27 insertions(+), 42 deletions(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -591,43 +591,6 @@ void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_mask)
- 	spin_unlock(&zone_scan_lock);
- }
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -113,19 +113,6 @@ static int store_updates_sp(struct pt_regs *regs)
+ #define MM_FAULT_CONTINUE	-1
+ #define MM_FAULT_ERR(sig)	(sig)
  
--/*
-- * Try to acquire the oom killer lock for all system zones.  Returns zero if a
-- * parallel oom killing is taking place, otherwise locks all zones and returns
-- * non-zero.
-- */
--static int try_set_system_oom(void)
+-static int out_of_memory(struct pt_regs *regs)
 -{
--	struct zone *zone;
--	int ret = 1;
--
--	spin_lock(&zone_scan_lock);
--	for_each_populated_zone(zone)
--		if (zone_is_oom_locked(zone)) {
--			ret = 0;
--			goto out;
--		}
--	for_each_populated_zone(zone)
--		zone_set_flag(zone, ZONE_OOM_LOCKED);
--out:
--	spin_unlock(&zone_scan_lock);
--	return ret;
+-	/*
+-	 * We ran out of memory, or some other thing happened to us that made
+-	 * us unable to handle the page fault gracefully.
+-	 */
+-	up_read(&current->mm->mmap_sem);
+-	if (!user_mode(regs))
+-		return MM_FAULT_ERR(SIGKILL);
+-	pagefault_out_of_memory();
+-	return MM_FAULT_RETURN;
 -}
 -
--/*
-- * Clears ZONE_OOM_LOCKED for all system zones so that failed allocation
-- * attempts or page faults may now recall the oom killer, if necessary.
-- */
--static void clear_system_oom(void)
--{
--	struct zone *zone;
--
--	spin_lock(&zone_scan_lock);
--	for_each_populated_zone(zone)
--		zone_clear_flag(zone, ZONE_OOM_LOCKED);
--	spin_unlock(&zone_scan_lock);
--}
--
- /**
-  * out_of_memory - kill the "best" process when we run out of memory
-  * @zonelist: zonelist pointer
-@@ -708,15 +671,17 @@ out:
- 
- /*
-  * The pagefault handler calls here because it is out of memory, so kill a
-- * memory-hogging task.  If a populated zone has ZONE_OOM_LOCKED set, a parallel
-- * oom killing is already in progress so do nothing.  If a task is found with
-- * TIF_MEMDIE set, it has been killed so do nothing and allow it to exit.
-+ * memory-hogging task.  If any populated zone has ZONE_OOM_LOCKED set, a
-+ * parallel oom killing is already in progress so do nothing.
-  */
- void pagefault_out_of_memory(void)
+ static int do_sigbus(struct pt_regs *regs, unsigned long address)
  {
--	if (try_set_system_oom()) {
-+	struct zonelist *zonelist = node_zonelist(first_online_node,
-+						  GFP_KERNEL);
+ 	siginfo_t info;
+@@ -169,8 +156,18 @@ static int mm_fault_error(struct pt_regs *regs, unsigned long addr, int fault)
+ 		return MM_FAULT_CONTINUE;
+ 
+ 	/* Out of memory */
+-	if (fault & VM_FAULT_OOM)
+-		return out_of_memory(regs);
++	if (fault & VM_FAULT_OOM) {
++		up_read(&current->mm->mmap_sem);
 +
-+	if (try_set_zonelist_oom(zonelist, GFP_KERNEL)) {
- 		out_of_memory(NULL, 0, 0, NULL, false);
--		clear_system_oom();
-+		clear_zonelist_oom(zonelist, GFP_KERNEL);
- 	}
- 	schedule_timeout_killable(1);
++		/*
++		 * We ran out of memory, or some other thing happened to us that
++		 * made us unable to handle the page fault gracefully.
++		 */
++		if (!user_mode(regs))
++			return MM_FAULT_ERR(SIGKILL);
++		pagefault_out_of_memory();
++		return MM_FAULT_RETURN;
++	}
+ 
+ 	/* Bus error. x86 handles HWPOISON here, we'll add this if/when
+ 	 * we support the feature in HW
+diff --git a/arch/sh/mm/fault.c b/arch/sh/mm/fault.c
+--- a/arch/sh/mm/fault.c
++++ b/arch/sh/mm/fault.c
+@@ -301,17 +301,6 @@ bad_area_access_error(struct pt_regs *regs, unsigned long error_code,
+ 	__bad_area(regs, error_code, address, SEGV_ACCERR);
  }
+ 
+-static void out_of_memory(void)
+-{
+-	/*
+-	 * We ran out of memory, call the OOM killer, and return the userspace
+-	 * (which will retry the fault, or kill us if we got oom-killed):
+-	 */
+-	up_read(&current->mm->mmap_sem);
+-
+-	pagefault_out_of_memory();
+-}
+-
+ static void
+ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address)
+ {
+@@ -353,8 +342,14 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 			no_context(regs, error_code, address);
+ 			return 1;
+ 		}
++		up_read(&current->mm->mmap_sem);
+ 
+-		out_of_memory();
++		/*
++		 * We ran out of memory, call the OOM killer, and return the
++		 * userspace (which will retry the fault, or kill us if we got
++		 * oom-killed):
++		 */
++		pagefault_out_of_memory();
+ 	} else {
+ 		if (fault & VM_FAULT_SIGBUS)
+ 			do_sigbus(regs, error_code, address);
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -803,20 +803,6 @@ bad_area_access_error(struct pt_regs *regs, unsigned long error_code,
+ 	__bad_area(regs, error_code, address, SEGV_ACCERR);
+ }
+ 
+-/* TODO: fixup for "mm-invoke-oom-killer-from-page-fault.patch" */
+-static void
+-out_of_memory(struct pt_regs *regs, unsigned long error_code,
+-	      unsigned long address)
+-{
+-	/*
+-	 * We ran out of memory, call the OOM killer, and return the userspace
+-	 * (which will retry the fault, or kill us if we got oom-killed):
+-	 */
+-	up_read(&current->mm->mmap_sem);
+-
+-	pagefault_out_of_memory();
+-}
+-
+ static void
+ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+ 	  unsigned int fault)
+@@ -879,7 +865,14 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 			return 1;
+ 		}
+ 
+-		out_of_memory(regs, error_code, address);
++		up_read(&current->mm->mmap_sem);
++
++		/*
++		 * We ran out of memory, call the OOM killer, and return the
++		 * userspace (which will retry the fault, or kill us if we got
++		 * oom-killed):
++		 */
++		pagefault_out_of_memory();
+ 	} else {
+ 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
+ 			     VM_FAULT_HWPOISON_LARGE))
