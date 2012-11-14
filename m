@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2KNAr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:47:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57067 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab2KNAr4 (ORCPT
+	id S1756149Ab2KNAsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 19:48:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57638 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab2KNAsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:47:56 -0500
-Date: Tue, 13 Nov 2012 16:47:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Xi Wang <xi.wang@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm: fix null dev in dma_pool_create()
-Message-Id: <20121113164754.cd1426de.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1211131458440.17623@chino.kir.corp.google.com>
-References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
-	<50A2BE19.7000604@gmail.com>
-	<alpine.DEB.2.00.1211131458440.17623@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Nov 2012 19:48:15 -0500
+Date: Tue, 13 Nov 2012 16:48:11 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Constantine Shulyupin <const@makelinux.com>
+Cc: linux-kernel@vger.kernel.org, celinux-dev@lists.celinuxforum.org
+Subject: Re: [PATCH] LDT - Linux Driver Template
+Message-ID: <20121114004811.GA29220@kroah.com>
+References: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
+ <20121113190123.GA32271@kroah.com>
+ <CAE7jHC_bTi7bNwTyPh=wsstGUFegisDUtt2QvDeAwh94AMoUAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE7jHC_bTi7bNwTyPh=wsstGUFegisDUtt2QvDeAwh94AMoUAQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012 15:01:34 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Tue, 13 Nov 2012, Xi Wang wrote:
+On Wed, Nov 14, 2012 at 02:14:58AM +0200, Constantine Shulyupin wrote:
+> On Tue, Nov 13, 2012 at 9:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> +#define pr_debug_hex(h)      pr_debug("%s:%d %s %s = 0x%lX\n", \
+> >> +     __file__, __LINE__, __func__, #h, (long int)h)
+> >
+> > This is not needed at all, just use the proper printk() attribute.
 > 
-> > diff --git a/mm/dmapool.c b/mm/dmapool.c
-> > index c5ab33b..bf7f8f0 100644
-> > --- a/mm/dmapool.c
-> > +++ b/mm/dmapool.c
-> > @@ -135,6 +135,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
-> >  {
-> >  	struct dma_pool *retval;
-> >  	size_t allocation;
-> > +	int node;
-> >  
-> >  	if (align == 0) {
-> >  		align = 1;
-> > @@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
-> >  		return NULL;
-> >  	}
-> >  
-> > -	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
-> > +	node = WARN_ON(!dev) ? -1 : dev_to_node(dev);
-> > +
-> > +	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
-> >  	if (!retval)
-> >  		return retval;
-> >  
+> Macro above allows tidy tracing code:
 > 
-> Begs the question why we don't just do something like this generically?
-> ---
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -718,7 +718,7 @@ int dev_set_name(struct device *dev, const char *name, ...);
->  #ifdef CONFIG_NUMA
->  static inline int dev_to_node(struct device *dev)
->  {
-> -	return dev->numa_node;
-> +	return WARN_ON(!dev) ? NUMA_NO_NODE : dev->numa_node;
->  }
+>         pr_debug_hex(ioread8(port_ptr + UART_IER));
+>         pr_debug_hex(ioread8(port_ptr + UART_IIR));
+>         pr_debug_hex(ioread8(port_ptr + UART_FCR));
+>         pr_debug_hex(ioread8(port_ptr + UART_LCR));
+>         pr_debug_hex(ioread8(port_ptr + UART_MCR));
+>         pr_debug_hex(ioread8(port_ptr + UART_LSR));
+>         pr_debug_hex(ioread8(port_ptr + UART_MSR));
+> 
+> Without that macro, code above should be rewritten with pr_debug (or printk) as:
+> 
+>         pr_debug("UART_IER=0x%02X\n", ioread8(port_ptr + UART_IER));
+>         pr_debug("UART_IIR=0x%02X\n", ioread8(port_ptr + UART_IIR));
+>         pr_debug("UART_FCR=0x%02X\n", ioread8(port_ptr + UART_FCR));
+>         pr_debug("UART_LCR=0x%02X\n", ioread8(port_ptr + UART_LCR));
+>         pr_debug("UART_MCR=0x%02X\n", ioread8(port_ptr + UART_MCR));
+>         pr_debug("UART_LSR=0x%02X\n", ioread8(port_ptr + UART_LSR));
+>         pr_debug("UART_MSR=0x%02X\n", ioread8(port_ptr + UART_MSR));
+> 
+> That is less readable and less supportable.
 
-WARN and friends can cause quite a lot of code to be generated, so they're
-a rather bloat-risky thing to include in a little inlined helper
-function.
+What better is to not do foolish stuff like this at all :)
 
+If you need tracing, use the in-kernel tracing framework, don't roll
+your own.
+
+> I prefer the fist case.
+
+I prefer the flower case :)
+
+> Actually I use a lot shorter macro:
+> #define traceh(h)   printk("%s = 0x%lX\n", #h, (long int)h)
+> 
+> What is you opinion? Which method is better?
+
+Again, neither, don't clutter your code up with unneeded things like
+this.
+
+greg k-h
