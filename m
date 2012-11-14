@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab2KNGZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:25:24 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59624 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab2KNGZW convert rfc822-to-8bit (ORCPT
+	id S1752815Ab2KNG1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:27:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43001 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab2KNG1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 01:25:22 -0500
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH RESEND] regulator: tps65910: fix BUG_ON() shown with
- vrtc regulator
-Thread-Topic: [PATCH RESEND] regulator: tps65910: fix BUG_ON() shown with
- vrtc regulator
-Thread-Index: AQHNwiyLzW1RQJhikESt5UCAv6KHzJfof2MAgABc2ZA=
-Date: Wed, 14 Nov 2012 06:25:15 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA6B07A@DBDE01.ent.ti.com>
-References: <1352872479-25462-1-git-send-email-anilkumar@ti.com>
- <20121114061913.GB7407@opensource.wolfsonmicro.com>
-In-Reply-To: <20121114061913.GB7407@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Nov 2012 01:27:21 -0500
+Date: Tue, 13 Nov 2012 22:27:10 -0800
+From: tip-bot for Namhyung Kim <namhyung@kernel.org>
+Message-ID: <tip-1234471e2d11e4ee47f6de452dd8b8aeb09b45de@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, drjones@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, drjones@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <1350999890-6920-1-git-send-email-namhyung@kernel.org>
+References: <1350999890-6920-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf header: Fix numa topology printing
+Git-Commit-ID: 1234471e2d11e4ee47f6de452dd8b8aeb09b45de
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 22:27:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 11:49:14, Mark Brown wrote:
-> On Wed, Nov 14, 2012 at 11:24:39AM +0530, AnilKumar Ch wrote:
-> > Fix BUG_ON() error if tps65910 VRTC regulator is used with out
-> > rdev->desc->volt_table data. Recent changes in regulator core driver
-> > which add support for "regulator_list_voltage_table" have BUG_ON() if
-> > regulator descriptor do not have voltage table information. This patch
-> > adds the voltage table information to fix the issue.
-> 
-> This is already applied...  got dropped from -next for a day for some
-> reason but it's there.  When resending please do say why.
-> 
+Commit-ID:  1234471e2d11e4ee47f6de452dd8b8aeb09b45de
+Gitweb:     http://git.kernel.org/tip/1234471e2d11e4ee47f6de452dd8b8aeb09b45de
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 23 Oct 2012 22:44:49 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 30 Oct 2012 10:32:55 -0200
 
-Hi Mark,
+perf header: Fix numa topology printing
 
-Sorry for the noise (My bad missed the version change details). I have
-checked in regulator/for-next tree and not found, so resend the patch
-thanks for you time.
+Andrew reported that the commit 7e94cfcc9d20 ("perf header: Use pre-
+processed session env when printing") regresses the header output.  It
+was because of a missed string pointer calculation in the loop.
 
-Thanks
-AnilKumar
+Reported-by: Andrew Jones <drjones@redhat.com>
+Tested-by: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andrew Jones <drjones@redhat.com>
+Link: http://lkml.kernel.org/r/1350999890-6920-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/header.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 7daad23..566b84c 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1378,6 +1378,8 @@ static void print_numa_topology(struct perf_header *ph, int fd __maybe_unused,
+ 
+ 		str = tmp + 1;
+ 		fprintf(fp, "# node%u cpu list : %s\n", c, str);
++
++		str += strlen(str) + 1;
+ 	}
+ 	return;
+ error:
