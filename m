@@ -1,49 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab2KNCYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:24:21 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7991 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2KNCYS (ORCPT
+	id S932463Ab2KNCZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:25:30 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:28635 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab2KNCZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:24:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 13 Nov 2012 18:24:09 -0800
-Message-ID: <50A300C1.1000501@nvidia.com>
-Date: Wed, 14 Nov 2012 10:24:01 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Dave Airlie <airlied@redhat.com>, Rob Clark <robdclark@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] drm: Add NVIDIA Tegra20 support
-References: <1352757358-14001-1-git-send-email-thierry.reding@avionic-design.de> <1352757358-14001-2-git-send-email-thierry.reding@avionic-design.de> <50A1F3A3.40905@nvidia.com> <50A28542.8020406@wwwdotorg.org>
-In-Reply-To: <50A28542.8020406@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 13 Nov 2012 21:25:28 -0500
+Message-ID: <1352859923.7889.2.camel@lorien2>
+Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Steven Rostedt <rostedt@goodmis.org>, roland@purestorage.com
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
+Date: Tue, 13 Nov 2012 19:25:23 -0700
+In-Reply-To: <20111204190008.804987080@goodmis.org>
+References: <20111204185444.411298317@goodmis.org>
+	 <20111204190008.804987080@goodmis.org>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 01:37 AM, Stephen Warren wrote:
-> On 11/13/2012 12:15 AM, Mark Zhang wrote:
->> On 11/13/2012 05:55 AM, Thierry Reding wrote:
->>> This commit adds a KMS driver for the Tegra20 SoC. This includes basic
->>> support for host1x and the two display controllers found on the Tegra20
->>> SoC. Each display controller can drive a separate RGB/LVDS output.
+On Sun, 2011-12-04 at 13:54 -0500, Steven Rostedt wrote:
+> From: Roland Dreier <roland@purestorage.com>
 > 
-> Mark, when you're replying to a long patch, it's useful to quote only
-> the code you're directly responding to; slowly scrolling through your
-> email to find your comments is rather error-prone and time-consuming.
->
+> When unbinding a device so that I could pass it through to a KVM VM, I
+> got the lockdep report below.  It looks like a legitimate lock
+> ordering problem:
 
-Sure. Sorry for the inconvenience. Thanks.
+Did this patch not make it into stable releases other than 3.1. I
+couldn't find it in any other stable tress prior to 3.1.
 
-> Thanks for the feedback though.
+-- Shuah 
 > 
+>  - domain_context_mapping_one() takes iommu->lock and calls
+>    iommu_support_dev_iotlb(), which takes device_domain_lock (inside
+>    iommu->lock).
+> 
+>  - domain_remove_one_dev_info() starts by taking device_domain_lock
+>    then takes iommu->lock inside it (near the end of the function).
+> 
+> So this is the classic AB-BA deadlock.  It looks like a safe fix is to
+> simply release device_domain_lock a bit earlier, since as far as I can
+> tell, it doesn't protect any of the stuff accessed at the end of
+> domain_remove_one_dev_info() anyway.
+> 
+> BTW, the use of device_domain_lock looks a bit unsafe to me... it's
+> at least not obvious to me why we aren't vulnerable to the race below:
+> 
+>   iommu_support_dev_iotlb()
+>                                           domain_remove_dev_info()
+> 
+>   lock device_domain_lock
+>     find info
+>   unlock device_domain_lock
+> 
+>                                           lock device_domain_lock
+>                                             find same info
+>                                           unlock device_domain_lock
+> 
+>                                           free_devinfo_mem(info)
+> 
+>   do stuff with info after it's free
+> 
+> However I don't understand the locking here well enough to know if
+> this is a real problem, let alone what the best fix is.
+> 
+> Anyway here's the full lockdep output that prompted all of this:
+> 
+>      =======================================================
+>      [ INFO: possible circular locking dependency detected ]
+>      2.6.39.1+ #1
+>      -------------------------------------------------------
+>      bash/13954 is trying to acquire lock:
+>       (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
+> 
+>      but task is already holding lock:
+>       (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
+> 
+>      which lock already depends on the new lock.
+> 
+>      the existing dependency chain (in reverse order) is:
+> 
+>      -> #1 (device_domain_lock){-.-...}:
+>             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+>             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+>             [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
+>             [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
+>             [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
+>             [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
+>             [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
+>             [<ffffffff81002165>] do_one_initcall+0x45/0x190
+>             [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
+>             [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
+> 
+>      -> #0 (&(&iommu->lock)->rlock){......}:
+>             [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
+>             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+>             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+>             [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
+>             [<ffffffff812f8b42>] device_notifier+0x72/0x90
+>             [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
+>             [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
+>             [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
+>             [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
+>             [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
+>             [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
+>             [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
+>             [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
+>             [<ffffffff8117569e>] vfs_write+0xce/0x190
+>             [<ffffffff811759e4>] sys_write+0x54/0xa0
+>             [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
+> 
+>      other info that might help us debug this:
+> 
+>      6 locks held by bash/13954:
+>       #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_file+0x44/0x170
+>       #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+0xcd/0x170
+>       #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] driver_unbind+0x9b/0xc0
+>       #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] device_release_driver+0x27/0x50
+>       #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>] __blocking_notifier_call_chain+0x5f/0xb0
+>       #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
+> 
+>      stack backtrace:
+>      Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
+>      Call Trace:
+>       [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
+>       [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
+>       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
+>       [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
+>       [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+>       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
+>       [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+>       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
+>       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
+>       [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
+>       [<ffffffff812f8b42>] device_notifier+0x72/0x90
+>       [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
+>       [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
+>       [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
+>       [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
+>       [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
+>       [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
+>       [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
+>       [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
+>       [<ffffffff8117569e>] vfs_write+0xce/0x190
+>       [<ffffffff811759e4>] sys_write+0x54/0xa0
+>       [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Roland Dreier <roland@purestorage.com>
+> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+> ---
+>  drivers/pci/intel-iommu.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+> index 8c2564d..bc05a51 100644
+> --- a/drivers/pci/intel-iommu.c
+> +++ b/drivers/pci/intel-iommu.c
+> @@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+>  			found = 1;
+>  	}
+>  
+> +	spin_unlock_irqrestore(&device_domain_lock, flags);
+> +
+>  	if (found == 0) {
+>  		unsigned long tmp_flags;
+>  		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
+> @@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+>  			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
+>  		}
+>  	}
+> -
+> -	spin_unlock_irqrestore(&device_domain_lock, flags);
+>  }
+>  
+>  static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
+
+
