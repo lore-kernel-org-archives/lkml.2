@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab2KNGFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:05:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55052 "EHLO
+	id S1756395Ab2KNGGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:06:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55049 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754638Ab2KNFuY (ORCPT
+	by vger.kernel.org with ESMTP id S1754546Ab2KNFuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:24 -0500
-Message-Id: <20121114053943.489513173@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:23 -0500
+Message-Id: <20121114053943.768284098@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:43 +0000
+Date: Wed, 14 Nov 2012 05:40:45 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>, Elliot Hughes <enh@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Tom Herbert <therbert@google.com>,
+        Hemant Kumar <hemantk@codeaurora.org>, Oliver Neukum <oneukum@suse.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 70/82] tcp: fix FIONREAD/SIOCINQ
+Subject: [ 72/82] net: usb: Fix memory leak on Tx data path
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,49 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Hemant Kumar <hemantk@codeaurora.org>
 
-[ Upstream commit a3374c42aa5f7237e87ff3b0622018636b0c847e ]
+[ Upstream commit 39707c2a3ba5011038b363f84d37c8a98d2d9db1 ]
 
-tcp_ioctl() tries to take into account if tcp socket received a FIN
-to report correct number bytes in receive queue.
+Driver anchors the tx urbs and defers the urb submission if
+a transmit request comes when the interface is suspended.
+Anchoring urb increments the urb reference count. These
+deferred urbs are later accessed by calling usb_get_from_anchor()
+for submission during interface resume. usb_get_from_anchor()
+unanchors the urb but urb reference count remains same.
+This causes the urb reference count to remain non-zero
+after usb_free_urb() gets called and urb never gets freed.
+Hence call usb_put_urb() after anchoring the urb to properly
+balance the reference count for these deferred urbs. Also,
+unanchor these deferred urbs during disconnect, to free them
+up.
 
-But its flaky because if the application ate the last skb,
-we return 1 instead of 0.
-
-Correct way to detect that FIN was received is to test SOCK_DONE.
-
-Reported-by: Elliot Hughes <enh@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Tom Herbert <therbert@google.com>
+Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/usb/usbnet.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 7397ad8..52edbb8 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -481,14 +481,12 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
- 			 !tp->urg_data ||
- 			 before(tp->urg_seq, tp->copied_seq) ||
- 			 !before(tp->urg_seq, tp->rcv_nxt)) {
--			struct sk_buff *skb;
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index b873b5d..dc53a8f 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1156,6 +1156,7 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
+ 		usb_anchor_urb(urb, &dev->deferred);
+ 		/* no use to process more packets */
+ 		netif_stop_queue(net);
++		usb_put_urb(urb);
+ 		spin_unlock_irqrestore(&dev->txq.lock, flags);
+ 		netdev_dbg(dev->net, "Delaying transmission for resumption\n");
+ 		goto deferred;
+@@ -1297,6 +1298,8 @@ void usbnet_disconnect (struct usb_interface *intf)
  
- 			answ = tp->rcv_nxt - tp->copied_seq;
+ 	cancel_work_sync(&dev->kevent);
  
--			/* Subtract 1, if FIN is in queue. */
--			skb = skb_peek_tail(&sk->sk_receive_queue);
--			if (answ && skb)
--				answ -= tcp_hdr(skb)->fin;
-+			/* Subtract 1, if FIN was received */
-+			if (answ && sock_flag(sk, SOCK_DONE))
-+				answ--;
- 		} else
- 			answ = tp->urg_seq - tp->copied_seq;
- 		release_sock(sk);
++	usb_scuttle_anchored_urbs(&dev->deferred);
++
+ 	if (dev->driver_info->unbind)
+ 		dev->driver_info->unbind (dev, intf);
+ 
 
 
