@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab2KNGHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:07:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54952 "EHLO
+	id S1756518Ab2KNGHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:07:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54946 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752513Ab2KNFuB (ORCPT
+	by vger.kernel.org with ESMTP id S1752360Ab2KNFuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:50:01 -0500
-Message-Id: <20121114053936.093915450@decadent.org.uk>
+Message-Id: <20121114053935.803593195@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:49 +0000
+Date: Wed, 14 Nov 2012 05:39:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/82] rtnetlink: fix rtnl_calcit() and rtnl_dump_ifinfo()
+        Johan Hovold <jhovold@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 14/82] USB: mos7840: remove unused variable
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a4b64fbe482c7766f7925f03067fc637716bfa3f upstream.
+Fix warning about unused variable introduced by commit e681b66f2e19fa
+("USB: mos7840: remove invalid disconnect handling") upstream.
 
-nlmsg_parse() might return an error, so test its return value before
-potential random memory accesses.
+A subsequent fix which removed the disconnect function got rid of the
+warning but that one was only backported to v3.6.
 
-Errors introduced in commit 115c9b81928 (rtnetlink: Fix problem with
-buffer allocation)
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Greg Rose <gregory.v.rose@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/rtnetlink.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/usb/serial/mos7840.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 606a6e8..f965dce 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1060,11 +1060,12 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	rcu_read_lock();
- 	cb->seq = net->dev_base_seq;
- 
--	nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
--		    ifla_policy);
-+	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+			ifla_policy) >= 0) {
- 
--	if (tb[IFLA_EXT_MASK])
--		ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-+		if (tb[IFLA_EXT_MASK])
-+			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-+	}
- 
- 	for (h = s_h; h < NETDEV_HASHENTRIES; h++, s_idx = 0) {
- 		idx = 0;
-@@ -1900,10 +1901,11 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
- 
--	nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX, ifla_policy);
--
--	if (tb[IFLA_EXT_MASK])
--		ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-+	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+			ifla_policy) >= 0) {
-+		if (tb[IFLA_EXT_MASK])
-+			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-+	}
- 
- 	if (!ext_filter_mask)
- 		return NLMSG_GOODSIZE;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 0179d34..c854235 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2581,7 +2581,6 @@ error:
+ static void mos7840_disconnect(struct usb_serial *serial)
+ {
+ 	int i;
+-	unsigned long flags;
+ 	struct moschip_port *mos7840_port;
+ 	dbg("%s", " disconnect :entering..........");
+
 
 
