@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab2KNFvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:51:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55232 "EHLO
+	id S1756591Ab2KNF4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:56:08 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55246 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756419Ab2KNFvB (ORCPT
+	by vger.kernel.org with ESMTP id S1756438Ab2KNFvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:01 -0500
-Message-Id: <20121114053939.712712156@decadent.org.uk>
+	Wed, 14 Nov 2012 00:51:05 -0500
+Message-Id: <20121114053939.141502299@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:15 +0000
+Date: Wed, 14 Nov 2012 05:40:11 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jingjie Jiang <jingjie.jiang@oracle.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: [ 42/82] xen/mmu: Use Xen specific TLB flush instead of the generic one.
+        Sven Eckelmann <sven@narfation.org>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 38/82] ath9k: Test for TID only in BlockAcks while checking tx status
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,87 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Sven Eckelmann <sven@narfation.org>
 
-commit 95a7d76897c1e7243d4137037c66d15cbf2cce76 upstream.
+commit 6fe7cc71bbf3a0bc28c9cec3c00bc11e81344412 upstream.
 
-As Mukesh explained it, the MMUEXT_TLB_FLUSH_ALL allows the
-hypervisor to do a TLB flush on all active vCPUs. If instead
-we were using the generic one (which ends up being xen_flush_tlb)
-we end up making the MMUEXT_TLB_FLUSH_LOCAL hypercall. But
-before we make that hypercall the kernel will IPI all of the
-vCPUs (even those that were asleep from the hypervisor
-perspective). The end result is that we needlessly wake them
-up and do a TLB flush when we can just let the hypervisor
-do it correctly.
+The ath9k xmit functions for AMPDUs can send frames as non-aggregate in case
+only one frame is currently available. The client will then answer using a
+normal Ack instead of a BlockAck. This acknowledgement has no TID stored and
+therefore the hardware is not able to provide us the corresponding TID.
 
-This patch gives around 50% speed improvement when migrating
-idle guest's from one host to another.
+The TID set by the hardware in the tx status descriptor has to be seen as
+undefined and not as a valid TID value for normal acknowledgements. Doing
+otherwise results in a massive amount of retransmissions and stalls of
+connections.
 
-Oracle-bug: 14630170
+Users may experience low bandwidth and complete connection stalls in
+environments with transfers using multiple TIDs.
 
-Tested-by:  Jingjie Jiang <jingjie.jiang@oracle.com>
-Suggested-by:  Mukesh Rathor <mukesh.rathor@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This regression was introduced in b11b160defc48e4daa283f785192ea3a23a51f8e
+("ath9k: validate the TID in the tx status information").
+
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Acked-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/mmu.c         |   21 ++++++++++++++++++++-
- include/trace/events/xen.h |    8 ++++++++
- 2 files changed, 28 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1203,6 +1203,25 @@ unsigned long xen_read_cr2_direct(void)
- 	return percpu_read(xen_vcpu_info.arch.cr2);
- }
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -370,7 +370,7 @@ static void ath_tx_complete_aggr(struct
+ 	u16 seq_st = 0, acked_cnt = 0, txfail_cnt = 0;
+ 	u32 ba[WME_BA_BMP_SIZE >> 5];
+ 	int isaggr, txfail, txpending, sendbar = 0, needreset = 0, nbad = 0;
+-	bool rc_update = true;
++	bool rc_update = true, isba;
+ 	struct ieee80211_tx_rate rates[4];
+ 	struct ath_frame_info *fi;
+ 	int nframes;
+@@ -408,13 +408,17 @@ static void ath_tx_complete_aggr(struct
+ 	an = (struct ath_node *)sta->drv_priv;
+ 	tidno = ieee80211_get_qos_ctl(hdr)[0] & IEEE80211_QOS_CTL_TID_MASK;
+ 	tid = ATH_AN_2_TID(an, tidno);
++	isba = ts->ts_flags & ATH9K_TX_BA;
  
-+void xen_flush_tlb_all(void)
-+{
-+	struct mmuext_op *op;
-+	struct multicall_space mcs;
-+
-+	trace_xen_mmu_flush_tlb_all(0);
-+
-+	preempt_disable();
-+
-+	mcs = xen_mc_entry(sizeof(*op));
-+
-+	op = mcs.args;
-+	op->cmd = MMUEXT_TLB_FLUSH_ALL;
-+	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
-+
-+	xen_mc_issue(PARAVIRT_LAZY_MMU);
-+
-+	preempt_enable();
-+}
- static void xen_flush_tlb(void)
- {
- 	struct mmuext_op *op;
-@@ -2366,7 +2385,7 @@ int xen_remap_domain_mfn_range(struct vm
- 	err = 0;
- out:
+ 	/*
+ 	 * The hardware occasionally sends a tx status for the wrong TID.
+ 	 * In this case, the BA status cannot be considered valid and all
+ 	 * subframes need to be retransmitted
++	 *
++	 * Only BlockAcks have a TID and therefore normal Acks cannot be
++	 * checked
+ 	 */
+-	if (tidno != ts->tid)
++	if (isba && tidno != ts->tid)
+ 		txok = false;
  
--	flush_tlb_all();
-+	xen_flush_tlb_all();
- 
- 	return err;
- }
---- a/include/trace/events/xen.h
-+++ b/include/trace/events/xen.h
-@@ -377,6 +377,14 @@ DECLARE_EVENT_CLASS(xen_mmu_pgd,
- DEFINE_XEN_MMU_PGD_EVENT(xen_mmu_pgd_pin);
- DEFINE_XEN_MMU_PGD_EVENT(xen_mmu_pgd_unpin);
- 
-+TRACE_EVENT(xen_mmu_flush_tlb_all,
-+	    TP_PROTO(int x),
-+	    TP_ARGS(x),
-+	    TP_STRUCT__entry(__array(char, x, 0)),
-+	    TP_fast_assign((void)x),
-+	    TP_printk("%s", "")
-+	);
-+
- TRACE_EVENT(xen_mmu_flush_tlb,
- 	    TP_PROTO(int x),
- 	    TP_ARGS(x),
+ 	isaggr = bf_isaggr(bf);
 
 
