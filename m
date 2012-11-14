@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2KNHnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:43:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44358 "EHLO
+	id S932643Ab2KNHpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:45:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44392 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2KNHna (ORCPT
+	with ESMTP id S1751918Ab2KNHpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:43:30 -0500
-Date: Tue, 13 Nov 2012 23:43:09 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-32ae1efd9d40645601cd4e09fa83a2711dd1ad6d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        ak@linux.intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1352482044-3443-5-git-send-email-namhyung@kernel.org>
-References: <1352482044-3443-5-git-send-email-namhyung@kernel.org>
+	Wed, 14 Nov 2012 02:45:34 -0500
+Date: Tue, 13 Nov 2012 23:45:10 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-soe4gqcz8fd4ecik6exvyqox@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, fweisbec@gmail.com, rostedt@goodmis.org,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Don'
- t try to follow jump target on PLT symbols
-Git-Commit-ID: 32ae1efd9d40645601cd4e09fa83a2711dd1ad6d
+Subject: [tip:perf/core] tools lib traceevent:
+  Add __maybe_unused to unused parameters
+Git-Commit-ID: ca383a4df77a07e607123d7763facdc00ce32796
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,68 +30,62 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:43:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:45:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  32ae1efd9d40645601cd4e09fa83a2711dd1ad6d
-Gitweb:     http://git.kernel.org/tip/32ae1efd9d40645601cd4e09fa83a2711dd1ad6d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Sat, 10 Nov 2012 02:27:15 +0900
+Commit-ID:  ca383a4df77a07e607123d7763facdc00ce32796
+Gitweb:     http://git.kernel.org/tip/ca383a4df77a07e607123d7763facdc00ce32796
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 9 Nov 2012 15:18:57 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 9 Nov 2012 16:23:21 -0300
+CommitDate: Fri, 9 Nov 2012 17:34:39 -0300
 
-perf annotate: Don't try to follow jump target on PLT symbols
+tools lib traceevent: Add __maybe_unused to unused parameters
 
-The perf annotate browser on TUI can identify a jump target for a
-selected instruction.  It assumes that the jump target is within the
-function but it's not the case of PLT symbols which have offset out of
-the function as a target.
+Fixing the build on 32-bit Fedora 14:
 
-Since it caused a segmentation fault, do not try to follow jump target
-on the PLT symbols.
+  tools/lib/traceevent/event-parse.c: In function ‘print_event_fields’:
+  tools/lib/traceevent/event-parse.c:3934:69: error: unused parameter ‘size’
+  tools/lib/traceevent/event-parse.c: In function ‘pevent_strerror’:
+  tools/lib/traceevent/event-parse.c:5074:36: error: unused parameter ‘pevent’
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1352482044-3443-5-git-send-email-namhyung@kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-soe4gqcz8fd4ecik6exvyqox@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/event-parse.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 3eff17f..5dab3ca 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -188,6 +188,12 @@ static void annotate_browser__draw_current_jump(struct ui_browser *browser)
- 	struct disasm_line *cursor = ab->selection, *target;
- 	struct browser_disasm_line *btarget, *bcursor;
- 	unsigned int from, to;
-+	struct map_symbol *ms = ab->b.priv;
-+	struct symbol *sym = ms->sym;
-+
-+	/* PLT symbols contain external offsets */
-+	if (strstr(sym->name, "@plt"))
-+		return;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index f2989c5..0dcc18c 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -3931,7 +3931,8 @@ static int is_printable_array(char *p, unsigned int len)
+ 	return 1;
+ }
  
- 	if (!cursor || !cursor->ins || !ins__is_jump(cursor->ins) ||
- 	    !disasm_line__has_offset(cursor))
-@@ -771,6 +777,12 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
- 						size_t size)
+-static void print_event_fields(struct trace_seq *s, void *data, int size,
++static void print_event_fields(struct trace_seq *s, void *data,
++			       int size __maybe_unused,
+ 			       struct event_format *event)
  {
- 	u64 offset;
-+	struct map_symbol *ms = browser->b.priv;
-+	struct symbol *sym = ms->sym;
-+
-+	/* PLT symbols contain external offsets */
-+	if (strstr(sym->name, "@plt"))
-+		return;
+ 	struct format_field *field;
+@@ -5070,8 +5071,8 @@ static const char * const pevent_error_str[] = {
+ };
+ #undef _PE
  
- 	for (offset = 0; offset < size; ++offset) {
- 		struct disasm_line *dl = browser->offsets[offset], *dlt;
+-int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+-		    char *buf, size_t buflen)
++int pevent_strerror(struct pevent *pevent __maybe_unused,
++		    enum pevent_errno errnum, char *buf, size_t buflen)
+ {
+ 	int idx;
+ 	const char *msg;
