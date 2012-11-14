@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2KNBFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 20:05:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61955 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052Ab2KNBFe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 20:05:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
-References: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com> <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 13 Nov 2012 17:05:12 -0800
-Message-ID: <CAK5ve-L=SBFEfoY8oKYYb-dFCWf=-Eb-qMFdWdiBO3wfaR3tDA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] Add documentation for tca6507 devicetree bindings.
-To: Marek Belisko <marek.belisko@open-nandra.com>,
-        Stephen Warren <swarren@nvidia.com>
-Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932259Ab2KNBIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 20:08:32 -0500
+Received: from mga03.intel.com ([143.182.124.21]:63665 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932120Ab2KNBIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 20:08:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="168057990"
+Message-ID: <1352855308.7176.232.camel@yhuang-dev>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
+ forbidden
+From: Huang Ying <ying.huang@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Wed, 14 Nov 2012 09:08:28 +0800
+In-Reply-To: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211131102330.1292-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks fine to me, but I need a DT maintainer's ack. Stephen, could
-you help on this. I will merge this patch via my tree.
+On Tue, 2012-11-13 at 11:10 -0500, Alan Stern wrote:
+> On Tue, 13 Nov 2012, Huang Ying wrote:
+> 
+> > > This is not quite right.  Consider a device that is in runtime suspend 
+> > > when a system sleep starts.  When the system sleep ends, the device 
+> > > will be resumed but the PM core will still think its state is 
+> > > SUSPENDED.  The subsystem has to tell the PM core that the device is 
+> > > now ACTIVE.  Currently, subsystems do this by calling 
+> > > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable.  Under 
+> > > your scheme this wouldn't work; the pm_runtime_set_active call would 
+> > > fail because the device was !forbidden.
+> > 
+> > Thanks for your information.  For this specific situation, is it
+> > possible to call pm_runtime_resume() or pm_request_resume() for the
+> > device?
+> 
+> No, because the device already is at full power.  The subsystem just
+> needs to tell the PM core that it is.
+> 
+> > > > PM.  Device can always work with full power.
+> > > 
+> > > It can't if the parent is in SUSPEND.  If necessary, the user can write 
+> > > "on" to the parent's power/control attribute first.
+> > 
+> > Is it possible to call pm_runtime_set_active() for the parent if the
+> > parent is disabled and SUSPENDED.
+> 
+> Doing that is possible, but it might not work.  The parent might
+> actually be at low power; calling pm_runtime_set_active wouldn't change
+> the physical power level.  Basically, it's not safe to assume anything
+> about devices that are disabled for runtime PM.
+> 
+> > It appears that there is race condition between this and the
+> > pm_runtime_disable, pm_runtime_set_active, pm_runtime_enable sequence
+> > you mentioned ealier.
+> > 
+> > thread 1			thread 2
+> > pm_runtime_disable
+> > pm_runtime_set_active
+> > 				pm_runtime_allow
+> > 				  pm_runtime_set_suspended
+> > pm_runtime_enable
+> 
+> This can't happen in the situation I described earlier because during
+> system sleep transitions, no other user threads are allowed to run.  
+> All of them except the one actually carrying out the transition are
+> frozen.
 
-Thanks,
--Bryan
+Thanks for your kind explanation.
 
-On Mon, Nov 12, 2012 at 1:25 PM, Marek Belisko
-<marek.belisko@open-nandra.com> wrote:
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
->  Documentation/devicetree/bindings/leds/tca6507.txt |   40 ++++++++++++++++++++
->  1 file changed, 40 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
->
-> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-> new file mode 100644
-> index 0000000..a49eb0c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-> @@ -0,0 +1,40 @@
-> +LEDs conected to tca6507
-> +
-> +Required properties:
-> +- compatible : should be : "ti,tca6507".
-> +
-> +Each led is represented as a sub-node of the ti,tca6507 device.
-> +
-> +LED sub-node properties:
-> +- label : label for this LED
-> +- reg : number of LED line (could be from 0 to 6)
-> +- linux,default-trigger :  (optional) This parameter, if present, is a
-> +  string defining the trigger assigned to the LED.  Current triggers are:
-> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
-> +                 system
-> +    "default-on" - LED will turn on
-> +    "heartbeat" - LED "double" flashes at a load average based rate
-> +    "ide-disk" - LED indicates disk activity
-> +    "timer" - LED flashes at a fixed, configurable rate
-> +
-> +Examples:
-> +
-> +tca6507@45 {
-> +       compatible = "ti,tca6507";
-> +       #address-cells = <1>;
-> +       #size-cells = <0>;
-> +       reg = <0x45>;
-> +
-> +       led0: red_aux@0 {
-> +               label = "red:aux";
-> +               reg = <0x0>;
-> +       };
-> +
-> +       led1: green_aux@1 {
-> +               label = "green:aux";
-> +               reg = <0x5>;
-> +               linux,default-trigger = "default-on";
-> +       };
-> +
-> +};
-> +
-> --
-> 1.7.9.5
->
+After talking with you, my feeling is that the disabled state is obscure
+and error-prone.  So I suggest not to use it if possible.  Maybe we can
+
+ - make changes suggested by Alan to make disabled state better.
+ - use Rafael's solution to solve this specific issue, and avoid the
+usage of disabled state here.
+
+Best Regards,
+Huang Ying
+
+
