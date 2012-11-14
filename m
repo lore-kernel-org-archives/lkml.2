@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab2KNEH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 23:07:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46202 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab2KNEH5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 23:07:57 -0500
-Date: Wed, 14 Nov 2012 15:07:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Florian Fainelli <florian@openwrt.org>
-Subject: linux-next: manual merge of the usb tree with the usb.current tree
-Message-Id: <20121114150746.433de520ffbc71b4281f3c62@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__14_Nov_2012_15_07_46_+1100_RVFDQTh15FtgVMDX"
+	id S932493Ab2KNEJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 23:09:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932268Ab2KNEJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 23:09:44 -0500
+Message-ID: <50A31971.6000706@redhat.com>
+Date: Tue, 13 Nov 2012 23:09:21 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/31] Foundation for automatic NUMA balancing V2
+References: <1352805180-1607-1-git-send-email-mgorman@suse.de> <20121113151416.GA20044@gmail.com> <20121113154215.GD8218@suse.de> <20121113172734.GA12098@gmail.com>
+In-Reply-To: <20121113172734.GA12098@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__14_Nov_2012_15_07_46_+1100_RVFDQTh15FtgVMDX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/13/2012 12:27 PM, Ingo Molnar wrote:
+>
+> * Mel Gorman <mgorman@suse.de> wrote:
+>
+>>> I'd also like to add another, structural side note: you
+>>> mixed new vm-stats bits into the whole queue, needlessly
+>>> blowing up the size and the mm/ specific portions of the
+>>> tree. I'd suggest to post and keep those bits separately,
+>>> preferably on top of what we have already once it has
+>>> settled down. I'm keeping the 'perf bench numa' bits
+>>> separate as well.
+>>
+>> The stats part are fairly late in the queue. I noticed they
+>> break build for !CONFIG_BALANCE_NUMA but it was trivially
+>> resolved. [...]
+>
+> Ok - the vm-stats bits are the last larger item remaining that
+> I've seen - could you please redo any of your changes on top of
+> the latest tip:numa/core tree, to make them easier for me to
+> pick up?
+ >
+> Your tree is slowly becoming a rebase of tip:numa/core and that
+> will certainly cause problems.
 
-Hi Greg,
+Mel's tree looks like the easiest of the two to merge
+from an mm/ point of view.
 
-Today's linux-next merge of the usb tree got conflicts in
-drivers/usb/host/ehci-ls1x.c and drivers/usb/host/ohci-xls.c between
-commit e592c5d0b7db ("Revert "USB/host: Cleanup unneccessary irq disable
-code"") from the usb.current tree and commits ead92fae1290 ("USB: EHCI:
-remove Loongson 1B EHCI driver") and c2e91e046df6 ("USB: OHCI: remove
-Netlogic XLS OHCI platform driver") from the usb tree.
+> I'll backmerge any delta patches and rebase as necessary - but
+> please do them as deltas on top of tip:numa/core to make things
+> reviewable and easier to merge:
+>
+>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git numa/core
+>
+> Thanks!
+>
+> 	Ingo
+>
 
-The latter removed the files, so I just did that and can carry the fix as
-necessary (no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__14_Nov_2012_15_07_46_+1100_RVFDQTh15FtgVMDX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQoxkSAAoJEECxmPOUX5FELV0P/i1e1DvYFqOPwEsF3in6Eu//
-EutvAuS5jrBF+23G+pVPg8J3TJxM8QFMzWytsKrF4rPqaGr795OjIOj+s97I/fcR
-6qsa3RpQhChZrK+I7on7jbTjMKMCyGQ4Z8GWYcgthZZgBoKCWc57N4+yccLOQAUf
-A4utQMWCs3oYBGN8JaRcIhMMMbtg1+zyM4H05pJ58vv5+FpJgPeuPfgcLTGVFBmZ
-QweZvnhrhGW51bPty1DiKo1tHwaGpyn81Wgn7myN+BqXcg9J+b5ZtZFzmDuV5AGC
-JjyCYqsW9IrYFjm3t3OdeV4AWloi1xS/9OqB9Px8ssplN/vPEkVDsJLrN4ppdxbP
-6RIxVM0XrKPOomSnFdNxiksx2SqJFrKyikyp9hgUXAa6MY41/EGwEshPXihsAo8X
-u5QukYUQfJ9++/jbQgEEmR0VGtC2SjbT/AOvF1b1hyvXii9crX8P7ebFCL2QrZj3
-i9UdTvPq/NJ5nD88JIgXe+g+gxUW2wNVagqVCa7TAB9qrDvsliFhhkXQZ8Tmclox
-44scOGTQT9QYfVqV3KiRV35xkGZvTFSyc8+ZWCZScRE1Y6WliPg70sP/35/rfl43
-bG3MHaUYu7/537y/DA1V5YpXAChEZ7jbD414gaEPm4odHVuXxqGUiht4CF4Xx2J/
-jtGO7sOZM08cPLAMxj7q
-=UAuF
------END PGP SIGNATURE-----
-
---Signature=_Wed__14_Nov_2012_15_07_46_+1100_RVFDQTh15FtgVMDX--
+-- 
+All rights reversed
