@@ -1,114 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2KNDHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:07:18 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45704 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab2KNDHQ (ORCPT
+	id S932550Ab2KNDIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:08:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34572 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab2KNDIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:07:16 -0500
-Message-ID: <50A30ADD.9000209@gmail.com>
-Date: Wed, 14 Nov 2012 11:07:09 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 22:08:21 -0500
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1211061521230.6954@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348111122-27400-1-git-send-email-robin.k.dong@gmail.com>
+References: <1348111122-27400-1-git-send-email-robin.k.dong@gmail.com>
+Date: Wed, 14 Nov 2012 11:08:20 +0800
+Message-ID: <CANsebLGKQcDM8rkiZdqAVqf8JLPt4UMhz4keNs9KYh=1VjdiLQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] md: add new interface 'mk_rq' in target_type
+From: Robin Dong <robin.k.dong@gmail.com>
+To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 07:48 AM, Hugh Dickins wrote:
-> On Tue, 6 Nov 2012, Dave Jones wrote:
->> On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
->>
->>   > -			/* We already confirmed swap, and make no allocation */
->>   > -			VM_BUG_ON(error);
->>   > +			/*
->>   > +			 * We already confirmed swap under page lock, and make
->>   > +			 * no memory allocation here, so usually no possibility
->>   > +			 * of error; but free_swap_and_cache() only trylocks a
->>   > +			 * page, so it is just possible that the entry has been
->>   > +			 * truncated or holepunched since swap was confirmed.
->>   > +			 * shmem_undo_range() will have done some of the
->>   > +			 * unaccounting, now delete_from_swap_cache() will do
->>   > +			 * the rest (including mem_cgroup_uncharge_swapcache).
->>   > +			 * Reset swap.val? No, leave it so "failed" goes back to
->>   > +			 * "repeat": reading a hole and writing should succeed.
->>   > +			 */
->>   > +			if (error) {
->>   > +				VM_BUG_ON(error != -ENOENT);
->>   > +				delete_from_swap_cache(page);
->>   > +			}
->>   >  		}
->>
->> I ran with this overnight,
-> Thanks a lot...
->
->> and still hit the (new!) VM_BUG_ON
-> ... but that's even more surprising than your original report.
->
->> Perhaps we should print out what 'error' was too ?  I'll rebuild with that..
-> Thanks; though I thought the error was going to turn out too boring,
-> and was preparing a debug patch for you to show the expected and found
-> values too.  But then got very puzzled...
->   
->> ------------[ cut here ]------------
->> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
->> Hardware name: 2012 Client Platform
->> Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
-> That's the very same line number as in your original report, despite
-> the long comment which the patch adds.  Are you sure that kernel was
-> built with the patch in?
->
-> I wouldn't usually question you, but I'm going mad trying to understand
-> how the VM_BUG_ON(error != -ENOENT) fires.  At the time I wrote that
-> line, and when I was preparing the debug patch, I was thinking that an
-> error from shmem_radix_tree_replace could also be -EEXIST, for when a
-> different something rather than nothing is found [*].  But that's not
-> the case, shmem_radix_tree_replace returns either 0 or -ENOENT.
->
-> So if error != -ENOENT, that means shmem_add_to_page_cache went the
-> radix_tree_insert route instead of the shmem_radix_tree_replace route;
-> which means that its 'expected' is NULL, so swp_to_radix_entry(swap)
-> is NULL; but swp_to_radix_entry() does an "| 2", so however corrupt
-> the radix_tree might be, I do not understand the new VM_BUG_ON firing.
->
-> Please tell me it was the wrong kernel!
-> Hugh
->
-> [*] But in thinking it over, I realize that if shmem_radix_tree_replace
-> had returned -EEXIST for the "wrong something" case, I would have been
-> wrong to BUG on that; because just as truncation could remove an entry,
-> something else could immediately after instantiate a new page there.
+ping
 
-Hi Hugh,
-
-As you said, swp_to_radix_entry() does an "| 2", so even if truncation 
-could remove an entry and something else could immediately after 
-instantiate a new page there, but the expected parameter will not be 
-NULL, the result is radix_tree_insert will not be called and 
-shmem_add_to_page_cache will not return -EEXIST, then why trigger BUG_ON ?
-
-Regards,
-Jaegeuk
-
-> So although I believe my VM_BUG_ON(error != -ENOENT) is safe, it's
-> not saying what I had intended to say with it, and would have been
-> wrong to say that anyway.  It just looks stupid to me now, rather
-> like inserting a VM_BUG_ON(false) - but that does become interesting
-> when you report that you've hit it.
+2012/9/20 Robin Dong <robin.k.dong@gmail.com>:
+> From: Robin Dong <sanbai@taobao.com>
 >
+> We are now trying to modify flashcache(https://github.com/facebook/flashcache)
+> to make it request based so that
+> we can let cfq io-controller control the bandwidth between different
+> io cgroups.
+>
+> A search in the dm directory tells me that only multipath is a request
+> based dm target and its functionality
+> is very simple and map_rq() is used to map the request to different underlying devices.
+> We can't work in this way because:
+>
+> 1. the request which processed by map_rq() need to be issued to
+>         different lower devices (disk device and cache device, in flashcache), therefore the request
+>         can't be totally remapped by simply changing its queue and returning DM_MAPIO_REMAPPED in map_rq() like multipath_map()
+> 2. to submit bios drectly in map_rq() (by return DM_MAPIO_SUBMITTED) will cause BUG_ON(!irqs_disabled())
+>         in dm_request_fn() because the submit_bio()->generic_make_request()->blk_queue_bio() will definitly call spin_unlock_irq to enable the irqs
+>
+> As above,the interface map_rq() provided by devcie-mapper framework
+> is not enough for an autonomous target, like flashcache.
+>
+> We propose to add a new
+> mk_rq interface so that we can make the requests
+> by ourselves.
+>
+> Signed-off-by: Robin Dong <sanbai@taobao.com>
+> ---
+>  drivers/md/dm-io.c    |   58 ++++++++++++++++++++++++++++--------------------
+>  drivers/md/dm-log.c   |    1 +
+>  include/linux/dm-io.h |    3 ++
+>  3 files changed, 38 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
+> index ea5dd28..f767792 100644
+> --- a/drivers/md/dm-io.c
+> +++ b/drivers/md/dm-io.c
+> @@ -287,8 +287,8 @@ static void km_dp_init(struct dpages *dp, void *data)
+>  /*-----------------------------------------------------------------
+>   * IO routines that accept a list of pages.
+>   *---------------------------------------------------------------*/
+> -static void do_region(int rw, unsigned region, struct dm_io_region *where,
+> -                     struct dpages *dp, struct io *io)
+> +static void do_region(struct dm_io_request *io_req, unsigned region,
+> +               struct dm_io_region *where, struct dpages *dp, struct io *io)
+>  {
+>         struct bio *bio;
+>         struct page *page;
+> @@ -298,6 +298,7 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
+>         sector_t remaining = where->count;
+>         struct request_queue *q = bdev_get_queue(where->bdev);
+>         sector_t discard_sectors;
+> +       int rw = io_req->bi_rw;
+>
+>         /*
+>          * where->count may be zero if rw holds a flush and we need to
+> @@ -339,15 +340,26 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
+>                 }
+>
+>                 atomic_inc(&io->count);
+> -               submit_bio(rw, bio);
+> +               if (!io_req->only_create_bio)
+> +                       submit_bio(rw, bio);
+> +               else {
+> +                       bio->bi_rw |= rw;
+> +                       if (io_req->start) {
+> +                               io_req->end->bi_next = bio;
+> +                               io_req->end = bio;
+> +                       } else
+> +                               io_req->start = io_req->end = bio;
+> +                       bio->bi_next = NULL;
+> +               }
+>         } while (remaining);
+>  }
+>
+> -static void dispatch_io(int rw, unsigned int num_regions,
+> +static void dispatch_io(struct dm_io_request *io_req, unsigned int num_regions,
+>                         struct dm_io_region *where, struct dpages *dp,
+>                         struct io *io, int sync)
+>  {
+>         int i;
+> +       int rw = io_req->bi_rw;
+>         struct dpages old_pages = *dp;
+>
+>         BUG_ON(num_regions > DM_IO_MAX_REGIONS);
+> @@ -362,7 +374,7 @@ static void dispatch_io(int rw, unsigned int num_regions,
+>         for (i = 0; i < num_regions; i++) {
+>                 *dp = old_pages;
+>                 if (where[i].count || (rw & REQ_FLUSH))
+> -                       do_region(rw, i, where + i, dp, io);
+> +                       do_region(io_req, i, where + i, dp, io);
+>         }
+>
+>         /*
+> @@ -372,8 +384,8 @@ static void dispatch_io(int rw, unsigned int num_regions,
+>         dec_count(io, 0, 0);
+>  }
+>
+> -static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+> -                  struct dm_io_region *where, int rw, struct dpages *dp,
+> +static int sync_io(struct dm_io_request *io_req,  unsigned int num_regions,
+> +                  struct dm_io_region *where, struct dpages *dp,
+>                    unsigned long *error_bits)
+>  {
+>         /*
+> @@ -385,7 +397,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>         volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
+>         struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
+>
+> -       if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
+> +       if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
+>                 WARN_ON(1);
+>                 return -EIO;
+>         }
+> @@ -393,12 +405,12 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>         io->error_bits = 0;
+>         atomic_set(&io->count, 1); /* see dispatch_io() */
+>         io->sleeper = current;
+> -       io->client = client;
+> +       io->client = io_req->client;
+>
+>         io->vma_invalidate_address = dp->vma_invalidate_address;
+>         io->vma_invalidate_size = dp->vma_invalidate_size;
+>
+> -       dispatch_io(rw, num_regions, where, dp, io, 1);
+> +       dispatch_io(io_req, num_regions, where, dp, io, 1);
+>
+>         while (1) {
+>                 set_current_state(TASK_UNINTERRUPTIBLE);
+> @@ -416,30 +428,29 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+>         return io->error_bits ? -EIO : 0;
+>  }
+>
+> -static int async_io(struct dm_io_client *client, unsigned int num_regions,
+> -                   struct dm_io_region *where, int rw, struct dpages *dp,
+> -                   io_notify_fn fn, void *context)
+> +static int async_io(struct dm_io_request *io_req, unsigned int num_regions,
+> +               struct dm_io_region *where, struct dpages *dp)
+>  {
+>         struct io *io;
+>
+> -       if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
+> +       if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
+>                 WARN_ON(1);
+> -               fn(1, context);
+> +               io_req->notify.fn(1, io_req->notify.context);
+>                 return -EIO;
+>         }
+>
+> -       io = mempool_alloc(client->pool, GFP_NOIO);
+> +       io = mempool_alloc(io_req->client->pool, GFP_NOIO);
+>         io->error_bits = 0;
+>         atomic_set(&io->count, 1); /* see dispatch_io() */
+>         io->sleeper = NULL;
+> -       io->client = client;
+> -       io->callback = fn;
+> -       io->context = context;
+> +       io->client = io_req->client;
+> +       io->callback = io_req->notify.fn;
+> +       io->context = io_req->notify.context;
+>
+>         io->vma_invalidate_address = dp->vma_invalidate_address;
+>         io->vma_invalidate_size = dp->vma_invalidate_size;
+>
+> -       dispatch_io(rw, num_regions, where, dp, io, 0);
+> +       dispatch_io(io_req, num_regions, where, dp, io, 0);
+>         return 0;
+>  }
+>
+> @@ -499,11 +510,10 @@ int dm_io(struct dm_io_request *io_req, unsigned num_regions,
+>                 return r;
+>
+>         if (!io_req->notify.fn)
+> -               return sync_io(io_req->client, num_regions, where,
+> -                              io_req->bi_rw, &dp, sync_error_bits);
+> +               return sync_io(io_req, num_regions, where,
+> +                               &dp, sync_error_bits);
+>
+> -       return async_io(io_req->client, num_regions, where, io_req->bi_rw,
+> -                       &dp, io_req->notify.fn, io_req->notify.context);
+> +       return async_io(io_req, num_regions, where, &dp);
+>  }
+>  EXPORT_SYMBOL(dm_io);
+>
+> diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
+> index 627d191..3bf065a 100644
+> --- a/drivers/md/dm-log.c
+> +++ b/drivers/md/dm-log.c
+> @@ -463,6 +463,7 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
+>                         kfree(lc);
+>                         return r;
+>                 }
+> +               lc->io_req.only_create_bio = 0;
+>
+>                 lc->disk_header = vmalloc(buf_size);
+>                 if (!lc->disk_header) {
+> diff --git a/include/linux/dm-io.h b/include/linux/dm-io.h
+> index f4b0aa3..8782163 100644
+> --- a/include/linux/dm-io.h
+> +++ b/include/linux/dm-io.h
+> @@ -61,6 +61,9 @@ struct dm_io_request {
+>         struct dm_io_memory mem;        /* Memory to use for io */
+>         struct dm_io_notify notify;     /* Synchronous if notify.fn is NULL */
+>         struct dm_io_client *client;    /* Client memory handler */
+> +       int only_create_bio;
+> +       struct bio *start;
+> +       struct bio *end;
+>  };
+>
+>  /*
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 1.7.1
+>
 
+
+
+-- 
+--
+Best Regard
+Robin Dong
