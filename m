@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422885Ab2KNNVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 08:21:55 -0500
-Received: from 79.132.231.86.static.edpnet.net ([79.132.231.86]:40545 "EHLO
-	mail.offline.be" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1422805Ab2KNNVy (ORCPT
+	id S1422893Ab2KNNXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 08:23:19 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40787 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422829Ab2KNNXR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 08:21:54 -0500
-Date: Wed, 14 Nov 2012 14:21:47 +0100
-From: Marc Duponcheel <marc@offline.be>
-To: David Rientjes <rientjes@google.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Marc Duponcheel <marc@offline.be>
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
-Message-ID: <20121114132146.GA13122@offline.be>
-Reply-To: Marc Duponcheel <marc@offline.be>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
- <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
- <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
- <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
- <CALCETrXSzNEdNEZaQqB93rpP9zXcBD4KRX_bjTAnzU6JEXcApg@mail.gmail.com>
- <alpine.DEB.2.00.1211131553170.17623@chino.kir.corp.google.com>
- <20121114012234.GB8152@offline.be>
- <alpine.DEB.2.00.1211131750200.408@chino.kir.corp.google.com>
+	Wed, 14 Nov 2012 08:23:17 -0500
+Message-ID: <50A39B2D.6070206@parallels.com>
+Date: Wed, 14 Nov 2012 17:22:53 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211131750200.408@chino.kir.corp.google.com>
-Organization: OFFLINE
-X-uname: Linux 3.6.6-gentoo x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@redhat.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/15] nfsd: make reclaim_str_hashtbl allocated per net
+References: <20121113154722.12577.57671.stgit@localhost.localdomain> <20121113154833.12577.8139.stgit@localhost.localdomain> <20121114080247.67cd6b45@tlielax.poochiereds.net>
+In-Reply-To: <20121114080247.67cd6b45@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.29.152]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012 Nov 13, David Rientjes wrote:
-> On Wed, 14 Nov 2012, Marc Duponcheel wrote:
-> 
-> >  Hi all, please let me know if there is are patches you want me to try.
-> > 
-> >  FWIW time did not stand still and I run 3.6.6 now.
-> 
-> Hmm, interesting since there are no core VM changes between 3.6.2, the 
-> kernel you ran into problems with, and 3.6.6.
+14.11.2012 17:02, Jeff Layton пишет:
+> On Tue, 13 Nov 2012 18:48:33 +0300
+> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+>
+<snip>
+>>
+>> +
+>> +static int
+>> +nfs4_legacy_state_init(struct net *net)
+>> +{
+>> +     struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+>> +     int i;
+>> +
+>> +     nn->reclaim_str_hashtbl = kmalloc(sizeof(struct list_head) *
+>> +                                       CLIENT_HASH_SIZE, GFP_KERNEL);
+>> +     if (!nn->reclaim_str_hashtbl)
+>> +             return -ENOMEM;
+>> +
+>> +     for (i = 0; i < CLIENT_HASH_SIZE; i++)
+>> +             INIT_LIST_HEAD(&nn->reclaim_str_hashtbl[i]);
+>> +     nn->reclaim_str_hashtbl_size = 0;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static void
+>> +nfs4_legacy_state_shutdown(struct net *net)
+>> +{
+>> +     struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+>> +
+>> +     kfree(nn->reclaim_str_hashtbl);
+>> +}
+>> +
+>>   static int
+>>   nfsd4_load_reboot_recovery_data(struct net *net)
+>>   {
+>> @@ -425,13 +454,23 @@ nfsd4_load_reboot_recovery_data(struct net *net)
+>>                return -EINVAL;
+>>        }
+>>
+>> +     status = nfs4_legacy_state_init(net);
+>> +     if (status)
+>> +             return status;
+>> +
+>
+> nit: might be clearer to create a new legacy ->init function and have
+> it call the state_init and then load the recovery data.
+>
 
- Hi David
+Yep, sure.
 
- I have not tried yet to repro #49361 on 3.6.6, but, as you say, if
-there are no core VM changes, I am confident I can do so just by doing
+>
+> Looks like a reasonable and good change, but may need reconciling with
+> the patches from me that Bruce merged recently into his for-next tree.
+>
 
-# echo always > /sys/kernel/mm/transparent_hugepage/enabled
+Thanks. Already working on it.
 
- I am at your disposal to test further, and, if there are patches, to
-try them out.
-
- Note that I only once experienced a crash for which I could not find
-relevant info in logs. But the hanging processes issue could always be
-reproduced consistently.
-
- have a nice day
-
---
- Marc Duponcheel
- Velodroomstraat 74 - 2600 Berchem - Belgium
- +32 (0)478 68.10.91 - marc@offline.be
+-- 
+Best regards,
+Stanislav Kinsbursky
