@@ -1,406 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897Ab2KNJob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:44:31 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59961 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932833Ab2KNJmc (ORCPT
+	id S932889Ab2KNJs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:48:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41501 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab2KNJsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:42:32 -0500
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        schwidefsky@de.ibm.com, Jan Glauber <jang@linux.vnet.ibm.com>
-Subject: [RFC PATCH 06/10] s390/pci: CHSC PCI support for error and availability events
-Date: Wed, 14 Nov 2012 10:41:38 +0100
-Message-Id: <4d72dd60418fe8dc886049e64dfc180ec918e628.1352719878.git.jang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-x-cbid: 12111409-0542-0000-0000-0000039280AE
+	Wed, 14 Nov 2012 04:48:22 -0500
+Date: Wed, 14 Nov 2012 01:48:18 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Shaohua Li <shli@kernel.org>
+cc: Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+In-Reply-To: <20121106053628.GA1539@kernel.org>
+Message-ID: <alpine.LNX.2.00.1211140109020.19427@eggly.anvils>
+References: <506AACAC.2010609@openvz.org> <alpine.LSU.2.00.1210031337320.1415@eggly.anvils> <506DB816.9090107@openvz.org> <alpine.LSU.2.00.1210081451410.1384@eggly.anvils> <20121016005049.GA1467@kernel.org> <20121022073654.GA7821@kernel.org>
+ <alpine.LNX.2.00.1210222141170.1136@eggly.anvils> <20121023055127.GA24239@kernel.org> <50869E6C.1080907@redhat.com> <20121024011356.GA6400@kernel.org> <20121106053628.GA1539@kernel.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CHSC store-event-information support for PCI (notfication type 2)
-and report error and availability events to the PCI architecture layer.
+On Tue, 6 Nov 2012, Shaohua Li wrote:
+> On Wed, Oct 24, 2012 at 09:13:56AM +0800, Shaohua Li wrote:
+> > On Tue, Oct 23, 2012 at 09:41:00AM -0400, Rik van Riel wrote:
+> > > On 10/23/2012 01:51 AM, Shaohua Li wrote:
+> > > 
+> > > >I have no strong point against the global state method. But I'd agree making the
+> > > >heuristic simple is preferred currently. I'm happy about the patch if the '+1'
+> > > >is removed.
+> > > 
+> > > Without the +1, how will you figure out when to re-enable readahead?
+> > 
+> > Below code in swapin_nr_pages can recover it.
+> > +               if (offset == prev_offset + 1 || offset == prev_offset - 1)
+> > +                       pages <<= 1;
+> > 
+> > Not perfect, but should work in some sort. This reminds me to think if
+> > pagereadahead flag is really required, hit in swap cache is a more reliable way
+> > to count readahead hit, and as Hugh mentioned, swap isn't vma bound.
+> 
+> Hugh,
+> ping! Any chance you can check this again?
 
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+I apologize, Shaohua, my slowness must be very frustrating for you,
+as it is for me too.
+
+Thank you for pointing out how my first patch was reading two pages
+instead of one in the random case, explaining its disappointing
+performance there: odd how blind I was to that, despite taking stats.
+
+I did experiment with removing the "+ 1" as you did, it worked well
+in the random SSD case, but degraded performance in (all? I forget)
+the other cases.
+
+I failed to rescue the "algorithm" in that patch, and changed it a
+week ago for an even simpler one, that has worked well for me so far.
+When I sent you a quick private ack to your ping, I was puzzled by its
+"too good to be true" initial test results: once I looked into those,
+found my rearrangement of the test script had left out a swapoff,
+so the supposed harddisk tests were actually swapping to SSD.
+
+I've finally got around to assembling the results and writing up
+some description, starting off from yours.  I think I've gone as
+far as I can with this, and don't want to hold you up with further
+delays: would it be okay if I simply hand this patch over to you now,
+to test and expand upon and add your Sign-off and send in to akpm to
+replace your original in mmotm - IF you are satisfied with it?
+
+
+[PATCH] swap: add a simple detector for inappropriate swapin readahead
+
+swapin readahead does a blind readahead, whether or not the swapin
+is sequential.  This may be ok on harddisk, because large reads have
+relatively small costs, and if the readahead pages are unneeded they
+can be reclaimed easily - though, what if their allocation forced
+reclaim of useful pages?  But on SSD devices large reads are more
+expensive than small ones: if the readahead pages are unneeded,
+reading them in caused significant overhead.
+
+This patch adds very simplistic random read detection.  Stealing
+the PageReadahead technique from Konstantin Khlebnikov's patch,
+avoiding the vma/anon_vma sophistications of Shaohua Li's patch,
+swapin_nr_pages() simply looks at readahead's current success
+rate, and narrows or widens its readahead window accordingly.
+There is little science to its heuristic: it's about as stupid
+as can be whilst remaining effective.
+
+The table below shows elapsed times (in centiseconds) when running
+a single repetitive swapping load across a 1000MB mapping in 900MB
+ram with 1GB swap (the harddisk tests had taken painfully too long
+when I used mem=500M, but SSD shows similar results for that).
+
+Vanilla is the 3.6-rc7 kernel on which I started; Shaohua denotes
+his Sep 3 patch in mmotm and linux-next; HughOld denotes my Oct 1
+patch which Shaohua showed to be defective; HughNew this Nov 14
+patch, with page_cluster as usual at default of 3 (8-page reads);
+HughPC4 this same patch with page_cluster 4 (16-page reads);
+HughPC0 with page_cluster 0 (1-page reads: no readahead).
+
+HDD for swapping to harddisk, SSD for swapping to VertexII SSD.
+Seq for sequential access to the mapping, cycling five times around;
+Rand for the same number of random touches.  Anon for a MAP_PRIVATE
+anon mapping; Shmem for a MAP_SHARED anon mapping, equivalent to tmpfs.
+
+One weakness of Shaohua's vma/anon_vma approach was that it did
+not optimize Shmem: seen below.  Konstantin's approach was perhaps
+mistuned, 50% slower on Seq: did not compete and is not shown below.
+
+HDD        Vanilla Shaohua HughOld HughNew HughPC4 HughPC0
+Seq Anon     73921   76210   75611   76904   78191  121542
+Seq Shmem    73601   73176   73855   72947   74543  118322
+Rand Anon   895392  831243  871569  845197  846496  841680
+Rand Shmem 1058375 1053486  827935  764955  764376  756489
+
+SSD        Vanilla Shaohua HughOld HughNew HughPC4 HughPC0
+Seq Anon     24634   24198   24673   25107   21614   70018
+Seq Shmem    24959   24932   25052   25703   22030   69678
+Rand Anon    43014   26146   28075   25989   26935   25901
+Rand Shmem   45349   45215   28249   24268   24138   24332
+
+These tests are, of course, two extremes of a very simple case:
+under heavier mixed loads I've not yet observed any consistent
+improvement or degradation, and wider testing would be welcome.
+
+Original-patch-by: Shaohua Li <shli@fusionio.com>
+Original-patch-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan@kernel.org>
 ---
- arch/s390/include/asm/pci.h |   4 ++
- arch/s390/pci/Makefile      |   3 +-
- arch/s390/pci/pci_event.c   |  93 ++++++++++++++++++++++++++
- drivers/s390/cio/chsc.c     | 156 +++++++++++++++++++++++++++++++-------------
- 4 files changed, 211 insertions(+), 45 deletions(-)
- create mode 100644 arch/s390/pci/pci_event.c
 
-diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
-index ca48caf..3dc2cb6 100644
---- a/arch/s390/include/asm/pci.h
-+++ b/arch/s390/include/asm/pci.h
-@@ -127,6 +127,10 @@ void zpci_teardown_msi_irq(struct zpci_dev *, struct msi_desc *);
- int zpci_msihash_init(void);
- void zpci_msihash_exit(void);
+ include/linux/page-flags.h |    4 +-
+ mm/swap_state.c            |   55 +++++++++++++++++++++++++++++++++--
+ 2 files changed, 54 insertions(+), 5 deletions(-)
+
+--- 3.7-rc5/include/linux/page-flags.h	2012-09-30 16:47:46.000000000 -0700
++++ linux/include/linux/page-flags.h	2012-11-11 09:45:30.908591576 -0800
+@@ -228,9 +228,9 @@ PAGEFLAG(OwnerPriv1, owner_priv_1) TESTC
+ TESTPAGEFLAG(Writeback, writeback) TESTSCFLAG(Writeback, writeback)
+ PAGEFLAG(MappedToDisk, mappedtodisk)
  
-+/* Error handling and recovery */
-+void zpci_event_error(void *);
-+void zpci_event_availability(void *);
-+
- /* Helpers */
- struct zpci_dev *get_zdev(struct pci_dev *);
- struct zpci_dev *get_zdev_by_fid(u32);
-diff --git a/arch/s390/pci/Makefile b/arch/s390/pci/Makefile
-index 4590596..7e36f42 100644
---- a/arch/s390/pci/Makefile
-+++ b/arch/s390/pci/Makefile
-@@ -2,4 +2,5 @@
- # Makefile for the s390 PCI subsystem.
- #
+-/* PG_readahead is only used for file reads; PG_reclaim is only for writes */
++/* PG_readahead is only used for reads; PG_reclaim is only for writes */
+ PAGEFLAG(Reclaim, reclaim) TESTCLEARFLAG(Reclaim, reclaim)
+-PAGEFLAG(Readahead, reclaim)		/* Reminder to do async read-ahead */
++PAGEFLAG(Readahead, reclaim) TESTCLEARFLAG(Readahead, reclaim)
  
--obj-$(CONFIG_PCI)	+= pci.o pci_dma.o pci_clp.o pci_msi.o
-+obj-$(CONFIG_PCI)	+= pci.o pci_dma.o pci_clp.o pci_msi.o \
-+			   pci_event.o
-diff --git a/arch/s390/pci/pci_event.c b/arch/s390/pci/pci_event.c
-new file mode 100644
-index 0000000..dbed8cd
---- /dev/null
-+++ b/arch/s390/pci/pci_event.c
-@@ -0,0 +1,93 @@
-+/*
-+ *  Copyright IBM Corp. 2012
-+ *
-+ *  Author(s):
-+ *    Jan Glauber <jang@linux.vnet.ibm.com>
-+ */
-+
-+#define COMPONENT "zPCI"
-+#define pr_fmt(fmt) COMPONENT ": " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/pci.h>
-+
-+/* Content Code Description for PCI Function Error */
-+struct zpci_ccdf_err {
-+	u32 reserved1;
-+	u32 fh;				/* function handle */
-+	u32 fid;			/* function id */
-+	u32 ett		:  4;		/* expected table type */
-+	u32 mvn		: 12;		/* MSI vector number */
-+	u32 dmaas	:  8;		/* DMA address space */
-+	u32		:  6;
-+	u32 q		:  1;		/* event qualifier */
-+	u32 rw		:  1;		/* read/write */
-+	u64 faddr;			/* failing address */
-+	u32 reserved3;
-+	u16 reserved4;
-+	u16 pec;			/* PCI event code */
-+} __packed;
-+
-+/* Content Code Description for PCI Function Availability */
-+struct zpci_ccdf_avail {
-+	u32 reserved1;
-+	u32 fh;				/* function handle */
-+	u32 fid;			/* function id */
-+	u32 reserved2;
-+	u32 reserved3;
-+	u32 reserved4;
-+	u32 reserved5;
-+	u16 reserved6;
-+	u16 pec;			/* PCI event code */
-+} __packed;
-+
-+static void zpci_event_log_err(struct zpci_ccdf_err *ccdf)
-+{
-+	struct zpci_dev *zdev = get_zdev_by_fid(ccdf->fid);
-+
-+	dev_err(&zdev->pdev->dev, "event code: 0x%x\n", ccdf->pec);
-+}
-+
-+static void zpci_event_log_avail(struct zpci_ccdf_avail *ccdf)
-+{
-+	struct zpci_dev *zdev = get_zdev_by_fid(ccdf->fid);
-+
-+	pr_err("%s%s: availability event: fh: 0x%x  fid: 0x%x  event code: 0x%x  reason:",
-+		(zdev) ? dev_driver_string(&zdev->pdev->dev) : "?",
-+		(zdev) ? dev_name(&zdev->pdev->dev) : "?",
-+		ccdf->fh, ccdf->fid, ccdf->pec);
-+	print_hex_dump(KERN_CONT, "ccdf", DUMP_PREFIX_OFFSET,
-+		       16, 1, ccdf, sizeof(*ccdf), false);
-+
-+	switch (ccdf->pec) {
-+	case 0x0301:
-+		zpci_enable_device(zdev);
-+		break;
-+	case 0x0302:
-+		clp_add_pci_device(ccdf->fid, ccdf->fh, 0);
-+		break;
-+	case 0x0306:
-+		clp_find_pci_devices();
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+void zpci_event_error(void *data)
-+{
-+	struct zpci_ccdf_err *ccdf = data;
-+	struct zpci_dev *zdev;
-+
-+	zpci_event_log_err(ccdf);
-+	zdev = get_zdev_by_fid(ccdf->fid);
-+	if (!zdev) {
-+		pr_err("Error event for unknown fid: %x", ccdf->fid);
-+		return;
-+	}
-+}
-+
-+void zpci_event_availability(void *data)
-+{
-+	zpci_event_log_avail(data);
-+}
-diff --git a/drivers/s390/cio/chsc.c b/drivers/s390/cio/chsc.c
-index 4d51a7c..68e80e2 100644
---- a/drivers/s390/cio/chsc.c
-+++ b/drivers/s390/cio/chsc.c
-@@ -1,7 +1,7 @@
+ #ifdef CONFIG_HIGHMEM
  /*
-  *   S/390 common I/O routines -- channel subsystem call
-  *
-- *    Copyright IBM Corp. 1999, 2010
-+ *    Copyright IBM Corp. 1999,2012
-  *    Author(s): Ingo Adlung (adlung@de.ibm.com)
-  *		 Cornelia Huck (cornelia.huck@de.ibm.com)
-  *		 Arnd Bergmann (arndb@de.ibm.com)
-@@ -14,6 +14,7 @@
- #include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/device.h>
-+#include <linux/pci.h>
+--- 3.7-rc5/mm/swap_state.c	2012-09-30 16:47:46.000000000 -0700
++++ linux/mm/swap_state.c	2012-11-11 09:50:06.520598126 -0800
+@@ -53,6 +53,8 @@ static struct {
+ 	unsigned long find_total;
+ } swap_cache_info;
  
- #include <asm/cio.h>
- #include <asm/chpid.h>
-@@ -260,26 +261,45 @@ __get_chpid_from_lir(void *data)
- 	return (u16) (lir->indesc[0]&0x000000ff);
++static atomic_t swapin_readahead_hits = ATOMIC_INIT(4);
++
+ void show_swap_cache_info(void)
+ {
+ 	printk("%lu pages in swap cache\n", total_swapcache_pages);
+@@ -265,8 +267,11 @@ struct page * lookup_swap_cache(swp_entr
+ 
+ 	page = find_get_page(&swapper_space, entry.val);
+ 
+-	if (page)
++	if (page) {
+ 		INC_CACHE_INFO(find_success);
++		if (TestClearPageReadahead(page))
++			atomic_inc(&swapin_readahead_hits);
++	}
+ 
+ 	INC_CACHE_INFO(find_total);
+ 	return page;
+@@ -351,6 +356,42 @@ struct page *read_swap_cache_async(swp_e
+ 	return found_page;
  }
  
--struct chsc_sei_area {
--	struct chsc_header request;
-+struct chsc_sei_nt0_area {
-+	u8  flags;
-+	u8  vf;				/* validity flags */
-+	u8  rs;				/* reporting source */
-+	u8  cc;				/* content code */
-+	u16 fla;			/* full link address */
-+	u16 rsid;			/* reporting source id */
- 	u32 reserved1;
- 	u32 reserved2;
--	u32 reserved3;
--	struct chsc_header response;
--	u32 reserved4;
--	u8  flags;
--	u8  vf;		/* validity flags */
--	u8  rs;		/* reporting source */
--	u8  cc;		/* content code */
--	u16 fla;	/* full link address */
--	u16 rsid;	/* reporting source id */
--	u32 reserved5;
--	u32 reserved6;
--	u8 ccdf[4096 - 16 - 24];	/* content-code dependent field */
- 	/* ccdf has to be big enough for a link-incident record */
--} __attribute__ ((packed));
--
--static void chsc_process_sei_link_incident(struct chsc_sei_area *sei_area)
-+	u8  ccdf[PAGE_SIZE - 24 - 16];	/* content-code dependent field */
-+} __packed;
-+
-+struct chsc_sei_nt2_area {
-+	u8  flags;			/* p and v bit */
-+	u8  reserved1;
-+	u8  reserved2;
-+	u8  cc;				/* content code */
-+	u32 reserved3[13];
-+	u8  ccdf[PAGE_SIZE - 24 - 56];	/* content-code dependent field */
-+} __packed;
-+
-+#define CHSC_SEI_NT0	0ULL
-+#define CHSC_SEI_NT2	(1ULL << 61)
-+
-+struct chsc_sei {
-+	struct chsc_header request;
-+	u32 reserved1;
-+	u64 ntsm;			/* notification type mask */
-+	struct chsc_header response;
-+	u32 reserved2;
-+	union {
-+		struct chsc_sei_nt0_area nt0_area;
-+		struct chsc_sei_nt2_area nt2_area;
-+		u8 nt_area[PAGE_SIZE - 24];
-+	} u;
-+} __packed;
-+
-+static void chsc_process_sei_link_incident(struct chsc_sei_nt0_area *sei_area)
- {
- 	struct chp_id chpid;
- 	int id;
-@@ -298,7 +318,7 @@ static void chsc_process_sei_link_incident(struct chsc_sei_area *sei_area)
- 	}
- }
- 
--static void chsc_process_sei_res_acc(struct chsc_sei_area *sei_area)
-+static void chsc_process_sei_res_acc(struct chsc_sei_nt0_area *sei_area)
- {
- 	struct chp_link link;
- 	struct chp_id chpid;
-@@ -330,7 +350,7 @@ static void chsc_process_sei_res_acc(struct chsc_sei_area *sei_area)
- 	s390_process_res_acc(&link);
- }
- 
--static void chsc_process_sei_chp_avail(struct chsc_sei_area *sei_area)
-+static void chsc_process_sei_chp_avail(struct chsc_sei_nt0_area *sei_area)
- {
- 	struct channel_path *chp;
- 	struct chp_id chpid;
-@@ -366,7 +386,7 @@ struct chp_config_data {
- 	u8 pc;
- };
- 
--static void chsc_process_sei_chp_config(struct chsc_sei_area *sei_area)
-+static void chsc_process_sei_chp_config(struct chsc_sei_nt0_area *sei_area)
- {
- 	struct chp_config_data *data;
- 	struct chp_id chpid;
-@@ -398,7 +418,7 @@ static void chsc_process_sei_chp_config(struct chsc_sei_area *sei_area)
- 	}
- }
- 
--static void chsc_process_sei_scm_change(struct chsc_sei_area *sei_area)
-+static void chsc_process_sei_scm_change(struct chsc_sei_nt0_area *sei_area)
- {
- 	int ret;
- 
-@@ -412,13 +432,26 @@ static void chsc_process_sei_scm_change(struct chsc_sei_area *sei_area)
- 			      " failed (rc=%d).\n", ret);
- }
- 
--static void chsc_process_sei(struct chsc_sei_area *sei_area)
-+static void chsc_process_sei_nt2(struct chsc_sei_nt2_area *sei_area)
- {
--	/* Check if we might have lost some information. */
--	if (sei_area->flags & 0x40) {
--		CIO_CRW_EVENT(2, "chsc: event overflow\n");
--		css_schedule_eval_all();
-+#ifdef CONFIG_PCI
-+	switch (sei_area->cc) {
-+	case 1:
-+		zpci_event_error(sei_area->ccdf);
-+		break;
-+	case 2:
-+		zpci_event_availability(sei_area->ccdf);
-+		break;
-+	default:
-+		CIO_CRW_EVENT(2, "chsc: unhandled sei content code %d\n",
-+			      sei_area->cc);
-+		break;
- 	}
-+#endif
-+}
-+
-+static void chsc_process_sei_nt0(struct chsc_sei_nt0_area *sei_area)
++unsigned long swapin_nr_pages(unsigned long offset)
 +{
- 	/* which kind of information was stored? */
- 	switch (sei_area->cc) {
- 	case 1: /* link incident*/
-@@ -443,9 +476,51 @@ static void chsc_process_sei(struct chsc_sei_area *sei_area)
- 	}
- }
- 
-+static int __chsc_process_crw(struct chsc_sei *sei, u64 ntsm)
-+{
-+	do {
-+		memset(sei, 0, sizeof(*sei));
-+		sei->request.length = 0x0010;
-+		sei->request.code = 0x000e;
-+		sei->ntsm = ntsm;
++	static unsigned long prev_offset;
++	unsigned int pages, max_pages;
 +
-+		if (chsc(sei))
-+			break;
++	max_pages = 1 << ACCESS_ONCE(page_cluster);
++	if (max_pages <= 1)
++		return 1;
 +
-+		if (sei->response.code == 0x0001) {
-+			CIO_CRW_EVENT(2, "chsc: sei successful\n");
-+
-+			/* Check if we might have lost some information. */
-+			if (sei->u.nt0_area.flags & 0x40) {
-+				CIO_CRW_EVENT(2, "chsc: event overflow\n");
-+				css_schedule_eval_all();
-+			}
-+
-+			switch (sei->ntsm) {
-+			case CHSC_SEI_NT0:
-+				chsc_process_sei_nt0(&sei->u.nt0_area);
-+				return 1;
-+			case CHSC_SEI_NT2:
-+				chsc_process_sei_nt2(&sei->u.nt2_area);
-+				return 1;
-+			default:
-+				CIO_CRW_EVENT(2, "chsc: unhandled nt (nt=%08Lx)\n",
-+					      sei->ntsm);
-+				return 0;
-+			}
-+		} else {
-+			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
-+				      sei->response.code);
-+			break;
-+		}
-+	} while (sei->u.nt0_area.flags & 0x80);
-+
-+	return 0;
-+}
-+
- static void chsc_process_crw(struct crw *crw0, struct crw *crw1, int overflow)
- {
--	struct chsc_sei_area *sei_area;
-+	struct chsc_sei *sei;
- 
- 	if (overflow) {
- 		css_schedule_eval_all();
-@@ -459,25 +534,18 @@ static void chsc_process_crw(struct crw *crw0, struct crw *crw1, int overflow)
- 		return;
- 	/* Access to sei_page is serialized through machine check handler
- 	 * thread, so no need for locking. */
--	sei_area = sei_page;
-+	sei = sei_page;
- 
- 	CIO_TRACE_EVENT(2, "prcss");
--	do {
--		memset(sei_area, 0, sizeof(*sei_area));
--		sei_area->request.length = 0x0010;
--		sei_area->request.code = 0x000e;
--		if (chsc(sei_area))
--			break;
- 
--		if (sei_area->response.code == 0x0001) {
--			CIO_CRW_EVENT(4, "chsc: sei successful\n");
--			chsc_process_sei(sei_area);
--		} else {
--			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
--				      sei_area->response.code);
--			break;
--		}
--	} while (sei_area->flags & 0x80);
 +	/*
-+	 * The ntsm does not allow to select NT0 and NT2 together. We need to
-+	 * first check for NT2, than additionally for NT0...
++	 * This heuristic has been found to work well on both sequential and
++	 * random loads, swapping to hard disk or to SSD: please don't ask
++	 * what the "+ 2" means, it just happens to work well, that's all.
 +	 */
-+#ifdef CONFIG_PCI
-+	if (!__chsc_process_crw(sei, CHSC_SEI_NT2))
-+#endif
-+		__chsc_process_crw(sei, CHSC_SEI_NT0);
- }
++	pages = atomic_xchg(&swapin_readahead_hits, 0) + 2;
++	if (pages == 2) {
++		/*
++		 * We can have no readahead hits to judge by: but must not get
++		 * stuck here forever, so check for an adjacent offset instead
++		 * (and don't even bother to check whether swap type is same).
++		 */
++		if (offset != prev_offset + 1 && offset != prev_offset - 1)
++			pages = 1;
++		prev_offset = offset;
++	} else {
++		unsigned int roundup = 4;
++		while (roundup < pages)
++			roundup <<= 1;
++		pages = roundup;
++	}
++
++	if (pages > max_pages)
++		pages = max_pages;
++	return pages;
++}
++
+ /**
+  * swapin_readahead - swap in pages in hope we need them soon
+  * @entry: swap entry of this memory
+@@ -374,11 +415,16 @@ struct page *swapin_readahead(swp_entry_
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	struct page *page;
+-	unsigned long offset = swp_offset(entry);
++	unsigned long entry_offset = swp_offset(entry);
++	unsigned long offset = entry_offset;
+ 	unsigned long start_offset, end_offset;
+-	unsigned long mask = (1UL << page_cluster) - 1;
++	unsigned long mask;
+ 	struct blk_plug plug;
  
- void chsc_chp_online(struct chp_id chpid)
--- 
-1.7.12.4
-
++	mask = swapin_nr_pages(offset) - 1;
++	if (!mask)
++		goto skip;
++
+ 	/* Read a page_cluster sized and aligned cluster around offset. */
+ 	start_offset = offset & ~mask;
+ 	end_offset = offset | mask;
+@@ -392,10 +438,13 @@ struct page *swapin_readahead(swp_entry_
+ 						gfp_mask, vma, addr);
+ 		if (!page)
+ 			continue;
++		if (offset != entry_offset)
++			SetPageReadahead(page);
+ 		page_cache_release(page);
+ 	}
+ 	blk_finish_plug(&plug);
+ 
+ 	lru_add_drain();	/* Push any new pages onto the LRU now */
++skip:
+ 	return read_swap_cache_async(entry, gfp_mask, vma, addr);
+ }
