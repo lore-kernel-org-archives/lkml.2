@@ -1,88 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab2KNAR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:17:58 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:61226 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab2KNAR5 (ORCPT
+	id S1756108Ab2KNAUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 19:20:24 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56708 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab2KNAUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:17:57 -0500
-Message-ID: <50A2E332.1050002@gmail.com>
-Date: Tue, 13 Nov 2012 18:17:54 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 13 Nov 2012 19:20:23 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50A2E3B3.6080007@jp.fujitsu.com>
+Date: Wed, 14 Nov 2012 09:20:03 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Dimitar Popov <dimitar.georgiev.popov@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: DMA Errors from SATA Controller with 4G Memory Remapping Enabled
-References: <1871872.oE0GX69FUF@darkstar>
-In-Reply-To: <1871872.oE0GX69FUF@darkstar>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
+Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
+References: <1352820639-13521-1-git-send-email-mhocko@suse.cz> <1352820639-13521-3-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1352820639-13521-3-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 04:08 PM, Dimitar Popov wrote:
-> Hi all,
->
-> I have an old computer with motherboard ASUS SK8N with AMD Opteron 148 and 4
-> GiB of DDR400. There is an onboard SATA Promise RAID controller working in IDE
-> mode (i.e. not as RAID controller) with 2 SATA disks. In order to use all 4
-> GiB RAM I need to enable the "4G Memory Remapping" option from the BIOS.
-> However, if I do that I receive the following errors:
->
-> ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-> ata2.00: failed command: WRITE DMA
-> [136B blob data]
-> ata2.00: status: { DRDY }
-> ata2: hard resetting link
-> ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> ata2.00: configured for UDMA/133
-> ata2.00: device reported invalid CHS sector 0
-> sd 1:0:0:0: [sdb]
-> Result: hostbyte=0x00 driverbyte=0x08
-> sd 1:0:0:0: [sdb]
-> Sense Key : 0xb [current] [descriptor]
-> Descriptor sense data with sense descriptors (in hex):
->          72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
->          00 00 00 00
-> sd 1:0:0:0: [sdb]
-> ASC=0x0 ASCQ=0x0
-> sd 1:0:0:0: [sdb] CDB:
-> cdb[0]=0x2a: 2a 00 00 2a 63 f0 00 00 08 00
-> end_request: I/O error, dev sdb, sector 2778096
-> btrfs: bdev /dev/sdb6 errs: wr 1, rd 0, flush 0, corrupt 0, gen 0
-> ata2: EH complete
->
-> I don't know if it is a bug in the BIOS or a kernel bug. Here some info (I'll
-> provide further info, if needed):
+(2012/11/14 0:30), Michal Hocko wrote:
+> mem_cgroup_iter curently relies on css->id when walking down a group
+> hierarchy tree. This is really awkward because the tree walk depends on
+> the groups creation ordering. The only guarantee is that a parent node
+> is visited before its children.
+> Example
+>   1) mkdir -p a a/d a/b/c
+>   2) mkdir -a a/b/c a/d
+> Will create the same trees but the tree walks will be different:
+>   1) a, d, b, c
+>   2) a, b, c, d
+> 
+> 574bd9f7 (cgroup: implement generic child / descendant walk macros) has
+> introduced generic cgroup tree walkers which provide either pre-order
+> or post-order tree walk. This patch converts css->id based iteration
+> to pre-order tree walk to keep the semantic with the original iterator
+> where parent is always visited before its subtree.
+> 
+> cgroup_for_each_descendant_pre suggests using post_create and
+> pre_destroy for proper synchronization with groups addidition resp.
+> removal. This implementation doesn't use those because a new memory
+> cgroup is fully initialized in mem_cgroup_create and css_tryget makes
+> sure that the group is alive when we encounter it by iterator.
+> 
+> If the reclaim cookie is used we need to store the last visited group
+> into the iterator so we have to be careful that it doesn't disappear in
+> the mean time. Elevated reference count on the memcg guarantees that
+> the group will not vanish even though it has been already removed from
+> the tree. In such a case css_tryget will fail and the iteration is
+> retried (groups are linked with RCU safe lists so the forward progress
+> is still possible). iter_lock will make sure that only one reclaimer
+> will see the last_visited group and the reference count game around it.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>   mm/memcontrol.c |   64 ++++++++++++++++++++++++++++++++++++++++++-------------
+>   1 file changed, 49 insertions(+), 15 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0fe5177..5da1e58 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -142,8 +142,8 @@ struct mem_cgroup_stat_cpu {
+>   };
+>   
+>   struct mem_cgroup_reclaim_iter {
+> -	/* css_id of the last scanned hierarchy member */
+> -	int position;
+> +	/* last scanned hierarchy member with elevated ref count */
+> +	struct mem_cgroup *last_visited;
+>   	/* scan generation, increased every round-trip */
+>   	unsigned int generation;
+>   	/* lock to protect the position and generation */
+> @@ -1063,8 +1063,8 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   				   struct mem_cgroup *prev,
+>   				   struct mem_cgroup_reclaim_cookie *reclaim)
+>   {
+> -	struct mem_cgroup *memcg = NULL;
+> -	int id = 0;
+> +	struct mem_cgroup *memcg = NULL,
+> +			  *last_visited = NULL;
+>   
+>   	if (mem_cgroup_disabled())
+>   		return NULL;
+> @@ -1073,7 +1073,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   		root = root_mem_cgroup;
+>   
+>   	if (prev && !reclaim)
+> -		id = css_id(&prev->css);
+> +		last_visited = prev;
+>   
+>   	if (prev && prev != root)
+>   		css_put(&prev->css);
+> @@ -1086,7 +1086,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   
+>   	while (!memcg) {
+>   		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+> -		struct cgroup_subsys_state *css;
+> +		struct cgroup_subsys_state *css = NULL;
+>   
+>   		if (reclaim) {
+>   			int nid = zone_to_nid(reclaim->zone);
+> @@ -1096,30 +1096,64 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   			mz = mem_cgroup_zoneinfo(root, nid, zid);
+>   			iter = &mz->reclaim_iter[reclaim->priority];
+>   			spin_lock(&iter->iter_lock);
+> +			last_visited = iter->last_visited;
+>   			if (prev && reclaim->generation != iter->generation) {
+> +				if (last_visited) {
+> +					mem_cgroup_put(last_visited);
+> +					iter->last_visited = NULL;
+> +				}
+>   				spin_unlock(&iter->iter_lock);
+>   				return NULL;
+>   			}
+> -			id = iter->position;
+>   		}
+>   
+>   		rcu_read_lock();
+> -		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+> -		if (css) {
+> -			if (css == &root->css || css_tryget(css))
+> -				memcg = mem_cgroup_from_css(css);
+> -		} else
+> -			id = 0;
+> -		rcu_read_unlock();
+> +		/*
+> +		 * Root is not visited by cgroup iterators so it needs a special
+> +		 * treatment.
+> +		 */
+> +		if (!last_visited) {
+> +			css = &root->css;
+> +		} else {
+> +			struct cgroup *next_cgroup;
+> +
+> +			next_cgroup = cgroup_next_descendant_pre(
+> +					last_visited->css.cgroup,
+> +					root->css.cgroup);
 
-It seems like there are some lines missing from this output. Can you 
-provide the full dmesg output from bootup?
+Maybe I miss something but.... last_visited is holded by memcg's refcnt.
+The cgroup pointed by css.cgroup is by cgroup's refcnt which can be freed
+before memcg is freed and last_visited->css.cgroup is out of RCU cycle.
+Is this safe ?
 
-You also might want to check for a BIOS update.
+Thanks,
+-Kame
 
->
-> $ uname -a
-> Linux darkstar 3.6.6-1-ARCH #1 SMP PREEMPT Mon Nov 5 11:57:22 CET 2012 x86_64
-> GNU/Linux
->
-> 01:08.0 RAID bus controller: Promise Technology, Inc. PDC20378 (FastTrak
-> 378/SATA 378) (rev 02)
->          Subsystem: ASUSTeK Computer Inc. K8V Deluxe/PC-DL Deluxe motherboard
->          Flags: bus master, 66MHz, medium devsel, latency 96, IRQ 19
->          I/O ports at dc00 [size=64]
->          I/O ports at d800 [size=16]
->          I/O ports at d400 [size=128]
->          Memory at fa9ff000 (32-bit, non-prefetchable) [size=4K]
->          Memory at fa9c0000 (32-bit, non-prefetchable) [size=128K]
->          Capabilities: [60] Power Management version 2
->          Kernel driver in use: sata_promise
->
-> Thank you in advance!
->
-> Regards,
-> Dimitar
->
+> +			if (next_cgroup)
+> +				css = cgroup_subsys_state(next_cgroup,
+> +						mem_cgroup_subsys_id);
+> +		}
+> +
+> +		/*
+> +		 * Even if we find a group we have to make sure it is alive.
+> +		 * css && !memcg means that the groups should be skipped and
+> +		 * we should continue the tree walk.
+> +		 */
+> +		if (css == &root->css || (css && css_tryget(css)))
+> +			memcg = mem_cgroup_from_css(css);
+>   
+>   		if (reclaim) {
+> -			iter->position = id;
+> +			struct mem_cgroup *curr = memcg;
+> +
+> +			if (last_visited)
+> +				mem_cgroup_put(last_visited);
+> +
+> +			if (css && !memcg)
+> +				curr = mem_cgroup_from_css(css);
+> +			if (curr)
+> +				mem_cgroup_get(curr);
+> +			iter->last_visited = curr;
+> +
+>   			if (!css)
+>   				iter->generation++;
+>   			else if (!prev && memcg)
+>   				reclaim->generation = iter->generation;
+>   			spin_unlock(&iter->iter_lock);
+> +		} else if (css && !memcg) {
+> +			last_visited = mem_cgroup_from_css(css);
+>   		}
+> +		rcu_read_unlock();
+>   
+>   		if (prev && !css)
+>   			return NULL;
+> 
+
 
