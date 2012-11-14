@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab2KNGGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:06:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55044 "EHLO
+	id S1753769Ab2KNFuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54996 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754517Ab2KNFuX (ORCPT
+	by vger.kernel.org with ESMTP id S1751874Ab2KNFuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:23 -0500
-Message-Id: <20121114053943.660691711@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:08 -0500
+Message-Id: <20121114053945.118561949@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:44 +0000
+Date: Wed, 14 Nov 2012 05:40:55 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Li RongQing <roy.qing.li@gmail.com>,
+        Mirko Lindner <mlindner@marvell.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 71/82] ipv6: Set default hoplimit as zero.
+Subject: [ 82/82] sky2: Fix for interrupt handler
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Mirko Lindner <mlindner@marvell.com>
 
-[ Upstream commit 14edd87dc67311556f1254a8f29cf4dd6cb5b7d1 ]
+commit d663d181b9e92d80c2455e460e932d34e7a2a7ae upstream.
 
-Commit a02e4b7dae4551(Demark default hoplimit as zero) only changes the
-hoplimit checking condition and default value in ip6_dst_hoplimit, not
-zeros all hoplimit default value.
+Re-enable interrupts if it is not our interrupt
 
-Keep the zeroing ip6_template_metrics[RTAX_HOPLIMIT - 1] to force it as
-const, cause as a37e6e344910(net: force dst_default_metrics to const
-section)
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/route.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/sky2.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 488a1b7..19724bd 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -185,7 +185,7 @@ static struct dst_ops ip6_dst_blackhole_ops = {
- };
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index f1163b2..2b0748d 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -3080,8 +3080,10 @@ static irqreturn_t sky2_intr(int irq, void *dev_id)
  
- static const u32 ip6_template_metrics[RTAX_MAX] = {
--	[RTAX_HOPLIMIT - 1] = 255,
-+	[RTAX_HOPLIMIT - 1] = 0,
- };
+ 	/* Reading this mask interrupts as side effect */
+ 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
+-	if (status == 0 || status == ~0)
++	if (status == 0 || status == ~0) {
++		sky2_write32(hw, B0_Y2_SP_ICR, 2);
+ 		return IRQ_NONE;
++	}
  
- static struct rt6_info ip6_null_entry_template = {
-@@ -1097,7 +1097,7 @@ struct dst_entry *icmp6_dst_alloc(struct net_device *dev,
- 	ipv6_addr_copy(&rt->rt6i_dst.addr, addr);
- 	rt->rt6i_dst.plen = 128;
- 	rt->rt6i_idev     = idev;
--	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 255);
-+	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 0);
+ 	prefetch(&hw->st_le[hw->st_idx]);
  
- 	spin_lock_bh(&icmp6_dst_lock);
- 	rt->dst.next = icmp6_dst_gc_list;
 
 
