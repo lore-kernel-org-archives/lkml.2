@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2KNH3P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:29:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46589 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752332Ab2KNH3O (ORCPT
+	id S1756653Ab2KNH3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:29:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44095 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab2KNH3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:29:14 -0500
-Date: Wed, 14 Nov 2012 16:28:56 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kevin Liu <keyuan.liu@gmail.com>
-Cc: m.szyprowski@samsung.com, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-Message-ID: <20121114072855.GF7407@opensource.wolfsonmicro.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
- <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+	Wed, 14 Nov 2012 02:29:32 -0500
+Date: Tue, 13 Nov 2012 23:29:10 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-4552cf0f774ae3d24bf31e91324586274a552a66@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1352273234-28912-3-git-send-email-namhyung@kernel.org>
+References: <1352273234-28912-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf machine: Set kernel data mapping length
+Git-Commit-ID: 4552cf0f774ae3d24bf31e91324586274a552a66
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9ADF8FXzFeE7X4jE"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:29:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  4552cf0f774ae3d24bf31e91324586274a552a66
+Gitweb:     http://git.kernel.org/tip/4552cf0f774ae3d24bf31e91324586274a552a66
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 7 Nov 2012 16:27:10 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 8 Nov 2012 11:56:16 -0300
 
---9ADF8FXzFeE7X4jE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+perf machine: Set kernel data mapping length
 
-On Wed, Nov 14, 2012 at 03:11:37PM +0800, Kevin Liu wrote:
+Currently only text (function) mapping was set, so that the kernel data
+addresses couldn't parsed correctly.  Fix it.
 
-> -		ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
-> +		ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1352273234-28912-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/machine.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-Should this be regulator_set_voltage_tol()?  Otherwise it'd be good to
-explain where the numbers come from.
-
-> +		ret = regulator_is_supported_voltage(host->vmmc, 1700000,
-> +			1950000);
-
-We should really add a regulator_is_supported_voltage_tol...  let me
-just do that.
-
---9ADF8FXzFeE7X4jE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQo0ftAAoJELSic+t+oim9F2gP/0YoaO/BX4RA/oHyCBZkprGv
-W3hwQRxDEpvkr6+CNMKK/Bo6U2NgsuXQTAh1YrFwon1VIhQ3/eDekIJ+9mn+o7pI
-biEmJC5Uy4U6KRua8r386vbJ6CqHJFzNCjtbM/yaDnkrUxQm0KmxK0pRRQXxmk0i
-e/l2jnyXOY/ujfNNo8jDk/VOTc638SdwAkHxAwUoz93zeAKCmUW1A9V2rF0tjsDS
-tcJKGX4ahppWCC05Y6jp/fCD0Tn9HFu4VaRdZ8N2cNtuFq8BspxyLAZsSPFQubTx
-aBkAW63IKozfaQNGYBCWt3Vgg0LhxQL9jCra80InfSs5cjA8OdikwqbofaBeCxBp
-5ClnTwGRMpd5t0juztarkrE6Buqj8hm4V8PZUyyDS9Id6nSTafwTbyKDdLd00oEh
-tbmPKVg8KJQw7aVr85/lTpSudQ/Na16+IHj2k3u2CBg1X8l5Yhu+Z8N35/ypXC1c
-g9W6VKhD6YWHk1sSasyQRyZBOazDbQapyYx+zy5fJy4VjvJ+HZfTKWlfK7Bi52sX
-nmX5YSGfuVMVl2yKiSfWW/ZOS6t9E0Ug0GbjKABlCBz8LKMNhQmj3egjFGrjHdBk
-g4Zzzfzcuhk+h09CmWwNjo4/66J6M48P/FJjtTdXroiPs/srZVf0zwS7IN3N1Gfy
-KC+gaqZmSFQI9yknEdHp
-=gFcK
------END PGP SIGNATURE-----
-
---9ADF8FXzFeE7X4jE--
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 502eec0..4c6754a 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -84,15 +84,19 @@ int machine__process_lost_event(struct machine *machine __maybe_unused,
+ static void machine__set_kernel_mmap_len(struct machine *machine,
+ 					 union perf_event *event)
+ {
+-	machine->vmlinux_maps[MAP__FUNCTION]->start = event->mmap.start;
+-	machine->vmlinux_maps[MAP__FUNCTION]->end   = (event->mmap.start +
+-						       event->mmap.len);
+-	/*
+-	 * Be a bit paranoid here, some perf.data file came with
+-	 * a zero sized synthesized MMAP event for the kernel.
+-	 */
+-	if (machine->vmlinux_maps[MAP__FUNCTION]->end == 0)
+-		machine->vmlinux_maps[MAP__FUNCTION]->end = ~0ULL;
++	int i;
++
++	for (i = 0; i < MAP__NR_TYPES; i++) {
++		machine->vmlinux_maps[i]->start = event->mmap.start;
++		machine->vmlinux_maps[i]->end   = (event->mmap.start +
++						   event->mmap.len);
++		/*
++		 * Be a bit paranoid here, some perf.data file came with
++		 * a zero sized synthesized MMAP event for the kernel.
++		 */
++		if (machine->vmlinux_maps[i]->end == 0)
++			machine->vmlinux_maps[i]->end = ~0ULL;
++	}
+ }
+ 
+ static int machine__process_kernel_mmap_event(struct machine *machine,
