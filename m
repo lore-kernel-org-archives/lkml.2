@@ -1,520 +1,1044 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab2KNJoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:44:05 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:45812 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836Ab2KNJmd (ORCPT
+	id S1161040Ab2KNJoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:44:34 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:37587 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932820Ab2KNJmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:42:33 -0500
+	Wed, 14 Nov 2012 04:42:31 -0500
 From: Jan Glauber <jang@linux.vnet.ibm.com>
 To: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
         schwidefsky@de.ibm.com, Jan Glauber <jang@linux.vnet.ibm.com>
-Subject: [RFC PATCH 07/10] s390/pci: PCI hotplug support via SCLP
-Date: Wed, 14 Nov 2012 10:41:39 +0100
-Message-Id: <24140c0677f914bfc51b88259155887c327a7103.1352719878.git.jang@linux.vnet.ibm.com>
+Subject: [RFC PATCH 05/10] s390/pci: DMA support
+Date: Wed, 14 Nov 2012 10:41:37 +0100
+Message-Id: <43e1ac3beb3d5a7f3a3e9248a5a53a0cb0893500.1352719878.git.jang@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-x-cbid: 12111409-5024-0000-0000-0000045AFA8B
+x-cbid: 12111409-3548-0000-0000-000003AC2975
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add SCLP PCI configure/deconfigure and implement a PCI hotplug
-controller (s390_pci_hpc). The hotplug controller creates a slot
-for every PCI function in stand-by or configured state. The PCI
-functions are named after the PCI function ID (fid). By writing to
-the power attribute in /sys/bus/pci/slots/<fid>/power the PCI function
-is moved to stand-by or configured state. If moved to the configured
-state the device is automatically scanned by the s390 PCI layer.
+Add DMA IOMMU support using 4K page table entries. Implement dma_map_ops.
 
 Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
 ---
- arch/s390/include/asm/pci.h        |  11 ++
- arch/s390/include/asm/sclp.h       |   2 +
- arch/s390/pci/pci.c                |   9 ++
- drivers/pci/hotplug/Kconfig        |  11 ++
- drivers/pci/hotplug/Makefile       |   1 +
- drivers/pci/hotplug/s390_pci_hpc.c | 252 +++++++++++++++++++++++++++++++++++++
- drivers/s390/char/sclp.h           |   3 +-
- drivers/s390/char/sclp_cmd.c       |  64 +++++++++-
- 8 files changed, 351 insertions(+), 2 deletions(-)
- create mode 100644 drivers/pci/hotplug/s390_pci_hpc.c
+ arch/s390/include/asm/dma-mapping.h |  76 ++++++
+ arch/s390/include/asm/dma.h         |  19 +-
+ arch/s390/include/asm/pci.h         |  21 ++
+ arch/s390/include/asm/pci_dma.h     | 196 ++++++++++++++
+ arch/s390/pci/Makefile              |   2 +-
+ arch/s390/pci/pci.c                 |  36 +++
+ arch/s390/pci/pci_clp.c             |   4 +
+ arch/s390/pci/pci_dma.c             | 505 ++++++++++++++++++++++++++++++++++++
+ 8 files changed, 848 insertions(+), 11 deletions(-)
+ create mode 100644 arch/s390/include/asm/dma-mapping.h
+ create mode 100644 arch/s390/include/asm/pci_dma.h
+ create mode 100644 arch/s390/pci/pci_dma.c
 
+diff --git a/arch/s390/include/asm/dma-mapping.h b/arch/s390/include/asm/dma-mapping.h
+new file mode 100644
+index 0000000..aab2158
+--- /dev/null
++++ b/arch/s390/include/asm/dma-mapping.h
+@@ -0,0 +1,76 @@
++#ifndef _ASM_S390_DMA_MAPPING_H
++#define _ASM_S390_DMA_MAPPING_H
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/mm.h>
++#include <linux/scatterlist.h>
++#include <linux/dma-attrs.h>
++#include <linux/dma-debug.h>
++#include <linux/io.h>
++
++#define DMA_ERROR_CODE          (~(dma_addr_t) 0x0)
++
++extern struct dma_map_ops s390_dma_ops;
++
++static inline struct dma_map_ops *get_dma_ops(struct device *dev)
++{
++	return &s390_dma_ops;
++}
++
++extern int dma_set_mask(struct device *dev, u64 mask);
++extern int dma_is_consistent(struct device *dev, dma_addr_t dma_handle);
++extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
++			   enum dma_data_direction direction);
++
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
++#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
++
++#include <asm-generic/dma-mapping-common.h>
++
++static inline int dma_supported(struct device *dev, u64 mask)
++{
++	struct dma_map_ops *dma_ops = get_dma_ops(dev);
++
++	if (dma_ops->dma_supported == NULL)
++		return 1;
++	return dma_ops->dma_supported(dev, mask);
++}
++
++static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	if (!dev->dma_mask)
++		return 0;
++	return addr + size - 1 <= *dev->dma_mask;
++}
++
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	struct dma_map_ops *dma_ops = get_dma_ops(dev);
++
++	if (dma_ops->mapping_error)
++		return dma_ops->mapping_error(dev, dma_addr);
++	return (dma_addr == 0UL);
++}
++
++static inline void *dma_alloc_coherent(struct device *dev, size_t size,
++				       dma_addr_t *dma_handle, gfp_t flag)
++{
++	struct dma_map_ops *ops = get_dma_ops(dev);
++	void *ret;
++
++	ret = ops->alloc(dev, size, dma_handle, flag, NULL);
++	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
++	return ret;
++}
++
++static inline void dma_free_coherent(struct device *dev, size_t size,
++				     void *cpu_addr, dma_addr_t dma_handle)
++{
++	struct dma_map_ops *dma_ops = get_dma_ops(dev);
++
++	dma_ops->free(dev, size, cpu_addr, dma_handle, NULL);
++	debug_dma_free_coherent(dev, size, cpu_addr, dma_handle);
++}
++
++#endif /* _ASM_S390_DMA_MAPPING_H */
+diff --git a/arch/s390/include/asm/dma.h b/arch/s390/include/asm/dma.h
+index 6fb6de4..de015d8 100644
+--- a/arch/s390/include/asm/dma.h
++++ b/arch/s390/include/asm/dma.h
+@@ -1,14 +1,13 @@
+-/*
+- *  S390 version
+- */
+-
+-#ifndef _ASM_DMA_H
+-#define _ASM_DMA_H
++#ifndef _ASM_S390_DMA_H
++#define _ASM_S390_DMA_H
+ 
+-#include <asm/io.h>		/* need byte IO */
++#include <asm/io.h>
+ 
++/*
++ * MAX_DMA_ADDRESS is ambiguous because on s390 its completely unrelated
++ * to DMA. It _is_ used for the s390 memory zone split at 2GB caused
++ * by the 31 bit heritage.
++ */
+ #define MAX_DMA_ADDRESS         0x80000000
+ 
+-#define free_dma(x)	do { } while (0)
+-
+-#endif /* _ASM_DMA_H */
++#endif /* _ASM_S390_DMA_H */
 diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
-index 3dc2cb6..739d9f1 100644
+index a9aadeb..ca48caf 100644
 --- a/arch/s390/include/asm/pci.h
 +++ b/arch/s390/include/asm/pci.h
-@@ -95,6 +95,11 @@ struct zpci_dev {
+@@ -75,8 +75,23 @@ struct zpci_dev {
+ 	struct msi_map *msi_map[ZPCI_NR_MSI_VECS];
+ 	unsigned int	aisb;		/* number of the summary bit */
+ 
++	/* DMA stuff */
++	unsigned long	*dma_table;
++	spinlock_t	dma_table_lock;
++	int		tlb_refresh;
++
++	spinlock_t	iommu_bitmap_lock;
++	unsigned long	*iommu_bitmap;
++	unsigned long	iommu_size;
++	unsigned long	iommu_pages;
++	unsigned int	next_bit;
++
+ 	struct zpci_bar_struct bars[PCI_BAR_COUNT];
+ 
++	u64		start_dma;	/* Start of available DMA addresses */
++	u64		end_dma;	/* End of available DMA addresses */
++	u64		dma_mask;	/* DMA address space mask */
++
  	enum pci_bus_speed max_bus_speed;
  };
  
-+struct pci_hp_callback_ops {
-+	int (*create_slot)	(struct zpci_dev *zdev);
-+	void (*remove_slot)	(struct zpci_dev *zdev);
-+};
-+
- static inline bool zdev_enabled(struct zpci_dev *zdev)
- {
- 	return (zdev->fh & (1UL << 31)) ? true : false;
-@@ -140,4 +145,10 @@ bool zpci_fid_present(u32);
- int zpci_dma_init(void);
- void zpci_dma_exit(void);
+@@ -95,6 +110,8 @@ int zpci_enable_device(struct zpci_dev *);
+ void zpci_stop_device(struct zpci_dev *);
+ void zpci_free_device(struct zpci_dev *);
+ int zpci_scan_device(struct zpci_dev *);
++int zpci_register_ioat(struct zpci_dev *, u8, u64, u64, u64);
++int zpci_unregister_ioat(struct zpci_dev *, u8);
  
-+/* Hotplug */
-+extern struct mutex zpci_list_lock;
-+extern struct list_head zpci_list;
-+extern struct pci_hp_callback_ops hotplug_ops;
-+extern unsigned int pci_probe;
+ /* CLP */
+ int clp_find_pci_devices(void);
+@@ -115,4 +132,8 @@ struct zpci_dev *get_zdev(struct pci_dev *);
+ struct zpci_dev *get_zdev_by_fid(u32);
+ bool zpci_fid_present(u32);
+ 
++/* DMA */
++int zpci_dma_init(void);
++void zpci_dma_exit(void);
 +
  #endif
-diff --git a/arch/s390/include/asm/sclp.h b/arch/s390/include/asm/sclp.h
-index e62a555..8337886 100644
---- a/arch/s390/include/asm/sclp.h
-+++ b/arch/s390/include/asm/sclp.h
-@@ -55,5 +55,7 @@ int sclp_chp_read_info(struct sclp_chp_info *info);
- void sclp_get_ipl_info(struct sclp_ipl_info *info);
- bool sclp_has_linemode(void);
- bool sclp_has_vt220(void);
-+int sclp_pci_configure(u32 fid);
-+int sclp_pci_deconfigure(u32 fid);
+diff --git a/arch/s390/include/asm/pci_dma.h b/arch/s390/include/asm/pci_dma.h
+new file mode 100644
+index 0000000..b6492bd
+--- /dev/null
++++ b/arch/s390/include/asm/pci_dma.h
+@@ -0,0 +1,196 @@
++#ifndef _ASM_S390_PCI_DMA_H
++#define _ASM_S390_PCI_DMA_H
++
++/* I/O Translation Anchor (IOTA) */
++enum zpci_ioat_dtype {
++	ZPCI_IOTA_STO = 0,
++	ZPCI_IOTA_RTTO = 1,
++	ZPCI_IOTA_RSTO = 2,
++	ZPCI_IOTA_RFTO = 3,
++	ZPCI_IOTA_PFAA = 4,
++	ZPCI_IOTA_IOPFAA = 5,
++	ZPCI_IOTA_IOPTO = 7
++};
++
++#define ZPCI_IOTA_IOT_ENABLED		0x800UL
++#define ZPCI_IOTA_DT_ST			(ZPCI_IOTA_STO  << 2)
++#define ZPCI_IOTA_DT_RT			(ZPCI_IOTA_RTTO << 2)
++#define ZPCI_IOTA_DT_RS			(ZPCI_IOTA_RSTO << 2)
++#define ZPCI_IOTA_DT_RF			(ZPCI_IOTA_RFTO << 2)
++#define ZPCI_IOTA_DT_PF			(ZPCI_IOTA_PFAA << 2)
++#define ZPCI_IOTA_FS_4K			0
++#define ZPCI_IOTA_FS_1M			1
++#define ZPCI_IOTA_FS_2G			2
++#define ZPCI_KEY			(PAGE_DEFAULT_KEY << 5)
++
++#define ZPCI_IOTA_STO_FLAG	(ZPCI_IOTA_IOT_ENABLED | ZPCI_KEY | ZPCI_IOTA_DT_ST)
++#define ZPCI_IOTA_RTTO_FLAG	(ZPCI_IOTA_IOT_ENABLED | ZPCI_KEY | ZPCI_IOTA_DT_RT)
++#define ZPCI_IOTA_RSTO_FLAG	(ZPCI_IOTA_IOT_ENABLED | ZPCI_KEY | ZPCI_IOTA_DT_RS)
++#define ZPCI_IOTA_RFTO_FLAG	(ZPCI_IOTA_IOT_ENABLED | ZPCI_KEY | ZPCI_IOTA_DT_RF)
++#define ZPCI_IOTA_RFAA_FLAG	(ZPCI_IOTA_IOT_ENABLED | ZPCI_KEY | ZPCI_IOTA_DT_PF | ZPCI_IOTA_FS_2G)
++
++/* I/O Region and segment tables */
++#define ZPCI_INDEX_MASK			0x7ffUL
++
++#define ZPCI_TABLE_TYPE_MASK		0xc
++#define ZPCI_TABLE_TYPE_RFX		0xc
++#define ZPCI_TABLE_TYPE_RSX		0x8
++#define ZPCI_TABLE_TYPE_RTX		0x4
++#define ZPCI_TABLE_TYPE_SX		0x0
++
++#define ZPCI_TABLE_LEN_RFX		0x3
++#define ZPCI_TABLE_LEN_RSX		0x3
++#define ZPCI_TABLE_LEN_RTX		0x3
++
++#define ZPCI_TABLE_OFFSET_MASK		0xc0
++#define ZPCI_TABLE_SIZE			0x4000
++#define ZPCI_TABLE_ALIGN		ZPCI_TABLE_SIZE
++#define ZPCI_TABLE_ENTRY_SIZE		(sizeof(unsigned long))
++#define ZPCI_TABLE_ENTRIES		(ZPCI_TABLE_SIZE / ZPCI_TABLE_ENTRY_SIZE)
++
++#define ZPCI_TABLE_BITS			11
++#define ZPCI_PT_BITS			8
++#define ZPCI_ST_SHIFT			(ZPCI_PT_BITS + PAGE_SHIFT)
++#define ZPCI_RT_SHIFT			(ZPCI_ST_SHIFT + ZPCI_TABLE_BITS)
++
++#define ZPCI_RTE_FLAG_MASK		0x3fffUL
++#define ZPCI_RTE_ADDR_MASK		(~ZPCI_RTE_FLAG_MASK)
++#define ZPCI_STE_FLAG_MASK		0x7ffUL
++#define ZPCI_STE_ADDR_MASK		(~ZPCI_STE_FLAG_MASK)
++
++/* I/O Page tables */
++#define ZPCI_PTE_VALID_MASK		0x400
++#define ZPCI_PTE_INVALID		0x400
++#define ZPCI_PTE_VALID			0x000
++#define ZPCI_PT_SIZE			0x800
++#define ZPCI_PT_ALIGN			ZPCI_PT_SIZE
++#define ZPCI_PT_ENTRIES			(ZPCI_PT_SIZE / ZPCI_TABLE_ENTRY_SIZE)
++#define ZPCI_PT_MASK			(ZPCI_PT_ENTRIES - 1)
++
++#define ZPCI_PTE_FLAG_MASK		0xfffUL
++#define ZPCI_PTE_ADDR_MASK		(~ZPCI_PTE_FLAG_MASK)
++
++/* Shared bits */
++#define ZPCI_TABLE_VALID		0x00
++#define ZPCI_TABLE_INVALID		0x20
++#define ZPCI_TABLE_PROTECTED		0x200
++#define ZPCI_TABLE_UNPROTECTED		0x000
++
++#define ZPCI_TABLE_VALID_MASK		0x20
++#define ZPCI_TABLE_PROT_MASK		0x200
++
++static inline unsigned int calc_rtx(dma_addr_t ptr)
++{
++	return ((unsigned long) ptr >> ZPCI_RT_SHIFT) & ZPCI_INDEX_MASK;
++}
++
++static inline unsigned int calc_sx(dma_addr_t ptr)
++{
++	return ((unsigned long) ptr >> ZPCI_ST_SHIFT) & ZPCI_INDEX_MASK;
++}
++
++static inline unsigned int calc_px(dma_addr_t ptr)
++{
++	return ((unsigned long) ptr >> PAGE_SHIFT) & ZPCI_PT_MASK;
++}
++
++static inline void set_pt_pfaa(unsigned long *entry, void *pfaa)
++{
++	*entry &= ZPCI_PTE_FLAG_MASK;
++	*entry |= ((unsigned long) pfaa & ZPCI_PTE_ADDR_MASK);
++}
++
++static inline void set_rt_sto(unsigned long *entry, void *sto)
++{
++	*entry &= ZPCI_RTE_FLAG_MASK;
++	*entry |= ((unsigned long) sto & ZPCI_RTE_ADDR_MASK);
++	*entry |= ZPCI_TABLE_TYPE_RTX;
++}
++
++static inline void set_st_pto(unsigned long *entry, void *pto)
++{
++	*entry &= ZPCI_STE_FLAG_MASK;
++	*entry |= ((unsigned long) pto & ZPCI_STE_ADDR_MASK);
++	*entry |= ZPCI_TABLE_TYPE_SX;
++}
++
++static inline void validate_rt_entry(unsigned long *entry)
++{
++	*entry &= ~ZPCI_TABLE_VALID_MASK;
++	*entry &= ~ZPCI_TABLE_OFFSET_MASK;
++	*entry |= ZPCI_TABLE_VALID;
++	*entry |= ZPCI_TABLE_LEN_RTX;
++}
++
++static inline void validate_st_entry(unsigned long *entry)
++{
++	*entry &= ~ZPCI_TABLE_VALID_MASK;
++	*entry |= ZPCI_TABLE_VALID;
++}
++
++static inline void invalidate_table_entry(unsigned long *entry)
++{
++	*entry &= ~ZPCI_TABLE_VALID_MASK;
++	*entry |= ZPCI_TABLE_INVALID;
++}
++
++static inline void invalidate_pt_entry(unsigned long *entry)
++{
++	WARN_ON_ONCE((*entry & ZPCI_PTE_VALID_MASK) == ZPCI_PTE_INVALID);
++	*entry &= ~ZPCI_PTE_VALID_MASK;
++	*entry |= ZPCI_PTE_INVALID;
++}
++
++static inline void validate_pt_entry(unsigned long *entry)
++{
++	WARN_ON_ONCE((*entry & ZPCI_PTE_VALID_MASK) == ZPCI_PTE_VALID);
++	*entry &= ~ZPCI_PTE_VALID_MASK;
++	*entry |= ZPCI_PTE_VALID;
++}
++
++static inline void entry_set_protected(unsigned long *entry)
++{
++	*entry &= ~ZPCI_TABLE_PROT_MASK;
++	*entry |= ZPCI_TABLE_PROTECTED;
++}
++
++static inline void entry_clr_protected(unsigned long *entry)
++{
++	*entry &= ~ZPCI_TABLE_PROT_MASK;
++	*entry |= ZPCI_TABLE_UNPROTECTED;
++}
++
++static inline int reg_entry_isvalid(unsigned long entry)
++{
++	return (entry & ZPCI_TABLE_VALID_MASK) == ZPCI_TABLE_VALID;
++}
++
++static inline int pt_entry_isvalid(unsigned long entry)
++{
++	return (entry & ZPCI_PTE_VALID_MASK) == ZPCI_PTE_VALID;
++}
++
++static inline int entry_isprotected(unsigned long entry)
++{
++	return (entry & ZPCI_TABLE_PROT_MASK) == ZPCI_TABLE_PROTECTED;
++}
++
++static inline unsigned long *get_rt_sto(unsigned long entry)
++{
++	return ((entry & ZPCI_TABLE_TYPE_MASK) == ZPCI_TABLE_TYPE_RTX)
++		? (unsigned long *) (entry & ZPCI_RTE_ADDR_MASK)
++		: NULL;
++}
++
++static inline unsigned long *get_st_pto(unsigned long entry)
++{
++	return ((entry & ZPCI_TABLE_TYPE_MASK) == ZPCI_TABLE_TYPE_SX)
++		? (unsigned long *) (entry & ZPCI_STE_ADDR_MASK)
++		: NULL;
++}
++
++/* Prototypes */
++int zpci_dma_init_device(struct zpci_dev *);
++void zpci_dma_exit_device(struct zpci_dev *);
++
++#endif
+diff --git a/arch/s390/pci/Makefile b/arch/s390/pci/Makefile
+index 628be7b..4590596 100644
+--- a/arch/s390/pci/Makefile
++++ b/arch/s390/pci/Makefile
+@@ -2,4 +2,4 @@
+ # Makefile for the s390 PCI subsystem.
+ #
  
- #endif /* _ASM_S390_SCLP_H */
+-obj-$(CONFIG_PCI)	+= pci.o pci_clp.o pci_msi.o
++obj-$(CONFIG_PCI)	+= pci.o pci_dma.o pci_clp.o pci_msi.o
 diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 5a2ef9e..c523594 100644
+index d11dc8a..5a2ef9e 100644
 --- a/arch/s390/pci/pci.c
 +++ b/arch/s390/pci/pci.c
-@@ -47,7 +47,12 @@
+@@ -34,6 +34,7 @@
+ #include <asm/facility.h>
+ #include <asm/pci_insn.h>
+ #include <asm/pci_clp.h>
++#include <asm/pci_dma.h>
  
- /* list of all detected zpci devices */
- LIST_HEAD(zpci_list);
-+EXPORT_SYMBOL_GPL(zpci_list);
- DEFINE_MUTEX(zpci_list_lock);
-+EXPORT_SYMBOL_GPL(zpci_list_lock);
+ #define DEBUG				/* enable pr_debug */
+ 
+@@ -232,6 +233,25 @@ static int mod_pci(struct zpci_dev *zdev, int fn, u8 dmaas, struct mod_pci_args
+ 	return rc;
+ }
+ 
++/* Modify PCI: Register I/O address translation parameters */
++int zpci_register_ioat(struct zpci_dev *zdev, u8 dmaas,
++		       u64 base, u64 limit, u64 iota)
++{
++	struct mod_pci_args args = { base, limit, iota };
 +
-+struct pci_hp_callback_ops hotplug_ops;
-+EXPORT_SYMBOL_GPL(hotplug_ops);
- 
- static DECLARE_BITMAP(zpci_domain, ZPCI_NR_DEVICES);
- static DEFINE_SPINLOCK(zpci_domain_lock);
-@@ -935,6 +940,8 @@ int zpci_create_device(struct zpci_dev *zdev)
- 
- 	mutex_lock(&zpci_list_lock);
- 	list_add_tail(&zdev->entry, &zpci_list);
-+	if (hotplug_ops.create_slot)
-+		hotplug_ops.create_slot(zdev);
- 	mutex_unlock(&zpci_list_lock);
- 
- 	if (zdev->state == ZPCI_FN_STATE_STANDBY)
-@@ -948,6 +955,8 @@ int zpci_create_device(struct zpci_dev *zdev)
- out_start:
- 	mutex_lock(&zpci_list_lock);
- 	list_del(&zdev->entry);
-+	if (hotplug_ops.remove_slot)
-+		hotplug_ops.remove_slot(zdev);
- 	mutex_unlock(&zpci_list_lock);
- out_bus:
- 	zpci_free_domain(zdev);
-diff --git a/drivers/pci/hotplug/Kconfig b/drivers/pci/hotplug/Kconfig
-index b0e46de..0594c4a 100644
---- a/drivers/pci/hotplug/Kconfig
-+++ b/drivers/pci/hotplug/Kconfig
-@@ -151,4 +151,15 @@ config HOTPLUG_PCI_SGI
- 
- 	  When in doubt, say N.
- 
-+config HOTPLUG_PCI_S390
-+	tristate "System z PCI Hotplug Support"
-+	depends on S390 && 64BIT
-+	help
-+	  Say Y here if you want to use the System z PCI Hotplug
-+	  driver for PCI devices. Without this driver it is not
-+          possible to access stand-by PCI functions nor to deconfigure
-+          PCI functions.
++	WARN_ON_ONCE(iota & 0x3fff);
++	args.iota |= ZPCI_IOTA_RTTO_FLAG;
++	return mod_pci(zdev, ZPCI_MOD_FC_REG_IOAT, dmaas, &args);
++}
 +
-+	  When in doubt, say Y.
++/* Modify PCI: Unregister I/O address translation parameters */
++int zpci_unregister_ioat(struct zpci_dev *zdev, u8 dmaas)
++{
++	struct mod_pci_args args = { 0, 0, 0 };
 +
- endif # HOTPLUG_PCI
-diff --git a/drivers/pci/hotplug/Makefile b/drivers/pci/hotplug/Makefile
-index c459cd4..47ec8c8 100644
---- a/drivers/pci/hotplug/Makefile
-+++ b/drivers/pci/hotplug/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_HOTPLUG_PCI_RPA)		+= rpaphp.o
- obj-$(CONFIG_HOTPLUG_PCI_RPA_DLPAR)	+= rpadlpar_io.o
- obj-$(CONFIG_HOTPLUG_PCI_SGI)		+= sgi_hotplug.o
- obj-$(CONFIG_HOTPLUG_PCI_ACPI)		+= acpiphp.o
-+obj-$(CONFIG_HOTPLUG_PCI_S390)		+= s390_pci_hpc.o
++	return mod_pci(zdev, ZPCI_MOD_FC_DEREG_IOAT, dmaas, &args);
++}
++
+ /* Modify PCI: Unregister adapter interruptions */
+ static int zpci_unregister_airq(struct zpci_dev *zdev)
+ {
+@@ -602,6 +622,7 @@ static void zpci_remove_device(struct pci_dev *pdev)
  
- # acpiphp_ibm extends acpiphp, so should be linked afterwards.
+ 	dev_info(&pdev->dev, "Removing device %u\n", zdev->domain);
+ 	zdev->state = ZPCI_FN_STATE_CONFIGURED;
++	zpci_dma_exit_device(zdev);
+ 	zpci_unmap_resources(pdev);
+ 	list_del(&zdev->entry);		/* can be called from init */
+ 	zdev->pdev = NULL;
+@@ -887,7 +908,14 @@ int zpci_enable_device(struct zpci_dev *zdev)
+ 	if (rc)
+ 		goto out;
+ 	pr_info("Enabled fh: 0x%x fid: 0x%x\n", zdev->fh, zdev->fid);
++
++	rc = zpci_dma_init_device(zdev);
++	if (rc)
++		goto out_dma;
+ 	return 0;
++
++out_dma:
++	clp_disable_fh(zdev);
+ out:
+ 	return rc;
+ }
+@@ -929,6 +957,7 @@ out:
  
-diff --git a/drivers/pci/hotplug/s390_pci_hpc.c b/drivers/pci/hotplug/s390_pci_hpc.c
+ void zpci_stop_device(struct zpci_dev *zdev)
+ {
++	zpci_dma_exit_device(zdev);
+ 	/*
+ 	 * Note: SCLP disables fh via set-pci-fn so don't
+ 	 * do that here.
+@@ -953,6 +982,7 @@ int zpci_scan_device(struct zpci_dev *zdev)
+ 	return 0;
+ 
+ out:
++	zpci_dma_exit_device(zdev);
+ 	clp_disable_fh(zdev);
+ 	return -EIO;
+ }
+@@ -1028,6 +1058,10 @@ static int __init pci_base_init(void)
+ 	if (rc)
+ 		goto out_irq;
+ 
++	rc = zpci_dma_init();
++	if (rc)
++		goto out_dma;
++
+ 	rc = clp_find_pci_devices();
+ 	if (rc)
+ 		goto out_find;
+@@ -1036,6 +1070,8 @@ static int __init pci_base_init(void)
+ 	return 0;
+ 
+ out_find:
++	zpci_dma_exit();
++out_dma:
+ 	zpci_irq_exit();
+ out_irq:
+ 	zpci_msihash_exit();
+diff --git a/arch/s390/pci/pci_clp.c b/arch/s390/pci/pci_clp.c
+index 72694fb..7f4ce8d 100644
+--- a/arch/s390/pci/pci_clp.c
++++ b/arch/s390/pci/pci_clp.c
+@@ -48,6 +48,8 @@ static void clp_free_block(void *ptr)
+ static void clp_store_query_pci_fngrp(struct zpci_dev *zdev,
+ 				      struct clp_rsp_query_pci_grp *response)
+ {
++	zdev->tlb_refresh = response->refresh;
++	zdev->dma_mask = response->dasm;
+ 	zdev->msi_addr = response->msia;
+ 
+ 	pr_debug("Supported number of MSI vectors: %u\n", response->noi);
+@@ -97,6 +99,8 @@ static int clp_store_query_pci_fn(struct zpci_dev *zdev,
+ 		zdev->bars[i].val = le32_to_cpu(response->bar[i]);
+ 		zdev->bars[i].size = response->bar_size[i];
+ 	}
++	zdev->start_dma = response->sdma;
++	zdev->end_dma = response->edma;
+ 	zdev->pchid = response->pchid;
+ 	zdev->pfgid = response->pfgid;
+ 	return 0;
+diff --git a/arch/s390/pci/pci_dma.c b/arch/s390/pci/pci_dma.c
 new file mode 100644
-index 0000000..d4de895
+index 0000000..de48625
 --- /dev/null
-+++ b/drivers/pci/hotplug/s390_pci_hpc.c
-@@ -0,0 +1,252 @@
++++ b/arch/s390/pci/pci_dma.c
+@@ -0,0 +1,505 @@
 +/*
-+ * PCI Hot Plug Controller Driver for System z
-+ *
-+ * Copyright 2012 IBM Corp.
++ * Copyright IBM Corp. 2012
 + *
 + * Author(s):
 + *   Jan Glauber <jang@linux.vnet.ibm.com>
 + */
 +
-+#define COMPONENT "zPCI hpc"
-+#define pr_fmt(fmt) COMPONENT ": " fmt
-+
-+#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include <linux/slab.h>
-+#include <linux/pci.h>
-+#include <linux/pci_hotplug.h>
-+#include <linux/init.h>
-+#include <asm/sclp.h>
-+
-+#define SLOT_NAME_SIZE	10
-+static LIST_HEAD(s390_hotplug_slot_list);
-+
-+MODULE_AUTHOR("Jan Glauber <jang@linux.vnet.ibm.com");
-+MODULE_DESCRIPTION("Hot Plug PCI Controller for System z");
-+MODULE_LICENSE("GPL");
-+
-+static int zpci_fn_configured(enum zpci_state state)
-+{
-+	return state == ZPCI_FN_STATE_CONFIGURED ||
-+	       state == ZPCI_FN_STATE_ONLINE;
-+}
-+
-+/*
-+ * struct slot - slot information for each *physical* slot
-+ */
-+struct slot {
-+	struct list_head slot_list;
-+	struct hotplug_slot *hotplug_slot;
-+	struct zpci_dev *zdev;
-+};
-+
-+static int enable_slot(struct hotplug_slot *hotplug_slot)
-+{
-+	struct slot *slot = hotplug_slot->private;
-+	int rc;
-+
-+	if (slot->zdev->state != ZPCI_FN_STATE_STANDBY)
-+		return -EIO;
-+
-+	rc = sclp_pci_configure(slot->zdev->fid);
-+	if (!rc) {
-+		slot->zdev->state = ZPCI_FN_STATE_CONFIGURED;
-+		/* automatically scan the device after is was configured */
-+		zpci_enable_device(slot->zdev);
-+		zpci_scan_device(slot->zdev);
-+	}
-+	return rc;
-+}
-+
-+static int disable_slot(struct hotplug_slot *hotplug_slot)
-+{
-+	struct slot *slot = hotplug_slot->private;
-+	int rc;
-+
-+	if (!zpci_fn_configured(slot->zdev->state))
-+		return -EIO;
-+
-+	/* TODO: we rely on the user to unbind/remove the device, is that plausible
-+	 *       or do we need to trigger that here?
-+	 */
-+	rc = sclp_pci_deconfigure(slot->zdev->fid);
-+	if (!rc) {
-+		/* Fixme: better call List-PCI to find the disabled FH
-+		   for the FID since the FH should be opaque... */
-+		slot->zdev->fh &= 0x7fffffff;
-+		slot->zdev->state = ZPCI_FN_STATE_STANDBY;
-+	}
-+	return rc;
-+}
-+
-+static int get_power_status(struct hotplug_slot *hotplug_slot, u8 *value)
-+{
-+	struct slot *slot = hotplug_slot->private;
-+
-+	switch (slot->zdev->state) {
-+	case ZPCI_FN_STATE_STANDBY:
-+		*value = 0;
-+		break;
-+	default:
-+		*value = 1;
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static int get_adapter_status(struct hotplug_slot *hotplug_slot, u8 *value)
-+{
-+	/* if the slot exits it always contains a function */
-+	*value = 1;
-+	return 0;
-+}
-+
-+static void release_slot(struct hotplug_slot *hotplug_slot)
-+{
-+	struct slot *slot = hotplug_slot->private;
-+
-+	pr_debug("%s - physical_slot = %s\n", __func__, hotplug_slot_name(hotplug_slot));
-+	kfree(slot->hotplug_slot->info);
-+	kfree(slot->hotplug_slot);
-+	kfree(slot);
-+}
-+
-+static struct hotplug_slot_ops s390_hotplug_slot_ops = {
-+	.enable_slot =		enable_slot,
-+	.disable_slot =		disable_slot,
-+	.get_power_status =	get_power_status,
-+	.get_adapter_status =	get_adapter_status,
-+};
-+
-+static int init_pci_slot(struct zpci_dev *zdev)
-+{
-+	struct hotplug_slot *hotplug_slot;
-+	struct hotplug_slot_info *info;
-+	char name[SLOT_NAME_SIZE];
-+	struct slot *slot;
-+	int rc;
-+
-+	if (!zdev)
-+		return 0;
-+
-+	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
-+	if (!slot)
-+		goto error;
-+
-+	hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
-+	if (!hotplug_slot)
-+		goto error_hp;
-+	hotplug_slot->private = slot;
-+
-+	slot->hotplug_slot = hotplug_slot;
-+	slot->zdev = zdev;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		goto error_info;
-+	hotplug_slot->info = info;
-+
-+	hotplug_slot->ops = &s390_hotplug_slot_ops;
-+	hotplug_slot->release = &release_slot;
-+
-+	get_power_status(hotplug_slot, &info->power_status);
-+	get_adapter_status(hotplug_slot, &info->adapter_status);
-+
-+	snprintf(name, SLOT_NAME_SIZE, "%08x", zdev->fid);
-+	rc = pci_hp_register(slot->hotplug_slot, zdev->bus,
-+			     ZPCI_DEVFN, name);
-+	if (rc) {
-+		pr_err("pci_hp_register failed with error %d\n", rc);
-+		goto error_reg;
-+	}
-+	list_add(&slot->slot_list, &s390_hotplug_slot_list);
-+	return 0;
-+
-+error_reg:
-+	kfree(info);
-+error_info:
-+	kfree(hotplug_slot);
-+error_hp:
-+	kfree(slot);
-+error:
-+	return -ENOMEM;
-+}
-+
-+static int __init init_pci_slots(void)
-+{
-+	struct zpci_dev *zdev;
-+	int device = 0;
-+
-+	/*
-+	 * Create a structure for each slot, and register that slot
-+	 * with the pci_hotplug subsystem.
-+	 */
-+	mutex_lock(&zpci_list_lock);
-+	list_for_each_entry(zdev, &zpci_list, entry) {
-+		init_pci_slot(zdev);
-+		device++;
-+	}
-+
-+	mutex_unlock(&zpci_list_lock);
-+	return (device) ? 0 : -ENODEV;
-+}
-+
-+static void exit_pci_slot(struct zpci_dev *zdev)
-+{
-+	struct list_head *tmp, *n;
-+	struct slot *slot;
-+
-+	list_for_each_safe(tmp, n, &s390_hotplug_slot_list) {
-+		slot = list_entry(tmp, struct slot, slot_list);
-+		if (slot->zdev != zdev)
-+			continue;
-+		list_del(&slot->slot_list);
-+		pci_hp_deregister(slot->hotplug_slot);
-+	}
-+}
-+
-+static void __exit exit_pci_slots(void)
-+{
-+	struct list_head *tmp, *n;
-+	struct slot *slot;
-+
-+	/*
-+	 * Unregister all of our slots with the pci_hotplug subsystem.
-+	 * Memory will be freed in release_slot() callback after slot's
-+	 * lifespan is finished.
-+	 */
-+	list_for_each_safe(tmp, n, &s390_hotplug_slot_list) {
-+		slot = list_entry(tmp, struct slot, slot_list);
-+		list_del(&slot->slot_list);
-+		pci_hp_deregister(slot->hotplug_slot);
-+	}
-+}
-+
-+static int __init pci_hotplug_s390_init(void)
-+{
-+	/*
-+	 * Do specific initialization stuff for your driver here
-+	 * like initializing your controller hardware (if any) and
-+	 * determining the number of slots you have in the system
-+	 * right now.
-+	 */
-+
-+	if (!pci_probe)
-+		return -EOPNOTSUPP;
-+
-+	/* register callbacks for slot handling from arch code */
-+	mutex_lock(&zpci_list_lock);
-+	hotplug_ops.create_slot = init_pci_slot;
-+	hotplug_ops.remove_slot = exit_pci_slot;
-+	mutex_unlock(&zpci_list_lock);
-+	pr_info("registered hotplug slot callbacks\n");
-+	return init_pci_slots();
-+}
-+
-+static void __exit pci_hotplug_s390_exit(void)
-+{
-+	exit_pci_slots();
-+}
-+
-+module_init(pci_hotplug_s390_init);
-+module_exit(pci_hotplug_s390_exit);
-diff --git a/drivers/s390/char/sclp.h b/drivers/s390/char/sclp.h
-index d7e97ae..25bcd4c 100644
---- a/drivers/s390/char/sclp.h
-+++ b/drivers/s390/char/sclp.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright IBM Corp. 1999, 2009
-+ * Copyright IBM Corp. 1999,2012
-  *
-  * Author(s): Martin Peschke <mpeschke@de.ibm.com>
-  *	      Martin Schwidefsky <schwidefsky@de.ibm.com>
-@@ -103,6 +103,7 @@ extern u64 sclp_facilities;
- #define SCLP_HAS_CHP_RECONFIG	(sclp_facilities & 0x2000000000000000ULL)
- #define SCLP_HAS_CPU_INFO	(sclp_facilities & 0x0800000000000000ULL)
- #define SCLP_HAS_CPU_RECONFIG	(sclp_facilities & 0x0400000000000000ULL)
-+#define SCLP_HAS_PCI_RECONFIG	(sclp_facilities & 0x0000000040000000ULL)
- 
- 
- struct gds_subvector {
-diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
-index 71ea923c..f308bac 100644
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright IBM Corp. 2007, 2009
-+ * Copyright IBM Corp. 2007,2012
-  *
-  * Author(s): Heiko Carstens <heiko.carstens@de.ibm.com>,
-  *	      Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
-@@ -12,6 +12,7 @@
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/err.h>
 +#include <linux/export.h>
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/mm.h>
-@@ -702,6 +703,67 @@ __initcall(sclp_detect_standby_memory);
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- /*
-+ * PCI I/O adapter configuration related functions.
-+ */
-+#define SCLP_CMDW_CONFIGURE_PCI			0x001a0001
-+#define SCLP_CMDW_DECONFIGURE_PCI		0x001b0001
++#include <linux/iommu-helper.h>
++#include <linux/dma-mapping.h>
++#include <linux/pci.h>
++#include <asm/pci_dma.h>
 +
-+#define SCLP_RECONFIG_PCI_ATPYE			2
++static enum zpci_ioat_dtype zpci_ioat_dt = ZPCI_IOTA_RTTO;
 +
-+struct pci_cfg_sccb {
-+	struct sccb_header header;
-+	u8 atype;		/* adapter type */
-+	u8 reserved1;
-+	u16 reserved2;
-+	u32 aid;		/* adapter identifier */
-+} __packed;
++static struct kmem_cache *dma_region_table_cache;
++static struct kmem_cache *dma_page_table_cache;
 +
-+static int do_pci_configure(sclp_cmdw_t cmd, u32 fid)
++static unsigned long *dma_alloc_cpu_table(void)
 +{
-+	struct pci_cfg_sccb *sccb;
-+	int rc;
++	unsigned long *table, *entry;
 +
-+	if (!SCLP_HAS_PCI_RECONFIG)
-+		return -EOPNOTSUPP;
++	table = kmem_cache_alloc(dma_region_table_cache, GFP_ATOMIC);
++	if (!table)
++		return NULL;
 +
-+	sccb = (struct pci_cfg_sccb *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
-+	if (!sccb)
-+		return -ENOMEM;
++	for (entry = table; entry < table + ZPCI_TABLE_ENTRIES; entry++)
++		*entry = ZPCI_TABLE_INVALID | ZPCI_TABLE_PROTECTED;
++	return table;
++}
 +
-+	sccb->header.length = PAGE_SIZE;
-+	sccb->atype = SCLP_RECONFIG_PCI_ATPYE;
-+	sccb->aid = fid;
-+	rc = do_sync_request(cmd, sccb);
-+	if (rc)
++static void dma_free_cpu_table(void *table)
++{
++	kmem_cache_free(dma_region_table_cache, table);
++}
++
++static unsigned long *dma_alloc_page_table(void)
++{
++	unsigned long *table, *entry;
++
++	table = kmem_cache_alloc(dma_page_table_cache, GFP_ATOMIC);
++	if (!table)
++		return NULL;
++
++	for (entry = table; entry < table + ZPCI_PT_ENTRIES; entry++)
++		*entry = ZPCI_PTE_INVALID | ZPCI_TABLE_PROTECTED;
++	return table;
++}
++
++static void dma_free_page_table(void *table)
++{
++	kmem_cache_free(dma_page_table_cache, table);
++}
++
++static unsigned long *dma_get_seg_table_origin(unsigned long *entry)
++{
++	unsigned long *sto;
++
++	if (reg_entry_isvalid(*entry))
++		sto = get_rt_sto(*entry);
++	else {
++		sto = dma_alloc_cpu_table();
++		if (!sto)
++			return NULL;
++
++		set_rt_sto(entry, sto);
++		validate_rt_entry(entry);
++		entry_clr_protected(entry);
++	}
++	return sto;
++}
++
++static unsigned long *dma_get_page_table_origin(unsigned long *entry)
++{
++	unsigned long *pto;
++
++	if (reg_entry_isvalid(*entry))
++		pto = get_st_pto(*entry);
++	else {
++		pto = dma_alloc_page_table();
++		if (!pto)
++			return NULL;
++		set_st_pto(entry, pto);
++		validate_st_entry(entry);
++		entry_clr_protected(entry);
++	}
++	return pto;
++}
++
++static unsigned long *dma_walk_cpu_trans(unsigned long *rto, dma_addr_t dma_addr)
++{
++	unsigned long *sto, *pto;
++	unsigned int rtx, sx, px;
++
++	rtx = calc_rtx(dma_addr);
++	sto = dma_get_seg_table_origin(&rto[rtx]);
++	if (!sto)
++		return NULL;
++
++	sx = calc_sx(dma_addr);
++	pto = dma_get_page_table_origin(&sto[sx]);
++	if (!pto)
++		return NULL;
++
++	px = calc_px(dma_addr);
++	return &pto[px];
++}
++
++static void dma_update_cpu_trans(struct zpci_dev *zdev, void *page_addr,
++				 dma_addr_t dma_addr, int flags)
++{
++	unsigned long *entry;
++
++	entry = dma_walk_cpu_trans(zdev->dma_table, dma_addr);
++	if (!entry) {
++		WARN_ON_ONCE(1);
++		return;
++	}
++
++	if (flags & ZPCI_PTE_INVALID) {
++		invalidate_pt_entry(entry);
++		return;
++	} else {
++		set_pt_pfaa(entry, page_addr);
++		validate_pt_entry(entry);
++	}
++
++	if (flags & ZPCI_TABLE_PROTECTED)
++		entry_set_protected(entry);
++	else
++		entry_clr_protected(entry);
++}
++
++static int dma_update_trans(struct zpci_dev *zdev, unsigned long pa,
++			    dma_addr_t dma_addr, size_t size, int flags)
++{
++	unsigned int nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	u8 *page_addr = (u8 *) (pa & PAGE_MASK);
++	dma_addr_t start_dma_addr = dma_addr;
++	unsigned long irq_flags;
++	int i, rc = 0;
++
++	if (!nr_pages)
++		return -EINVAL;
++
++	spin_lock_irqsave(&zdev->dma_table_lock, irq_flags);
++	if (!zdev->dma_table) {
++		dev_err(&zdev->pdev->dev, "Missing DMA table\n");
++		goto no_refresh;
++	}
++
++	for (i = 0; i < nr_pages; i++) {
++		dma_update_cpu_trans(zdev, page_addr, dma_addr, flags);
++		page_addr += PAGE_SIZE;
++		dma_addr += PAGE_SIZE;
++	}
++
++	/*
++	 * rpcit is not required to establish new translations when previously
++	 * invalid translation-table entries are validated, however it is
++	 * required when altering previously valid entries.
++	 */
++	if (!zdev->tlb_refresh &&
++	    ((flags & ZPCI_PTE_VALID_MASK) == ZPCI_PTE_VALID))
++		/*
++		 * TODO: also need to check that the old entry is indeed INVALID
++		 * and not only for one page but for the whole range...
++		 * -> now we WARN_ON in that case but with lazy unmap that
++		 * needs to be redone!
++		 */
++		goto no_refresh;
++	rc = rpcit_instr((u64) zdev->fh << 32, start_dma_addr,
++			  nr_pages * PAGE_SIZE);
++
++no_refresh:
++	spin_unlock_irqrestore(&zdev->dma_table_lock, irq_flags);
++	return rc;
++}
++
++static void dma_free_seg_table(unsigned long entry)
++{
++	unsigned long *sto = get_rt_sto(entry);
++	int sx;
++
++	for (sx = 0; sx < ZPCI_TABLE_ENTRIES; sx++)
++		if (reg_entry_isvalid(sto[sx]))
++			dma_free_page_table(get_st_pto(sto[sx]));
++
++	dma_free_cpu_table(sto);
++}
++
++static void dma_cleanup_tables(struct zpci_dev *zdev)
++{
++	unsigned long *table = zdev->dma_table;
++	int rtx;
++
++	if (!zdev || !zdev->dma_table)
++		return;
++
++	for (rtx = 0; rtx < ZPCI_TABLE_ENTRIES; rtx++)
++		if (reg_entry_isvalid(table[rtx]))
++			dma_free_seg_table(table[rtx]);
++
++	dma_free_cpu_table(table);
++	zdev->dma_table = NULL;
++}
++
++static unsigned long __dma_alloc_iommu(struct zpci_dev *zdev, unsigned long start,
++				   int size)
++{
++	unsigned long boundary_size = 0x1000000;
++
++	return iommu_area_alloc(zdev->iommu_bitmap, zdev->iommu_pages,
++				start, size, 0, boundary_size, 0);
++}
++
++static unsigned long dma_alloc_iommu(struct zpci_dev *zdev, int size)
++{
++	unsigned long offset, flags;
++
++	spin_lock_irqsave(&zdev->iommu_bitmap_lock, flags);
++	offset = __dma_alloc_iommu(zdev, zdev->next_bit, size);
++	if (offset == -1)
++		offset = __dma_alloc_iommu(zdev, 0, size);
++
++	if (offset != -1) {
++		zdev->next_bit = offset + size;
++		if (zdev->next_bit >= zdev->iommu_pages)
++			zdev->next_bit = 0;
++	}
++	spin_unlock_irqrestore(&zdev->iommu_bitmap_lock, flags);
++	return offset;
++}
++
++static void dma_free_iommu(struct zpci_dev *zdev, unsigned long offset, int size)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&zdev->iommu_bitmap_lock, flags);
++	if (!zdev->iommu_bitmap)
 +		goto out;
-+	switch (sccb->header.response_code) {
-+	case 0x0020:
-+	case 0x0120:
-+		break;
-+	default:
-+		pr_warn("configure PCI I/O adapter failed: cmd=0x%08x  response=0x%04x\n",
-+			cmd, sccb->header.response_code);
-+		rc = -EIO;
-+		break;
++	bitmap_clear(zdev->iommu_bitmap, offset, size);
++	if (offset >= zdev->next_bit)
++		zdev->next_bit = offset + size;
++out:
++	spin_unlock_irqrestore(&zdev->iommu_bitmap_lock, flags);
++}
++
++int dma_set_mask(struct device *dev, u64 mask)
++{
++	if (!dev->dma_mask || !dma_supported(dev, mask))
++		return -EIO;
++
++	*dev->dma_mask = mask;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(dma_set_mask);
++
++static dma_addr_t s390_dma_map_pages(struct device *dev, struct page *page,
++				     unsigned long offset, size_t size,
++				     enum dma_data_direction direction,
++				     struct dma_attrs *attrs)
++{
++	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
++	unsigned long nr_pages, iommu_page_index;
++	unsigned long pa = page_to_phys(page) + offset;
++	int flags = ZPCI_PTE_VALID;
++	dma_addr_t dma_addr;
++
++	WARN_ON_ONCE(offset > PAGE_SIZE);
++
++	/* This rounds up number of pages based on size and offset */
++	nr_pages = iommu_num_pages(pa, size, PAGE_SIZE);
++	iommu_page_index = dma_alloc_iommu(zdev, nr_pages);
++	if (iommu_page_index == -1)
++		goto out_err;
++
++	/* Use rounded up size */
++	size = nr_pages * PAGE_SIZE;
++
++	dma_addr = zdev->start_dma + iommu_page_index * PAGE_SIZE;
++	if (dma_addr + size > zdev->end_dma) {
++		dev_err(dev, "(dma_addr: 0x%16.16LX + size: 0x%16.16lx) > end_dma: 0x%16.16Lx\n",
++			 dma_addr, size, zdev->end_dma);
++		goto out_free;
++	}
++
++	if (direction == DMA_NONE || direction == DMA_TO_DEVICE)
++		flags |= ZPCI_TABLE_PROTECTED;
++
++	if (!dma_update_trans(zdev, pa, dma_addr, size, flags))
++		return dma_addr + offset;
++
++out_free:
++	dma_free_iommu(zdev, iommu_page_index, nr_pages);
++out_err:
++	dev_err(dev, "Failed to map addr: %lx\n", pa);
++	return DMA_ERROR_CODE;
++}
++
++static void s390_dma_unmap_pages(struct device *dev, dma_addr_t dma_addr,
++				 size_t size, enum dma_data_direction direction,
++				 struct dma_attrs *attrs)
++{
++	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
++	unsigned long iommu_page_index;
++	int npages;
++
++	npages = iommu_num_pages(dma_addr, size, PAGE_SIZE);
++	dma_addr = dma_addr & PAGE_MASK;
++	if (dma_update_trans(zdev, 0, dma_addr, npages * PAGE_SIZE,
++			     ZPCI_TABLE_PROTECTED | ZPCI_PTE_INVALID))
++		dev_err(dev, "Failed to unmap addr: %Lx\n", dma_addr);
++
++	iommu_page_index = (dma_addr - zdev->start_dma) >> PAGE_SHIFT;
++	dma_free_iommu(zdev, iommu_page_index, npages);
++}
++
++static void *s390_dma_alloc(struct device *dev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t flag,
++			    struct dma_attrs *attrs)
++{
++	struct page *page;
++	unsigned long pa;
++	dma_addr_t map;
++
++	size = PAGE_ALIGN(size);
++	page = alloc_pages(flag, get_order(size));
++	if (!page)
++		return NULL;
++	pa = page_to_phys(page);
++	memset((void *) pa, 0, size);
++
++	map = s390_dma_map_pages(dev, page, pa % PAGE_SIZE,
++				 size, DMA_BIDIRECTIONAL, NULL);
++	if (dma_mapping_error(dev, map)) {
++		free_pages(pa, get_order(size));
++		return NULL;
++	}
++
++	if (dma_handle)
++		*dma_handle = map;
++	return (void *) pa;
++}
++
++static void s390_dma_free(struct device *dev, size_t size,
++			  void *pa, dma_addr_t dma_handle,
++			  struct dma_attrs *attrs)
++{
++	s390_dma_unmap_pages(dev, dma_handle, PAGE_ALIGN(size),
++			     DMA_BIDIRECTIONAL, NULL);
++	free_pages((unsigned long) pa, get_order(size));
++}
++
++static int s390_dma_map_sg(struct device *dev, struct scatterlist *sg,
++			   int nr_elements, enum dma_data_direction dir,
++			   struct dma_attrs *attrs)
++{
++	int mapped_elements = 0;
++	struct scatterlist *s;
++	int i;
++
++	for_each_sg(sg, s, nr_elements, i) {
++		struct page *page = sg_page(s);
++		s->dma_address = s390_dma_map_pages(dev, page, s->offset,
++						    s->length, dir, NULL);
++		if (!dma_mapping_error(dev, s->dma_address)) {
++			s->dma_length = s->length;
++			mapped_elements++;
++		} else
++			goto unmap;
 +	}
 +out:
-+	free_page((unsigned long) sccb);
++	return mapped_elements;
++
++unmap:
++	for_each_sg(sg, s, mapped_elements, i) {
++		if (s->dma_address)
++			s390_dma_unmap_pages(dev, s->dma_address, s->dma_length,
++					     dir, NULL);
++		s->dma_address = 0;
++		s->dma_length = 0;
++	}
++	mapped_elements = 0;
++	goto out;
++}
++
++static void s390_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
++			      int nr_elements, enum dma_data_direction dir,
++			      struct dma_attrs *attrs)
++{
++	struct scatterlist *s;
++	int i;
++
++	for_each_sg(sg, s, nr_elements, i) {
++		s390_dma_unmap_pages(dev, s->dma_address, s->dma_length, dir, NULL);
++		s->dma_address = 0;
++		s->dma_length = 0;
++	}
++}
++
++int zpci_dma_init_device(struct zpci_dev *zdev)
++{
++	unsigned int bitmap_order;
++	int rc;
++
++	spin_lock_init(&zdev->iommu_bitmap_lock);
++	spin_lock_init(&zdev->dma_table_lock);
++
++	zdev->dma_table = dma_alloc_cpu_table();
++	if (!zdev->dma_table) {
++		rc = -ENOMEM;
++		goto out_clean;
++	}
++
++	zdev->iommu_size = (unsigned long) high_memory - PAGE_OFFSET;
++	zdev->iommu_pages = zdev->iommu_size >> PAGE_SHIFT;
++	bitmap_order = get_order(zdev->iommu_pages / 8);
++	pr_info("iommu_size: 0x%lx  iommu_pages: 0x%lx  bitmap_order: %i\n",
++		 zdev->iommu_size, zdev->iommu_pages, bitmap_order);
++
++	zdev->iommu_bitmap = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
++						       bitmap_order);
++	if (!zdev->iommu_bitmap) {
++		rc = -ENOMEM;
++		goto out_reg;
++	}
++
++	rc = zpci_register_ioat(zdev,
++				0,
++				zdev->start_dma + PAGE_OFFSET,
++				zdev->start_dma + zdev->iommu_size - 1,
++				(u64) zdev->dma_table);
++	if (rc)
++		goto out_reg;
++	return 0;
++
++out_reg:
++	dma_free_cpu_table(zdev->dma_table);
++out_clean:
 +	return rc;
 +}
 +
-+int sclp_pci_configure(u32 fid)
++void zpci_dma_exit_device(struct zpci_dev *zdev)
 +{
-+	return do_pci_configure(SCLP_CMDW_CONFIGURE_PCI, fid);
++	zpci_unregister_ioat(zdev, 0);
++	dma_cleanup_tables(zdev);
++	free_pages((unsigned long) zdev->iommu_bitmap,
++		   get_order(zdev->iommu_pages / 8));
++	zdev->iommu_bitmap = NULL;
++	zdev->next_bit = 0;
 +}
-+EXPORT_SYMBOL(sclp_pci_configure);
 +
-+int sclp_pci_deconfigure(u32 fid)
++static int __init dma_alloc_cpu_table_caches(void)
 +{
-+	return do_pci_configure(SCLP_CMDW_DECONFIGURE_PCI, fid);
-+}
-+EXPORT_SYMBOL(sclp_pci_deconfigure);
++	dma_region_table_cache = kmem_cache_create("PCI_DMA_region_tables",
++					ZPCI_TABLE_SIZE, ZPCI_TABLE_ALIGN,
++					0, NULL);
++	if (!dma_region_table_cache)
++		return -ENOMEM;
 +
-+/*
-  * Channel path configuration related functions.
-  */
- 
++	dma_page_table_cache = kmem_cache_create("PCI_DMA_page_tables",
++					ZPCI_PT_SIZE, ZPCI_PT_ALIGN,
++					0, NULL);
++	if (!dma_page_table_cache) {
++		kmem_cache_destroy(dma_region_table_cache);
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++int __init zpci_dma_init(void)
++{
++	return dma_alloc_cpu_table_caches();
++}
++
++void zpci_dma_exit(void)
++{
++	kmem_cache_destroy(dma_page_table_cache);
++	kmem_cache_destroy(dma_region_table_cache);
++}
++
++#define PREALLOC_DMA_DEBUG_ENTRIES	(1 << 16)
++
++static int __init dma_debug_do_init(void)
++{
++	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
++	return 0;
++}
++fs_initcall(dma_debug_do_init);
++
++struct dma_map_ops s390_dma_ops = {
++	.alloc		= s390_dma_alloc,
++	.free		= s390_dma_free,
++	.map_sg		= s390_dma_map_sg,
++	.unmap_sg	= s390_dma_unmap_sg,
++	.map_page	= s390_dma_map_pages,
++	.unmap_page	= s390_dma_unmap_pages,
++	/* if we support direct DMA this must be conditional */
++	.is_phys	= 0,
++	/* dma_supported is unconditionally true without a callback */
++};
++EXPORT_SYMBOL_GPL(s390_dma_ops);
 -- 
 1.7.12.4
 
