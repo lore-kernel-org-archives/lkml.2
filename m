@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab2KNUWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:22:09 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56297 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab2KNUWH (ORCPT
+	id S933088Ab2KNUY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:24:58 -0500
+Received: from usindpps05.hds.com ([207.126.252.18]:45389 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141Ab2KNUY5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:22:07 -0500
-Date: Wed, 14 Nov 2012 21:21:54 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
-Message-ID: <20121114202154.GA10742@avionic-0098.mockup.avionic-design.de>
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
- <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
- <50A357D3.9080002@nvidia.com>
- <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de>
- <50A3712E.7000104@nvidia.com>
- <20121114105406.GA31455@avionic-0098.mockup.avionic-design.de>
- <50A3C485.7080704@wwwdotorg.org>
- <20121114200415.GA10335@avionic-0098.mockup.avionic-design.de>
- <50A3FBFA.3080008@wwwdotorg.org>
+	Wed, 14 Nov 2012 15:24:57 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v6 0/7] efi_pstore: multiple event logging support
+Thread-Topic: [PATCH v6 0/7] efi_pstore: multiple event logging support
+Thread-Index: Ac3Co/YreTzYCjTIQ/2ZAbnLjE4wHg==
+Date: Wed, 14 Nov 2012 20:24:36 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138CA679@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
-Content-Disposition: inline
-In-Reply-To: <50A3FBFA.3080008@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:d/3f+AAbruwWEJKFr1JU8juvP0TlV+2EnM8jD699Og+
- bm+Z8hGMNVr4HGSyMNYo8B0WoEAh0yIAypgS9vKJ9rnCHjSb/t
- SKwusOJTTEA9Nl6R2TdWEBMTBB2mJEgtT1Ks7SfljrNkaTD8Re
- qYh+Tv+luJdQqiLY55OLAirt2fD+c9UMjrEIw9EnQQZeRZlTXH
- zasoTJnpTaaUuiwzUdg34zc9A6yVhE7C/rzSINTYYE68K49GOU
- c37MCOKhVC6APBER7QUnoM5GoUn8awFI2opX0TMtrySY+muato
- ozXwP5BwDFQw/44fyrSzTQj7KiZPEt11Mue+zRIydEmC+oRDcl
- iCGTh3tyXY+Fz6p2o46QxOE+nZ5t5is2FNrycidPZVFAm1T/Bp
- 3xD5RCVrUkL3rwpx7k9iA8QKuJhBGc/9zg=
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-11-14_06:2012-11-14,2012-11-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1211140199
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+v5 -> v6
+   - Add ctime to an argument of efi_pstore_erase to build successfully
+     in case where CONFIG_PTORE=n is specified. (Patch 4/7)
+   - Add count to an argument of efi_pstore_erase and efi_pstore_write to
+     build successfully in case where CONFIG_PTORE=n is specified (Patch 5/7)
+   - They are removed in a patchset v5 by mistake even though they were fixed
+     in a patchset v4.
+ 
+   By applying a patchset v6, kernel can be built with both CONFIG_PSTORE=y and
+   CONFIG_PSTORE=n.
+   Also, it can be built with both CONFIG_PSTORE_CONSOLE=y and
+   CONFIG_PSTORE_CONSOLE=n.
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+v4 -> v5
+   - Rebase to 3.7-rc5
+   - Add count to an argument of a write callback executed in pstore_console_write()
+     to build successfully in case where CONSIG_PSTORE_CONSOLE=y is specified. (Patch 5/7)
 
-On Wed, Nov 14, 2012 at 01:15:54PM -0700, Stephen Warren wrote:
-> On 11/14/2012 01:04 PM, Thierry Reding wrote:
-> ...
-> > According to tegra20_clocks_data.c, the maximum clock frequency
-> > for host1x is 166 MHz, so 216 is probably not a good idea. 150 MHz
-> > sounds sensible, though.
->=20
-> As a general rule, I wouldn't rely on the upstream clock driver to
-> specify accurate maximum clock rates at the moment. Our downstream
-> kernel is more likely to be accurate. Still, upstream might be correct
-> here already...
+v3 -> v4
+   - Rebase to 3.7-rc3
+   - Add ctime to an argument of efi_pstore_erase to build successfully
+     in case where CONFIG_PTORE=n is specified. (Patch 4/7)
+   - Add count to an argument of efi_pstore_erase and efi_pstore_write to
+     build successfully in case where CONFIG_PTORE=n is specified (Patch 5/7)
+   - Fix a white space damage (Patch 6/7)
+   - Modify a logic checking a 3-variable format of a variable name (Patch 7/7)
 
-I just checked and the downstream kernel has the same maximum clock rate
-for host1x.
+v2 -> v3
+   - Create patches 6/7 and 7/7 to work with an existing format of variable name
 
-Thierry
+v1 -> v2
+   - Separate into 5 patches in accordance with Mike's comment
+   - Erase an extra line of comment in patch 1/5
 
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature
+[Issue]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+    So, in the following scenario, we will lose 1st panic messages.
 
-iQIcBAEBAgAGBQJQo/1iAAoJEN0jrNd/PrOhXoAQALgpuiHcv+T300NZYeS2vcR2
-IFC0mKyPx0y4mZ2ox0OnlMuX8+fwmtlI74MkSfk8NsA5yqeKpzDOD9kX3LmBNky8
-K5PocUVAvX7K3Ke/U6fqBxU6TEEPv647KNI/NMknxtEu5rV83Al/c/nys5IREmv+
-9H4wODSaiOx74+WGix/H6z2bGnzc/Dezrrsbqe7B4fPRv+/Ld/P9pJBBH+LUzVYP
-RRRwMO0uxgXzuDeGIfW4T/+bDuzELkzYk2TAItr4aL8561JMt2BzGGhIK8hvOnDv
-E7p14Yhlc/AVy8tKS1LwU9cicgC/D06cyOyysgZFuNj7Pw8SCFsxgpRAwFsg4AI+
-hRiL9mU7ocLeiR/Cbn+Vj+LiO6itoRqpotWF5D3dNd2LMMevEozAkcqttflpBwhQ
-R6s4bUVGNndOVheI7M26AchCIks7KAkAhQwtRdbYO5oa+Onsa/Q+4bI+6bNMscoj
-Ym34p0ENJ2t+dxn0pJaVsbJO09e+aUtTUqmzXEXvCZ5liRuirYwTJnjQDFiqt+Bb
-RhcREjJ3TRsE+gywQ1dEsbB3NynBx+iosaCE6mtAGd9EGb0omCWSTAaN2dPPDocw
-6xpke8caW9zp8Cd+fxuSW/VoS6CXzxLsBLzqCUTq/NyeUiI9KtEjtlHePbvQowfU
-aaFPBh0h0baw63xxjHUy
-=gqkf
------END PGP SIGNATURE-----
+    1. kernel panics.
+    2. efi_pstore is kicked and writes panic messages to NVRAM.
+    3. system reboots.
+    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
 
---MGYHOYXEY6WxJCY8--
+[Solution]
+
+   Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
+
+   http://marc.info/?l=linux-kernel&m=134273270704586&w=2
+
+   And there are two possible solutions right now.
+     - First one is introducing some policy overwriting existing logs.
+     - Second one is simply holding multiple log without overwriting any entries.
+
+   We haven't decided the overwriting policy which is reasonable to all users yet.
+   But I believe we agree that just holding multiple logs is a reasonable way.
+
+   We may need further discussions to find the possibility of introducing overwriting
+   policy, especially getting critical messages in multiple oops case.
+   But I would like to begin with a simple and reasonable way to everyone.
+   So, this patch takes an approach just holding multiple logs.
+
+Seiji Aguchi (7):
+  efi_pstore: Check remaining space with QueryVariableInfo() before
+    writing data
+  efi_pstore: Add a logic erasing entries to an erase callback
+  efi_pstore: Remove a logic erasing entries from a write callback to
+    hold multiple logs
+  efi_pstore: Add ctime to argument of erase callback
+  efi_pstore: Add a sequence counter to a variable name
+  efi_pstore: Add a format check for an existing variable name at
+    reading time
+  efi_pstore: Add a format check for an existing variable name at
+    erasing time
+
+ drivers/acpi/apei/erst.c   |   16 ++--
+ drivers/firmware/efivars.c |  163 ++++++++++++++++++++++++++++++-------------
+ fs/pstore/inode.c          |    7 ++-
+ fs/pstore/internal.h       |    2 +-
+ fs/pstore/platform.c       |   13 ++--
+ fs/pstore/ram.c            |    9 +--
+ include/linux/efi.h        |    1 +
+ include/linux/pstore.h     |    6 +-
+ 8 files changed, 144 insertions(+), 73 deletions(-)
+
