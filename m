@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423323Ab2KNS65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:58:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18538 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423239Ab2KNS5i (ORCPT
+	id S1423172Ab2KNS7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:59:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26086 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423200Ab2KNS5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 13:57:38 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,122 +12,261 @@ To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
         akpm@linux-foundation.org, mgorman@suse.de
-Cc: fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com
-Subject: [PATCH v2] enable all tmem backends to be built and loaded as modules.
-Date: Wed, 14 Nov 2012 13:57:04 -0500
-Message-Id: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+Cc: fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/8] frontswap: Make frontswap_init use a pointer for the ops.
+Date: Wed, 14 Nov 2012 13:57:07 -0500
+Message-Id: <1352919432-9699-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are also some patch I wrote up that are based on this patchset
-that I will post soonish.
+This simplifies the code in the frontswap - we can get rid
+of the 'backend_registered' test and instead check against
+frontswap_ops.
 
-I hope these patches come out - I am travelling and not sure if my
-git-send-email foo will make this work.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/staging/ramster/zcache-main.c |    8 +++---
+ drivers/staging/zcache/zcache-main.c  |    8 +++---
+ drivers/xen/tmem.c                    |    6 ++--
+ include/linux/frontswap.h             |    2 +-
+ mm/frontswap.c                        |   34 +++++++++++++++-----------------
+ 5 files changed, 28 insertions(+), 30 deletions(-)
 
-I copying here what Dan mentioned with some modifications by me:
-
- Since various parts of transcendent memory ("tmem") [1] were first posted in
- 2009, reviewers have suggested that various tmem features should be built
- as a module and enabled by loading the module, rather than the current clunky
- method of compiling as a built-in and enabling via boot parameter.  Due
- to certain tmem initialization steps, that was not feasible at the time.
+diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+index a09dd5c..6c8959d 100644
+--- a/drivers/staging/ramster/zcache-main.c
++++ b/drivers/staging/ramster/zcache-main.c
+@@ -1626,9 +1626,9 @@ static struct frontswap_ops zcache_frontswap_ops = {
+ 	.init = zcache_frontswap_init
+ };
  
- [1] http://lwn.net/Articles/454795/
+-struct frontswap_ops zcache_frontswap_register_ops(void)
++struct frontswap_ops *zcache_frontswap_register_ops(void)
+ {
+-	struct frontswap_ops old_ops =
++	struct frontswap_ops *old_ops =
+ 		frontswap_register_ops(&zcache_frontswap_ops);
  
- This patchset allows each of the three merged transcendent memory
- backends (zcache, ramster, Xen tmem) to be used as modules by first
- enabling transcendent memory frontends (cleancache, frontswap) to deal
- with "lazy initialization" and, second, by adding the necessary code for
- the backends to be built and loaded as modules.
+ 	return old_ops;
+@@ -1795,7 +1795,7 @@ static int __init zcache_init(void)
+ 			pr_warn("%s: cleancache_ops overridden\n", namestr);
+ 	}
+ 	if (zcache_enabled && !disable_frontswap) {
+-		struct frontswap_ops old_ops;
++		struct frontswap_ops *old_ops;
  
- The original mechanism to enable tmem backends -- namely to hardwire
- them into the kernel and select/enable one with a kernel boot
- parameter --  is retained but should be considered deprecated.  When
- backends are loaded as modules, certain knobs will now be
- properly selected via module_params rather than via undocumented
- kernel boot parameters.  Note that module UNloading is not yet
- supported as it is lower priority and will require significant
- additional work.
+ 		old_ops = zcache_frontswap_register_ops();
+ 		if (frontswap_has_exclusive_gets)
+@@ -1807,7 +1807,7 @@ static int __init zcache_init(void)
+ 			namestr, frontswap_has_exclusive_gets,
+ 			!disable_frontswap_ignore_nonactive);
+ #endif
+-		if (old_ops.init != NULL)
++		if (old_ops)
+ 			pr_warn("%s: frontswap_ops overridden\n", namestr);
+ 	}
+ 	if (ramster_enabled)
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 52b43b7..3db38cb 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1919,9 +1919,9 @@ static struct frontswap_ops zcache_frontswap_ops = {
+ 	.init = zcache_frontswap_init
+ };
  
- The lazy initialization support is necessary because filesystems
- and swap devices are normally mounted early in boot and these
- activites normally trigger tmem calls to setup certain data structures;
- if the respective cleancache/frontswap ops are not yet registered
- by a back end, the tmem setup would fail for these devices and
- cleancache/frontswap would never be enabled for them which limits
- much of the value of tmem in many system configurations.  Lazy
- initialization records the necessary information in cleancache/frontswap
- data structures and "replays" it after the ops are registered
- to ensure that all filesystems and swap devices can benefit from
- the loaded tmem backend.
+-struct frontswap_ops zcache_frontswap_register_ops(void)
++struct frontswap_ops *zcache_frontswap_register_ops(void)
+ {
+-	struct frontswap_ops old_ops =
++	struct frontswap_ops *old_ops =
+ 		frontswap_register_ops(&zcache_frontswap_ops);
  
- [PATCH 1/8] mm: cleancache: lazy initialization to allow tmem
- [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
+ 	return old_ops;
+@@ -2061,12 +2061,12 @@ static int __init zcache_init(void)
+ #endif
+ #ifdef CONFIG_FRONTSWAP
+ 	if (zcache_enabled && use_frontswap) {
+-		struct frontswap_ops old_ops;
++		struct frontswap_ops *old_ops;
+ 
+ 		old_ops = zcache_frontswap_register_ops();
+ 		pr_info("zcache: frontswap enabled using kernel "
+ 			"transcendent memory and zsmalloc\n");
+-		if (old_ops.init != NULL)
++		if (old_ops)
+ 			pr_warning("zcache: frontswap_ops overridden");
+ 	}
+ #endif
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 144564e..4b02c07 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -362,7 +362,7 @@ static int __init no_frontswap(char *s)
+ }
+ __setup("nofrontswap", no_frontswap);
+ 
+-static struct frontswap_ops __initdata tmem_frontswap_ops = {
++static struct frontswap_ops tmem_frontswap_ops = {
+ 	.store = tmem_frontswap_store,
+ 	.load = tmem_frontswap_load,
+ 	.invalidate_page = tmem_frontswap_flush_page,
+@@ -378,11 +378,11 @@ static int __init xen_tmem_init(void)
+ #ifdef CONFIG_FRONTSWAP
+ 	if (tmem_enabled && use_frontswap) {
+ 		char *s = "";
+-		struct frontswap_ops old_ops =
++		struct frontswap_ops *old_ops =
+ 			frontswap_register_ops(&tmem_frontswap_ops);
+ 
+ 		tmem_frontswap_poolid = -1;
+-		if (old_ops.init != NULL)
++		if (old_ops)
+ 			s = " (WARNING: frontswap_ops overridden)";
+ 		printk(KERN_INFO "frontswap enabled, RAM provided by "
+ 				 "Xen Transcendent Memory\n");
+diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+index 3044254..d4f2987 100644
+--- a/include/linux/frontswap.h
++++ b/include/linux/frontswap.h
+@@ -14,7 +14,7 @@ struct frontswap_ops {
+ };
+ 
+ extern bool frontswap_enabled;
+-extern struct frontswap_ops
++extern struct frontswap_ops *
+ 	frontswap_register_ops(struct frontswap_ops *ops);
+ extern void frontswap_shrink(unsigned long);
+ extern unsigned long frontswap_curr_pages(void);
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index ba58157..e73dd23 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -24,7 +24,7 @@
+  * frontswap_ops is set by frontswap_register_ops to contain the pointers
+  * to the frontswap "backend" implementation functions.
+  */
+-static struct frontswap_ops frontswap_ops __read_mostly;
++static struct frontswap_ops *frontswap_ops __read_mostly;
+ 
+ /*
+  * This global enablement flag reduces overhead on systems where frontswap_ops
+@@ -90,28 +90,26 @@ static inline void inc_frontswap_invalidates(void) { }
+  * ignored or fail.
+  */
+ static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
+-static bool backend_registered __read_mostly;
+ 
+ /*
+  * Register operations for frontswap, returning previous thus allowing
+  * detection of multiple backends and possible nesting.
+  */
+-struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
++struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ {
+-	struct frontswap_ops old = frontswap_ops;
++	struct frontswap_ops *old = frontswap_ops;
+ 	int i;
+ 
+-	frontswap_ops = *ops;
+ 	frontswap_enabled = true;
+ 
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
+ 		if (test_and_clear_bit(i, need_init))
+-			(*frontswap_ops.init)(i);
++			ops->init(i);
+ 	}
+-	/* We MUST have backend_registered called _after_ the frontswap_init's
++	/* We MUST have frontswap_ops set _after_ the frontswap_init's
+  	 * have been called. Otherwise __frontswap_store might fail. */
+ 	barrier();
+-	backend_registered = true;
++	frontswap_ops = ops;
+ 	return old;
+ }
+ EXPORT_SYMBOL(frontswap_register_ops);
+@@ -141,11 +139,11 @@ void __frontswap_init(unsigned type)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (backend_registered) {
++	if (frontswap_ops) {
+ 		BUG_ON(sis == NULL);
+ 		if (sis->frontswap_map == NULL)
+ 			return;
+-		(*frontswap_ops.init)(type);
++		frontswap_ops->init(type);
+ 	}
+ 	else {
+ 		BUG_ON(type > MAX_SWAPFILES);
+@@ -176,7 +174,7 @@ int __frontswap_store(struct page *page)
+ 	struct swap_info_struct *sis = swap_info[type];
+ 	pgoff_t offset = swp_offset(entry);
+ 
+-	if (!backend_registered) {
++	if (!frontswap_ops) {
+ 		inc_frontswap_failed_stores();
+ 		return ret;
+ 	}
+@@ -185,7 +183,7 @@ int __frontswap_store(struct page *page)
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset))
+ 		dup = 1;
+-	ret = frontswap_ops.store(type, offset, page);
++	ret = frontswap_ops->store(type, offset, page);
+ 	if (ret == 0) {
+ 		frontswap_set(sis, offset);
+ 		inc_frontswap_succ_stores();
+@@ -220,13 +218,13 @@ int __frontswap_load(struct page *page)
+ 	struct swap_info_struct *sis = swap_info[type];
+ 	pgoff_t offset = swp_offset(entry);
+ 
+-	if (!backend_registered)
++	if (!frontswap_ops)
+ 		return ret;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset))
+-		ret = frontswap_ops.load(type, offset, page);
++		ret = frontswap_ops->load(type, offset, page);
+ 	if (ret == 0) {
+ 		inc_frontswap_loads();
+ 		if (frontswap_tmem_exclusive_gets_enabled) {
+@@ -246,12 +244,12 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (!backend_registered)
++	if (!frontswap_ops)
+ 		return;
+ 
+ 	BUG_ON(sis == NULL);
+ 	if (frontswap_test(sis, offset)) {
+-		frontswap_ops.invalidate_page(type, offset);
++		frontswap_ops->invalidate_page(type, offset);
+ 		__frontswap_clear(sis, offset);
+ 		inc_frontswap_invalidates();
+ 	}
+@@ -266,11 +264,11 @@ void __frontswap_invalidate_area(unsigned type)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+-	if (backend_registered) {
++	if (frontswap_ops) {
+ 		BUG_ON(sis == NULL);
+ 		if (sis->frontswap_map == NULL)
+ 			return;
+-		(*frontswap_ops.invalidate_area)(type);
++		frontswap_ops->invalidate_area(type);
+ 		atomic_set(&sis->frontswap_pages, 0);
+ 		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+ 	}
+-- 
+1.7.7.6
 
- Patches 1 and 2 are the original [2] patches to cleancache and frontswap
- proposed by Erlangen University, but rebased to 3.7-rcN plus a couple
- of bug fixes I found necessary to run properly + extra review comments.
- 
- [2] http://www.spinics.net/lists/linux-mm/msg31490.html
-
- The other two:
- [PATCH 3/8] frontswap: Make frontswap_init use a pointer for the
- [PATCH 4/8] cleancache: Make cleancache_init use a pointer for the
- do a bit of code cleanup that can be done to make it easier to
- read and also remove some of the bools.
- 
- [PATCH 5/8] staging: zcache2+ramster: enable ramster to be
- Enables module support for zcache2.  Zsmalloc support
- has not yet been merged into zcache2 but, once merged, could now
- easily be selected via a module_param.
- 
- [PATCH 6/8] staging: zcache2+ramster: enable zcache2 to be
- Enables module support for ramster.  Ramster will now be
- enabled with a module_param to zcache2.
- 
- [PATCH 7/8] xen: tmem: enable Xen tmem shim to be built/loaded as a
- [PATCH 8/8] xen/tmem: Remove the subsys call.
- Enables module support for the Xen tmem shim.  Xen self-ballooning and
- frontswap-selfshrinking are also "lazily"
- initialized when the Xen tmem shim is loaded as a module, unless
- explicitly disabled by module_params.
-
-
-Dan Magenheimer (5):
-      mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
-      mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-      staging: zcache2+ramster: enable ramster to be built/loaded as a module
-      staging: zcache2+ramster: enable zcache2 to be built/loaded as a module
-      xen: tmem: enable Xen tmem shim to be built/loaded as a module
-
-Konrad Rzeszutek Wilk (3):
-      frontswap: Make frontswap_init use a pointer for the ops.
-      cleancache: Make cleancache_init use a pointer for the ops
-      xen/tmem: Remove the subsys call.
-
-
- drivers/staging/ramster/Kconfig                    |    6 +-
- drivers/staging/ramster/Makefile                   |   11 +-
- drivers/staging/ramster/ramster.h                  |    6 +-
- drivers/staging/ramster/ramster/nodemanager.c      |    9 +-
- drivers/staging/ramster/ramster/ramster.c          |   29 +++-
- drivers/staging/ramster/ramster/ramster.h          |    2 +-
- .../staging/ramster/ramster/ramster_nodemanager.h  |    2 +
- drivers/staging/ramster/tmem.c                     |    6 +-
- drivers/staging/ramster/tmem.h                     |    8 +-
- drivers/staging/ramster/zcache-main.c              |   63 ++++++--
- drivers/staging/ramster/zcache.h                   |    2 +-
- drivers/staging/zcache/zcache-main.c               |   16 +-
- drivers/xen/Kconfig                                |    4 +-
- drivers/xen/tmem.c                                 |   50 ++++--
- drivers/xen/xen-selfballoon.c                      |   13 +-
- include/linux/cleancache.h                         |    2 +-
- include/linux/frontswap.h                          |    2 +-
- include/xen/tmem.h                                 |    8 +
- mm/cleancache.c                                    |  167 +++++++++++++++++---
- mm/frontswap.c                                     |   78 +++++++--
- 20 files changed, 371 insertions(+), 113 deletions(-)
