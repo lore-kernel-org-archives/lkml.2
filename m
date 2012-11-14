@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423230Ab2KNStH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:49:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23090 "EHLO mx1.redhat.com"
+	id S1423246Ab2KNStY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:49:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37532 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423191Ab2KNStF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 13:49:05 -0500
-Date: Wed, 14 Nov 2012 19:49:29 +0100
+	id S1423191Ab2KNStX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 13:49:23 -0500
+Date: Wed, 14 Nov 2012 19:49:53 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,59 +14,166 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Anton Arapov <anton@redhat.com>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/1] uprobes: Use percpu_rw_semaphore to fix
+Subject: [PATCH v2 1/1] uprobes: Use percpu_rw_semaphore to fix
 	register/unregister vs dup_mmap() race
-Message-ID: <20121114184929.GA6977@redhat.com>
+Message-ID: <20121114184953.GA6972@redhat.com>
+References: <20121114184929.GA6977@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121114184929.GA6977@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This was always racy, but 268720903f87e0b84b161626c4447b81671b5d18
+"uprobes: Rework register_for_each_vma() to make it O(n)" should be
+blamed anyway, it made everything worse and I didn't notice.
 
-The same patch I sent before, the only difference is that it uses
-percpu_rw_semaphore instead of brw_mutex.
+register/unregister call build_map_info() and then do install/remove
+breakpoint for every mm which mmaps inode/offset. This can obviously
+race with fork()->dup_mmap() in between and we can miss the child.
 
-Srikar, I'll hope you can ack v2 too, and unless someone objects
-I'll ask Ingo to pull this fix.
+uprobe_register() could be easily fixed but unregister is much worse,
+the new mm inherits "int3" from parent and there is no way to detect
+this if uprobe goes away.
 
-Tejun, recently we briefly discussed signal->group_rwsem, please
-see the note about cgroups below.
+So this patch simply adds percpu_down_read/up_read around dup_mmap(),
+and percpu_down_write/up_write into register_for_each_vma().
 
-Note:
+This adds 2 new hooks into dup_mmap() but we can kill uprobe_dup_mmap()
+and fold it into uprobe_end_dup_mmap().
 
-	- The current implementation of percpu_rw_semaphore is not
-	  optimal, register/unregister will block fork() completely
-	  while it sleeps in msleep() and synchronize_sched().
+Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/uprobes.h |    8 ++++++++
+ kernel/events/uprobes.c |   26 +++++++++++++++++++++++---
+ kernel/fork.c           |    2 ++
+ 3 files changed, 33 insertions(+), 3 deletions(-)
 
-	  So this patch assumes that
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 2615c4d..4f628a6 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -97,6 +97,8 @@ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_con
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+ extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
++extern void uprobe_start_dup_mmap(void);
++extern void uprobe_end_dup_mmap(void);
+ extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+@@ -127,6 +129,12 @@ static inline void
+ uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ }
++static inline void uprobe_start_dup_mmap(void)
++{
++}
++static inline void uprobe_end_dup_mmap(void)
++{
++}
+ static inline void
+ uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
+ {
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index e616a7c..5e22faf 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -33,6 +33,7 @@
+ #include <linux/ptrace.h>	/* user_enable_single_step */
+ #include <linux/kdebug.h>	/* notifier mechanism */
+ #include "../../mm/internal.h"	/* munlock_vma_page */
++#include <linux/percpu-rwsem.h>
+ 
+ #include <linux/uprobes.h>
+ 
+@@ -71,6 +72,8 @@ static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
+ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+ #define uprobes_mmap_hash(v)	(&uprobes_mmap_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
+ 
++static struct percpu_rw_semaphore dup_mmap_sem;
++
+ /*
+  * uprobe_events allows us to skip the uprobe_mmap if there are no uprobe
+  * events active at this time.  Probably a fine grained per inode count is
+@@ -766,10 +769,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 	struct map_info *info;
+ 	int err = 0;
+ 
++	percpu_down_write(&dup_mmap_sem);
+ 	info = build_map_info(uprobe->inode->i_mapping,
+ 					uprobe->offset, is_register);
+-	if (IS_ERR(info))
+-		return PTR_ERR(info);
++	if (IS_ERR(info)) {
++		err = PTR_ERR(info);
++		goto out;
++	}
+ 
+ 	while (info) {
+ 		struct mm_struct *mm = info->mm;
+@@ -799,7 +805,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 		mmput(mm);
+ 		info = free_map_info(info);
+ 	}
+-
++ out:
++	percpu_up_write(&dup_mmap_sem);
+ 	return err;
+ }
+ 
+@@ -1131,6 +1138,16 @@ void uprobe_clear_state(struct mm_struct *mm)
+ 	kfree(area);
+ }
+ 
++void uprobe_start_dup_mmap(void)
++{
++	percpu_down_read(&dup_mmap_sem);
++}
++
++void uprobe_end_dup_mmap(void)
++{
++	percpu_up_read(&dup_mmap_sem);
++}
++
+ void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
+ {
+ 	newmm->uprobes_state.xol_area = NULL;
+@@ -1597,6 +1614,9 @@ static int __init init_uprobes(void)
+ 		mutex_init(&uprobes_mmap_mutex[i]);
+ 	}
+ 
++	if (percpu_init_rwsem(&dup_mmap_sem))
++		return -ENOMEM;
++
+ 	return register_die_notifier(&uprobe_exception_nb);
+ }
+ module_init(init_uprobes);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 8b20ab7..c497e57 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -352,6 +352,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 	unsigned long charge;
+ 	struct mempolicy *pol;
+ 
++	uprobe_start_dup_mmap();
+ 	down_write(&oldmm->mmap_sem);
+ 	flush_cache_dup_mm(oldmm);
+ 	uprobe_dup_mmap(oldmm, mm);
+@@ -469,6 +470,7 @@ out:
+ 	up_write(&mm->mmap_sem);
+ 	flush_tlb_mm(oldmm);
+ 	up_write(&oldmm->mmap_sem);
++	uprobe_end_dup_mmap();
+ 	return retval;
+ fail_nomem_anon_vma_fork:
+ 	mpol_put(pol);
+-- 
+1.5.5.1
 
-	  	percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessarily.patch
-	  	http://marc.info/?l=linux-mm-commits&m=135240650828875
-
-	  will be applied eventually (and the new implementation can be
-	  improved).
-
-	- This patch adds percpu_down_read/up_read around dup_mmap()
-	  for uprobes.
-
-	  Given that it is very cheap (and assuming the optimizations
-	  above), _perhaps_ we can turn this dup_mmap_sem into fork_sem
-	  and use it instead of threadgroup_change_begin/end, so that
-	  uprobes and cgroups can use it.
-
-	- Compared to v1, percpu_rw_semaphore doesn't support multi-
-	  writers. I hope we can tolerate this, register/unregister
-	  are system-wide and rare events anyway. And _perhaps_ we
-	  can add percpu_down_write_nonexclusive() later.
-
-	- Given that currently percpu_down_write() is exclusive, this
-	  patch almost dismisses the purpose of uprobes_mutex[] array.
-
-	  Yes, but we need to rework this locking anyway for filtering.
-
-Oleg.
 
