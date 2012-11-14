@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab2KNWp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:45:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45542 "EHLO
+	id S933230Ab2KNWqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:46:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45557 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab2KNWpz (ORCPT
+	with ESMTP id S932997Ab2KNWqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:45:55 -0500
-Date: Wed, 14 Nov 2012 13:35:17 -0800
+	Wed, 14 Nov 2012 17:46:30 -0500
+Date: Wed, 14 Nov 2012 13:29:59 -0800
 From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-69d130989b0f96508f02f508b88f545fec72cc08@git.kernel.org>
+Message-ID: <tip-f72614ed18fb4698d27a3d5cfdea96599b08a084@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1352835171-3958-15-git-send-email-fenghua.yu@intel.com>
-References: <1352835171-3958-15-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1352835171-3958-10-git-send-email-fenghua.yu@intel.com>
+References: <1352835171-3958-10-git-send-email-fenghua.yu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86, topology: Debug CPU0 hotplug
-Git-Commit-ID: 69d130989b0f96508f02f508b88f545fec72cc08
+Subject: [tip:x86/bsp-hotplug] x86, hotplug:
+  Wake up CPU0 via NMI instead of INIT, SIPI, SIPI
+Git-Commit-ID: f72614ed18fb4698d27a3d5cfdea96599b08a084
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,207 +28,267 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:45:50 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 14:46:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  69d130989b0f96508f02f508b88f545fec72cc08
-Gitweb:     http://git.kernel.org/tip/69d130989b0f96508f02f508b88f545fec72cc08
+Commit-ID:  f72614ed18fb4698d27a3d5cfdea96599b08a084
+Gitweb:     http://git.kernel.org/tip/f72614ed18fb4698d27a3d5cfdea96599b08a084
 Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Tue, 13 Nov 2012 11:32:51 -0800
+AuthorDate: Tue, 13 Nov 2012 11:32:46 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Nov 2012 10:29:04 -0800
+CommitDate: Wed, 14 Nov 2012 09:39:53 -0800
 
-x86, topology: Debug CPU0 hotplug
+x86, hotplug: Wake up CPU0 via NMI instead of INIT, SIPI, SIPI
 
-CONFIG_DEBUG_HOTPLUG_CPU0 is for debugging the CPU0 hotplug feature. The switch
-offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
-User can online CPU0 back after boot time. The default value of the switch is
-off.
+Instead of waiting for STARTUP after INITs, BSP will execute the BIOS boot-strap
+code which is not a desired behavior for waking up BSP. To avoid the boot-strap
+code, wake up CPU0 by NMI instead.
 
-To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
-turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
-cpu0_hotplug kernel parameter at boot.
+This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined (i.e.
+physically hot removed and then hot added), NMI won't wake it up. We'll change
+this code in the future to wake up hard offlined CPU0 if real platform and
+request are available.
 
-It's safe and early place to take down CPU0 after all hotplug notifiers
-are installed and SMP is booted.
-
-Please note that some applications or drivers, e.g. some versions of udevd,
-during boot time may put CPU0 online again in this CPU0 hotplug debug mode.
-
-In this debug mode, setup_local_APIC() may report a warning on max_loops<=0
-when CPU0 is onlined back after boot time. This is because pending interrupt in
-IRR can not move to ISR. The warning is not CPU0 specfic and it can happen on
-other CPUs as well. It is harmless except the first CPU0 online takes a bit
-longer time. And so this debug mode is useful to expose this issue. I'll send
-a seperate patch to fix this generic warning issue.
+AP is still waken up as before by INIT, SIPI, SIPI sequence.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1352835171-3958-15-git-send-email-fenghua.yu@intel.com
+Link: http://lkml.kernel.org/r/1352835171-3958-10-git-send-email-fenghua.yu@intel.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig           | 15 ++++++++++++++
- arch/x86/include/asm/cpu.h |  3 +++
- arch/x86/kernel/topology.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/power/cpu.c       | 38 ++++++++++++++++++++++++++++++++++
- 4 files changed, 107 insertions(+)
+ arch/x86/include/asm/cpu.h |   1 +
+ arch/x86/kernel/smpboot.c  | 113 ++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 107 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 036e89a..b6cfa5f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1727,6 +1727,21 @@ config BOOTPARAM_HOTPLUG_CPU0
- 	  You still can enable the CPU0 hotplug feature at boot by kernel
- 	  parameter cpu0_hotplug.
- 
-+config DEBUG_HOTPLUG_CPU0
-+	def_bool n
-+	prompt "Debug CPU0 hotplug"
-+	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	---help---
-+	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
-+	  soon as possible and boots up userspace with CPU0 offlined. User
-+	  can online CPU0 back after boot time.
-+
-+	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
-+	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
-+	  compilation or giving cpu0_hotplug kernel parameter at boot.
-+
-+	  If unsure, say N.
-+
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
 diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index a119572..5f9a124 100644
+index 4564c8e..a119572 100644
 --- a/arch/x86/include/asm/cpu.h
 +++ b/arch/x86/include/asm/cpu.h
-@@ -29,6 +29,9 @@ struct x86_cpu {
+@@ -28,6 +28,7 @@ struct x86_cpu {
+ #ifdef CONFIG_HOTPLUG_CPU
  extern int arch_register_cpu(int num);
  extern void arch_unregister_cpu(int);
- extern void __cpuinit start_cpu0(void);
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+extern int _debug_hotplug_cpu(int cpu, int action);
-+#endif
++extern void __cpuinit start_cpu0(void);
  #endif
  
  DECLARE_PER_CPU(int, cpu_state);
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 0e7b4a7..6e60b5f 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -50,6 +50,57 @@ static int __init enable_cpu0_hotplug(char *str)
- __setup("cpu0_hotplug", enable_cpu0_hotplug);
- #endif
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c297907..504769d 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -138,15 +138,17 @@ static void __cpuinit smp_callin(void)
+ 	 * we may get here before an INIT-deassert IPI reaches
+ 	 * our local APIC.  We have to wait for the IPI or we'll
+ 	 * lock up on an APIC access.
++	 *
++	 * Since CPU0 is not wakened up by INIT, it doesn't wait for the IPI.
+ 	 */
+-	if (apic->wait_for_init_deassert)
++	cpuid = smp_processor_id();
++	if (apic->wait_for_init_deassert && cpuid != 0)
+ 		apic->wait_for_init_deassert(&init_deasserted);
  
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+/*
-+ * This function offlines a CPU as early as possible and allows userspace to
-+ * boot up without the CPU. The CPU can be onlined back by user after boot.
-+ *
-+ * This is only called for debugging CPU offline/online feature.
-+ */
-+int __ref _debug_hotplug_cpu(int cpu, int action)
+ 	/*
+ 	 * (This works even if the APIC is not enabled.)
+ 	 */
+ 	phys_id = read_apic_id();
+-	cpuid = smp_processor_id();
+ 	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+ 		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+ 					phys_id, cpuid);
+@@ -228,6 +230,8 @@ static void __cpuinit smp_callin(void)
+ 	cpumask_set_cpu(cpuid, cpu_callin_mask);
+ }
+ 
++static int cpu0_logical_apicid;
++static int enable_start_cpu0;
+ /*
+  * Activate a secondary processor.
+  */
+@@ -243,6 +247,8 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	preempt_disable();
+ 	smp_callin();
+ 
++	enable_start_cpu0 = 0;
++
+ #ifdef CONFIG_X86_32
+ 	/* switch away from the initial page table */
+ 	load_cr3(swapper_pg_dir);
+@@ -492,7 +498,7 @@ void __inquire_remote_apic(int apicid)
+  * won't ... remember to clear down the APIC, etc later.
+  */
+ int __cpuinit
+-wakeup_secondary_cpu_via_nmi(int logical_apicid, unsigned long start_eip)
++wakeup_secondary_cpu_via_nmi(int apicid, unsigned long start_eip)
+ {
+ 	unsigned long send_status, accept_status = 0;
+ 	int maxlvt;
+@@ -500,7 +506,7 @@ wakeup_secondary_cpu_via_nmi(int logical_apicid, unsigned long start_eip)
+ 	/* Target chip */
+ 	/* Boot on the stack */
+ 	/* Kick the second */
+-	apic_icr_write(APIC_DM_NMI | apic->dest_logical, logical_apicid);
++	apic_icr_write(APIC_DM_NMI | apic->dest_logical, apicid);
+ 
+ 	pr_debug("Waiting for send to finish...\n");
+ 	send_status = safe_apic_wait_icr_idle();
+@@ -660,6 +666,63 @@ static void __cpuinit announce_cpu(int cpu, int apicid)
+ 			node, cpu, apicid);
+ }
+ 
++static int wakeup_cpu0_nmi(unsigned int cmd, struct pt_regs *regs)
 +{
-+	struct device *dev = get_cpu_device(cpu);
-+	int ret;
++	int cpu;
 +
-+	if (!cpu_is_hotpluggable(cpu))
-+		return -EINVAL;
++	cpu = smp_processor_id();
++	if (cpu == 0 && !cpu_online(cpu) && enable_start_cpu0)
++		return NMI_HANDLED;
 +
-+	cpu_hotplug_driver_lock();
++	return NMI_DONE;
++}
 +
-+	switch (action) {
-+	case 0:
-+		ret = cpu_down(cpu);
-+		if (!ret) {
-+			pr_info("CPU %u is now offline\n", cpu);
-+			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-+		} else
-+			pr_debug("Can't offline CPU%d.\n", cpu);
-+		break;
-+	case 1:
-+		ret = cpu_up(cpu);
-+		if (!ret)
-+			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
++/*
++ * Wake up AP by INIT, INIT, STARTUP sequence.
++ *
++ * Instead of waiting for STARTUP after INITs, BSP will execute the BIOS
++ * boot-strap code which is not a desired behavior for waking up BSP. To
++ * void the boot-strap code, wake up CPU0 by NMI instead.
++ *
++ * This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined
++ * (i.e. physically hot removed and then hot added), NMI won't wake it up.
++ * We'll change this code in the future to wake up hard offlined CPU0 if
++ * real platform and request are available.
++ */
++static int __cpuinit
++wakeup_cpu_via_init_nmi(int cpu, unsigned long start_ip, int apicid,
++	       int *cpu0_nmi_registered)
++{
++	int id;
++	int boot_error;
++
++	/*
++	 * Wake up AP by INIT, INIT, STARTUP sequence.
++	 */
++	if (cpu)
++		return wakeup_secondary_cpu_via_init(apicid, start_ip);
++
++	/*
++	 * Wake up BSP by nmi.
++	 *
++	 * Register a NMI handler to help wake up CPU0.
++	 */
++	boot_error = register_nmi_handler(NMI_LOCAL,
++					  wakeup_cpu0_nmi, 0, "wake_cpu0");
++
++	if (!boot_error) {
++		enable_start_cpu0 = 1;
++		*cpu0_nmi_registered = 1;
++		if (apic->dest_logical == APIC_DEST_LOGICAL)
++			id = cpu0_logical_apicid;
 +		else
-+			pr_debug("Can't online CPU%d.\n", cpu);
-+		break;
-+	default:
-+		ret = -EINVAL;
++			id = apicid;
++		boot_error = wakeup_secondary_cpu_via_nmi(id, start_ip);
 +	}
 +
-+	cpu_hotplug_driver_unlock();
-+
-+	return ret;
++	return boot_error;
 +}
 +
-+static int __init debug_hotplug_cpu(void)
-+{
-+	_debug_hotplug_cpu(0, 0);
-+	return 0;
-+}
-+
-+late_initcall_sync(debug_hotplug_cpu);
-+#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
-+
- int __ref arch_register_cpu(int num)
- {
- 	struct cpuinfo_x86 *c = &cpu_data(num);
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index adde775..120cee1 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -21,6 +21,7 @@
- #include <asm/suspend.h>
- #include <asm/debugreg.h>
- #include <asm/fpu-internal.h> /* pcntxt_mask */
-+#include <asm/cpu.h>
+ /*
+  * NOTE - on most systems this is a PHYSICAL apic ID, but on multiquad
+  * (ie clustered apic addressing mode), this is a LOGICAL apic ID.
+@@ -675,6 +738,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
  
- #ifdef CONFIG_X86_32
- static struct saved_context saved_context;
-@@ -263,6 +264,43 @@ static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
- 	case PM_HIBERNATION_PREPARE:
- 		ret = bsp_check();
- 		break;
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+	case PM_RESTORE_PREPARE:
-+		/*
-+		 * When system resumes from hibernation, online CPU0 because
-+		 * 1. it's required for resume and
-+		 * 2. the CPU was online before hibernation
-+		 */
-+		if (!cpu_online(0))
-+			_debug_hotplug_cpu(0, 1);
-+		break;
-+	case PM_POST_RESTORE:
-+		/*
-+		 * When a resume really happens, this code won't be called.
-+		 *
-+		 * This code is called only when user space hibernation software
-+		 * prepares for snapshot device during boot time. So we just
-+		 * call _debug_hotplug_cpu() to restore to CPU0's state prior to
-+		 * preparing the snapshot device.
-+		 *
-+		 * This works for normal boot case in our CPU0 hotplug debug
-+		 * mode, i.e. CPU0 is offline and user mode hibernation
-+		 * software initializes during boot time.
-+		 *
-+		 * If CPU0 is online and user application accesses snapshot
-+		 * device after boot time, this will offline CPU0 and user may
-+		 * see different CPU0 state before and after accessing
-+		 * the snapshot device. But hopefully this is not a case when
-+		 * user debugging CPU0 hotplug. Even if users hit this case,
-+		 * they can easily online CPU0 back.
-+		 *
-+		 * To simplify this debug code, we only consider normal boot
-+		 * case. Otherwise we need to remember CPU0's state and restore
-+		 * to that state and resolve racy conditions etc.
-+		 */
-+		_debug_hotplug_cpu(0, 0);
-+		break;
-+#endif
- 	default:
- 		break;
+ 	unsigned long boot_error = 0;
+ 	int timeout;
++	int cpu0_nmi_registered = 0;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -722,13 +786,16 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
  	}
+ 
+ 	/*
+-	 * Kick the secondary CPU. Use the method in the APIC driver
+-	 * if it's defined - or use an INIT boot APIC message otherwise:
++	 * Wake up a CPU in difference cases:
++	 * - Use the method in the APIC driver if it's defined
++	 * Otherwise,
++	 * - Use an INIT boot APIC message for APs or NMI for BSP.
+ 	 */
+ 	if (apic->wakeup_secondary_cpu)
+ 		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+ 	else
+-		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
++						     &cpu0_nmi_registered);
+ 
+ 	if (!boot_error) {
+ 		/*
+@@ -793,6 +860,13 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		 */
+ 		smpboot_restore_warm_reset_vector();
+ 	}
++	/*
++	 * Clean up the nmi handler. Do this after the callin and callout sync
++	 * to avoid impact of possible long unregister time.
++	 */
++	if (cpu0_nmi_registered)
++		unregister_nmi_handler(NMI_LOCAL, "wake_cpu0");
++
+ 	return boot_error;
+ }
+ 
+@@ -1037,6 +1111,11 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	 */
+ 	setup_local_APIC();
+ 
++	if (x2apic_mode)
++		cpu0_logical_apicid = apic_read(APIC_LDR);
++	else
++		cpu0_logical_apicid = GET_APIC_LOGICAL_ID(apic_read(APIC_LDR));
++
+ 	/*
+ 	 * Enable IO APIC before setting up error vector
+ 	 */
+@@ -1264,6 +1343,16 @@ void play_dead_common(void)
+ 	local_irq_disable();
+ }
+ 
++static bool wakeup_cpu0(void)
++{
++	unsigned int timeout;
++
++	if (smp_processor_id() == 0 && enable_start_cpu0)
++		return true;
++
++	return false;
++}
++
+ /*
+  * We need to flush the caches before going to sleep, lest we have
+  * dirty data in our caches when we come back up.
+@@ -1327,6 +1416,11 @@ static inline void mwait_play_dead(void)
+ 		__monitor(mwait_ptr, 0, 0);
+ 		mb();
+ 		__mwait(eax, 0);
++		/*
++		 * If NMI wants to wake up CPU0, start CPU0.
++		 */
++		if (wakeup_cpu0())
++			start_cpu0();
+ 	}
+ }
+ 
+@@ -1337,6 +1431,11 @@ static inline void hlt_play_dead(void)
+ 
+ 	while (1) {
+ 		native_halt();
++		/*
++		 * If NMI wants to wake up CPU0, start CPU0.
++		 */
++		if (wakeup_cpu0())
++			start_cpu0();
+ 	}
+ }
+ 
