@@ -1,273 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab2KNCXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:23:22 -0500
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59535 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2KNCXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:23:20 -0500
-Date: Tue, 13 Nov 2012 18:23:13 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
-Subject: Re: [PATCH 21/31] sched, numa, mm: Implement THP migration
-In-Reply-To: <20121113184835.GH10092@cmpxchg.org>
-Message-ID: <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
-References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <1352826834-11774-22-git-send-email-mingo@kernel.org> <20121113184835.GH10092@cmpxchg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932442Ab2KNCX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:23:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:23682 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932375Ab2KNCXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 21:23:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="246648948"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Zheng, Lv" <lv.zheng@intel.com>
+Subject: RE: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
+ objects
+Thread-Topic: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
+ objects
+Thread-Index: AQHNwRiioOP9jIS+5UWx2cJd20NobJfn4E6AgAAVKMCAAM23gP//j3MwgACVkwD//6+HIA==
+Date: Wed, 14 Nov 2012 02:23:51 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346BC08EB@ORSMSX101.amr.corp.intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2586712.Jsv1H95qXQ@vostro.rjw.lan>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E346BC083A@ORSMSX101.amr.corp.intel.com>
+ <1957831.MvUm7YPtfp@vostro.rjw.lan>
+In-Reply-To: <1957831.MvUm7YPtfp@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAE2O0Sb019282
 
-On Tue, 13 Nov 2012, Johannes Weiner wrote:
-> [Put Hugh back on CC]
+Rafael,
+
+I sounds like with a few changes, we can enhance this mechanism to be more useful to you and others. Some comments below. I need to look at the code in question a bit more, but I see no insurmountable issues.
+
+Bob
+
+
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Tuesday, November 13, 2012 2:57 PM
+> To: Moore, Robert
+> Cc: Mika Westerberg; mathias.nyman@linux.intel.com; linux-
+> acpi@vger.kernel.org; linux-kernel@vger.kernel.org; lenb@kernel.org;
+> Wysocki, Rafael J; broonie@opensource.wolfsonmicro.com;
+> grant.likely@secretlab.ca; linus.walleij@linaro.org; khali@linux-fr.org;
+> Bjorn Helgaas; Zheng, Lv
+> Subject: Re: [PATCH 3/3] ACPI: Evaluate _CRS while creating device node
+> objects
 > 
-> What happened to Hugh's fixes to the LRU handling?  I believe it was
-> racy beyond affecting memcg, it's just that memcg code had a BUG_ON in
-> the right place to point it out.
+> On Tuesday, November 13, 2012 10:06:03 PM Moore, Robert wrote:
+> > I may not quite understand what you are asking for, but I will try.
+> > It seems like we already have much of what you want/need, so maybe I'm
+> > missing something.
+> 
+> I think all of the necessary pieces are there.
+> 
+> > > So what I would like to have, in general terms, is something like
+> > > acpi_walk_resources() split into three parts:
+> > >
+> > >  (1) One that processes the _CRS output and creates a list of
+> > >      struct acpi_resource objects for us to play with.  I suppose
+> > >      it's OK if that's just a buffer filled with resource objects,
+> > >      but a linked list might be more convenient.
+> > >
+> >
+> > This sounds like AcpiGetCurrentResources. It executes _CRS and formats
+> > the data into acpi_resource objects.
+> 
+> Yes, it does.  However, it is not completely clear to me if/how the caller
+> is supposed to prepare the buffer object pointed to by the second arg.
+> 
+> If the buffer is initialized by AcpiGetCurrentResources, then that's what
+> I need for (1).
 
-Right, yes, I made several fixes there, but never sent out the final
-version.  And I can't see your fix to the memcg end of THP migration
-either - though I've not done much more than scan the Subjects so far,
-I've not yet got to grips with yesterday/today's latest approach.
 
-I'll send out two patches, yours and mine, to what's in the current
-linux-next and the current mmotm, which I have been testing with in
-several contexts; they probably both apply easily to Ingo's new tree.
+It looks to me that at least AcpiGetCurrentResources does not actually ever allocate a buffer for the resource template, it expects the caller to eventually provide one of at least the size of the returned resource template.
 
-But I vehemently hope that this all very soon vanishes from linux-next,
-and the new stuff is worked on properly for a while, in a separate
-development branch of tip, hopefully converging with Mel's.
+This is really quite a bit out-of-date as far as the memory allocation model. It should also support the option to just allocate the buffer of the appropriate size before returning it to the caller.
 
-Hugh
+
+
 
 > 
-> On Tue, Nov 13, 2012 at 06:13:44PM +0100, Ingo Molnar wrote:
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > 
-> > Add THP migration for the NUMA working set scanning fault case.
-> > 
-> > It uses the page lock to serialize. No migration pte dance is
-> > necessary because the pte is already unmapped when we decide
-> > to migrate.
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Link: http://lkml.kernel.org/n/tip-yv9vbiz2s455zxq1ffzx3fye@git.kernel.org
-> > [ Significant fixes and changelog. ]
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> > ---
-> >  mm/huge_memory.c | 131 +++++++++++++++++++++++++++++++++++++++++++------------
-> >  mm/migrate.c     |   2 +-
-> >  2 files changed, 103 insertions(+), 30 deletions(-)
-> > 
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > index c4c0a57..931caf4 100644
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -742,12 +742,13 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  			   unsigned int flags, pmd_t entry)
-> >  {
-> >  	unsigned long haddr = address & HPAGE_PMD_MASK;
-> > +	struct page *new_page = NULL;
-> >  	struct page *page = NULL;
-> > -	int node;
-> > +	int node, lru;
-> >  
-> >  	spin_lock(&mm->page_table_lock);
-> >  	if (unlikely(!pmd_same(*pmd, entry)))
-> > -		goto out_unlock;
-> > +		goto unlock;
-> >  
-> >  	if (unlikely(pmd_trans_splitting(entry))) {
-> >  		spin_unlock(&mm->page_table_lock);
-> > @@ -755,45 +756,117 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  		return;
-> >  	}
-> >  
-> > -#ifdef CONFIG_NUMA
-> >  	page = pmd_page(entry);
-> > -	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> > +	if (page) {
-> > +		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> >  
-> > -	get_page(page);
-> > -	spin_unlock(&mm->page_table_lock);
-> > +		get_page(page);
-> > +		node = mpol_misplaced(page, vma, haddr);
-> > +		if (node != -1)
-> > +			goto migrate;
-> > +	}
-> >  
-> > -	/*
-> > -	 * XXX should we serialize against split_huge_page ?
-> > -	 */
-> > +fixup:
-> > +	/* change back to regular protection */
-> > +	entry = pmd_modify(entry, vma->vm_page_prot);
-> > +	set_pmd_at(mm, haddr, pmd, entry);
-> > +	update_mmu_cache_pmd(vma, address, entry);
-> >  
-> > -	node = mpol_misplaced(page, vma, haddr);
-> > -	if (node == -1)
-> > -		goto do_fixup;
-> > +unlock:
-> > +	spin_unlock(&mm->page_table_lock);
-> > +	if (page)
-> > +		put_page(page);
-> >  
-> > -	/*
-> > -	 * Due to lacking code to migrate thp pages, we'll split
-> > -	 * (which preserves the special PROT_NONE) and re-take the
-> > -	 * fault on the normal pages.
-> > -	 */
-> > -	split_huge_page(page);
-> > -	put_page(page);
-> >  	return;
-> >  
-> > -do_fixup:
-> > +migrate:
-> > +	spin_unlock(&mm->page_table_lock);
-> > +
-> > +	lock_page(page);
-> >  	spin_lock(&mm->page_table_lock);
-> > -	if (unlikely(!pmd_same(*pmd, entry)))
-> > -		goto out_unlock;
-> > -#endif
-> > +	if (unlikely(!pmd_same(*pmd, entry))) {
-> > +		spin_unlock(&mm->page_table_lock);
-> > +		unlock_page(page);
-> > +		put_page(page);
-> > +		return;
-> > +	}
-> > +	spin_unlock(&mm->page_table_lock);
-> >  
-> > -	/* change back to regular protection */
-> > -	entry = pmd_modify(entry, vma->vm_page_prot);
-> > -	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
-> > -		update_mmu_cache_pmd(vma, address, entry);
-> > +	new_page = alloc_pages_node(node,
-> > +	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
-> > +	    HPAGE_PMD_ORDER);
-> >  
-> > -out_unlock:
-> > +	if (!new_page)
-> > +		goto alloc_fail;
-> > +
-> > +	lru = PageLRU(page);
-> > +
-> > +	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-> > +		goto alloc_fail;
-> > +
-> > +	if (!trylock_page(new_page))
-> > +		BUG();
-> > +
-> > +	/* anon mapping, we can simply copy page->mapping to the new page: */
-> > +	new_page->mapping = page->mapping;
-> > +	new_page->index = page->index;
-> > +
-> > +	migrate_page_copy(new_page, page);
-> > +
-> > +	WARN_ON(PageLRU(new_page));
-> > +
-> > +	spin_lock(&mm->page_table_lock);
-> > +	if (unlikely(!pmd_same(*pmd, entry))) {
-> > +		spin_unlock(&mm->page_table_lock);
-> > +		if (lru)
-> > +			putback_lru_page(page);
-> > +
-> > +		unlock_page(new_page);
-> > +		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
-> > +		new_page->mapping = NULL;
-> > +		put_page(new_page);		/* Free it */
-> > +
-> > +		unlock_page(page);
-> > +		put_page(page);			/* Drop the local reference */
-> > +
-> > +		return;
-> > +	}
-> > +
-> > +	entry = mk_pmd(new_page, vma->vm_page_prot);
-> > +	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-> > +	entry = pmd_mkhuge(entry);
-> > +
-> > +	page_add_new_anon_rmap(new_page, vma, haddr);
-> > +
-> > +	set_pmd_at(mm, haddr, pmd, entry);
-> > +	update_mmu_cache_pmd(vma, address, entry);
-> > +	page_remove_rmap(page);
-> >  	spin_unlock(&mm->page_table_lock);
-> > -	if (page)
-> > +
-> > +	put_page(page);			/* Drop the rmap reference */
-> > +
-> > +	if (lru)
-> > +		put_page(page);		/* drop the LRU isolation reference */
-> > +
-> > +	unlock_page(new_page);
-> > +	unlock_page(page);
-> > +	put_page(page);			/* Drop the local reference */
-> > +
-> > +	return;
-> > +
-> > +alloc_fail:
-> > +	if (new_page)
-> > +		put_page(new_page);
-> > +
-> > +	unlock_page(page);
-> > +
-> > +	spin_lock(&mm->page_table_lock);
-> > +	if (unlikely(!pmd_same(*pmd, entry))) {
-> >  		put_page(page);
-> > +		page = NULL;
-> > +		goto unlock;
-> > +	}
-> > +	goto fixup;
-> >  }
-> >  
-> >  int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-> > diff --git a/mm/migrate.c b/mm/migrate.c
-> > index 3299949..72d1056 100644
-> > --- a/mm/migrate.c
-> > +++ b/mm/migrate.c
-> > @@ -417,7 +417,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
-> >   */
-> >  void migrate_page_copy(struct page *newpage, struct page *page)
-> >  {
-> > -	if (PageHuge(page))
-> > +	if (PageHuge(page) || PageTransHuge(page))
-> >  		copy_huge_page(newpage, page);
-> >  	else
-> >  		copy_highpage(newpage, page);
-> > -- 
-> > 1.7.11.7
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > >  (2) One that allows us to access (read/write) resources in the
+> > >      list returned by (1).  We don't need to open code walking
+> > >      the list and I probably wouldn't event want to do that.  What
+> > >      we need is to be able to walk the same list for a number of
+> > >      times and possibly to modify values in the resource objects
+> > >      if there are conflicts.
+> >
+> > This sounds like AcpiWalkResources. I suppose a possible issue is that
+> > currently, AcpiWalkResources actually invokes the _CRS, _PRS, or _AEI
+> > method on behalf of the caller.
+> 
+> Yes, that exactly is the problem.
+> 
+> > It might make more sense to allow the caller to pass in the resource
+> > buffer returned from a call to _CRS, etc.
+> 
+> Yes! :-)
+
+
+I'll take a closer look at this tomorrow.
+
+
+
+
+> 
+> > >
+> > >  (3) One allowing us to free the list returned by (1) if not needed
+> > >      any more.
+> > >
+> >
+> > AcpiGetCurrentResources: Currently, everything is returned in a single
+> > buffer to minimize the number of allocations. A buffer you can free
+> > when you are done with it.
+> 
+> I suppose I should use ACPI_FREE(buffer.pointer) for that, but isn't it
+> for the ACPICA's internal use only?
+> 
+> Besides, I would prefer to be able to pass just "buffer" for freeing,
+> without having to touch its internals.  No big deal, but it would be
+> nicer. :-)
+
+
+The ACPI_BUFFER type is in fact a public type that is meant to return both the buffer and the (actual) length. You will find many instances of ACPI_FREE(buffer.pointer) within existing linux code, since it also used for objects returned by control method execution/object evaluation.
+
+
+> 
+> > I think I saw where you mentioned that you cannot copy this buffer
+> > because of internal pointers to other areas of the buffer. Yes.
+> > However, we can build linked lists all day if you really want them :-)
+> 
+> I really won't care if I can pass a resource buffer to a "walker" routine.
+> :-)
+> 
+> > > And it would be great if we could take the list returned by (1),
+> > > modify the resources in it and feed it back to _SRS (after
+> > > conversion back to the format that _SRS understands).
+> > >
+> >
+> > AcpiSetCurrentResources.
+> >
+> > The AML debugger already has a command that illustrates the use of the
+> > various resource interfaces, see dbcmds.c
+> 
+> I will.
+> 
+> Thanks,
+> Rafael
+> 
 > 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
