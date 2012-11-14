@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab2KNGCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:02:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55122 "EHLO
+	id S1756386Ab2KNGC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:02:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55114 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280Ab2KNFug (ORCPT
+	by vger.kernel.org with ESMTP id S1756256Ab2KNFud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:36 -0500
-Message-Id: <20121114053942.130165168@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:33 -0500
+Message-Id: <20121114053942.537438122@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:33 +0000
+Date: Wed, 14 Nov 2012 05:40:36 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Massimo Del Fedele <max@veneto.com>
-Subject: [ 60/82] ALSA: hda - Fix invalid connections in VT1802 codec
+        Dave Chinner <dchinner@redhat.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Christoph Hellwig <hch@lst.de>, Mark Tinguely <tinguely@sgi.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [ 63/82] xfs: fix reading of wrapped log data
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,51 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit ef4da45828603df57e5e21b8aa21a66ce309f79b upstream.
+commit 6ce377afd1755eae5c93410ca9a1121dfead7b87 upstream.
 
-VT1802 codec provides the invalid connection lists of NID 0x24 and
-0x33 containing the routes to a non-exist widget 0x3e.  This confuses
-the auto-parser.  Fix it up in the driver by overriding these
-connections.
+Commit 4439647 ("xfs: reset buffer pointers before freeing them") in
+3.0-rc1 introduced a regression when recovering log buffers that
+wrapped around the end of log. The second part of the log buffer at
+the start of the physical log was being read into the header buffer
+rather than the data buffer, and hence recovery was seeing garbage
+in the data buffer when it got to the region of the log buffer that
+was incorrectly read.
 
-Reported-by: Massimo Del Fedele <max@veneto.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_via.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/xfs/xfs_log_recover.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -3686,6 +3686,18 @@ static void set_widgets_power_state_vt20
- 				    AC_VERB_SET_POWER_STATE, AC_PWRST_D3);
- }
- 
-+/* NIDs 0x24 and 0x33 on VT1802 have connections to non-existing NID 0x3e
-+ * Replace this with mixer NID 0x1c
-+ */
-+static void fix_vt1802_connections(struct hda_codec *codec)
-+{
-+	static hda_nid_t conn_24[] = { 0x14, 0x1c };
-+	static hda_nid_t conn_33[] = { 0x1c };
-+
-+	snd_hda_override_conn_list(codec, 0x24, ARRAY_SIZE(conn_24), conn_24);
-+	snd_hda_override_conn_list(codec, 0x33, ARRAY_SIZE(conn_33), conn_33);
-+}
-+
- /* patch for vt2002P */
- static int patch_vt2002P(struct hda_codec *codec)
- {
-@@ -3700,6 +3712,8 @@ static int patch_vt2002P(struct hda_code
- 	spec->aa_mix_nid = 0x21;
- 	override_mic_boost(codec, 0x2b, 0, 3, 40);
- 	override_mic_boost(codec, 0x29, 0, 3, 40);
-+	if (spec->codec_type == VT1802)
-+		fix_vt1802_connections(codec);
- 	add_secret_dac_path(codec);
- 
- 	/* automatic parse from the BIOS config */
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 5da3ace..d308749 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3541,7 +3541,7 @@ xlog_do_recovery_pass(
+ 				 *   - order is important.
+ 				 */
+ 				error = xlog_bread_offset(log, 0,
+-						bblks - split_bblks, hbp,
++						bblks - split_bblks, dbp,
+ 						offset + BBTOB(split_bblks));
+ 				if (error)
+ 					goto bread_err2;
 
 
