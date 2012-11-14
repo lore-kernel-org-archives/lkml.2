@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423031Ab2KNOo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:44:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63557 "EHLO mx1.redhat.com"
+	id S1755306Ab2KNOr4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:47:56 -0500
+Received: from ns.iliad.fr ([212.27.33.1]:37055 "EHLO ns.iliad.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964819Ab2KNOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:44:54 -0500
-Date: Wed, 14 Nov 2012 12:44:10 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: xiaoguangrong@linux.vnet.ibm.com, avi@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        qemu-devel@nongnu.org, owasserm@redhat.com, quintela@redhat.com,
-        pbonzini@redhat.com, chegu_vinod@hp.com, yamahata@valinux.co.jp
-Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
-Message-ID: <20121114144410.GB7054@amt.cnet>
-References: <50978DFE.1000005@linux.vnet.ibm.com>
- <20121112231032.GB5798@amt.cnet>
- <20121114003350.d6e8ff85658fccbf41183f05@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121114003350.d6e8ff85658fccbf41183f05@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751607Ab2KNOry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 09:47:54 -0500
+Message-ID: <1352904472.13818.66.camel@sakura.staff.proxad.net>
+Subject: Re: [RFC] MIPS: BCM63XX: add initial Device Tree support
+From: Maxime Bizon <mbizon@freebox.fr>
+Reply-To: mbizon@freebox.fr
+To: Jonas Gorski <jonas.gorski@gmail.com>
+Cc: linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+        John Crispin <blogic@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Wed, 14 Nov 2012 15:47:52 +0100
+In-Reply-To: <CAOiHx==1UxrmxB5kyeDQPF4HBYxY9h4Ha8mWErwm6znX=y75OA@mail.gmail.com>
+References: <1352638249-29298-1-git-send-email-jonas.gorski@gmail.com>
+	 <1352719094.10405.18.camel@sakura.staff.proxad.net>
+	 <CAOiHx==1UxrmxB5kyeDQPF4HBYxY9h4Ha8mWErwm6znX=y75OA@mail.gmail.com>
+Organization: Freebox
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 12:33:50AM +0900, Takuya Yoshikawa wrote:
-> Ccing live migration developers who should be interested in this work,
-> 
-> On Mon, 12 Nov 2012 21:10:32 -0200
-> Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> 
-> > On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
-> > > Do not drop large spte until it can be insteaded by small pages so that
-> > > the guest can happliy read memory through it
-> > > 
-> > > The idea is from Avi:
-> > > | As I mentioned before, write-protecting a large spte is a good idea,
-> > > | since it moves some work from protect-time to fault-time, so it reduces
-> > > | jitter.  This removes the need for the return value.
-> > > 
-> > > Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> > > ---
-> > >  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
-> > >  1 files changed, 9 insertions(+), 25 deletions(-)
-> > 
-> > Its likely that other 4k pages are mapped read-write in the 2mb range 
-> > covered by a read-only 2mb map. Therefore its not entirely useful to
-> > map read-only. 
-> > 
-> > Can you measure an improvement with this change?
-> 
-> What we discussed at KVM Forum last week was about the jitter we could
-> measure right after starting live migration: both Isaku and Chegu reported
-> such jitter.
-> 
-> So if this patch reduces such jitter for some real workloads, by lazily
-> dropping largepage mappings and saving read faults until that point, that
-> would be very nice!
-> 
-> But sadly, what they measured included interactions with the outside of the
-> guest, and the main cause was due to the big QEMU lock problem, they guessed.
-> The order is so different that an improvement by a kernel side effort may not
-> be seen easily.
-> 
-> FWIW: I am now changing the initial write protection by
-> kvm_mmu_slot_remove_write_access() to rmap based as I proposed at KVM Forum.
-> ftrace said that 1ms was improved to 250-350us by the change for 10GB guest.
-> My code still drops largepage mappings, so the initial write protection time
-> itself may not be a such big issue here, I think.
-> 
-> Again, if we can eliminate read faults to such an extent that guests can see
-> measurable improvement, that should be very nice!
-> 
-> Any thoughts?
-> 
-> Thanks,
-> 	Takuya
 
-OK, makes sense. I'm worried about shadow / oos interactions 
-with large read-only mappings (trying to remember what was the 
-case exactly, it might be non-existant now).
+On Wed, 2012-11-14 at 13:07 +0100, Jonas Gorski wrote:
+
+Thanks for addressing my concerns
+
+> > We can even build a single kernel that support all SOCs/boards.
+> 
+> That's not going to change with Device Tree, and I'm trying my best to
+> keep this.
+
+DT is said to be the solution to achieve this goal on ARM. I was just
+pointing out that we already have this today.
+
+> Not having to update board_bcm963xx.{c,h} because some vendor decided
+> to add e.g. a previously unused gpio-bitbanged device. Not having to
+> modify the kernel but just attach a (externally build) dtb to the
+> kernel to support a new board. Ideally in the far future even using a
+> CFE provided dtb. I'm sure there are more reasons.
+
+Put the board description in DT, but please leave the SOC out and don't
+try to describe them with DT, that's too preliminary.
+
+Let's support more SOCs first, we cannot generalize on what we don't
+know.
+
+> And nobody wants to do that. But - as Kevin already mentioned - it
+> would be nice if we get similar SoCs we already know about supported
+> with the same code; or at least , like BCM33xx, BCM68xx or maybe even
+> BCM7xxx (never looked at them, so I can't tell how viable that is).
+
+DT is not the key here
+
+code reuse/refactoring is
+
+> These special clocks are so that the original behaviour of the clocks
+> is kept.  I'd rather argue that the reset code does not belong into
+> the clock code, and is actually the responsibility of the driver. It
+> would make the clock code much simpler.
+
+and IMO would make the driver code uglier. You don't read clock code
+everyday, it's boring, you do read/change driver code much more often.
+
+> What would you suggest? Please no "don't use Device Tree", as I don't
+> think we can avoid that. I'm struggling to find something you are fine
+
+As I said in my original email, I don't think bcm63xx codebase suffers
+from any problem similar to what caused Linus' rant about ARM few years
+ago.
+
+Did someone threaten to stop merging our patches if we don't use DT ?
+
+> I wouldn't treat this as stable until we got it into a satisfactory
+> state with everything supported. Heck, I wouldn't even treat this as
+> stable until Broadcom ships it in their SDKs to customers with CFEs
+> providing DTBs to the kernel.
+
+DT will succeed if chip designers start thinking the other way around:
+making new chip backward compatible with existing code or DT bindings.
+If that does not happen, we just moving C struct/arrays into another
+format with no added benefits.
+
+So we have to call it stable, otherwise there is no incentive to use
+them.
+
+And I just hate stable interfaces (which developer doesn't ?), they
+require more maintenance/testing if you're serious about your work.
+
+-- 
+Maxime
+
 
