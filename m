@@ -1,189 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab2KNCZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:25:30 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:28635 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2KNCZ2 (ORCPT
+	id S932445Ab2KNC3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:29:45 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:43135 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab2KNC3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:25:28 -0500
-Message-ID: <1352859923.7889.2.camel@lorien2>
-Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Steven Rostedt <rostedt@goodmis.org>, roland@purestorage.com
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
-Date: Tue, 13 Nov 2012 19:25:23 -0700
-In-Reply-To: <20111204190008.804987080@goodmis.org>
-References: <20111204185444.411298317@goodmis.org>
-	 <20111204190008.804987080@goodmis.org>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 13 Nov 2012 21:29:44 -0500
+Date: Tue, 13 Nov 2012 18:29:43 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ingo Molnar <mingo@kernel.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
+Subject: [PATCH 2/2] sched, numa, mm: Fixes and cleanups in
+ do_huge_pmd_numa_page()
+In-Reply-To: <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
+Message-ID: <alpine.LNX.2.00.1211131828020.29612@eggly.anvils>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <1352826834-11774-22-git-send-email-mingo@kernel.org> <20121113184835.GH10092@cmpxchg.org> <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-04 at 13:54 -0500, Steven Rostedt wrote:
-> From: Roland Dreier <roland@purestorage.com>
-> 
-> When unbinding a device so that I could pass it through to a KVM VM, I
-> got the lockdep report below.  It looks like a legitimate lock
-> ordering problem:
+Refuse to migrate a THPage if its page count is raised: that covers both
+the case when it is mapped into another address space, and the case
+when it has been pinned by get_user_pages(), fast or slow.
 
-Did this patch not make it into stable releases other than 3.1. I
-couldn't find it in any other stable tress prior to 3.1.
+Repeat this check each time we recheck pmd_same() under page_table_lock:
+it is unclear how necessary this is, perhaps once after lock_page() or
+once after isolate_lru_page() would be enough; but normal page migration
+certainly checks page count, and we often think "ah, this is safe against
+page migration because its page count is raised" - though sadly without
+thinking through what serialization supports that.
 
--- Shuah 
-> 
->  - domain_context_mapping_one() takes iommu->lock and calls
->    iommu_support_dev_iotlb(), which takes device_domain_lock (inside
->    iommu->lock).
-> 
->  - domain_remove_one_dev_info() starts by taking device_domain_lock
->    then takes iommu->lock inside it (near the end of the function).
-> 
-> So this is the classic AB-BA deadlock.  It looks like a safe fix is to
-> simply release device_domain_lock a bit earlier, since as far as I can
-> tell, it doesn't protect any of the stuff accessed at the end of
-> domain_remove_one_dev_info() anyway.
-> 
-> BTW, the use of device_domain_lock looks a bit unsafe to me... it's
-> at least not obvious to me why we aren't vulnerable to the race below:
-> 
->   iommu_support_dev_iotlb()
->                                           domain_remove_dev_info()
-> 
->   lock device_domain_lock
->     find info
->   unlock device_domain_lock
-> 
->                                           lock device_domain_lock
->                                             find same info
->                                           unlock device_domain_lock
-> 
->                                           free_devinfo_mem(info)
-> 
->   do stuff with info after it's free
-> 
-> However I don't understand the locking here well enough to know if
-> this is a real problem, let alone what the best fix is.
-> 
-> Anyway here's the full lockdep output that prompted all of this:
-> 
->      =======================================================
->      [ INFO: possible circular locking dependency detected ]
->      2.6.39.1+ #1
->      -------------------------------------------------------
->      bash/13954 is trying to acquire lock:
->       (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-> 
->      but task is already holding lock:
->       (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-> 
->      which lock already depends on the new lock.
-> 
->      the existing dependency chain (in reverse order) is:
-> 
->      -> #1 (device_domain_lock){-.-...}:
->             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
->             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
->             [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
->             [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
->             [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
->             [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
->             [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
->             [<ffffffff81002165>] do_one_initcall+0x45/0x190
->             [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
->             [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
-> 
->      -> #0 (&(&iommu->lock)->rlock){......}:
->             [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
->             [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
->             [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
->             [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
->             [<ffffffff812f8b42>] device_notifier+0x72/0x90
->             [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
->             [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
->             [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
->             [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
->             [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
->             [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
->             [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
->             [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
->             [<ffffffff8117569e>] vfs_write+0xce/0x190
->             [<ffffffff811759e4>] sys_write+0x54/0xa0
->             [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-> 
->      other info that might help us debug this:
-> 
->      6 locks held by bash/13954:
->       #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_file+0x44/0x170
->       #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+0xcd/0x170
->       #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] driver_unbind+0x9b/0xc0
->       #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] device_release_driver+0x27/0x50
->       #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>] __blocking_notifier_call_chain+0x5f/0xb0
->       #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-> 
->      stack backtrace:
->      Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
->      Call Trace:
->       [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
->       [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
->       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
->       [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
->       [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
->       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
->       [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
->       [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
->       [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
->       [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
->       [<ffffffff812f8b42>] device_notifier+0x72/0x90
->       [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
->       [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
->       [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
->       [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
->       [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
->       [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
->       [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
->       [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
->       [<ffffffff8117569e>] vfs_write+0xce/0x190
->       [<ffffffff811759e4>] sys_write+0x54/0xa0
->       [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Roland Dreier <roland@purestorage.com>
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  drivers/pci/intel-iommu.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-> index 8c2564d..bc05a51 100644
-> --- a/drivers/pci/intel-iommu.c
-> +++ b/drivers/pci/intel-iommu.c
-> @@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
->  			found = 1;
->  	}
->  
-> +	spin_unlock_irqrestore(&device_domain_lock, flags);
-> +
->  	if (found == 0) {
->  		unsigned long tmp_flags;
->  		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
-> @@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
->  			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
->  		}
->  	}
-> -
-> -	spin_unlock_irqrestore(&device_domain_lock, flags);
->  }
->  
->  static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
+Do not proceed with migration when PageLRU is unset: such a page may
+well be in a private list or on a pagevec, about to be added to LRU at
+any instant: checking PageLRU under zone lock, as isolate_lru_page() does,
+is essential before proceeding safely.
 
+Replace trylock_page and BUG by __set_page_locked: here the page has
+been allocated a few lines earlier.  And SetPageSwapBacked: it is set
+later, but there may be an error path which needs it set earlier.
 
+On error path reverse the Active, Unevictable, Mlocked changes made
+by migrate_page_copy().  Update mlock_migrate_page() to account for
+THPages correctly now that it can get called on them.
+
+Cleanup: rearrange unwinding slightly, removing a few blank lines.
+
+Previous-Version-Tested-by: Zhouping Liu <zliu@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+I did not understand at all how pmd_page(entry) might be NULL, but
+assumed that check is there for good reason and did not remove it.
+
+ mm/huge_memory.c |   60 +++++++++++++++++++++++----------------------
+ mm/internal.h    |    5 ++-
+ 2 files changed, 34 insertions(+), 31 deletions(-)
+
+--- mmotm/mm/huge_memory.c	2012-11-13 14:51:04.000321370 -0800
++++ linux/mm/huge_memory.c	2012-11-13 15:01:01.892335579 -0800
+@@ -751,9 +751,9 @@ void do_huge_pmd_numa_page(struct mm_str
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 	struct mem_cgroup *memcg = NULL;
+-	struct page *new_page = NULL;
++	struct page *new_page;
+ 	struct page *page = NULL;
+-	int node, lru;
++	int node = -1;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, entry)))
+@@ -770,7 +770,17 @@ void do_huge_pmd_numa_page(struct mm_str
+ 		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+ 
+ 		get_page(page);
+-		node = mpol_misplaced(page, vma, haddr);
++		/*
++		 * Do not migrate this page if it is mapped anywhere else.
++		 * Do not migrate this page if its count has been raised.
++		 * Our caller's down_read of mmap_sem excludes fork raising
++		 * mapcount; but recheck page count below whenever we take
++		 * page_table_lock - although it's unclear what pin we are
++		 * protecting against, since get_user_pages() or GUP fast
++		 * would have to fault it present before they could proceed.
++		 */
++		if (page_count(page) == 2)
++			node = mpol_misplaced(page, vma, haddr);
+ 		if (node != -1)
+ 			goto migrate;
+ 	}
+@@ -794,7 +804,7 @@ migrate:
+ 
+ 	lock_page(page);
+ 	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(*pmd, entry))) {
++	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 2)) {
+ 		spin_unlock(&mm->page_table_lock);
+ 		unlock_page(page);
+ 		put_page(page);
+@@ -803,19 +813,17 @@ migrate:
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	new_page = alloc_pages_node(node,
+-	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
+-	    HPAGE_PMD_ORDER);
+-
++	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
+ 	if (!new_page)
+ 		goto alloc_fail;
+ 
+-	lru = PageLRU(page);
+-
+-	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
++	if (isolate_lru_page(page)) {	/* Does an implicit get_page() */
++		put_page(new_page);
+ 		goto alloc_fail;
++	}
+ 
+-	if (!trylock_page(new_page))
+-		BUG();
++	__set_page_locked(new_page);
++	SetPageSwapBacked(new_page);
+ 
+ 	/* anon mapping, we can simply copy page->mapping to the new page: */
+ 	new_page->mapping = page->mapping;
+@@ -826,19 +834,22 @@ migrate:
+ 	WARN_ON(PageLRU(new_page));
+ 
+ 	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(*pmd, entry))) {
++	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 3)) {
+ 		spin_unlock(&mm->page_table_lock);
+-		if (lru)
+-			putback_lru_page(page);
++
++		/* Reverse changes made by migrate_page_copy() */
++		if (TestClearPageActive(new_page))
++			SetPageActive(page);
++		if (TestClearPageUnevictable(new_page))
++			SetPageUnevictable(page);
++		mlock_migrate_page(page, new_page);
+ 
+ 		unlock_page(new_page);
+-		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
+-		new_page->mapping = NULL;
+ 		put_page(new_page);		/* Free it */
+ 
+ 		unlock_page(page);
++		putback_lru_page(page);
+ 		put_page(page);			/* Drop the local reference */
+-
+ 		return;
+ 	}
+ 	/*
+@@ -867,26 +878,17 @@ migrate:
+ 	mem_cgroup_end_migration(memcg, page, new_page, true);
+ 	spin_unlock(&mm->page_table_lock);
+ 
+-	put_page(page);			/* Drop the rmap reference */
+-
+ 	task_numa_fault(node, HPAGE_PMD_NR);
+ 
+-	if (lru)
+-		put_page(page);		/* drop the LRU isolation reference */
+-
+ 	unlock_page(new_page);
+-
+ 	unlock_page(page);
++	put_page(page);			/* Drop the rmap reference */
++	put_page(page);			/* Drop the LRU isolation reference */
+ 	put_page(page);			/* Drop the local reference */
+-
+ 	return;
+ 
+ alloc_fail:
+-	if (new_page)
+-		put_page(new_page);
+-
+ 	unlock_page(page);
+-
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, entry))) {
+ 		put_page(page);
+--- mmotm/mm/internal.h	2012-11-09 09:43:46.896046342 -0800
++++ linux/mm/internal.h	2012-11-13 15:01:01.892335579 -0800
+@@ -218,11 +218,12 @@ static inline void mlock_migrate_page(st
+ {
+ 	if (TestClearPageMlocked(page)) {
+ 		unsigned long flags;
++		int nr_pages = hpage_nr_pages(page);
+ 
+ 		local_irq_save(flags);
+-		__dec_zone_page_state(page, NR_MLOCK);
++		__mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
+ 		SetPageMlocked(newpage);
+-		__inc_zone_page_state(newpage, NR_MLOCK);
++		__mod_zone_page_state(page_zone(newpage), NR_MLOCK, nr_pages);
+ 		local_irq_restore(flags);
+ 	}
+ }
