@@ -1,247 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423435Ab2KNUjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:39:18 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52548 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750Ab2KNUiC (ORCPT
+	id S1755507Ab2KNUnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:43:41 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46838 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2KNUnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:38:02 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 3/7] irq_work: Remove CONFIG_HAVE_IRQ_WORK
-Date: Wed, 14 Nov 2012 21:37:33 +0100
-Message-Id: <1352925457-15700-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
-References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
+	Wed, 14 Nov 2012 15:43:35 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        x86@kernel.org
+Subject: [PATCH 3/7] tools/power/x86/turbostat: use kernel MSR #defines
+Date: Wed, 14 Nov 2012 15:43:20 -0500
+Message-Id: <38fbc0a1ee900bbdc18fba2d7cfbc4e9b5d51ce8.1352925508.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+References: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+In-Reply-To: <39300ffb9b6666714c60735cf854e1280e4e75f4.1352925508.git.len.brown@intel.com>
+References: <39300ffb9b6666714c60735cf854e1280e4e75f4.1352925508.git.len.brown@intel.com>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq work can run on any arch even without IPI
-support because of the hook on update_process_times().
+From: Len Brown <len.brown@intel.com>
 
-So lets remove HAVE_IRQ_WORK because it doesn't reflect
-any backend requirement.
+Now that turbostat is built in the kernel tree,
+it can share MSR #defines with the kernel.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: x86@kernel.org
 ---
- arch/alpha/Kconfig                  |    1 -
- arch/arm/Kconfig                    |    1 -
- arch/arm64/Kconfig                  |    1 -
- arch/blackfin/Kconfig               |    1 -
- arch/frv/Kconfig                    |    1 -
- arch/hexagon/Kconfig                |    1 -
- arch/mips/Kconfig                   |    1 -
- arch/parisc/Kconfig                 |    1 -
- arch/powerpc/Kconfig                |    1 -
- arch/s390/Kconfig                   |    1 -
- arch/sh/Kconfig                     |    1 -
- arch/sparc/Kconfig                  |    1 -
- arch/x86/Kconfig                    |    1 -
- drivers/staging/iio/trigger/Kconfig |    1 -
- init/Kconfig                        |    4 ----
- 15 files changed, 0 insertions(+), 18 deletions(-)
+ arch/x86/include/asm/msr-index.h      | 12 ++++++++++++
+ tools/power/x86/turbostat/Makefile    |  1 +
+ tools/power/x86/turbostat/turbostat.c | 26 +++++++-------------------
+ 3 files changed, 20 insertions(+), 19 deletions(-)
 
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 5dd7f5d..e56c2d1 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -5,7 +5,6 @@ config ALPHA
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_SYSCALL_WRAPPERS
--	select HAVE_IRQ_WORK
- 	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
- 	select HAVE_DMA_ATTRS
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ade7e92..22d378b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -36,7 +36,6 @@ config ARM
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
- 	select HAVE_IDE if PCI || ISA || PCMCIA
--	select HAVE_IRQ_WORK
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index ef54a59..dd50d72 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -17,7 +17,6 @@ config ARM64
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
--	select HAVE_IRQ_WORK
- 	select HAVE_MEMBLOCK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_SPARSE_IRQ
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index b6f3ad5..86f891f 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -24,7 +24,6 @@ config BLACKFIN
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	select HAVE_IDE
--	select HAVE_IRQ_WORK
- 	select HAVE_KERNEL_GZIP if RAMKERNEL
- 	select HAVE_KERNEL_BZIP2 if RAMKERNEL
- 	select HAVE_KERNEL_LZMA if RAMKERNEL
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index df2eb4b..c44fd6e 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -3,7 +3,6 @@ config FRV
- 	default y
- 	select HAVE_IDE
- 	select HAVE_ARCH_TRACEHOOK
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_UID16
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 0744f7d..40a3185 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -14,7 +14,6 @@ config HEXAGON
- 	# select HAVE_CLK
- 	# select IRQ_PER_CPU
- 	# select GENERIC_PENDING_IRQ if SMP
--	select HAVE_IRQ_WORK
- 	select GENERIC_ATOMIC64
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index dba9390..3d86d69 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -4,7 +4,6 @@ config MIPS
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index 11def45..8f0df47 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -9,7 +9,6 @@ config PARISC
- 	select RTC_DRV_GENERIC
- 	select INIT_ALL_POSSIBLE
- 	select BUG
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select GENERIC_ATOMIC64 if !64BIT
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index a902a5c..a90f0c9 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -118,7 +118,6 @@ config PPC
- 	select HAVE_SYSCALL_WRAPPERS if PPC64
- 	select GENERIC_ATOMIC64 if PPC32
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 5dba755..0816ff0 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -78,7 +78,6 @@ config S390
- 	select HAVE_KVM if 64BIT
- 	select HAVE_ARCH_TRACEHOOK
- 	select INIT_ALL_POSSIBLE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_DEBUG_KMEMLEAK
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index babc2b8..996e008 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -11,7 +11,6 @@ config SUPERH
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_DEBUG_BUGVERBOSE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index b6b442b..05a478f 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -22,7 +22,6 @@ config SPARC
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select RTC_CLASS
- 	select RTC_DRV_M48T59
--	select HAVE_IRQ_WORK
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_ARCH_JUMP_LABEL
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..c13e07a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -26,7 +26,6 @@ config X86
- 	select HAVE_OPROFILE
- 	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
--	select HAVE_IRQ_WORK
- 	select HAVE_IOREMAP_PROT
- 	select HAVE_KPROBES
- 	select HAVE_MEMBLOCK
-diff --git a/drivers/staging/iio/trigger/Kconfig b/drivers/staging/iio/trigger/Kconfig
-index 7d32075..d44d3ad 100644
---- a/drivers/staging/iio/trigger/Kconfig
-+++ b/drivers/staging/iio/trigger/Kconfig
-@@ -21,7 +21,6 @@ config IIO_GPIO_TRIGGER
- config IIO_SYSFS_TRIGGER
- 	tristate "SYSFS trigger"
- 	depends on SYSFS
--	depends on HAVE_IRQ_WORK
- 	select IRQ_WORK
- 	help
- 	  Provides support for using SYSFS entry as IIO triggers.
-diff --git a/init/Kconfig b/init/Kconfig
-index 6fdd6e3..cdc152c 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -20,12 +20,8 @@ config CONSTRUCTORS
- 	bool
- 	depends on !UML
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 7f0edce..c9775a3 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -35,6 +35,7 @@
+ #define MSR_IA32_PERFCTR0		0x000000c1
+ #define MSR_IA32_PERFCTR1		0x000000c2
+ #define MSR_FSB_FREQ			0x000000cd
++#define MSR_NHM_PLATFORM_INFO		0x000000ce
  
--config HAVE_IRQ_WORK
--	bool
+ #define MSR_NHM_SNB_PKG_CST_CFG_CTL	0x000000e2
+ #define NHM_C3_AUTO_DEMOTE		(1UL << 25)
+@@ -55,6 +56,8 @@
+ 
+ #define MSR_OFFCORE_RSP_0		0x000001a6
+ #define MSR_OFFCORE_RSP_1		0x000001a7
++#define MSR_NHM_TURBO_RATIO_LIMIT	0x000001ad
++#define MSR_IVT_TURBO_RATIO_LIMIT	0x000001ae
+ 
+ #define MSR_LBR_SELECT			0x000001c8
+ #define MSR_LBR_TOS			0x000001c9
+@@ -103,6 +106,15 @@
+ #define MSR_IA32_MC0_ADDR		0x00000402
+ #define MSR_IA32_MC0_MISC		0x00000403
+ 
++/* C-state Residency Counters */
++#define MSR_PKG_C3_RESIDENCY		0x000003f8
++#define MSR_PKG_C6_RESIDENCY		0x000003f9
++#define MSR_PKG_C7_RESIDENCY		0x000003fa
++#define MSR_CORE_C3_RESIDENCY		0x000003fc
++#define MSR_CORE_C6_RESIDENCY		0x000003fd
++#define MSR_CORE_C7_RESIDENCY		0x000003fe
++#define MSR_PKG_C2_RESIDENCY		0x0000060d
++
+ #define MSR_AMD64_MC0_MASK		0xc0010044
+ 
+ #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
+diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
+index f856495..51880e8 100644
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -1,5 +1,6 @@
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
++CFLAGS +=	-I../../../../arch/x86/include/
+ 
+ clean :
+ 	rm -f turbostat
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index ea095ab..3c063a0 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -20,6 +20,7 @@
+  */
+ 
+ #define _GNU_SOURCE
++#include <asm/msr.h>
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+@@ -35,19 +36,6 @@
+ #include <ctype.h>
+ #include <sched.h>
+ 
+-#define MSR_NEHALEM_PLATFORM_INFO	0xCE
+-#define MSR_NEHALEM_TURBO_RATIO_LIMIT	0x1AD
+-#define MSR_IVT_TURBO_RATIO_LIMIT	0x1AE
+-#define MSR_APERF	0xE8
+-#define MSR_MPERF	0xE7
+-#define MSR_PKG_C2_RESIDENCY	0x60D	/* SNB only */
+-#define MSR_PKG_C3_RESIDENCY	0x3F8
+-#define MSR_PKG_C6_RESIDENCY	0x3F9
+-#define MSR_PKG_C7_RESIDENCY	0x3FA	/* SNB only */
+-#define MSR_CORE_C3_RESIDENCY	0x3FC
+-#define MSR_CORE_C6_RESIDENCY	0x3FD
+-#define MSR_CORE_C7_RESIDENCY	0x3FE	/* SNB only */
 -
- config IRQ_WORK
- 	bool
--	depends on HAVE_IRQ_WORK
+ char *proc_stat = "/proc/stat";
+ unsigned int interval_sec = 5;	/* set with -i interval_sec */
+ unsigned int verbose;		/* set with -v */
+@@ -674,9 +662,9 @@ int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
+ 	t->tsc = rdtsc();	/* we are running on local CPU of interest */
  
- config BUILDTIME_EXTABLE_SORT
- 	bool
+ 	if (has_aperf) {
+-		if (get_msr(cpu, MSR_APERF, &t->aperf))
++		if (get_msr(cpu, MSR_IA32_APERF, &t->aperf))
+ 			return -3;
+-		if (get_msr(cpu, MSR_MPERF, &t->mperf))
++		if (get_msr(cpu, MSR_IA32_MPERF, &t->mperf))
+ 			return -4;
+ 	}
+ 
+@@ -742,10 +730,10 @@ void print_verbose_header(void)
+ 	if (!do_nehalem_platform_info)
+ 		return;
+ 
+-	get_msr(0, MSR_NEHALEM_PLATFORM_INFO, &msr);
++	get_msr(0, MSR_NHM_PLATFORM_INFO, &msr);
+ 
+ 	if (verbose > 1)
+-		fprintf(stderr, "MSR_NEHALEM_PLATFORM_INFO: 0x%llx\n", msr);
++		fprintf(stderr, "MSR_NHM_PLATFORM_INFO: 0x%llx\n", msr);
+ 
+ 	ratio = (msr >> 40) & 0xFF;
+ 	fprintf(stderr, "%d * %.0f = %.0f MHz max efficiency\n",
+@@ -808,10 +796,10 @@ print_nhm_turbo_ratio_limits:
+ 	if (!do_nehalem_turbo_ratio_limit)
+ 		return;
+ 
+-	get_msr(0, MSR_NEHALEM_TURBO_RATIO_LIMIT, &msr);
++	get_msr(0, MSR_NHM_TURBO_RATIO_LIMIT, &msr);
+ 
+ 	if (verbose > 1)
+-		fprintf(stderr, "MSR_NEHALEM_TURBO_RATIO_LIMIT: 0x%llx\n", msr);
++		fprintf(stderr, "MSR_NHM_TURBO_RATIO_LIMIT: 0x%llx\n", msr);
+ 
+ 	ratio = (msr >> 56) & 0xFF;
+ 	if (ratio)
 -- 
-1.7.5.4
+1.8.0
 
