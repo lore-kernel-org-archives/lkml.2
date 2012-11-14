@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803Ab2KNOx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:53:56 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57725 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab2KNOxx (ORCPT
+	id S1755024Ab2KNO4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:56:44 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:43699 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752390Ab2KNO4m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:53:53 -0500
+	Wed, 14 Nov 2012 09:56:42 -0500
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Porter <mporter@kernel.crashing.org>
+Subject: RE: [PATCH] rapidio: fix kernel-doc warnings
+Thread-Topic: [PATCH] rapidio: fix kernel-doc warnings
+Thread-Index: AQHNvvBnI7CepLd5R0CPLbe0rfICPpfpcNVQ
+Date: Wed, 14 Nov 2012 14:55:56 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC045F7@corpmail1.na.ads.idt.com>
+References: <509DC837.6040007@infradead.org>
+In-Reply-To: <509DC837.6040007@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXu2VJhB+1uFApeBrYS3t2cfpPMaTz12F=A_FNJB1Q60w@mail.gmail.com>
-References: <ADE657CA350FB648AAC2C43247A983F00206B25884B1@AUSP01VMBX24.collaborationhost.net>
- <CAErSpo6WG2R_8sa=rOmAOci-3iFpDs2NFzNkZYxDnD2oTiMQJg@mail.gmail.com>
- <20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au> <CAMuHMdXu2VJhB+1uFApeBrYS3t2cfpPMaTz12F=A_FNJB1Q60w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 14 Nov 2012 07:53:31 -0700
-Message-ID: <CAErSpo6p09BJo=3tFp7f8StLT9avYdqiecGm8FxyQnWUm+pfiw@mail.gmail.com>
-Subject: Re: [PATCH] Centralise CONFIG_ARCH_NO_VIRT_TO_BUS
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-arch@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 3:32 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Mon, Nov 12, 2012 at 10:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> diff --git a/arch/Kconfig b/arch/Kconfig
->> index 366ec06..9bc00e7 100644
->> --- a/arch/Kconfig
->> +++ b/arch/Kconfig
->> @@ -271,6 +271,13 @@ config ARCH_WANT_OLD_COMPAT_IPC
->>         select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
->>         bool
->>
->> +config ARCH_NO_VIRT_TO_BUS
->> +       bool
->> +       help
->> +         An architecture should select this if it cannot (or will not)
->> +         implement virt_to_bus().  All new architectures should probably
->> +         select this.
->
-> Don't we typically put the burden of selecting Kconfig flags for deprecated
-> features on the existing architectures that provide the deprecated features?
->
-> I.e. shouldn't it be ARCH_HAS_VIRT_TO_BUS, selected by the architectures
-> that need it, instead?
+On Fri, Nov 09, 2012 10:21 PM
+Randy Dunlap <rdunlap@infradead.org> wrote:
+> 
+> Fix rapidio kernel-doc warnings:
+> 
+> Warning(drivers/rapidio/rio.c:415): No description found for parameter
+> 'local'
+> Warning(drivers/rapidio/rio.c:415): Excess function parameter 'lstart'
+> description in 'rio_map_inb_region'
+> Warning(include/linux/rio.h:290): No description found for parameter
+> 'switches'
+> Warning(include/linux/rio.h:290): No description found for parameter
+> 'destid_table'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc:	Matt Porter <mporter@kernel.crashing.org>
+> Cc:	Alexandre Bounine <alexandre.bounine@idt.com>
+> ---
+>  drivers/rapidio/rio.c |    2 +-
+>  include/linux/rio.h   |    2 ++
+>  2 files changed, 3 insertions(+), 1 deletion(-)
+> 
+> --- lnx-37-rc4.orig/include/linux/rio.h
+> +++ lnx-37-rc4/include/linux/rio.h
+> @@ -275,9 +275,11 @@ struct rio_id_table {
+>   * struct rio_net - RIO network info
+>   * @node: Node in global list of RIO networks
+>   * @devices: List of devices in this network
+> + * @switches: List of switches in this netowrk
+>   * @mports: List of master ports accessing this network
+>   * @hport: Default port for accessing this network
+>   * @id: RIO network ID
+> + * @destid_table: destID allocation table
+>   */
+>  struct rio_net {
+>  	struct list_head node;	/* node in list of networks */
+> --- lnx-37-rc4.orig/drivers/rapidio/rio.c
+> +++ lnx-37-rc4/drivers/rapidio/rio.c
+> @@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(rio_release_inb_pwrite
+>  /**
+>   * rio_map_inb_region -- Map inbound memory region.
+>   * @mport: Master port.
+> - * @lstart: physical address of memory region to be mapped
+> + * @local: physical address of memory region to be mapped
+>   * @rbase: RIO base address assigned to this window
+>   * @size: Size of the memory region
+>   * @rflags: Flags for mapping.
 
-I like this idea.
+Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+
