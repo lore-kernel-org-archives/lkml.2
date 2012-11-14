@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423205Ab2KNTEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 14:04:13 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64845 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423130Ab2KNTEM (ORCPT
+	id S1423224Ab2KNTFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 14:05:44 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59826 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423130Ab2KNTFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 14:04:12 -0500
-Date: Wed, 14 Nov 2012 11:04:07 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, glommer@parallels.com
-Subject: Re: [PATCH 04/17] cgroup: create directory before linking while
- creating a new cgroup
-Message-ID: <20121114190407.GI21185@mtj.dyndns.org>
-References: <1352775704-9023-1-git-send-email-tj@kernel.org>
- <1352775704-9023-5-git-send-email-tj@kernel.org>
- <50A30E0F.7000408@huawei.com>
+	Wed, 14 Nov 2012 14:05:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A30E0F.7000408@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50A29E28.5040303@mit.edu>
+References: <1352587485-18348-1-git-send-email-keescook@chromium.org>
+	<50A29E28.5040303@mit.edu>
+Date: Wed, 14 Nov 2012 11:05:42 -0800
+X-Google-Sender-Auth: Pcpa6jn-txIRSoomooEM00-mYBk
+Message-ID: <CAGXu5j+a1dmu92wxct=HBok0aWphL-Vu4xwMB1XffRWgrw8Zcw@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] arch/arm: support seccomp
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Geremy Condra <gcondra@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+On Tue, Nov 13, 2012 at 11:23 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On 11/10/2012 02:44 PM, Kees Cook wrote:
+>> This adds support for seccomp BPF to ARM. When built with the seccomp
+>> improvement patch waiting in linux-next ("seccomp: Make syscall skipping
+>> and nr changes more consistent"), this passes the seccomp regression
+>> test suite: https://github.com/redpig/seccomp
+>
+> I don't know if this matters much on ARM, but should something like
+> https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=commit;h=dee1ae5a05149f30baeccb4b8f68f22525ba9ca2
+> be added?
 
-On Wed, Nov 14, 2012 at 11:20:47AM +0800, Li Zefan wrote:
-> > It also removes the need to check whether cgroup->dentry is %NULL in
-> > cgroup_path.  If a cgroup is visible, its dentry is guaranteed to be
-> > visible too.
-> 
-> I'm afraid this isn't safe.
-> 
-> The cgroup is visible to a controller soon after ss->create(), and then
-> the controller might call cgroup_path() while cgrp->dentry is still NULL.
+Not sure -- I'll leave that up to other folks.
 
-Hmmm... I can't find any case where ss->create() is calling
-cgroup_path().  Do you remember which one that was?
-
-> This can happen for cpu cgroup I think, and in fact the NULL check was
-> added for this reason IIRC.
-
-Then, I think we better move the dentry assignment further up.  It's
-really silly to be unable to answer "what's this new cgroup's name?"
-for any callback really.  Will update accordingly.
-
-Thanks.
+-Kees
 
 -- 
-tejun
+Kees Cook
+Chrome OS Security
