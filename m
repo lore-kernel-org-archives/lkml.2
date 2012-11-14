@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab2KNXFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 18:05:50 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:44534 "EHLO ogre.sisk.pl"
+	id S1945940Ab2KNXIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 18:08:35 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:44541 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab2KNXFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 18:05:48 -0500
+	id S933195Ab2KNXIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 18:08:34 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-Date: Thu, 15 Nov 2012 00:10:09 +0100
-Message-ID: <37583314.JAxoSZqTsM@vostro.rjw.lan>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, linux-acpi@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH 0/3] acpi: Introduce prepare_remove device operation
+Date: Thu, 15 Nov 2012 00:12:55 +0100
+Message-ID: <1647704.U9gX6ykHyh@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
+In-Reply-To: <20121112172046.GA4931@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1352399371-8015-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <50A07477.2050002@cn.fujitsu.com> <20121112172046.GA4931@dhcp-192-168-178-175.profitbricks.localdomain>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,72 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 14, 2012 04:45:01 PM Alan Stern wrote:
-> On Wed, 14 Nov 2012, Rafael J. Wysocki wrote:
-> 
-> > > This has the side effect that when a driver unbinds, it can't leave the 
-> > > device in a special low-power state.  The device will always end up in 
-> > > the generic low-power state supported by the PCI core.
+On Monday, November 12, 2012 06:20:47 PM Vasilis Liaskovitis wrote:
+> On Mon, Nov 12, 2012 at 12:00:55PM +0800, Wen Congyang wrote:
+> > At 11/09/2012 02:29 AM, Vasilis Liaskovitis Wrote:
+> > > As discussed in
+> > > https://patchwork.kernel.org/patch/1581581/
+> > > the driver core remove function needs to always succeed. This means we need
+> > > to know that the device can be successfully removed before acpi_bus_trim / 
+> > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > > eject (echo 1 > /sys/bus/acpi/devices/PNP/eject) of memory devices fails, since
+> > > the ACPI core goes ahead and ejects the device regardless of whether the memory
+> > > is still in use or not.
+> > > 
+> > > For this reason a new acpi_device operation called prepare_remove is introduced.
+> > > This operation should be registered for acpi devices whose removal (from kernel
+> > > perspective) can fail.  Memory devices fall in this category.
+> > > 
+> > > acpi_bus_hot_remove_device is changed to handle removal in 2 steps:
+> > > - preparation for removal i.e. perform part of removal that can fail outside of
+> > >   ACPI core. Should succeed for device and all its children.
+> > > - if above step was successfull, proceed to actual ACPI removal
 > > 
-> > Well, I'm not sure I'd like that.
-> > 
-> > Let's just go back even one step more and think what we'd like to have in
-> > general terms and then how to implement it. :-)
-> > 
-> > Suppose that pci_pm_init() calls pm_runtime_enable() for all devices (in
-> > addition to what it does currently).  The runtime PM status of each device is
-> > RPM_SUSPENDED at this point.  Then:
+> > If we unbind the device from the driver, we still need to do preparation. But
+> > you don't do it in your patch.
 > 
-> Wait a moment.  When the device is detected and initialized, it is in
-> D0, right?  Currently we don't care much because the device starts out
-> disabled for runtime PM.  But now you are going to enable it.  While
-> the device is enabled, its runtime status should match the physical
-> power level.
+> yes, driver_unbind breaks with the current patchset. I 'll try to fix and
+> repost. However, I think this will require a new driver-core wide prepare_remove
+> callback (not only acpi-specific). I am not sure that would be acceptable.
 
-OK
-
-> This means the initialization routine would have to call
-> pm_runtime_set_active() before pm_runtime_enable().  If you then wanted
-> to change the status to RPM_SUSPENDED, you would actually have to put
-> the device into D3 by calling pm_runtime_suspend() (or maybe
-> pm_runtime_schedule_suspend() to give drivers some time to get loaded 
-> and bind).
-
-No, I don't want that.  It may be RPM_ACTIVE all the time as long as the
-device doesn't have a driver.  Which probably would even make things
-simpler. :-)
-
-> > (1) We want to keep the current semantics during probe, i.e. the device should
-> >     (a) be RPM_ACTIVE and (b) have usage_count == (user space usage_count + 1)
-> >     right before ddi->drv->probe() is executed.
-> 
-> In theory the usage_count could be higher and then adjusted back after
-> the probe is finished, if that would make anything easier.
-
-No, it wouldn't, because of (5).  Suppose that the driver wants to suspend
-the device directly from .probe() and the user space doesn't mind.  We can't
-prevent that from being doable.
-
-> > (2) We don't want the driver's PM callbacks to be run before ddi->drv->probe().
-> >     There's a question if we want the bus type's PM callbacks to be run at
-> >     that point, but they are not run currently and IMO we shouldn't change
-> >     that.
-> 
-> The device is supposed to be in D0 when it is probed.  Since we are
-> assuming that initialization is now going to leave it in D3, there's no
-> choice -- you _have_ to invoke pci_pm_runtime_resume(), which would
-> invoke the driver's callback, which we don't want.
-
-Let's say the device will stay in D0 after the initialization and then
-we'll require that it be in D0 if .probe() fails or after .remove().
-
-The only thing we'll need to do before .probe() in that case is to
-bump up the usage counter and then to bump it down if .probe() fails
-(and after .remove()).
-
-The only problem we have in that case are buggy drivers that leave
-devices in, say, D3cold after a failing .probe().  That doesn't
-seem to be avoidable, though.
+However, you can't break driver_unbind either.
 
 Thanks,
 Rafael
