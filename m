@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2KNFua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55036 "EHLO
+	id S1756224Ab2KNFu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55038 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754452Ab2KNFuW (ORCPT
+	by vger.kernel.org with ESMTP id S1754484Ab2KNFuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:50:22 -0500
-Message-Id: <20121114053944.039777768@decadent.org.uk>
+Message-Id: <20121114053944.716082064@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:47 +0000
+Date: Wed, 14 Nov 2012 05:40:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tom Parkin <tparkin@katalix.com>,
+        Nathan Walp <faceprint@faceprint.com>,
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 74/82] l2tp: fix oops in l2tp_eth_create() error path
+Subject: [ 79/82] r8169: allow multicast packets on sub-8168f chipset.
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,37 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Parkin <tparkin@katalix.com>
+From: Nathan Walp <faceprint@faceprint.com>
 
-[ Upstream commit 789336360e0a2aeb9750c16ab704a02cbe035e9e ]
+commit 0481776b7a70f09acf7d9d97c288c3a8403fbfe4 upstream.
 
-When creating an L2TPv3 Ethernet session, if register_netdev() should fail for
-any reason (for example, automatic naming for "l2tpeth%d" interfaces hits the
-32k-interface limit), the netdev is freed in the error path.  However, the
-l2tp_eth_sess structure's dev pointer is left uncleared, and this results in
-l2tp_eth_delete() then attempting to unregister the same netdev later in the
-session teardown.  This results in an oops.
+RTL_GIGA_MAC_VER_35 includes no multicast hardware filter.
 
-To avoid this, clear the session dev pointer in the error path.
-
-Signed-off-by: Tom Parkin <tparkin@katalix.com>
+Signed-off-by: Nathan Walp <faceprint@faceprint.com>
+Suggested-by: Hayes Wang <hayeswang@realtek.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_eth.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/realtek/r8169.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/l2tp/l2tp_eth.c b/net/l2tp/l2tp_eth.c
-index 2cef50b..64164fb 100644
---- a/net/l2tp/l2tp_eth.c
-+++ b/net/l2tp/l2tp_eth.c
-@@ -269,6 +269,7 @@ static int l2tp_eth_create(struct net *net, u32 tunnel_id, u32 session_id, u32 p
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index eb6a5e4..927aa33 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -4521,6 +4521,9 @@ static void rtl_set_rx_mode(struct net_device *dev)
+ 		mc_filter[1] = swab32(data);
+ 	}
  
- out_del_dev:
- 	free_netdev(dev);
-+	spriv->dev = NULL;
- out_del_session:
- 	l2tp_session_delete(session);
- out:
++	if (tp->mac_version == RTL_GIGA_MAC_VER_35)
++		mc_filter[1] = mc_filter[0] = 0xffffffff;
++
+ 	RTL_W32(MAR0 + 4, mc_filter[1]);
+ 	RTL_W32(MAR0 + 0, mc_filter[0]);
+ 
 
 
