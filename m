@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab2KNGF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:05:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55054 "EHLO
+	id S1756312Ab2KNGFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:05:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55052 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754693Ab2KNFuY (ORCPT
+	by vger.kernel.org with ESMTP id S1754638Ab2KNFuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:50:24 -0500
-Message-Id: <20121114053943.355593421@decadent.org.uk>
+Message-Id: <20121114053943.489513173@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:42 +0000
+Date: Wed, 14 Nov 2012 05:40:43 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Jonathan Kliegman <kliegs@google.com>,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@google.com>,
-        Sam Leffler <sleffler@google.com>,
+        Eric Dumazet <edumazet@google.com>, Elliot Hughes <enh@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 69/82] netlink: use kfree_rcu() in netlink_release()
+Subject: [ 70/82] tcp: fix FIONREAD/SIOCINQ
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,101 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6d772ac5578f711d1ce7b03535d1c95bffb21dff ]
+[ Upstream commit a3374c42aa5f7237e87ff3b0622018636b0c847e ]
 
-On some suspend/resume operations involving wimax device, we have
-noticed some intermittent memory corruptions in netlink code.
+tcp_ioctl() tries to take into account if tcp socket received a FIN
+to report correct number bytes in receive queue.
 
-Stéphane Marchesin tracked this corruption in netlink_update_listeners()
-and suggested a patch.
+But its flaky because if the application ate the last skb,
+we return 1 instead of 0.
 
-It appears netlink_release() should use kfree_rcu() instead of kfree()
-for the listeners structure as it may be used by other cpus using RCU
-protection.
+Correct way to detect that FIN was received is to test SOCK_DONE.
 
-netlink_release() must set to NULL the listeners pointer when
-it is about to be freed.
-
-Also have to protect netlink_update_listeners() and
-netlink_has_listeners() if listeners is NULL.
-
-Add a nl_deref_protected() lockdep helper to properly document which
-locks protects us.
-
-Reported-by: Jonathan Kliegman <kliegs@google.com>
+Reported-by: Elliot Hughes <enh@google.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Stéphane Marchesin <marcheu@google.com>
-Cc: Sam Leffler <sleffler@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/netlink/af_netlink.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ net/ipv4/tcp.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 38b78b9..3d1d55d 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -137,6 +137,8 @@ static void netlink_destroy_callback(struct netlink_callback *cb);
- static DEFINE_RWLOCK(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 7397ad8..52edbb8 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -481,14 +481,12 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
+ 			 !tp->urg_data ||
+ 			 before(tp->urg_seq, tp->copied_seq) ||
+ 			 !before(tp->urg_seq, tp->rcv_nxt)) {
+-			struct sk_buff *skb;
  
-+#define nl_deref_protected(X) rcu_dereference_protected(X, lockdep_is_held(&nl_table_lock));
-+
- static ATOMIC_NOTIFIER_HEAD(netlink_chain);
+ 			answ = tp->rcv_nxt - tp->copied_seq;
  
- static u32 netlink_group_mask(u32 group)
-@@ -331,6 +333,11 @@ netlink_update_listeners(struct sock *sk)
- 	struct hlist_node *node;
- 	unsigned long mask;
- 	unsigned int i;
-+	struct listeners *listeners;
-+
-+	listeners = nl_deref_protected(tbl->listeners);
-+	if (!listeners)
-+		return;
- 
- 	for (i = 0; i < NLGRPLONGS(tbl->groups); i++) {
- 		mask = 0;
-@@ -338,7 +345,7 @@ netlink_update_listeners(struct sock *sk)
- 			if (i < NLGRPLONGS(nlk_sk(sk)->ngroups))
- 				mask |= nlk_sk(sk)->groups[i];
- 		}
--		tbl->listeners->masks[i] = mask;
-+		listeners->masks[i] = mask;
- 	}
- 	/* this function is only called with the netlink table "grabbed", which
- 	 * makes sure updates are visible before bind or setsockopt return. */
-@@ -519,7 +526,11 @@ static int netlink_release(struct socket *sock)
- 	if (netlink_is_kernel(sk)) {
- 		BUG_ON(nl_table[sk->sk_protocol].registered == 0);
- 		if (--nl_table[sk->sk_protocol].registered == 0) {
--			kfree(nl_table[sk->sk_protocol].listeners);
-+			struct listeners *old;
-+
-+			old = nl_deref_protected(nl_table[sk->sk_protocol].listeners);
-+			RCU_INIT_POINTER(nl_table[sk->sk_protocol].listeners, NULL);
-+			kfree_rcu(old, rcu);
- 			nl_table[sk->sk_protocol].module = NULL;
- 			nl_table[sk->sk_protocol].registered = 0;
- 		}
-@@ -950,7 +961,7 @@ int netlink_has_listeners(struct sock *sk, unsigned int group)
- 	rcu_read_lock();
- 	listeners = rcu_dereference(nl_table[sk->sk_protocol].listeners);
- 
--	if (group - 1 < nl_table[sk->sk_protocol].groups)
-+	if (listeners && group - 1 < nl_table[sk->sk_protocol].groups)
- 		res = test_bit(group - 1, listeners->masks);
- 
- 	rcu_read_unlock();
-@@ -1584,7 +1595,7 @@ int __netlink_change_ngroups(struct sock *sk, unsigned int groups)
- 		new = kzalloc(sizeof(*new) + NLGRPSZ(groups), GFP_ATOMIC);
- 		if (!new)
- 			return -ENOMEM;
--		old = rcu_dereference_protected(tbl->listeners, 1);
-+		old = nl_deref_protected(tbl->listeners);
- 		memcpy(new->masks, old->masks, NLGRPSZ(tbl->groups));
- 		rcu_assign_pointer(tbl->listeners, new);
- 
+-			/* Subtract 1, if FIN is in queue. */
+-			skb = skb_peek_tail(&sk->sk_receive_queue);
+-			if (answ && skb)
+-				answ -= tcp_hdr(skb)->fin;
++			/* Subtract 1, if FIN was received */
++			if (answ && sock_flag(sk, SOCK_DONE))
++				answ--;
+ 		} else
+ 			answ = tp->urg_seq - tp->copied_seq;
+ 		release_sock(sk);
 
 
