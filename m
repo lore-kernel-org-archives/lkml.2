@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423555Ab2KNW26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:28:58 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:39202 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1423512Ab2KNW24 (ORCPT
+	id S2992444Ab2KNWay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:30:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38303 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945904Ab2KNWax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:28:56 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18GufBUcv4G8QL90RzWOgmnL4OJKLnKNsHLSfwZN9
-	LjFbTgBhzQ0/8X
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] char/tpm: simplify duration calculation and eliminate sparse warning.
-Date: Wed, 14 Nov 2012 23:37:06 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.6; KDE/4.8.5; x86_64; ; )
-Cc: Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <1352759838-27175-1-git-send-email-peterhuewe@gmx.de> <1352759838-27175-2-git-send-email-peterhuewe@gmx.de> <20121114221826.GC533@ennui.austin.ibm.com>
-In-Reply-To: <20121114221826.GC533@ennui.austin.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 14 Nov 2012 17:30:53 -0500
+Date: Wed, 14 Nov 2012 14:30:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scatterlist: don't BUG when we can trivially return a
+ proper error.
+Message-Id: <20121114143052.7ebe8947.akpm@linux-foundation.org>
+In-Reply-To: <20121114221544.GA3083@elliptictech.com>
+References: <1351796580-20600-1-git-send-email-nbowler@elliptictech.com>
+	<20121114130500.250dd5b8.akpm@linux-foundation.org>
+	<20121114221544.GA3083@elliptictech.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211142337.06884.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 14. November 2012, 23:18:26 schrieb Kent Yoder:
-> On Mon, Nov 12, 2012 at 11:37:18PM +0100, Peter Huewe wrote:> > 
-> > This patch also gets rid of the (false positive) sparse warning:
-> >  drivers/char/tpm/tpm.c:360 tpm_calc_ordinal_duration() error: buffer
-> >  overflow 'tpm_protected_ordinal_duration' 12 <= 243
+On Wed, 14 Nov 2012 17:15:44 -0500
+Nick Bowler <nbowler@elliptictech.com> wrote:
+
+> > Unfortunately there is no EKERNELSCREWEDUP,
 > 
->   I'm not seeing this sparse warning, how did you get it?
+> Well, maybe we should add it! :P
 
-Oh sorry 
-s/sparse/smatch/
+Well.  Given how frequently it will be used, it would need to be a much
+shorter identifier.  Perhaps "EEK".  Or just "E".
 
-It was a smatch warning, not sparse - sorry about that:
+> > so we usually use EINVAL.
+> 
+> Fair enough.  I will prepare v2.  But perhaps EOPNOTSUPP would be a
+> better fit?
 
-/data/data-old/linux-2.6/drivers/char/tpm $ make -C /data/data-old/linux-2.6/ M=`pwd`  C=1 CHECK=smatch
-make: Entering directory `/data/data-old/linux-2.6'
-  LD      /data/data-old/linux-2.6/drivers/char/tpm/built-in.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm.c
-/data/data-old/linux-2.6/drivers/char/tpm/tpm.c:360 tpm_calc_ordinal_duration() error: buffer overflow 'tpm_protected_ordinal_duration' 12 <= 243
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_eventlog.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_eventlog.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_acpi.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_acpi.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_ppi.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_ppi.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.o
-  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.c
-  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.o
-  Building modules, stage 2.
-  MODPOST 7 modules
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.ko
-  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.mod.o
-  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.ko
-make: Leaving directory `/data/data-old/linux-2.6'
+I have queued a delta:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: scatterlist-dont-bug-when-we-can-trivially-return-a-proper-error-fix
+
+s/E2BIG/EINVAL/
+
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ lib/scatterlist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -puN lib/scatterlist.c~scatterlist-dont-bug-when-we-can-trivially-return-a-proper-error-fix lib/scatterlist.c
+--- a/lib/scatterlist.c~scatterlist-dont-bug-when-we-can-trivially-return-a-proper-error-fix
++++ a/lib/scatterlist.c
+@@ -249,7 +249,7 @@ int __sg_alloc_table(struct sg_table *ta
+ 
+ #ifndef ARCH_HAS_SG_CHAIN
+ 	if (WARN_ON_ONCE(nents > max_ents))
+-		return -E2BIG;
++		return -EINVAL;
+ #endif
+ 
+ 	memset(table, 0, sizeof(*table));
+_
+
