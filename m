@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab2KNIaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 03:30:21 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56897 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab2KNIaT (ORCPT
+	id S932748Ab2KNIcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 03:32:22 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17000 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab2KNIcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 03:30:19 -0500
-Date: Wed, 14 Nov 2012 09:30:13 +0100
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>
-Subject: Re: [PATCH v2 RESEND] leds: add led_trigger_rename function
-Message-ID: <20121114083013.GA23881@gmail.com>
-Mail-Followup-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
-	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-	Kurt Van Dijck <kurt.van.dijck@eia.be>
-References: <1352022874-5100-1-git-send-email-fabio.baltieri@gmail.com>
- <CAK5ve-Jn_1Lc=FyX24_DHDz6+=VUC5xoiH4zUWLgRB=rgOiueA@mail.gmail.com>
+	Wed, 14 Nov 2012 03:32:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 14 Nov 2012 00:32:15 -0800
+Message-ID: <50A357D3.9080002@nvidia.com>
+Date: Wed, 14 Nov 2012 10:35:31 +0200
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-Jn_1Lc=FyX24_DHDz6+=VUC5xoiH4zUWLgRB=rgOiueA@mail.gmail.com>
-X-Operating-System: Linux balto 3.7.0-rc3-00218-g45a82fc x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+On 09.11.2012 15:20, Thierry Reding wrote:
+> This commit adds the host1x node along with its children to the Tegra20
+> DTSI. Furthermore the OF auxiliary data table is updated to have proper
+> names assigned to the platform devices instantiated from the device
+> tree. Moreover, the clocks required by host1x and the two display
+> controllers are initialized and the pll_d frequency table is completed
+> with a few entries to support common HDMI and LVDS display modes.
 
-On Tue, Nov 13, 2012 at 04:33:14PM -0800, Bryan Wu wrote:
-> > +void led_trigger_rename_static(const char *name, struct led_trigger *trig)
-> > +{
-> > +       /* new name must be on a temporary string to prevent races */
-> > +       BUG_ON(name == trig->name);
-> > +
-> > +       down_write(&triggers_list_lock);
-> > +       /* this assumes that trig->name was originaly allocated to
-> > +        * non constant storage */
-> > +       strcpy((char *)trig->name, name);
-> 
-> Is this strcpy() safe here? Probably strncpy() or strlcpy() is safer.
+I tried to add nvhost on top of your patches and I noticed a glitch.
 
-Actually the LED subsystem is not aware of the string allocation size,
-so I guess that strcpy is the only option here.
+> +       { "host1x",     "pll_c",        144000000,      false },
 
-On the other side, the caller, who originally allocated the string,
-should do the check properly, such as in:
+This line causes host1x not to operate correctly. I don't know why this
+is so, but when I try to initialize host1x, it hangs with this change,
+but everything works without this line.
 
-	snprintf(name, sizeof(name), "%s-tx", netdev->name);
-	led_trigger_rename_static(name, priv->tx_led_trig);
+If you could fix that,
 
-> > +extern void led_trigger_rename_static(const char *name,
-> > +                                     struct led_trigger *trig);
-> > +
-> 
-> Any example how to use this new API?
+Acked-by: Terje Bergstrom <tbergstrom@nvidia.com>
 
-Sure!  That was developed as part of CANBUS LED triggers to have trigger
-name follow can interfaces name changes.
+Best regards,
+Terje
 
-Original patch using this function, including the whole discussion
-behind it, was posted here:
-
-https://lkml.org/lkml/2012/9/10/544
-
-or you can find the complete set on my github branch:
-
-http://github.com/fabiobaltieri/linux.git can-leds-devel
-
-Fabio
-
--- 
-Fabio Baltieri
