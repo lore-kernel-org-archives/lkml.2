@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab2KNR7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:59:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab2KNR7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:59:05 -0500
-Message-ID: <50A3DBCD.8010503@redhat.com>
-Date: Wed, 14 Nov 2012 12:58:37 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S933044Ab2KNSBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:01:33 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35724 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847Ab2KNSBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 13:01:31 -0500
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <1352883029-7885-1-git-send-email-mingo@kernel.org>
+References: <1352883029-7885-1-git-send-email-mingo@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 14 Nov 2012 10:01:08 -0800
+X-Google-Sender-Auth: d_hCFLknlQNPS4rQl2q8nD4M4Tc
+Message-ID: <CA+55aFz_JnoR73O46YWhZn2A4t_CSUkGzMMprCUpvR79TVMCEQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] change_protection(): Count the number of pages affected
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/31] mm: numa: Only call task_numa_placement for misplaced
- pages
-References: <1352805180-1607-1-git-send-email-mgorman@suse.de> <1352805180-1607-17-git-send-email-mgorman@suse.de>
-In-Reply-To: <1352805180-1607-17-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 06:12 AM, Mel Gorman wrote:
-> task_numa_placement is potentially very expensive so limit it to being
-> called when a page is misplaced. How necessary this is depends on
-> the placement policy.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Wed, Nov 14, 2012 at 12:50 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> What do you guys think about this mprotect() optimization?
 
-That reads like a premature optimization :)
+Hmm..
 
--- 
-All rights reversed
+If this is mainly about just avoiding the TLB flushing, I do wonder if
+it might not be more interesting to try to be much more aggressive.
+
+As noted elsewhere, we should just notice when vm_page_prot doesn't
+change at all - even if 'flags' change, it is possible that the actual
+low-level page protection bits do not (due to the X=R issue).
+
+But even *more* aggressively, how about looking at
+
+ - not flushing the TLB at all if the bits become  more permissive
+(taking the TLB micro-fault and letting the CPU just update it on its
+own)
+
+ - even *more* aggressive: if the bits become strictly more
+restrictive, how about not flushing the TLB at all, *and* not even
+changing the page tables, and just teaching the page fault code to do
+it lazily at fault time?
+
+Now, the "change protections lazily" might actually be a huge
+performance problem with the page fault overhead dwarfing any TLB
+flush costs, but we don't really know, do we? It might be worth trying
+out.
+
+               Linus
