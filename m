@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab2KNF4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:56:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55233 "EHLO
+	id S1756583Ab2KNF4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:56:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55239 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756420Ab2KNFvC (ORCPT
+	by vger.kernel.org with ESMTP id S1756424Ab2KNFvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:02 -0500
-Message-Id: <20121114053939.419144308@decadent.org.uk>
+	Wed, 14 Nov 2012 00:51:03 -0500
+Message-Id: <20121114053939.028683483@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:13 +0000
+Date: Wed, 14 Nov 2012 05:40:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 40/82] Input: tsc40 - remove wrong announcement of pressure support
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 37/82] rt2800: validate step value for temperature compensation
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 32ed1911fc79908d704023317d4ddeb3883fd07e upstream.
+commit bf7e1abe434ba9e22e8dc04a4cba4ab504b788b8 upstream.
 
-The tsc40 driver announces it supports the pressure event, but will never
-send one. The announcement will cause tslib to wait for such events and
-sending all touch events with a pressure of 0. Removing the announcement
-will make tslib fall back to emulating the pressure on touch events so
-everything works as expected.
+Some hardware has correct (!= 0xff) value of tssi_bounds[4] in the
+EEPROM, but step is equal to 0xff. This results on ridiculous delta
+calculations and completely broke TX power settings.
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-and-tested-by: Pavel Lucik <pavel.lucik@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/touchscreen/tsc40.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/tsc40.c b/drivers/input/touchscreen/tsc40.c
-index 63209aa..eb96f16 100644
---- a/drivers/input/touchscreen/tsc40.c
-+++ b/drivers/input/touchscreen/tsc40.c
-@@ -107,7 +107,6 @@ static int tsc_connect(struct serio *serio, struct serio_driver *drv)
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
- 	input_set_abs_params(ptsc->dev, ABS_X, 0, 0x3ff, 0, 0);
- 	input_set_abs_params(ptsc->dev, ABS_Y, 0, 0x3ff, 0, 0);
--	input_set_abs_params(ptsc->dev, ABS_PRESSURE, 0, 0, 0, 0);
+diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
+index 01dc889..59474ae 100644
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2449,7 +2449,7 @@ static int rt2800_get_gain_calibration_delta(struct rt2x00_dev *rt2x00dev)
+ 	/*
+ 	 * Check if temperature compensation is supported.
+ 	 */
+-	if (tssi_bounds[4] == 0xff)
++	if (tssi_bounds[4] == 0xff || step == 0xff)
+ 		return 0;
  
- 	serio_set_drvdata(serio, ptsc);
- 
+ 	/*
 
 
