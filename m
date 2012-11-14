@@ -1,214 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab2KNC3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:29:45 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:43135 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2KNC3o (ORCPT
+	id S932466Ab2KNCbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:31:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26694 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab2KNCbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:29:44 -0500
-Date: Tue, 13 Nov 2012 18:29:43 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ingo Molnar <mingo@kernel.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
-Subject: [PATCH 2/2] sched, numa, mm: Fixes and cleanups in
- do_huge_pmd_numa_page()
-In-Reply-To: <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1211131828020.29612@eggly.anvils>
-References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <1352826834-11774-22-git-send-email-mingo@kernel.org> <20121113184835.GH10092@cmpxchg.org> <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 13 Nov 2012 21:31:48 -0500
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LmWu7n8Vm5kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=c4Q_C9-CEacA:10 a=m4aFBlJfEDBMt36WKB8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1352860305.18025.48.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 13 Nov 2012 21:31:45 -0500
+In-Reply-To: <CAJL_ekvb89saY9F0F3ip-8xipuuRyJ1_M8hOyThu_0Q2=5sXgA@mail.gmail.com>
+References: <20121114013611.5338.15086.stgit@yunodevel>
+	 <1352858437.18025.47.camel@gandalf.local.home>
+	 <CAJL_ekvb89saY9F0F3ip-8xipuuRyJ1_M8hOyThu_0Q2=5sXgA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refuse to migrate a THPage if its page count is raised: that covers both
-the case when it is mapped into another address space, and the case
-when it has been pinned by get_user_pages(), fast or slow.
+On Tue, 2012-11-13 at 18:03 -0800, David Sharp wrote:
+> On Tue, Nov 13, 2012 at 6:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Wed, 2012-11-14 at 10:36 +0900, Yoshihiro YUNOMAE wrote:
+> >
+> >> To merge the data like previous pattern, we apply this patch set. Then, we can
+> >> get TSC offset of the guest as follows:
+> >>
+> >> $ dmesg | grep kvm
+> >> [   57.717180] kvm: (2687) write TSC offset 18446743360465545001, now clock ##
+> >>                      ^^^^                   ^^^^^^^^^^^^^^^^^^^^            |
+> >>                      PID                         TSC offset                 |
+> >>                                                            HOST TSC value --+
+> >>
+> >
+> > Using printk to export something like this is IMO a nasty hack.
+> >
+> > Can't we create a /sys or /proc file to export the same thing?
+> 
+> Since the value changes over the course of the trace, and seems to be
+> part of the context of the trace, I think I'd include it as a
+> tracepoint.
+> 
 
-Repeat this check each time we recheck pmd_same() under page_table_lock:
-it is unclear how necessary this is, perhaps once after lock_page() or
-once after isolate_lru_page() would be enough; but normal page migration
-certainly checks page count, and we often think "ah, this is safe against
-page migration because its page count is raised" - though sadly without
-thinking through what serialization supports that.
+I'm fine with that too.
 
-Do not proceed with migration when PageLRU is unset: such a page may
-well be in a private list or on a pagevec, about to be added to LRU at
-any instant: checking PageLRU under zone lock, as isolate_lru_page() does,
-is essential before proceeding safely.
+-- Steve
 
-Replace trylock_page and BUG by __set_page_locked: here the page has
-been allocated a few lines earlier.  And SetPageSwapBacked: it is set
-later, but there may be an error path which needs it set earlier.
 
-On error path reverse the Active, Unevictable, Mlocked changes made
-by migrate_page_copy().  Update mlock_migrate_page() to account for
-THPages correctly now that it can get called on them.
-
-Cleanup: rearrange unwinding slightly, removing a few blank lines.
-
-Previous-Version-Tested-by: Zhouping Liu <zliu@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-I did not understand at all how pmd_page(entry) might be NULL, but
-assumed that check is there for good reason and did not remove it.
-
- mm/huge_memory.c |   60 +++++++++++++++++++++++----------------------
- mm/internal.h    |    5 ++-
- 2 files changed, 34 insertions(+), 31 deletions(-)
-
---- mmotm/mm/huge_memory.c	2012-11-13 14:51:04.000321370 -0800
-+++ linux/mm/huge_memory.c	2012-11-13 15:01:01.892335579 -0800
-@@ -751,9 +751,9 @@ void do_huge_pmd_numa_page(struct mm_str
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
- 	struct mem_cgroup *memcg = NULL;
--	struct page *new_page = NULL;
-+	struct page *new_page;
- 	struct page *page = NULL;
--	int node, lru;
-+	int node = -1;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry)))
-@@ -770,7 +770,17 @@ void do_huge_pmd_numa_page(struct mm_str
- 		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
- 
- 		get_page(page);
--		node = mpol_misplaced(page, vma, haddr);
-+		/*
-+		 * Do not migrate this page if it is mapped anywhere else.
-+		 * Do not migrate this page if its count has been raised.
-+		 * Our caller's down_read of mmap_sem excludes fork raising
-+		 * mapcount; but recheck page count below whenever we take
-+		 * page_table_lock - although it's unclear what pin we are
-+		 * protecting against, since get_user_pages() or GUP fast
-+		 * would have to fault it present before they could proceed.
-+		 */
-+		if (page_count(page) == 2)
-+			node = mpol_misplaced(page, vma, haddr);
- 		if (node != -1)
- 			goto migrate;
- 	}
-@@ -794,7 +804,7 @@ migrate:
- 
- 	lock_page(page);
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry))) {
-+	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 2)) {
- 		spin_unlock(&mm->page_table_lock);
- 		unlock_page(page);
- 		put_page(page);
-@@ -803,19 +813,17 @@ migrate:
- 	spin_unlock(&mm->page_table_lock);
- 
- 	new_page = alloc_pages_node(node,
--	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
--	    HPAGE_PMD_ORDER);
--
-+	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
- 	if (!new_page)
- 		goto alloc_fail;
- 
--	lru = PageLRU(page);
--
--	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-+	if (isolate_lru_page(page)) {	/* Does an implicit get_page() */
-+		put_page(new_page);
- 		goto alloc_fail;
-+	}
- 
--	if (!trylock_page(new_page))
--		BUG();
-+	__set_page_locked(new_page);
-+	SetPageSwapBacked(new_page);
- 
- 	/* anon mapping, we can simply copy page->mapping to the new page: */
- 	new_page->mapping = page->mapping;
-@@ -826,19 +834,22 @@ migrate:
- 	WARN_ON(PageLRU(new_page));
- 
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry))) {
-+	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 3)) {
- 		spin_unlock(&mm->page_table_lock);
--		if (lru)
--			putback_lru_page(page);
-+
-+		/* Reverse changes made by migrate_page_copy() */
-+		if (TestClearPageActive(new_page))
-+			SetPageActive(page);
-+		if (TestClearPageUnevictable(new_page))
-+			SetPageUnevictable(page);
-+		mlock_migrate_page(page, new_page);
- 
- 		unlock_page(new_page);
--		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
--		new_page->mapping = NULL;
- 		put_page(new_page);		/* Free it */
- 
- 		unlock_page(page);
-+		putback_lru_page(page);
- 		put_page(page);			/* Drop the local reference */
--
- 		return;
- 	}
- 	/*
-@@ -867,26 +878,17 @@ migrate:
- 	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(&mm->page_table_lock);
- 
--	put_page(page);			/* Drop the rmap reference */
--
- 	task_numa_fault(node, HPAGE_PMD_NR);
- 
--	if (lru)
--		put_page(page);		/* drop the LRU isolation reference */
--
- 	unlock_page(new_page);
--
- 	unlock_page(page);
-+	put_page(page);			/* Drop the rmap reference */
-+	put_page(page);			/* Drop the LRU isolation reference */
- 	put_page(page);			/* Drop the local reference */
--
- 	return;
- 
- alloc_fail:
--	if (new_page)
--		put_page(new_page);
--
- 	unlock_page(page);
--
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry))) {
- 		put_page(page);
---- mmotm/mm/internal.h	2012-11-09 09:43:46.896046342 -0800
-+++ linux/mm/internal.h	2012-11-13 15:01:01.892335579 -0800
-@@ -218,11 +218,12 @@ static inline void mlock_migrate_page(st
- {
- 	if (TestClearPageMlocked(page)) {
- 		unsigned long flags;
-+		int nr_pages = hpage_nr_pages(page);
- 
- 		local_irq_save(flags);
--		__dec_zone_page_state(page, NR_MLOCK);
-+		__mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
- 		SetPageMlocked(newpage);
--		__inc_zone_page_state(newpage, NR_MLOCK);
-+		__mod_zone_page_state(page_zone(newpage), NR_MLOCK, nr_pages);
- 		local_irq_restore(flags);
- 	}
- }
