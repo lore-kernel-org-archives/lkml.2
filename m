@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab2KNVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 16:38:26 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33498 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753562Ab2KNViY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 16:38:24 -0500
-Date: Wed, 14 Nov 2012 21:38:19 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: gustavo@padovan.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        ulisses@profusion.mobi, marcel@holtmann.org, padovan@profusion.mobi
-Message-ID: <20121114213819.GT13292@decadent.org.uk>
-References: <20121114053933.726869752@decadent.org.uk>
- <20121114053933.935584768@decadent.org.uk>
- <20121114212426.GA1866@joana>
- <20121114.163044.2287972932330697472.davem@davemloft.net>
+	id S933138Ab2KNVmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 16:42:42 -0500
+Received: from fieldses.org ([174.143.236.118]:56265 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933106Ab2KNVml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 16:42:41 -0500
+Date: Wed, 14 Nov 2012 16:42:36 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
+ connecting local transports
+Message-ID: <20121114214236.GB539@fieldses.org>
+References: <5098E31A.5080801@parallels.com>
+ <20121106120642.GA6718@fieldses.org>
+ <20121106124035.GA20522@infradead.org>
+ <20121106130705.GC6718@fieldses.org>
+ <20121106131018.GA12211@infradead.org>
+ <20121106133605.GD6718@fieldses.org>
+ <20121107183355.GA7421@fieldses.org>
+ <50A0B562.2090807@parallels.com>
+ <20121114210112.GA539@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0A40@SACEXCMBX04-PRD.hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121114.163044.2287972932330697472.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
- Core
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0A40@SACEXCMBX04-PRD.hq.netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
-> From: Gustavo Padovan <gustavo@padovan.org>
-> Date: Wed, 14 Nov 2012 19:24:26 -0200
+On Wed, Nov 14, 2012 at 09:36:33PM +0000, Myklebust, Trond wrote:
+> On Wed, 2012-11-14 at 16:01 -0500, J. Bruce Fields wrote:
+> > On Mon, Nov 12, 2012 at 12:37:54PM +0400, Stanislav Kinsbursky wrote:
+> > > 07.11.2012 22:33, J. Bruce Fields пишет:
+> > > >On Tue, Nov 06, 2012 at 08:36:05AM -0500, J. Bruce Fields wrote:
+> > > >>On Tue, Nov 06, 2012 at 08:10:18AM -0500, Christoph Hellwig wrote:
+> > > >>>On Tue, Nov 06, 2012 at 08:07:06AM -0500, J. Bruce Fields wrote:
+> > > >>>>So you're worried that a bug in the nfs code could modify the root and
+> > > >>>>then not restore it?
+> > > >>>
+> > > >>>At least the link you pointed to earlier never sets it back.
+> > > >>
+> > > >>This? http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
+> > > >>
+> > > >>	+	get_fs_root(current->fs, &root);
+> > > >>	+	set_fs_root(current->fs, &transport->root);
+> > > >>	+
+> > > >>	 	status = xs_local_finish_connecting(xprt, sock);
+> > > >>	+
+> > > >>	+	set_fs_root(current->fs, &root);
+> > > >>	+	path_put(&root);
+> > > >>
+> > > >>>Instead
+> > > >>>of messing with it I'd rather have the sunrpc code use vfs_path_lookup
+> > > >>>and not care about current->fs->root at all.
+> > > >>
+> > > >>The annoyance is that the lookup happens somewhere lower down in the
+> > > >>networking code (net/unix/af_unix.c:unix_find_other, I think).  So we'd
+> > > >>need some new (internal) API.  We'd likely be the only user of that new
+> > > >>API.
+> > > >
+> > > >So, if the only drawback is really just the risk of introducing a bug
+> > > >that leaves the fs_root changed--the above seems simple enough for that
+> > > >not to be a great risk, right?
+> > > >
+> > > 
+> > > If we unshare rpciod fs struct (which is exported already), then we
+> > 
+> > I'm not sure what you mean by that.  Do workqueues actually have their
+> > own dedicated set of associated tasks?  I thought all workqueues shared
+> > a common pool of tasks these days.
+> > 
+> > > won't affect other kthreads by root swapping.
+> > > But would be great to hear Trond's opinion about this approach.
+> > > 
+> > > Trond, could you tell us your feeling about all this?
+> > 
+> > I think it's often easier to get people to comment on an actual patch,
+> > and this one would be quite short, so try that....
 > 
-> > Hi Ben,
-> > 
-> > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
-> > 
-> >> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> >> 
-> >> ------------------
-> >> 
-> >> From: Ulisses Furquim <ulisses@profusion.mobi>
-> >> 
-> >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
-> >> 
-> >> The handling of SCO audio links and the L2CAP protocol are essential to
-> >> any system with Bluetooth thus are always compiled in from now on.
-> > 
-> > I wonder if this could not break any kind of script or code people have that
-> > refer directly to the sco and l2cap modules. Also I don't see this change as
-> > really necessary for 3.2.
+> unshare() would break expectations for other users of workqueue threads
+> unless you "reshare()" afterwards. Either way that's going to be
+> seriously ugly.
 > 
-> Agreed, I wish this had not been merged into -stable, I would have never
-> submitted a patch like this myself.
+> OK, let's look at this again. Do we ever use AF_LOCAL connections for
+> anything other than synchronous rpc calls to the local rpcbind daemon in
+> order to register/unregister new services?
 
-This is required by:
+Simo's patches use them for upcalls to svcgssd.  Those will always be
+done from server threads.
 
-commit ff03261adc8b4bdd8291f1783c079b53a892b429
-Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Date:   Thu Aug 23 21:32:44 2012 -0300
+> If not, then let's just move
+> the AF_LOCAL connection back into the process context and out of rpciod.
 
-    Bluetooth: Fix sending a HCI Authorization Request over LE links
-    
-    commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+Remind me how this helps?
 
-which was already applied.
+--b.
 
-Ben.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+> 
+> That implies that the process needs to be privileged, but it needs
+> privileges in order to start RPC daemons anyway.
