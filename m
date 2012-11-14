@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422698Ab2KNLu0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 06:50:26 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52227 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161139Ab2KNLuX (ORCPT
+	id S1422676Ab2KNLvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 06:51:44 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51491 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161139Ab2KNLvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 06:50:23 -0500
-Date: Wed, 14 Nov 2012 11:55:32 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kumar Amit Mehta <gmate.amit@gmail.com>
-Cc: gregkh@linuxfoundation.org, wfp5p@virginia.edu, geert@linux-m68k.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] staging: dgrp: dgrp_tty.c: return an -EFAULT if
- get_user() fails
-Message-ID: <20121114115532.5b4fa80d@pyramind.ukuu.org.uk>
-In-Reply-To: <1352878879-19840-1-git-send-email-gmate.amit@gmail.com>
-References: <1352878879-19840-1-git-send-email-gmate.amit@gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 06:51:43 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Frank Li <Frank.Li@freescale.com>
+Subject: [PATCH 1/1] regulator: gpio-regulator: Catch 'no states property' misuse
+Date: Wed, 14 Nov 2012 11:51:36 +0000
+Message-Id: <1352893896-15956-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 13:11:18 +0530
-Kumar Amit Mehta <gmate.amit@gmail.com> wrote:
+A selection of voltage or current values (AKA states) should always
+be specified when using a GPIO regulator. If there are no switchable
+states then the fixed regulators should be used instead.
 
-> Inspect the return value of get_user() and return -EFAULT on error.
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Frank Li <Frank.Li@freescale.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ .../bindings/regulator/gpio-regulator.txt          |    3 ++-
+ drivers/regulator/gpio-regulator.c                 |    5 +++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-You cam just delete all the TIOCSOFTCAR nonsense. That ioctl is handled
-correctly by the core tty layer code rather than incorrectly by the dgrp
-driver.
+diff --git a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+index 3703be2..51527c6 100644
+--- a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+@@ -2,11 +2,12 @@ GPIO controlled regulators
+ 
+ Required properties:
+ - compatible		: Must be "regulator-gpio".
++- states		: Selection of available voltages and GPIO configs.
++                          if there are no states, then use a fixed regulator
+ 
+ Optional properties:
+ - gpio-enable		: GPIO to use to enable/disable the regulator.
+ - gpios			: GPIO group used to control voltage.
+-- states		: Selection of available voltages and GPIO configs.
+ - startup-delay-us	: Startup time in microseconds.
+ - enable-active-high	: Polarity of GPIO is active high (default is low).
+ 
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index e467d0a..a7a2974 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -183,6 +183,11 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
+ 
+ 	/* Fetch states. */
+ 	prop = of_find_property(np, "states", NULL);
++	if (!prop) {
++		dev_err(dev, "No 'states' property found\n");
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	proplen = prop->length / sizeof(int);
+ 
+ 	config->states = devm_kzalloc(dev,
+-- 
+1.7.9.5
 
-Alan
