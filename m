@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423301Ab2KNTTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 14:19:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9384 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab2KNTTs (ORCPT
+	id S1756199Ab2KNTU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 14:20:59 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37181 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab2KNTU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 14:19:48 -0500
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=l2F7ChNpxMUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=1qqrvxW5imwA:10 a=7gG8LQRT1JzBAUlnawwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352920786.18025.71.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/4] vtime: Consolidate a bit the ctx switch code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Wed, 14 Nov 2012 14:19:46 -0500
-In-Reply-To: <1352910413-10759-4-git-send-email-fweisbec@gmail.com>
-References: <1352910413-10759-1-git-send-email-fweisbec@gmail.com>
-	 <1352910413-10759-4-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 14:20:57 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V6 1/2] kbuild: centralize .dts->.dtb rule
+To: Stephen Warren <swarren@wwwdotorg.org>, Michal Marek <mmarek@suse.cz>
+Cc: David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <1352753907-3316-1-git-send-email-swarren@wwwdotorg.org>
+References: <1352753907-3316-1-git-send-email-swarren@wwwdotorg.org>
+Date: Wed, 14 Nov 2012 19:20:52 +0000
+Message-Id: <20121114192052.4A3EA3E0B7C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from the subject: vtime: Consolidate a bit the ctx switch code
+On Mon, 12 Nov 2012 13:58:26 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> All architectures that use cmd_dtc do so in the same way. Move the build
+> rule to a central location to avoid duplication.
+> 
+> Update Documentation/kbuild to remove the explicit call to cmd_dtc from
+> the example, now that the rule exists in a centralized location, and in
+> fact replace the example with a couple that still exist.
+> 
+> arch/mips changes courtesy of Ralf Baechle.
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> ---
+> v6: Added arch/{arm64,microblaze,mips} updates.
+> v5: Updated Documentation/kbuild.
+> v4: No change.
+> v3: No change.
+> v2: New patch.
 
-I read that line several times and it just keeps sounding like some
-chant done by the strikers in Greece over the austerity measures...
+Merged, thanks.
 
-  "Consolidate a bit! The context switch code!"
-  "Consolidate a bit! The context switch code!"
-  "Consolidate a bit! The context switch code!"
-  "Consolidate a bit! The context switch code!"
-
-I guess because it just sounds Greek to me.
-
-
--- Steve
-
+g.
 
