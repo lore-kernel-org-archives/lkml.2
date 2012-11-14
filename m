@@ -1,138 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab2KNHwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:52:43 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50136 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab2KNHu7 (ORCPT
+	id S1756527Ab2KNIDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 03:03:53 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42614 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab2KNIDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:50:59 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 1/6] staging: line6: drop control URB dumping code
-Date: Wed, 14 Nov 2012 08:50:41 +0100
-Message-Id: <1352879446-23195-2-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
-References: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
+	Wed, 14 Nov 2012 03:03:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121103101926.4e48cf8e7f3f1d3de90e45a2@canb.auug.org.au>
+References: <CAMuHMdXhYNQ_7JOC3u7CS41mxgSKkuFYA7QdjZgeBawqMZQ9-g@mail.gmail.com>
+	<20121103101926.4e48cf8e7f3f1d3de90e45a2@canb.auug.org.au>
+Date: Wed, 14 Nov 2012 09:03:51 +0100
+X-Google-Sender-Auth: o2-ZGbkkhoAG60aPV1qkbdYauhA
+Message-ID: <CAMuHMdWeDsAtmUq_TEFRAEY_gikAVoh=-mqwwp9OzOXobyWo+A@mail.gmail.com>
+Subject: Re: ccache: FATAL: Could not create /scratch/kisskb/ccache
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Michael Ellerman <michael@ellerman.id.au>
+Cc: Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usbmon feature should be used instead of manually dumping control
-URBs.  There are a few advantages to using usbmon:
+Hi Stephen,
 
- * Can be turned on/off at runtime
- * Provides full USB-level traffic
- * tcpdump and wireshark support for powerful analysis
- * No driver-specific code is required
+On Sat, Nov 3, 2012 at 12:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Fri, 2 Nov 2012 19:44:48 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/7458505/
+>>
+>> ccache: FATAL: Could not create
+>> /scratch/kisskb/ccache/d/7/f9e308f728ef43aaa482aefb9a00a2-852386.o.tmp.stdout.Sprygo.5748
+>> (permission denied?)
+>> make[4]: *** [drivers/media/rc/ene_ir.o] Error 1
+>>
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/7461979/
+>>
+>> ccache: FATAL: Could not create
+>> /scratch/kisskb/ccache/5/e/47d893acad42c07542edec1f826579-1842636.o.tmp.stdout.Sprygo.557
+>> (permission denied?)
+>> make[3]: *** [net/core/sock.o] Error 1
+>
+> Well, that is weird.  I can't find any reason for that to happen :-(
+>
+> I'll have a chat with the kisskb guy when I next see him.  Thanks for the
+> heads up.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
----
- drivers/staging/line6/driver.c | 36 ------------------------------------
- drivers/staging/line6/midi.c   |  3 ---
- 2 files changed, 39 deletions(-)
+As code is migrating to Linus' tree, it's spreading from the linux-next to the
+linus branch, e.g.:
+http://kisskb.ellerman.id.au/kisskb/buildresult/7536268/
+ccache: FATAL: Could not create
+/scratch/kisskb/ccache/1/3/a44cddb2457ad89fe496b0c82b0a09-1211932.o.tmp.stdout.Sprygo.2788
+(permission denied?)
+make[3]: *** [drivers/block/aoe/aoecmd.o] Error 1
 
-diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index 571f2ce..fda92d1 100644
---- a/drivers/staging/line6/driver.c
-+++ b/drivers/staging/line6/driver.c
-@@ -177,22 +177,6 @@ void line6_write_hexdump(struct usb_line6 *line6, char dir,
- }
- #endif
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--/*
--	Dump URB data to syslog.
--*/
--static void line6_dump_urb(struct urb *urb)
--{
--	struct usb_line6 *line6 = (struct usb_line6 *)urb->context;
--
--	if (urb->status < 0)
--		return;
--
--	line6_write_hexdump(line6, 'R', (unsigned char *)urb->transfer_buffer,
--			    urb->actual_length);
--}
--#endif
--
- /*
- 	Send raw message in pieces of wMaxPacketSize bytes.
- */
-@@ -201,10 +185,6 @@ int line6_send_raw_message(struct usb_line6 *line6, const char *buffer,
- {
- 	int i, done = 0;
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_write_hexdump(line6, 'S', buffer, size);
--#endif
--
- 	for (i = 0; i < size; i += line6->max_packet_size) {
- 		int partial;
- 		const char *frag_buf = buffer + i;
-@@ -259,10 +239,6 @@ static int line6_send_raw_message_async_part(struct message *msg,
- 			 (char *)msg->buffer + done, bytes,
- 			 line6_async_request_sent, msg, line6->interval);
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_write_hexdump(line6, 'S', (char *)msg->buffer + done, bytes);
--#endif
--
- 	msg->done += bytes;
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
- 
-@@ -403,10 +379,6 @@ static void line6_data_received(struct urb *urb)
- 	if (urb->status == -ESHUTDOWN)
- 		return;
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_dump_urb(urb);
--#endif
--
- 	done =
- 	    line6_midibuf_write(mb, urb->transfer_buffer, urb->actual_length);
- 
-@@ -502,10 +474,6 @@ int line6_send_program(struct usb_line6 *line6, u8 value)
- 	buffer[0] = LINE6_PROGRAM_CHANGE | LINE6_CHANNEL_HOST;
- 	buffer[1] = value;
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_write_hexdump(line6, 'S', buffer, 2);
--#endif
--
- 	retval = usb_interrupt_msg(line6->usbdev,
- 				   usb_sndintpipe(line6->usbdev,
- 						  line6->ep_control_write),
-@@ -539,10 +507,6 @@ int line6_transmit_parameter(struct usb_line6 *line6, int param, u8 value)
- 	buffer[1] = param;
- 	buffer[2] = value;
- 
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_write_hexdump(line6, 'S', buffer, 3);
--#endif
--
- 	retval = usb_interrupt_msg(line6->usbdev,
- 				   usb_sndintpipe(line6->usbdev,
- 						  line6->ep_control_write),
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index 5040729..348d425 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -131,9 +131,6 @@ static int send_midi_async(struct usb_line6 *line6, unsigned char *data,
- 		dev_err(line6->ifcdev, "Out of memory\n");
- 		return -ENOMEM;
- 	}
--#ifdef CONFIG_LINE6_USB_DUMP_CTRL
--	line6_write_hexdump(line6, 'S', data, length);
--#endif
- 
- 	transfer_buffer = kmemdup(data, length, GFP_ATOMIC);
- 
--- 
-1.8.0
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
