@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab2KNVyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 16:54:37 -0500
-Received: from fieldses.org ([174.143.236.118]:59595 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932381Ab2KNVyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 16:54:36 -0500
-Date: Wed, 14 Nov 2012 16:54:26 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121114215426.GC539@fieldses.org>
-References: <20121106124035.GA20522@infradead.org>
- <20121106130705.GC6718@fieldses.org>
- <20121106131018.GA12211@infradead.org>
- <20121106133605.GD6718@fieldses.org>
- <20121107183355.GA7421@fieldses.org>
- <50A0B562.2090807@parallels.com>
- <20121114210112.GA539@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0A40@SACEXCMBX04-PRD.hq.netapp.com>
- <20121114214236.GB539@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0AE9@SACEXCMBX04-PRD.hq.netapp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0AE9@SACEXCMBX04-PRD.hq.netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933158Ab2KNVzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 16:55:06 -0500
+Received: from 173-254-64-10.unifiedlayer.com ([173.254.64.10]:60196 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with SMTP id S933125Ab2KNVzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 16:55:04 -0500
+Date: Wed, 14 Nov 2012 13:55:34 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/Sandy Bridge: reserve pages when integrated
+ graphics is present
+Message-ID: <20121114135534.653b70dd@jbarnes-desktop>
+In-Reply-To: <20121114211905.503f3701@pyramind.ukuu.org.uk>
+References: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
+	<20121114211905.503f3701@pyramind.ukuu.org.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 09:51:33PM +0000, Myklebust, Trond wrote:
-> On Wed, 2012-11-14 at 16:42 -0500, J. Bruce Fields wrote:
-> > Simo's patches use them for upcalls to svcgssd.  Those will always be
-> > done from server threads.
-> 
-> Any reason why you can't set that up when you start nfsd?
+On Wed, 14 Nov 2012 21:19:05 +0000
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Oh, right, I was thinking of the upcalls themselves--right, the connect
-we should be able to do on server start, I agree.
+> On Wed, 14 Nov 2012 20:43:31 +0000
+> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> 
+> > SNB graphics devices have a bug that prevent them from accessing certain
+> > memory ranges, namely anything below 1M and in the pages listed in the
+> > table.  So reserve those at boot if set detect a SNB gfx device on the
+> > CPU to avoid GPU hangs.
+> 
+> What happens if the other addresses map to an external memory object - eg
+> a PCI device which is a legitimate DMA source for video overlay etc ?
 
-> 
-> > > If not, then let's just move
-> > > the AF_LOCAL connection back into the process context and out of rpciod.
-> > 
-> > Remind me how this helps?
-> 
-> rpciod shares the 'init' process net namespace and chroot properties.
-> If, however you call bind() from the (containerised) process that was
-> used to start nfsd, then you will be using filesystem root (and net
-> namespace) of that container.
+Other addresses as in the 5 pages high in the address space?  I'm not
+sure how to do what I want with memblock, doesn't it just allocate RAM
+not I/O space?... /me looks at the memblock API
 
-Got it.
+Or do you mean if we map GTT pages to point at some non-RAM region will
+SNB gfx be able to decode them?  If that's the question, then I think
+the answer is no, but I don't have enough detail on the hw bug to be
+certain.
 
---b.
+> I assume this is just for GPU fetches from main memory ?
 
-> 
-> > --b.
-> > 
-> > > 
-> > > That implies that the process needs to be privileged, but it needs
-> > > privileges in order to start RPC daemons anyway.
-> 
-> -- 
-> Trond Myklebust
-> Linux NFS client maintainer
-> 
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
+AIUI, it's an address decoder bug, so it would affect any fetch by the
+GPU through its memory interface glue.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
