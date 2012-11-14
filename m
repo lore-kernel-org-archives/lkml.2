@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161062Ab2KNJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:49:29 -0500
-Received: from mga14.intel.com ([143.182.124.37]:24249 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161051Ab2KNJtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:49:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,249,1352102400"; 
-   d="scan'208";a="168193394"
-Date: Wed, 14 Nov 2012 11:52:32 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, mathias.nyman@linux.intel.com,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 0/3 rev 2] Centralized parsing of ACPI device resources
-Message-ID: <20121114095232.GN31759@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <2429141.J1r7BIpiiT@vostro.rjw.lan>
- <5953163.ZajFIHZXph@vostro.rjw.lan>
+	id S932876Ab2KNJvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:51:13 -0500
+Received: from claranet-outbound-smtp05.uk.clara.net ([195.8.89.38]:36299 "EHLO
+	claranet-outbound-smtp05.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932782Ab2KNJvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 04:51:11 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 3/7] fs, notify: Add file handle entry into inotify_inode_mark
+Date: Wed, 14 Nov 2012 09:50:55 +0000
+Message-ID: <19056257.kzSp6roqV4@deuteros>
+User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <20121114093849.GE16685@moon>
+References: <20121112101440.665694060@openvz.org> <4242534.oR1fYvhZDe@deuteros> <20121114093849.GE16685@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5953163.ZajFIHZXph@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 09:51:39PM +0100, Rafael J. Wysocki wrote:
-> Updated series, taking the Mika's feedback into account, follows.  There are
-> bug fixes in [1/3], [2/3] is unchanged and the new [3/3] is a replacement, done
-> in a different way because of some ACPICA limitations I didn't realize before.
+On Wednesday 14 November 2012 13:38:49 Cyrill Gorcunov wrote:
+> On Wed, Nov 14, 2012 at 09:20:51AM +0000, Tvrtko Ursulin wrote:
+> > On Tuesday 13 November 2012 19:28:46 Cyrill Gorcunov wrote:
+> > > On Tue, Nov 13, 2012 at 03:02:22PM +0000, Tvrtko Ursulin wrote:
+> > > > Perhaps there could be a different way, where you could use additional
+> > > > space only when it is actually used at runtime. But as I said, I am
+> > > > not
+> > > > following closely.
+> > > 
+> > > Unfortunatelly at moment I see no way how to make it in on-demand
+> > > fashion.
+> > 
+> > You could not use a pointer and then allocate your buffers on the check
+> > point operation, freeing on restore?
+> 
+> The problem is not allocating the memory itself but rather the time when the
+> information needed (ie the dentry) is available. The only moment when we
+> can use dentry of the target file/directory is at inotify_new_watch, that's
+> why i need to compose fhandle that early. At any later point we simply have
+> no dentry to use.
 
-I've now tested this series on my ACPI 5 enabled test machine and
-everything works fine - I can see the platform devices and that they have
-the ACPI handle attached.
+But you do not fundamentally need the dentry to restore a watch, right? 
+Couldn't you restore, creating a new restore path if needed, using the inode 
+which is pinned anyway while the watch exists?
 
-For the whole series,
+Regards,
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Tvrtko
 
-(testing has been limited on one ACPI 5 machine, though).
-
-I guess I can start preparing the GPIO/SPI/I2C patches soon ;-)
