@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab2KNFue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55028 "EHLO
+	id S1756311Ab2KNFul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55111 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754197Ab2KNFuV (ORCPT
+	by vger.kernel.org with ESMTP id S1751594Ab2KNFue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:21 -0500
-Message-Id: <20121114053944.453037235@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:34 -0500
+Message-Id: <20121114053942.402525152@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:50 +0000
+Date: Wed, 14 Nov 2012 05:40:35 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Stefan Beller <stefanbeller@googlemail.com>,
-        John Johansen <john.johansen@canonical.com>
-Subject: [ 77/82] eCryptfs: Copy up POSIX ACL and read-only flags from lower mount
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 62/82] ALSA: Fix card refcount unbalance
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,64 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 069ddcda37b2cf5bb4b6031a944c0e9359213262 upstream.
+commit 8bb4d9ce08b0a92ca174e41d92c180328f86173f upstream.
 
-When the eCryptfs mount options do not include '-o acl', but the lower
-filesystem's mount options do include 'acl', the MS_POSIXACL flag is not
-flipped on in the eCryptfs super block flags. This flag is what the VFS
-checks in do_last() when deciding if the current umask should be applied
-to a newly created inode's mode or not. When a default POSIX ACL mask is
-set on a directory, the current umask is incorrectly applied to new
-inodes created in the directory. This patch ignores the MS_POSIXACL flag
-passed into ecryptfs_mount() and sets the flag on the eCryptfs super
-block depending on the flag's presence on the lower super block.
+There are uncovered cases whether the card refcount introduced by the
+commit a0830dbd isn't properly increased or decreased:
+- OSS PCM and mixer success paths
+- When lookup function gets NULL
 
-Additionally, it is incorrect to allow a writeable eCryptfs mount on top
-of a read-only lower mount. This missing check did not allow writes to
-the read-only lower mount because permissions checks are still performed
-on the lower filesystem's objects but it is best to simply not allow a
-rw mount on top of ro mount. However, a ro eCryptfs mount on top of a rw
-mount is valid and still allowed.
+This patch fixes these places.
 
-https://launchpad.net/bugs/1009207
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50251
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Stefan Beller <stefanbeller@googlemail.com>
-Cc: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ sound/core/oss/mixer_oss.c |    1 +
+ sound/core/oss/pcm_oss.c   |    1 +
+ sound/core/pcm_native.c    |    6 ++++--
+ sound/core/sound.c         |    2 +-
+ sound/core/sound_oss.c     |    2 +-
+ 5 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 6895493..df217dc 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -505,7 +505,6 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
- 		goto out;
+diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
+index a9a2e63..e8a1d18 100644
+--- a/sound/core/oss/mixer_oss.c
++++ b/sound/core/oss/mixer_oss.c
+@@ -76,6 +76,7 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
+ 		snd_card_unref(card);
+ 		return -EFAULT;
  	}
++	snd_card_unref(card);
+ 	return 0;
+ }
  
--	s->s_flags = flags;
- 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
- 	if (rc)
- 		goto out1;
-@@ -541,6 +540,15 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
- 	}
+diff --git a/sound/core/oss/pcm_oss.c b/sound/core/oss/pcm_oss.c
+index f337b66..4c1cc51 100644
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2454,6 +2454,7 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
+ 	mutex_unlock(&pcm->open_mutex);
+ 	if (err < 0)
+ 		goto __error;
++	snd_card_unref(pcm->card);
+ 	return err;
  
- 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
-+
-+	/**
-+	 * Set the POSIX ACL flag based on whether they're enabled in the lower
-+	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
-+	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-+	 */
-+	s->s_flags = flags & ~MS_POSIXACL;
-+	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-+
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
+       __error:
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index 6e8872d..f9ddecf 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -2122,7 +2122,8 @@ static int snd_pcm_playback_open(struct inode *inode, struct file *file)
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_PLAYBACK);
+ 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_PLAYBACK);
+-	snd_card_unref(pcm->card);
++	if (pcm)
++		snd_card_unref(pcm->card);
+ 	return err;
+ }
+ 
+@@ -2135,7 +2136,8 @@ static int snd_pcm_capture_open(struct inode *inode, struct file *file)
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_CAPTURE);
+ 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_CAPTURE);
+-	snd_card_unref(pcm->card);
++	if (pcm)
++		snd_card_unref(pcm->card);
+ 	return err;
+ }
+ 
+diff --git a/sound/core/sound.c b/sound/core/sound.c
+index 89780c3..70ccdab 100644
+--- a/sound/core/sound.c
++++ b/sound/core/sound.c
+@@ -114,7 +114,7 @@ void *snd_lookup_minor_data(unsigned int minor, int type)
+ 	mreg = snd_minors[minor];
+ 	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-		if (mreg->card_ptr)
++		if (private_data && mreg->card_ptr)
+ 			atomic_inc(&mreg->card_ptr->refcount);
+ 	} else
+ 		private_data = NULL;
+diff --git a/sound/core/sound_oss.c b/sound/core/sound_oss.c
+index e1d79ee..726a49a 100644
+--- a/sound/core/sound_oss.c
++++ b/sound/core/sound_oss.c
+@@ -54,7 +54,7 @@ void *snd_lookup_oss_minor_data(unsigned int minor, int type)
+ 	mreg = snd_oss_minors[minor];
+ 	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-		if (mreg->card_ptr)
++		if (private_data && mreg->card_ptr)
+ 			atomic_inc(&mreg->card_ptr->refcount);
+ 	} else
+ 		private_data = NULL;
 
 
