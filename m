@@ -1,89 +1,784 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2KNAZP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:25:15 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56483 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756079Ab2KNAZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:25:13 -0500
-Date: Tue, 13 Nov 2012 16:05:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: Does anyone use CONFIG_TINY_PREEMPT_RCU?
-Message-ID: <20121114000534.GM2489@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121113004906.GA10557@linux.vnet.ibm.com>
- <20121113144620.GA27426@elliptictech.com>
- <20121113170804.GA2489@linux.vnet.ibm.com>
- <20121113175654.GA30119@elliptictech.com>
- <20121113211952.GC2489@linux.vnet.ibm.com>
- <20121113214720.GC13472@elliptictech.com>
- <20121113222521.GI2489@linux.vnet.ibm.com>
- <20121113224040.GA14594@elliptictech.com>
+	id S1756111Ab2KNA2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 19:28:06 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18670 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018Ab2KNA2D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 19:28:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 13 Nov 2012 16:27:46 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>
+CC: <spi-devel-general@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] spi: tegra: add spi driver for sflash controller
+Date: Wed, 14 Nov 2012 05:54:47 +0530
+Message-ID: <1352852687-25514-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113224040.GA14594@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111400-5806-0000-0000-00001BBD7C2C
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 05:40:40PM -0500, Nick Bowler wrote:
-> On 2012-11-13 14:25 -0800, Paul E. McKenney wrote:
-> > On Tue, Nov 13, 2012 at 04:47:20PM -0500, Nick Bowler wrote:
-> > > On 2012-11-13 13:19 -0800, Paul E. McKenney wrote:
-> > > > On Tue, Nov 13, 2012 at 12:56:54PM -0500, Nick Bowler wrote:
-> > > > > On 2012-11-13 09:08 -0800, Paul E. McKenney wrote:
-> > > > > > Suppose that TREE_PREEMPT_RCU was available for !SMP && PREEMPT builds.
-> > > > > > Would that work for you?
-> > > > > 
-> > > > > To be honest I don't really know what the difference is, other than what
-> > > > > the help text says, which is:
-> > > > > 
-> > > > >   [TINY_PREEMPT_RCU] greatly reduces the memory footprint of RCU.
-> > > > >   
-> > > > > "Greatly reduced memory footprint" sounds pretty useful...
-> > > > 
-> > > > OK, so from your viewpoint, the only possible benefit is smaller
-> > > > memory?
-> > > 
-> > > Well, I have no idea.  If I was given the choice between TREE_PREEMPT_RCU
-> > > and TINY_PREEMPT_RCU, absent any information not in the description of
-> > > these options, I would choose TINY.  The description suggests that the
-> > > memory savings come at the expense of SMP support, which sounds like a
-> > > great tradeoff to make for a UP system.
-> > > 
-> > > > How much memory does your device have, if I may ask?
-> > > 
-> > > It's a (pretty old!) desktop.  I recently had to upgrade it to two
-> > > gigabytes due to unbearable thrashing with only one...
-> > 
-> > If you have two gigabytes (or even one gigabyte), you won't notice the
-> > few kilobytes of difference between TINY_PREEMPT_RCU and TREE_PREEMPT_RCU.
-> 
-> Well then TINY_PREEMPT_RCU doesn't sound all that useful for me!
-> Perhaps the help text could be improved... such as changing the words
-> "greatly reduced" to "marginally reduced" as a first step?
-> 
-> Is there no significant cache impact due to the larger implementation?
-> I don't really have the time or expertise to do measurements in this
-> regard, but if TREE_PREEMPT_RCU was actually a selectable option I could
-> at least choose it to see if anything explodes horribly...
+NVIDIA's Tegra20 have the SPI (SFLASH) controller to
+interface with spi flash device which is used for system
+boot. Add the spi driver for this controller.
 
-Indeed, if I do this, the first step would be to re-introduce the
-choice between CONFIG_TREE_PREEMPT_RCU and CONFIG_TINY_PREEMPT_RCU
-so that you could check for horrible explosions.  If the past is
-any guide, there would be at least a few.  ;-)
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from V1:
+- nit cleanups as suggested by Stephen.
+- Use of_property_read_u32() in place of doing the same locally.
 
-							Thanx, Paul
+ .../bindings/spi/nvidia,tegra20-sflash.txt         |   26 +
+ drivers/spi/Kconfig                                |    8 +
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi-tegra20-sflash.c                   |  665 ++++++++++++++++++++
+ 4 files changed, 700 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
+ create mode 100644 drivers/spi/spi-tegra20-sflash.c
+
+diff --git a/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt b/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
+new file mode 100644
+index 0000000..8cf24f6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
+@@ -0,0 +1,26 @@
++NVIDIA Tegra20 SFLASH controller.
++
++Required properties:
++- compatible : should be "nvidia,tegra20-sflash".
++- reg: Should contain SFLASH registers location and length.
++- interrupts: Should contain SFLASH interrupts.
++- nvidia,dma-request-selector : The Tegra DMA controller's phandle and
++  request selector for this SFLASH controller.
++
++Recommended properties:
++- spi-max-frequency: Definition as per
++                     Documentation/devicetree/bindings/spi/spi-bus.txt
++
++Example:
++
++spi@7000d600 {
++	compatible = "nvidia,tegra20-sflash";
++	reg = <0x7000c380 0x80>;
++	interrupts = <0 39 0x04>;
++	nvidia,dma-request-selector = <&apbdma 16>;
++	spi-max-frequency = <25000000>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "disabled";
++};
++
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 25290d9..3cbc9fb 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -385,6 +385,14 @@ config SPI_MXS
+ 	help
+ 	  SPI driver for Freescale MXS devices.
+ 
++config SPI_TEGRA20_SFLASH
++	tristate "Nvidia Tegra20 Serial flash Controller"
++	depends on ARCH_TEGRA
++	help
++	  SPI driver for Nvidia Tegra20 Serial flash Controller interface.
++	  The main usecase of this controller is to use spi flash as boot
++	  device.
++
+ config SPI_TEGRA20_SLINK
+ 	tristate "Nvidia Tegra20/Tegra30 SLINK Controller"
+ 	depends on ARCH_TEGRA && TEGRA20_APB_DMA
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index f87c0f1..9f6b3d8 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -60,6 +60,7 @@ obj-$(CONFIG_SPI_SH_MSIOF)		+= spi-sh-msiof.o
+ obj-$(CONFIG_SPI_SH_SCI)		+= spi-sh-sci.o
+ obj-$(CONFIG_SPI_SIRF)		+= spi-sirf.o
+ obj-$(CONFIG_SPI_STMP3XXX)		+= spi-stmp.o
++obj-$(CONFIG_SPI_TEGRA20_SFLASH)	+= spi-tegra20-sflash.o
+ obj-$(CONFIG_SPI_TEGRA20_SLINK)		+= spi-tegra20-slink.o
+ obj-$(CONFIG_SPI_TI_SSP)		+= spi-ti-ssp.o
+ obj-$(CONFIG_SPI_TLE62X0)		+= spi-tle62x0.o
+diff --git a/drivers/spi/spi-tegra20-sflash.c b/drivers/spi/spi-tegra20-sflash.c
+new file mode 100644
+index 0000000..6c8e367
+--- /dev/null
++++ b/drivers/spi/spi-tegra20-sflash.c
+@@ -0,0 +1,665 @@
++/*
++ * SPI driver for Nvidia's Tegra20 Serial Flash Controller.
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/clk.h>
++#include <linux/completion.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/kthread.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/spi/spi.h>
++#include <linux/spi/spi-tegra.h>
++#include <mach/clk.h>
++
++#define SPI_COMMAND				0x000
++#define SPI_GO					BIT(30)
++#define SPI_M_S					BIT(28)
++#define SPI_ACTIVE_SCLK_MASK			(0x3 << 26)
++#define SPI_ACTIVE_SCLK_DRIVE_LOW		(0 << 26)
++#define SPI_ACTIVE_SCLK_DRIVE_HIGH		(1 << 26)
++#define SPI_ACTIVE_SCLK_PULL_LOW		(2 << 26)
++#define SPI_ACTIVE_SCLK_PULL_HIGH		(3 << 26)
++
++#define SPI_CK_SDA_FALLING			(1 << 21)
++#define SPI_CK_SDA_RISING			(0 << 21)
++#define SPI_CK_SDA_MASK				(1 << 21)
++#define SPI_ACTIVE_SDA				(0x3 << 18)
++#define SPI_ACTIVE_SDA_DRIVE_LOW		(0 << 18)
++#define SPI_ACTIVE_SDA_DRIVE_HIGH		(1 << 18)
++#define SPI_ACTIVE_SDA_PULL_LOW			(2 << 18)
++#define SPI_ACTIVE_SDA_PULL_HIGH		(3 << 18)
++
++#define SPI_CS_POL_INVERT			BIT(16)
++#define SPI_TX_EN				BIT(15)
++#define SPI_RX_EN				BIT(14)
++#define SPI_CS_VAL_HIGH				BIT(13)
++#define SPI_CS_VAL_LOW				0x0
++#define SPI_CS_SW				BIT(12)
++#define SPI_CS_HW				0x0
++#define SPI_CS_DELAY_MASK			(7 << 9)
++#define SPI_CS3_EN				BIT(8)
++#define SPI_CS2_EN				BIT(7)
++#define SPI_CS1_EN				BIT(6)
++#define SPI_CS0_EN				BIT(5)
++
++#define SPI_CS_MASK			(SPI_CS3_EN | SPI_CS2_EN |	\
++					SPI_CS1_EN | SPI_CS0_EN)
++#define SPI_BIT_LENGTH(x)		(((x) & 0x1f) << 0)
++
++#define SPI_MODES			(SPI_ACTIVE_SCLK_MASK | SPI_CK_SDA_MASK)
++
++#define SPI_STATUS			0x004
++#define SPI_BSY				BIT(31)
++#define SPI_RDY				BIT(30)
++#define SPI_TXF_FLUSH			BIT(29)
++#define SPI_RXF_FLUSH			BIT(28)
++#define SPI_RX_UNF			BIT(27)
++#define SPI_TX_OVF			BIT(26)
++#define SPI_RXF_EMPTY			BIT(25)
++#define SPI_RXF_FULL			BIT(24)
++#define SPI_TXF_EMPTY			BIT(23)
++#define SPI_TXF_FULL			BIT(22)
++#define SPI_BLK_CNT(count)		(((count) & 0xffff) + 1)
++
++#define SPI_FIFO_ERROR			(SPI_RX_UNF | SPI_TX_OVF)
++#define SPI_FIFO_EMPTY			(SPI_TX_EMPTY | SPI_RX_EMPTY)
++
++#define SPI_RX_CMP			0x8
++#define SPI_DMA_CTL			0x0C
++#define SPI_DMA_EN			BIT(31)
++#define SPI_IE_RXC			BIT(27)
++#define SPI_IE_TXC			BIT(26)
++#define SPI_PACKED			BIT(20)
++#define SPI_RX_TRIG_MASK		(0x3 << 18)
++#define SPI_RX_TRIG_1W			(0x0 << 18)
++#define SPI_RX_TRIG_4W			(0x1 << 18)
++#define SPI_TX_TRIG_MASK		(0x3 << 16)
++#define SPI_TX_TRIG_1W			(0x0 << 16)
++#define SPI_TX_TRIG_4W			(0x1 << 16)
++#define SPI_DMA_BLK_COUNT(count)	(((count) - 1) & 0xFFFF);
++
++#define SPI_TX_FIFO			0x10
++#define SPI_RX_FIFO			0x20
++
++#define DATA_DIR_TX			(1 << 0)
++#define DATA_DIR_RX			(1 << 1)
++
++#define MAX_CHIP_SELECT			4
++#define SPI_FIFO_DEPTH			4
++#define SPI_DMA_TIMEOUT               (msecs_to_jiffies(1000))
++
++struct tegra_sflash_data {
++	struct device				*dev;
++	struct spi_master			*master;
++	spinlock_t				lock;
++
++	struct clk				*clk;
++	void __iomem				*base;
++	unsigned				irq;
++	u32					spi_max_frequency;
++	u32					cur_speed;
++
++	struct spi_device			*cur_spi;
++	unsigned				cur_pos;
++	unsigned				cur_len;
++	unsigned				bytes_per_word;
++	unsigned				cur_direction;
++	unsigned				curr_xfer_words;
++
++	unsigned				cur_rx_pos;
++	unsigned				cur_tx_pos;
++
++	u32					tx_status;
++	u32					rx_status;
++	u32					status_reg;
++
++	u32					def_command_reg;
++	u32					command_reg;
++	u32					dma_control_reg;
++
++	struct completion			xfer_completion;
++	struct spi_transfer			*curr_xfer;
++};
++
++static int tegra_sflash_runtime_suspend(struct device *dev);
++static int tegra_sflash_runtime_resume(struct device *dev);
++
++static inline unsigned long tegra_sflash_readl(struct tegra_sflash_data *tsd,
++		unsigned long reg)
++{
++	return readl(tsd->base + reg);
++}
++
++static inline void tegra_sflash_writel(struct tegra_sflash_data *tsd,
++		unsigned long val, unsigned long reg)
++{
++	writel(val, tsd->base + reg);
++}
++
++static void tegra_sflash_clear_status(struct tegra_sflash_data *tsd)
++{
++	/* Write 1 to clear status register */
++	tegra_sflash_writel(tsd, SPI_RDY | SPI_FIFO_ERROR, SPI_STATUS);
++}
++
++static unsigned tegra_sflash_calculate_curr_xfer_param(
++	struct spi_device *spi, struct tegra_sflash_data *tsd,
++	struct spi_transfer *t)
++{
++	unsigned remain_len = t->len - tsd->cur_pos;
++	unsigned max_word;
++
++	tsd->bytes_per_word = (t->bits_per_word - 1) / 8 + 1;
++	max_word = remain_len / tsd->bytes_per_word;
++	if (max_word > SPI_FIFO_DEPTH)
++		max_word = SPI_FIFO_DEPTH;
++	tsd->curr_xfer_words = max_word;
++	return max_word;
++}
++
++static unsigned tegra_sflash_fill_tx_fifo_from_client_txbuf(
++	struct tegra_sflash_data *tsd, struct spi_transfer *t)
++{
++	unsigned nbytes;
++	unsigned long status;
++	unsigned max_n_32bit = tsd->curr_xfer_words;
++	u8 *tx_buf = (u8 *)t->tx_buf + tsd->cur_tx_pos;
++
++	if (max_n_32bit > SPI_FIFO_DEPTH)
++		max_n_32bit = SPI_FIFO_DEPTH;
++	nbytes = max_n_32bit * tsd->bytes_per_word;
++
++	status = tegra_sflash_readl(tsd, SPI_STATUS);
++	while (!(status & SPI_TXF_FULL)) {
++		int i;
++		unsigned int x = 0;
++
++		for (i = 0; nbytes && (i < tsd->bytes_per_word);
++							i++, nbytes--)
++				x |= ((*tx_buf++) << i*8);
++		tegra_sflash_writel(tsd, x, SPI_TX_FIFO);
++		if (!nbytes)
++			break;
++
++		status = tegra_sflash_readl(tsd, SPI_STATUS);
++	}
++	tsd->cur_tx_pos += max_n_32bit * tsd->bytes_per_word;
++	return max_n_32bit;
++}
++
++static int tegra_sflash_read_rx_fifo_to_client_rxbuf(
++		struct tegra_sflash_data *tsd, struct spi_transfer *t)
++{
++	unsigned long status;
++	unsigned int read_words = 0;
++	u8 *rx_buf = (u8 *)t->rx_buf + tsd->cur_rx_pos;
++
++	status = tegra_sflash_readl(tsd, SPI_STATUS);
++	while (!(status & SPI_RXF_EMPTY)) {
++		int i;
++		unsigned long x;
++
++		x = tegra_sflash_readl(tsd, SPI_RX_FIFO);
++		for (i = 0; (i < tsd->bytes_per_word); i++)
++			*rx_buf++ = (x >> (i*8)) & 0xFF;
++		read_words++;
++		status = tegra_sflash_readl(tsd, SPI_STATUS);
++	}
++	tsd->cur_rx_pos += read_words * tsd->bytes_per_word;
++	return 0;
++}
++
++static int tegra_sflash_start_cpu_based_transfer(
++		struct tegra_sflash_data *tsd, struct spi_transfer *t)
++{
++	unsigned long val = 0;
++	unsigned cur_words;
++
++	if (tsd->cur_direction & DATA_DIR_TX)
++		val |= SPI_IE_TXC;
++
++	if (tsd->cur_direction & DATA_DIR_RX)
++		val |= SPI_IE_RXC;
++
++	tegra_sflash_writel(tsd, val, SPI_DMA_CTL);
++	tsd->dma_control_reg = val;
++
++	if (tsd->cur_direction & DATA_DIR_TX)
++		cur_words = tegra_sflash_fill_tx_fifo_from_client_txbuf(tsd, t);
++	else
++		cur_words = tsd->curr_xfer_words;
++	val |= SPI_DMA_BLK_COUNT(cur_words);
++	tegra_sflash_writel(tsd, val, SPI_DMA_CTL);
++	tsd->dma_control_reg = val;
++	val |= SPI_DMA_EN;
++	tegra_sflash_writel(tsd, val, SPI_DMA_CTL);
++	return 0;
++}
++
++static int tegra_sflash_start_transfer_one(struct spi_device *spi,
++		struct spi_transfer *t, bool is_first_of_msg,
++		bool is_single_xfer)
++{
++	struct tegra_sflash_data *tsd = spi_master_get_devdata(spi->master);
++	u32 speed;
++	unsigned long command;
++
++	speed = t->speed_hz ? t->speed_hz : spi->max_speed_hz;
++	if (!speed)
++		speed = tsd->spi_max_frequency;
++	if (speed != tsd->cur_speed) {
++		clk_set_rate(tsd->clk, speed);
++		tsd->cur_speed = speed;
++	}
++
++	tsd->cur_spi = spi;
++	tsd->cur_pos = 0;
++	tsd->cur_rx_pos = 0;
++	tsd->cur_tx_pos = 0;
++	tsd->curr_xfer = t;
++	tegra_sflash_calculate_curr_xfer_param(spi, tsd, t);
++	if (is_first_of_msg) {
++		command = tsd->def_command_reg;
++		command |= SPI_BIT_LENGTH(t->bits_per_word - 1);
++		command |= SPI_CS_VAL_HIGH;
++
++		command &= ~SPI_MODES;
++		if (spi->mode & SPI_CPHA)
++			command |= SPI_CK_SDA_FALLING;
++
++		if (spi->mode & SPI_CPOL)
++			command |= SPI_ACTIVE_SCLK_DRIVE_HIGH;
++		else
++			command |= SPI_ACTIVE_SCLK_DRIVE_LOW;
++		command |= SPI_CS0_EN << spi->chip_select;
++	} else {
++		command = tsd->command_reg;
++		command &= ~SPI_BIT_LENGTH(~0);
++		command |= SPI_BIT_LENGTH(t->bits_per_word - 1);
++		command &= ~(SPI_RX_EN | SPI_TX_EN);
++	}
++
++	tsd->cur_direction = 0;
++	if (t->rx_buf) {
++		command |= SPI_RX_EN;
++		tsd->cur_direction |= DATA_DIR_RX;
++	}
++	if (t->tx_buf) {
++		command |= SPI_TX_EN;
++		tsd->cur_direction |= DATA_DIR_TX;
++	}
++	tegra_sflash_writel(tsd, command, SPI_COMMAND);
++	tsd->command_reg = command;
++
++	return  tegra_sflash_start_cpu_based_transfer(tsd, t);
++}
++
++static int tegra_sflash_transfer_one_message(struct spi_master *master,
++			struct spi_message *msg)
++{
++	bool is_first_msg = true;
++	int single_xfer;
++	struct tegra_sflash_data *tsd = spi_master_get_devdata(master);
++	struct spi_transfer *xfer;
++	struct spi_device *spi = msg->spi;
++	int ret;
++
++	ret = pm_runtime_get_sync(tsd->dev);
++	if (ret < 0) {
++		dev_err(tsd->dev, "pm_runtime_get() failed, err = %d\n", ret);
++		return ret;
++	}
++
++	msg->status = 0;
++	msg->actual_length = 0;
++	single_xfer = list_is_singular(&msg->transfers);
++	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
++		INIT_COMPLETION(tsd->xfer_completion);
++		ret = tegra_sflash_start_transfer_one(spi, xfer,
++					is_first_msg, single_xfer);
++		if (ret < 0) {
++			dev_err(tsd->dev,
++				"spi can not start transfer, err %d\n", ret);
++			goto exit;
++		}
++		is_first_msg = false;
++		ret = wait_for_completion_timeout(&tsd->xfer_completion,
++						SPI_DMA_TIMEOUT);
++		if (WARN_ON(ret == 0)) {
++			dev_err(tsd->dev,
++				"spi trasfer timeout, err %d\n", ret);
++			ret = -EIO;
++			goto exit;
++		}
++
++		if (tsd->tx_status ||  tsd->rx_status) {
++			dev_err(tsd->dev, "Error in Transfer\n");
++			ret = -EIO;
++			goto exit;
++		}
++		msg->actual_length += xfer->len;
++		if (xfer->cs_change && xfer->delay_usecs) {
++			tegra_sflash_writel(tsd, tsd->def_command_reg,
++					SPI_COMMAND);
++			udelay(xfer->delay_usecs);
++		}
++	}
++	ret = 0;
++exit:
++	tegra_sflash_writel(tsd, tsd->def_command_reg, SPI_COMMAND);
++	msg->status = ret;
++	spi_finalize_current_message(master);
++	pm_runtime_put(tsd->dev);
++	return ret;
++}
++
++static irqreturn_t handle_cpu_based_xfer(struct tegra_sflash_data *tsd)
++{
++	struct spi_transfer *t = tsd->curr_xfer;
++	unsigned long flags;
++
++	spin_lock_irqsave(&tsd->lock, flags);
++	if (tsd->tx_status || tsd->rx_status || (tsd->status_reg & SPI_BSY)) {
++		dev_err(tsd->dev,
++			"CpuXfer ERROR bit set 0x%x\n", tsd->status_reg);
++		dev_err(tsd->dev,
++			"CpuXfer 0x%08x:0x%08x\n", tsd->command_reg,
++				tsd->dma_control_reg);
++		tegra_periph_reset_assert(tsd->clk);
++		udelay(2);
++		tegra_periph_reset_deassert(tsd->clk);
++		complete(&tsd->xfer_completion);
++		goto exit;
++	}
++
++	if (tsd->cur_direction & DATA_DIR_RX)
++		tegra_sflash_read_rx_fifo_to_client_rxbuf(tsd, t);
++
++	if (tsd->cur_direction & DATA_DIR_TX)
++		tsd->cur_pos = tsd->cur_tx_pos;
++	else
++		tsd->cur_pos = tsd->cur_rx_pos;
++
++	if (tsd->cur_pos == t->len) {
++		complete(&tsd->xfer_completion);
++		goto exit;
++	}
++
++	tegra_sflash_calculate_curr_xfer_param(tsd->cur_spi, tsd, t);
++	tegra_sflash_start_cpu_based_transfer(tsd, t);
++exit:
++	spin_unlock_irqrestore(&tsd->lock, flags);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t tegra_sflash_isr(int irq, void *context_data)
++{
++	struct tegra_sflash_data *tsd = context_data;
++
++	tsd->status_reg = tegra_sflash_readl(tsd, SPI_STATUS);
++	if (tsd->cur_direction & DATA_DIR_TX)
++		tsd->tx_status = tsd->status_reg & SPI_TX_OVF;
++
++	if (tsd->cur_direction & DATA_DIR_RX)
++		tsd->rx_status = tsd->status_reg & SPI_RX_UNF;
++	tegra_sflash_clear_status(tsd);
++
++	return handle_cpu_based_xfer(tsd);
++}
++
++static struct tegra_spi_platform_data *tegra_sflash_parse_dt(
++		struct platform_device *pdev)
++{
++	struct tegra_spi_platform_data *pdata;
++	struct device_node *np = pdev->dev.of_node;
++	u32 max_freq;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(&pdev->dev, "Memory alloc for pdata failed\n");
++		return NULL;
++	}
++
++	if (!of_property_read_u32(np, "spi-max-frequency", &max_freq))
++		pdata->spi_max_frequency = max_freq;
++
++	return pdata;
++}
++
++static struct of_device_id tegra_sflash_of_match[] __devinitconst = {
++	{ .compatible = "nvidia,tegra20-sflash", },
++	{}
++};
++MODULE_DEVICE_TABLE(of, tegra_sflash_of_match);
++
++static int __devinit tegra_sflash_probe(struct platform_device *pdev)
++{
++	struct spi_master	*master;
++	struct tegra_sflash_data	*tsd;
++	struct resource		*r;
++	struct tegra_spi_platform_data *pdata = pdev->dev.platform_data;
++	int ret;
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(tegra_sflash_of_match),
++					&pdev->dev);
++	if (!match) {
++		dev_err(&pdev->dev, "Error: No device match found\n");
++		return -ENODEV;
++	}
++
++	if (!pdata && pdev->dev.of_node)
++		pdata = tegra_sflash_parse_dt(pdev);
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform data, exiting\n");
++		return -ENODEV;
++	}
++
++	if (!pdata->spi_max_frequency)
++		pdata->spi_max_frequency = 25000000; /* 25MHz */
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*tsd));
++	if (!master) {
++		dev_err(&pdev->dev, "master allocation failed\n");
++		return -ENOMEM;
++	}
++
++	/* the spi->mode bits understood by this driver: */
++	master->mode_bits = SPI_CPOL | SPI_CPHA;
++	master->transfer_one_message = tegra_sflash_transfer_one_message;
++	master->num_chipselect = MAX_CHIP_SELECT;
++	master->bus_num = -1;
++
++	dev_set_drvdata(&pdev->dev, master);
++	tsd = spi_master_get_devdata(master);
++	tsd->master = master;
++	tsd->dev = &pdev->dev;
++	spin_lock_init(&tsd->lock);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!r) {
++		dev_err(&pdev->dev, "No IO memory resource\n");
++		ret = -ENODEV;
++		goto exit_free_master;
++	}
++	tsd->base = devm_request_and_ioremap(&pdev->dev, r);
++	if (!tsd->base) {
++		dev_err(&pdev->dev,
++			"Cannot request memregion/iomap dma address\n");
++		ret = -EADDRNOTAVAIL;
++		goto exit_free_master;
++	}
++
++	tsd->irq = platform_get_irq(pdev, 0);
++	ret = request_irq(tsd->irq, tegra_sflash_isr, 0,
++			dev_name(&pdev->dev), tsd);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to register ISR for IRQ %d\n",
++					tsd->irq);
++		goto exit_free_master;
++	}
++
++	tsd->clk = devm_clk_get(&pdev->dev, "spi");
++	if (IS_ERR(tsd->clk)) {
++		dev_err(&pdev->dev, "can not get clock\n");
++		ret = PTR_ERR(tsd->clk);
++		goto exit_free_irq;
++	}
++
++	tsd->spi_max_frequency = pdata->spi_max_frequency;
++	init_completion(&tsd->xfer_completion);
++	pm_runtime_enable(&pdev->dev);
++	if (!pm_runtime_enabled(&pdev->dev)) {
++		ret = tegra_sflash_runtime_resume(&pdev->dev);
++		if (ret)
++			goto exit_pm_disable;
++	}
++
++	ret = pm_runtime_get_sync(&pdev->dev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "pm runtime get failed, e = %d\n", ret);
++		goto exit_pm_disable;
++	}
++
++	/* Reset controller */
++	tegra_periph_reset_assert(tsd->clk);
++	udelay(2);
++	tegra_periph_reset_deassert(tsd->clk);
++
++	tsd->def_command_reg  = SPI_M_S | SPI_CS_SW;
++	tegra_sflash_writel(tsd, tsd->def_command_reg, SPI_COMMAND);
++	pm_runtime_put(&pdev->dev);
++
++	master->dev.of_node = pdev->dev.of_node;
++	ret = spi_register_master(master);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "can not register to master err %d\n", ret);
++		goto exit_pm_disable;
++	}
++	return ret;
++
++exit_pm_disable:
++	pm_runtime_disable(&pdev->dev);
++	if (!pm_runtime_status_suspended(&pdev->dev))
++		tegra_sflash_runtime_suspend(&pdev->dev);
++exit_free_irq:
++	free_irq(tsd->irq, tsd);
++exit_free_master:
++	spi_master_put(master);
++	return ret;
++}
++
++static int __devexit tegra_sflash_remove(struct platform_device *pdev)
++{
++	struct spi_master *master = dev_get_drvdata(&pdev->dev);
++	struct tegra_sflash_data	*tsd = spi_master_get_devdata(master);
++
++	free_irq(tsd->irq, tsd);
++	spi_unregister_master(master);
++
++	pm_runtime_disable(&pdev->dev);
++	if (!pm_runtime_status_suspended(&pdev->dev))
++		tegra_sflash_runtime_suspend(&pdev->dev);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int tegra_sflash_suspend(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++
++	return spi_master_suspend(master);
++}
++
++static int tegra_sflash_resume(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct tegra_sflash_data *tsd = spi_master_get_devdata(master);
++	int ret;
++
++	ret = pm_runtime_get_sync(dev);
++	if (ret < 0) {
++		dev_err(dev, "pm runtime failed, e = %d\n", ret);
++		return ret;
++	}
++	tegra_sflash_writel(tsd, tsd->command_reg, SPI_COMMAND);
++	pm_runtime_put(dev);
++
++	return spi_master_resume(master);
++}
++#endif
++
++static int tegra_sflash_runtime_suspend(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct tegra_sflash_data *tsd = spi_master_get_devdata(master);
++
++	/* Flush all write which are in PPSB queue by reading back */
++	tegra_sflash_readl(tsd, SPI_COMMAND);
++
++	clk_disable_unprepare(tsd->clk);
++	return 0;
++}
++
++static int tegra_sflash_runtime_resume(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct tegra_sflash_data *tsd = spi_master_get_devdata(master);
++	int ret;
++
++	ret = clk_prepare_enable(tsd->clk);
++	if (ret < 0) {
++		dev_err(tsd->dev, "clk_prepare failed: %d\n", ret);
++		return ret;
++	}
++	return 0;
++}
++
++static const struct dev_pm_ops slink_pm_ops = {
++	SET_RUNTIME_PM_OPS(tegra_sflash_runtime_suspend,
++		tegra_sflash_runtime_resume, NULL)
++	SET_SYSTEM_SLEEP_PM_OPS(tegra_sflash_suspend, tegra_sflash_resume)
++};
++static struct platform_driver tegra_sflash_driver = {
++	.driver = {
++		.name		= "spi-tegra-sflash",
++		.owner		= THIS_MODULE,
++		.pm		= &slink_pm_ops,
++		.of_match_table	= of_match_ptr(tegra_sflash_of_match),
++	},
++	.probe =	tegra_sflash_probe,
++	.remove =	__devexit_p(tegra_sflash_remove),
++};
++module_platform_driver(tegra_sflash_driver);
++
++MODULE_ALIAS("platform:spi-tegra-sflash");
++MODULE_DESCRIPTION("NVIDIA Tegra20 Serial Flash Controller Driver");
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.1.1
 
