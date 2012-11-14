@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2KNKBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:01:36 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:43253 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab2KNKBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:01:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-Date: Wed, 14 Nov 2012 11:05:56 +0100
-Message-ID: <1456950.61QZjXbNpt@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1211081125470.1280-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211081125470.1280-100000@iolanthe.rowland.org>
+	id S1755204Ab2KNKB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:01:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38671 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752187Ab2KNKB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 05:01:56 -0500
+Date: Wed, 14 Nov 2012 19:01:49 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lrg@ti.com, ldewangan@nvidia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regulator: core: Avoid deadlock when
+ regulator_register fails
+Message-ID: <20121114100147.GH7407@opensource.wolfsonmicro.com>
+References: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com>
+ <20121106111256.GA2512@opensource.wolfsonmicro.com>
+ <20121106113138.GB10080@opensource.wolfsonmicro.com>
+ <20121113163040.GA19089@opensource.wolfsonmicro.com>
+ <20121113232537.GA27212@opensource.wolfsonmicro.com>
+ <20121114093931.GA23525@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/Gk0KcsbyUMelFU1"
+Content-Disposition: inline
+In-Reply-To: <20121114093931.GA23525@opensource.wolfsonmicro.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 08, 2012 12:07:54 PM Alan Stern wrote:
-> On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
 
-[...]
+--/Gk0KcsbyUMelFU1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'd like to revisit this for a while if you don't mind.
+On Wed, Nov 14, 2012 at 09:39:31AM +0000, Charles Keepax wrote:
+> When regulator_register fails and exits through the scrub path the
+> regulator_put function was called whilst holding the
+> regulator_list_mutex, causing deadlock.
 
-> Your revised patch does do the job, except for a few problems.  
-> Namely, while local_pci_probe() and pci_device_remove() are running,
-> the device _does_ have a driver.
+Applied, thanks.
 
-Right.
+> Cc: Laxman Dewangan <ldewangan@nvidia.com>
 
-> This means that local_pci_probe() should not call pm_runtime_get_sync(),
-> for example.  Doing so would invoke the driver's runtime_resume routine
-> before calling the driver's probe routine!
-> 
-> The USB subsystem solves this problem by carefully keeping track of the 
-> state of the device-driver binding:
-> 
-> 	Originally the device is UNBOUND.
-> 
-> 	At the start of the subsystem's probe routine, the state
-> 	changes to BINDING.
-> 
-> 	If the probe succeeds then it changes to BOUND; otherwise
-> 	it goes back to UNBOUND.
-> 
-> 	At the start of the subsystem's remove routine, the state
-> 	changes to UNBINDING.  At the end it goes to UNBOUND.
-> 
-> When the state is anything other than BOUND, the subsystem's runtime PM 
-> routines act as though there is no driver.
+Please avoid doing this.  I know a lot of people do but it makes for
+hand editing of the commit log to remove it.
 
-Well, that wouldn't help PCI, because some drivers want to use the
-pm_runtime_* stuff in their .probe() routines and actually expect it to
-work. :-)
+--/Gk0KcsbyUMelFU1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Perhaps we can introduce something like
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-pm_runtime_get[_put]_skip_callbacks()
+iQIcBAEBAgAGBQJQo2wCAAoJELSic+t+oim9eQ0P/3WnBu8Eg4wYJhYjiaGcfqMm
+FDyavxX5qPi9DD4GU98zGE0e5trWvMQCM2iMu8NGY0aeTFZXYoGPOpbE9fkH8u7G
+Z6qX94a3HIqOuiQKbKYtfvFxA2NemZnRNgP58aSgk1Pd/H7lX8qDMHGWPAsR6bEF
+zeP3Whl5dJwnjBGFMuA/Pd4UlXLBwBGGfGwNVTPtKYChG/Pvu9f4zKW0B23H5AJP
+7pAFHCq9BBp7Es776vtjRGHOMYeNoilEaTFuQDpk4OO/4kUAcvjRZwlMMSg5mi+5
+WcRLGLK+GfseJ99NTto5DiX6C1ur8MJRlcOvhAggZGoD86QRDrCgmAj5YO3TCjJm
+fLnV9evnqQVy8m7qVQdvE8Zh7xUmI9Zf/a2UeFdgqeCAhzIiSh+qGJP8v8oQS5m1
+Zj/3zj+Exf+sZj9Gfmy1g7c/Rjw/Y9y/TAcx+uNxUC2YgLbAZyOQXhTV+Svciy0m
+N4kw19sv8oin0or/PRF7DAk91Zo2BFILTCnPAQLHbHQRZ/OWhy4jydm4scXSy4PG
+u4u2U/76VVT1RA/ver/vqV+Qg4HnUJi9FN6/Ih1c7PA+zTLIgIlF9CZQ0G51tB68
+abroZqtrBttWuNujbAovesD8vwRSyjdl62bDYs4PZuxkOo8x7bfNXSdFrzK/F3C8
+sFeaOKM+l2Z0ffApnk3v
+=bXvk
+-----END PGP SIGNATURE-----
 
-that would treat the device as though it had the power.no_callbacks flag
-set and use that around the driver's .probe() in the PCI core?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--/Gk0KcsbyUMelFU1--
