@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab2KNA62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:58:28 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:54608
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756056Ab2KNA60 (ORCPT
+	id S1756163Ab2KNA6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 19:58:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57304 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052Ab2KNA6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:58:26 -0500
-X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail04.sonyusa.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371I1432Izz1de0h1202h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-Message-ID: <50A2ECDB.7030901@am.sony.com>
-Date: Tue, 13 Nov 2012 16:59:07 -0800
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Constantine Shulyupin <const@makelinux.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Celinux-dev] [PATCH] LDT - Linux Driver Template
-References: <1352832397-1349-1-git-send-email-const@MakeLinux.com> <20121113190123.GA32271@kroah.com> <CAE7jHC_bTi7bNwTyPh=wsstGUFegisDUtt2QvDeAwh94AMoUAQ@mail.gmail.com>
-In-Reply-To: <CAE7jHC_bTi7bNwTyPh=wsstGUFegisDUtt2QvDeAwh94AMoUAQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 13 Nov 2012 19:58:49 -0500
+Date: Tue, 13 Nov 2012 16:58:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm: fix null dev in dma_pool_create()
+Message-Id: <20121113165847.4dcf968c.akpm@linux-foundation.org>
+In-Reply-To: <50A2BE19.7000604@gmail.com>
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+	<50A2BE19.7000604@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My apologies.  As celinux-dev list administrator, I messed up my
-moderation and this response from Greg got discarded instead of
-sent to the list.
+On Tue, 13 Nov 2012 16:39:37 -0500
+Xi Wang <xi.wang@gmail.com> wrote:
 
-Here it is, sent by me on Greg's behalf...
- -- Tim
+> A few drivers invoke dma_pool_create() with a null dev.  Note that dev
+> is dereferenced in dev_to_node(dev), causing a null pointer dereference.
+> 
+> A long term solution is to disallow null dev.  Once the drivers are
+> fixed, we can simplify the core code here.  For now we add WARN_ON(!dev)
+> to notify the driver maintainers and avoid the null pointer dereference.
+> 
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 
-On Wed, Nov 14, 2012 at 02:14:58AM +0200, Constantine Shulyupin wrote:
-> On Tue, Nov 13, 2012 at 9:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> +#define pr_debug_hex(h)      pr_debug("%s:%d %s %s = 0x%lX\n", \
->>> +     __file__, __LINE__, __func__, #h, (long int)h)
->>
->> This is not needed at all, just use the proper printk() attribute.
->
-> Macro above allows tidy tracing code:
->
->         pr_debug_hex(ioread8(port_ptr + UART_IER));
->         pr_debug_hex(ioread8(port_ptr + UART_IIR));
->         pr_debug_hex(ioread8(port_ptr + UART_FCR));
->         pr_debug_hex(ioread8(port_ptr + UART_LCR));
->         pr_debug_hex(ioread8(port_ptr + UART_MCR));
->         pr_debug_hex(ioread8(port_ptr + UART_LSR));
->         pr_debug_hex(ioread8(port_ptr + UART_MSR));
->
-> Without that macro, code above should be rewritten with pr_debug (or printk) as:
->
->         pr_debug("UART_IER=0x%02X\n", ioread8(port_ptr + UART_IER));
->         pr_debug("UART_IIR=0x%02X\n", ioread8(port_ptr + UART_IIR));
->         pr_debug("UART_FCR=0x%02X\n", ioread8(port_ptr + UART_FCR));
->         pr_debug("UART_LCR=0x%02X\n", ioread8(port_ptr + UART_LCR));
->         pr_debug("UART_MCR=0x%02X\n", ioread8(port_ptr + UART_MCR));
->         pr_debug("UART_LSR=0x%02X\n", ioread8(port_ptr + UART_LSR));
->         pr_debug("UART_MSR=0x%02X\n", ioread8(port_ptr + UART_MSR));
->
-> That is less readable and less supportable.
+I'm not sure that I really suggested doing this :(
 
-What better is to not do foolish stuff like this at all
+> --- a/mm/dmapool.c
+> +++ b/mm/dmapool.c
+> @@ -135,6 +135,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+>  {
+>  	struct dma_pool *retval;
+>  	size_t allocation;
+> +	int node;
+>  
+>  	if (align == 0) {
+>  		align = 1;
+> @@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+>  		return NULL;
+>  	}
+>  
+> -	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
+> +	node = WARN_ON(!dev) ? -1 : dev_to_node(dev);
+> +
+> +	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
+>  	if (!retval)
+>  		return retval;
 
-If you need tracing, use the in-kernel tracing framework, don't roll
-your own.
+We know there are a few scruffy drivers which are passing in dev==0. 
 
-> I prefer the fist case.
+Those drivers don't oops because nobody is testing them on NUMA
+systems.
 
-I prefer the flower case :)
+With this patch, the kernel will now cause runtime warnings to be
+emitted from those drivers.  Even on non-NUMA systems.
 
-> Actually I use a lot shorter macro:
-> #define traceh(h)   printk("%s = 0x%lX\n", #h, (long int)h)
->
-> What is you opinion? Which method is better?
 
-Again, neither, don't clutter your code up with unneeded things like
-this.
+This is a problem!  What will happen is that this code will get
+released by Linus and will propagate to users mainly via distros and
+eventually end-user bug reports will trickle back saying "hey, I got
+this warning".  Slowly people will fix the scruffy drivers and those
+fixes will propagate out from Linus's tree into -stable and then into
+distros and then into the end-users hands.
 
-greg k-h
+This is *terribly* inefficient!  It's a lot of work for a lot of people
+and it involves long delays.
+
+So let's not do any of that!  Let us try to get those scruffy drivers
+fixed up *before* we add this warning.
+
+As a nice side-effect of that work, we can then clean up the dmapool
+code so it doesn't need to worry about handling the dev==0 special
+case.
+
+So.  To start this off, can you please generate a list of the offending
+drivers?  Then we can hunt down the maintainers and we'll see what can be
+done.
 
