@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab2KNDFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:05:16 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57682 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932478Ab2KNDFO (ORCPT
+	id S932541Ab2KNDHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:07:18 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45704 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932477Ab2KNDHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:05:14 -0500
-Date: Wed, 14 Nov 2012 12:04:14 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
-Message-ID: <20121114030412.GO4415@opensource.wolfsonmicro.com>
-References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com>
- <1352646721-8350-2-git-send-email-ldewangan@nvidia.com>
- <20121113074623.GL18224@opensource.wolfsonmicro.com>
- <50A287F2.4070008@nvidia.com>
- <20121114012217.GE4415@opensource.wolfsonmicro.com>
- <50A30381.3000609@nvidia.com>
- <20121114024529.GN4415@opensource.wolfsonmicro.com>
- <50A30986.1000507@nvidia.com>
+	Tue, 13 Nov 2012 22:07:16 -0500
+Message-ID: <50A30ADD.9000209@gmail.com>
+Date: Wed, 14 Nov 2012 11:07:09 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s9kDAZ2EyO0AcRYa"
-Content-Disposition: inline
-In-Reply-To: <50A30986.1000507@nvidia.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1211061521230.6954@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/07/2012 07:48 AM, Hugh Dickins wrote:
+> On Tue, 6 Nov 2012, Dave Jones wrote:
+>> On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
+>>
+>>   > -			/* We already confirmed swap, and make no allocation */
+>>   > -			VM_BUG_ON(error);
+>>   > +			/*
+>>   > +			 * We already confirmed swap under page lock, and make
+>>   > +			 * no memory allocation here, so usually no possibility
+>>   > +			 * of error; but free_swap_and_cache() only trylocks a
+>>   > +			 * page, so it is just possible that the entry has been
+>>   > +			 * truncated or holepunched since swap was confirmed.
+>>   > +			 * shmem_undo_range() will have done some of the
+>>   > +			 * unaccounting, now delete_from_swap_cache() will do
+>>   > +			 * the rest (including mem_cgroup_uncharge_swapcache).
+>>   > +			 * Reset swap.val? No, leave it so "failed" goes back to
+>>   > +			 * "repeat": reading a hole and writing should succeed.
+>>   > +			 */
+>>   > +			if (error) {
+>>   > +				VM_BUG_ON(error != -ENOENT);
+>>   > +				delete_from_swap_cache(page);
+>>   > +			}
+>>   >  		}
+>>
+>> I ran with this overnight,
+> Thanks a lot...
+>
+>> and still hit the (new!) VM_BUG_ON
+> ... but that's even more surprising than your original report.
+>
+>> Perhaps we should print out what 'error' was too ?  I'll rebuild with that..
+> Thanks; though I thought the error was going to turn out too boring,
+> and was preparing a debug patch for you to show the expected and found
+> values too.  But then got very puzzled...
+>   
+>> ------------[ cut here ]------------
+>> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
+>> Hardware name: 2012 Client Platform
+>> Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
+> That's the very same line number as in your original report, despite
+> the long comment which the patch adds.  Are you sure that kernel was
+> built with the patch in?
+>
+> I wouldn't usually question you, but I'm going mad trying to understand
+> how the VM_BUG_ON(error != -ENOENT) fires.  At the time I wrote that
+> line, and when I was preparing the debug patch, I was thinking that an
+> error from shmem_radix_tree_replace could also be -EEXIST, for when a
+> different something rather than nothing is found [*].  But that's not
+> the case, shmem_radix_tree_replace returns either 0 or -ENOENT.
+>
+> So if error != -ENOENT, that means shmem_add_to_page_cache went the
+> radix_tree_insert route instead of the shmem_radix_tree_replace route;
+> which means that its 'expected' is NULL, so swp_to_radix_entry(swap)
+> is NULL; but swp_to_radix_entry() does an "| 2", so however corrupt
+> the radix_tree might be, I do not understand the new VM_BUG_ON firing.
+>
+> Please tell me it was the wrong kernel!
+> Hugh
+>
+> [*] But in thinking it over, I realize that if shmem_radix_tree_replace
+> had returned -EEXIST for the "wrong something" case, I would have been
+> wrong to BUG on that; because just as truncation could remove an entry,
+> something else could immediately after instantiate a new page there.
 
---s9kDAZ2EyO0AcRYa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Hugh,
 
-On Tue, Nov 13, 2012 at 10:01:26PM -0500, Laxman Dewangan wrote:
+As you said, swp_to_radix_entry() does an "| 2", so even if truncation 
+could remove an entry and something else could immediately after 
+instantiate a new page there, but the expected parameter will not be 
+NULL, the result is radix_tree_insert will not be called and 
+shmem_add_to_page_cache will not return -EEXIST, then why trigger BUG_ON ?
 
-> >This does not seem sensible.  Why would this be optional if it is
-> >useful?  In any case, what you're doing in the driver here is clearly
-> >not the way forward.
+Regards,
+Jaegeuk
 
-> I was thinking  of adding wake_enable in struct regmap_irq_chip and
-> decide the wake support based on the value if wake_enable true or
-> wake_base is non-zero. then wake support should be enable.
-> The wake register write will happen only when wake_base is non-zero.
+> So although I believe my VM_BUG_ON(error != -ENOENT) is safe, it's
+> not saying what I had intended to say with it, and would have been
+> wrong to say that anyway.  It just looks stupid to me now, rather
+> like inserting a VM_BUG_ON(false) - but that does become interesting
+> when you report that you've hit it.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-But to repeat my question why would this be optional?
-
---s9kDAZ2EyO0AcRYa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQownUAAoJELSic+t+oim9F+kP/A/DluaSXB7s46B6MVZ7Wv4F
-FZFgS7ql1HVsTpfI88p5pvqM+q5RUG2bXpkmNUWe/sPz87Y+T5CPQdsMtwqwaJwf
-LUj01rL/UZpiEJb8ESmEty5xxAcHIJ2AKiteN7IEHUnRTtC4wvMcnmU6dQycgv2j
-YjIi9SFQxjfHOawPMJHN6qFkt0kBXwboKE5WPRhQX0jU6dQH1od2BfIj0RxqLlHQ
-h7qWE760Bd7pB1TYwPazP9hKGNS++zsw0HtrSnCqtToAsecSaNgtCwLKnKzJefsj
-Uk3xEsya942WVc0DjZVCnHP34okSkgZ0i5iOdjr07glS2d9la3z1QtkTcFHtRvOq
-EApX7UQrt1KqeO62TcNgNhMXOffW520/VSPJuxJ9bb2sln8m0Oh3VlH+46cMCH1Z
-QZ6tbAJxAyWTjHeBpZvHS92MnRbogMc1QaY/OVyNGvr3+xb9vYCYlkzkMdxoxCAN
-I4tM7DxE5nNIsjvSgFWLLpXLLagdVcwLLRpDrfBWlrjo4WOzPdySj1sDBV2/OnaB
-q5bfC/cp+y2gNgJjihxVJe+33aJc6j7r48AWUyrh2ROVmAR2yjs9kEnFaK1bUzLC
-OAZAwKAQeQtRPfxsVklh9sB8UgenfokIVCy2xQg7fPn8p9YQ/AyjrdT/GAeHbfUw
-IdxFx38Vt2dwseS5oVHG
-=B9yn
------END PGP SIGNATURE-----
-
---s9kDAZ2EyO0AcRYa--
