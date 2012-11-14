@@ -1,138 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab2KNDuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:50:35 -0500
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:35555 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab2KNDue (ORCPT
+	id S932662Ab2KNDvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:51:55 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19022 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576Ab2KNDvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:50:34 -0500
-Date: Tue, 13 Nov 2012 19:50:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-In-Reply-To: <50A30ADD.9000209@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211131935410.30540@eggly.anvils>
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
- <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 13 Nov 2012 22:51:53 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Nov 2012 19:51:51 -0800
+Message-ID: <50A31557.30704@nvidia.com>
+Date: Tue, 13 Nov 2012 22:51:51 -0500
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] mfd: add TI TPS80031 mfd core driver
+References: <1352646721-8350-1-git-send-email-ldewangan@nvidia.com> <1352646721-8350-2-git-send-email-ldewangan@nvidia.com> <20121113074623.GL18224@opensource.wolfsonmicro.com> <50A287F2.4070008@nvidia.com> <20121114012217.GE4415@opensource.wolfsonmicro.com> <50A30381.3000609@nvidia.com> <20121114024529.GN4415@opensource.wolfsonmicro.com> <50A30986.1000507@nvidia.com> <20121114030412.GO4415@opensource.wolfsonmicro.com>
+In-Reply-To: <20121114030412.GO4415@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012, Jaegeuk Hanse wrote:
-> On 11/07/2012 07:48 AM, Hugh Dickins wrote:
-> > On Tue, 6 Nov 2012, Dave Jones wrote:
-> > > On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
-> > > 
-> > >   > -			/* We already confirmed swap, and make no
-> > > allocation */
-> > >   > -			VM_BUG_ON(error);
-> > >   > +			/*
-> > >   > +			 * We already confirmed swap under page lock,
-> > > and make
-> > >   > +			 * no memory allocation here, so usually no
-> > > possibility
-> > >   > +			 * of error; but free_swap_and_cache() only
-> > > trylocks a
-> > >   > +			 * page, so it is just possible that the
-> > > entry has been
-> > >   > +			 * truncated or holepunched since swap was
-> > > confirmed.
-> > >   > +			 * shmem_undo_range() will have done some of
-> > > the
-> > >   > +			 * unaccounting, now delete_from_swap_cache()
-> > > will do
-> > >   > +			 * the rest (including
-> > > mem_cgroup_uncharge_swapcache).
-> > >   > +			 * Reset swap.val? No, leave it so "failed"
-> > > goes back to
-> > >   > +			 * "repeat": reading a hole and writing
-> > > should succeed.
-> > >   > +			 */
-> > >   > +			if (error) {
-> > >   > +				VM_BUG_ON(error != -ENOENT);
-> > >   > +				delete_from_swap_cache(page);
-> > >   > +			}
-> > >   >  		}
-> > > 
-> > > I ran with this overnight,
-> > Thanks a lot...
-> > 
-> > > and still hit the (new!) VM_BUG_ON
-> > ... but that's even more surprising than your original report.
-> > 
-> > > Perhaps we should print out what 'error' was too ?  I'll rebuild with
-> > > that..
-> > Thanks; though I thought the error was going to turn out too boring,
-> > and was preparing a debug patch for you to show the expected and found
-> > values too.  But then got very puzzled...
-> >   
-> > > ------------[ cut here ]------------
-> > > WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
-> > > Hardware name: 2012 Client Platform
-> > > Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
-> > That's the very same line number as in your original report, despite
-> > the long comment which the patch adds.  Are you sure that kernel was
-> > built with the patch in?
-> > 
-> > I wouldn't usually question you, but I'm going mad trying to understand
-> > how the VM_BUG_ON(error != -ENOENT) fires.  At the time I wrote that
-> > line, and when I was preparing the debug patch, I was thinking that an
-> > error from shmem_radix_tree_replace could also be -EEXIST, for when a
-> > different something rather than nothing is found [*].  But that's not
-> > the case, shmem_radix_tree_replace returns either 0 or -ENOENT.
-> > 
-> > So if error != -ENOENT, that means shmem_add_to_page_cache went the
-> > radix_tree_insert route instead of the shmem_radix_tree_replace route;
-> > which means that its 'expected' is NULL, so swp_to_radix_entry(swap)
-> > is NULL; but swp_to_radix_entry() does an "| 2", so however corrupt
-> > the radix_tree might be, I do not understand the new VM_BUG_ON firing.
-> > 
-> > Please tell me it was the wrong kernel!
-> > Hugh
-> > 
-> > [*] But in thinking it over, I realize that if shmem_radix_tree_replace
-> > had returned -EEXIST for the "wrong something" case, I would have been
-> > wrong to BUG on that; because just as truncation could remove an entry,
-> > something else could immediately after instantiate a new page there.
-> 
-> Hi Hugh,
-> 
-> As you said, swp_to_radix_entry() does an "| 2", so even if truncation could
-> remove an entry and something else could immediately after instantiate a new
-> page there, but the expected parameter will not be NULL, the result is
-> radix_tree_insert will not be called and shmem_add_to_page_cache will not
-> return -EEXIST, then why trigger BUG_ON ?
+On 11/13/2012 10:04 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Nov 13, 2012 at 10:01:26PM -0500, Laxman Dewangan wrote:
+>
+>>> This does not seem sensible.  Why would this be optional if it is
+>>> useful?  In any case, what you're doing in the driver here is clearly
+>>> not the way forward.
+>> I was thinking  of adding wake_enable in struct regmap_irq_chip and
+>> decide the wake support based on the value if wake_enable true or
+>> wake_base is non-zero. then wake support should be enable.
+>> The wake register write will happen only when wake_base is non-zero.
+> But to repeat my question why would this be optional?
+>
 
-Why insert the VM_BUG_ON?  Because at the time I thought that it
-asserted something useful; but I was mistaken, as explained above.
+OK, I wanted to make this configurable to preserve the current 
+functional behavior although I always want to be wakeup from PMIC 
+devices i.e. gpio or rtc or onkey etc.
+If I understand your statement then the wake support should be there and 
+should enable the wake even if there is no wake_base. The irq_set_wake() 
+should be called for parent irq if client have called the irq_set_wake() 
+with interrupts supported by this regmap-irq.
 
-How can the VM_BUG_ON trigger (without stack corruption, or something
-of that kind)?  I have no idea.
-
-We are in agreement: I now think that VM_BUG_ON is misleading and silly,
-and sent Andrew a further patch to remove it a just couple of hours ago.
-
-Originally I was waiting to hear further from Dave; but his test
-machine was giving trouble, and it occurred to me that, never mind
-whether he says he has hit it again, or he has not hit it again,
-the answer is the same: don't send that VM_BUG_ON upstream.
-
-Hugh
-
-> 
-> Regards,
-> Jaegeuk
-> 
-> > So although I believe my VM_BUG_ON(error != -ENOENT) is safe, it's
-> > not saying what I had intended to say with it, and would have been
-> > wrong to say that anyway.  It just looks stupid to me now, rather
-> > like inserting a VM_BUG_ON(false) - but that does become interesting
-> > when you report that you've hit it.
