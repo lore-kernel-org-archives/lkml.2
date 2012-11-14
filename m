@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab2KNF7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:59:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55176 "EHLO
+	id S1756634Ab2KNF7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:59:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55177 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756315Ab2KNFus (ORCPT
+	by vger.kernel.org with ESMTP id S1756318Ab2KNFut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:48 -0500
-Message-Id: <20121114053940.641117649@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:49 -0500
+Message-Id: <20121114053940.780944643@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:22 +0000
+Date: Wed, 14 Nov 2012 05:40:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Roland Dreier <roland@purestorage.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 49/82] target: Dont return success from module_init() if setup fails
+Subject: [ 50/82] target: Avoid integer overflow in se_dev_align_max_sectors()
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,34 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland Dreier <roland@purestorage.com>
 
-commit 0d0f9dfb31e0a6c92063e235417b42df185b3275 upstream.
+commit 3e03989b5868acf69a391a424dc71fcd6cc48167 upstream.
 
-If the call to core_dev_release_virtual_lun0() fails, then nothing
-sets ret to anything other than 0, so even though everything is
-torn down and freed, target_core_init_configfs() will seem to succeed
-and the module will be loaded.  Fix this by passing the return value
-on up the chain.
+The expression (max_sectors * block_size) might overflow a u32
+(indeed, since iblock sets max_hw_sectors to UINT_MAX, it is
+guaranteed to overflow and end up with a much-too-small result in many
+common cases).  Fix this by doing an equivalent calculation that
+doesn't require multiplication.
+
+While we're touching this code, avoid splitting a printk format across
+two lines and use pr_info(...) instead of printk(KERN_INFO ...).
 
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_configfs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/target_core_device.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index 015f5be..c123327 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -3206,7 +3206,8 @@ static int __init target_core_init_configfs(void)
- 	if (ret < 0)
- 		goto out;
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -835,20 +835,20 @@ int se_dev_check_shutdown(struct se_devi
  
--	if (core_dev_setup_virtual_lun0() < 0)
-+	ret = core_dev_setup_virtual_lun0();
-+	if (ret < 0)
- 		goto out;
+ u32 se_dev_align_max_sectors(u32 max_sectors, u32 block_size)
+ {
+-	u32 tmp, aligned_max_sectors;
++	u32 aligned_max_sectors;
++	u32 alignment;
+ 	/*
+ 	 * Limit max_sectors to a PAGE_SIZE aligned value for modern
+ 	 * transport_allocate_data_tasks() operation.
+ 	 */
+-	tmp = rounddown((max_sectors * block_size), PAGE_SIZE);
+-	aligned_max_sectors = (tmp / block_size);
+-	if (max_sectors != aligned_max_sectors) {
+-		printk(KERN_INFO "Rounding down aligned max_sectors from %u"
+-				" to %u\n", max_sectors, aligned_max_sectors);
+-		return aligned_max_sectors;
+-	}
++	alignment = max(1ul, PAGE_SIZE / block_size);
++	aligned_max_sectors = rounddown(max_sectors, alignment);
  
- 	return 0;
+-	return max_sectors;
++	if (max_sectors != aligned_max_sectors)
++		pr_info("Rounding down aligned max_sectors from %u to %u\n",
++			max_sectors, aligned_max_sectors);
++
++	return aligned_max_sectors;
+ }
+ 
+ void se_dev_set_default_attribs(
 
 
