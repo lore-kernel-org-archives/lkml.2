@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423092Ab2KNQBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 11:01:49 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35615 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423004Ab2KNP7y (ORCPT
+	id S1423057Ab2KNQCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 11:02:31 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38389 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422641Ab2KNP7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:59:54 -0500
-Message-ID: <50A3CE10.5080100@mvista.com>
-Date: Wed, 14 Nov 2012 20:00:00 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] ARM: tegra: Implement 6395/1 for Tegra
-References: <1352903243-5389-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1352903243-5389-1-git-send-email-pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 10:59:49 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 06/14] HID: hid-multitouch: get maxcontacts also from logical_max value
+Date: Wed, 14 Nov 2012 16:59:18 +0100
+Message-Id: <1352908766-4492-7-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Win8 devices are required to present the feature "Maximum Contact Number".
+Fortunately all win7 devices I've seen presents this feature.
+If the current value is 0, then, the driver can get the actual supported
+contact count by refering to the logical_max.
+This win8 specification ensures that logical_max may not be above 250.
+This also allows us to detect when devices like irtouch or stantum reports
+an obviously wrong value of 255.
 
-On 11/14/2012 05:27 PM, Peter De Schrijver wrote:
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/hid/hid-multitouch.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-> This patch implements ARM linux patch 6395/1 for Tegra. See commit
-> 1a8e41cd672f894bbd74874eac601e6cedf838fb for details.
-
-   You should give some details in this commit too, like specifying that commit
-summary in parens.
-
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-
-WBR, Sergei
-
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index a6a4e0a..ae57b8f 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -121,6 +121,7 @@ struct mt_device {
+ #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0109
+ 
+ #define MT_DEFAULT_MAXCONTACT	10
++#define MT_MAX_MAXCONTACT	250
+ 
+ #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
+ #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
+@@ -283,6 +284,9 @@ static void mt_feature_mapping(struct hid_device *hdev,
+ 	case HID_DG_CONTACTMAX:
+ 		td->maxcontact_report_id = field->report->id;
+ 		td->maxcontacts = field->value[0];
++		if (!td->maxcontacts &&
++		    field->logical_maximum <= MT_MAX_MAXCONTACT)
++			td->maxcontacts = field->logical_maximum;
+ 		if (td->mtclass.maxcontacts)
+ 			/* check if the maxcontacts is given by the class */
+ 			td->maxcontacts = td->mtclass.maxcontacts;
+-- 
+1.8.0
 
