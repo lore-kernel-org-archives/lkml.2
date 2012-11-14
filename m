@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab2KNFvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:51:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55257 "EHLO
+	id S1756514Ab2KNFyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:54:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55287 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756426Ab2KNFvH (ORCPT
+	by vger.kernel.org with ESMTP id S1756478Ab2KNFvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:07 -0500
-Message-Id: <20121114053938.731103602@decadent.org.uk>
+	Wed, 14 Nov 2012 00:51:10 -0500
+Message-Id: <20121114053937.652708298@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:08 +0000
+Date: Wed, 14 Nov 2012 05:40:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 35/82] floppy: properly handle failure on add_disk loop
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 27/82] gpiolib: Dont return -EPROBE_DEFER to sysfs, or for invalid gpios
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,49 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit d60e7ec18c3fb2cbf90969ccd42889eb2d03aef9 upstream.
+commit ad2fab36d7922401c4576fb7ea9b21a47a29a17f upstream.
 
-On floppy initialization, if something failed inside the loop we call
-add_disk, there was no cleanup of previous iterations in the error
-handling.
+gpios requested with invalid numbers, or gpios requested from userspace via sysfs
+should not try to be deferred on failure.
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/floppy.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpio/gpiolib.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4305,7 +4305,7 @@ static int __init floppy_init(void)
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 5d6c71e..1c8d9e3 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -623,9 +623,11 @@ static ssize_t export_store(struct class *class,
+ 	 */
  
- 		err = platform_device_register(&floppy_device[drive]);
- 		if (err)
--			goto out_flush_work;
-+			goto out_remove_drives;
- 
- 		err = device_create_file(&floppy_device[drive].dev,
- 					 &dev_attr_cmos);
-@@ -4323,6 +4323,15 @@ static int __init floppy_init(void)
- 
- out_unreg_platform_dev:
- 	platform_device_unregister(&floppy_device[drive]);
-+out_remove_drives:
-+	while (drive--) {
-+		if ((allowed_drive_mask & (1 << drive)) &&
-+		    fdc_state[FDC(drive)].version != FDC_NONE) {
-+			del_gendisk(disks[drive]);
-+			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
-+			platform_device_unregister(&floppy_device[drive]);
-+		}
+ 	status = gpio_request(gpio, "sysfs");
+-	if (status < 0)
++	if (status < 0) {
++		if (status == -EPROBE_DEFER)
++			status = -ENODEV;
+ 		goto done;
+-
 +	}
- out_flush_work:
- 	flush_work_sync(&floppy_work);
- 	if (atomic_read(&usage_count))
+ 	status = gpio_export(gpio, true);
+ 	if (status < 0)
+ 		gpio_free(gpio);
+@@ -1191,8 +1193,10 @@ int gpio_request(unsigned gpio, const char *label)
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+ 
+-	if (!gpio_is_valid(gpio))
++	if (!gpio_is_valid(gpio)) {
++		status = -EINVAL;
+ 		goto done;
++	}
+ 	desc = &gpio_desc[gpio];
+ 	chip = desc->chip;
+ 	if (chip == NULL)
 
 
