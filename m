@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2KNAdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 19:33:38 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:55355 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755993Ab2KNAdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 19:33:37 -0500
+	id S1756132Ab2KNAeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 19:34:31 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21604 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755993Ab2KNAea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 19:34:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="217374951"
+Date: Tue, 13 Nov 2012 16:42:18 -0800 (PST)
+From: Joseph Gasparakis <joseph.gasparakis@intel.com>
+X-X-Sender: jgaspara@morpheus.jf.intel.com
+To: Joseph Gasparakis <joseph.gasparakis@intel.com>
+cc: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry@broadcom.com, saeed.bishara@gmail.com
+Subject: Re: [PATCH v2 net-next 0/3 ] tunneling: Add support for hardware-offloaded
+ encapsulation
+In-Reply-To: <1352709418-28996-1-git-send-email-joseph.gasparakis@intel.com>
+Message-ID: <alpine.LFD.2.02.1211131514060.13310@morpheus.jf.intel.com>
+References: <1352709418-28996-1-git-send-email-joseph.gasparakis@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+ReplyTo: "Joseph Gasparakis" <joseph.gasparakis@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1352022874-5100-1-git-send-email-fabio.baltieri@gmail.com>
-References: <1352022874-5100-1-git-send-email-fabio.baltieri@gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 13 Nov 2012 16:33:14 -0800
-Message-ID: <CAK5ve-Jn_1Lc=FyX24_DHDz6+=VUC5xoiH4zUWLgRB=rgOiueA@mail.gmail.com>
-Subject: Re: [PATCH v2 RESEND] leds: add led_trigger_rename function
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 4, 2012 at 1:54 AM, Fabio Baltieri <fabio.baltieri@gmail.com> wrote:
-> Implements a "led_trigger_rename" function to rename a trigger with
-> proper locking.
->
-> This assumes that led name was originally allocated in non-constant
-> storage.
->
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> ---
->
-> Hi Bryan,
->
-> I'm resending this one as it was probably lost it in the mail transition.
->
-> Fabio
->
->  drivers/leds/led-triggers.c | 13 +++++++++++++
->  include/linux/leds.h        | 18 ++++++++++++++++++
->  2 files changed, 31 insertions(+)
->
-> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-> index 262eb41..a4fa4bf 100644
-> --- a/drivers/leds/led-triggers.c
-> +++ b/drivers/leds/led-triggers.c
-> @@ -166,6 +166,19 @@ void led_trigger_set_default(struct led_classdev *led_cdev)
->  }
->  EXPORT_SYMBOL_GPL(led_trigger_set_default);
->
-> +void led_trigger_rename_static(const char *name, struct led_trigger *trig)
-> +{
-> +       /* new name must be on a temporary string to prevent races */
-> +       BUG_ON(name == trig->name);
-> +
-> +       down_write(&triggers_list_lock);
-> +       /* this assumes that trig->name was originaly allocated to
-> +        * non constant storage */
-> +       strcpy((char *)trig->name, name);
 
-Is this strcpy() safe here? Probably strncpy() or strlcpy() is safer.
 
-> +       up_write(&triggers_list_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(led_trigger_rename_static);
-> +
->  /* LED Trigger Interface */
->
->  int led_trigger_register(struct led_trigger *trig)
-> diff --git a/include/linux/leds.h b/include/linux/leds.h
-> index 6e53bb3..8107592 100644
-> --- a/include/linux/leds.h
-> +++ b/include/linux/leds.h
-> @@ -139,6 +139,24 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
->  extern void led_set_brightness(struct led_classdev *led_cdev,
->                                enum led_brightness brightness);
->
-> +/**
-> + * led_trigger_rename_static - rename a trigger
-> + * @name: the new trigger name
-> + * @trig: the LED trigger to rename
-> + *
-> + * Change a LED trigger name by copying the string passed in
-> + * name into current trigger name, which MUST be large
-> + * enough for the new string.
-> + *
-> + * Note that name must NOT point to the same string used
-> + * during LED registration, as that could lead to races.
-> + *
-> + * This is meant to be used on triggers with statically
-> + * allocated name.
-> + */
-> +extern void led_trigger_rename_static(const char *name,
-> +                                     struct led_trigger *trig);
-> +
+On Mon, 12 Nov 2012, Joseph Gasparakis wrote:
 
-Any example how to use this new API?
+> The series contains updates to add in the NIC Rx and Tx checksumming support
+> for encapsulated packets.
+> 
+> The sk_buff needs to somehow have information of the inner packet, and adding
+> three fields for the inner mac, network and transport headers was the prefered
+> approach. 
+> 
+> Not adding these fields would mean that the drivers would need to parse the
+> sk_buff data in hot-path, having a negative impact in the performance.
+> 
+> Adding in sk_buff a pointer to the skbuff of the inner packet made sense, but
+> would be a complicated change as assumptions needed to be made with regards to
+> helper functions such as skb_clone() skb_copy(). Also code for the existing
+> encapsulation protocols (such as VXLAN and IP GRE) had to be reworked, so the
+> decision was to have the simple approach of adding these three fields.
+> 
+> v2 Makes sure that checksumming for IP GRE does not take place if the offload flag is set in the skb's netdev features
+> 
 
-Thanks,
--Bryan
-
->  /*
->   * LED Triggers
->   */
-> --
-> 1.7.12.1
->
+Thank you all. I am working now on implementing a demo using ixgbe and 
+will re-submit soon this series of patches taking into consideration any 
+open comments.
