@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab2KNFul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55111 "EHLO
+	id S1756392Ab2KNFuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55180 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751594Ab2KNFue (ORCPT
+	by vger.kernel.org with ESMTP id S1756341Ab2KNFut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:34 -0500
-Message-Id: <20121114053942.402525152@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:49 -0500
+Message-Id: <20121114053940.926046549@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:35 +0000
+Date: Wed, 14 Nov 2012 05:40:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 62/82] ALSA: Fix card refcount unbalance
+        Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 51/82] iscsi-target: Fix missed wakeup race in TX thread
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,102 +30,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 8bb4d9ce08b0a92ca174e41d92c180328f86173f upstream.
+commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
 
-There are uncovered cases whether the card refcount introduced by the
-commit a0830dbd isn't properly increased or decreased:
-- OSS PCM and mixer success paths
-- When lookup function gets NULL
+The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
+missed wakeup race:
 
-This patch fixes these places.
+ - TX thread finishes handle_immediate_queue() and handle_response_queue(),
+   thinks both queues are empty.
+ - Another thread adds a queue entry and does wake_up_process(), which does
+   nothing because the TX thread is still awake.
+ - TX thread does schedule_timeout() and sleeps forever.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50251
+In practice this can kill an iSCSI connection if for example an initiator
+does single-threaded writes and the target misses the wakeup window when
+queueing an R2T; in this case the connection will be stuck until the
+initiator loses patience and does some task management operation (or kills
+the connection entirely).
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix this by converting to wait_event_interruptible(), which does not
+suffer from this sort of race.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/core/oss/mixer_oss.c |    1 +
- sound/core/oss/pcm_oss.c   |    1 +
- sound/core/pcm_native.c    |    6 ++++--
- sound/core/sound.c         |    2 +-
- sound/core/sound_oss.c     |    2 +-
- 5 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/target/iscsi/iscsi_target.c       |    4 +++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_util.h  |    1 +
+ 5 files changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
-index a9a2e63..e8a1d18 100644
---- a/sound/core/oss/mixer_oss.c
-+++ b/sound/core/oss/mixer_oss.c
-@@ -76,6 +76,7 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
- 		snd_card_unref(card);
- 		return -EFAULT;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index d6ce218..035c2c7 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3719,7 +3719,9 @@ restart:
+ 		 */
+ 		iscsit_thread_check_cpumask(conn, current, 1);
+ 
+-		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
++		wait_event_interruptible(conn->queues_wq,
++					 !iscsit_conn_all_queues_empty(conn) ||
++					 ts->status == ISCSI_THREAD_SET_RESET);
+ 
+ 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
+ 		     signal_pending(current))
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 2ba9f9b..21048db 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -486,6 +486,7 @@ struct iscsi_tmr_req {
+ };
+ 
+ struct iscsi_conn {
++	wait_queue_head_t	queues_wq;
+ 	/* Authentication Successful for this connection */
+ 	u8			auth_complete;
+ 	/* State connection is currently in */
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index cdc8a10..f8dbec0 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -41,6 +41,7 @@
+ 
+ static int iscsi_login_init_conn(struct iscsi_conn *conn)
+ {
++	init_waitqueue_head(&conn->queues_wq);
+ 	INIT_LIST_HEAD(&conn->conn_list);
+ 	INIT_LIST_HEAD(&conn->conn_cmd_list);
+ 	INIT_LIST_HEAD(&conn->immed_queue_list);
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index afd98cc..1a91195 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
+ 	atomic_set(&conn->check_immediate_queue, 1);
+ 	spin_unlock_bh(&conn->immed_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
+@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
+ 	atomic_inc(&cmd->response_queue_count);
+ 	spin_unlock_bh(&conn->response_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
+@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_response_queue(
  	}
-+	snd_card_unref(card);
- 	return 0;
  }
  
-diff --git a/sound/core/oss/pcm_oss.c b/sound/core/oss/pcm_oss.c
-index f337b66..4c1cc51 100644
---- a/sound/core/oss/pcm_oss.c
-+++ b/sound/core/oss/pcm_oss.c
-@@ -2454,6 +2454,7 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
- 	mutex_unlock(&pcm->open_mutex);
- 	if (err < 0)
- 		goto __error;
-+	snd_card_unref(pcm->card);
- 	return err;
- 
-       __error:
-diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
-index 6e8872d..f9ddecf 100644
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -2122,7 +2122,8 @@ static int snd_pcm_playback_open(struct inode *inode, struct file *file)
- 	pcm = snd_lookup_minor_data(iminor(inode),
- 				    SNDRV_DEVICE_TYPE_PCM_PLAYBACK);
- 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_PLAYBACK);
--	snd_card_unref(pcm->card);
-+	if (pcm)
-+		snd_card_unref(pcm->card);
- 	return err;
- }
- 
-@@ -2135,7 +2136,8 @@ static int snd_pcm_capture_open(struct inode *inode, struct file *file)
- 	pcm = snd_lookup_minor_data(iminor(inode),
- 				    SNDRV_DEVICE_TYPE_PCM_CAPTURE);
- 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_CAPTURE);
--	snd_card_unref(pcm->card);
-+	if (pcm)
-+		snd_card_unref(pcm->card);
- 	return err;
- }
- 
-diff --git a/sound/core/sound.c b/sound/core/sound.c
-index 89780c3..70ccdab 100644
---- a/sound/core/sound.c
-+++ b/sound/core/sound.c
-@@ -114,7 +114,7 @@ void *snd_lookup_minor_data(unsigned int minor, int type)
- 	mreg = snd_minors[minor];
- 	if (mreg && mreg->type == type) {
- 		private_data = mreg->private_data;
--		if (mreg->card_ptr)
-+		if (private_data && mreg->card_ptr)
- 			atomic_inc(&mreg->card_ptr->refcount);
- 	} else
- 		private_data = NULL;
-diff --git a/sound/core/sound_oss.c b/sound/core/sound_oss.c
-index e1d79ee..726a49a 100644
---- a/sound/core/sound_oss.c
-+++ b/sound/core/sound_oss.c
-@@ -54,7 +54,7 @@ void *snd_lookup_oss_minor_data(unsigned int minor, int type)
- 	mreg = snd_oss_minors[minor];
- 	if (mreg && mreg->type == type) {
- 		private_data = mreg->private_data;
--		if (mreg->card_ptr)
-+		if (private_data && mreg->card_ptr)
- 			atomic_inc(&mreg->card_ptr->refcount);
- 	} else
- 		private_data = NULL;
++bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
++{
++	bool empty;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	empty = list_empty(&conn->immed_queue_list);
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	if (!empty)
++		return empty;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	empty = list_empty(&conn->response_queue_list);
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	return empty;
++}
++
+ void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
+ {
+ 	struct iscsi_queue_req *qr, *qr_tmp;
+diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
+index 44054bd..894d0f8 100644
+--- a/drivers/target/iscsi/iscsi_target_util.h
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_
+ extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
+ extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
+ extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
++extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
+ extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
+ extern void iscsit_release_cmd(struct iscsi_cmd *);
+ extern void iscsit_free_cmd(struct iscsi_cmd *);
 
 
