@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2KNGGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:06:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55049 "EHLO
+	id S1754426Ab2KNFuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55018 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754546Ab2KNFuX (ORCPT
+	by vger.kernel.org with ESMTP id S1753023Ab2KNFuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:23 -0500
-Message-Id: <20121114053943.768284098@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:15 -0500
+Message-Id: <20121114053944.848687480@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:45 +0000
+Date: Wed, 14 Nov 2012 05:40:53 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hemant Kumar <hemantk@codeaurora.org>, Oliver Neukum <oneukum@suse.de>,
+        Cyril Brulebois <kibi@debian.org>,
+        Florent Fourcot <florent.fourcot@enst-bretagne.fr>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 72/82] net: usb: Fix memory leak on Tx data path
+Subject: [ 80/82] r8169: Fix WoL on RTL8168d/8111d.
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hemant Kumar <hemantk@codeaurora.org>
+From: Cyril Brulebois <kibi@debian.org>
 
-[ Upstream commit 39707c2a3ba5011038b363f84d37c8a98d2d9db1 ]
+commit b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd upstream.
 
-Driver anchors the tx urbs and defers the urb submission if
-a transmit request comes when the interface is suspended.
-Anchoring urb increments the urb reference count. These
-deferred urbs are later accessed by calling usb_get_from_anchor()
-for submission during interface resume. usb_get_from_anchor()
-unanchors the urb but urb reference count remains same.
-This causes the urb reference count to remain non-zero
-after usb_free_urb() gets called and urb never gets freed.
-Hence call usb_put_urb() after anchoring the urb to properly
-balance the reference count for these deferred urbs. Also,
-unanchor these deferred urbs during disconnect, to free them
-up.
+This regression was spotted between Debian squeeze and Debian wheezy
+kernels (respectively based on 2.6.32 and 3.2). More info about
+Wake-on-LAN issues with Realtek's 816x chipsets can be found in the
+following thread: http://marc.info/?t=132079219400004
 
-Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+Probable regression from d4ed95d796e5126bba51466dc07e287cebc8bd19;
+more chipsets are likely affected.
+
+Tested on top of a 3.2.23 kernel.
+
+Reported-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Tested-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Hinted-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Cyril Brulebois <kibi@debian.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/usbnet.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/realtek/r8169.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index b873b5d..dc53a8f 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1156,6 +1156,7 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
- 		usb_anchor_urb(urb, &dev->deferred);
- 		/* no use to process more packets */
- 		netif_stop_queue(net);
-+		usb_put_urb(urb);
- 		spin_unlock_irqrestore(&dev->txq.lock, flags);
- 		netdev_dbg(dev->net, "Delaying transmission for resumption\n");
- 		goto deferred;
-@@ -1297,6 +1298,8 @@ void usbnet_disconnect (struct usb_interface *intf)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e7ff886..eb6a5e4 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3827,6 +3827,8 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	void __iomem *ioaddr = tp->mmio_addr;
  
- 	cancel_work_sync(&dev->kevent);
- 
-+	usb_scuttle_anchored_urbs(&dev->deferred);
-+
- 	if (dev->driver_info->unbind)
- 		dev->driver_info->unbind (dev, intf);
- 
+ 	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_25:
++	case RTL_GIGA_MAC_VER_26:
+ 	case RTL_GIGA_MAC_VER_29:
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_32:
 
 
