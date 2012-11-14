@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab2KNFux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55151 "EHLO
+	id S1756608Ab2KNF6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:58:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55193 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756278Ab2KNFum (ORCPT
+	by vger.kernel.org with ESMTP id S1756359Ab2KNFuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:42 -0500
-Message-Id: <20121114053941.190372481@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:51 -0500
+Message-Id: <20121114053940.232994658@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:26 +0000
+Date: Wed, 14 Nov 2012 05:40:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Subject: [ 53/82] cifs: fix potential buffer overrun in cifs.idmap handling code
+        NeilBrown <neilb@suse.de>, Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 46/82] NFS: fix bug in legacy DNS resolver.
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,172 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 36960e440ccf94349c09fb944930d3bfe4bc473f upstream.
+commit 8d96b10639fb402357b75b055b1e82a65ff95050 upstream.
 
-The userspace cifs.idmap program generally works with the wbclient libs
-to generate binary SIDs in userspace. That program defines the struct
-that holds these values as having a max of 15 subauthorities. The kernel
-idmapping code however limits that value to 5.
+The DNS resolver's use of the sunrpc cache involves a 'ttl' number
+(relative) rather that a timeout (absolute).  This confused me when
+I wrote
+  commit c5b29f885afe890f953f7f23424045cdad31d3e4
+     "sunrpc: use seconds since boot in expiry cache"
 
-When the kernel copies those values around though, it doesn't sanity
-check the num_subauths value handed back from userspace or from the
-server. It's possible therefore for userspace to hand us back a bogus
-num_subauths value (or one that's valid, but greater than 5) that could
-cause the kernel to walk off the end of the cifs_sid->sub_auths array.
+and I managed to break it.  The effect is that any TTL is interpreted
+as 0, and nothing useful gets into the cache.
 
-Fix this by defining a new routine for copying sids and using that in
-all of the places that copy it. If we end up with a sid that's longer
-than expected then this approach will just lop off the "extra" subauths,
-but that's basically what the code does today already. Better approaches
-might be to fix this code to reject SIDs with >5 subauths, or fix it
-to handle the subauths array dynamically.
+This patch removes the use of get_expiry() - which really expects an
+expiry time - and uses get_uint() instead, treating the int correctly
+as a ttl.
 
-At the same time, change the kernel to check the length of the data
-returned by userspace. If it's shorter than struct cifs_sid, reject it
-and return -EIO. If that happens we'll end up with fields that are
-basically uninitialized.
+This fixes a regression that has been present since 2.6.37, causing
+certain NFS accesses in certain environments to incorrectly fail.
 
-Long term, it might make sense to redefine cifs_sid using a flexarray at
-the end, to allow for variable-length subauth lists, and teach the code
-to handle the case where the subauths array being passed in from
-userspace is shorter than 5 elements.
-
-Note too, that I don't consider this a security issue since you'd need
-a compromised cifs.idmap program. If you have that, you can do all sorts
-of nefarious stuff. Still, this is probably reasonable for stable.
-
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reported-by: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/cifsacl.c |   49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+ fs/nfs/dns_resolve.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
-index fc783e2..0fb15bb 100644
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -225,6 +225,13 @@ sid_to_str(struct cifs_sid *sidptr, char *sidstr)
- }
- 
- static void
-+cifs_copy_sid(struct cifs_sid *dst, const struct cifs_sid *src)
-+{
-+	memcpy(dst, src, sizeof(*dst));
-+	dst->num_subauth = min_t(u8, src->num_subauth, NUM_SUBAUTHS);
-+}
-+
-+static void
- id_rb_insert(struct rb_root *root, struct cifs_sid *sidptr,
- 		struct cifs_sid_id **psidid, char *typestr)
+diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+index 31c26c4..ca4b11e 100644
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -217,7 +217,7 @@ static int nfs_dns_parse(struct cache_detail *cd, char *buf, int buflen)
  {
-@@ -248,7 +255,7 @@ id_rb_insert(struct rb_root *root, struct cifs_sid *sidptr,
- 		}
- 	}
+ 	char buf1[NFS_DNS_HOSTNAME_MAXLEN+1];
+ 	struct nfs_dns_ent key, *item;
+-	unsigned long ttl;
++	unsigned int ttl;
+ 	ssize_t len;
+ 	int ret = -EINVAL;
  
--	memcpy(&(*psidid)->sid, sidptr, sizeof(struct cifs_sid));
-+	cifs_copy_sid(&(*psidid)->sid, sidptr);
- 	(*psidid)->time = jiffies - (SID_MAP_RETRY + 1);
- 	(*psidid)->refcount = 0;
+@@ -240,7 +240,8 @@ static int nfs_dns_parse(struct cache_detail *cd, char *buf, int buflen)
+ 	key.namelen = len;
+ 	memset(&key.h, 0, sizeof(key.h));
  
-@@ -354,7 +361,7 @@ id_to_sid(unsigned long cid, uint sidtype, struct cifs_sid *ssid)
- 	 * any fields of the node after a reference is put .
- 	 */
- 	if (test_bit(SID_ID_MAPPED, &psidid->state)) {
--		memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
-+		cifs_copy_sid(ssid, &psidid->sid);
- 		psidid->time = jiffies; /* update ts for accessing */
- 		goto id_sid_out;
- 	}
-@@ -370,14 +377,14 @@ id_to_sid(unsigned long cid, uint sidtype, struct cifs_sid *ssid)
- 		if (IS_ERR(sidkey)) {
- 			rc = -EINVAL;
- 			cFYI(1, "%s: Can't map and id to a SID", __func__);
-+		} else if (sidkey->datalen < sizeof(struct cifs_sid)) {
-+			rc = -EIO;
-+			cFYI(1, "%s: Downcall contained malformed key "
-+				"(datalen=%hu)", __func__, sidkey->datalen);
- 		} else {
- 			lsid = (struct cifs_sid *)sidkey->payload.data;
--			memcpy(&psidid->sid, lsid,
--				sidkey->datalen < sizeof(struct cifs_sid) ?
--				sidkey->datalen : sizeof(struct cifs_sid));
--			memcpy(ssid, &psidid->sid,
--				sidkey->datalen < sizeof(struct cifs_sid) ?
--				sidkey->datalen : sizeof(struct cifs_sid));
-+			cifs_copy_sid(&psidid->sid, lsid);
-+			cifs_copy_sid(ssid, &psidid->sid);
- 			set_bit(SID_ID_MAPPED, &psidid->state);
- 			key_put(sidkey);
- 			kfree(psidid->sidstr);
-@@ -396,7 +403,7 @@ id_to_sid(unsigned long cid, uint sidtype, struct cifs_sid *ssid)
- 			return rc;
- 		}
- 		if (test_bit(SID_ID_MAPPED, &psidid->state))
--			memcpy(ssid, &psidid->sid, sizeof(struct cifs_sid));
-+			cifs_copy_sid(ssid, &psidid->sid);
- 		else
- 			rc = -EINVAL;
- 	}
-@@ -675,8 +682,6 @@ int compare_sids(const struct cifs_sid *ctsid, const struct cifs_sid *cwsid)
- static void copy_sec_desc(const struct cifs_ntsd *pntsd,
- 				struct cifs_ntsd *pnntsd, __u32 sidsoffset)
- {
--	int i;
--
- 	struct cifs_sid *owner_sid_ptr, *group_sid_ptr;
- 	struct cifs_sid *nowner_sid_ptr, *ngroup_sid_ptr;
- 
-@@ -692,26 +697,14 @@ static void copy_sec_desc(const struct cifs_ntsd *pntsd,
- 	owner_sid_ptr = (struct cifs_sid *)((char *)pntsd +
- 				le32_to_cpu(pntsd->osidoffset));
- 	nowner_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset);
--
--	nowner_sid_ptr->revision = owner_sid_ptr->revision;
--	nowner_sid_ptr->num_subauth = owner_sid_ptr->num_subauth;
--	for (i = 0; i < 6; i++)
--		nowner_sid_ptr->authority[i] = owner_sid_ptr->authority[i];
--	for (i = 0; i < 5; i++)
--		nowner_sid_ptr->sub_auth[i] = owner_sid_ptr->sub_auth[i];
-+	cifs_copy_sid(nowner_sid_ptr, owner_sid_ptr);
- 
- 	/* copy group sid */
- 	group_sid_ptr = (struct cifs_sid *)((char *)pntsd +
- 				le32_to_cpu(pntsd->gsidoffset));
- 	ngroup_sid_ptr = (struct cifs_sid *)((char *)pnntsd + sidsoffset +
- 					sizeof(struct cifs_sid));
--
--	ngroup_sid_ptr->revision = group_sid_ptr->revision;
--	ngroup_sid_ptr->num_subauth = group_sid_ptr->num_subauth;
--	for (i = 0; i < 6; i++)
--		ngroup_sid_ptr->authority[i] = group_sid_ptr->authority[i];
--	for (i = 0; i < 5; i++)
--		ngroup_sid_ptr->sub_auth[i] = group_sid_ptr->sub_auth[i];
-+	cifs_copy_sid(ngroup_sid_ptr, group_sid_ptr);
- 
- 	return;
- }
-@@ -1120,8 +1113,7 @@ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
- 				kfree(nowner_sid_ptr);
- 				return rc;
- 			}
--			memcpy(owner_sid_ptr, nowner_sid_ptr,
--					sizeof(struct cifs_sid));
-+			cifs_copy_sid(owner_sid_ptr, nowner_sid_ptr);
- 			kfree(nowner_sid_ptr);
- 			*aclflag = CIFS_ACL_OWNER;
- 		}
-@@ -1139,8 +1131,7 @@ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
- 				kfree(ngroup_sid_ptr);
- 				return rc;
- 			}
--			memcpy(group_sid_ptr, ngroup_sid_ptr,
--					sizeof(struct cifs_sid));
-+			cifs_copy_sid(group_sid_ptr, ngroup_sid_ptr);
- 			kfree(ngroup_sid_ptr);
- 			*aclflag = CIFS_ACL_GROUP;
- 		}
+-	ttl = get_expiry(&buf);
++	if (get_uint(&buf, &ttl) < 0)
++		goto out;
+ 	if (ttl == 0)
+ 		goto out;
+ 	key.h.expiry_time = ttl + seconds_since_boot();
 
 
