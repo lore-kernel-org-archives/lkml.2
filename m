@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab2KNTlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 14:41:22 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:40979 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2KNTlV (ORCPT
+	id S932396Ab2KNTmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 14:42:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40790 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab2KNTme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 14:41:21 -0500
+	Wed, 14 Nov 2012 14:42:34 -0500
+Message-ID: <50A3F3FD.4070707@infradead.org>
+Date: Wed, 14 Nov 2012 11:41:49 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1352921090.18025.73.camel@gandalf.local.home>
-References: <1352910413-10759-1-git-send-email-fweisbec@gmail.com>
-	<1352910413-10759-5-git-send-email-fweisbec@gmail.com>
-	<1352921090.18025.73.camel@gandalf.local.home>
-Date: Wed, 14 Nov 2012 20:41:19 +0100
-Message-ID: <CAFTL4hwmPdaGnRXF3eAK=2id8hgQyLTqjttV=V1uF+nQU5isSw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] vtime: No need to disable irqs on vtime_account()
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>
+Subject: Re: linux-next: Tree for Nov 14 (gpu/drm/i915)
+References: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
+In-Reply-To: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/14 Steven Rostedt <rostedt@goodmis.org>:
-> On Wed, 2012-11-14 at 17:26 +0100, Frederic Weisbecker wrote:
->> vtime_account() is only called from irq entry. irqs
->> are always disabled at this point so we can safely
->> remove the irq disabling guards on that function.
->>
->> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->> Cc: Tony Luck <tony.luck@intel.com>
->> Cc: Fenghua Yu <fenghua.yu@intel.com>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
->> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->> ---
->>  kernel/sched/cputime.c |    6 ------
->>  1 files changed, 0 insertions(+), 6 deletions(-)
->>
->> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
->> index 2e8d34a..80b2fd5 100644
->> --- a/kernel/sched/cputime.c
->> +++ b/kernel/sched/cputime.c
->> @@ -467,16 +467,10 @@ void vtime_task_switch(struct task_struct *prev)
->>  #ifndef __ARCH_HAS_VTIME_ACCOUNT
->>  void vtime_account(struct task_struct *tsk)
->>  {
->> -     unsigned long flags;
->> -
->> -     local_irq_save(flags);
->> -
->
-> I'd add a WARN_ON_ONCE(!irqs_disabled()) again here, or is this also
-> covered by the vtime_delta()?
+On 11/13/2012 09:30 PM, Stephen Rothwell wrote:
 
-Yeah it's the ending point for both vtime_account_system() and
-vtime_account_idle()
+> Hi all,
+> 
+> News: next-20121115 (i.e. tomorrow) will be the last release until
+> next-20121126 (which should be just be after -rc7, I guess - assuming
+> that Linus does not release v3.7 before then), so if you want something
+> in linux-next for a reasonable amount of testing, it should probably be
+> committed tomorrow.
+> 
+> Changes since 20121113:
+> 
+
+
+
+on i386:
+
+ERROR: "__build_bug_on_failed" [drivers/gpu/drm/i915/i915.ko] undefined!
+
+Reference to that symbol is found in
+i915_gem_execbuffer.o.  Reference to BUILD_BUG_ON() is found in
+i915_gem_execbuffer.c:
+
+static struct eb_objects *
+eb_create(int size)
+{
+	struct eb_objects *eb;
+	int count = PAGE_SIZE / sizeof(struct hlist_head) / 2;
+	BUILD_BUG_ON(!is_power_of_2(PAGE_SIZE / sizeof(struct hlist_head)));
+
+
+-- 
+~Randy
