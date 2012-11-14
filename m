@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2KNGBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:01:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55141 "EHLO
+	id S1756298Ab2KNFui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55116 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752719Ab2KNFuj (ORCPT
+	by vger.kernel.org with ESMTP id S1754197Ab2KNFue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:39 -0500
-Message-Id: <20121114053941.590830243@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:34 -0500
+Message-Id: <20121114053942.269603643@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:29 +0000
+Date: Wed, 14 Nov 2012 05:40:34 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Robin Kreis <r.kreis@uni-bremen.de>
-Subject: [ 56/82] ALSA: hda - Force to reset IEC958 status bits for AD codecs
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 61/82] ALSA: hda - Add new codec ALC668 and ALC900 (default name ALC1150)
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,36 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kailang Yang <kailang@realtek.com>
 
-commit ae24c3191ba2ab03ec6b4be323e730e00404b4b6 upstream.
+commit 19a62823eae453619604636082085812c14ee391 upstream.
 
-Several bug reports suggest that the forcibly resetting IEC958 status
-bits is required for AD codecs to get the SPDIF output working
-properly after changing streams.
-
-Original fix credit to Javeed Shaikh.
-
-BugLink: https://bugs.launchpad.net/ubuntu/+source/alsa-driver/+bug/359361
-
-Reported-by: Robin Kreis <r.kreis@uni-bremen.de>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index cdd43ea..1eeba73 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -545,6 +545,7 @@ static int ad198x_build_pcms(struct hda_codec *codec)
- 	if (spec->multiout.dig_out_nid) {
- 		info++;
- 		codec->num_pcms++;
-+		codec->spdif_status_reset = 1;
- 		info->name = "AD198x Digital";
- 		info->pcm_type = HDA_PCM_TYPE_SPDIF;
- 		info->stream[SNDRV_PCM_STREAM_PLAYBACK] = ad198x_pcm_digital_playback;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index b25e9b2..c0ce3b1 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -7077,6 +7077,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	  .patch = patch_alc662 },
+ 	{ .id = 0x10ec0663, .name = "ALC663", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0665, .name = "ALC665", .patch = patch_alc662 },
++	{ .id = 0x10ec0668, .name = "ALC668", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
+ 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
+@@ -7094,6 +7095,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0889, .name = "ALC889", .patch = patch_alc882 },
+ 	{ .id = 0x10ec0892, .name = "ALC892", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0899, .name = "ALC898", .patch = patch_alc882 },
++	{ .id = 0x10ec0900, .name = "ALC1150", .patch = patch_alc882 },
+ 	{} /* terminator */
+ };
+ 
 
 
