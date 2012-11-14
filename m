@@ -1,151 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab2KNHWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:22:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43976 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab2KNHWu (ORCPT
+	id S1756621Ab2KNHXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:23:10 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:53098 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab2KNHTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:22:50 -0500
-Date: Tue, 13 Nov 2012 23:22:09 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-48ed0ece1b8063313284812ef048b26c3c4250af@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, dsahern@gmail.com,
-        irina.tirdea@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, irina.tirdea@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1351835406-15208-1-git-send-email-namhyung@kernel.org>
-References: <1351835406-15208-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Use normalized arch name for searching objdump path
-Git-Commit-ID: 48ed0ece1b8063313284812ef048b26c3c4250af
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:22:16 -0800 (PST)
+	Wed, 14 Nov 2012 02:19:33 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
+        plagnioj@jcrosoft.com, wenyou.yang@atmel.com, JM.Lin@atmel.com
+Subject: [PATCH 02/11] watchdog/at91sam9_wdt: change the at91wdt_private struct to the at91wdt_drvdata struct
+Date: Wed, 14 Nov 2012 15:16:00 +0800
+Message-Id: <1352877369-19740-3-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com>
+References: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com>
+X-OriginalArrivalTime: 14 Nov 2012 07:19:20.0556 (UTC) FILETIME=[5D75A2C0:01CDC238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  48ed0ece1b8063313284812ef048b26c3c4250af
-Gitweb:     http://git.kernel.org/tip/48ed0ece1b8063313284812ef048b26c3c4250af
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 2 Nov 2012 14:50:04 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 5 Nov 2012 14:03:58 -0300
+Set the at91wdt_drvdata struct as the driver data of struct watchdog_device.
 
-perf tools: Use normalized arch name for searching objdump path
-
-David reported that perf report for i686 target data on x86_64 host
-failed to work because it tried to find out cross-compiled objdump.
-
-However objdump for x86_64 is compatible to i686 so that it doesn't need
-to do it at all.  To prevent similar artifacts, normalize arch name when
-comparing host and file architectures.
-
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351835406-15208-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- tools/perf/arch/common.c |   40 +++++++++++++++++++++++++++++++++-------
- 1 files changed, 33 insertions(+), 7 deletions(-)
+ drivers/watchdog/at91sam9_wdt.c |   35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
-index 2367b25..5683529 100644
---- a/tools/perf/arch/common.c
-+++ b/tools/perf/arch/common.c
-@@ -93,16 +93,46 @@ static int lookup_triplets(const char *const *triplets, const char *name)
- 	return -1;
- }
+diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+index 549c256..31c914a 100644
+--- a/drivers/watchdog/at91sam9_wdt.c
++++ b/drivers/watchdog/at91sam9_wdt.c
+@@ -66,13 +66,12 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
  
-+/*
-+ * Return architecture name in a normalized form.
-+ * The conversion logic comes from the Makefile.
-+ */
-+static const char *normalize_arch(char *arch)
-+{
-+	if (!strcmp(arch, "x86_64"))
-+		return "x86";
-+	if (arch[0] == 'i' && arch[2] == '8' && arch[3] == '6')
-+		return "x86";
-+	if (!strcmp(arch, "sun4u") || !strncmp(arch, "sparc", 5))
-+		return "sparc";
-+	if (!strncmp(arch, "arm", 3) || !strcmp(arch, "sa110"))
-+		return "arm";
-+	if (!strncmp(arch, "s390", 4))
-+		return "s390";
-+	if (!strncmp(arch, "parisc", 6))
-+		return "parisc";
-+	if (!strncmp(arch, "powerpc", 7) || !strncmp(arch, "ppc", 3))
-+		return "powerpc";
-+	if (!strncmp(arch, "mips", 4))
-+		return "mips";
-+	if (!strncmp(arch, "sh", 2) && isdigit(arch[2]))
-+		return "sh";
-+
-+	return arch;
-+}
-+
- static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
- 						  const char *name,
- 						  const char **path)
+ static void at91_ping(unsigned long data);
+ 
+-static struct {
++struct at91wdt_drvdata {
+ 	void __iomem *base;
++	bool enabled;			/* indicate if the watchdog is eabled */
+ 	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
+-	unsigned long open;
+-	char expect_close;
+ 	struct timer_list timer;	/* The timer that pings the watchdog */
+-} at91wdt_private;
++};
+ 
+ /* ......................................................................... */
+ 
+@@ -90,10 +89,12 @@ static inline void at91_wdt_reset(void)
+  */
+ static void at91_ping(unsigned long data)
  {
- 	int idx;
--	char *arch, *cross_env;
-+	const char *arch, *cross_env;
- 	struct utsname uts;
- 	const char *const *path_list;
- 	char *buf = NULL;
- 
-+	arch = normalize_arch(env->arch);
+-	if (time_before(jiffies, at91wdt_private.next_heartbeat) ||
+-			(!nowayout && !at91wdt_private.open)) {
++	struct watchdog_device *wddev = (struct watchdog_device *)data;
++	struct at91wdt_drvdata *driver_data = watchdog_get_drvdata(wddev);
 +
- 	if (uname(&uts) < 0)
- 		goto out;
++	if (time_before(jiffies, driver_data->next_heartbeat))
+ 		at91_wdt_reset();
+-		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
++		mod_timer(&driver_data->timer, jiffies + WDT_TIMEOUT);
+ 	} else
+ 		pr_crit("I will reset your machine !\n");
+ }
+@@ -138,26 +139,36 @@ static const struct watchdog_info at91_wdt_info = {
  
-@@ -110,7 +140,7 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
- 	 * We don't need to try to find objdump path for native system.
- 	 * Just use default binutils path (e.g.: "objdump").
- 	 */
--	if (!strcmp(uts.machine, env->arch))
-+	if (!strcmp(normalize_arch(uts.machine), arch))
- 		goto out;
+ static int __init at91wdt_probe(struct platform_device *pdev)
+ {
++	struct at91wdt_drvdata *driver_data;
+ 	struct resource	*r;
+ 	int res;
  
- 	cross_env = getenv("CROSS_COMPILE");
-@@ -127,8 +157,6 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
- 		free(buf);
++	driver_data = devm_kzalloc(&pdev->dev,
++				sizeof(*driver_data), GFP_KERNEL);
++	if (!driver_data) {
++		dev_err(&pdev->dev, "Unable to alloacate watchdog device\n");
++		return -ENOMEM;
++	}
++
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!r)
+ 		return -ENODEV;
+-	at91wdt_private.base = ioremap(r->start, resource_size(r));
+-	if (!at91wdt_private.base) {
++	driver_data->base = ioremap(r->start, resource_size(r));
++	if (!driver_data->base) {
+ 		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+ 		return -ENOMEM;
  	}
  
--	arch = env->arch;
--
- 	if (!strcmp(arch, "arm"))
- 		path_list = arm_triplets;
- 	else if (!strcmp(arch, "powerpc"))
-@@ -139,9 +167,7 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
- 		path_list = s390_triplets;
- 	else if (!strcmp(arch, "sparc"))
- 		path_list = sparc_triplets;
--	else if (!strcmp(arch, "x86") || !strcmp(arch, "i386") ||
--		 !strcmp(arch, "i486") || !strcmp(arch, "i586") ||
--		 !strcmp(arch, "i686"))
-+	else if (!strcmp(arch, "x86"))
- 		path_list = x86_triplets;
- 	else if (!strcmp(arch, "mips"))
- 		path_list = mips_triplets;
++	watchdog_set_drvdata(&at91_wddev, driver_data);
++
+ 	/* Set watchdog */
+ 	res = at91_wdt_settimeout(ms_to_ticks(WDT_HW_TIMEOUT * 1000));
+ 	if (res)
+ 		return res;
+ 
+-	at91wdt_private.next_heartbeat = jiffies + heartbeat * HZ;
+-	setup_timer(&at91wdt_private.timer, at91_ping, 0);
+-	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
++	driver_data->next_heartbeat = jiffies + heartbeat * HZ;
++	setup_timer(&driver_data->timer, at91_ping, 0);
++	mod_timer(&driver_data->timer, jiffies + WDT_TIMEOUT);
+ 
+ 	pr_info("enabled (heartbeat=%d sec, nowayout=%d)\n",
+ 		heartbeat, nowayout);
+-- 
+1.7.9.5
+
