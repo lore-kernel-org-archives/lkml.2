@@ -1,186 +1,520 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161037Ab2KNJnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:43:40 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:47133 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932856Ab2KNJme (ORCPT
+	id S932880Ab2KNJoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:44:05 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:45812 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836Ab2KNJmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:42:34 -0500
+	Wed, 14 Nov 2012 04:42:33 -0500
 From: Jan Glauber <jang@linux.vnet.ibm.com>
 To: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
         schwidefsky@de.ibm.com, Jan Glauber <jang@linux.vnet.ibm.com>
-Subject: [RFC PATCH 08/10] s390/pci: s390 specific PCI sysfs attributes
-Date: Wed, 14 Nov 2012 10:41:40 +0100
-Message-Id: <78e3640d9d30e04c2dc17edc5480ee0938313ff0.1352719878.git.jang@linux.vnet.ibm.com>
+Subject: [RFC PATCH 07/10] s390/pci: PCI hotplug support via SCLP
+Date: Wed, 14 Nov 2012 10:41:39 +0100
+Message-Id: <24140c0677f914bfc51b88259155887c327a7103.1352719878.git.jang@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 In-Reply-To: <cover.1352719877.git.jang@linux.vnet.ibm.com>
 References: <cover.1352719877.git.jang@linux.vnet.ibm.com>
-x-cbid: 12111409-2966-0000-0000-000005DD565F
+x-cbid: 12111409-5024-0000-0000-0000045AFA8B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some s390 specific sysfs attributes to the PCI device directory.
-The following attributes are introduced:
-- function_id (PCI function ID)
-- function_handle (PCI function handle)
-- pchid (PCI channel ID)
-- pfgid (PCI function group ID aka PCI root complex)
+Add SCLP PCI configure/deconfigure and implement a PCI hotplug
+controller (s390_pci_hpc). The hotplug controller creates a slot
+for every PCI function in stand-by or configured state. The PCI
+functions are named after the PCI function ID (fid). By writing to
+the power attribute in /sys/bus/pci/slots/<fid>/power the PCI function
+is moved to stand-by or configured state. If moved to the configured
+state the device is automatically scanned by the s390 PCI layer.
 
 Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
 ---
- arch/s390/include/asm/pci.h |  4 +++
- arch/s390/pci/Makefile      |  2 +-
- arch/s390/pci/pci.c         |  6 ++++
- arch/s390/pci/pci_sysfs.c   | 86 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 97 insertions(+), 1 deletion(-)
- create mode 100644 arch/s390/pci/pci_sysfs.c
+ arch/s390/include/asm/pci.h        |  11 ++
+ arch/s390/include/asm/sclp.h       |   2 +
+ arch/s390/pci/pci.c                |   9 ++
+ drivers/pci/hotplug/Kconfig        |  11 ++
+ drivers/pci/hotplug/Makefile       |   1 +
+ drivers/pci/hotplug/s390_pci_hpc.c | 252 +++++++++++++++++++++++++++++++++++++
+ drivers/s390/char/sclp.h           |   3 +-
+ drivers/s390/char/sclp_cmd.c       |  64 +++++++++-
+ 8 files changed, 351 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/pci/hotplug/s390_pci_hpc.c
 
 diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
-index 739d9f1..39057e4 100644
+index 3dc2cb6..739d9f1 100644
 --- a/arch/s390/include/asm/pci.h
 +++ b/arch/s390/include/asm/pci.h
-@@ -141,6 +141,10 @@ struct zpci_dev *get_zdev(struct pci_dev *);
- struct zpci_dev *get_zdev_by_fid(u32);
- bool zpci_fid_present(u32);
+@@ -95,6 +95,11 @@ struct zpci_dev {
+ 	enum pci_bus_speed max_bus_speed;
+ };
  
-+/* sysfs */
-+int zpci_sysfs_add_device(struct device *);
-+void zpci_sysfs_remove_device(struct device *);
++struct pci_hp_callback_ops {
++	int (*create_slot)	(struct zpci_dev *zdev);
++	void (*remove_slot)	(struct zpci_dev *zdev);
++};
 +
- /* DMA */
+ static inline bool zdev_enabled(struct zpci_dev *zdev)
+ {
+ 	return (zdev->fh & (1UL << 31)) ? true : false;
+@@ -140,4 +145,10 @@ bool zpci_fid_present(u32);
  int zpci_dma_init(void);
  void zpci_dma_exit(void);
-diff --git a/arch/s390/pci/Makefile b/arch/s390/pci/Makefile
-index 7e36f42..ab0827b 100644
---- a/arch/s390/pci/Makefile
-+++ b/arch/s390/pci/Makefile
-@@ -3,4 +3,4 @@
- #
  
- obj-$(CONFIG_PCI)	+= pci.o pci_dma.o pci_clp.o pci_msi.o \
--			   pci_event.o
-+			   pci_sysfs.o pci_event.o
++/* Hotplug */
++extern struct mutex zpci_list_lock;
++extern struct list_head zpci_list;
++extern struct pci_hp_callback_ops hotplug_ops;
++extern unsigned int pci_probe;
++
+ #endif
+diff --git a/arch/s390/include/asm/sclp.h b/arch/s390/include/asm/sclp.h
+index e62a555..8337886 100644
+--- a/arch/s390/include/asm/sclp.h
++++ b/arch/s390/include/asm/sclp.h
+@@ -55,5 +55,7 @@ int sclp_chp_read_info(struct sclp_chp_info *info);
+ void sclp_get_ipl_info(struct sclp_ipl_info *info);
+ bool sclp_has_linemode(void);
+ bool sclp_has_vt220(void);
++int sclp_pci_configure(u32 fid);
++int sclp_pci_deconfigure(u32 fid);
+ 
+ #endif /* _ASM_S390_SCLP_H */
 diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index c523594..0723b10 100644
+index 5a2ef9e..c523594 100644
 --- a/arch/s390/pci/pci.c
 +++ b/arch/s390/pci/pci.c
-@@ -628,6 +628,7 @@ static void zpci_remove_device(struct pci_dev *pdev)
- 	dev_info(&pdev->dev, "Removing device %u\n", zdev->domain);
- 	zdev->state = ZPCI_FN_STATE_CONFIGURED;
- 	zpci_dma_exit_device(zdev);
-+	zpci_sysfs_remove_device(&pdev->dev);
- 	zpci_unmap_resources(pdev);
- 	list_del(&zdev->entry);		/* can be called from init */
- 	zdev->pdev = NULL;
-@@ -676,6 +677,11 @@ void pcibios_disable_device(struct pci_dev *pdev)
- 	pdev->sysdata = NULL;
- }
+@@ -47,7 +47,12 @@
  
-+int pcibios_add_platform_entries(struct pci_dev *pdev)
-+{
-+	return zpci_sysfs_add_device(&pdev->dev);
-+}
+ /* list of all detected zpci devices */
+ LIST_HEAD(zpci_list);
++EXPORT_SYMBOL_GPL(zpci_list);
+ DEFINE_MUTEX(zpci_list_lock);
++EXPORT_SYMBOL_GPL(zpci_list_lock);
 +
- int zpci_request_irq(unsigned int irq, irq_handler_t handler, void *data)
- {
- 	int msi_nr = irq_to_msi_nr(irq);
-diff --git a/arch/s390/pci/pci_sysfs.c b/arch/s390/pci/pci_sysfs.c
++struct pci_hp_callback_ops hotplug_ops;
++EXPORT_SYMBOL_GPL(hotplug_ops);
+ 
+ static DECLARE_BITMAP(zpci_domain, ZPCI_NR_DEVICES);
+ static DEFINE_SPINLOCK(zpci_domain_lock);
+@@ -935,6 +940,8 @@ int zpci_create_device(struct zpci_dev *zdev)
+ 
+ 	mutex_lock(&zpci_list_lock);
+ 	list_add_tail(&zdev->entry, &zpci_list);
++	if (hotplug_ops.create_slot)
++		hotplug_ops.create_slot(zdev);
+ 	mutex_unlock(&zpci_list_lock);
+ 
+ 	if (zdev->state == ZPCI_FN_STATE_STANDBY)
+@@ -948,6 +955,8 @@ int zpci_create_device(struct zpci_dev *zdev)
+ out_start:
+ 	mutex_lock(&zpci_list_lock);
+ 	list_del(&zdev->entry);
++	if (hotplug_ops.remove_slot)
++		hotplug_ops.remove_slot(zdev);
+ 	mutex_unlock(&zpci_list_lock);
+ out_bus:
+ 	zpci_free_domain(zdev);
+diff --git a/drivers/pci/hotplug/Kconfig b/drivers/pci/hotplug/Kconfig
+index b0e46de..0594c4a 100644
+--- a/drivers/pci/hotplug/Kconfig
++++ b/drivers/pci/hotplug/Kconfig
+@@ -151,4 +151,15 @@ config HOTPLUG_PCI_SGI
+ 
+ 	  When in doubt, say N.
+ 
++config HOTPLUG_PCI_S390
++	tristate "System z PCI Hotplug Support"
++	depends on S390 && 64BIT
++	help
++	  Say Y here if you want to use the System z PCI Hotplug
++	  driver for PCI devices. Without this driver it is not
++          possible to access stand-by PCI functions nor to deconfigure
++          PCI functions.
++
++	  When in doubt, say Y.
++
+ endif # HOTPLUG_PCI
+diff --git a/drivers/pci/hotplug/Makefile b/drivers/pci/hotplug/Makefile
+index c459cd4..47ec8c8 100644
+--- a/drivers/pci/hotplug/Makefile
++++ b/drivers/pci/hotplug/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_HOTPLUG_PCI_RPA)		+= rpaphp.o
+ obj-$(CONFIG_HOTPLUG_PCI_RPA_DLPAR)	+= rpadlpar_io.o
+ obj-$(CONFIG_HOTPLUG_PCI_SGI)		+= sgi_hotplug.o
+ obj-$(CONFIG_HOTPLUG_PCI_ACPI)		+= acpiphp.o
++obj-$(CONFIG_HOTPLUG_PCI_S390)		+= s390_pci_hpc.o
+ 
+ # acpiphp_ibm extends acpiphp, so should be linked afterwards.
+ 
+diff --git a/drivers/pci/hotplug/s390_pci_hpc.c b/drivers/pci/hotplug/s390_pci_hpc.c
 new file mode 100644
-index 0000000..a42cce6
+index 0000000..d4de895
 --- /dev/null
-+++ b/arch/s390/pci/pci_sysfs.c
-@@ -0,0 +1,86 @@
++++ b/drivers/pci/hotplug/s390_pci_hpc.c
+@@ -0,0 +1,252 @@
 +/*
-+ * Copyright IBM Corp. 2012
++ * PCI Hot Plug Controller Driver for System z
++ *
++ * Copyright 2012 IBM Corp.
 + *
 + * Author(s):
 + *   Jan Glauber <jang@linux.vnet.ibm.com>
 + */
 +
-+#define COMPONENT "zPCI"
++#define COMPONENT "zPCI hpc"
 +#define pr_fmt(fmt) COMPONENT ": " fmt
 +
++#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/stat.h>
++#include <linux/slab.h>
 +#include <linux/pci.h>
++#include <linux/pci_hotplug.h>
++#include <linux/init.h>
++#include <asm/sclp.h>
 +
-+static ssize_t show_fid(struct device *dev, struct device_attribute *attr,
-+			char *buf)
++#define SLOT_NAME_SIZE	10
++static LIST_HEAD(s390_hotplug_slot_list);
++
++MODULE_AUTHOR("Jan Glauber <jang@linux.vnet.ibm.com");
++MODULE_DESCRIPTION("Hot Plug PCI Controller for System z");
++MODULE_LICENSE("GPL");
++
++static int zpci_fn_configured(enum zpci_state state)
 +{
-+	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
-+
-+	sprintf(buf, "0x%08x\n", zdev->fid);
-+	return strlen(buf);
++	return state == ZPCI_FN_STATE_CONFIGURED ||
++	       state == ZPCI_FN_STATE_ONLINE;
 +}
-+static DEVICE_ATTR(function_id, S_IRUGO, show_fid, NULL);
 +
-+static ssize_t show_fh(struct device *dev, struct device_attribute *attr,
-+		       char *buf)
-+{
-+	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
-+
-+	sprintf(buf, "0x%08x\n", zdev->fh);
-+	return strlen(buf);
-+}
-+static DEVICE_ATTR(function_handle, S_IRUGO, show_fh, NULL);
-+
-+static ssize_t show_pchid(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
-+
-+	sprintf(buf, "0x%04x\n", zdev->pchid);
-+	return strlen(buf);
-+}
-+static DEVICE_ATTR(pchid, S_IRUGO, show_pchid, NULL);
-+
-+static ssize_t show_pfgid(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct zpci_dev *zdev = get_zdev(container_of(dev, struct pci_dev, dev));
-+
-+	sprintf(buf, "0x%02x\n", zdev->pfgid);
-+	return strlen(buf);
-+}
-+static DEVICE_ATTR(pfgid, S_IRUGO, show_pfgid, NULL);
-+
-+static struct device_attribute *zpci_dev_attrs[] = {
-+	&dev_attr_function_id,
-+	&dev_attr_function_handle,
-+	&dev_attr_pchid,
-+	&dev_attr_pfgid,
-+	NULL,
++/*
++ * struct slot - slot information for each *physical* slot
++ */
++struct slot {
++	struct list_head slot_list;
++	struct hotplug_slot *hotplug_slot;
++	struct zpci_dev *zdev;
 +};
 +
-+int zpci_sysfs_add_device(struct device *dev)
++static int enable_slot(struct hotplug_slot *hotplug_slot)
 +{
-+	int i, rc = 0;
++	struct slot *slot = hotplug_slot->private;
++	int rc;
 +
-+	for (i = 0; zpci_dev_attrs[i]; i++) {
-+		rc = device_create_file(dev, zpci_dev_attrs[i]);
-+		if (rc)
-+			goto error;
++	if (slot->zdev->state != ZPCI_FN_STATE_STANDBY)
++		return -EIO;
++
++	rc = sclp_pci_configure(slot->zdev->fid);
++	if (!rc) {
++		slot->zdev->state = ZPCI_FN_STATE_CONFIGURED;
++		/* automatically scan the device after is was configured */
++		zpci_enable_device(slot->zdev);
++		zpci_scan_device(slot->zdev);
 +	}
-+	return 0;
-+
-+error:
-+	while (--i >= 0)
-+		device_remove_file(dev, zpci_dev_attrs[i]);
 +	return rc;
 +}
 +
-+void zpci_sysfs_remove_device(struct device *dev)
++static int disable_slot(struct hotplug_slot *hotplug_slot)
 +{
-+	int i;
++	struct slot *slot = hotplug_slot->private;
++	int rc;
 +
-+	for (i = 0; zpci_dev_attrs[i]; i++)
-+		device_remove_file(dev, zpci_dev_attrs[i]);
++	if (!zpci_fn_configured(slot->zdev->state))
++		return -EIO;
++
++	/* TODO: we rely on the user to unbind/remove the device, is that plausible
++	 *       or do we need to trigger that here?
++	 */
++	rc = sclp_pci_deconfigure(slot->zdev->fid);
++	if (!rc) {
++		/* Fixme: better call List-PCI to find the disabled FH
++		   for the FID since the FH should be opaque... */
++		slot->zdev->fh &= 0x7fffffff;
++		slot->zdev->state = ZPCI_FN_STATE_STANDBY;
++	}
++	return rc;
 +}
++
++static int get_power_status(struct hotplug_slot *hotplug_slot, u8 *value)
++{
++	struct slot *slot = hotplug_slot->private;
++
++	switch (slot->zdev->state) {
++	case ZPCI_FN_STATE_STANDBY:
++		*value = 0;
++		break;
++	default:
++		*value = 1;
++		break;
++	}
++	return 0;
++}
++
++static int get_adapter_status(struct hotplug_slot *hotplug_slot, u8 *value)
++{
++	/* if the slot exits it always contains a function */
++	*value = 1;
++	return 0;
++}
++
++static void release_slot(struct hotplug_slot *hotplug_slot)
++{
++	struct slot *slot = hotplug_slot->private;
++
++	pr_debug("%s - physical_slot = %s\n", __func__, hotplug_slot_name(hotplug_slot));
++	kfree(slot->hotplug_slot->info);
++	kfree(slot->hotplug_slot);
++	kfree(slot);
++}
++
++static struct hotplug_slot_ops s390_hotplug_slot_ops = {
++	.enable_slot =		enable_slot,
++	.disable_slot =		disable_slot,
++	.get_power_status =	get_power_status,
++	.get_adapter_status =	get_adapter_status,
++};
++
++static int init_pci_slot(struct zpci_dev *zdev)
++{
++	struct hotplug_slot *hotplug_slot;
++	struct hotplug_slot_info *info;
++	char name[SLOT_NAME_SIZE];
++	struct slot *slot;
++	int rc;
++
++	if (!zdev)
++		return 0;
++
++	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
++	if (!slot)
++		goto error;
++
++	hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
++	if (!hotplug_slot)
++		goto error_hp;
++	hotplug_slot->private = slot;
++
++	slot->hotplug_slot = hotplug_slot;
++	slot->zdev = zdev;
++
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info)
++		goto error_info;
++	hotplug_slot->info = info;
++
++	hotplug_slot->ops = &s390_hotplug_slot_ops;
++	hotplug_slot->release = &release_slot;
++
++	get_power_status(hotplug_slot, &info->power_status);
++	get_adapter_status(hotplug_slot, &info->adapter_status);
++
++	snprintf(name, SLOT_NAME_SIZE, "%08x", zdev->fid);
++	rc = pci_hp_register(slot->hotplug_slot, zdev->bus,
++			     ZPCI_DEVFN, name);
++	if (rc) {
++		pr_err("pci_hp_register failed with error %d\n", rc);
++		goto error_reg;
++	}
++	list_add(&slot->slot_list, &s390_hotplug_slot_list);
++	return 0;
++
++error_reg:
++	kfree(info);
++error_info:
++	kfree(hotplug_slot);
++error_hp:
++	kfree(slot);
++error:
++	return -ENOMEM;
++}
++
++static int __init init_pci_slots(void)
++{
++	struct zpci_dev *zdev;
++	int device = 0;
++
++	/*
++	 * Create a structure for each slot, and register that slot
++	 * with the pci_hotplug subsystem.
++	 */
++	mutex_lock(&zpci_list_lock);
++	list_for_each_entry(zdev, &zpci_list, entry) {
++		init_pci_slot(zdev);
++		device++;
++	}
++
++	mutex_unlock(&zpci_list_lock);
++	return (device) ? 0 : -ENODEV;
++}
++
++static void exit_pci_slot(struct zpci_dev *zdev)
++{
++	struct list_head *tmp, *n;
++	struct slot *slot;
++
++	list_for_each_safe(tmp, n, &s390_hotplug_slot_list) {
++		slot = list_entry(tmp, struct slot, slot_list);
++		if (slot->zdev != zdev)
++			continue;
++		list_del(&slot->slot_list);
++		pci_hp_deregister(slot->hotplug_slot);
++	}
++}
++
++static void __exit exit_pci_slots(void)
++{
++	struct list_head *tmp, *n;
++	struct slot *slot;
++
++	/*
++	 * Unregister all of our slots with the pci_hotplug subsystem.
++	 * Memory will be freed in release_slot() callback after slot's
++	 * lifespan is finished.
++	 */
++	list_for_each_safe(tmp, n, &s390_hotplug_slot_list) {
++		slot = list_entry(tmp, struct slot, slot_list);
++		list_del(&slot->slot_list);
++		pci_hp_deregister(slot->hotplug_slot);
++	}
++}
++
++static int __init pci_hotplug_s390_init(void)
++{
++	/*
++	 * Do specific initialization stuff for your driver here
++	 * like initializing your controller hardware (if any) and
++	 * determining the number of slots you have in the system
++	 * right now.
++	 */
++
++	if (!pci_probe)
++		return -EOPNOTSUPP;
++
++	/* register callbacks for slot handling from arch code */
++	mutex_lock(&zpci_list_lock);
++	hotplug_ops.create_slot = init_pci_slot;
++	hotplug_ops.remove_slot = exit_pci_slot;
++	mutex_unlock(&zpci_list_lock);
++	pr_info("registered hotplug slot callbacks\n");
++	return init_pci_slots();
++}
++
++static void __exit pci_hotplug_s390_exit(void)
++{
++	exit_pci_slots();
++}
++
++module_init(pci_hotplug_s390_init);
++module_exit(pci_hotplug_s390_exit);
+diff --git a/drivers/s390/char/sclp.h b/drivers/s390/char/sclp.h
+index d7e97ae..25bcd4c 100644
+--- a/drivers/s390/char/sclp.h
++++ b/drivers/s390/char/sclp.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright IBM Corp. 1999, 2009
++ * Copyright IBM Corp. 1999,2012
+  *
+  * Author(s): Martin Peschke <mpeschke@de.ibm.com>
+  *	      Martin Schwidefsky <schwidefsky@de.ibm.com>
+@@ -103,6 +103,7 @@ extern u64 sclp_facilities;
+ #define SCLP_HAS_CHP_RECONFIG	(sclp_facilities & 0x2000000000000000ULL)
+ #define SCLP_HAS_CPU_INFO	(sclp_facilities & 0x0800000000000000ULL)
+ #define SCLP_HAS_CPU_RECONFIG	(sclp_facilities & 0x0400000000000000ULL)
++#define SCLP_HAS_PCI_RECONFIG	(sclp_facilities & 0x0000000040000000ULL)
+ 
+ 
+ struct gds_subvector {
+diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
+index 71ea923c..f308bac 100644
+--- a/drivers/s390/char/sclp_cmd.c
++++ b/drivers/s390/char/sclp_cmd.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright IBM Corp. 2007, 2009
++ * Copyright IBM Corp. 2007,2012
+  *
+  * Author(s): Heiko Carstens <heiko.carstens@de.ibm.com>,
+  *	      Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+@@ -12,6 +12,7 @@
+ #include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/err.h>
++#include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/mm.h>
+@@ -702,6 +703,67 @@ __initcall(sclp_detect_standby_memory);
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ /*
++ * PCI I/O adapter configuration related functions.
++ */
++#define SCLP_CMDW_CONFIGURE_PCI			0x001a0001
++#define SCLP_CMDW_DECONFIGURE_PCI		0x001b0001
++
++#define SCLP_RECONFIG_PCI_ATPYE			2
++
++struct pci_cfg_sccb {
++	struct sccb_header header;
++	u8 atype;		/* adapter type */
++	u8 reserved1;
++	u16 reserved2;
++	u32 aid;		/* adapter identifier */
++} __packed;
++
++static int do_pci_configure(sclp_cmdw_t cmd, u32 fid)
++{
++	struct pci_cfg_sccb *sccb;
++	int rc;
++
++	if (!SCLP_HAS_PCI_RECONFIG)
++		return -EOPNOTSUPP;
++
++	sccb = (struct pci_cfg_sccb *) get_zeroed_page(GFP_KERNEL | GFP_DMA);
++	if (!sccb)
++		return -ENOMEM;
++
++	sccb->header.length = PAGE_SIZE;
++	sccb->atype = SCLP_RECONFIG_PCI_ATPYE;
++	sccb->aid = fid;
++	rc = do_sync_request(cmd, sccb);
++	if (rc)
++		goto out;
++	switch (sccb->header.response_code) {
++	case 0x0020:
++	case 0x0120:
++		break;
++	default:
++		pr_warn("configure PCI I/O adapter failed: cmd=0x%08x  response=0x%04x\n",
++			cmd, sccb->header.response_code);
++		rc = -EIO;
++		break;
++	}
++out:
++	free_page((unsigned long) sccb);
++	return rc;
++}
++
++int sclp_pci_configure(u32 fid)
++{
++	return do_pci_configure(SCLP_CMDW_CONFIGURE_PCI, fid);
++}
++EXPORT_SYMBOL(sclp_pci_configure);
++
++int sclp_pci_deconfigure(u32 fid)
++{
++	return do_pci_configure(SCLP_CMDW_DECONFIGURE_PCI, fid);
++}
++EXPORT_SYMBOL(sclp_pci_deconfigure);
++
++/*
+  * Channel path configuration related functions.
+  */
+ 
 -- 
 1.7.12.4
 
