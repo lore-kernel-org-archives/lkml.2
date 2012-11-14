@@ -1,119 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423160Ab2KNS0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:26:48 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42956 "EHLO e8.ny.us.ibm.com"
+	id S1756393Ab2KNS2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:28:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33382 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423116Ab2KNS0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 13:26:47 -0500
-Date: Wed, 14 Nov 2012 10:20:45 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] perf/POWER7: Make event translations available in
- sysfs
-Message-ID: <20121114182045.GA2240@us.ibm.com>
-References: <20121107191818.GA16211@us.ibm.com>
- <20121107191927.GC16211@us.ibm.com>
- <20121114102534.GA2220@krava.brq.redhat.com>
+	id S1753502Ab2KNS2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 13:28:30 -0500
+Date: Wed, 14 Nov 2012 18:28:26 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Cc: a.p.zijlstra@chello.nl, riel@redhat.com, aarcange@redhat.com,
+        lee.schermerhorn@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/31] mm: sched: numa: Implement constant, per task
+ Working Set Sampling (WSS) rate
+Message-ID: <20121114182826.GP8218@suse.de>
+References: <1352913882.7130.131.camel@oc2024037011.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121114102534.GA2220@krava.brq.redhat.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111418-9360-0000-0000-00000CCF2138
+In-Reply-To: <1352913882.7130.131.camel@oc2024037011.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa [jolsa@redhat.com] wrote:
-| On Wed, Nov 07, 2012 at 11:19:28AM -0800, Sukadev Bhattiprolu wrote:
-| 
-| SNIP
-| 
-| > +struct perf_pmu_events_attr {
-| > +	struct device_attribute attr;
-| > +	u64 id;
-| > +};
-| > +
-| > +extern ssize_t power_events_sysfs_show(struct device *dev,
-| > +				struct device_attribute *attr, char *page);
-| > +
-| > +#define EVENT_VAR(_id)	event_attr_##_id
-| > +#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
-| > +
-| > +#define EVENT_ATTR(_name, _id)                                             \
-| > +	static struct perf_pmu_events_attr EVENT_VAR(_id) = {              \
-| > +		.attr = __ATTR(_name, 0444, power_events_sysfs_show, NULL),\
-| > +		.id   = PM_##_id,                                               \
-| > +	};
-| 
-| this is duplicating the x86 code, perhaps it could be moved
-| to include/linux/perf_event.h and shared globaly
+On Wed, Nov 14, 2012 at 11:24:42AM -0600, Andrew Theurer wrote:
+> 
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > Note: The scan period is much larger than it was in the original patch.
+> > 	The reason was because the system CPU usage went through the roof
+> > 	with a sample period of 500ms but it was unsuitable to have a
+> > 	situation where a large process could stall for excessively long
+> > 	updating pte_numa. This may need to be tuned again if a placement
+> > 	policy converges too slowly.
+> > 
+> > Previously, to probe the working set of a task, we'd use
+> > a very simple and crude method: mark all of its address
+> > space PROT_NONE.
+> > 
+> > That method has various (obvious) disadvantages:
+> > 
+> >  - it samples the working set at dissimilar rates,
+> >    giving some tasks a sampling quality advantage
+> >    over others.
+> > 
+> >  - creates performance problems for tasks with very
+> >    large working sets
+> > 
+> >  - over-samples processes with large address spaces but
+> >    which only very rarely execute
+> > 
+> > Improve that method by keeping a rotating offset into the
+> > address space that marks the current position of the scan,
+> > and advance it by a constant rate (in a CPU cycles execution
+> > proportional manner). If the offset reaches the last mapped
+> > address of the mm then it then it starts over at the first
+> > address.
+> 
+> I believe we will have problems with this. For example, running a large
+> KVM VM with 512GB memory, using the new defaults in this patch, and
+> assuming we never go longer per scan than the scan_period_min, it would
+> take over an hour to scan the entire VM just once.  The defaults could
+> be changed, but ideally there should be no knobs like this in the final
+> version, as it should just work well under all conditions.
+> 
 
-Ok.
+Good point. I'll switch to the old defaults. The system CPU usage will
+be high but that has to be coped with anyway. Ideally the tunables would
+go away but for now they are handy for debugging.
 
-Can we remove the assumption that the event id is a generic event that
-has PERF_COUNT_HW_ prefix and also let the architectures pass in a "show"
-function ? This would allow architectures to display any arch specific
-events that don't yet have a generic counterpart.
+> Also, if such a method is kept, would it be possible to base it on fixed
+> number of pages successfully marked instead of a MB range? 
 
-IOW, can we do something like this (untested) and make PERF_EVENT_ATTR global:
+I see a patch for that in the -tip tree. I'm still debating this with
+myself. On the one hand, it'll update the PTEs faster. On the other
+hand, the time spent scanning is now variable because it depends on the
+number of PTE updates. It's no longer a constant in terms of scanning
+although it would still be constant in terms of PTEs update. Hmm..
 
+> Reason I
+> bring it up is that we often can have VMs which are large in their
+> memory definition, but might not actually have a lot of pages faulted
+> in.  We could be "scanning" sections of vma which are not even actually
+> present yet.
+> 
 
+Ok, thanks for that. That would push me towards accepting it and being
+ok with the variable amount of scanning.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4428fd1..25298f7 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1354,12 +1354,15 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
- #define EVENT_VAR(_id)  event_attr_##_id
- #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+> > The per-task nature of the working set sampling functionality in this tree
+> > allows such constant rate, per task, execution-weight proportional sampling
+> > of the working set, with an adaptive sampling interval/frequency that
+> > goes from once per 2 seconds up to just once per 32 seconds.  The current
+> > sampling volume is 256 MB per interval.
+> 
+> Once a new section is marked, is the previous section automatically
+> reverted? 
 
--#define EVENT_ATTR(_name, _id)                                 \
-+#define PERF_EVENT_ATTR(_name, _id, _show)                     \
- static struct perf_pmu_events_attr EVENT_VAR(_id) = {          \
--       .attr = __ATTR(_name, 0444, events_sysfs_show, NULL),   \
--       .id   =  PERF_COUNT_HW_##_id,                           \
-+       .attr = __ATTR(_name, 0444, _show, NULL),               \
-+       .id   =  _id,                                           \
- };
+No.
 
-+#define EVENT_ATTR(_name, _id)                                         \
-+       PERF_EVENT_ATTR(_name, PERF_COUNT_HW_##_id, events_sysfs_show)
-+
- EVENT_ATTR(cpu-cycles,                 CPU_CYCLES              );
- EVENT_ATTR(instructions,               INSTRUCTIONS            );
- EVENT_ATTR(cache-references,           CACHE_REFERENCES        );
+> If not, I wonder if there's risk of building up a ton of
+> potential page faults?
+> 
 
-| 
-| 
-| > diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-| > index aa2465e..19b23bd 100644
-| > --- a/arch/powerpc/perf/core-book3s.c
-| > +++ b/arch/powerpc/perf/core-book3s.c
-| > @@ -1305,6 +1305,16 @@ static int power_pmu_event_idx(struct perf_event *event)
-| >  	return event->hw.idx;
-| >  }
-| >  
-| > +ssize_t power_events_sysfs_show(struct device *dev,
-| > +				struct device_attribute *attr, char *page)
-| > +{
-| > +       struct perf_pmu_events_attr *pmu_attr;
-| > +       
-| > +       pmu_attr = container_of(attr, struct perf_pmu_events_attr, attr);
-| > +        
-| > +       return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
-| 
-| whitespace issues
+Yes, if the full address space is suddenly referenced.
 
-Will fix. Thanks for the review.
+> > As tasks mature and converge their working set, so does the
+> > sampling rate slow down to just a trickle, 256 MB per 32
+> > seconds of CPU time executed.
+> > 
+> > This, beyond being adaptive, also rate-limits rarely
+> > executing systems and does not over-sample on overloaded
+> > systems.
+> 
+> I am wondering if it would be better to shrink the scan period back to a
+> much smaller fixed value,
 
-Sukadev
+I'll do that anyway.
 
+> and instead of picking 256MB ranges of memory
+> to mark completely, go back to using all of the address space, but mark
+> only every Nth page. 
+
+It'll still be necessary to do the full walk and I wonder if we'd lose on
+the larger number of PTE locks that will have to be taken to do a scan if
+we are only updating every 128 pages for example. It could be very expensive.
+
+> N is adjusted each period to target a rolling
+> average of X faults per MB per execution time period.  This per task N
+> would also be an interesting value to rank memory access frequency among
+> tasks and help prioritize scheduling decisions.
+> 
+
+It's an interesting idea. I'll think on it more but my initial reaction
+is that the cost could be really high.
+
+-- 
+Mel Gorman
+SUSE Labs
