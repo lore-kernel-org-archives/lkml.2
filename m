@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422972Ab2KNNrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 08:47:55 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40121 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422757Ab2KNNrw (ORCPT
+	id S1423010Ab2KNNsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 08:48:04 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63267 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422959Ab2KNNrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 08:47:52 -0500
+	Wed, 14 Nov 2012 08:47:55 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Lee Jones <lee.jones@linaro.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org
-Subject: [PATCH 2/5] Input: bu21013_ts - Move GPIO init and exit functions into the driver
-Date: Wed, 14 Nov 2012 13:47:14 +0000
-Message-Id: <1352900837-20759-3-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/5] Input: Enable STMPE keypad driver for Device Tree
+Date: Wed, 14 Nov 2012 13:47:16 +0000
+Message-Id: <1352900837-20759-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
 References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
@@ -22,10 +22,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These GPIO init and exit functions have no place in platform data.
-Instead they should be part of the driver. This patch moves them to
-their rightful place, which subsequently elevates platform data of
-yet more cruft.
+This patch allows the STMPE driver to be successfully probed and
+initialised when Device Tree support is enabled. Besides the usual
+platform data changes, we also separate the process of filling in
+the 'in use' pin bitmap, as we have to extract the information from
+Device Tree in the DT boot case.
 
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-input@vger.kernel.org
@@ -33,263 +34,117 @@ Acked-by: Arnd Bergmann <arnd@arndb.de>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-stuib.c |   70 +--------------------------
- drivers/input/touchscreen/bu21013_ts.c   |   76 ++++++++++++++++++++++++++----
- include/linux/input/bu21013.h            |    8 +---
- 3 files changed, 70 insertions(+), 84 deletions(-)
+ drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
+ drivers/mfd/stmpe.c                   |    1 +
+ 2 files changed, 59 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-stuib.c b/arch/arm/mach-ux500/board-mop500-stuib.c
-index 564f57d..eb19a7e 100644
---- a/arch/arm/mach-ux500/board-mop500-stuib.c
-+++ b/arch/arm/mach-ux500/board-mop500-stuib.c
-@@ -77,9 +77,6 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
-  * BU21013 ROHM touchscreen interface on the STUIBs
-  */
- 
--/* tracks number of bu21013 devices being enabled */
--static int bu21013_devices;
--
- #define TOUCH_GPIO_PIN  84
- 
- #define TOUCH_XMAX	384
-@@ -88,73 +85,8 @@ static int bu21013_devices;
- #define PRCMU_CLOCK_OCR		0x1CC
- #define TSC_EXT_CLOCK_9_6MHZ	0x840000
- 
--/**
-- * bu21013_gpio_board_init : configures the touch panel.
-- * @reset_pin: reset pin number
-- * This function can be used to configures
-- * the voltage and reset the touch panel controller.
-- */
--static int bu21013_gpio_board_init(int reset_pin)
--{
--	int retval = 0;
--
--	bu21013_devices++;
--	if (bu21013_devices == 1) {
--		retval = gpio_request(reset_pin, "touchp_reset");
--		if (retval) {
--			printk(KERN_ERR "Unable to request gpio reset_pin");
--			return retval;
--		}
--		retval = gpio_direction_output(reset_pin, 1);
--		if (retval < 0) {
--			printk(KERN_ERR "%s: gpio direction failed\n",
--					__func__);
--			return retval;
--		}
--	}
--
--	return retval;
--}
--
--/**
-- * bu21013_gpio_board_exit : deconfigures the touch panel controller
-- * @reset_pin: reset pin number
-- * This function can be used to deconfigures the chip selection
-- * for touch panel controller.
-- */
--static int bu21013_gpio_board_exit(int reset_pin)
--{
--	int retval = 0;
--
--	if (bu21013_devices == 1) {
--		retval = gpio_direction_output(reset_pin, 0);
--		if (retval < 0) {
--			printk(KERN_ERR "%s: gpio direction failed\n",
--					__func__);
--			return retval;
--		}
--		gpio_set_value(reset_pin, 0);
--	}
--	bu21013_devices--;
--
--	return retval;
--}
--
--/**
-- * bu21013_read_pin_val : get the interrupt pin value
-- * This function can be used to get the interrupt pin value for touch panel
-- * controller.
-- */
--static int bu21013_read_pin_val(void)
--{
--	return gpio_get_value(TOUCH_GPIO_PIN);
--}
--
- static struct bu21013_platform_device tsc_plat_device = {
--	.cs_en = bu21013_gpio_board_init,
--	.cs_dis = bu21013_gpio_board_exit,
--	.irq_read_val = bu21013_read_pin_val,
--	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
-+	.touch_pin = TOUCH_GPIO_PIN,
- 	.touch_x_max = TOUCH_XMAX,
- 	.touch_y_max = TOUCH_YMAX,
- 	.ext_clk = false,
-diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
-index 2fae682..5d8fc75 100644
---- a/drivers/input/touchscreen/bu21013_ts.c
-+++ b/drivers/input/touchscreen/bu21013_ts.c
-@@ -14,6 +14,10 @@
- #include <linux/slab.h>
- #include <linux/regulator/consumer.h>
- #include <linux/module.h>
-+#include <linux/gpio.h>
-+
-+/* Reference tracking for multiple displays. */
-+static int bu21013_devices = 0;
- 
- #define PEN_DOWN_INTR	0
- #define MAX_FINGERS	2
-@@ -262,7 +266,7 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
- 			return IRQ_NONE;
- 		}
- 
--		data->intr_pin = data->chip->irq_read_val();
-+		data->intr_pin = gpio_get_value(data->chip->touch_pin);
- 		if (data->intr_pin == PEN_DOWN_INTR)
- 			wait_event_timeout(data->wait, data->touch_stopped,
- 					   msecs_to_jiffies(2));
-@@ -272,6 +276,60 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
+diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
+index 470a877..4ae01d5 100644
+--- a/drivers/input/keyboard/stmpe-keypad.c
++++ b/drivers/input/keyboard/stmpe-keypad.c
+@@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
+ 			      (plat->debounce_ms << 1));
  }
  
- /**
-+ * bu21013_gpio_board_init() - configures the touch panel
-+ * @reset_pin: reset pin number
-+ *
-+ * This function is used to configure the voltage and
-+ * reset the touch panel controller.
-+ */
-+static int bu21013_gpio_board_init(int reset_pin)
++static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
++				struct stmpe_keypad *keypad,
++				struct stmpe_keypad_platform_data *plat)
 +{
-+	int retval = 0;
++	struct device_node *np = pdev->dev.of_node;
++	unsigned int proplen;
++	const __be32 *prop;
++	int i;
 +
-+	bu21013_devices++;
-+	if (bu21013_devices == 1) {
-+		retval = gpio_request(reset_pin, "touchp_reset");
-+		if (retval) {
-+			printk(KERN_ERR "Unable to request gpio reset_pin");
-+			return retval;
++	if (np) {
++		prop = of_get_property(np, "linux,keymap", &proplen);
++		if (!prop) {
++			dev_err(&pdev->dev,
++				"linux,keymap property not defined\n");
++			return -EINVAL;
 +		}
-+		retval = gpio_direction_output(reset_pin, 1);
-+		if (retval < 0) {
-+			printk(KERN_ERR "%s: gpio direction failed\n",
-+					__func__);
-+			return retval;
++
++		for (i = 0; i < proplen / sizeof(u32); i++) {
++			unsigned int key = be32_to_cpup(prop + i);
++
++			keypad->cols |= 1 << KEY_COL(key);
++			keypad->rows |= 1 << KEY_ROW(key);
++		}
++	} else {
++		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
++			unsigned int key = plat->keymap_data->keymap[i];
++
++			keypad->cols |= 1 << KEY_COL(key);
++			keypad->rows |= 1 << KEY_ROW(key);
 +		}
 +	}
 +
-+	return retval;
++	return 0;
 +}
 +
-+/**
-+ * bu21013_gpio_board_exit() - deconfigures the touch panel controller
-+ * @reset_pin: reset pin number
-+ *
-+ * This function is used to deconfigure the chip selection
-+ * for touch panel controller.
-+ */
-+static int bu21013_gpio_board_exit(int reset_pin)
++static void __devinit stmpe_keypad_of_probe(struct device_node *np,
++				struct stmpe_keypad_platform_data *plat)
 +{
-+	int retval = 0;
++	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
++	of_property_read_u32(np, "st,scan-count", &plat->scan_count);
 +
-+	if (bu21013_devices == 1) {
-+		retval = gpio_direction_output(reset_pin, 0);
-+		if (retval < 0) {
-+			printk(KERN_ERR "%s: gpio direction failed\n",
-+					__func__);
-+			return retval;
-+		}
-+		gpio_set_value(reset_pin, 0);
-+	}
-+	bu21013_devices--;
-+
-+	return retval;
++	if (of_get_property(np, "st,no-autorepeat", NULL))
++		plat->no_autorepeat = true;
 +}
 +
-+/**
-  * bu21013_init_chip() - power on sequence for the bu21013 controller
-  * @data: device structure pointer
-  *
-@@ -449,6 +507,8 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
+ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+ 	struct stmpe_keypad_platform_data *plat;
++	struct device_node *np = pdev->dev.of_node;
+ 	struct stmpe_keypad *keypad;
+ 	struct input_dev *input;
+ 	int ret;
+ 	int irq;
+-	int i;
  
-+	pdata->irq = gpio_to_irq(pdata->touch_pin);
+ 	plat = stmpe->pdata->keypad;
+-	if (!plat)
+-		return -ENODEV;
++	if (!plat) {
++		if (np) {
++			plat = devm_kzalloc(&pdev->dev,
++					sizeof(*plat), GFP_KERNEL);
++			if (!plat)
++				return -ENOMEM;
 +
- 	bu21013_data = kzalloc(sizeof(struct bu21013_ts_data), GFP_KERNEL);
- 	in_dev = input_allocate_device();
- 	if (!bu21013_data || !in_dev) {
-@@ -478,12 +538,10 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- 	init_waitqueue_head(&bu21013_data->wait);
++			stmpe_keypad_of_probe(np, plat);
++		} else
++			return -ENODEV;
++	}
  
- 	/* configure the gpio pins */
--	if (pdata->cs_en) {
--		error = pdata->cs_en(pdata->cs_pin);
--		if (error < 0) {
--			dev_err(&client->dev, "chip init failed\n");
--			goto err_disable_regulator;
--		}
-+	error = bu21013_gpio_board_init(pdata->cs_pin);
-+	if (error < 0) {
-+		dev_err(&client->dev, "chip init failed\n");
-+		goto err_disable_regulator;
- 	}
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+@@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+ 	if (!plat->no_autorepeat)
+ 		__set_bit(EV_REP, input->evbit);
  
- 	/* configure the touch panel controller */
-@@ -531,7 +589,7 @@ static int __devinit bu21013_probe(struct i2c_client *client,
- err_free_irq:
- 	bu21013_free_irq(bu21013_data);
- err_cs_disable:
--	pdata->cs_dis(pdata->cs_pin);
-+	bu21013_gpio_board_exit(pdata->cs_pin);
- err_disable_regulator:
- 	regulator_disable(bu21013_data->regulator);
- err_put_regulator:
-@@ -555,7 +613,7 @@ static int __devexit bu21013_remove(struct i2c_client *client)
+-	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
+-		unsigned int key = plat->keymap_data->keymap[i];
+-
+-		keypad->cols |= 1 << KEY_COL(key);
+-		keypad->rows |= 1 << KEY_ROW(key);
+-	}
++	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
  
- 	bu21013_free_irq(bu21013_data);
+ 	keypad->stmpe = stmpe;
+ 	keypad->plat = plat;
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index ba157d4..b03cc64 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
  
--	bu21013_data->chip->cs_dis(bu21013_data->chip->cs_pin);
-+	bu21013_gpio_board_exit(bu21013_data->chip->cs_pin);
- 
- 	input_unregister_device(bu21013_data->in_dev);
- 
-diff --git a/include/linux/input/bu21013.h b/include/linux/input/bu21013.h
-index 05e0328..01a2975 100644
---- a/include/linux/input/bu21013.h
-+++ b/include/linux/input/bu21013.h
-@@ -9,13 +9,11 @@
- 
- /**
-  * struct bu21013_platform_device - Handle the platform data
-- * @cs_en:	pointer to the cs enable function
-- * @cs_dis:	pointer to the cs disable function
-- * @irq_read_val:    pointer to read the pen irq value function
-  * @touch_x_max: touch x max
-  * @touch_y_max: touch y max
-  * @cs_pin: chip select pin
-  * @irq: irq pin
-+ * @touch_pin: touch gpio pin
-  * @ext_clk: external clock flag
-  * @x_flip: x flip flag
-  * @y_flip: y flip flag
-@@ -24,13 +22,11 @@
-  * This is used to handle the platform data
-  */
- struct bu21013_platform_device {
--	int (*cs_en)(int reset_pin);
--	int (*cs_dis)(int reset_pin);
--	int (*irq_read_val)(void);
- 	int touch_x_max;
- 	int touch_y_max;
- 	unsigned int cs_pin;
- 	unsigned int irq;
-+	unsigned int touch_pin;
- 	bool ext_clk;
- 	bool x_flip;
- 	bool y_flip;
+ static struct mfd_cell stmpe_keypad_cell = {
+ 	.name		= "stmpe-keypad",
++	.of_compatible  = "st,stmpe-keypad",
+ 	.resources	= stmpe_keypad_resources,
+ 	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
+ };
 -- 
 1.7.9.5
 
