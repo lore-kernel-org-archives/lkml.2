@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933018Ab2KNRMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:12:03 -0500
-Received: from mail2.ruggedcom.com ([204.50.148.11]:48191 "EHLO
-	mail2.ruggedcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519Ab2KNRMC (ORCPT
+	id S933027Ab2KNRMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:12:38 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52717 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422781Ab2KNRMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:12:02 -0500
-Message-ID: <50A3D0E1.4060209@ruggedcom.com>
-Date: Wed, 14 Nov 2012 12:12:01 -0500
-From: Richard Retanubun <richardretanubun@ruggedcom.com>
-Organization: Ruggedcom
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Tang Nguyen <TangNguyen@ruggedcom.com>,
-        linux-usb mailing list <linux-usb@vger.kernel.org>
-Subject: Re: kmemleak report on isp1763 and sierra MC8705
-References: <Pine.LNX.4.44L0.1210291806360.31151-100000@netrider.rowland.org> <509D804A.7080807@ruggedcom.com> <CAMgPeKUPeJSKas2VOqbG+Nt5MOtdA3jUUCsFwUcDVhwDJJCr6A@mail.gmail.com>
-In-Reply-To: <CAMgPeKUPeJSKas2VOqbG+Nt5MOtdA3jUUCsFwUcDVhwDJJCr6A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 14 Nov 2012 12:12:37 -0500
+Date: Wed, 14 Nov 2012 17:17:55 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Forconi <forconi@wavecomm.it>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: KMS Framebuffer on Intel N2600 (GMA3600)
+Message-ID: <20121114171755.27b8423b@pyramind.ukuu.org.uk>
+In-Reply-To: <624976355.1341772.1352911727159.JavaMail.root@zmail.sgconsulting.it>
+References: <20121114115255.2dfaefc9@pyramind.ukuu.org.uk>
+	<624976355.1341772.1352911727159.JavaMail.root@zmail.sgconsulting.it>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/12 09:30 AM, Johan Hovold wrote:
-Hi Johan,
+> This backlight problem appears only when I run linux with KMS framebuffer,
+> when I run linux without KMS framebuffer, the backlight is always on.
+> 
+> Yes, I have ACPI enabled and ACPI backlight enabled, but running:
+> echo 100 > /sys/class/backlight/psb-bl/brightness
 
-> There was a reference-count fix for the probe error path that went in to
-> v3.5. Haven't read all the details on how you trigger your leak, but at
-> the face of it, it could be related.
->
-> Have a look at 0658a3366db7e27fa ("usb: use usb_serial_put in
-> usb_serial_probe errors). If related, you should be seeing "Ignoring
-> blacklisted interface #n" messages when you enable debug (e.g. #define
-> DEBUG) in the sierra driver.
+psb-bl/backlight willbe the backlight of the graphics not the ACPI
+driver. You may need to enable that and also hack the acpi_video code to
+add it anyway on that device.
 
-That was it! Thanks so much for the research.
-I can apply it cleanly to 3.0.22 and see usb_release_dev() being called and thus no more kmemleak.
+> But, in the end, this means that the driver si correctly loaded and the 
+> framebuffer is running but the panel backlight is off?
+> In other words, I can't see anything only because the backlight is off?
 
->
-> Greg, it seems to me that the fix referred to above should be backported
-> to the earlier stable trees either way.
-I would vote "yes" for this also.
+I think so.
 
-While my setup circumstances may be a corner case, (modem kept resetting to re-establish PPP connection)
-it was leaking 1192 bytes per occurrence.
+> I don't know which could be the maximum value, there are any standard values
+> for backlight settings? I could try setting some values and see what happens...
 
-Thanks for everyone's time.
+Unfortunately not - and I have no idea what overdriving it would do to
+the hardware.
 
--- Richard Retanubun.
+Alan
