@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2KNIyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 03:54:11 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:47710 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751458Ab2KNIyJ (ORCPT
+	id S1754928Ab2KNI57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 03:57:59 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45359 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab2KNI56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 03:54:09 -0500
-Message-ID: <50A35C2E.6010602@vmware.com>
-Date: Wed, 14 Nov 2012 09:54:06 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 14 Nov 2012 03:57:58 -0500
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/ttm: remove unneeded preempt_disable/enable
-References: <1352463043-9408-1-git-send-email-akinobu.mita@gmail.com> <1352463043-9408-3-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1352463043-9408-3-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121114084105.GG7407@opensource.wolfsonmicro.com>
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+	<20121114072855.GF7407@opensource.wolfsonmicro.com>
+	<CADz5_gLb5ZRHLZHw1sDDWzu4QgOR7JXnaRMEXxETNzVsu1Wq1A@mail.gmail.com>
+	<20121114084105.GG7407@opensource.wolfsonmicro.com>
+Date: Wed, 14 Nov 2012 16:57:56 +0800
+Message-ID: <CADz5_gJDHeZNoWRF18YJKY3kT1vN0=d-eLcP1wgWxYhLNnbpDQ@mail.gmail.com>
+Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+From: Kevin Liu <keyuan.liu@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: m.szyprowski@samsung.com, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, lrg@ti.com,
+        Philip Rakity <prakity@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 01:10 PM, Akinobu Mita wrote:
-> It is unnecessary to disable preemption explicitly while calling
-> copy_highpage().  Because copy_highpage() will do it again through
-> kmap_atomic/kunmap_atomic.
+2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Nov 14, 2012 at 04:36:28PM +0800, Kevin Liu wrote:
+>> 2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 >
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: David Airlie <airlied@linux.ie>
-> ---
->   drivers/gpu/drm/ttm/ttm_tt.c | 4 ----
->   1 file changed, 4 deletions(-)
+>> > Should this be regulator_set_voltage_tol()?  Otherwise it'd be good to
+>> > explain where the numbers come from.
 >
-> diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-> index bf82601..7d759a4 100644
-> --- a/drivers/gpu/drm/ttm/ttm_tt.c
-> +++ b/drivers/gpu/drm/ttm/ttm_tt.c
-> @@ -308,9 +308,7 @@ int ttm_tt_swapin(struct ttm_tt *ttm)
->   		if (unlikely(to_page == NULL))
->   			goto out_err;
->   
-> -		preempt_disable();
->   		copy_highpage(to_page, from_page);
-> -		preempt_enable();
->   		page_cache_release(from_page);
->   	}
->   
-> @@ -358,9 +356,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
->   			ret = PTR_ERR(to_page);
->   			goto out_err;
->   		}
-> -		preempt_disable();
->   		copy_highpage(to_page, from_page);
-> -		preempt_enable();
->   		set_page_dirty(to_page);
->   		mark_page_accessed(to_page);
->   		page_cache_release(to_page);
+>> In SD physical layer spec 3.01 chapter 6.6.1, the threshold level for
+>> voltage range is defined as below:
+>> Vdd(min) = 2.7V while Vdd(max) = 3.6V.
+>> The card should work within the voltage range.
+>
+>> If you are afraid the voltage value is too aggressive, maybe we can
+>> use regulator_set_voltage_tol() to set a smaller range.
+>> But which range should be reasonable?
+>
+> The above makes total sense - thanks!  I just wasn't aware that the
+> range was specified in this fashion in the spec.  Might be worth a
+> comment in the code if you need to respin.
 
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-
+Sure, I will update the patch. Thanks!
