@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2KNI3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 03:29:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50305 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab2KNI3R (ORCPT
+	id S932758Ab2KNIaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 03:30:21 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56897 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728Ab2KNIaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 03:29:17 -0500
-Date: Wed, 14 Nov 2012 11:27:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] ALSA: es1968: precedence bug in
- snd_es1968_tea575x_get_pins()
-Message-ID: <20121114082739.GF11566@mwanda>
-References: <20121113074454.GB13198@elgon.mountain>
- <1352793790.24230.18.camel@joe-AO722>
+	Wed, 14 Nov 2012 03:30:19 -0500
+Date: Wed, 14 Nov 2012 09:30:13 +0100
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Kurt Van Dijck <kurt.van.dijck@eia.be>
+Subject: Re: [PATCH v2 RESEND] leds: add led_trigger_rename function
+Message-ID: <20121114083013.GA23881@gmail.com>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
+	Bryan Wu <cooloney@gmail.com>, linux-leds@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+	Kurt Van Dijck <kurt.van.dijck@eia.be>
+References: <1352022874-5100-1-git-send-email-fabio.baltieri@gmail.com>
+ <CAK5ve-Jn_1Lc=FyX24_DHDz6+=VUC5xoiH4zUWLgRB=rgOiueA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352793790.24230.18.camel@joe-AO722>
+In-Reply-To: <CAK5ve-Jn_1Lc=FyX24_DHDz6+=VUC5xoiH4zUWLgRB=rgOiueA@mail.gmail.com>
+X-Operating-System: Linux balto 3.7.0-rc3-00218-g45a82fc x86_64 GNU/Linux
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 12:03:10AM -0800, Joe Perches wrote:
-> On Tue, 2012-11-13 at 10:44 +0300, Dan Carpenter wrote:
-> > I don't think this works as intended.  '|' higher precedence than ?: so
-> > the bitwize OR "0 | (val & STR_MOST)" is a no-op.
-> > 
-> > I have re-written it to be more clear.
-> []
-> > diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
-> []
-> > @@ -2581,9 +2581,14 @@ static u8 snd_es1968_tea575x_get_pins(struct snd_tea575x *tea)
-> >  	struct es1968 *chip = tea->private_data;
-> >  	unsigned long io = chip->io_port + GPIO_DATA;
-> >  	u16 val = inw(io);
-> > -
-> > -	return  (val & STR_DATA) ? TEA575X_DATA : 0 |
-> > -		(val & STR_MOST) ? TEA575X_MOST : 0;
-> > +	u8 ret;
+Hi Bryan,
+
+On Tue, Nov 13, 2012 at 04:33:14PM -0800, Bryan Wu wrote:
+> > +void led_trigger_rename_static(const char *name, struct led_trigger *trig)
+> > +{
+> > +       /* new name must be on a temporary string to prevent races */
+> > +       BUG_ON(name == trig->name);
 > > +
-> > +	ret = 0;
-> > +	if (val & STR_DATA)
-> > +		ret |= TEA575X_DATA;
-> > +	if (val & STR_MOST)
-> > +		ret |= TEA575X_MOST;
-> > +	return ret;
+> > +       down_write(&triggers_list_lock);
+> > +       /* this assumes that trig->name was originaly allocated to
+> > +        * non constant storage */
+> > +       strcpy((char *)trig->name, name);
 > 
-> Cute.  smatch I presume?  Tools are useful.
+> Is this strcpy() safe here? Probably strncpy() or strlcpy() is safer.
 
-Yep.  This is a smatch thing.
+Actually the LED subsystem is not aware of the string allocation size,
+so I guess that strcpy is the only option here.
 
+On the other side, the caller, who originally allocated the string,
+should do the check properly, such as in:
+
+	snprintf(name, sizeof(name), "%s-tx", netdev->name);
+	led_trigger_rename_static(name, priv->tx_led_trig);
+
+> > +extern void led_trigger_rename_static(const char *name,
+> > +                                     struct led_trigger *trig);
+> > +
 > 
-> Moving the close parentheses is a pretty common style too
-> 
-> 	return  (val & STR_DATA ? TEA575X_DATA : 0) |
-> 		(val & STR_MOST ? TEA575X_MOST : 0);
+> Any example how to use this new API?
 
-That would work as well, of course.  I don't have a strong
-preference either way.
+Sure!  That was developed as part of CANBUS LED triggers to have trigger
+name follow can interfaces name changes.
 
-regards,
-dan carpenter
+Original patch using this function, including the whole discussion
+behind it, was posted here:
 
+https://lkml.org/lkml/2012/9/10/544
+
+or you can find the complete set on my github branch:
+
+http://github.com/fabiobaltieri/linux.git can-leds-devel
+
+Fabio
+
+-- 
+Fabio Baltieri
