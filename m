@@ -1,168 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab2KNFuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55180 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756341Ab2KNFut (ORCPT
+	id S1756415Ab2KNFu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:50:59 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50152 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab2KNFu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:49 -0500
-Message-Id: <20121114053940.926046549@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:24 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 51/82] iscsi-target: Fix missed wakeup race in TX thread
-In-Reply-To: <20121114053933.726869752@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Nov 2012 00:50:56 -0500
+Message-ID: <50A3313D.1000809@gmail.com>
+Date: Wed, 14 Nov 2012 00:50:53 -0500
+From: Xi Wang <xi.wang@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Felipe Balbi <balbi@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] mm: fix null dev in dma_pool_create()
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com> <50A2BE19.7000604@gmail.com> <20121113165847.4dcf968c.akpm@linux-foundation.org>
+In-Reply-To: <20121113165847.4dcf968c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On 11/13/12 7:58 PM, Andrew Morton wrote:
+> I'm not sure that I really suggested doing this :(
 
-------------------
-
-From: Roland Dreier <roland@purestorage.com>
-
-commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
-
-The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
-missed wakeup race:
-
- - TX thread finishes handle_immediate_queue() and handle_response_queue(),
-   thinks both queues are empty.
- - Another thread adds a queue entry and does wake_up_process(), which does
-   nothing because the TX thread is still awake.
- - TX thread does schedule_timeout() and sleeps forever.
-
-In practice this can kill an iSCSI connection if for example an initiator
-does single-threaded writes and the target misses the wakeup window when
-queueing an R2T; in this case the connection will be stuck until the
-initiator loses patience and does some task management operation (or kills
-the connection entirely).
-
-Fix this by converting to wait_event_interruptible(), which does not
-suffer from this sort of race.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/target/iscsi/iscsi_target.c       |    4 +++-
- drivers/target/iscsi/iscsi_target_core.h  |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
- drivers/target/iscsi/iscsi_target_util.h  |    1 +
- 5 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index d6ce218..035c2c7 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3719,7 +3719,9 @@ restart:
- 		 */
- 		iscsit_thread_check_cpumask(conn, current, 1);
+You suggested WARN_ON_ONCE(!dev); I changed it to WARN_ON(!dev) and
+kept the NULL check..
  
--		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
-+		wait_event_interruptible(conn->queues_wq,
-+					 !iscsit_conn_all_queues_empty(conn) ||
-+					 ts->status == ISCSI_THREAD_SET_RESET);
- 
- 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
- 		     signal_pending(current))
-diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
-index 2ba9f9b..21048db 100644
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -486,6 +486,7 @@ struct iscsi_tmr_req {
- };
- 
- struct iscsi_conn {
-+	wait_queue_head_t	queues_wq;
- 	/* Authentication Successful for this connection */
- 	u8			auth_complete;
- 	/* State connection is currently in */
-diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
-index cdc8a10..f8dbec0 100644
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -41,6 +41,7 @@
- 
- static int iscsi_login_init_conn(struct iscsi_conn *conn)
- {
-+	init_waitqueue_head(&conn->queues_wq);
- 	INIT_LIST_HEAD(&conn->conn_list);
- 	INIT_LIST_HEAD(&conn->conn_cmd_list);
- 	INIT_LIST_HEAD(&conn->immed_queue_list);
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index afd98cc..1a91195 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
- 	atomic_set(&conn->check_immediate_queue, 1);
- 	spin_unlock_bh(&conn->immed_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
-@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
- 	atomic_inc(&cmd->response_queue_count);
- 	spin_unlock_bh(&conn->response_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
-@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_response_queue(
- 	}
- }
- 
-+bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
-+{
-+	bool empty;
-+
-+	spin_lock_bh(&conn->immed_queue_lock);
-+	empty = list_empty(&conn->immed_queue_list);
-+	spin_unlock_bh(&conn->immed_queue_lock);
-+
-+	if (!empty)
-+		return empty;
-+
-+	spin_lock_bh(&conn->response_queue_lock);
-+	empty = list_empty(&conn->response_queue_list);
-+	spin_unlock_bh(&conn->response_queue_lock);
-+
-+	return empty;
-+}
-+
- void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
- {
- 	struct iscsi_queue_req *qr, *qr_tmp;
-diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
-index 44054bd..894d0f8 100644
---- a/drivers/target/iscsi/iscsi_target_util.h
-+++ b/drivers/target/iscsi/iscsi_target_util.h
-@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_
- extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
- extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
- extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
-+extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
- extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
- extern void iscsit_release_cmd(struct iscsi_cmd *);
- extern void iscsit_free_cmd(struct iscsi_cmd *);
+> We know there are a few scruffy drivers which are passing in dev==0.
+> 
+> Those drivers don't oops because nobody is testing them on NUMA
+> systems.
+> 
+> With this patch, the kernel will now cause runtime warnings to be
+> emitted from those drivers.  Even on non-NUMA systems.
+> 
+> This is a problem!  What will happen is that this code will get
+> released by Linus and will propagate to users mainly via distros and
+> eventually end-user bug reports will trickle back saying "hey, I got
+> this warning".  Slowly people will fix the scruffy drivers and those
+> fixes will propagate out from Linus's tree into -stable and then into
+> distros and then into the end-users hands.
+> 
+> This is *terribly* inefficient!  It's a lot of work for a lot of people
+> and it involves long delays.
+> 
+> So let's not do any of that!  Let us try to get those scruffy drivers
+> fixed up *before* we add this warning.
+> 
+> As a nice side-effect of that work, we can then clean up the dmapool
+> code so it doesn't need to worry about handling the dev==0 special
+> case.
+> 
+> So.  To start this off, can you please generate a list of the offending
+> drivers?  Then we can hunt down the maintainers and we'll see what can be
+> done.
 
+I like this plan.
 
+Here's the list of drivers that invoke dma_pool_create() with NULL dev,
+as well as possible fixes, from previous emails.
+
+* arch/arm/mach-s3c64xx/dma.c
+
+Use dmac->dev for dma_pool_create() in s3c64xx_dma_init1()?  Probably
+need to add ->dma_pool to struct s3c64xx_dmac.
+
+* drivers/usb/gadget/amd5536udc.c (2)
+
+Use dev->gadget.dev or dev->pdev->dev for dma_pool_create()?  Also move
+the init_dma_pools() call after the assignments in udc_pci_probe().
+
+* drivers/net/wan/ixp4xx_hss.c
+* drivers/net/ethernet/xscale/ixp4xx_eth.c
+
+Use port->netdev->dev for dma_pool_create()?
