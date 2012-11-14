@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2KNGge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:36:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43153 "EHLO
+	id S1754522Ab2KNGhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:37:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43168 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab2KNGgc (ORCPT
+	with ESMTP id S1751776Ab2KNGhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 01:36:32 -0500
-Date: Tue, 13 Nov 2012 22:36:08 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-dc53eda5a025f3e7503219477a8aefb8842ed74b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1351634526-1516-2-git-send-email-jolsa@redhat.com>
-References: <1351634526-1516-2-git-send-email-jolsa@redhat.com>
+	Wed, 14 Nov 2012 01:37:45 -0500
+Date: Tue, 13 Nov 2012 22:37:07 -0800
+From: tip-bot for Feng Tang <feng.tang@intel.com>
+Message-ID: <tip-c77d8d7030128e61e206658815b96a6befed9d06@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, andi@firstfloor.org, peterz@infradead.org,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com,
+        mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, andi@firstfloor.org, peterz@infradead.org,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com,
+        mingo@elte.hu
+In-Reply-To: <1351699257-5102-1-git-send-email-feng.tang@intel.com>
+References: <1351699257-5102-1-git-send-email-feng.tang@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove BINDIR define from exec_cmd.
- o compilation
-Git-Commit-ID: dc53eda5a025f3e7503219477a8aefb8842ed74b
+Subject: [tip:perf/core] perf browser: Don't show scripts menu for '
+ perf top'
+Git-Commit-ID: c77d8d7030128e61e206658815b96a6befed9d06
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,43 +32,69 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 22:36:14 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 22:37:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc53eda5a025f3e7503219477a8aefb8842ed74b
-Gitweb:     http://git.kernel.org/tip/dc53eda5a025f3e7503219477a8aefb8842ed74b
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 30 Oct 2012 23:01:42 +0100
+Commit-ID:  c77d8d7030128e61e206658815b96a6befed9d06
+Gitweb:     http://git.kernel.org/tip/c77d8d7030128e61e206658815b96a6befed9d06
+Author:     Feng Tang <feng.tang@intel.com>
+AuthorDate: Thu, 1 Nov 2012 00:00:55 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 31 Oct 2012 15:55:11 -0200
+CommitDate: Wed, 31 Oct 2012 16:14:19 -0200
 
-perf tools: Remove BINDIR define from exec_cmd.o compilation
+perf browser: Don't show scripts menu for 'perf top'
 
-It's not needed.
+As 'perf top' has no data files to run scripts against. Also add a
+is_report_browser() helper function to judge whether the running browser
+is for 'perf report'.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-2-git-send-email-jolsa@redhat.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1351699257-5102-1-git-send-email-feng.tang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ tools/perf/ui/browsers/hists.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b1801e0..3e807d7 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -893,7 +893,6 @@ $(OUTPUT)%.s: %.S
- $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
- 		'-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
--		'-DBINDIR="$(bindir_relative_SQ)"' \
- 		'-DPREFIX="$(prefix_SQ)"' \
- 		$<
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index fe62284..082078a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1127,6 +1127,12 @@ static inline void free_popup_options(char **options, int n)
+ 	}
+ }
  
++/* Check whether the browser is for 'top' or 'report' */
++static inline bool is_report_browser(void *timer)
++{
++	return timer == NULL;
++}
++
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+@@ -1214,7 +1220,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			}
+ 			continue;
+ 		case 'r':
+-			goto do_scripts;
++			if (is_report_browser(timer))
++				goto do_scripts;
++			continue;
+ 		case K_F1:
+ 		case 'h':
+ 		case '?':
+@@ -1233,7 +1241,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					"E             Expand all callchains\n"
+ 					"d             Zoom into current DSO\n"
+ 					"t             Zoom into current Thread\n"
+-					"r             Run available scripts\n"
++					"r             Run available scripts('perf report' only)\n"
+ 					"P             Print histograms to perf.hist.N\n"
+ 					"V             Verbose (DSO names in callchains, etc)\n"
+ 					"/             Filter symbol by name");
