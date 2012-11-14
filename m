@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423442Ab2KNVJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 16:09:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37956 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422629Ab2KNVJK (ORCPT
+	id S1423457Ab2KNVKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 16:10:04 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48253 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422629Ab2KNVKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 16:09:10 -0500
-Date: Wed, 14 Nov 2012 13:09:09 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Jeff Liu <jeff.liu@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <aedilger@gmail.com>,
-        John Sobecki <john.sobecki@oracle.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>, "Ted Ts'o" <tytso@mit.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        jakub@redhat.com, drepper@redhat.com,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RESEND PATCH V3] binfmt_elf.c: use get_random_int() to fix
- entropy depleting
-Message-Id: <20121114130909.2dcc5b75.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jLC9aj3KewbFb2tHoisjvqj4KkMwpA6KiZ7y8k15WWOwA@mail.gmail.com>
-References: <5099F133.5030305@oracle.com>
-	<5099FBAA.6000200@oracle.com>
-	<CAGXu5jLpE5kTGGqLqDRwRaEOt+nhpKc52jQFs+rsa+0GVKA-vw@mail.gmail.com>
-	<509A078D.8060705@oracle.com>
-	<CAGXu5jLC9aj3KewbFb2tHoisjvqj4KkMwpA6KiZ7y8k15WWOwA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 16:10:01 -0500
+Date: Wed, 14 Nov 2012 13:09:59 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: aquini@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        konrad.wilk@oracle.com, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>, mst@redhat.com,
+        Rik van Riel <riel@redhat.com>, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org
+Subject: [patch resend] mm: introduce a common interface for balloon pages
+ mobility fix
+In-Reply-To: <alpine.DEB.2.00.1211091330330.2974@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1211141309090.16566@chino.kir.corp.google.com>
+References: <20121107200113.65C4B100047@wpzn3.hot.corp.google.com> <alpine.DEB.2.00.1211091330330.2974@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Nov 2012 23:13:54 -0800
-Kees Cook <keescook@chromium.org> wrote:
+Fixes build failure from "mm: introduce a common interface for balloon 
+pages mobility":
 
-> On Tue, Nov 6, 2012 at 11:02 PM, Jeff Liu <jeff.liu@oracle.com> wrote:
-> > On 11/07/2012 02:21 PM, Kees Cook wrote:
-> >> I still want to hear at least from Ted about this changes -- we would
-> >> be potentially increasing the predictability of these bytes...
-> >
-> > We would not increasing that if this routine would be used for AT_RANDOM
-> > only(and if the array keeping aligned to 4 bytes).
-> > Otherwise, it would be, so let's waiting for further feedbacks.
-> 
-> get_random_int() comes from a different pool than get_random_bytes(),
-> IIUC. I'd like to hear some convincing reasoning as to why this change
-> doesn't compromise predictability. :)
+mm/balloon_compaction.c: In function 'balloon_page_putback':
+mm/balloon_compaction.c:243: error: implicit declaration of function '__WARN'
 
-But the original "ELF: implement AT_RANDOM for glibc PRNG seeding"
-compromised predictability.  That's the whole point of this patch.
+Generic code calls WARN_ON(), not __WARN() directly.
 
-What was so important about that patch that justified gobbling down so
-much of the system's entropy accumulation?
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Still affects linux-next, original patch posted November 9.
 
+ mm/balloon_compaction.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+--- a/mm/balloon_compaction.c
++++ b/mm/balloon_compaction.c
+@@ -240,7 +240,7 @@ void balloon_page_putback(struct page *page)
+ 		put_page(page);
+ 		balloon_event_count(COMPACTBALLOONRETURNED);
+ 	} else {
+-		__WARN();
++		WARN_ON(1);
+ 		dump_page(page);
+ 	}
+ 	unlock_page(page);
