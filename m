@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab2KNGLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:11:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54916 "EHLO
+	id S1756246Ab2KNGL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:11:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54919 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751776Ab2KNFt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751827Ab2KNFt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:49:56 -0500
-Message-Id: <20121114053934.360360087@decadent.org.uk>
+Message-Id: <20121114053935.530624474@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:37 +0000
+Date: Wed, 14 Nov 2012 05:39:45 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 04/82] drm/nouveau: fix suspend/resume when in headless mode
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 12/82] ALSA: Avoid endless sleep after disconnect
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,87 +27,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9430738d80223a1cd791a2baa74fa170d3df1262 upstream.
+commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-[jrnieder@gmail.com: backport to 3.2: make fbcon suspend/resume
- handling conditional in a vague hope that this will approximate what
- the original does for 3.3+]
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+When disconnect callback is called, each component should wake up
+sleepers and check card->shutdown flag for avoiding the endless sleep
+blocking the proper resource release.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nouveau_drv.c | 32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ sound/core/control.c     |  2 ++
+ sound/core/hwdep.c       |  7 +++++++
+ sound/core/oss/pcm_oss.c |  4 ++++
+ sound/core/pcm.c         |  6 +++++-
+ sound/core/pcm_native.c  |  8 ++++++++
+ sound/core/rawmidi.c     | 20 ++++++++++++++++++++
+ 6 files changed, 46 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
-index 9791d13c9e3b..4ab35b588664 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drv.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -178,8 +178,10 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
--	NV_INFO(dev, "Disabling fbcon acceleration...\n");
--	nouveau_fbcon_save_disable_accel(dev);
-+	if (dev->mode_config.num_crtc) {
-+		NV_INFO(dev, "Disabling fbcon acceleration...\n");
-+		nouveau_fbcon_save_disable_accel(dev);
-+	}
- 
- 	NV_INFO(dev, "Unpinning framebuffer(s)...\n");
- 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-@@ -246,10 +248,12 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
- 		pci_set_power_state(pdev, PCI_D3hot);
+diff --git a/sound/core/control.c b/sound/core/control.c
+index 699ccf5..5511307 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1436,6 +1436,8 @@ static ssize_t snd_ctl_read(struct file *file, char __user *buffer,
+ 			spin_unlock_irq(&ctl->read_lock);
+ 			schedule();
+ 			remove_wait_queue(&ctl->change_sleep, &wait);
++			if (ctl->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			spin_lock_irq(&ctl->read_lock);
+diff --git a/sound/core/hwdep.c b/sound/core/hwdep.c
+index 53a6ba5..3f7f662 100644
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -131,6 +131,10 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
+ 		mutex_unlock(&hw->open_mutex);
+ 		schedule();
+ 		mutex_lock(&hw->open_mutex);
++		if (hw->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -462,12 +466,15 @@ static int snd_hwdep_dev_disconnect(struct snd_device *device)
+ 		mutex_unlock(&register_mutex);
+ 		return -EINVAL;
  	}
- 
--	console_lock();
--	nouveau_fbcon_set_suspend(dev, 1);
--	console_unlock();
--	nouveau_fbcon_restore_accel(dev);
-+	if (dev->mode_config.num_crtc) {
-+		console_lock();
-+		nouveau_fbcon_set_suspend(dev, 1);
-+		console_unlock();
-+		nouveau_fbcon_restore_accel(dev);
-+	}
- 	return 0;
- 
- out_abort:
-@@ -275,7 +279,8 @@ nouveau_pci_resume(struct pci_dev *pdev)
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
--	nouveau_fbcon_save_disable_accel(dev);
-+	if (dev->mode_config.num_crtc)
-+		nouveau_fbcon_save_disable_accel(dev);
- 
- 	NV_INFO(dev, "We're back, enabling device...\n");
- 	pci_set_power_state(pdev, PCI_D0);
-@@ -376,15 +381,18 @@ nouveau_pci_resume(struct pci_dev *pdev)
- 		nv_crtc->lut.depth = 0;
- 	}
- 
--	console_lock();
--	nouveau_fbcon_set_suspend(dev, 0);
--	console_unlock();
-+	if (dev->mode_config.num_crtc) {
-+		console_lock();
-+		nouveau_fbcon_set_suspend(dev, 0);
-+		console_unlock();
- 
--	nouveau_fbcon_zfill_all(dev);
-+		nouveau_fbcon_zfill_all(dev);
-+	}
- 
- 	drm_helper_resume_force_mode(dev);
- 
--	nouveau_fbcon_restore_accel(dev);
-+	if (dev->mode_config.num_crtc)
-+		nouveau_fbcon_restore_accel(dev);
++	mutex_lock(&hwdep->open_mutex);
++	wake_up(&hwdep->open_wait);
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (hwdep->ossreg)
+ 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
+ #endif
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
+ 	list_del_init(&hwdep->list);
++	mutex_unlock(&hwdep->open_mutex);
+ 	mutex_unlock(&register_mutex);
  	return 0;
  }
+diff --git a/sound/core/oss/pcm_oss.c b/sound/core/oss/pcm_oss.c
+index f3cf781..408f815 100644
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+index 86440e4..13eaeb3 100644
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -1047,12 +1047,16 @@ static int snd_pcm_dev_disconnect(struct snd_device *device)
+ 		goto unlock;
  
+ 	mutex_lock(&pcm->open_mutex);
++	wake_up(&pcm->open_wait);
+ 	list_del_init(&pcm->list);
+ 	for (cidx = 0; cidx < 2; cidx++)
+ 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
+ 			snd_pcm_stream_lock_irq(substream);
+-			if (substream->runtime)
++			if (substream->runtime) {
+ 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
++				wake_up(&substream->runtime->sleep);
++				wake_up(&substream->runtime->tsleep);
++			}
+ 			snd_pcm_stream_unlock_irq(substream);
+ 		}
+ 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index c67994d..81a0fee 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1508,6 +1508,10 @@ static int snd_pcm_drain(struct snd_pcm_substream *substream,
+ 		down_read(&snd_pcm_link_rwsem);
+ 		snd_pcm_stream_lock_irq(substream);
+ 		remove_wait_queue(&to_check->sleep, &wait);
++		if (card->shutdown) {
++			result = -ENODEV;
++			break;
++		}
+ 		if (tout == 0) {
+ 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
+ 				result = -ESTRPIPE;
+@@ -2153,6 +2157,10 @@ static int snd_pcm_open(struct file *file, struct snd_pcm *pcm, int stream)
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+diff --git a/sound/core/rawmidi.c b/sound/core/rawmidi.c
+index 7d4f62a..1bb95ae 100644
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -424,6 +424,10 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
+ 		mutex_unlock(&rmidi->open_mutex);
+ 		schedule();
+ 		mutex_lock(&rmidi->open_mutex);
++		if (rmidi->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -995,6 +999,8 @@ static ssize_t snd_rawmidi_read(struct file *file, char __user *buf, size_t coun
+ 			spin_unlock_irq(&runtime->lock);
+ 			schedule();
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail)
+@@ -1238,6 +1244,8 @@ static ssize_t snd_rawmidi_write(struct file *file, const char __user *buf,
+ 			spin_unlock_irq(&runtime->lock);
+ 			timeout = schedule_timeout(30 * HZ);
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail && !timeout)
+@@ -1613,9 +1621,20 @@ static int snd_rawmidi_dev_register(struct snd_device *device)
+ static int snd_rawmidi_dev_disconnect(struct snd_device *device)
+ {
+ 	struct snd_rawmidi *rmidi = device->device_data;
++	int dir;
+ 
+ 	mutex_lock(&register_mutex);
++	mutex_lock(&rmidi->open_mutex);
++	wake_up(&rmidi->open_wait);
+ 	list_del_init(&rmidi->list);
++	for (dir = 0; dir < 2; dir++) {
++		struct snd_rawmidi_substream *s;
++		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
++			if (s->runtime)
++				wake_up(&s->runtime->sleep);
++		}
++	}
++
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (rmidi->ossreg) {
+ 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
+@@ -1630,6 +1649,7 @@ static int snd_rawmidi_dev_disconnect(struct snd_device *device)
+ 	}
+ #endif /* CONFIG_SND_OSSEMUL */
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
++	mutex_unlock(&rmidi->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
 
 
