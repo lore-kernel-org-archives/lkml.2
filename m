@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab2KNGJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:09:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54934 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752162Ab2KNFuA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752791Ab2KNFuA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Nov 2012 00:50:00 -0500
-Message-Id: <20121114053934.960877509@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54913 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751723Ab2KNFtz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 00:49:55 -0500
+Message-Id: <20121114053934.489149439@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:41 +0000
+Date: Wed, 14 Nov 2012 05:39:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>,
-        Matthieu CASTET <matthieu.castet@parrot.com>
-Subject: [ 08/82] ALSA: usb-audio: Fix races at disconnection
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 05/82] drm/nouveau: headless mode by default if pci class != vga display
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,330 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 978520b75f0a1ce82b17e1e8186417250de6d545 upstream.
+commit e412e95a268fa8544858ebfe066826b290430d51 upstream.
 
-Close some races at disconnection of a USB audio device by adding the
-chip->shutdown_mutex and chip->shutdown check at appropriate places.
+This is to prevent nouveau from taking over the console on headless boards
+such as Tesla.
 
-The spots to put bandaids are:
-- PCM prepare, hw_params and hw_free
-- where the usb device is accessed for communication or get speed, in
- mixer.c and others; the device speed is now cached in subs->speed
- instead of accessing to chip->dev
-
-The accesses in PCM open and close don't need the mutex protection
-because these are already handled in the core PCM disconnection code.
-
-The autosuspend/autoresume codes are still uncovered by this patch
-because of possible mutex deadlocks.  They'll be covered by the
-upcoming change to rwsem.
-
-Also the mixer codes are untouched, too.  These will be fixed in
-another patch, too.
-
-Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/card.h     |  1 +
- sound/usb/endpoint.c |  9 +++++---
- sound/usb/mixer.c    | 65 ++++++++++++++++++++++++++++++++++------------------
- sound/usb/pcm.c      | 31 +++++++++++++++++++------
- sound/usb/proc.c     |  4 ++--
- 5 files changed, 76 insertions(+), 34 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drv.c   | 2 --
+ drivers/gpu/drm/nouveau/nouveau_state.c | 4 +++-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/card.h b/sound/usb/card.h
-index a39edcc..665e297 100644
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -86,6 +86,7 @@ struct snd_usb_substream {
- 	struct snd_urb_ctx syncurb[SYNC_URBS];	/* sync urb table */
- 	char *syncbuf;				/* sync buffer for all sync URBs */
- 	dma_addr_t sync_dma;			/* DMA address of syncbuf */
-+	unsigned int speed;		/* USB_SPEED_XXX */
- 
- 	u64 formats;			/* format bitmasks (all or'ed) */
- 	unsigned int num_formats;		/* number of supported audio formats (list) */
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index 08dcce5..24c5114 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -148,8 +148,10 @@ void snd_usb_release_substream_urbs(struct snd_usb_substream *subs, int force)
- 	int i;
- 
- 	/* stop urbs (to be sure) */
--	deactivate_urbs(subs, force, 1);
--	wait_clear_urbs(subs);
-+	if (!subs->stream->chip->shutdown) {
-+		deactivate_urbs(subs, force, 1);
-+		wait_clear_urbs(subs);
-+	}
- 
- 	for (i = 0; i < MAX_URBS; i++)
- 		release_urb_ctx(&subs->dataurb[i]);
-@@ -895,7 +897,8 @@ void snd_usb_init_substream(struct snd_usb_stream *as,
- 	subs->dev = as->chip->dev;
- 	subs->txfr_quirk = as->chip->txfr_quirk;
- 	subs->ops = audio_urb_ops[stream];
--	if (snd_usb_get_speed(subs->dev) >= USB_SPEED_HIGH)
-+	subs->speed = snd_usb_get_speed(subs->dev);
-+	if (subs->speed >= USB_SPEED_HIGH)
- 		subs->ops.prepare_sync = prepare_capture_sync_urb_hs;
- 
- 	snd_usb_set_pcm_ops(as->pcm, stream);
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index ab23869..51a81ef 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -287,25 +287,32 @@ static int get_ctl_value_v1(struct usb_mixer_elem_info *cval, int request, int v
- 	unsigned char buf[2];
- 	int val_len = cval->val_type >= USB_MIXER_S16 ? 2 : 1;
- 	int timeout = 10;
--	int err;
-+	int idx = 0, err;
- 
- 	err = snd_usb_autoresume(cval->mixer->chip);
- 	if (err < 0)
- 		return -EIO;
-+	mutex_lock(&chip->shutdown_mutex);
- 	while (timeout-- > 0) {
-+		if (chip->shutdown)
-+			break;
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
- 		if (snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), request,
- 				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
--				    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--				    buf, val_len) >= val_len) {
-+				    validx, idx, buf, val_len) >= val_len) {
- 			*value_ret = convert_signed_value(cval, snd_usb_combine_bytes(buf, val_len));
--			snd_usb_autosuspend(cval->mixer->chip);
--			return 0;
-+			err = 0;
-+			goto out;
- 		}
- 	}
--	snd_usb_autosuspend(cval->mixer->chip);
- 	snd_printdd(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
--		    request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type);
--	return -EINVAL;
-+		    request, validx, idx, cval->val_type);
-+	err = -EINVAL;
-+
-+ out:
-+	mutex_unlock(&chip->shutdown_mutex);
-+	snd_usb_autosuspend(cval->mixer->chip);
-+	return err;
- }
- 
- static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int validx, int *value_ret)
-@@ -313,7 +320,7 @@ static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int v
- 	struct snd_usb_audio *chip = cval->mixer->chip;
- 	unsigned char buf[2 + 3*sizeof(__u16)]; /* enough space for one range */
- 	unsigned char *val;
--	int ret, size;
-+	int idx = 0, ret, size;
- 	__u8 bRequest;
- 
- 	if (request == UAC_GET_CUR) {
-@@ -330,16 +337,22 @@ static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int v
- 	if (ret)
- 		goto error;
- 
--	ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
-+	mutex_lock(&chip->shutdown_mutex);
-+	if (chip->shutdown)
-+		ret = -ENODEV;
-+	else {
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
-+		ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
- 			      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
--			      validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--			      buf, size);
-+			      validx, idx, buf, size);
-+	}
-+	mutex_unlock(&chip->shutdown_mutex);
- 	snd_usb_autosuspend(chip);
- 
- 	if (ret < 0) {
- error:
- 		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
--			   request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type);
-+			   request, validx, idx, cval->val_type);
- 		return ret;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
+index 1fcc69a..a06eb3d 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drv.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
+@@ -488,9 +488,7 @@ static int __init nouveau_init(void)
+ #ifdef CONFIG_VGA_CONSOLE
+ 		if (vgacon_text_force())
+ 			nouveau_modeset = 0;
+-		else
+ #endif
+-			nouveau_modeset = 1;
  	}
  
-@@ -417,7 +430,7 @@ int snd_usb_mixer_set_ctl_value(struct usb_mixer_elem_info *cval,
+ 	if (!nouveau_modeset)
+diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
+index c610144..f5e9584 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_state.c
++++ b/drivers/gpu/drm/nouveau/nouveau_state.c
+@@ -50,6 +50,7 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
  {
- 	struct snd_usb_audio *chip = cval->mixer->chip;
- 	unsigned char buf[2];
--	int val_len, err, timeout = 10;
-+	int idx = 0, val_len, err, timeout = 10;
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nouveau_engine *engine = &dev_priv->engine;
++	u32 pclass = dev->pdev->class >> 8;
  
- 	if (cval->mixer->protocol == UAC_VERSION_1) {
- 		val_len = cval->val_type >= USB_MIXER_S16 ? 2 : 1;
-@@ -440,19 +453,27 @@ int snd_usb_mixer_set_ctl_value(struct usb_mixer_elem_info *cval,
- 	err = snd_usb_autoresume(chip);
- 	if (err < 0)
- 		return -EIO;
--	while (timeout-- > 0)
-+	mutex_lock(&chip->shutdown_mutex);
-+	while (timeout-- > 0) {
-+		if (chip->shutdown)
-+			break;
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
- 		if (snd_usb_ctl_msg(chip->dev,
- 				    usb_sndctrlpipe(chip->dev, 0), request,
- 				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
--				    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--				    buf, val_len) >= 0) {
--			snd_usb_autosuspend(chip);
--			return 0;
-+				    validx, idx, buf, val_len) >= 0) {
-+			err = 0;
-+			goto out;
- 		}
--	snd_usb_autosuspend(chip);
-+	}
- 	snd_printdd(KERN_ERR "cannot set ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d, data = %#x/%#x\n",
--		    request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type, buf[0], buf[1]);
--	return -EINVAL;
-+		    request, validx, idx, cval->val_type, buf[0], buf[1]);
-+	err = -EINVAL;
-+
-+ out:
-+	mutex_unlock(&chip->shutdown_mutex);
-+	snd_usb_autosuspend(chip);
-+	return err;
- }
- 
- static int set_cur_ctl_value(struct usb_mixer_elem_info *cval, int validx, int value)
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index 839165f..9a11fae 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -67,6 +67,8 @@ static snd_pcm_uframes_t snd_usb_pcm_pointer(struct snd_pcm_substream *substream
- 	unsigned int hwptr_done;
- 
- 	subs = (struct snd_usb_substream *)substream->runtime->private_data;
-+	if (subs->stream->chip->shutdown)
-+		return SNDRV_PCM_POS_XRUN;
- 	spin_lock(&subs->lock);
- 	hwptr_done = subs->hwptr_done;
- 	substream->runtime->delay = snd_usb_pcm_delay(subs,
-@@ -373,8 +375,14 @@ static int snd_usb_hw_params(struct snd_pcm_substream *substream,
- 	changed = subs->cur_audiofmt != fmt ||
- 		subs->period_bytes != params_period_bytes(hw_params) ||
- 		subs->cur_rate != rate;
-+
-+	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	if (subs->stream->chip->shutdown) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 	if ((ret = set_format(subs, fmt)) < 0)
--		return ret;
-+		goto unlock;
- 
- 	if (subs->cur_rate != rate) {
- 		struct usb_host_interface *alts;
-@@ -383,12 +391,11 @@ static int snd_usb_hw_params(struct snd_pcm_substream *substream,
- 		alts = &iface->altsetting[fmt->altset_idx];
- 		ret = snd_usb_init_sample_rate(subs->stream->chip, subs->interface, alts, fmt, rate);
- 		if (ret < 0)
--			return ret;
-+			goto unlock;
- 		subs->cur_rate = rate;
+ 	switch (dev_priv->chipset & 0xf0) {
+ 	case 0x00:
+@@ -428,7 +429,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
  	}
  
- 	if (changed) {
--		mutex_lock(&subs->stream->chip->shutdown_mutex);
- 		/* format changed */
- 		snd_usb_release_substream_urbs(subs, 0);
- 		/* influenced: period_bytes, channels, rate, format, */
-@@ -396,9 +403,10 @@ static int snd_usb_hw_params(struct snd_pcm_substream *substream,
- 						  params_rate(hw_params),
- 						  snd_pcm_format_physical_width(params_format(hw_params)) *
- 							params_channels(hw_params));
--		mutex_unlock(&subs->stream->chip->shutdown_mutex);
- 	}
- 
-+unlock:
-+	mutex_unlock(&subs->stream->chip->shutdown_mutex);
- 	return ret;
- }
- 
-@@ -429,12 +437,18 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct snd_usb_substream *subs = runtime->private_data;
-+	int ret = 0;
- 
- 	if (! subs->cur_audiofmt) {
- 		snd_printk(KERN_ERR "usbaudio: no format is specified!\n");
- 		return -ENXIO;
- 	}
- 
-+	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	if (subs->stream->chip->shutdown) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 	/* some unit conversions in runtime */
- 	subs->maxframesize = bytes_to_frames(runtime, subs->maxpacksize);
- 	subs->curframesize = bytes_to_frames(runtime, subs->curpacksize);
-@@ -447,7 +461,10 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
- 	subs->last_frame_number = 0;
- 	runtime->delay = 0;
- 
--	return snd_usb_substream_prepare(subs, runtime);
-+	ret = snd_usb_substream_prepare(subs, runtime);
-+ unlock:
-+	mutex_unlock(&subs->stream->chip->shutdown_mutex);
-+	return ret;
- }
- 
- static struct snd_pcm_hardware snd_usb_hardware =
-@@ -500,7 +517,7 @@ static int hw_check_valid_format(struct snd_usb_substream *subs,
- 		return 0;
- 	}
- 	/* check whether the period time is >= the data packet interval */
--	if (snd_usb_get_speed(subs->dev) != USB_SPEED_FULL) {
-+	if (subs->speed != USB_SPEED_FULL) {
- 		ptime = 125 * (1 << fp->datainterval);
- 		if (ptime > pt->max || (ptime == pt->max && pt->openmax)) {
- 			hwc_debug("   > check: ptime %u > max %u\n", ptime, pt->max);
-@@ -776,7 +793,7 @@ static int setup_hw_info(struct snd_pcm_runtime *runtime, struct snd_usb_substre
- 		return err;
- 
- 	param_period_time_if_needed = SNDRV_PCM_HW_PARAM_PERIOD_TIME;
--	if (snd_usb_get_speed(subs->dev) == USB_SPEED_FULL)
-+	if (subs->speed == USB_SPEED_FULL)
- 		/* full speed devices have fixed data packet interval */
- 		ptmin = 1000;
- 	if (ptmin == 1000)
-diff --git a/sound/usb/proc.c b/sound/usb/proc.c
-index 961c9a2..aef03db 100644
---- a/sound/usb/proc.c
-+++ b/sound/usb/proc.c
-@@ -107,7 +107,7 @@ static void proc_dump_substream_formats(struct snd_usb_substream *subs, struct s
- 			}
- 			snd_iprintf(buffer, "\n");
- 		}
--		if (snd_usb_get_speed(subs->dev) != USB_SPEED_FULL)
-+		if (subs->speed != USB_SPEED_FULL)
- 			snd_iprintf(buffer, "    Data packet interval: %d us\n",
- 				    125 * (1 << fp->datainterval));
- 		// snd_iprintf(buffer, "    Max Packet Size = %d\n", fp->maxpacksize);
-@@ -128,7 +128,7 @@ static void proc_dump_substream_status(struct snd_usb_substream *subs, struct sn
- 		snd_iprintf(buffer, "]\n");
- 		snd_iprintf(buffer, "    Packet Size = %d\n", subs->curpacksize);
- 		snd_iprintf(buffer, "    Momentary freq = %u Hz (%#x.%04x)\n",
--			    snd_usb_get_speed(subs->dev) == USB_SPEED_FULL
-+			    subs->speed == USB_SPEED_FULL
- 			    ? get_full_speed_hz(subs->freqm)
- 			    : get_high_speed_hz(subs->freqm),
- 			    subs->freqm >> 16, subs->freqm & 0xffff);
+ 	/* headless mode */
+-	if (nouveau_modeset == 2) {
++	if (nouveau_modeset == 2 ||
++	    (nouveau_modeset < 0 && pclass != PCI_CLASS_DISPLAY_VGA)) {
+ 		engine->display.early_init = nouveau_stub_init;
+ 		engine->display.late_takedown = nouveau_stub_takedown;
+ 		engine->display.create = nouveau_stub_init;
 
 
