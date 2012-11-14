@@ -1,204 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab2KNDnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 22:43:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22089 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab2KNDnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 22:43:07 -0500
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ueNZMrm-JmMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ZtitcL5Qm7IA:10 a=WTJdmG3rAAAA:8 a=QyXUC8HyAAAA:8 a=EujyWprOPbVT4QmRI6oA:9 a=PUjeQqilurYA:10 a=zKHuuLyfC7UA:10 a=4hhS-M3IBKYA:10 a=nsF78Xlgl7EA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352864585.18025.54.camel@gandalf.local.home>
-Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: shuah.khan@hp.com, stable <stable@vger.kernel.org>, roland@purestorage.com,
-        linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
-Date: Tue, 13 Nov 2012 22:43:05 -0500
-In-Reply-To: <20121114033444.GA29560@kroah.com>
-References: <20111204185444.411298317@goodmis.org>
-	 <20111204190008.804987080@goodmis.org> <1352859923.7889.2.camel@lorien2>
-	 <1352862293.18025.52.camel@gandalf.local.home>
-	 <20121114033444.GA29560@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932654Ab2KNDni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 22:43:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43226 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932464Ab2KNDng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 22:43:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,247,1352102400"; 
+   d="scan'208";a="248767316"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Li Yu <raise.sail@gmail.com>
+CC: Joe Jin <joe.jin@oracle.com>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjaLYD//3rpUA==
+Date: Wed, 14 Nov 2012 03:43:33 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA8913348B0E7@ORSMSX102.amr.corp.intel.com>
+References: <509B5038.8090304@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+ <50A311E9.9030702@gmail.com>
+In-Reply-To: <50A311E9.9030702@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAE3hgw1019768
 
-On Tue, 2012-11-13 at 19:34 -0800, Greg Kroah-Hartman wrote:
+>-----Original Message-----
+>From: Li Yu [mailto:raise.sail@gmail.com]
+>Sent: Tuesday, November 13, 2012 7:37 PM
+>To: Dave, Tushar N
+>Cc: Joe Jin; e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org; Mary Mcgrath
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>‰∫é 2012Âπ¥11Êúà09Êó• 04:35, Dave, Tushar N ÂÜôÈÅì:
+>>> -----Original Message-----
+>>> From: netdev-owner@vger.kernel.org
+>>> [mailto:netdev-owner@vger.kernel.org]
+>>> On Behalf Of Joe Jin
+>>> Sent: Wednesday, November 07, 2012 10:25 PM
+>>> To: e1000-devel@lists.sf.net
+>>> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Mary
+>>> Mcgrath
+>>> Subject: 82571EB: Detected Hardware Unit Hang
+>>>
+>>> Hi list,
+>>>
+>>> IHAC reported "82571EB Detected Hardware Unit Hang" on HP ProLiant
+>>> DL360 G6, and have to reboot the server to recover:
+>>>
+>>> e1000e 0000:06:00.1: eth3: Detected Hardware Unit Hang:
+>>>   TDH                  <1a>
+>>>   TDT                  <1a>
+>>>   next_to_use          <1a>
+>>>   next_to_clean        <18>
+>>> buffer_info[next_to_clean]:
+>>>   time_stamp           <10047a74e>
+>>>   next_to_watch        <18>
+>>>   jiffies              <10047a88c>
+>>>   next_to_watch.status <1>
+>>> MAC Status             <80383>
+>>> PHY Status             <792d>
+>>> PHY 1000BASE-T Status  <3800>
+>>> PHY Extended Status    <3000>
+>>> PCI Status             <10>
+>>>
+>>> With newer kernel 2.0.0.1 the issue still reproducible.
+>>>
+>>> Device info:
+>>> 06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit
+>>> Ethernet Controller (Copper) (rev 06)
+>>> 06:00.1 0200: 8086:10bc (rev 06)
+>>>
+>>> I compared lspci output before and after the issue, different as below:
+>>> 06:00.1 Ethernet controller: Intel Corporation 82571EB Gigabit
+>>> Ethernet Controller (Copper) (rev 06)
+>>> 	Subsystem: Hewlett-Packard Company NC364T PCI Express Quad Port
+>>> Gigabit Server Adapter
+>>> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+
+>>> Stepping- SERR- FastB2B- DisINTx-
+>>> -	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>> +	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>>> +<TAbort- <MAbort- >SERR- <PERR- INTx+
+>>
+>> Are you sure this is not similar issue as before that you reported.
+>> i.e.
+>> On Mon, 2012-07-09 at 16:51 +0800, Joe Jin wrote:
+>>> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when
+>>> doing scp test. this issue is easy do reproduced on SUN FIRE X2270
+>>> M2, just copy a big file (>500M) from another server will hit it at
+>once.
+>>
+>> All devices in path from root complex to 82571, should have *same* max
+>payload size otherwise it can cause hang.
+>> Can you double check this?
+>>
+>
+>We also found such hang problem on 82599EB (ixgbe driver) in RHEL6.3
+>kernel, we ever tried to upgrade to latest version (3.8.21 or 3.10.17),
+>but it still happens.
+>
+>Is it probably also due to wrong "max payload size" set in BIOS?
+>
+It could be or could not be. I would suggest please create another thread with that issue as these two devices are significantly different.
 
-> I had to edit the path to the file, but it looks like it applies
-> properly now, thanks.
-
-Thanks,
-
-Just in case, below is what I applied to v3.0-rt.
-
--- Steve
-
->From fd92bf3e21c77fe06647b57feebb1b52da54969a Mon Sep 17 00:00:00 2001
-From: Roland Dreier <roland@purestorage.com>
-Date: Wed, 20 Jul 2011 06:22:21 -0700
-Subject: [PATCH] intel-iommu: Fix AB-BA lockdep report
-
-When unbinding a device so that I could pass it through to a KVM VM, I
-got the lockdep report below.  It looks like a legitimate lock
-ordering problem:
-
- - domain_context_mapping_one() takes iommu->lock and calls
-   iommu_support_dev_iotlb(), which takes device_domain_lock (inside
-   iommu->lock).
-
- - domain_remove_one_dev_info() starts by taking device_domain_lock
-   then takes iommu->lock inside it (near the end of the function).
-
-So this is the classic AB-BA deadlock.  It looks like a safe fix is to
-simply release device_domain_lock a bit earlier, since as far as I can
-tell, it doesn't protect any of the stuff accessed at the end of
-domain_remove_one_dev_info() anyway.
-
-BTW, the use of device_domain_lock looks a bit unsafe to me... it's
-at least not obvious to me why we aren't vulnerable to the race below:
-
-  iommu_support_dev_iotlb()
-                                          domain_remove_dev_info()
-
-  lock device_domain_lock
-    find info
-  unlock device_domain_lock
-
-                                          lock device_domain_lock
-                                            find same info
-                                          unlock device_domain_lock
-
-                                          free_devinfo_mem(info)
-
-  do stuff with info after it's free
-
-However I don't understand the locking here well enough to know if
-this is a real problem, let alone what the best fix is.
-
-Anyway here's the full lockdep output that prompted all of this:
-
-     =======================================================
-     [ INFO: possible circular locking dependency detected ]
-     2.6.39.1+ #1
-     -------------------------------------------------------
-     bash/13954 is trying to acquire lock:
-      (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-
-     but task is already holding lock:
-      (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-
-     which lock already depends on the new lock.
-
-     the existing dependency chain (in reverse order) is:
-
-     -> #1 (device_domain_lock){-.-...}:
-            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-            [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
-            [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
-            [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
-            [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
-            [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
-            [<ffffffff81002165>] do_one_initcall+0x45/0x190
-            [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
-            [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
-
-     -> #0 (&(&iommu->lock)->rlock){......}:
-            [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-            [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-            [<ffffffff812f8b42>] device_notifier+0x72/0x90
-            [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-            [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-            [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-            [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-            [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-            [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-            [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-            [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-            [<ffffffff8117569e>] vfs_write+0xce/0x190
-            [<ffffffff811759e4>] sys_write+0x54/0xa0
-            [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-
-     other info that might help us debug this:
-
-     6 locks held by bash/13954:
-      #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_file+0x44/0x170
-      #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+0xcd/0x170
-      #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] driver_unbind+0x9b/0xc0
-      #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] device_release_driver+0x27/0x50
-      #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>] __blocking_notifier_call_chain+0x5f/0xb0
-      #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_one_dev_info+0x208/0x230
-
-     stack backtrace:
-     Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
-     Call Trace:
-      [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
-      [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-      [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
-      [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-      [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff812f8b42>] device_notifier+0x72/0x90
-      [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-      [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-      [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-      [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-      [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-      [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-      [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-      [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-      [<ffffffff8117569e>] vfs_write+0xce/0x190
-      [<ffffffff811759e4>] sys_write+0x54/0xa0
-      [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
----
- drivers/pci/intel-iommu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 8c2564d..bc05a51 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 			found = 1;
- 	}
- 
-+	spin_unlock_irqrestore(&device_domain_lock, flags);
-+
- 	if (found == 0) {
- 		unsigned long tmp_flags;
- 		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
-@@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
- 		}
- 	}
--
--	spin_unlock_irqrestore(&device_domain_lock, flags);
- }
- 
- static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
--- 
-1.7.10.4
-
-
-
+-Tushar
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
