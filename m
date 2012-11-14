@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423363Ab2KNTNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 14:13:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46350 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423196Ab2KNTNC (ORCPT
+	id S1423392Ab2KNTN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 14:13:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30881 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423285Ab2KNTNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 14:13:02 -0500
+	Wed, 14 Nov 2012 14:13:23 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
@@ -14,61 +14,38 @@ To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         akpm@linux-foundation.org, mgorman@suse.de
 Cc: fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 09/11] zcache: Allow to compile if ZCACHE_DEBUG and !DEBUG_FS
-Date: Wed, 14 Nov 2012 14:12:17 -0500
-Message-Id: <1352920339-10183-10-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 10/11] zcache: Module license is defined twice.
+Date: Wed, 14 Nov 2012 14:12:18 -0500
+Message-Id: <1352920339-10183-11-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
 References: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is defined.
+The other (same license) is at the end of the file.
 
 Reviewed-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/ramster/debug.h |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/staging/ramster/zcache-main.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/ramster/debug.h b/drivers/staging/ramster/debug.h
-index 35af06d..b412b90 100644
---- a/drivers/staging/ramster/debug.h
-+++ b/drivers/staging/ramster/debug.h
-@@ -174,7 +174,6 @@ static inline void inc_zcache_evicted_eph_pageframes(void) { zcache_evicted_eph_
- static inline void inc_zcache_eph_nonactive_puts_ignored(void) { zcache_eph_nonactive_puts_ignored ++; };
- static inline void inc_zcache_pers_nonactive_puts_ignored(void) { zcache_pers_nonactive_puts_ignored ++; };
+diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+index 457e41c..a1a9799 100644
+--- a/drivers/staging/ramster/zcache-main.c
++++ b/drivers/staging/ramster/zcache-main.c
+@@ -68,8 +68,6 @@ static char *namestr __read_mostly = "zcache";
+ #define ZCACHE_GFP_MASK \
+ 	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
  
--int zcache_debugfs_init(void);
- #else
- static inline void inc_zcache_obj_count(void) { };
- static inline void dec_zcache_obj_count(void) { };
-@@ -198,10 +197,6 @@ static inline unsigned long curr_pageframes_count(void)
- {
- 	return 0;
- };
--static inline int zcache_debugfs_init(void)
--{
--	return 0;
--};
- static inline void inc_zcache_flush_total(void) { };
- static inline void inc_zcache_flush_found(void) { };
- static inline void inc_zcache_flobj_total(void) { };
-@@ -223,3 +218,12 @@ static inline void inc_zcache_evicted_eph_pageframes(void) { };
- static inline void inc_zcache_eph_nonactive_puts_ignored(void) { };
- static inline void inc_zcache_pers_nonactive_puts_ignored(void) { };
- #endif
-+
-+#ifdef CONFIG_DEBUG_FS
-+int zcache_debugfs_init(void);
-+#else
-+static inline int zcache_debugfs_init(void)
-+{
-+	return 0;
-+};
-+#endif
+-MODULE_LICENSE("GPL");
+-
+ /* crypto API for zcache  */
+ #ifdef CONFIG_ZCACHE2_MODULE
+ static char *zcache_comp_name = "lzo";
 -- 
 1.7.7.6
 
