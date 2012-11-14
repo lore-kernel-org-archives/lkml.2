@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2KNP6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 10:58:53 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:4365 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713Ab2KNP6v (ORCPT
+	id S1161142Ab2KNP7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 10:59:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43778 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932909Ab2KNP7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:58:51 -0500
-Message-ID: <1352908726.2883.0.camel@lorien2>
-Subject: Re: [PATCH 03/11] intel-iommu: Fix AB-BA lockdep report
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, stable <stable@vger.kernel.org>,
-        roland@purestorage.com, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>, shuahkhan@gmail.com
-Date: Wed, 14 Nov 2012 08:58:46 -0700
-In-Reply-To: <20121114033444.GA29560@kroah.com>
-References: <20111204185444.411298317@goodmis.org>
-	 <20111204190008.804987080@goodmis.org> <1352859923.7889.2.camel@lorien2>
-	 <1352862293.18025.52.camel@gandalf.local.home>
-	 <20121114033444.GA29560@kroah.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 Nov 2012 10:59:39 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 00/14] Win 8 support for digitizers
+Date: Wed, 14 Nov 2012 16:59:12 +0100
+Message-Id: <1352908766-4492-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-13 at 19:34 -0800, Greg Kroah-Hartman wrote:
-> On Tue, Nov 13, 2012 at 10:04:53PM -0500, Steven Rostedt wrote:
-> > On Tue, 2012-11-13 at 19:25 -0700, Shuah Khan wrote:
-> > > On Sun, 2011-12-04 at 13:54 -0500, Steven Rostedt wrote:
-> > > > From: Roland Dreier <roland@purestorage.com>
-> > > > 
-> > > > When unbinding a device so that I could pass it through to a KVM VM, I
-> > > > got the lockdep report below.  It looks like a legitimate lock
-> > > > ordering problem:
-> > > 
-> > > Did this patch not make it into stable releases other than 3.1. I
-> > > couldn't find it in any other stable tress prior to 3.1.
-> > 
-> > Ah, this was done in the early stable-rt releases. Where we took
-> > mainline fixes as long as they were in tglx's tree. But today the
-> > stable-rt tree waits for mainline fixes to come in via the stable tree
-> > so we don't do something like this. That is, miss getting a fix into
-> > stable.  Yeah, this should be added to 3.0. (looks to be already in 3.2
-> > and 3.4).
-> > 
-> > 
-> > Greg,
-> > 
-> > Can you add the following commit to the 3.0 stable tree. We've had this
-> > in v3.0-rt for some time now. :-/
-> > 
-> > commit 3e7abe2556b583e87dabda3e0e6178a67b20d06f
-> > Author: Roland Dreier <roland@purestorage.com>
-> > Date:   Wed Jul 20 06:22:21 2011 -0700
-> > 
-> >     intel-iommu: Fix AB-BA lockdep report
-> 
-> I had to edit the path to the file, but it looks like it applies
-> properly now, thanks.
+Hi Guys,
 
+here is the forth version of this patchset.
 
-Thanks,
--- Shuah
+* patches 1-9 has already been reviewed and are ready for inclusion I would say.
+* Jiri, I kept your ack on patch 4 even if I changed the place of the comment in hid.h
+* patch 10 is half new as it is splitted from a patch of the v3
+* patch 11 has been changed according to Henrik's comments
+* patches 12-13 have been splitted since v3 to introduce QUIRK_HOVERING and setup WIN 8
+devices in a better way.
+* patch 14 has been copied from the v3 as Dmitry wanted to use a MSC event for the timestamp.
 
+Cheers,
+Benjamin
+
+v1 introduction:
+So, this is an update for supporting Win 8 multitouch devices in the kernel.
+As I wanted to reliably forward the resolution, I noticed a bug in the
+processing of the unit_exponent in the hid core layer.
+Thus the fixes for hid-core and hid-input.
+
+v2 changes:
+* added missing initial patch that prevents the series to be applied on top of Jiri's tree
+* update to include latest hid changes
+* taken into account Alan's patch: "hid: put the case in the right switch statement"
+
+v3 changes:
+* splitted "round return value of hidinput_calc_abs_res" in a separate patch
+* export snto32 in hid.h as we need to use it in hid-input.c
+* didn't change all drivers, but add a field in hid_usage instead
+* add quirk MT_QUIRK_IGNORE_DUPLICATES so that any device can rely on it
+* easier understandable support of hovering devices
+* changed scan time definition
+* applied new definition of scan time in hid-multitouch
+* some other few things.
+
+v4 changes:
+* introduced QUIRK_HOVERING for hovering devices (not necessarily win 8 ones)
+* removed QUIRK_WIN8_CERTIFIED as it's not relevant anymore
+* made the change in input-mt.c
+* add a test against input->mt != null
+
+Benjamin Tissoires (14):
+  HID: hid-input: export hidinput_calc_abs_res
+  HID: hid-input: round return value of hidinput_calc_abs_res
+  HID: core: fix unit exponent parsing
+  HID: hid-input: add usage_index in struct hid_usage.
+  HID: hid-multitouch: support arrays for the split of the touches in a
+    report
+  HID: hid-multitouch: get maxcontacts also from logical_max value
+  HID: hid-multitouch: support T and C for win8 devices
+  HID: hid-multitouch: move ALWAYS_VALID quirk check
+  Input: introduce EV_MSC Timestamp
+  Input: mt: add input_mt_is_used
+  HID: hid-multitouch: add MT_QUIRK_IGNORE_DUPLICATES
+  HID: hid-multitouch: support for hovering devices
+  HID: hid-multitouch: fix Win 8 protocol
+  HID: hid-multitouch: forwards MSC_TIMESTAMP
+
+ Documentation/input/event-codes.txt |  11 +++
+ drivers/hid/hid-core.c              |  20 ++++-
+ drivers/hid/hid-input.c             |  24 ++++--
+ drivers/hid/hid-multitouch.c        | 155 ++++++++++++++++++++++++++++++------
+ drivers/input/input-mt.c            |   2 +-
+ include/linux/hid.h                 |   4 +
+ include/linux/input.h               |   1 +
+ include/linux/input/mt.h            |   6 ++
+ 8 files changed, 191 insertions(+), 32 deletions(-)
+
+-- 
+1.8.0
 
