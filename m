@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab2KNCFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:05:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56728 "EHLO
+	id S932420Ab2KNCTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:19:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42274 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932215Ab2KNCFW (ORCPT
+	by vger.kernel.org with ESMTP id S932318Ab2KNCTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:05:22 -0500
-Date: Wed, 14 Nov 2012 11:05:15 +0900
+	Tue, 13 Nov 2012 21:19:15 -0500
+Date: Wed, 14 Nov 2012 11:19:07 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, swarren@wwwdotorg.org
-Subject: Re: [PATCH V2] spi: tegra: add spi driver for sflash controller
-Message-ID: <20121114020514.GI4415@opensource.wolfsonmicro.com>
-References: <1352852687-25514-1-git-send-email-ldewangan@nvidia.com>
+To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] regmap: Add no-"bus" configuration possibility
+Message-ID: <20121114021906.GL4415@opensource.wolfsonmicro.com>
+References: <1351988297-16145-1-git-send-email-andrey.smirnov@convergeddevices.net>
+ <50A2E7C0.6080501@convergeddevices.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nO3oAMapP4dBpMZi"
+	protocol="application/pgp-signature"; boundary="9/GiYV45wF7IL3Iq"
 Content-Disposition: inline
-In-Reply-To: <1352852687-25514-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <50A2E7C0.6080501@convergeddevices.net>
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,37 +27,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---nO3oAMapP4dBpMZi
+--9/GiYV45wF7IL3Iq
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Nov 14, 2012 at 05:54:47AM +0530, Laxman Dewangan wrote:
-> NVIDIA's Tegra20 have the SPI (SFLASH) controller to
-> interface with spi flash device which is used for system
-> boot. Add the spi driver for this controller.
+On Tue, Nov 13, 2012 at 04:37:20PM -0800, Andrey Smirnov wrote:
+> On 11/03/2012 05:18 PM, Andrey Smirnov wrote:
 
-Applied, thanks.
+> > This commit has only purpose of illustrating the proposed extension of
+> > the 'regmap' API. It has never been compiled or tested.
 
---nO3oAMapP4dBpMZi
+> Mark, did you by any chance had a time to look at this RFC?
+
+No, not yet - you sent it in the middle of ELC.  Please also don't send
+contentless pings, if you think something has been lost send it again.
+
+--9/GiYV45wF7IL3Iq
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQovxMAAoJELSic+t+oim9XCAP/iXVSbJxuOlG5825N81Wl6X9
-Cs+c+AMo29Mf9KSneRo6T7PvS0ly+dnjM652rJM1Tn0LVdABuV51CgNhe1xcWAmo
-3O7gpKIam0fQmeokkEJIKv7CLw49pOzCmS7gbeXucZLUQDRqp+xSxwlFOvnkrNv0
-Ny8AF9w95jgyRycMTb8wDuJOaBE5ZzFR6vmxP6DRS+bqYDXKWgoZaEjgR9XiUJKe
-QZib5X2pHReqxRw4Etu9PYaI2ISHMCJMLffYWrOISvG/k1XGZyNwbIe0GQp9GjFO
-JXYUiTFFx4/UE70su5apdVsQ5VkLzgpEqacukRpUV8L62aWs9fquslwIPrfzkNrQ
-IlJj6CVntmpY2NPBpR4SgusYSEp3Za2fqPUkKhB/mTokhSA2gvT+ZNY09DH3ybsW
-1jWSTzYFLkLGpeoqeELzlQes8rlUw7B9mDSRK3fDhQAJjH5V3v2Ofhyqlx3C+hQp
-XUgN6WuNrvLbZhF6vbfiPuIYFZc3sNe+sv5xVj/ICl4qAS+mw1pV8oCPNXx9+r13
-xBh94BgLdjx4Rq0/dl3Pplv0Tm+hUfFfBJqVjD/RXJaeYKCjfIsxxkwnp7iuumaD
-yNaI/uCnfNnzgtl7WuWrIif4q6yvTM1l7UAlsd8GWtrNzCNG3fne0rOxdSRpX/gS
-gpWvkBcQoQBsItwU8WMA
-=Orq+
+iQIcBAEBAgAGBQJQov+TAAoJELSic+t+oim9nncP/A40Xvg3N8ZOzK0/kYVQF5qP
+t1xN5HeAoW1673/hI3a6IXG/2U63qyvmzgZeawTbFvtvS/I/uU8T6Igq6PUm/WEk
+WS0U8Sobw0ijnXxfdx4xQogRVOKMeDthK4bA1fhCBhQlWBqxkR/iuj8Q4M2UTspy
+sAFFFoY1tGu4jaG4BH6+KBGsCJpA4KIVKHUqPvyQ+73uzshaaoIiOsiGk35V9w42
+6BPvDDpzmW0uborrMDk8pPRUPtBuUFatoLHzP/zZdEH5GQ/NnaIhXkwZ85bCaqzE
+n62K+o52WMx/cokS8Yhrw84l/I5FRhjZLunh3p1tb9G5DjBNtbDQN0dwfS3/oY9j
+z9wzs3EYfBDszhQDs9mUD3ZONJohfEe82nI7OlLAWhUtl0lH0k1B6e7h9QTDKzsa
+ARVkBlAYFAlkQaPFiHV93ODooUSgPkVpE+RsFS047oDDnxe1Dn51B/obM8U4wZad
+xCKfrbM8hr/xXXcr7UmXP64ETQjcuohSOiLjn1F+6+pFae35ZsLl9KiNR11JryCz
+4CYoPNfhC4gCeK3nqfpcAafnIyphk7ejMRiA7aMPSguucWtiVtANweUqbQgk+ZhN
+VMwj+DkO9wJqRubTxSjAApez2JFiIrA5gFVcQDw0BxRKhXenbReD6Qy5h+LvzGgv
+cUusa3IskfFZoOPEqlqj
+=l5gk
 -----END PGP SIGNATURE-----
 
---nO3oAMapP4dBpMZi--
+--9/GiYV45wF7IL3Iq--
