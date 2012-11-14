@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2KNGrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:47:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64573 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2KNGre (ORCPT
+	id S1754193Ab2KNGtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:49:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43350 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab2KNGty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 01:47:34 -0500
-Date: Wed, 14 Nov 2012 07:47:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Hugh Dickins <hughd@google.com>
-Subject: Re: linux-next: Tree for Nov 14
-Message-ID: <20121114064726.GA2537@gmail.com>
-References: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
- <20121113213742.292f3ace.akpm@linux-foundation.org>
+	Wed, 14 Nov 2012 01:49:54 -0500
+Date: Tue, 13 Nov 2012 22:49:42 -0800
+From: tip-bot for David Sharp <dhsharp@google.com>
+Message-ID: <tip-01e3e710a9265fb7092efd67243d7b6dd6e2548a@git.kernel.org>
+Cc: vnagarnaik@google.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, rostedt@goodmis.org, dhsharp@google.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        vnagarnaik@google.com, rostedt@goodmis.org, dhsharp@google.com,
+        tglx@linutronix.de
+In-Reply-To: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
+References: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Trivial cleanup
+Git-Commit-ID: 01e3e710a9265fb7092efd67243d7b6dd6e2548a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121113213742.292f3ace.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 22:49:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  01e3e710a9265fb7092efd67243d7b6dd6e2548a
+Gitweb:     http://git.kernel.org/tip/01e3e710a9265fb7092efd67243d7b6dd6e2548a
+Author:     David Sharp <dhsharp@google.com>
+AuthorDate: Thu, 7 Jun 2012 16:46:24 -0700
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Wed, 31 Oct 2012 16:45:33 -0400
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+tracing: Trivial cleanup
 
-> On Wed, 14 Nov 2012 16:30:42 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > News: next-20121115 (i.e. tomorrow) will be the last release until
-> > next-20121126 (which should be just be after -rc7, I guess - assuming
-> > that Linus does not release v3.7 before then), so if you want something
-> > in linux-next for a reasonable amount of testing, it should probably be
-> > committed tomorrow.
-> 
-> It would help if the old sched/numa code wasn't in -next while 
-> you're away.  That would give me a clean run at 3.7 and will 
-> make it easier for others to integrate and test the four(!) 
-> different autoschednumacore implementations on top of 
-> linux-next.
-> 
-> Pretty please?
+Remove ftrace_format_syscall() declaration; it is neither defined nor
+used. Also update a comment and formatting.
 
-The next integration should have this solved: I have removed the 
-old sched/numa bits, replaced by the latest rebased/reworked 
-numa/core bits.
+Link: http://lkml.kernel.org/r/1339112785-21806-1-git-send-email-vnagarnaik@google.com
 
-(There's no fundamental changes to the mm/ bits, so the 
-conflict/merge fall-out should be minimal and/or trivial.)
+Signed-off-by: David Sharp <dhsharp@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/syscall.h    |    2 --
+ kernel/trace/ring_buffer.c |    6 +++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-Thanks,
-
-	Ingo
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 31966a4..0c95796 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -39,8 +39,6 @@ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+ extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+ extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+ extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+-extern int
+-ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
+ enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
+ 				      struct trace_event *event);
+ enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 0ebeb1d..23a384b 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1821,7 +1821,7 @@ rb_add_time_stamp(struct ring_buffer_event *event, u64 delta)
+ }
+ 
+ /**
+- * ring_buffer_update_event - update event type and data
++ * rb_update_event - update event type and data
+  * @event: the even to update
+  * @type: the type of event
+  * @length: the size of the event field in the ring buffer
+@@ -2723,8 +2723,8 @@ EXPORT_SYMBOL_GPL(ring_buffer_discard_commit);
+  * and not the length of the event which would hold the header.
+  */
+ int ring_buffer_write(struct ring_buffer *buffer,
+-			unsigned long length,
+-			void *data)
++		      unsigned long length,
++		      void *data)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct ring_buffer_event *event;
