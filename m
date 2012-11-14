@@ -1,206 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783Ab2KNJJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 04:09:11 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58033 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2KNJJF (ORCPT
+	id S932802Ab2KNJJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 04:09:30 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19938 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab2KNJJH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 04:09:05 -0500
-Message-ID: <50A35F21.9040003@linux.vnet.ibm.com>
-Date: Wed, 14 Nov 2012 14:36:41 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 14 Nov 2012 04:09:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 14 Nov 2012 01:09:02 -0800
+From: Philip Rakity <prakity@nvidia.com>
+To: Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "lrg@ti.com" <lrg@ti.com>, Kevin Liu <keyuan.liu@gmail.com>
+Date: Wed, 14 Nov 2012 10:08:57 +0100
+Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+Thread-Topic: [PATCH v2] mmc: sdhci: apply voltage range check only for
+ non-fixed regulators
+Thread-Index: Ac3CR68sS+gnd2cvRgep8lfvDuZV9g==
+Message-ID: <6D68C9EB-485C-44E8-B6C3-A988C12EFF0A@nvidia.com>
+References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
+ <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
+ <20121114072855.GF7407@opensource.wolfsonmicro.com>
+ <CADz5_gLb5ZRHLZHw1sDDWzu4QgOR7JXnaRMEXxETNzVsu1Wq1A@mail.gmail.com>
+ <20121114084105.GG7407@opensource.wolfsonmicro.com>
+ <CADz5_gJDHeZNoWRF18YJKY3kT1vN0=d-eLcP1wgWxYhLNnbpDQ@mail.gmail.com>
+In-Reply-To: <CADz5_gJDHeZNoWRF18YJKY3kT1vN0=d-eLcP1wgWxYhLNnbpDQ@mail.gmail.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>, linux-pm@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, Sameer Nanda <snanda@chromium.org>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] cpuidle: Measure idle state durations with monotonic
- clock
-References: <1352843563-16392-1-git-send-email-jwerner@chromium.org>
-In-Reply-To: <1352843563-16392-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12111409-6102-0000-0000-0000028C5D29
+Content-Language: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 03:22 AM, Julius Werner wrote:
-> Many cpuidle drivers measure their time spent in an idle state by
-> reading the wallclock time before and after idling and calculating the
-> difference. This leads to erroneous results when the wallclock time gets
-> updated by another processor in the meantime, adding that clock
-> adjustment to the idle state's time counter.
-> 
-> If the clock adjustment was negative, the result is even worse due to an
-> erroneous cast from int to unsigned long long of the last_residency
-> variable. The negative 32 bit integer will zero-extend and result in a
-> forward time jump of roughly four billion milliseconds or 1.3 hours on
-> the idle state residency counter.
-> 
-> This patch changes all affected cpuidle drivers to use the monotonic
-> clock for their measurements instead. It also removes the erroneous
-> cast, making sure that negative residency values are applied correctly
-> even though they should not appear anymore.
 
-Currently tegra/cpuidle uses ktime_get(). Good to have it for all
-the other arch idle residency time logging too.
-Tested patch on pseries.
+On Nov 14, 2012, at 8:57 AM, Kevin Liu <keyuan.liu@gmail.com> wrote:
 
-Reviewed-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> 2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>> On Wed, Nov 14, 2012 at 04:36:28PM +0800, Kevin Liu wrote:
+>>> 2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>> 
+>>>> Should this be regulator_set_voltage_tol()?  Otherwise it'd be good to
+>>>> explain where the numbers come from.
+>> 
+>>> In SD physical layer spec 3.01 chapter 6.6.1, the threshold level for
+>>> voltage range is defined as below:
+>>> Vdd(min) = 2.7V while Vdd(max) = 3.6V.
+>>> The card should work within the voltage range.
+>> 
+>>> If you are afraid the voltage value is too aggressive, maybe we can
+>>> use regulator_set_voltage_tol() to set a smaller range.
+>>> But which range should be reasonable?
+>> 
+>> The above makes total sense - thanks!  I just wasn't aware that the
+>> range was specified in this fashion in the spec.  Might be worth a
+>> comment in the code if you need to respin.
+> 
+> Sure, I will update the patch. Thanks!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Cheers,
-Deepthi
 
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  arch/powerpc/platforms/pseries/processor_idle.c |    4 ++--
->  drivers/acpi/processor_idle.c                   |   12 ++++++------
->  drivers/cpuidle/cpuidle.c                       |    3 +--
->  drivers/idle/intel_idle.c                       |   13 ++++---------
->  4 files changed, 13 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-> index 45d00e5..4d806b4 100644
-> --- a/arch/powerpc/platforms/pseries/processor_idle.c
-> +++ b/arch/powerpc/platforms/pseries/processor_idle.c
-> @@ -36,7 +36,7 @@ static struct cpuidle_state *cpuidle_state_table;
->  static inline void idle_loop_prolog(unsigned long *in_purr, ktime_t *kt_before)
->  {
-> 
-> -	*kt_before = ktime_get_real();
-> +	*kt_before = ktime_get();
->  	*in_purr = mfspr(SPRN_PURR);
->  	/*
->  	 * Indicate to the HV that we are idle. Now would be
-> @@ -50,7 +50,7 @@ static inline  s64 idle_loop_epilog(unsigned long in_purr, ktime_t kt_before)
->  	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
->  	get_lppaca()->idle = 0;
-> 
-> -	return ktime_to_us(ktime_sub(ktime_get_real(), kt_before));
-> +	return ktime_to_us(ktime_sub(ktime_get(), kt_before));
->  }
-> 
->  static int snooze_loop(struct cpuidle_device *dev,
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index e8086c7..8c98d73 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -751,9 +751,9 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
-> 
-> 
->  	lapic_timer_state_broadcast(pr, cx, 1);
-> -	kt1 = ktime_get_real();
-> +	kt1 = ktime_get();
->  	acpi_idle_do_entry(cx);
-> -	kt2 = ktime_get_real();
-> +	kt2 = ktime_get();
->  	idle_time =  ktime_to_us(ktime_sub(kt2, kt1));
-> 
->  	/* Update device last_residency*/
-> @@ -843,11 +843,11 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
->  	if (cx->type == ACPI_STATE_C3)
->  		ACPI_FLUSH_CPU_CACHE();
-> 
-> -	kt1 = ktime_get_real();
-> +	kt1 = ktime_get();
->  	/* Tell the scheduler that we are going deep-idle: */
->  	sched_clock_idle_sleep_event();
->  	acpi_idle_do_entry(cx);
-> -	kt2 = ktime_get_real();
-> +	kt2 = ktime_get();
->  	idle_time_ns = ktime_to_ns(ktime_sub(kt2, kt1));
->  	idle_time = idle_time_ns;
->  	do_div(idle_time, NSEC_PER_USEC);
-> @@ -934,7 +934,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  	 */
->  	lapic_timer_state_broadcast(pr, cx, 1);
-> 
-> -	kt1 = ktime_get_real();
-> +	kt1 = ktime_get();
->  	/*
->  	 * disable bus master
->  	 * bm_check implies we need ARB_DIS
-> @@ -965,7 +965,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  		c3_cpu_count--;
->  		raw_spin_unlock(&c3_lock);
->  	}
-> -	kt2 = ktime_get_real();
-> +	kt2 = ktime_get();
->  	idle_time_ns = ktime_to_ns(ktime_sub(kt2, kt1));
->  	idle_time = idle_time_ns;
->  	do_div(idle_time, NSEC_PER_USEC);
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 7f15b85..1536edd 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -109,8 +109,7 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
->  		/* This can be moved to within driver enter routine
->  		 * but that results in multiple copies of same code.
->  		 */
-> -		dev->states_usage[entered_state].time +=
-> -				(unsigned long long)dev->last_residency;
-> +		dev->states_usage[entered_state].time += dev->last_residency;
->  		dev->states_usage[entered_state].usage++;
->  	} else {
->  		dev->last_residency = 0;
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index b0f6b4c..6329a97 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -56,7 +56,7 @@
->  #include <linux/kernel.h>
->  #include <linux/cpuidle.h>
->  #include <linux/clockchips.h>
-> -#include <linux/hrtimer.h>	/* ktime_get_real() */
-> +#include <linux/hrtimer.h>	/* ktime_get() */
->  #include <trace/events/power.h>
->  #include <linux/sched.h>
->  #include <linux/notifier.h>
-> @@ -281,8 +281,7 @@ static int intel_idle(struct cpuidle_device *dev,
->  	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
->  	unsigned long eax = (unsigned long)cpuidle_get_statedata(state_usage);
->  	unsigned int cstate;
-> -	ktime_t kt_before, kt_after;
-> -	s64 usec_delta;
-> +	ktime_t kt_before;
->  	int cpu = smp_processor_id();
-> 
->  	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
-> @@ -297,7 +296,7 @@ static int intel_idle(struct cpuidle_device *dev,
->  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
-> 
-> -	kt_before = ktime_get_real();
-> +	kt_before = ktime_get();
-> 
->  	stop_critical_timings();
->  	if (!need_resched()) {
-> @@ -310,17 +309,13 @@ static int intel_idle(struct cpuidle_device *dev,
-> 
->  	start_critical_timings();
-> 
-> -	kt_after = ktime_get_real();
-> -	usec_delta = ktime_to_us(ktime_sub(kt_after, kt_before));
-> +	dev->last_residency = ktime_to_us(ktime_sub(ktime_get(), kt_before));
-> 
->  	local_irq_enable();
-> 
->  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> 
-> -	/* Update cpuidle counters */
-> -	dev->last_residency = (int)usec_delta;
-> -
->  	return index;
->  }
-> 
+re-read spec.  Please apply Kevin;s patch.
 
+Reviewed-by: Philip Rakity <prakity@nvidia.com>
