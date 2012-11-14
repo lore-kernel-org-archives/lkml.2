@@ -1,62 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab2KNR0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 12:26:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35269 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2KNR0u (ORCPT
+	id S933055Ab2KNR1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 12:27:53 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:11882 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2KNR1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 12:26:50 -0500
-Date: Wed, 14 Nov 2012 09:26:45 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, riel@redhat.com,
-        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
-        tglx@linutronix.de
-Cc: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-tip-commits@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, riel@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, tglx@linutronix.de
-Subject: Re: [tip:numa/core] mm: Count the number of pages affected in
- change_protection()
-Message-Id: <20121114092645.95fce74b.akpm@linux-foundation.org>
-In-Reply-To: <tip-a9463d90124af069b9b58a276acc46c00054d722@git.kernel.org>
-References: <tip-a9463d90124af069b9b58a276acc46c00054d722@git.kernel.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 12:27:52 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6895"; a="6791657"
+X-IronPort-AV: E=McAfee;i="5400,1158,6895"; a="340184390"
+From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+CC: "John W . Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-wireless@vger.kernel.org>,
+        "Luis R . Rodriguez" <rodrigue@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+Date: Wed, 14 Nov 2012 19:27:47 +0200
+Message-ID: <29414886.frl7IkqOMP@lx-vladimir>
+Organization: Qualcomm Atheros
+User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <1352912932.9388.23.camel@joe-AO722>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com> <4818336.JicdpLVKSo@lx-vladimir> <1352912932.9388.23.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 06:25:56 -0800 tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> mm: Count the number of pages affected in change_protection()
+On Wednesday, November 14, 2012 09:08:52 AM Joe Perches wrote:
+> On Wed, 2012-11-14 at 18:18 +0200, Vladimir Kondratiev wrote:
+> > And, here it goes (can I call it PATCH?):
+> Don't see why not.
 > 
-> This will be used by three kinds of purposes:
+> > From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
 > 
->  - to optimize mprotect()
+> []
 > 
->  - to speed up working set scanning for working set areas that
->    have not been touched
+> > Introduce debug_hex_dump() that can be dynamically controlled, similar to
+> > pr_debug.
+> > 
+> > Also, make print_hex_dump_bytes() dynamically controlled
 > 
->  - to more accurately scan per real working set
-> 
-> No change in functionality from this patch.
+> print_hex_dump_debug might be a better name than
+> debug_hex_dump because it's more similar to the other
+> print_hex_dump<_foo> names.
 
-Seems simple, cheap and useful.
+Well, let it be:
 
-A bit lacking in interface comments though.  In particular, does the
-return value (which is in units of PAGE_SIZE pages) represent the
-number of pages which were inspected, or the number of pages which
-actually had their permissions modified?
+>From 5c9a79ea32e300f9a228d659f325e30d450b57c1 Mon Sep 17 00:00:00 2001
+From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Date: Wed, 14 Nov 2012 19:24:51 +0200
+Subject: [PATCH] dynamic_debug: dynamic hex dump
 
->From a quick look, it seems the answer is both.  Or neither.  If a
-page's protection was written to but unaltered, that counts as a "1". 
-But if a pmd couldn't be locked via __pmd_trans_huge_lock(), that
-counts as a "0".
+Introduce print_hex_dump_debug() that can be dynamically controlled, similar to
+pr_debug.
 
-Anyway, please have a think about it, and describe exactly what these
-return values mean?
+Also, make print_hex_dump_bytes() dynamically controlled
+
+Implement only 'p' flag (_DPRINTK_FLAGS_PRINT) to keep it simple since hex dump prints
+multiple lines and long prefix would impact readability.
+To provide line/file etc. information, use pr_debug or similar
+before/after print_hex_dump_debug()
+
+Signed-off-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+---
+ Documentation/dynamic-debug-howto.txt |   11 +++++++++--
+ include/linux/dynamic_debug.h         |   10 ++++++++++
+ include/linux/printk.h                |   17 +++++++++++++++++
+ 3 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 6e16849..b39a771 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -6,8 +6,12 @@ This document describes how to use the dynamic debug (dyndbg) feature.
+ 
+ Dynamic debug is designed to allow you to dynamically enable/disable
+ kernel code to obtain additional kernel information.  Currently, if
+-CONFIG_DYNAMIC_DEBUG is set, then all pr_debug()/dev_dbg() calls can
+-be dynamically enabled per-callsite.
++CONFIG_DYNAMIC_DEBUG is set, then all pr_debug()/dev_dbg() and
++print_hex_dump_debug()/print_hex_dump_bytes() calls can be dynamically
++enabled per-callsite.
++
++If CONFIG_DYNAMIC_DEBUG is not set, print_hex_dump_debug() is just
++shortcut for print_hex_dump(KERN_DEBUG).
+ 
+ Dynamic debug has even more useful features:
+ 
+@@ -202,6 +206,9 @@ The flags are:
+   t    Include thread ID in messages not generated from interrupt context
+   _    No flags are set. (Or'd with others on input)
+ 
++For print_hex_dump_debug() and print_hex_dump_bytes(), only 'p' flag
++have meaning, other flags ignored.
++
+ For display, the flags are preceded by '='
+ (mnemonic: what the flags are currently equal to).
+ 
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 6dd4787..17565ab 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -95,6 +95,16 @@ do {								\
+ 				     ##__VA_ARGS__);		\
+ } while (0)
+ 
++#define dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
++			 groupsize, buf, len, ascii)		\
++do {								\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, prefix_str);	\
++	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
++		print_hex_dump(KERN_DEBUG, prefix_str,		\
++			       prefix_type, rowsize, groupsize,	\
++			       buf, len, ascii);		\
++} while (0)
++
+ #else
+ 
+ #include <linux/string.h>
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 9afc01e..02c95cf 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -321,8 +321,13 @@ extern void hex_dump_to_buffer(const void *buf, size_t len,
+ extern void print_hex_dump(const char *level, const char *prefix_str,
+ 			   int prefix_type, int rowsize, int groupsize,
+ 			   const void *buf, size_t len, bool ascii);
++#if defined(CONFIG_DYNAMIC_DEBUG)
++#define print_hex_dump_bytes(prefix_str, prefix_type, buf, len)	\
++	dynamic_hex_dump(prefix_str, prefix_type, 16, 1, buf, len, true)
++#else
+ extern void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
+ 				 const void *buf, size_t len);
++#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
+ #else
+ static inline void print_hex_dump(const char *level, const char *prefix_str,
+ 				  int prefix_type, int rowsize, int groupsize,
+@@ -336,4 +341,16 @@ static inline void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
+ 
+ #endif
+ 
++#if defined(CONFIG_DYNAMIC_DEBUG)
++#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,	\
++			     groupsize, buf, len, ascii)	\
++	dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
++			 groupsize, buf, len, ascii)
++#else
++#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,		\
++			     groupsize, buf, len, ascii)		\
++	print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, rowsize,	\
++		       groupsize, buf, len, ascii)
++#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
++
+ #endif
+-- 
+1.7.10.4
+
 
