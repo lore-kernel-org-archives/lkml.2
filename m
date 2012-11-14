@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab2KNOcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 09:32:39 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57383 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab2KNOch (ORCPT
+	id S1422995Ab2KNOcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 09:32:47 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44336 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422661Ab2KNOco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 09:32:37 -0500
+	Wed, 14 Nov 2012 09:32:44 -0500
 From: Mathias Leblanc <mathias.leblanc@st.com>
 To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
         Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
@@ -14,10 +14,12 @@ To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
         Debora Velarde <debora@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, Jean-Luc Blanc <jean-luc.blanc@st.com>,
         Mathias Leblanc <mathias.leblanc@st.com>
-Subject: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Date: Wed, 14 Nov 2012 15:31:42 +0100
-Message-Id: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
+Subject: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C CHROMIUM
+Date: Wed, 14 Nov 2012 15:31:43 +0100
+Message-Id: <1352903504-3364-2-git-send-email-mathias.leblanc@st.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
+References: <1352903504-3364-1-git-send-email-mathias.leblanc@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -49,7 +51,7 @@ Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
 
 diff --git a/drivers/char/tpm/tpm_stm_st33_i2c.c b/drivers/char/tpm/tpm_stm_st33_i2c.c
 new file mode 100644
-index 0000000..b96bb8c
+index 0000000..3ec6ae9
 --- /dev/null
 +++ b/drivers/char/tpm/tpm_stm_st33_i2c.c
 @@ -0,0 +1,903 @@
@@ -907,7 +909,7 @@ index 0000000..b96bb8c
 +		chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
 +	ret = tpm_pm_resume(&client->dev);
 +	if (!ret)
-+		tpm_continue_selftest(chip);
++		tpm_continue_selftest_nocheck(chip);
 +	}
 +	return ret;
 +}				/* tpm_st33_i2c_pm_resume() */
