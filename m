@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab2KNFur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:50:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55154 "EHLO
+	id S1756398Ab2KNGAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:00:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55169 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756315Ab2KNFun (ORCPT
+	by vger.kernel.org with ESMTP id S1756337Ab2KNFur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:50:43 -0500
-Message-Id: <20121114053941.728271535@decadent.org.uk>
+	Wed, 14 Nov 2012 00:50:47 -0500
+Message-Id: <20121114053941.859256353@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:30 +0000
+Date: Wed, 14 Nov 2012 05:40:31 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 57/82] hwmon: (w83627ehf) Force initial bank selection
+        Ilija Hadzic <ilijahadzic@gmail.com>,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 58/82] drm: restore open_count if drm_setup fails
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Ilija Hadzic <ilijahadzic@gmail.com>
 
-commit 3300fb4f88688029fff8dfb9ec0734f6e4cba3e7 upstream.
+commit 0f1cb1bd94a9c967cd4ad3de51cfdabe61eb5dcc upstream.
 
-Don't assume bank 0 is selected at device probe time. This may not be
-the case. Force bank selection at first register access to guarantee
-that we read the right registers upon driver loading.
+If drm_setup (called at first open) fails, the whole
+open call has failed, so we should not keep the
+open_count incremented.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/w83627ehf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/drm_fops.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 1821b74..de3c7e0 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2083,6 +2083,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
- 	mutex_init(&data->lock);
- 	mutex_init(&data->update_lock);
- 	data->name = w83627ehf_device_names[sio_data->kind];
-+	data->bank = 0xff;		/* Force initial bank selection */
- 	platform_set_drvdata(pdev, data);
- 
- 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
+diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
+index 7ef1b67..af68eca 100644
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -135,8 +135,11 @@ int drm_open(struct inode *inode, struct file *filp)
+ 	retcode = drm_open_helper(inode, filp, dev);
+ 	if (!retcode) {
+ 		atomic_inc(&dev->counts[_DRM_STAT_OPENS]);
+-		if (!dev->open_count++)
++		if (!dev->open_count++) {
+ 			retcode = drm_setup(dev);
++			if (retcode)
++				dev->open_count--;
++		}
+ 	}
+ 	if (!retcode) {
+ 		mutex_lock(&dev->struct_mutex);
 
 
