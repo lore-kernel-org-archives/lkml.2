@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab2KNIgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 03:36:31 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36575 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab2KNIga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 03:36:30 -0500
+	id S932756Ab2KNIhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 03:37:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35524 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751578Ab2KNIhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 03:37:02 -0500
+Date: Wed, 14 Nov 2012 09:36:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
+Subject: Re: [RFC] rework mem_cgroup iterator
+Message-ID: <20121114083653.GA17111@dhcp22.suse.cz>
+References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
+ <50A2F9FC.5050303@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20121114072855.GF7407@opensource.wolfsonmicro.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-	<CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-	<20121114072855.GF7407@opensource.wolfsonmicro.com>
-Date: Wed, 14 Nov 2012 16:36:28 +0800
-Message-ID: <CADz5_gLb5ZRHLZHw1sDDWzu4QgOR7JXnaRMEXxETNzVsu1Wq1A@mail.gmail.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: m.szyprowski@samsung.com, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A2F9FC.5050303@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Wed, Nov 14, 2012 at 03:11:37PM +0800, Kevin Liu wrote:
->
->> -             ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
->> +             ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
->
-> Should this be regulator_set_voltage_tol()?  Otherwise it'd be good to
-> explain where the numbers come from.
-In SD physical layer spec 3.01 chapter 6.6.1, the threshold level for
-voltage range is defined as below:
-Vdd(min) = 2.7V while Vdd(max) = 3.6V.
-The card should work within the voltage range.
+On Wed 14-11-12 09:55:08, Li Zefan wrote:
+> On 2012/11/13 23:30, Michal Hocko wrote:
+> > Hi all,
+> > this patch set tries to make mem_cgroup_iter saner in the way how it
+> > walks hierarchies. css->id based traversal is far from being ideal as it
+> > is not deterministic because it depends on the creation ordering.
+> > 
+> > Diffstat looks promising but it is fair the say that the biggest cleanup is
+> > just css_get_next removal. The memcg code has grown a bit but I think it is
+> > worth the resulting outcome (the sanity ;)).
+> > 
+> 
+> So memcg won't use css id at all, right?
 
-If you are afraid the voltage value is too aggressive, maybe we can
-use regulator_set_voltage_tol() to set a smaller range.
-But which range should be reasonable?
+Unfortunately we still use it for the swap accounting but that one could
+be replaced by something else, probably. Have to think about it.
 
->> +             ret = regulator_is_supported_voltage(host->vmmc, 1700000,
->> +                     1950000);
->
-> We should really add a regulator_is_supported_voltage_tol...  let me
-> just do that.
+> Then we can remove the whole css_id stuff, and that's quite a bunch of
+> code.
+
+Is memcg the only user of css_id? Quick grep shows that yes but I
+haven't checked all the callers of the exported functions. I would be
+happy if more code goes away.
+
+-- 
+Michal Hocko
+SUSE Labs
