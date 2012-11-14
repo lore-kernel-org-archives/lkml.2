@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab2KNHvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:51:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50136 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab2KNHvE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:51:04 -0500
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Markus Grabner <grabner@icg.tugraz.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        line6linux-devel@lists.sourceforge.net, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 4/6] staging: line6: drop MIDI dumping code
-Date: Wed, 14 Nov 2012 08:50:44 +0100
-Message-Id: <1352879446-23195-5-git-send-email-stefanha@gmail.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
-References: <1352879446-23195-1-git-send-email-stefanha@gmail.com>
+	id S1756751Ab2KNHvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:51:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19689 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756699Ab2KNHvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 02:51:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,249,1352102400"; 
+   d="scan'208";a="168160005"
+Subject: [PATCH] x86/irq,io_apic: Fix wrong unmask_ioapic calling when the
+ irq is masked
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: mingo@redhat.com, tglx@linutronix.de
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Nov 2012 00:52:42 +0800
+Message-ID: <1352911962.15558.1676.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ALSA amidi(1) and aseqdump(1) can be used to dump MIDI instead of
-manually dumping MIDI messages in the driver.  The advantage of using
-these existing tools is that can be used at run-time rather than
-compile-time.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+There is one typical case will cause this issue, that is:
+One io-apic interrupt with ONE_SHOT and threaded, when interrupt is coming:
+handle_fasteoi_irq()
+--> mask_irq(desc)
+    ...
+    desc->irq_data.chip->irq_eoi(&desc->irq_data)[ack_apic_level]
+    --> ioapic_irqd_mask()
+        ...
+        ioapic_irqd_unmask()
+
+After that, the irq will be in unmasked state.
+
+It will break the ONE_SHOT and threaded irq, and brings some unwanted issues.
+Here adding the irqd_irq_masked() condition to know if unmasking action is
+needed.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 ---
- drivers/staging/line6/driver.c | 3 ---
- drivers/staging/line6/midi.c   | 3 ---
- 2 files changed, 6 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index fda92d1..0bc838d 100644
---- a/drivers/staging/line6/driver.c
-+++ b/drivers/staging/line6/driver.c
-@@ -402,9 +402,6 @@ static void line6_data_received(struct urb *urb)
- 			continue;
- 
- 		line6->message_length = done;
--#ifdef CONFIG_LINE6_USB_DUMP_MIDI
--		line6_write_hexdump(line6, 'r', line6->buffer_message, done);
--#endif
- 		line6_midi_receive(line6, line6->buffer_message, done);
- 
- 		switch (line6->usbdev->descriptor.idProduct) {
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index 348d425..c8e099b 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -59,9 +59,6 @@ static void line6_midi_transmit(struct snd_rawmidi_substream *substream)
- 		if (done == 0)
- 			break;
- 
--#ifdef CONFIG_LINE6_USB_DUMP_MIDI
--		line6_write_hexdump(line6, 's', chunk, done);
--#endif
- 		line6_midibuf_write(mb, chunk, done);
- 		snd_rawmidi_transmit_ack(substream, done);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 1817fa9..d963e76 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2479,7 +2479,8 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ 		 */
+ 		if (!io_apic_level_ack_pending(cfg))
+ 			irq_move_masked_irq(data);
+-		unmask_ioapic(cfg);
++		if (!irqd_irq_masked(data))
++			unmask_ioapic(cfg);
  	}
+ }
+ #else
 -- 
-1.8.0
+1.7.0.4
+
+
 
