@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab2KNKPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 05:15:03 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:39923 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755024Ab2KNKPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 05:15:01 -0500
-Message-ID: <50A36ED5.4080505@parallels.com>
-Date: Wed, 14 Nov 2012 14:13:41 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1161111Ab2KNKUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 05:20:36 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6182 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161083Ab2KNKUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 05:20:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 14 Nov 2012 02:20:26 -0800
+Message-ID: <50A3712E.7000104@nvidia.com>
+Date: Wed, 14 Nov 2012 12:23:42 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 3/7] fs, notify: Add file handle entry into inotify_inode_mark
-References: <20121112101440.665694060@openvz.org> <19056257.kzSp6roqV4@deuteros> <20121114095812.GF16685@moon> <2105540.yeyMVrW4mH@deuteros>
-In-Reply-To: <2105540.yeyMVrW4mH@deuteros>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
+References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de> <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de> <50A357D3.9080002@nvidia.com> <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121114084931.GA31837@avionic-0098.mockup.avionic-design.de>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 02:08 PM, Tvrtko Ursulin wrote:
-> On Wednesday 14 November 2012 13:58:12 Cyrill Gorcunov wrote:
->> On Wed, Nov 14, 2012 at 09:50:55AM +0000, Tvrtko Ursulin wrote:
->>>>> You could not use a pointer and then allocate your buffers on the
->>>>> check
->>>>> point operation, freeing on restore?
->>>>
->>>> The problem is not allocating the memory itself but rather the time when
->>>> the information needed (ie the dentry) is available. The only moment
->>>> when we can use dentry of the target file/directory is at
->>>> inotify_new_watch, that's why i need to compose fhandle that early. At
->>>> any later point we simply have no dentry to use.
->>>
->>> But you do not fundamentally need the dentry to restore a watch, right?
->>
->> dentry only needed to encode the file handle.
->>
->>> Couldn't you restore, creating a new restore path if needed, using the
->>> inode which is pinned anyway while the watch exists?
->>
->> plain inode is not enough as far as i can tell, iow i don't see the way
->> to restore path from inode solely. or there something i miss?
+On 14.11.2012 10:49, Thierry Reding wrote:
+> Can you find out how the host1x clock is setup without this change? I
+> was told that freezes can occur when you try to access the registers
+> without the host1x clock being enabled. However, the host1x driver
+> should take care to properly setup the clock.
 > 
-> I don't know, as I said I was not following this at all until now. Just 
-> throwing in ideas.
-> 
-> I thought, since inotify does not use the path or dentry outside the system 
-> call at all, perhaps you need a different entry point allowing you to restore 
-> the watch using the inode or something. Assuming life time of objects and 
-> stuff in C&R world would allow you that. Since you don't need the full path, 
-> just something 64 bytes long, I assumed that could be the case.
+> To find out if the non-running clock is the issue, can you try to patch
+> that line and make the final element true instead of false? That should
+> enable the clock on boot so that it should always be running.
 
-Well, the kernel already has all the API we need but one -- it shows us _nothing_
-about the inode being watched. And we'd appreciate any information about it. Even
-the ino:dev pair would work. We propose to show the handle because we believe, that
-such API is better that ino:dev. You can get the handle, call the open_by_handle_at
-right at once and get much much more information about the inode with any other
-API (e.g. calling fstat() will give you the ino:dev pair). Having just ino:dev
-pair at hands is not that flexible.
+I tried with fastboot and U-Boot, and whenever that line is there,
+kernel boot will halt at nvhost init. Same happens if I just change the
+false to true.
 
-> Regards,
-> 
-> Tvrtko
-> 
-> .
-> 
+nvhost will enable the clock and disable as it need. Also, part of
+host1x initialization did proceed, but it ended up hanging after a few
+registers were initialized. So it's not a case of host1x being off, but
+host1x hanging after a while.
 
+If I change this line to:
 
+       { "host1x",     "pll_p",        216000000,      false },
+
+it will also work properly. It looks like we have some problem with
+pll_c in Tegra20, or clock configuration with your patch. In Tegra30,
+pll_c with 144MHz seems to work fine, but on Tegra20, it doesn't.
+
+In internal kernel, we use pll_c for host1x, so hardware shouldn't be
+the problem here.
+
+Best regards,
+Terje
