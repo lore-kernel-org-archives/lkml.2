@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422765Ab2KNMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:24:29 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:1224 "EHLO mms2.broadcom.com"
+	id S1422752Ab2KNMcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:32:01 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:54475 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161223Ab2KNMY1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:24:27 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Dmitry Kravkov" <dmitry@broadcom.com>
-To: "Joseph Gasparakis" <joseph.gasparakis@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Peter P Waskiewicz Jr" <peter.p.waskiewicz.jr@intel.com>
-Subject: RE: [PATCH 1/3] net: Add support for hardware-offloaded
- encapsulation
-Thread-Topic: [PATCH 1/3] net: Add support for hardware-offloaded
- encapsulation
-Thread-Index: AQHNvh+Txw513xb7fkuh1K7NvirtG5fpSRww
-Date: Wed, 14 Nov 2012 12:23:57 +0000
-Message-ID: <504C9EFCA2D0054393414C9CB605C37F1BF5CF01@SJEXCHMB06.corp.ad.broadcom.com>
-References: <1352427483-4380-1-git-send-email-joseph.gasparakis@intel.com>
- <1352427483-4380-2-git-send-email-joseph.gasparakis@intel.com>
-In-Reply-To: <1352427483-4380-2-git-send-email-joseph.gasparakis@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	id S1161219Ab2KNMcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 07:32:00 -0500
+Message-ID: <50A38F12.8030501@imgtec.com>
+Date: Wed, 14 Nov 2012 12:31:14 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-X-WSS-ID: 7CBD535F3R02306391-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jonas Bonn <jonas.bonn@gmail.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>, Markos <markos.chandras@imgtec.com>
+Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <CACM3HyFE-S2NM75qVS2Fhhm8YoP1jH4mS41aZ5B1gW2wo-Q99g@mail.gmail.com> <50A23906.6010900@imgtec.com> <201211141223.05063.arnd@arndb.de>
+In-Reply-To: <201211141223.05063.arnd@arndb.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_11_14_12_31_58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
-> On Behalf Of Joseph Gasparakis
-> Sent: Friday, November 09, 2012 4:18 AM
-> To: davem@davemloft.net; shemminger@vyatta.com; chrisw@sous-sol.org
-> Cc: Joseph Gasparakis; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Peter P Waskiewicz Jr
-> Subject: [PATCH 1/3] net: Add support for hardware-offloaded encapsulation
+On 14/11/12 12:23, Arnd Bergmann wrote:
+> On Tuesday 13 November 2012, James Hogan wrote:
+>> Hopefully with several architecture maintainers asking for this it might
+>> get somewhere, but indeed we're aware of the feedback problem on that list.
+>>
+>> The points that I've considered for defaulting to old syscalls:
+>> * doesn't change existing behaviour of other architectures, so is simply
+>> less risk of breaking them.
+>> * could possibly make uClibc slightly smaller if it doesn't have to add
+>> extra arguments.
 > 
-> This patch adds support in the kernel for offloading in the NIC Tx and Rx
-> checksumming for encapsulated packets (such as VXLAN and IP GRE)
-> 
-> Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-[D.K.] 
+> The second argument is not very good when you consider that it means adding
+> the same wrapper into the kernel rather than into uClibc, where it can
+> be stripped out when unused (e.g. for static compilation) and doesn't
+> have to be present in memory since the library is in pageable user space
+> memory, while the kernel side implementation would always have to
+> present.
 
->  	NETIF_F_HW_CSUM_BIT,		/* Can checksum all the packets.
-> */
-> +	NETIF_F_HW_CSUM_ENC_BIT,	/* Can checksum all inner headers */
->  	NETIF_F_IPV6_CSUM_BIT,		/* Can checksum TCP/UDP over
-> IPV6 */
+The context is existing architectures which already have to support the
+deprecated syscalls pretty much forever (in addition to the new ones),
+and therefore can't strip out the kernel side implementation anyway.
 
-Also #define NETIF_F_HW_CSUM_ENC should be added
+I don't see any of these arguments (either way) as holding too much
+weight to be honest though.
 
+Cheers
+James
 
