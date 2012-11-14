@@ -1,136 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161186Ab2KNLrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 06:47:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47533 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161139Ab2KNLrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 06:47:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,250,1352102400"; 
-   d="scan'208,223";a="219454660"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "Brown, Len" <len.brown@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Topic: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Index: Ac3CXcl8ew8WST3yRku0w23f1yFzHg==
-Date: Wed, 14 Nov 2012 11:47:13 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233538235A@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC829233538235ASHSMSX101ccrcorpi_"
-MIME-Version: 1.0
+	id S1422669Ab2KNLri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 06:47:38 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52217 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161155Ab2KNLrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 06:47:36 -0500
+Date: Wed, 14 Nov 2012 11:52:55 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Forconi <forconi@wavecomm.it>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: KMS Framebuffer on Intel N2600 (GMA3600)
+Message-ID: <20121114115255.2dfaefc9@pyramind.ukuu.org.uk>
+In-Reply-To: <2055189652.1317458.1352882446411.JavaMail.root@zmail.sgconsulting.it>
+References: <1877610299.1316440.1352881150817.JavaMail.root@zmail.sgconsulting.it>
+	<2055189652.1317458.1352882446411.JavaMail.root@zmail.sgconsulting.it>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC829233538235ASHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+>  - CPU: Intel Atom N2600
+>  - Chipset: Intel NM10
+>  - Integrated graphics system: Intel GMA 3600
+>  - LCD Panel with LVDS controller (LCD resolution is 800x480, 18 bpp, 60Hz)
 
->From 1d39279e45c54ce531691da5ffe261e7689dd92c Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Wed, 14 Nov 2012 18:52:06 +0800
-Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
+Ok
 
-When memory hotadd, acpi_memory_enable_device has already been done
-at drv->ops.add (acpi_memory_device_add), no need to do it again
-at notify callback.
+> CONFIG_DRM=y
+> CONFIG_DRM_KMS_HELPER=y
+> # CONFIG_DRM_LOAD_EDID_FIRMWARE is not set
 
-At acpi_memory_enable_device, acpi_memory_get_device_resources
-is also a redundant action, since it has been done at drv->ops.add.
+Ok
 
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- drivers/acpi/acpi_memhotplug.c |   17 -----------------
- 1 files changed, 0 insertions(+), 17 deletions(-)
+> CONFIG_DRM_GMA500=y
+> # CONFIG_DRM_GMA600 is not set
+> CONFIG_DRM_GMA3600=y
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.=
-c
-index 24c807f..a6489fd 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -220,15 +220,6 @@ static int acpi_memory_enable_device(struct acpi_memor=
-y_device *mem_device)
- 	struct acpi_memory_info *info;
- 	int node;
-=20
--
--	/* Get the range from the _CRS */
--	result =3D acpi_memory_get_device_resources(mem_device);
--	if (result) {
--		printk(KERN_ERR PREFIX "get_device_resources failed\n");
--		mem_device->state =3D MEMORY_INVALID_STATE;
--		return result;
--	}
--
- 	node =3D acpi_get_node(mem_device->device->handle);
- 	/*
- 	 * Tell the VM there is more memory here...
-@@ -357,14 +348,6 @@ static void acpi_memory_device_notify(acpi_handle hand=
-le, u32 event, void *data)
- 			break;
- 		}
-=20
--		if (acpi_memory_check_device(mem_device))
--			break;
--
--		if (acpi_memory_enable_device(mem_device)) {
--			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
--			break;
--		}
--
- 		ost_code =3D ACPI_OST_SC_SUCCESS;
- 		break;
-=20
---=20
-1.7.1
+Ditto
 
---_002_DE8DF0795D48FD4CA783C40EC829233538235ASHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0001-X86-acpi-remove-redundant-logic-of-acpi-memory-hotad.patch"
-Content-Description: 0001-X86-acpi-remove-redundant-logic-of-acpi-memory-hotad.patch
-Content-Disposition: attachment;
-	filename="0001-X86-acpi-remove-redundant-logic-of-acpi-memory-hotad.patch";
-	size=1705; creation-date="Wed, 14 Nov 2012 11:37:22 GMT";
-	modification-date="Wed, 14 Nov 2012 10:53:00 GMT"
-Content-Transfer-Encoding: base64
+> To boot my new kernel I use these parameters: video=LVDS-1:800x480-18@60D drm.debug=0x06
+> 
+> The kernel boots correctly but the LCD screen is completely black (with backlight off).
+> Using SSH I can login to my system and have a look at dmesg:
+> 
 
-RnJvbSAxZDM5Mjc5ZTQ1YzU0Y2U1MzE2OTFkYTVmZmUyNjFlNzY4OWRkOTJjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgpE
-YXRlOiBXZWQsIDE0IE5vdiAyMDEyIDE4OjUyOjA2ICswODAwClN1YmplY3Q6IFtQQVRDSF0gWDg2
-L2FjcGk6IHJlbW92ZSByZWR1bmRhbnQgbG9naWMgb2YgYWNwaSBtZW1vcnkgaG90YWRkCgpXaGVu
-IG1lbW9yeSBob3RhZGQsIGFjcGlfbWVtb3J5X2VuYWJsZV9kZXZpY2UgaGFzIGFscmVhZHkgYmVl
-biBkb25lCmF0IGRydi0+b3BzLmFkZCAoYWNwaV9tZW1vcnlfZGV2aWNlX2FkZCksIG5vIG5lZWQg
-dG8gZG8gaXQgYWdhaW4KYXQgbm90aWZ5IGNhbGxiYWNrLgoKQXQgYWNwaV9tZW1vcnlfZW5hYmxl
-X2RldmljZSwgYWNwaV9tZW1vcnlfZ2V0X2RldmljZV9yZXNvdXJjZXMKaXMgYWxzbyBhIHJlZHVu
-ZGFudCBhY3Rpb24sIHNpbmNlIGl0IGhhcyBiZWVuIGRvbmUgYXQgZHJ2LT5vcHMuYWRkLgoKU2ln
-bmVkLW9mZi1ieTogTGl1IEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4KLS0tCiBkcml2
-ZXJzL2FjcGkvYWNwaV9tZW1ob3RwbHVnLmMgfCAgIDE3IC0tLS0tLS0tLS0tLS0tLS0tCiAxIGZp
-bGVzIGNoYW5nZWQsIDAgaW5zZXJ0aW9ucygrKSwgMTcgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9hY3BpL2FjcGlfbWVtaG90cGx1Zy5jIGIvZHJpdmVycy9hY3BpL2FjcGlfbWVt
-aG90cGx1Zy5jCmluZGV4IDI0YzgwN2YuLmE2NDg5ZmQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYWNw
-aS9hY3BpX21lbWhvdHBsdWcuYworKysgYi9kcml2ZXJzL2FjcGkvYWNwaV9tZW1ob3RwbHVnLmMK
-QEAgLTIyMCwxNSArMjIwLDYgQEAgc3RhdGljIGludCBhY3BpX21lbW9yeV9lbmFibGVfZGV2aWNl
-KHN0cnVjdCBhY3BpX21lbW9yeV9kZXZpY2UgKm1lbV9kZXZpY2UpCiAJc3RydWN0IGFjcGlfbWVt
-b3J5X2luZm8gKmluZm87CiAJaW50IG5vZGU7CiAKLQotCS8qIEdldCB0aGUgcmFuZ2UgZnJvbSB0
-aGUgX0NSUyAqLwotCXJlc3VsdCA9IGFjcGlfbWVtb3J5X2dldF9kZXZpY2VfcmVzb3VyY2VzKG1l
-bV9kZXZpY2UpOwotCWlmIChyZXN1bHQpIHsKLQkJcHJpbnRrKEtFUk5fRVJSIFBSRUZJWCAiZ2V0
-X2RldmljZV9yZXNvdXJjZXMgZmFpbGVkXG4iKTsKLQkJbWVtX2RldmljZS0+c3RhdGUgPSBNRU1P
-UllfSU5WQUxJRF9TVEFURTsKLQkJcmV0dXJuIHJlc3VsdDsKLQl9Ci0KIAlub2RlID0gYWNwaV9n
-ZXRfbm9kZShtZW1fZGV2aWNlLT5kZXZpY2UtPmhhbmRsZSk7CiAJLyoKIAkgKiBUZWxsIHRoZSBW
-TSB0aGVyZSBpcyBtb3JlIG1lbW9yeSBoZXJlLi4uCkBAIC0zNTcsMTQgKzM0OCw2IEBAIHN0YXRp
-YyB2b2lkIGFjcGlfbWVtb3J5X2RldmljZV9ub3RpZnkoYWNwaV9oYW5kbGUgaGFuZGxlLCB1MzIg
-ZXZlbnQsIHZvaWQgKmRhdGEpCiAJCQlicmVhazsKIAkJfQogCi0JCWlmIChhY3BpX21lbW9yeV9j
-aGVja19kZXZpY2UobWVtX2RldmljZSkpCi0JCQlicmVhazsKLQotCQlpZiAoYWNwaV9tZW1vcnlf
-ZW5hYmxlX2RldmljZShtZW1fZGV2aWNlKSkgewotCQkJcHJpbnRrKEtFUk5fRVJSIFBSRUZJWCAi
-Q2Fubm90IGVuYWJsZSBtZW1vcnkgZGV2aWNlXG4iKTsKLQkJCWJyZWFrOwotCQl9Ci0KIAkJb3N0
-X2NvZGUgPSBBQ1BJX09TVF9TQ19TVUNDRVNTOwogCQlicmVhazsKIAotLSAKMS43LjEKCg==
+> [    5.749614] [drm:cdv_get_max_backlight], LVDS Panel PWM value is 0!
+> [    5.749622] [drm:cdv_get_max_backlight], LVDS Panel PWM value is 0!
+> [    5.749633] [drm] Initialized gma500 1.0.0 2011-06-06 for 0000:00:02.0 on minor 0
 
---_002_DE8DF0795D48FD4CA783C40EC829233538235ASHSMSX101ccrcorpi_--
+So the panel backlight register is set to indicate that the brightness
+will be handled by the firmware in some other way and not by the graphics.
+Do you have ACPI backlight support in your kernel ? Do you have the LVDS
+panel enabled in the BIOS ?
+
+It could be the value hasn't been initialised when it should have been,
+it could be your hardware has some other interface for this.
+
+If you look at cdv_device.c you'll see cdv_get_max_backlight() checks for
+this case. If you can find out what the value should be then you can
+substitute
+
+        if (max == 0) {
+                DRM_DEBUG_KMS("LVDS Panel PWM value is 0!\n");
+                /* i915 does this, I believe which means that we should
+                 * smash PWM control as firmware will take control of it.
+        	return 1;
+        }
+
+
+with
+	if (max == 0)
+		max = max_value << 16;
+
+and test that case. If that doesn't work then probably the backlight is
+wired some other way. If ACPI handles it you may be able to handle it
+that way. If it's a custom driver interface in Windows you may have a
+problem.
+
+Alan
+
+
