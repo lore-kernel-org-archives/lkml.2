@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab2KNFvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 00:51:13 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55263 "EHLO
+	id S1756537Ab2KNFxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 00:53:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55295 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756458Ab2KNFvH (ORCPT
+	by vger.kernel.org with ESMTP id S1756426Ab2KNFvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 00:51:07 -0500
-Message-Id: <20121114053938.462480058@decadent.org.uk>
+	Wed, 14 Nov 2012 00:51:11 -0500
+Message-Id: <20121114053937.769633291@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:40:06 +0000
+Date: Wed, 14 Nov 2012 05:40:01 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 33/82] ath9k: fix stale pointers potentially causing access to freed skbs
+        Antonio Quartulli <ordex@autistici.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 28/82] mac80211: fix SSID copy on IBSS JOIN
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,43 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Antonio Quartulli <ordex@autistici.org>
 
-commit 8c6e30936a7893a85f6222084f0f26aceb81137a upstream.
+commit badecb001a310408d3473b1fc2ed5aefd0bc92a9 upstream.
 
-bf->bf_next is only while buffers are chained as part of an A-MPDU
-in the tx queue. When a tid queue is flushed (e.g. on tearing down
-an aggregation session), frames can be enqueued again as normal
-transmission, without bf_next being cleared. This can lead to the
-old pointer being dereferenced again later.
+The 'ssid' field of the cfg80211_ibss_params is a u8 pointer and
+its length is likely to be less than IEEE80211_MAX_SSID_LEN most
+of the time.
 
-This patch might fix crashes and "Failed to stop TX DMA!" messages.
+This patch fixes the ssid copy in ieee80211_ibss_join() by using
+the SSID length to prevent it from reading beyond the string.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+[rewrapped commit message, small rewording]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/mac80211/ibss.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -288,6 +288,7 @@ static struct ath_buf *ath_tx_get_buffer
- 	}
+diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
+index 5f3620f..bf87c70 100644
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1108,7 +1108,7 @@ int ieee80211_ibss_join(struct ieee80211_sub_if_data *sdata,
+ 	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+ 	sdata->u.ibss.ibss_join_req = jiffies;
  
- 	bf = list_first_entry(&sc->tx.txbuf, struct ath_buf, list);
-+	bf->bf_next = NULL;
- 	list_del(&bf->list);
+-	memcpy(sdata->u.ibss.ssid, params->ssid, IEEE80211_MAX_SSID_LEN);
++	memcpy(sdata->u.ibss.ssid, params->ssid, params->ssid_len);
+ 	sdata->u.ibss.ssid_len = params->ssid_len;
  
- 	spin_unlock_bh(&sc->tx.txbuflock);
-@@ -1710,6 +1711,7 @@ static void ath_tx_send_normal(struct at
- 	if (tid)
- 		INCR(tid->seq_start, IEEE80211_SEQ_MAX);
- 
-+	bf->bf_next = NULL;
- 	bf->bf_lastbf = bf;
- 	ath_tx_fill_desc(sc, bf, txq, fi->framelen);
- 	ath_tx_txqaddbuf(sc, txq, &bf_head, false);
+ 	mutex_unlock(&sdata->u.ibss.mtx);
 
 
