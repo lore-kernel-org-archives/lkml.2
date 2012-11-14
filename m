@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423043Ab2KNPTW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 10:19:22 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:25627 "EHLO relay.sw.ru"
+	id S1423054Ab2KNPT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 10:19:28 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10048 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422677Ab2KNPTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:19:16 -0500
-Subject: [PATCH v2 07/15] nfsd: make unconf_name_tree per net
+	id S1754794Ab2KNPTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 10:19:21 -0500
+Subject: [PATCH v2 11/15] nfsd: make client_lru list per net
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Wed, 14 Nov 2012 18:21:36 +0300
-Message-ID: <20121114152136.4708.89742.stgit@localhost.localdomain>
+Date: Wed, 14 Nov 2012 18:21:56 +0300
+Message-ID: <20121114152156.4708.30359.stgit@localhost.localdomain>
 In-Reply-To: <20121114152018.4708.63125.stgit@localhost.localdomain>
 References: <20121114152018.4708.63125.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,177 +23,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hash holds nfs4_clients info, which are network namespace aware.
-So let's make it allocated per network namespace.
+This list holds nfs4 clients queue for lease renewal, which are network
+namespace aware. So let's make this list per network namespace too.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/netns.h     |    4 ++++
- fs/nfsd/nfs4state.c |   42 +++++++++++++++++++-----------------------
- 2 files changed, 23 insertions(+), 23 deletions(-)
+ fs/nfsd/netns.h     |    5 +++++
+ fs/nfsd/nfs4state.c |   16 ++++++++--------
+ 2 files changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index 1ff781f..1e76030 100644
+index da33d3f..9a98a0a 100644
 --- a/fs/nfsd/netns.h
 +++ b/fs/nfsd/netns.h
-@@ -50,12 +50,16 @@ struct nfsd_net {
- 	 *
- 	 * conf_id_hashtbl[], and conf_name_tree hold confirmed
- 	 * setclientid_confirmed info.
-+	 *
-+	 * unconf_str_hastbl[] and unconf_name_tree hold unconfirmed
-+	 * setclientid info.
- 	 */
- 	struct list_head *reclaim_str_hashtbl;
- 	int reclaim_str_hashtbl_size;
- 	struct list_head *conf_id_hashtbl;
- 	struct rb_root conf_name_tree;
- 	struct list_head *unconf_id_hashtbl;
-+	struct rb_root unconf_name_tree;
+@@ -68,6 +68,11 @@ struct nfsd_net {
+ 	struct list_head *ownerstr_hashtbl;
+ 	struct list_head *lockowner_ino_hashtbl;
+ 	struct list_head *sessionid_hashtbl;
++	/*
++	 * client_lru holds client queue ordered by nfs4_client.cl_time
++	 * for lease renewal.
++	 */
++	struct list_head client_lru;
  };
  
  extern int nfsd_net_id;
 diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index b967804..c38fea9 100644
+index 0de2844..87868ae 100644
 --- a/fs/nfsd/nfs4state.c
 +++ b/fs/nfsd/nfs4state.c
-@@ -404,9 +404,6 @@ static unsigned int clientstr_hashval(const char *name)
+@@ -402,15 +402,11 @@ static unsigned int clientstr_hashval(const char *name)
  }
  
  /*
-- * unconf_id_hashtbl[] and unconf_name_tree hold unconfirmed
-- * setclientid info.
+- * client_lru holds client queue ordered by nfs4_client.cl_time
+- * for lease renewal.
 - *
-  * client_lru holds client queue ordered by nfs4_client.cl_time
-  * for lease renewal.
-  *
-@@ -415,7 +412,6 @@ static unsigned int clientstr_hashval(const char *name)
+  * close_lru holds (open) stateowner queue ordered by nfs4_stateowner.so_time
+  * for last close replay.
   *
   * All of the above fields are protected by the client_mutex.
   */
--static struct rb_root unconf_name_tree;
- static struct list_head client_lru;
+-static struct list_head client_lru;
  static struct list_head close_lru;
  
-@@ -1134,7 +1130,7 @@ destroy_client(struct nfs4_client *clp)
- 	if (test_bit(NFSD4_CLIENT_CONFIRMED, &clp->cl_flags))
- 		rb_erase(&clp->cl_namenode, &nn->conf_name_tree);
- 	else
--		rb_erase(&clp->cl_namenode, &unconf_name_tree);
-+		rb_erase(&clp->cl_namenode, &nn->unconf_name_tree);
+ /*
+@@ -995,6 +991,8 @@ unhash_session(struct nfsd4_session *ses)
+ static inline void
+ renew_client_locked(struct nfs4_client *clp)
+ {
++	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
++
+ 	if (is_client_expired(clp)) {
+ 		WARN_ON(1);
+ 		printk("%s: client (clientid %08x/%08x) already expired\n",
+@@ -1007,7 +1005,7 @@ renew_client_locked(struct nfs4_client *clp)
+ 	dprintk("renewing client (clientid %08x/%08x)\n", 
+ 			clp->cl_clientid.cl_boot, 
+ 			clp->cl_clientid.cl_id);
+-	list_move_tail(&clp->cl_lru, &client_lru);
++	list_move_tail(&clp->cl_lru, &nn->client_lru);
+ 	clp->cl_time = get_seconds();
+ }
+ 
+@@ -3196,6 +3194,7 @@ nfs4_laundromat(void)
+ 	time_t cutoff = get_seconds() - nfsd4_lease;
+ 	time_t t, clientid_val = nfsd4_lease;
+ 	time_t u, test_val = nfsd4_lease;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	nfs4_lock_state();
+ 
+@@ -3203,7 +3202,7 @@ nfs4_laundromat(void)
+ 	nfsd4_end_grace(&init_net);
+ 	INIT_LIST_HEAD(&reaplist);
  	spin_lock(&client_lock);
- 	unhash_client_locked(clp);
- 	if (atomic_read(&clp->cl_refcount) == 0)
-@@ -1371,7 +1367,7 @@ add_to_unconfirmed(struct nfs4_client *clp)
- 	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+-	list_for_each_safe(pos, next, &client_lru) {
++	list_for_each_safe(pos, next, &nn->client_lru) {
+ 		clp = list_entry(pos, struct nfs4_client, cl_lru);
+ 		if (time_after((unsigned long)clp->cl_time, (unsigned long)cutoff)) {
+ 			t = clp->cl_time - cutoff;
+@@ -4590,9 +4589,10 @@ void nfsd_forget_clients(u64 num)
+ {
+ 	struct nfs4_client *clp, *next;
+ 	int count = 0;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
  
- 	clear_bit(NFSD4_CLIENT_CONFIRMED, &clp->cl_flags);
--	add_clp_to_name_tree(clp, &unconf_name_tree);
-+	add_clp_to_name_tree(clp, &nn->unconf_name_tree);
- 	idhashval = clientid_hashval(clp->cl_clientid.cl_id);
- 	list_add(&clp->cl_idhash, &nn->unconf_id_hashtbl[idhashval]);
- 	renew_client(clp);
-@@ -1385,7 +1381,7 @@ move_to_confirmed(struct nfs4_client *clp)
- 
- 	dprintk("NFSD: move_to_confirm nfs4_client %p\n", clp);
- 	list_move(&clp->cl_idhash, &nn->conf_id_hashtbl[idhashval]);
--	rb_erase(&clp->cl_namenode, &unconf_name_tree);
-+	rb_erase(&clp->cl_namenode, &nn->unconf_name_tree);
- 	add_clp_to_name_tree(clp, &nn->conf_name_tree);
- 	set_bit(NFSD4_CLIENT_CONFIRMED, &clp->cl_flags);
- 	renew_client(clp);
-@@ -1436,9 +1432,9 @@ find_confirmed_client_by_name(struct xdr_netobj *name, struct nfsd_net *nn)
+ 	nfs4_lock_state();
+-	list_for_each_entry_safe(clp, next, &client_lru, cl_lru) {
++	list_for_each_entry_safe(clp, next, &nn->client_lru, cl_lru) {
+ 		expire_client(clp);
+ 		if (++count == num)
+ 			break;
+@@ -4722,7 +4722,6 @@ nfs4_state_init(void)
+ 		INIT_LIST_HEAD(&file_hashtbl[i]);
+ 	}
+ 	INIT_LIST_HEAD(&close_lru);
+-	INIT_LIST_HEAD(&client_lru);
+ 	INIT_LIST_HEAD(&del_recall_lru);
  }
  
- static struct nfs4_client *
--find_unconfirmed_client_by_name(struct xdr_netobj *name)
-+find_unconfirmed_client_by_name(struct xdr_netobj *name, struct nfsd_net *nn)
- {
--	return find_clp_in_name_tree(name, &unconf_name_tree);
-+	return find_clp_in_name_tree(name, &nn->unconf_name_tree);
- }
- 
- static void
-@@ -1677,7 +1673,7 @@ nfsd4_exchange_id(struct svc_rqst *rqstp,
- 		goto out;
- 	}
- 
--	unconf  = find_unconfirmed_client_by_name(&exid->clname);
-+	unconf  = find_unconfirmed_client_by_name(&exid->clname, nn);
- 	if (unconf) /* case 4, possible retry or client restart */
- 		expire_client(unconf);
- 
-@@ -2239,7 +2235,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
- 			goto out;
- 		}
- 	}
--	unconf = find_unconfirmed_client_by_name(&clname);
-+	unconf = find_unconfirmed_client_by_name(&clname, nn);
- 	if (unconf)
- 		expire_client(unconf);
- 	status = nfserr_jukebox;
-@@ -4720,7 +4716,6 @@ nfs4_state_init(void)
- {
- 	int i;
- 
--	unconf_name_tree = RB_ROOT;
- 	for (i = 0; i < SESSION_HASH_SIZE; i++)
- 		INIT_LIST_HEAD(&sessionid_hashtbl[i]);
- 	for (i = 0; i < FILE_HASH_SIZE; i++) {
-@@ -4776,6 +4771,7 @@ static int nfs4_state_start_net(struct net *net)
- 		INIT_LIST_HEAD(&nn->unconf_id_hashtbl[i]);
- 	}
+@@ -4785,6 +4784,7 @@ static int nfs4_state_start_net(struct net *net)
+ 		INIT_LIST_HEAD(&nn->sessionid_hashtbl[i]);
  	nn->conf_name_tree = RB_ROOT;
-+	nn->unconf_name_tree = RB_ROOT;
+ 	nn->unconf_name_tree = RB_ROOT;
++	INIT_LIST_HEAD(&nn->client_lru);
  
  	return 0;
  
-@@ -4791,6 +4787,7 @@ __nfs4_state_shutdown_net(struct net *net)
- 	int i;
- 	struct nfs4_client *clp = NULL;
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+	struct rb_node *node, *tmp;
- 
- 	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
- 		while (!list_empty(&nn->conf_id_hashtbl[i])) {
-@@ -4798,6 +4795,16 @@ __nfs4_state_shutdown_net(struct net *net)
- 			destroy_client(clp);
- 		}
- 	}
-+
-+	node = rb_first(&nn->unconf_name_tree);
-+	while (node != NULL) {
-+		tmp = node;
-+		node = rb_next(tmp);
-+		clp = rb_entry(tmp, struct nfs4_client, cl_namenode);
-+		rb_erase(tmp, &nn->unconf_name_tree);
-+		destroy_client(clp);
-+	}
-+
- 	kfree(nn->unconf_id_hashtbl);
- 	kfree(nn->conf_id_hashtbl);
- }
-@@ -4857,22 +4864,11 @@ out_recovery:
- static void
- __nfs4_state_shutdown(struct net *net)
- {
--	struct nfs4_client *clp = NULL;
- 	struct nfs4_delegation *dp = NULL;
- 	struct list_head *pos, *next, reaplist;
--	struct rb_node *node, *tmp;
- 
- 	__nfs4_state_shutdown_net(net);
- 
--	node = rb_first(&unconf_name_tree);
--	while (node != NULL) {
--		tmp = node;
--		node = rb_next(tmp);
--		clp = rb_entry(tmp, struct nfs4_client, cl_namenode);
--		rb_erase(tmp, &unconf_name_tree);
--		destroy_client(clp);
--	}
--
- 	INIT_LIST_HEAD(&reaplist);
- 	spin_lock(&recall_lock);
- 	list_for_each_safe(pos, next, &del_recall_lru) {
 
