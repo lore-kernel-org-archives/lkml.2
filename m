@@ -1,151 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423542Ab2KNW2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 17:28:38 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50136 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423512Ab2KNW2h (ORCPT
+	id S1423555Ab2KNW26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 17:28:58 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:39202 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1423512Ab2KNW24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 17:28:37 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] drivers/of: Constify device_node->name and ->path_component_name
-Date: Wed, 14 Nov 2012 22:28:27 +0000
-Message-Id: <1352932107-14782-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 14 Nov 2012 17:28:56 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18GufBUcv4G8QL90RzWOgmnL4OJKLnKNsHLSfwZN9
+	LjFbTgBhzQ0/8X
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] char/tpm: simplify duration calculation and eliminate sparse warning.
+Date: Wed, 14 Nov 2012 23:37:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6.6; KDE/4.8.5; x86_64; ; )
+Cc: Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <1352759838-27175-1-git-send-email-peterhuewe@gmx.de> <1352759838-27175-2-git-send-email-peterhuewe@gmx.de> <20121114221826.GC533@ennui.austin.ibm.com>
+In-Reply-To: <20121114221826.GC533@ennui.austin.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211142337.06884.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neither of these should ever be changed once set. Make them const
+Am Mittwoch, 14. November 2012, 23:18:26 schrieb Kent Yoder:
+> On Mon, Nov 12, 2012 at 11:37:18PM +0100, Peter Huewe wrote:> > 
+> > This patch also gets rid of the (false positive) sparse warning:
+> >  drivers/char/tpm/tpm.c:360 tpm_calc_ordinal_duration() error: buffer
+> >  overflow 'tpm_protected_ordinal_duration' 12 <= 243
+> 
+>   I'm not seeing this sparse warning, how did you get it?
 
-Build tested with defconfigs on ARM, PowerPC, Sparc, MIPS, x86 among
-others.
+Oh sorry 
+s/sparse/smatch/
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "David S. Miller" <davem@davemloft.net>
----
- arch/powerpc/platforms/powermac/pfunc_core.c |    2 +-
- arch/powerpc/platforms/pseries/reconfig.c    |    3 +--
- arch/powerpc/sysdev/fsl_pci.c                |    2 +-
- arch/sparc/kernel/pci_impl.h                 |    2 +-
- drivers/of/fdt.c                             |   10 +++++-----
- include/linux/of.h                           |    4 ++--
- 6 files changed, 11 insertions(+), 12 deletions(-)
+It was a smatch warning, not sparse - sorry about that:
 
-diff --git a/arch/powerpc/platforms/powermac/pfunc_core.c b/arch/powerpc/platforms/powermac/pfunc_core.c
-index b0c3777..d588e48 100644
---- a/arch/powerpc/platforms/powermac/pfunc_core.c
-+++ b/arch/powerpc/platforms/powermac/pfunc_core.c
-@@ -686,7 +686,7 @@ static int pmf_add_functions(struct pmf_device *dev, void *driverdata)
- 	int count = 0;
- 
- 	for (pp = dev->node->properties; pp != 0; pp = pp->next) {
--		char *name;
-+		const char *name;
- 		if (strncmp(pp->name, PP_PREFIX, plen) != 0)
- 			continue;
- 		name = pp->name + plen;
-diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-index 39f71fb..2f46681 100644
---- a/arch/powerpc/platforms/pseries/reconfig.c
-+++ b/arch/powerpc/platforms/pseries/reconfig.c
-@@ -281,12 +281,11 @@ static struct property *new_property(const char *name, const int length,
- 	if (!new)
- 		return NULL;
- 
--	if (!(new->name = kmalloc(strlen(name) + 1, GFP_KERNEL)))
-+	if (!(new->name = kstrdup(name, GFP_KERNEL)))
- 		goto cleanup;
- 	if (!(new->value = kmalloc(length + 1, GFP_KERNEL)))
- 		goto cleanup;
- 
--	strcpy(new->name, name);
- 	memcpy(new->value, value, length);
- 	*(((char *)new->value) + length) = 0;
- 	new->length = length;
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index ffb93ae..01b62a6 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -136,7 +136,7 @@ static void __init setup_pci_atmu(struct pci_controller *hose,
- 	u32 pcicsrbar = 0, pcicsrbar_sz;
- 	u32 piwar = PIWAR_EN | PIWAR_PF | PIWAR_TGI_LOCAL |
- 			PIWAR_READ_SNOOP | PIWAR_WRITE_SNOOP;
--	char *name = hose->dn->full_name;
-+	const char *name = hose->dn->full_name;
- 	const u64 *reg;
- 	int len;
- 
-diff --git a/arch/sparc/kernel/pci_impl.h b/arch/sparc/kernel/pci_impl.h
-index 918a203..5f68853 100644
---- a/arch/sparc/kernel/pci_impl.h
-+++ b/arch/sparc/kernel/pci_impl.h
-@@ -88,7 +88,7 @@ struct pci_pbm_info {
- 	int				chip_revision;
- 
- 	/* Name used for top-level resources. */
--	char				*name;
-+	const char			*name;
- 
- 	/* OBP specific information. */
- 	struct platform_device		*op;
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 91a375f..4aded3b 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -198,10 +198,10 @@ static unsigned long unflatten_dt_node(struct boot_param_header *blob,
- 	np = unflatten_dt_alloc(&mem, sizeof(struct device_node) + allocl,
- 				__alignof__(struct device_node));
- 	if (allnextpp) {
-+		char *fn;
- 		memset(np, 0, sizeof(*np));
--		np->full_name = ((char *)np) + sizeof(struct device_node);
-+		np->full_name = fn = ((char *)np) + sizeof(*np);
- 		if (new_format) {
--			char *fn = np->full_name;
- 			/* rebuild full path for new format */
- 			if (dad && dad->parent) {
- 				strcpy(fn, dad->full_name);
-@@ -215,9 +215,9 @@ static unsigned long unflatten_dt_node(struct boot_param_header *blob,
- 				fn += strlen(fn);
- 			}
- 			*(fn++) = '/';
--			memcpy(fn, pathp, l);
--		} else
--			memcpy(np->full_name, pathp, l);
-+		}
-+		memcpy(fn, pathp, l);
-+
- 		prev_pp = &np->properties;
- 		**allnextpp = np;
- 		*allnextpp = &np->allnext;
-diff --git a/include/linux/of.h b/include/linux/of.h
-index b4e50d5..857dde9 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -46,7 +46,7 @@ struct device_node {
- 	const char *name;
- 	const char *type;
- 	phandle phandle;
--	char	*full_name;
-+	const char *full_name;
- 
- 	struct	property *properties;
- 	struct	property *deadprops;	/* removed properties */
-@@ -60,7 +60,7 @@ struct device_node {
- 	unsigned long _flags;
- 	void	*data;
- #if defined(CONFIG_SPARC)
--	char	*path_component_name;
-+	const char *path_component_name;
- 	unsigned int unique_id;
- 	struct of_irq_controller *irq_trans;
- #endif
--- 
-1.7.10.4
-
+/data/data-old/linux-2.6/drivers/char/tpm $ make -C /data/data-old/linux-2.6/ M=`pwd`  C=1 CHECK=smatch
+make: Entering directory `/data/data-old/linux-2.6'
+  LD      /data/data-old/linux-2.6/drivers/char/tpm/built-in.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm.c
+/data/data-old/linux-2.6/drivers/char/tpm/tpm.c:360 tpm_calc_ordinal_duration() error: buffer overflow 'tpm_protected_ordinal_duration' 12 <= 243
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_eventlog.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_eventlog.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_acpi.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_acpi.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_ppi.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_ppi.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.o
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.c
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.o
+  Building modules, stage 2.
+  MODPOST 7 modules
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_atmel.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_bios.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_infineon.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_infineon.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_nsc.ko
+  CC      /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.mod.o
+  LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_tis.ko
+make: Leaving directory `/data/data-old/linux-2.6'
