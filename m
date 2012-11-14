@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423478Ab2KNVar (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 16:30:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34921 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423259Ab2KNVaq (ORCPT
+	id S1423488Ab2KNVdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 16:33:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38062 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423452Ab2KNVdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 16:30:46 -0500
-Date: Wed, 14 Nov 2012 16:30:44 -0500 (EST)
-Message-Id: <20121114.163044.2287972932330697472.davem@davemloft.net>
-To: gustavo@padovan.org
-Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        ulisses@profusion.mobi, marcel@holtmann.org, padovan@profusion.mobi
-Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
- Core
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121114212426.GA1866@joana>
-References: <20121114053933.726869752@decadent.org.uk>
-	<20121114053933.935584768@decadent.org.uk>
-	<20121114212426.GA1866@joana>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 14 Nov 2012 16:33:44 -0500
+Date: Wed, 14 Nov 2012 13:33:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 00/11] Introduce huge zero page
+Message-Id: <20121114133342.cc7bcd6e.akpm@linux-foundation.org>
+In-Reply-To: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gustavo Padovan <gustavo@padovan.org>
-Date: Wed, 14 Nov 2012 19:24:26 -0200
+On Wed,  7 Nov 2012 17:00:52 +0200
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-> Hi Ben,
-> 
-> * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
-> 
->> 3.2-stable review patch.  If anyone has any objections, please let me know.
->> 
->> ------------------
->> 
->> From: Ulisses Furquim <ulisses@profusion.mobi>
->> 
->> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
->> 
->> The handling of SCO audio links and the L2CAP protocol are essential to
->> any system with Bluetooth thus are always compiled in from now on.
-> 
-> I wonder if this could not break any kind of script or code people have that
-> refer directly to the sco and l2cap modules. Also I don't see this change as
-> really necessary for 3.2.
+> Andrew, here's updated huge zero page patchset.
 
-Agreed, I wish this had not been merged into -stable, I would have never
-submitted a patch like this myself.
+There is still a distinct lack of reviewed-by's and acked-by's on this
+patchset.
+
+On 13 Sep, Andrea did indicate that he "reviewed the whole patchset and
+it looks fine to me".  But that information failed to make it into the
+changelogs, which is bad.
+
+I grabbed the patchset.  I might hold it over until 3.9 depending on
+additional review/test feedback and upon whether Andrea can be
+persuaded to take another look at it all.
+
+I'm still a bit concerned over the possibility that some workloads will
+cause a high-frequency free/alloc/memset cycle on that huge zero page. 
+We'll see how it goes...
+
+For this reason and for general ease-of-testing: can and should we add
+a knob which will enable users to disable the feature at runtime?  That
+way if it causes problems or if we suspect it's causing problems, we
+can easily verify the theory and offer users a temporary fix.
+
+Such a knob could be a boot-time option, but a post-boot /proc thing
+would be much nicer.
+
