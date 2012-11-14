@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161252Ab2KNQmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 11:42:36 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:35784 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1161099Ab2KNQme (ORCPT
+	id S1423086Ab2KNQmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 11:42:47 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:46079 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422685Ab2KNQmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 11:42:34 -0500
-Date: Wed, 14 Nov 2012 11:42:33 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Huang Ying <ying.huang@intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1456950.61QZjXbNpt@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1211141127440.1620-100000@iolanthe.rowland.org>
+	Wed, 14 Nov 2012 11:42:45 -0500
+Date: Wed, 14 Nov 2012 08:42:44 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, George Zhang <georgezhang@vmware.com>
+Message-ID: <1636188668.22560872.1352911364387.JavaMail.root@vmware.com>
+In-Reply-To: <50A01FB1.1080502@gmail.com>
+Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.160.14]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC23 (Mac)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012, Rafael J. Wysocki wrote:
+Hi Sasha,
 
-> On Thursday, November 08, 2012 12:07:54 PM Alan Stern wrote:
-> > On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
-> 
-> [...]
-> 
-> I'd like to revisit this for a while if you don't mind.
+Thanks for taking a look.
 
-Not at all.
+> So all the documentation I see in the VMCI Socket Programming Guide
+> is about userspace programming, and the documentation in af_vsock.c
+> is all around implementation considerations.
 
-> > Your revised patch does do the job, except for a few problems.  
-> > Namely, while local_pci_probe() and pci_device_remove() are running,
-> > the device _does_ have a driver.
-> 
-> Right.
-> 
-> > This means that local_pci_probe() should not call pm_runtime_get_sync(),
-> > for example.  Doing so would invoke the driver's runtime_resume routine
-> > before calling the driver's probe routine!
-> > 
-> > The USB subsystem solves this problem by carefully keeping track of the 
-> > state of the device-driver binding:
-> > 
-> > 	Originally the device is UNBOUND.
-> > 
-> > 	At the start of the subsystem's probe routine, the state
-> > 	changes to BINDING.
-> > 
-> > 	If the probe succeeds then it changes to BOUND; otherwise
-> > 	it goes back to UNBOUND.
-> > 
-> > 	At the start of the subsystem's remove routine, the state
-> > 	changes to UNBINDING.  At the end it goes to UNBOUND.
-> > 
-> > When the state is anything other than BOUND, the subsystem's runtime PM 
-> > routines act as though there is no driver.
-> 
-> Well, that wouldn't help PCI, because some drivers want to use the
-> pm_runtime_* stuff in their .probe() routines and actually expect it to
-> work. :-)
+Agreed, we're sorely lacking in proper documentation for the internal
+protocol.  We're in the process of writing such a specification and
+will post it to LKML next week at the latest.
 
-PCI could do something like this:
+> example, whats the deal with REQUEST/REQUEST2? it appears like
+> something to deal with legacy code, but I'd really like to have it
+> documented somewhere instead of trying to figure how everything
 
-	local_pci_probe() calls pm_runtime_get_sync() twice before
-	it changes the binding state to BINDING.  It then calls 
-	pm_runtime_put_sync() after the state is BOUND.
+Correct, we have a legacy protocol and a v2, the latter now being
+the default.  This particular packet is sent by the client when
+initiating a STREAM connection.  The sequence is REQUEST(2)->
+NEGOTIATE(2)->OFFER->ACCEPT.  It will be properly documented in
+the specification we post next week.
 
-	pci_device_remove() calls pm_runtime_get_sync() before it
-	changes the binding state to UNBINDING.  It then calls
-	pm_runtime_put_sync() twice after the state is UNBOUND.
-
-(Obviously some of those calls could be _get_noresume() or
-_put_noidle().)
-
-This has the side effect that when a driver unbinds, it can't leave the 
-device in a special low-power state.  The device will always end up in 
-the generic low-power state supported by the PCI core.
-
-> Perhaps we can introduce something like
-> 
-> pm_runtime_get[_put]_skip_callbacks()
-> 
-> that would treat the device as though it had the power.no_callbacks flag
-> set and use that around the driver's .probe() in the PCI core?
-
-That would prevent the PM core from invoking the PCI subsystem's own 
-callback, not just the driver's callback.  So I don't think that's what 
-you want.
-
-Alan Stern
-
+Thanks!
+- Andy
