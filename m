@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab2KNBgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 20:36:25 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45143 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756063Ab2KNBgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 20:36:23 -0500
-Date: Tue, 13 Nov 2012 17:34:59 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Linux PM <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 3/3] PM: Introduce Intel PowerClamp Driver
-Message-ID: <20121114013459.GS2489@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1352757831-5202-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1352757831-5202-4-git-send-email-jacob.jun.pan@linux.intel.com>
- <20121113211602.GA30150@linux.vnet.ibm.com>
- <20121113133922.47144a50@chromoly>
- <20121113222350.GH2489@linux.vnet.ibm.com>
- <50A2CD77.7000403@linux.intel.com>
- <20121114000259.GK2489@linux.vnet.ibm.com>
- <50A2E116.8000400@linux.intel.com>
- <20121113171450.3657290c@chromoly>
+	id S1756175Ab2KNBgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 20:36:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37197 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756063Ab2KNBg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Nov 2012 20:36:27 -0500
+Date: Wed, 14 Nov 2012 10:36:02 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ASoC: arizona: Add support for multiplexer with no
+ associated mixer
+Message-ID: <20121114013600.GG4415@opensource.wolfsonmicro.com>
+References: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="64j1qyTOoGvYcHb1"
 Content-Disposition: inline
-In-Reply-To: <20121113171450.3657290c@chromoly>
+In-Reply-To: <1352824834-11224-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111401-5806-0000-0000-00001BBE7BD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 05:14:50PM -0800, Jacob Pan wrote:
-> On Tue, 13 Nov 2012 16:08:54 -0800
-> Arjan van de Ven <arjan@linux.intel.com> wrote:
-> 
-> > > I think I know, but I feel the need to ask anyway.  Why not tell
-> > > RCU about the clamping?  
-> > 
-> > I don't mind telling RCU, but what cannot happen is a bunch of CPU
-> > time suddenly getting used (since that is the opposite of what is
-> > needed at the specific point in time of going idle)
 
-Another round of RCU_FAST_NO_HZ rework, you are asking for?  ;-)
+--64j1qyTOoGvYcHb1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Another reason is my observation that there are some assumptions/checks
-> to make sure only idle thread can tell rcu it is idle. Is it ok to
-> extend that to other kthreads?
+On Tue, Nov 13, 2012 at 04:40:32PM +0000, Charles Keepax wrote:
+> The Asynchronous Sample Rate Converters on the wm5102/wm5110 have no
+> mixer attached to their input, but they do allow the input to be
+> selected from a number of sources via a multiplexer. Currently the
+> platform assumes the presence of 4 multiplexers and a mixer for each
+> block.
 
-If you are only having the system take 6-millisecond "vacations", probably
-best to try it as it is and fix specific problems if/when they arise.
+Applied all, thanks.
 
-							Thanx, Paul
+--64j1qyTOoGvYcHb1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQovVyAAoJELSic+t+oim9mRQP/1XE363r1gpkjMDWuM+LwJBo
+SEg/6U7RAByT6xfzBNAlOhRGYV6tmOpkvKyF3/kq58Pu9hI55YujokVFPqCN8+34
+s9l6KiGXAd4WRpiAs7t7LCViRWklspiSHFP71jecF2rDBrb4e2QPhWXcdWjv1zzJ
+/8H0SCV2xjGf0hSdUddwXbb4h/xYVSVmmJYACY4kRwvJ5UhvBxMLRqyQaBZTW/6e
+wdPkALnugJi+I/epNi9Umh6GEdWU0m0GPN1DVTAppvt0T6aEdhF68Oqj0OzG03bY
+isS6AX1JJmiGKqN2xLnOa/bP7R91taNAGahxbDDiKLLH9pYag03Oug1XFHhxrb4A
+UQdtx4vhA+FrrDFmUFYVtwGtG+7v1bdQfXhj+X5IwDMGLH8evl7TiGzde8xW3T3d
+RNzmzKRNtrbPjAAM+iaXEPNmaKVmVf8kdDAUHYChwIq9cOUEcDyRgtEblVK5dh8A
+vbpsoF4Cewr4+DyXJE9WnKlXrwf75DY7QFqzV4sj72i5SjyGmeRWsw8iNMs96Em4
+hbHEcBz0zPR1DcZWLgRqM7yagCx73BThlRHXzwiy9Dhc0S5XYva9wU7ncbkLQB4M
+pUs5DRi46Zqff3bnZuFS/R34b9A7DCAd50gl0RXftMz/Vkbd+FXfz9Q6HEJBSQ72
+RhdoptjhRpaLMaMMJxet
+=9vP5
+-----END PGP SIGNATURE-----
+
+--64j1qyTOoGvYcHb1--
