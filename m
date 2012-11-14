@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422739Ab2KNMXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 07:23:18 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:63845 "EHLO
+	id S1422761Ab2KNMXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 07:23:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62180 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422673Ab2KNMXR (ORCPT
+	with ESMTP id S1422673Ab2KNMXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 07:23:17 -0500
+	Wed, 14 Nov 2012 07:23:47 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
-Date: Wed, 14 Nov 2012 12:23:04 +0000
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] Centralise CONFIG_ARCH_NO_VIRT_TO_BUS
+Date: Wed, 14 Nov 2012 12:23:21 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Jonas Bonn <jonas.bonn@gmail.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Markos <markos.chandras@imgtec.com>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <CACM3HyFE-S2NM75qVS2Fhhm8YoP1jH4mS41aZ5B1gW2wo-Q99g@mail.gmail.com> <50A23906.6010900@imgtec.com>
-In-Reply-To: <50A23906.6010900@imgtec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
+References: <ADE657CA350FB648AAC2C43247A983F00206B25884B1@AUSP01VMBX24.collaborationhost.net> <CAErSpo6WG2R_8sa=rOmAOci-3iFpDs2NFzNkZYxDnD2oTiMQJg@mail.gmail.com> <20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au>
+In-Reply-To: <20121113082615.2f482eb8835daf46e1f27947@canb.auug.org.au>
 MIME-Version: 1.0
+Message-Id: <201211141223.21696.arnd@arndb.de>
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211141223.05063.arnd@arndb.de>
-X-Provags-ID: V02:K0:kicouRLWYY3dBY69CONRJX77hRsq6DM5Mqeyw/4ADmK
- yz+6z4Ozp4/RWRRng5I0lr/FD3yqMdhUr4hegXrILuUaUTvPS6
- n0qHAMNer7tTV0xdFjMPx/y2ZyQK+X1lI3QyflZjABs8iRHFvh
- tkQ4hGHcQUpwueS+84ZIkJY/w9rayHzDef8+XOqFzWze4NlKxJ
- Zm0iVJzxQ/7kw0QVprat095EY+TNciSnIBRAQRYe11fGJdHrMi
- dgyYQy/zQXSj56kfGQJet5e0nOWTxFSA0v/M/tbhWG4wR+nD9U
- zV7OH2+QIrpS2PJd/GDzSrO7wgQdKZd5+DxdE6h2OHq2+DJmE2
- pMNZmCppUWWilyf5/sws=
+X-Provags-ID: V02:K0:dvpN9HUT/64gQF9HbyxnMiLIbrfeAuO9QJZ+0VPsliW
+ UF6QLWohINGE+mqDdBFCTy4vPe9MGxIgV4ClEHN9ng+oQH2BdH
+ zjK1JdkgeN3dAYgKiv2pR1XHk7qgWSl2I76txGw2CJe0aXQlTc
+ e5RP8jmHRt6QmVmfU40+EFqDKNiMMt3avetVZenueCqEORAg8T
+ DM/hydDTgcSTwPZ5FOwNY8PYgpmx8RwfGzjd8mEz7SX0UC1w9t
+ YqCu9iaSHJ5UZvbXp8MeMqlcPn0D2HSPqHoG3WFpaVWWQARZdE
+ 2brt9M0aB+VDeFKtJadHejYuAn6wDsl3J4jOXQkRvXVE2kOE93
+ grkuS+YIMaHh5OygdYqs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012, James Hogan wrote:
-> Hopefully with several architecture maintainers asking for this it might
-> get somewhere, but indeed we're aware of the feedback problem on that list.
+On Monday 12 November 2012, Stephen Rothwell wrote:
+>   Show Details
+>   Make if easier for more architectures to select it and thus disable
+> drivers that use virt_to_bus().
 > 
-> The points that I've considered for defaulting to old syscalls:
-> * doesn't change existing behaviour of other architectures, so is simply
-> less risk of breaking them.
-> * could possibly make uClibc slightly smaller if it doesn't have to add
-> extra arguments.
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-The second argument is not very good when you consider that it means adding
-the same wrapper into the kernel rather than into uClibc, where it can
-be stripped out when unused (e.g. for static compilation) and doesn't
-have to be present in memory since the library is in pageable user space
-memory, while the kernel side implementation would always have to
-present.
+Very nice, I was recently looking into enabling this for ARM
+as well, at least for the platforms that are known to not
+need virt_to_bus.
 
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
