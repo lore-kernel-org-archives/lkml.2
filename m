@@ -1,179 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423246Ab2KNStY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:49:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37532 "EHLO mx1.redhat.com"
+	id S1423242Ab2KNSuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:50:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34275 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423191Ab2KNStX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 13:49:23 -0500
-Date: Wed, 14 Nov 2012 19:49:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+	id S1423016Ab2KNSuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 13:50:24 -0500
+Date: Wed, 14 Nov 2012 18:50:17 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Anton Arapov <anton@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] uprobes: Use percpu_rw_semaphore to fix
-	register/unregister vs dup_mmap() race
-Message-ID: <20121114184953.GA6972@redhat.com>
-References: <20121114184929.GA6977@redhat.com>
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 26/31] sched: numa: Make mempolicy home-node aware
+Message-ID: <20121114185017.GQ8218@suse.de>
+References: <1352805180-1607-1-git-send-email-mgorman@suse.de>
+ <1352805180-1607-27-git-send-email-mgorman@suse.de>
+ <50A3E169.4010402@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121114184929.GA6977@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50A3E169.4010402@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was always racy, but 268720903f87e0b84b161626c4447b81671b5d18
-"uprobes: Rework register_for_each_vma() to make it O(n)" should be
-blamed anyway, it made everything worse and I didn't notice.
+On Wed, Nov 14, 2012 at 01:22:33PM -0500, Rik van Riel wrote:
+> On 11/13/2012 06:12 AM, Mel Gorman wrote:
+> >From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >
+> >Add another layer of fallback policy to make the home node concept
+> >useful from a memory allocation PoV.
+> >
+> >This changes the mpol order to:
+> >
+> >  - vma->vm_ops->get_policy	[if applicable]
+> >  - vma->vm_policy		[if applicable]
+> >  - task->mempolicy
+> >  - tsk_home_node() preferred	[NEW]
+> >  - default_policy
+> 
+> Why is the home node policy not the default policy?
+> 
 
-register/unregister call build_map_info() and then do install/remove
-breakpoint for every mm which mmaps inode/offset. This can obviously
-race with fork()->dup_mmap() in between and we can miss the child.
+hmm, it effectively is if there is no other policy set. The changelog is
+a bit misleading. In V3, this will be dropped entirely. It was not clear
+that doing a remote alloc for home nodes was a good idea. Instead memory
+is always allocated locally to the faulting process as normal and
+migrated later if necessary.
 
-uprobe_register() could be easily fixed but unregister is much worse,
-the new mm inherits "int3" from parent and there is no way to detect
-this if uprobe goes away.
-
-So this patch simply adds percpu_down_read/up_read around dup_mmap(),
-and percpu_down_write/up_write into register_for_each_vma().
-
-This adds 2 new hooks into dup_mmap() but we can kill uprobe_dup_mmap()
-and fold it into uprobe_end_dup_mmap().
-
-Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/uprobes.h |    8 ++++++++
- kernel/events/uprobes.c |   26 +++++++++++++++++++++++---
- kernel/fork.c           |    2 ++
- 3 files changed, 33 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 2615c4d..4f628a6 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -97,6 +97,8 @@ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_con
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern int uprobe_mmap(struct vm_area_struct *vma);
- extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
-+extern void uprobe_start_dup_mmap(void);
-+extern void uprobe_end_dup_mmap(void);
- extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
- extern void uprobe_free_utask(struct task_struct *t);
- extern void uprobe_copy_process(struct task_struct *t);
-@@ -127,6 +129,12 @@ static inline void
- uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
- {
- }
-+static inline void uprobe_start_dup_mmap(void)
-+{
-+}
-+static inline void uprobe_end_dup_mmap(void)
-+{
-+}
- static inline void
- uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
- {
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index e616a7c..5e22faf 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -33,6 +33,7 @@
- #include <linux/ptrace.h>	/* user_enable_single_step */
- #include <linux/kdebug.h>	/* notifier mechanism */
- #include "../../mm/internal.h"	/* munlock_vma_page */
-+#include <linux/percpu-rwsem.h>
- 
- #include <linux/uprobes.h>
- 
-@@ -71,6 +72,8 @@ static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
- static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
- #define uprobes_mmap_hash(v)	(&uprobes_mmap_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
- 
-+static struct percpu_rw_semaphore dup_mmap_sem;
-+
- /*
-  * uprobe_events allows us to skip the uprobe_mmap if there are no uprobe
-  * events active at this time.  Probably a fine grained per inode count is
-@@ -766,10 +769,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 	struct map_info *info;
- 	int err = 0;
- 
-+	percpu_down_write(&dup_mmap_sem);
- 	info = build_map_info(uprobe->inode->i_mapping,
- 					uprobe->offset, is_register);
--	if (IS_ERR(info))
--		return PTR_ERR(info);
-+	if (IS_ERR(info)) {
-+		err = PTR_ERR(info);
-+		goto out;
-+	}
- 
- 	while (info) {
- 		struct mm_struct *mm = info->mm;
-@@ -799,7 +805,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		mmput(mm);
- 		info = free_map_info(info);
- 	}
--
-+ out:
-+	percpu_up_write(&dup_mmap_sem);
- 	return err;
- }
- 
-@@ -1131,6 +1138,16 @@ void uprobe_clear_state(struct mm_struct *mm)
- 	kfree(area);
- }
- 
-+void uprobe_start_dup_mmap(void)
-+{
-+	percpu_down_read(&dup_mmap_sem);
-+}
-+
-+void uprobe_end_dup_mmap(void)
-+{
-+	percpu_up_read(&dup_mmap_sem);
-+}
-+
- void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
- {
- 	newmm->uprobes_state.xol_area = NULL;
-@@ -1597,6 +1614,9 @@ static int __init init_uprobes(void)
- 		mutex_init(&uprobes_mmap_mutex[i]);
- 	}
- 
-+	if (percpu_init_rwsem(&dup_mmap_sem))
-+		return -ENOMEM;
-+
- 	return register_die_notifier(&uprobe_exception_nb);
- }
- module_init(init_uprobes);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8b20ab7..c497e57 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -352,6 +352,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 	unsigned long charge;
- 	struct mempolicy *pol;
- 
-+	uprobe_start_dup_mmap();
- 	down_write(&oldmm->mmap_sem);
- 	flush_cache_dup_mm(oldmm);
- 	uprobe_dup_mmap(oldmm, mm);
-@@ -469,6 +470,7 @@ out:
- 	up_write(&mm->mmap_sem);
- 	flush_tlb_mm(oldmm);
- 	up_write(&oldmm->mmap_sem);
-+	uprobe_end_dup_mmap();
- 	return retval;
- fail_nomem_anon_vma_fork:
- 	mpol_put(pol);
 -- 
-1.5.5.1
-
-
+Mel Gorman
+SUSE Labs
