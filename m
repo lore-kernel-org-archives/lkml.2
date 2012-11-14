@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab2KNUh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 15:37:59 -0500
+	id S1423414Ab2KNUiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 15:38:07 -0500
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:52548 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750Ab2KNUh4 (ORCPT
+	with ESMTP id S1756524Ab2KNUiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 15:37:56 -0500
+	Wed, 14 Nov 2012 15:38:05 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,11 +14,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anish Kumar <anish198519851985@gmail.com>
-Subject: [PATCH 1/7] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-Date: Wed, 14 Nov 2012 21:37:31 +0100
-Message-Id: <1352925457-15700-2-git-send-email-fweisbec@gmail.com>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 4/7] nohz: Add API to check tick state
+Date: Wed, 14 Nov 2012 21:37:34 +0100
+Message-Id: <1352925457-15700-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
 References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
@@ -26,78 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQ_WORK_BUSY flag is set right before we execute the
-work. Once this flag value is set, the work enters a
-claimable state again.
+We need some quick way to check if the CPU has stopped
+its tick. This will be useful to implement the printk tick
+using the irq work subsystem.
 
-So if we have specific data to compute in our work, we ensure it's
-either handled by another CPU or locally by enqueuing the work again.
-This state machine is guanranteed by atomic operations on the flags.
-
-So when we set IRQ_WORK_BUSY without using an xchg-like operation,
-we break this guarantee as in the following summarized scenario:
-
-        CPU 1                                   CPU 2
-        -----                                   -----
-                                                (flags = 0)
-                                                old_flags = flags;
-        (flags = 0)
-        cmpxchg(flags, old_flags,
-                old_flags | IRQ_WORK_FLAGS)
-        (flags = 3)
-        [...]
-        flags = IRQ_WORK_BUSY
-        (flags = 2)
-        func()
-                                                (sees flags = 3)
-                                                cmpxchg(flags, old_flags,
-                                                        old_flags | IRQ_WORK_FLAGS)
-                                                (give up)
-
-        cmpxchg(flags, 2, 0);
-        (flags = 0)
-
-CPU 1 claims a work and executes it, so it sets IRQ_WORK_BUSY and
-the work is again in a claimable state. Now CPU 2 has new data to process
-and try to claim that work but it may see a stale value of the flags
-and think the work is still pending somewhere that will handle our data.
-This is because CPU 1 doesn't set IRQ_WORK_BUSY atomically.
-
-As a result, the data expected to be handle by CPU 2 won't get handled.
-
-To fix this, use xchg() to set IRQ_WORK_BUSY, this way we ensure the CPU 2
-will see the correct value with cmpxchg() using the expected ordering.
-
-Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Anish Kumar <anish198519851985@gmail.com>
 ---
- kernel/irq_work.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ include/linux/tick.h     |   17 ++++++++++++++++-
+ kernel/time/tick-sched.c |    2 +-
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 1588e3b..57be1a6 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -119,8 +119,11 @@ void irq_work_run(void)
- 		/*
- 		 * Clear the PENDING bit, after this point the @work
- 		 * can be re-used.
-+		 * Make it immediately visible so that other CPUs trying
-+		 * to claim that work don't rely on us to handle their data
-+		 * while we are in the middle of the func.
- 		 */
--		work->flags = IRQ_WORK_BUSY;
-+		xchg(&work->flags, IRQ_WORK_BUSY);
- 		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index f37fceb..2307dd3 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -8,6 +8,8 @@
+ 
+ #include <linux/clockchips.h>
+ #include <linux/irqflags.h>
++#include <linux/percpu.h>
++#include <linux/hrtimer.h>
+ 
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+ 
+@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
++DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
++
++static inline int tick_nohz_tick_stopped(void)
++{
++	return __this_cpu_read(tick_cpu_sched.tick_stopped);
++}
++
+ extern void tick_nohz_idle_enter(void);
+ extern void tick_nohz_idle_exit(void);
+ extern void tick_nohz_irq_exit(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+-# else
++
++# else /* !CONFIG_NO_HZ */
++static inline int tick_nohz_tick_stopped(void)
++{
++	return 0;
++}
++
+ static inline void tick_nohz_idle_enter(void) { }
+ static inline void tick_nohz_idle_exit(void) { }
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index a402608..9e945aa 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -28,7 +28,7 @@
+ /*
+  * Per cpu nohz control structure
+  */
+-static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
++DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+ 
+ /*
+  * The time, when the last jiffy update happened. Protected by xtime_lock.
 -- 
 1.7.5.4
 
