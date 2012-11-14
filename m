@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2KNGLc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 01:11:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54910 "EHLO
+	id S1756390Ab2KNGLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 01:11:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54916 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751710Ab2KNFt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751776Ab2KNFt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 00:49:56 -0500
-Message-Id: <20121114053934.215871322@decadent.org.uk>
+Message-Id: <20121114053934.360360087@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 14 Nov 2012 05:39:36 +0000
+Date: Wed, 14 Nov 2012 05:39:37 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 03/82] drm/nouveau: silence modesetting spam on pre-gf8 chipsets
+        Ben Skeggs <bskeggs@redhat.com>, Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 04/82] drm/nouveau: fix suspend/resume when in headless mode
 In-Reply-To: <20121114053933.726869752@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,108 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Skeggs <bskeggs@redhat.com>
 
-commit cee59f15a60cc6269a25e3f6fbf1a577d6ab8115 upstream.
+commit 9430738d80223a1cd791a2baa74fa170d3df1262 upstream.
 
 Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[jrnieder@gmail.com: backport to 3.2: make fbcon suspend/resume
+ handling conditional in a vague hope that this will approximate what
+ the original does for 3.3+]
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nv04_dac.c | 8 ++++----
- drivers/gpu/drm/nouveau/nv04_dfp.c | 6 +++---
- drivers/gpu/drm/nouveau/nv04_tv.c  | 4 ++--
- 3 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drv.c | 32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nv04_dac.c b/drivers/gpu/drm/nouveau/nv04_dac.c
-index 38f1947..09ac275 100644
---- a/drivers/gpu/drm/nouveau/nv04_dac.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dac.c
-@@ -210,7 +210,7 @@ out:
- 	NVWriteVgaCrtc(dev, 0, NV_CIO_CR_MODE_INDEX, saved_cr_mode);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
+index 9791d13c9e3b..4ab35b588664 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drv.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
+@@ -178,8 +178,10 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
  
- 	if (blue == 0x18) {
--		NV_INFO(dev, "Load detected on head A\n");
-+		NV_DEBUG(dev, "Load detected on head A\n");
- 		return connector_status_connected;
+-	NV_INFO(dev, "Disabling fbcon acceleration...\n");
+-	nouveau_fbcon_save_disable_accel(dev);
++	if (dev->mode_config.num_crtc) {
++		NV_INFO(dev, "Disabling fbcon acceleration...\n");
++		nouveau_fbcon_save_disable_accel(dev);
++	}
+ 
+ 	NV_INFO(dev, "Unpinning framebuffer(s)...\n");
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+@@ -246,10 +248,12 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
+ 		pci_set_power_state(pdev, PCI_D3hot);
  	}
  
-@@ -323,7 +323,7 @@ nv17_dac_detect(struct drm_encoder *encoder, struct drm_connector *connector)
+-	console_lock();
+-	nouveau_fbcon_set_suspend(dev, 1);
+-	console_unlock();
+-	nouveau_fbcon_restore_accel(dev);
++	if (dev->mode_config.num_crtc) {
++		console_lock();
++		nouveau_fbcon_set_suspend(dev, 1);
++		console_unlock();
++		nouveau_fbcon_restore_accel(dev);
++	}
+ 	return 0;
  
- 	if (nv17_dac_sample_load(encoder) &
- 	    NV_PRAMDAC_TEST_CONTROL_SENSEB_ALLHI) {
--		NV_INFO(dev, "Load detected on output %c\n",
-+		NV_DEBUG(dev, "Load detected on output %c\n",
- 			'@' + ffs(dcb->or));
- 		return connector_status_connected;
- 	} else {
-@@ -398,7 +398,7 @@ static void nv04_dac_commit(struct drm_encoder *encoder)
+ out_abort:
+@@ -275,7 +279,8 @@ nouveau_pci_resume(struct pci_dev *pdev)
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
  
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
+-	nouveau_fbcon_save_disable_accel(dev);
++	if (dev->mode_config.num_crtc)
++		nouveau_fbcon_save_disable_accel(dev);
  
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
+ 	NV_INFO(dev, "We're back, enabling device...\n");
+ 	pci_set_power_state(pdev, PCI_D0);
+@@ -376,15 +381,18 @@ nouveau_pci_resume(struct pci_dev *pdev)
+ 		nv_crtc->lut.depth = 0;
+ 	}
+ 
+-	console_lock();
+-	nouveau_fbcon_set_suspend(dev, 0);
+-	console_unlock();
++	if (dev->mode_config.num_crtc) {
++		console_lock();
++		nouveau_fbcon_set_suspend(dev, 0);
++		console_unlock();
+ 
+-	nouveau_fbcon_zfill_all(dev);
++		nouveau_fbcon_zfill_all(dev);
++	}
+ 
+ 	drm_helper_resume_force_mode(dev);
+ 
+-	nouveau_fbcon_restore_accel(dev);
++	if (dev->mode_config.num_crtc)
++		nouveau_fbcon_restore_accel(dev);
+ 	return 0;
  }
-@@ -447,7 +447,7 @@ static void nv04_dac_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
  
--	NV_INFO(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
-diff --git a/drivers/gpu/drm/nouveau/nv04_dfp.c b/drivers/gpu/drm/nouveau/nv04_dfp.c
-index c267562..89640f2 100644
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -476,7 +476,7 @@ static void nv04_dfp_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -519,7 +519,7 @@ static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	if (was_powersaving && is_powersaving_dpms(mode))
-@@ -564,7 +564,7 @@ static void nv04_tmds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dfp_update_backlight(encoder, mode);
-diff --git a/drivers/gpu/drm/nouveau/nv04_tv.c b/drivers/gpu/drm/nouveau/nv04_tv.c
-index 3eb605d..4de1fbe 100644
---- a/drivers/gpu/drm/nouveau/nv04_tv.c
-+++ b/drivers/gpu/drm/nouveau/nv04_tv.c
-@@ -69,7 +69,7 @@ static void nv04_tv_dpms(struct drm_encoder *encoder, int mode)
- 	struct nv04_mode_state *state = &dev_priv->mode_reg;
- 	uint8_t crtc1A;
- 
--	NV_INFO(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
- 		mode, nv_encoder->dcb->index);
- 
- 	state->pllsel &= ~(PLLSEL_TV_CRTC1_MASK | PLLSEL_TV_CRTC2_MASK);
-@@ -162,7 +162,7 @@ static void nv04_tv_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		      drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base), nv_crtc->index,
- 		      '@' + ffs(nv_encoder->dcb->or));
- }
 
 
