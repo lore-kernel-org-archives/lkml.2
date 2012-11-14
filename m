@@ -1,188 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab2KNHLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 02:11:40 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37248 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2KNHLi (ORCPT
+	id S1754757Ab2KNHMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 02:12:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43745 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2KNHMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 02:11:38 -0500
+	Wed, 14 Nov 2012 02:12:49 -0500
+Date: Tue, 13 Nov 2012 23:11:54 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-813105858a85c9a98fc686fbe6788dc217cc9ab3@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1351634526-1516-15-git-send-email-jolsa@redhat.com>
+References: <1351634526-1516-15-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests: Add attr record raw test
+Git-Commit-ID: 813105858a85c9a98fc686fbe6788dc217cc9ab3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C060FBEA29A@SC-VEXCH1.marvell.com>
-Date: Wed, 14 Nov 2012 15:11:37 +0800
-Message-ID: <CADz5_gLC=z_VYrNq8q3dU7L6im7shSz-Sn6Tzym2mRZONwpgUg@mail.gmail.com>
-Subject: Re: FW: [PATCH v2] mmc: sdhci: apply voltage range check only for
- non-fixed regulators
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: m.szyprowski@samsung.com, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
-        Philip Rakity <prakity@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Nov 2012 23:11:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
-> Sent: Tuesday, November 13, 2012 10:14 PM
-> To: Marek Szyprowski
-> Cc: linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org; Kyungmin Park; Mark Brown; Liam Girdwood; Philip Rakity
-> Subject: Re: [PATCH v2] mmc: sdhci: apply voltage range check only for non-fixed regulators
->
-> Hi,
->
-> On Tue, Nov 13 2012, Marek Szyprowski wrote:
->>> On Tue, Nov 13 2012, Marek Szyprowski wrote:
->>> > Fixed regulators cannot change their voltage, so disable all voltage
->>> > range checking for them, otherwise the driver fails to operate with
->>> > fixed regulators. Up to now it worked only by luck, because
->>> > regulator_is_supported_voltage() function returned incorrect values.
->>> > Commit "regulator: fix voltage check in regulator_is_supported_voltage()"
->>> > fixed that function and now additional check is needed for fixed
->>> > regulators.
->>> >
->>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->>> > ---
->>> >  drivers/mmc/host/sdhci.c |    2 +-
->>> >  1 file changed, 1 insertion(+), 1 deletion(-)
->>> >
->>> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->>> > index c7851c0..6f6534e 100644
->>> > --- a/drivers/mmc/host/sdhci.c
->>> > +++ b/drivers/mmc/host/sdhci.c
->>> > @@ -2923,7 +2923,7 @@ int sdhci_add_host(struct sdhci_host *host)
->>> >            regulator_enable(host->vmmc);
->>> >
->>> >  #ifdef CONFIG_REGULATOR
->>> > -  if (host->vmmc) {
->>> > +  if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
->>> >            ret = regulator_is_supported_voltage(host->vmmc, 3300000,
->>> >                    3300000);
->>> >            if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->>>
->>> Thanks for the longer explanation.  I'm still missing something, though;
->>> what's wrong with running the check as it was with the new regulator code?
->>> (I haven't tried it yet.)
->>>
->>> #ifdef CONFIG_REGULATOR
->>>          if (host->vmmc) {
->>>                  ret = regulator_is_supported_voltage(host->vmmc, 3300000,
->>>                          3300000);
->>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->>>                          caps[0] &= ~SDHCI_CAN_VDD_330;
->>>                  ret = regulator_is_supported_voltage(host->vmmc, 3000000,
->>>                          3000000);
->>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
->>>                          caps[0] &= ~SDHCI_CAN_VDD_300;
->>>                  ret = regulator_is_supported_voltage(host->vmmc, 1800000,
->>>                          1800000);
->>>                  if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
->>>                          caps[0] &= ~SDHCI_CAN_VDD_180;
->>>          }
->>> #endif /* CONFIG_REGULATOR */
->>>
->>> The point is to remove unsupported voltages, so if someone sets up a
->>> fixed regulator at 3300000, all of the other caps are disabled.  Why
->>> wouldn't that work without this change, and how are we supposed to
->>> remove those caps on a fixed regulator after your patchset?
->>>
->>> Thanks, sorry if I'm missing something obvious,
->>
->> On our boards eMMC is connected to fixed 2.8V regulator, what results in
->> clearing all available voltages and fail. The same situation is when one
->> enable dummy regulator and try to use sdhci with it. My patch fixes this
->> and restores sdhci to working state as it was before (before fixing
->> regulator regulator_is_supported_voltage() function and earlier when
->> MMC_BROKEN_VOLATGE capability was used).
->
-> I see.  Sounds like a separate bug -- Philip (or anyone else), any
-> idea how we should be treating eMMCs with a fixed voltage here?
->
+Commit-ID:  813105858a85c9a98fc686fbe6788dc217cc9ab3
+Gitweb:     http://git.kernel.org/tip/813105858a85c9a98fc686fbe6788dc217cc9ab3
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 30 Oct 2012 23:01:55 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 5 Nov 2012 14:02:07 -0300
 
-I think we should check the voltage range rather than the voltage
-point accoring to the spec.
-Otherwise some valid voltage like 2.8v will be discarded by mistake.
-My below old patch aim to fix this issue.
-How do you think?
+perf tests: Add attr record raw test
 
------Original Message-----
-From: Kevin Liu [mailto:keyuan.liu@gmail.com]
-Sent: Friday, September 28, 2012 3:56 PM
-To: linux-mmc@vger.kernel.org; cjb@laptop.org; pierre@ossman.eu;
-ulf.hansson@linaro.org; Zhangfei Gao
-Cc: Haojian Zhuang; Chao Xie; Philip Rakity; Kevin Liu; Jialing Fu
-Subject: [PATCH v5 03/13] mmc: sdhci: use regulator min/max voltage
-range according to spec
+Adding test to validate perf_event_attr data for command:
+  'record -R'
 
-From: Kevin Liu <kliu5@marvell.com>
-
-For regulator vmmc/vmmcq, use voltage range as below
-3.3v/3.0v: (2.7v, 3.6v)
-1.8v: (1.7v, 1.95v)
-Original code use the specific value which may fail in regulator
-driver if it does NOT support the specific voltage.
-
-Signed-off-by: Jialing Fu <jlfu@marvell.com>
-Signed-off-by: Kevin Liu <kliu5@marvell.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1351634526-1516-15-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/mmc/host/sdhci.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
+ .../attr/{test-record-data => test-record-raw}     |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 3aef580..36afd47 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1628,7 +1628,7 @@ static int
-sdhci_do_3_3v_signal_voltage_switch(struct sdhci_host *host,
- 	sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
-
- 	if (host->vqmmc) {
--		ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
-+		ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
- 		if (ret) {
- 			pr_warning("%s: Switching to 3.3V signalling voltage "
- 				   " failed\n", mmc_hostname(host->mmc));
-@@ -1672,7 +1672,7 @@ static int
-sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
- 		 */
- 		if (host->vqmmc)
- 			ret = regulator_set_voltage(host->vqmmc,
--				1800000, 1800000);
-+				1700000, 1950000);
- 		else
- 			ret = 0;
-
-@@ -2856,7 +2856,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
- 		host->vqmmc = NULL;
- 	}
--	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
-+	else if (regulator_is_supported_voltage(host->vqmmc, 1700000, 1950000))
- 		regulator_enable(host->vqmmc);
- 	else
- 		caps[1] &= ~(SDHCI_SUPPORT_SDR104 | SDHCI_SUPPORT_SDR50 |
-@@ -2927,16 +2927,14 @@ int sdhci_add_host(struct sdhci_host *host)
-
- #ifdef CONFIG_REGULATOR
- 	if (host->vmmc) {
--		ret = regulator_is_supported_voltage(host->vmmc, 3300000,
--			3300000);
-+		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
-+			3600000);
- 		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_330))
- 			caps[0] &= ~SDHCI_CAN_VDD_330;
--		ret = regulator_is_supported_voltage(host->vmmc, 3000000,
--			3000000);
- 		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_300))
- 			caps[0] &= ~SDHCI_CAN_VDD_300;
--		ret = regulator_is_supported_voltage(host->vmmc, 1800000,
--			1800000);
-+		ret = regulator_is_supported_voltage(host->vmmc, 1700000,
-+			1950000);
- 		if ((ret <= 0) && (caps[0] & SDHCI_CAN_VDD_180))
- 			caps[0] &= ~SDHCI_CAN_VDD_180;
- 	}
--- 
-1.7.0.4
+diff --git a/tools/perf/tests/attr/test-record-data b/tools/perf/tests/attr/test-record-raw
+similarity index 51%
+copy from tools/perf/tests/attr/test-record-data
+copy to tools/perf/tests/attr/test-record-raw
+index 6627c3e..4a8ef25 100644
+--- a/tools/perf/tests/attr/test-record-data
++++ b/tools/perf/tests/attr/test-record-raw
+@@ -1,8 +1,7 @@
+ [config]
+ command = record
+-args    = -d kill >/dev/null 2>&1
++args    = -R kill >/dev/null 2>&1
+ 
+ [event:base-record]
+ sample_period=4000
+-sample_type=271
+-mmap_data=1
++sample_type=1415
