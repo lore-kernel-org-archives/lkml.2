@@ -1,98 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab2KNPd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 10:33:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58951 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab2KNPdz (ORCPT
+	id S1755172Ab2KNPfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 10:35:31 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55324 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014Ab2KNPfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 10:33:55 -0500
-Date: Wed, 14 Nov 2012 16:33:48 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: Add Tegra20 host1x support
-Message-ID: <20121114153348.GA32208@avionic-0098.mockup.avionic-design.de>
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
- <1352467202-27903-2-git-send-email-thierry.reding@avionic-design.de>
- <50A357D3.9080002@nvidia.com>
- <20121114150125.GA11050@avionic-0098.mockup.avionic-design.de>
- <50A3B8DD.7010607@nvidia.com>
+	Wed, 14 Nov 2012 10:35:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <50A3B8DD.7010607@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:6pJfNbPwKQPmPQv2uBbNVck+faYPeyHMxFWCOt8Dsll
- Vb822MvywOBcqBTeWfV+tgx6rcny/RtKZYkshdnKcmYUsXjlrd
- Szl3dqHIyHEqPWEIY11oFSTAvefZxc7x12Z0MsjI21LzPEqsGL
- uMQGzwx1/ozyTGWEfoKiNtJ6brYCF5A8SZNEwzb9Yc/cvK1pmh
- KOT9jCwvRm5jbEq5fLQufW8QpFQ4b5CmFXujTVpQKUOh9Iaeje
- /W2U7EBEdIX1q4uFOLMdxRqrKSR5YDEON5viLSxAVgSRK9e+U+
- 1NLNlgOh7ma4TTXzzoYYFfOLRThAh7PNxXEG+7aKXfsN7WZPqF
- XFSQ2mYq6k8oUqRRTIEZFrRDQMVtyGG1X6VUnRG43y+aFialkK
- SuYFhz0U60iSUYKU42Dg8Be8XWlvOW+PnS1rwaAxIVyS76QNI2
- AokiQ
+In-Reply-To: <1352563700-5268-1-git-send-email-elezegarcia@gmail.com>
+References: <1352563700-5268-1-git-send-email-elezegarcia@gmail.com>
+Date: Wed, 14 Nov 2012 12:35:30 -0300
+Message-ID: <CALF0-+VcRv2C9jx=vwAK6xdgauVuqzCZLgZ9aCGpUad42jtyaw@mail.gmail.com>
+Subject: Re: [RFC/PATCH] mtd_blkdevs: Replace request handler kthread with a workqueue
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Ezequiel Garcia <elezegarcia@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 10, 2012 at 1:08 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
+> By replacing a kthread with a workqueue, the code is now a bit clearer.
+> There's also a slight reduction of code size (numbers apply for x86):
+> Before:
+>    text    data     bss     dec     hex filename
+>    3248      36       0    3284     cd4 drivers/mtd/mtd_blkdevs.o
+>
+> After:
+>    text    data     bss     dec     hex filename
+>    3150      36       0    3186     c72 drivers/mtd/mtd_blkdevs.o
+>
+> Due to lack of real hardware, tests have been performed on an emulated
+> environment with mtdswap and mtdblock over nandsim devices.
+> Some real testing should be done, before merging this patch.
+>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Artem Bityutskiy <dedekind1@gmail.com>
+> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> ---
+>  drivers/mtd/mtd_blkdevs.c    |   47 +++++++++++++----------------------------
+>  include/linux/mtd/blktrans.h |    4 ++-
+>  2 files changed, 18 insertions(+), 33 deletions(-)
+>
+> diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
+> index f1f0671..ba375ba 100644
+> --- a/drivers/mtd/mtd_blkdevs.c
+> +++ b/drivers/mtd/mtd_blkdevs.c
+> @@ -32,7 +32,6 @@
+>  #include <linux/hdreg.h>
+>  #include <linux/init.h>
+>  #include <linux/mutex.h>
+> -#include <linux/kthread.h>
+>  #include <asm/uaccess.h>
+>
+>  #include "mtdcore.h"
+> @@ -121,16 +120,14 @@ static int do_blktrans_request(struct mtd_blktrans_ops *tr,
+>
+>  int mtd_blktrans_cease_background(struct mtd_blktrans_dev *dev)
+>  {
+> -       if (kthread_should_stop())
+> -               return 1;
+> -
+>         return dev->bg_stop;
+>  }
+>  EXPORT_SYMBOL_GPL(mtd_blktrans_cease_background);
+>
+> -static int mtd_blktrans_thread(void *arg)
+> +static void mtd_blktrans_work(struct work_struct *work)
+>  {
+> -       struct mtd_blktrans_dev *dev = arg;
+> +       struct mtd_blktrans_dev *dev =
+> +               container_of(work, struct mtd_blktrans_dev, work);
+>         struct mtd_blktrans_ops *tr = dev->tr;
+>         struct request_queue *rq = dev->rq;
+>         struct request *req = NULL;
+> @@ -138,7 +135,7 @@ static int mtd_blktrans_thread(void *arg)
+>
+>         spin_lock_irq(rq->queue_lock);
+>
+> -       while (!kthread_should_stop()) {
+> +       while (1) {
+>                 int res;
+>
+>                 dev->bg_stop = false;
+> @@ -156,15 +153,7 @@ static int mtd_blktrans_thread(void *arg)
+>                                 background_done = !dev->bg_stop;
+>                                 continue;
+>                         }
+> -                       set_current_state(TASK_INTERRUPTIBLE);
+> -
+> -                       if (kthread_should_stop())
+> -                               set_current_state(TASK_RUNNING);
+> -
+> -                       spin_unlock_irq(rq->queue_lock);
+> -                       schedule();
+> -                       spin_lock_irq(rq->queue_lock);
+> -                       continue;
+> +                       break;
+>                 }
+>
+>                 spin_unlock_irq(rq->queue_lock);
+> @@ -185,8 +174,6 @@ static int mtd_blktrans_thread(void *arg)
+>                 __blk_end_request_all(req, -EIO);
+>
+>         spin_unlock_irq(rq->queue_lock);
+> -
+> -       return 0;
+>  }
+>
+>  static void mtd_blktrans_request(struct request_queue *rq)
+> @@ -199,10 +186,8 @@ static void mtd_blktrans_request(struct request_queue *rq)
+>         if (!dev)
+>                 while ((req = blk_fetch_request(rq)) != NULL)
+>                         __blk_end_request_all(req, -ENODEV);
+> -       else {
+> -               dev->bg_stop = true;
+> -               wake_up_process(dev->thread);
+> -       }
+> +       else
+> +               queue_work(dev->wq, &dev->work);
+>  }
+>
+>  static int blktrans_open(struct block_device *bdev, fmode_t mode)
+> @@ -437,14 +422,13 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
+>
+>         gd->queue = new->rq;
+>
+> -       /* Create processing thread */
+> -       /* TODO: workqueue ? */
+> -       new->thread = kthread_run(mtd_blktrans_thread, new,
+> -                       "%s%d", tr->name, new->mtd->index);
+> -       if (IS_ERR(new->thread)) {
+> -               ret = PTR_ERR(new->thread);
+> +       /* Create processing workqueue */
+> +       new->wq = alloc_workqueue("%s%d", 0, 0,
+> +                                 tr->name, new->mtd->index);
+> +       if (!new->wq)
+>                 goto error4;
+> -       }
+> +       INIT_WORK(&new->work, mtd_blktrans_work);
+> +
+>         gd->driverfs_dev = &new->mtd->dev;
+>
+>         if (new->readonly)
+> @@ -484,9 +468,8 @@ int del_mtd_blktrans_dev(struct mtd_blktrans_dev *old)
+>         /* Stop new requests to arrive */
+>         del_gendisk(old->disk);
+>
+> -
+> -       /* Stop the thread */
+> -       kthread_stop(old->thread);
+> +       /* Stop workqueue. This will perform any pending request. */
+> +       destroy_workqueue(old->wq);
+>
+>         /* Kill current requests */
+>         spin_lock_irqsave(&old->queue_lock, flags);
+> diff --git a/include/linux/mtd/blktrans.h b/include/linux/mtd/blktrans.h
+> index ed270bd..4eb0a50 100644
+> --- a/include/linux/mtd/blktrans.h
+> +++ b/include/linux/mtd/blktrans.h
+> @@ -23,6 +23,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/kref.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/workqueue.h>
+>
+>  struct hd_geometry;
+>  struct mtd_info;
+> @@ -43,7 +44,8 @@ struct mtd_blktrans_dev {
+>         struct kref ref;
+>         struct gendisk *disk;
+>         struct attribute_group *disk_attributes;
+> -       struct task_struct *thread;
+> +       struct workqueue_struct *wq;
+> +       struct work_struct work;
+>         struct request_queue *rq;
+>         spinlock_t queue_lock;
+>         void *priv;
+> --
+> 1.7.8.6
+>
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I guess lack of comments at least means this patch is not junk ;-)
 
-On Wed, Nov 14, 2012 at 05:29:33PM +0200, Terje Bergstr=C3=B6m wrote:
-> On 14.11.2012 17:01, Thierry Reding wrote:
-> > Funny. I just tested with this line removed and I also get the freeze.
-> > With the line I don't get the freeze. Does the freeze only occur with
-> > additional patches on top? If so I think we should keep the line in for
-> > now because it is what most people have tested against and which has
-> > proven to work. We can fix any remaining issues with host1x specific
-> > things when actual patches emerge.
->=20
-> I was running with 2D acceleration support added on top of your
-> gitorious tree. It was the nvhost driver, which probes host1x, and
-> initializes it. In middle of initialization (writing zeros to sync point
-> registers), host1x stops responding.
->=20
-> I agree, if removing the line causes regression, keep it and let's debug
-> this issue later.
->=20
-> It might be that we have a difference in bootloader. Does your
-> bootloader enable display? U-Boot and fastboot do, and it might be that
-> has an effect. They would need to initialize host1x clocks, and it might
-> be that kernel initialization somehow clashes with bootloader's.
+Another thing worth mentioning is that UBI uses kernel threads,
+instead of workqueues.
 
-I use an upstream U-Boot version that performs no display initialization
-on the board that I use. Perhaps that indeed causes your setup to work
-properly but not mine.
+Moreover, it fires a thread per ubi device, which on a first glance
+seems like a lot of overhead.
 
-Thierry
+We should really have a very good reason for prefering kernel threads
+to workqueues, the latter being much cheaper.
 
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature
+I'll try to fix an rfc/patch for this, in case anyone wants to give it a try.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJQo7ncAAoJEN0jrNd/PrOhVNoP/iAe087EDWMv4d3Mw3sM/vJ+
-a1D9uNUsciaL+b5TSL3l1wT5oVsmAbtawW0l/jBSAaAPwk/PdBvxJTjJ4ZSXlCFp
-HsTKUrj3MHkYdIO1MK9iH9oxeaU/A1jzC/pHKFB6G9jfsajwPm8MiSTGUIPf9Yha
-HCWSpJABj8TBHFnM7HVO7lcWqFr8RfBO8csRpY5jiolgtuS+SqFlL2VEN5YGa8nJ
-+y+kJpkzrnPon2UGcJbMRcwLNb8c+umoifNpjapuuruj1NXKDQj7nK7n4cEyG65L
-TNl0eyr0F9akusaYiaDS/nV8N/iHYs+UJXdom1QAdnBc+OMg85ksiQUVC6ZDyN/Y
-OgVnlwG6Lq0j6lDPogZ8dWZj0cjLGhbga+nyr7l4qFzOoXdztUFyhWHJ84FkjJI4
-hdvbY17+OBUo32ronYzoCwgYu2t89CfT+WMAHJxxCHpalXWPRZ1+tdCevvtJwvvw
-379lNJW05opCLt/geE2Pjd5+xYTBxCLMbYsEW7/38/CESyxHtEoXvvzV3NoLPldv
-AhrLX8jgwNtY1OxFumKapX/OJEnvFBrhyUyL2gZWV5+XOcMf5UrwKR/kAQDqep1u
-P/ZczhudKQQTQsVS54apJJMNjVpjxsdMq6DCwYDvGANupjZacBUwiIphdRsk4M2T
-AVp5/q+3kuJaZsDpvb3s
-=BmCj
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
+    Ezequiel
