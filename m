@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423397Ab2KNTNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 14:13:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30666 "EHLO
+	id S1423409Ab2KNTOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 14:14:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30601 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423175Ab2KNTNE (ORCPT
+	with ESMTP id S1423253Ab2KNTM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 14:13:04 -0500
+	Wed, 14 Nov 2012 14:12:58 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
@@ -14,99 +14,189 @@ To: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
         akpm@linux-foundation.org, mgorman@suse.de
 Cc: fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 11/11] zcache: Coalesce all debug under CONFIG_ZCACHE2_DEBUG
-Date: Wed, 14 Nov 2012 14:12:19 -0500
-Message-Id: <1352920339-10183-12-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 07/11] zcache: Use an array to initialize/use debugfs attributes.
+Date: Wed, 14 Nov 2012 14:12:15 -0500
+Message-Id: <1352920339-10183-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
 References: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and also define this extra attribute in the Kconfig entry.
+It makes it neater and also allows us to piggyback on that
+in the zcache_dump function.
 
 Reviewed-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/ramster/Kconfig       |    8 ++++++++
- drivers/staging/ramster/Makefile      |    2 +-
- drivers/staging/ramster/debug.h       |    2 +-
- drivers/staging/ramster/zcache-main.c |    6 +++---
- 4 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/staging/ramster/debug.c |  141 +++++++++++++--------------------------
+ 1 files changed, 47 insertions(+), 94 deletions(-)
 
-diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
-index 9ce2590..24c8704 100644
---- a/drivers/staging/ramster/Kconfig
-+++ b/drivers/staging/ramster/Kconfig
-@@ -15,6 +15,14 @@ config ZCACHE2
- 	  again in the future.  Until then, zcache2 is a single-node
- 	  version of ramster.
+diff --git a/drivers/staging/ramster/debug.c b/drivers/staging/ramster/debug.c
+index 0d19715..3a252a5 100644
+--- a/drivers/staging/ramster/debug.c
++++ b/drivers/staging/ramster/debug.c
+@@ -3,111 +3,64 @@
  
-+config ZCACHE2_DEBUG
-+	bool "Enable debug statistics"
-+	depends on DEBUG_FS && ZCACHE2
-+	default n
-+	help
-+	  This is used to provide an debugfs directory with counters of
-+	  how zcache2 is doing. You probably want to set this to 'N'.
+ #ifdef CONFIG_DEBUG_FS
+ #include <linux/debugfs.h>
+-#define	zdfs	debugfs_create_size_t
+-#define	zdfs64	debugfs_create_u64
 +
- config RAMSTER
- 	tristate "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
- 	depends on CONFIGFS_FS && SYSFS && !HIGHMEM && ZCACHE2
-diff --git a/drivers/staging/ramster/Makefile b/drivers/staging/ramster/Makefile
-index 61f5050..d341a23 100644
---- a/drivers/staging/ramster/Makefile
-+++ b/drivers/staging/ramster/Makefile
-@@ -4,5 +4,5 @@ zcache-y	+=	ramster/ramster.o ramster/r2net.o
- zcache-y	+=	ramster/nodemanager.o ramster/tcp.o
- zcache-y	+=	ramster/heartbeat.o ramster/masklog.o
- endif
--zcache-y-$(CONFIG_ZCACHE_DEBUG)	+= debug.o
-+zcache-y-$(CONFIG_ZCACHE2_DEBUG)	+= debug.o
- obj-$(CONFIG_MODULES)	+= zcache.o
-diff --git a/drivers/staging/ramster/debug.h b/drivers/staging/ramster/debug.h
-index b412b90..cf375d7 100644
---- a/drivers/staging/ramster/debug.h
-+++ b/drivers/staging/ramster/debug.h
-@@ -1,4 +1,4 @@
--#ifdef CONFIG_ZCACHE_DEBUG
-+#ifdef CONFIG_ZCACHE2_DEBUG
++#define ATTR(x)  { .name = #x, .val = &zcache_##x, }
++static struct debug_entry {
++	const char *name;
++	ssize_t *val;
++} attrs[] = {
++	ATTR(obj_count), ATTR(obj_count_max),
++	ATTR(objnode_count), ATTR(objnode_count_max),
++	ATTR(flush_total), ATTR(flush_found),
++	ATTR(flobj_total), ATTR(flobj_found),
++	ATTR(failed_eph_puts), ATTR(failed_pers_puts),
++	ATTR(failed_getfreepages), ATTR(failed_alloc),
++	ATTR(put_to_flush),
++	ATTR(compress_poor), ATTR(mean_compress_poor),
++	ATTR(eph_ate_tail), ATTR(eph_ate_tail_failed),
++	ATTR(pers_ate_eph), ATTR(pers_ate_eph_failed),
++	ATTR(evicted_eph_zpages), ATTR(evicted_eph_pageframes),
++	ATTR(eph_pageframes), ATTR(eph_pageframes_max),
++	ATTR(eph_zpages), ATTR(eph_zpages_max),
++	ATTR(pers_zpages), ATTR(pers_zpages_max),
++	ATTR(last_active_file_pageframes),
++	ATTR(last_inactive_file_pageframes),
++	ATTR(last_active_anon_pageframes),
++	ATTR(last_inactive_anon_pageframes),
++	ATTR(eph_nonactive_puts_ignored),
++	ATTR(pers_nonactive_puts_ignored),
++};
++#undef ATTR
+ int zcache_debugfs_init(void)
+ {
++	unsigned int i;
+ 	struct dentry *root = debugfs_create_dir("zcache", NULL);
+ 	if (root == NULL)
+ 		return -ENXIO;
  
- /* we try to keep these statistics SMP-consistent */
- static ssize_t zcache_obj_count;
-diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
-index a1a9799..6add13d 100644
---- a/drivers/staging/ramster/zcache-main.c
-+++ b/drivers/staging/ramster/zcache-main.c
-@@ -308,7 +308,7 @@ static void zcache_free_page(struct page *page)
- 		max_pageframes = curr_pageframes;
- 	if (curr_pageframes < min_pageframes)
- 		min_pageframes = curr_pageframes;
--#ifdef ZCACHE_DEBUG
-+#ifdef CONFIG_ZCACHE2_DEBUG
- 	if (curr_pageframes > 2L || curr_pageframes < -2L) {
- 		/* pr_info here */
- 	}
-@@ -1603,7 +1603,7 @@ static int zcache_init(void)
- 		old_ops = zcache_cleancache_register_ops();
- 		pr_info("%s: cleancache enabled using kernel transcendent "
- 			"memory and compression buddies\n", namestr);
--#ifdef ZCACHE_DEBUG
-+#ifdef CONFIG_ZCACHE2_DEBUG
- 		pr_info("%s: cleancache: ignorenonactive = %d\n",
- 			namestr, !disable_cleancache_ignore_nonactive);
+-	zdfs("obj_count", S_IRUGO, root, &zcache_obj_count);
+-	zdfs("obj_count_max", S_IRUGO, root, &zcache_obj_count_max);
+-	zdfs("objnode_count", S_IRUGO, root, &zcache_objnode_count);
+-	zdfs("objnode_count_max", S_IRUGO, root, &zcache_objnode_count_max);
+-	zdfs("flush_total", S_IRUGO, root, &zcache_flush_total);
+-	zdfs("flush_found", S_IRUGO, root, &zcache_flush_found);
+-	zdfs("flobj_total", S_IRUGO, root, &zcache_flobj_total);
+-	zdfs("flobj_found", S_IRUGO, root, &zcache_flobj_found);
+-	zdfs("failed_eph_puts", S_IRUGO, root, &zcache_failed_eph_puts);
+-	zdfs("failed_pers_puts", S_IRUGO, root, &zcache_failed_pers_puts);
+-	zdfs("failed_get_free_pages", S_IRUGO, root,
+-				&zcache_failed_getfreepages);
+-	zdfs("failed_alloc", S_IRUGO, root, &zcache_failed_alloc);
+-	zdfs("put_to_flush", S_IRUGO, root, &zcache_put_to_flush);
+-	zdfs("compress_poor", S_IRUGO, root, &zcache_compress_poor);
+-	zdfs("mean_compress_poor", S_IRUGO, root, &zcache_mean_compress_poor);
+-	zdfs("eph_ate_tail", S_IRUGO, root, &zcache_eph_ate_tail);
+-	zdfs("eph_ate_tail_failed", S_IRUGO, root, &zcache_eph_ate_tail_failed);
+-	zdfs("pers_ate_eph", S_IRUGO, root, &zcache_pers_ate_eph);
+-	zdfs("pers_ate_eph_failed", S_IRUGO, root, &zcache_pers_ate_eph_failed);
+-	zdfs("evicted_eph_zpages", S_IRUGO, root, &zcache_evicted_eph_zpages);
+-	zdfs("evicted_eph_pageframes", S_IRUGO, root,
+-				&zcache_evicted_eph_pageframes);
+-	zdfs("eph_pageframes", S_IRUGO, root, &zcache_eph_pageframes);
+-	zdfs("eph_pageframes_max", S_IRUGO, root, &zcache_eph_pageframes_max);
+-	zdfs("pers_pageframes", S_IRUGO, root, &zcache_pers_pageframes);
+-	zdfs("pers_pageframes_max", S_IRUGO, root, &zcache_pers_pageframes_max);
+-	zdfs("eph_zpages", S_IRUGO, root, &zcache_eph_zpages);
+-	zdfs("eph_zpages_max", S_IRUGO, root, &zcache_eph_zpages_max);
+-	zdfs("pers_zpages", S_IRUGO, root, &zcache_pers_zpages);
+-	zdfs("pers_zpages_max", S_IRUGO, root, &zcache_pers_zpages_max);
+-	zdfs("last_active_file_pageframes", S_IRUGO, root,
+-				&zcache_last_active_file_pageframes);
+-	zdfs("last_inactive_file_pageframes", S_IRUGO, root,
+-				&zcache_last_inactive_file_pageframes);
+-	zdfs("last_active_anon_pageframes", S_IRUGO, root,
+-				&zcache_last_active_anon_pageframes);
+-	zdfs("last_inactive_anon_pageframes", S_IRUGO, root,
+-				&zcache_last_inactive_anon_pageframes);
+-	zdfs("eph_nonactive_puts_ignored", S_IRUGO, root,
+-				&zcache_eph_nonactive_puts_ignored);
+-	zdfs("pers_nonactive_puts_ignored", S_IRUGO, root,
+-				&zcache_pers_nonactive_puts_ignored);
+-	zdfs64("eph_zbytes", S_IRUGO, root, &zcache_eph_zbytes);
+-	zdfs64("eph_zbytes_max", S_IRUGO, root, &zcache_eph_zbytes_max);
+-	zdfs64("pers_zbytes", S_IRUGO, root, &zcache_pers_zbytes);
+-	zdfs64("pers_zbytes_max", S_IRUGO, root, &zcache_pers_zbytes_max);
++	for (i = 0; i < ARRAY_SIZE(attrs); i++)
++		if (!debugfs_create_size_t(attrs[i].name, S_IRUGO, root, attrs[i].val))
++			goto out;
++
++	debugfs_create_u64("eph_zbytes", S_IRUGO, root, &zcache_eph_zbytes);
++	debugfs_create_u64("eph_zbytes_max", S_IRUGO, root, &zcache_eph_zbytes_max);
++	debugfs_create_u64("pers_zbytes", S_IRUGO, root, &zcache_pers_zbytes);
++	debugfs_create_u64("pers_zbytes_max", S_IRUGO, root, &zcache_pers_zbytes_max);
+ 	return 0;
++out:
++	return -ENODEV;
+ }
+-#undef	zdebugfs
+-#undef	zdfs64
+ 
+ /* developers can call this in case of ooms, e.g. to find memory leaks */
+ void zcache_dump(void)
+ {
+-	pr_debug("zcache: obj_count=%u\n", zcache_obj_count);
+-	pr_debug("zcache: obj_count_max=%u\n", zcache_obj_count_max);
+-	pr_debug("zcache: objnode_count=%u\n", zcache_objnode_count);
+-	pr_debug("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
+-	pr_debug("zcache: flush_total=%u\n", zcache_flush_total);
+-	pr_debug("zcache: flush_found=%u\n", zcache_flush_found);
+-	pr_debug("zcache: flobj_total=%u\n", zcache_flobj_total);
+-	pr_debug("zcache: flobj_found=%u\n", zcache_flobj_found);
+-	pr_debug("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
+-	pr_debug("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
+-	pr_debug("zcache: failed_get_free_pages=%u\n",
+-				zcache_failed_getfreepages);
+-	pr_debug("zcache: failed_alloc=%u\n", zcache_failed_alloc);
+-	pr_debug("zcache: put_to_flush=%u\n", zcache_put_to_flush);
+-	pr_debug("zcache: compress_poor=%u\n", zcache_compress_poor);
+-	pr_debug("zcache: mean_compress_poor=%u\n",
+-				zcache_mean_compress_poor);
+-	pr_debug("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
+-	pr_debug("zcache: eph_ate_tail_failed=%u\n",
+-				zcache_eph_ate_tail_failed);
+-	pr_debug("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
+-	pr_debug("zcache: pers_ate_eph_failed=%u\n",
+-				zcache_pers_ate_eph_failed);
+-	pr_debug("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
+-	pr_debug("zcache: evicted_eph_pageframes=%u\n",
+-				zcache_evicted_eph_pageframes);
+-	pr_debug("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
+-	pr_debug("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
+-	pr_debug("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
+-	pr_debug("zcache: pers_pageframes_max=%u\n",
+-				zcache_pers_pageframes_max);
+-	pr_debug("zcache: eph_zpages=%u\n", zcache_eph_zpages);
+-	pr_debug("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
+-	pr_debug("zcache: pers_zpages=%u\n", zcache_pers_zpages);
+-	pr_debug("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
+-	pr_debug("zcache: eph_zbytes=%llu\n",
+-				(unsigned long long)zcache_eph_zbytes);
+-	pr_debug("zcache: eph_zbytes_max=%llu\n",
+-				(unsigned long long)zcache_eph_zbytes_max);
+-	pr_debug("zcache: pers_zbytes=%llu\n",
+-				(unsigned long long)zcache_pers_zbytes);
+-	pr_debug("zcache: pers_zbytes_max=%llu\n",
+-			(unsigned long long)zcache_pers_zbytes_max);
++	unsigned int i;
++	for (i = 0; i < ARRAY_SIZE(attrs); i++)
++		pr_debug("zcache: %s=%u\n", attrs[i].name, *attrs[i].val);
++
++	pr_debug("zcache: eph_zbytes=%llu\n", (unsigned long long)zcache_eph_zbytes);
++	pr_debug("zcache: eph_zbytes_max=%llu\n", (unsigned long long)zcache_eph_zbytes_max);
++	pr_debug("zcache: pers_zbytes=%llu\n", (unsigned long long)zcache_pers_zbytes);
++	pr_debug("zcache: pers_zbytes_max=%llu\n", (unsigned long long)zcache_pers_zbytes_max);
+ }
  #endif
-@@ -1618,7 +1618,7 @@ static int zcache_init(void)
- 			frontswap_tmem_exclusive_gets(true);
- 		pr_info("%s: frontswap enabled using kernel transcendent "
- 			"memory and compression buddies\n", namestr);
--#ifdef ZCACHE_DEBUG
-+#ifdef CONFIG_ZCACHE2_DEBUG
- 		pr_info("%s: frontswap: excl gets = %d active only = %d\n",
- 			namestr, frontswap_has_exclusive_gets,
- 			!disable_frontswap_ignore_nonactive);
 -- 
 1.7.7.6
 
