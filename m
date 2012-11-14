@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2KNLnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 06:43:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57677 "EHLO
+	id S1161183Ab2KNLpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 06:45:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57703 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755134Ab2KNLnN (ORCPT
+	by vger.kernel.org with ESMTP id S1161139Ab2KNLpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 06:43:13 -0500
-Date: Wed, 14 Nov 2012 20:43:03 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Frank Li <Frank.Li@freescale.com>
-Subject: Re: [PATCH 1/1] regulator: gpio-regulator: Catch 'no states
- property' misuse
-Message-ID: <20121114114302.GN7407@opensource.wolfsonmicro.com>
-References: <1352892888-15546-1-git-send-email-lee.jones@linaro.org>
+	Wed, 14 Nov 2012 06:45:38 -0500
+Date: Wed, 14 Nov 2012 11:45:37 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>, sameo@linux.intel.com
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mfd: arizona: Sync regcache after reset
+Message-ID: <20121114114537.GA11206@opensource.wolfsonmicro.com>
+References: <20121112175648.GA29044@opensource.wolfsonmicro.com> <20121113055618.GC18224@opensource.wolfsonmicro.com> <20121113131219.GA29198@opensource.wolfsonmicro.com> <20121114012007.GD4415@opensource.wolfsonmicro.com> <20121114104854.GB23525@opensource.wolfsonmicro.com> <20121114105106.GK7407@opensource.wolfsonmicro.com> <20121114113138.GC23525@opensource.wolfsonmicro.com> <20121114113424.GM7407@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nb8zVy0QMK3AA1xu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352892888-15546-1-git-send-email-lee.jones@linaro.org>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121114113424.GM7407@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the absence of a physical reset line the chip is reset by writing the
+first register, which is done after the register patch has been applied.
+This patch synchronises the register cache after the reset to preserve
+any register changes that had been applied.
 
---nb8zVy0QMK3AA1xu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-On Wed, Nov 14, 2012 at 11:34:48AM +0000, Lee Jones wrote:
-> A selection of voltage or current values (AKA states) should always
-> be specified when using a GPIO regulator. If there are no switchable
-> states then the fixed regulators should be used instead.
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 202bf55..ad1ca49 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -415,11 +415,19 @@ int __devinit arizona_dev_init(struct arizona *arizona)
+ 
+ 	/* If we have a /RESET GPIO we'll already be reset */
+ 	if (!arizona->pdata.reset) {
++		regcache_mark_dirty(arizona->regmap);
++
+ 		ret = regmap_write(arizona->regmap, ARIZONA_SOFTWARE_RESET, 0);
+ 		if (ret != 0) {
+ 			dev_err(dev, "Failed to reset device: %d\n", ret);
+ 			goto err_reset;
+ 		}
++
++		ret = regcache_sync(arizona->regmap);
++		if (ret != 0) {
++			dev_err(dev, "Failed to sync device: %d\n", ret);
++			goto err_ldoena;
++		}
+ 	}
+ 
+ 	ret = arizona_wait_for_boot(arizona);
+-- 
+1.7.2.5
 
-Applied, thanks.
-
---nb8zVy0QMK3AA1xu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQo4O4AAoJELSic+t+oim9rigP/RmtHsLwEPK1AHy4huPgVVWg
-f20JLlW/7rafebs5s7XAs2qR0fL1sTUo4dDH9dUVghqQ7+HNzy4O0E1/QDMjcl7z
-m7IeGJSiEWXVATsv9eLRFu3GM321aMvvQeX6e2DE1yXNmDX6j/AM6b1f5CzGWotx
-hZp93tDSxCbAmcRAfK27DY7E2XbhdW0KUu/O1aWBpn+YimDPQwmYc+15knicTkwd
-b4zVoux5yzyAG08tnEjJYTPrMPusaW/sixeOQK0AXcWmvujI8nTrKWzaZmX3GVGL
-2owsdlDqA+isRDrDUjITVlw+ic2GLNUOqKa1glcAgmVhpTzX42g+BONvCvh62WY2
-7e2G69ZhJIH+QaIgMw/hsnHuRLA2G9H/s4/l5T7LIlk+zNh5sC6X67JgXphg5nX4
-YySWypyYcEiyx8g10s6pyOmuKrNxVwsbH7kit/Iy/bTNnivC+I8ObE740JjSLtL9
-vnsVvbu1arFwNvFZfESuMBLBS1sWeyBpaLiJ+ibu64bRcRZITkvCu5i2g5vBCKxa
-sPQcvoa5rWvsJCQ9ccfDmnW5hNyEcOwRp6xn0JNnbNR9nwxyuonqa/vuh+T7Rgfz
-m8oWZIeDIMqz+elnWVE9aDLNshBs2TT1U6S31AKbGI1i9MW0mmOWtEwQ5HfifLOI
-wqS8SjBGtEu4A47BSix1
-=dAOf
------END PGP SIGNATURE-----
-
---nb8zVy0QMK3AA1xu--
