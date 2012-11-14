@@ -1,67 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab2KNCTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Nov 2012 21:19:16 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42274 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932318Ab2KNCTP (ORCPT
+	id S932425Ab2KNCXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Nov 2012 21:23:22 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59535 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab2KNCXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Nov 2012 21:19:15 -0500
-Date: Wed, 14 Nov 2012 11:19:07 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] regmap: Add no-"bus" configuration possibility
-Message-ID: <20121114021906.GL4415@opensource.wolfsonmicro.com>
-References: <1351988297-16145-1-git-send-email-andrey.smirnov@convergeddevices.net>
- <50A2E7C0.6080501@convergeddevices.net>
+	Tue, 13 Nov 2012 21:23:20 -0500
+Date: Tue, 13 Nov 2012 18:23:13 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
+Subject: Re: [PATCH 21/31] sched, numa, mm: Implement THP migration
+In-Reply-To: <20121113184835.GH10092@cmpxchg.org>
+Message-ID: <alpine.LNX.2.00.1211131759390.29612@eggly.anvils>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <1352826834-11774-22-git-send-email-mingo@kernel.org> <20121113184835.GH10092@cmpxchg.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9/GiYV45wF7IL3Iq"
-Content-Disposition: inline
-In-Reply-To: <50A2E7C0.6080501@convergeddevices.net>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 13 Nov 2012, Johannes Weiner wrote:
+> [Put Hugh back on CC]
+> 
+> What happened to Hugh's fixes to the LRU handling?  I believe it was
+> racy beyond affecting memcg, it's just that memcg code had a BUG_ON in
+> the right place to point it out.
 
---9/GiYV45wF7IL3Iq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, yes, I made several fixes there, but never sent out the final
+version.  And I can't see your fix to the memcg end of THP migration
+either - though I've not done much more than scan the Subjects so far,
+I've not yet got to grips with yesterday/today's latest approach.
 
-On Tue, Nov 13, 2012 at 04:37:20PM -0800, Andrey Smirnov wrote:
-> On 11/03/2012 05:18 PM, Andrey Smirnov wrote:
+I'll send out two patches, yours and mine, to what's in the current
+linux-next and the current mmotm, which I have been testing with in
+several contexts; they probably both apply easily to Ingo's new tree.
 
-> > This commit has only purpose of illustrating the proposed extension of
-> > the 'regmap' API. It has never been compiled or tested.
+But I vehemently hope that this all very soon vanishes from linux-next,
+and the new stuff is worked on properly for a while, in a separate
+development branch of tip, hopefully converging with Mel's.
 
-> Mark, did you by any chance had a time to look at this RFC?
+Hugh
 
-No, not yet - you sent it in the middle of ELC.  Please also don't send
-contentless pings, if you think something has been lost send it again.
-
---9/GiYV45wF7IL3Iq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQov+TAAoJELSic+t+oim9nncP/A40Xvg3N8ZOzK0/kYVQF5qP
-t1xN5HeAoW1673/hI3a6IXG/2U63qyvmzgZeawTbFvtvS/I/uU8T6Igq6PUm/WEk
-WS0U8Sobw0ijnXxfdx4xQogRVOKMeDthK4bA1fhCBhQlWBqxkR/iuj8Q4M2UTspy
-sAFFFoY1tGu4jaG4BH6+KBGsCJpA4KIVKHUqPvyQ+73uzshaaoIiOsiGk35V9w42
-6BPvDDpzmW0uborrMDk8pPRUPtBuUFatoLHzP/zZdEH5GQ/NnaIhXkwZ85bCaqzE
-n62K+o52WMx/cokS8Yhrw84l/I5FRhjZLunh3p1tb9G5DjBNtbDQN0dwfS3/oY9j
-z9wzs3EYfBDszhQDs9mUD3ZONJohfEe82nI7OlLAWhUtl0lH0k1B6e7h9QTDKzsa
-ARVkBlAYFAlkQaPFiHV93ODooUSgPkVpE+RsFS047oDDnxe1Dn51B/obM8U4wZad
-xCKfrbM8hr/xXXcr7UmXP64ETQjcuohSOiLjn1F+6+pFae35ZsLl9KiNR11JryCz
-4CYoPNfhC4gCeK3nqfpcAafnIyphk7ejMRiA7aMPSguucWtiVtANweUqbQgk+ZhN
-VMwj+DkO9wJqRubTxSjAApez2JFiIrA5gFVcQDw0BxRKhXenbReD6Qy5h+LvzGgv
-cUusa3IskfFZoOPEqlqj
-=l5gk
------END PGP SIGNATURE-----
-
---9/GiYV45wF7IL3Iq--
+> 
+> On Tue, Nov 13, 2012 at 06:13:44PM +0100, Ingo Molnar wrote:
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > Add THP migration for the NUMA working set scanning fault case.
+> > 
+> > It uses the page lock to serialize. No migration pte dance is
+> > necessary because the pte is already unmapped when we decide
+> > to migrate.
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Link: http://lkml.kernel.org/n/tip-yv9vbiz2s455zxq1ffzx3fye@git.kernel.org
+> > [ Significant fixes and changelog. ]
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> > ---
+> >  mm/huge_memory.c | 131 +++++++++++++++++++++++++++++++++++++++++++------------
+> >  mm/migrate.c     |   2 +-
+> >  2 files changed, 103 insertions(+), 30 deletions(-)
+> > 
+> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > index c4c0a57..931caf4 100644
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -742,12 +742,13 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  			   unsigned int flags, pmd_t entry)
+> >  {
+> >  	unsigned long haddr = address & HPAGE_PMD_MASK;
+> > +	struct page *new_page = NULL;
+> >  	struct page *page = NULL;
+> > -	int node;
+> > +	int node, lru;
+> >  
+> >  	spin_lock(&mm->page_table_lock);
+> >  	if (unlikely(!pmd_same(*pmd, entry)))
+> > -		goto out_unlock;
+> > +		goto unlock;
+> >  
+> >  	if (unlikely(pmd_trans_splitting(entry))) {
+> >  		spin_unlock(&mm->page_table_lock);
+> > @@ -755,45 +756,117 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  		return;
+> >  	}
+> >  
+> > -#ifdef CONFIG_NUMA
+> >  	page = pmd_page(entry);
+> > -	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+> > +	if (page) {
+> > +		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+> >  
+> > -	get_page(page);
+> > -	spin_unlock(&mm->page_table_lock);
+> > +		get_page(page);
+> > +		node = mpol_misplaced(page, vma, haddr);
+> > +		if (node != -1)
+> > +			goto migrate;
+> > +	}
+> >  
+> > -	/*
+> > -	 * XXX should we serialize against split_huge_page ?
+> > -	 */
+> > +fixup:
+> > +	/* change back to regular protection */
+> > +	entry = pmd_modify(entry, vma->vm_page_prot);
+> > +	set_pmd_at(mm, haddr, pmd, entry);
+> > +	update_mmu_cache_pmd(vma, address, entry);
+> >  
+> > -	node = mpol_misplaced(page, vma, haddr);
+> > -	if (node == -1)
+> > -		goto do_fixup;
+> > +unlock:
+> > +	spin_unlock(&mm->page_table_lock);
+> > +	if (page)
+> > +		put_page(page);
+> >  
+> > -	/*
+> > -	 * Due to lacking code to migrate thp pages, we'll split
+> > -	 * (which preserves the special PROT_NONE) and re-take the
+> > -	 * fault on the normal pages.
+> > -	 */
+> > -	split_huge_page(page);
+> > -	put_page(page);
+> >  	return;
+> >  
+> > -do_fixup:
+> > +migrate:
+> > +	spin_unlock(&mm->page_table_lock);
+> > +
+> > +	lock_page(page);
+> >  	spin_lock(&mm->page_table_lock);
+> > -	if (unlikely(!pmd_same(*pmd, entry)))
+> > -		goto out_unlock;
+> > -#endif
+> > +	if (unlikely(!pmd_same(*pmd, entry))) {
+> > +		spin_unlock(&mm->page_table_lock);
+> > +		unlock_page(page);
+> > +		put_page(page);
+> > +		return;
+> > +	}
+> > +	spin_unlock(&mm->page_table_lock);
+> >  
+> > -	/* change back to regular protection */
+> > -	entry = pmd_modify(entry, vma->vm_page_prot);
+> > -	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
+> > -		update_mmu_cache_pmd(vma, address, entry);
+> > +	new_page = alloc_pages_node(node,
+> > +	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
+> > +	    HPAGE_PMD_ORDER);
+> >  
+> > -out_unlock:
+> > +	if (!new_page)
+> > +		goto alloc_fail;
+> > +
+> > +	lru = PageLRU(page);
+> > +
+> > +	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
+> > +		goto alloc_fail;
+> > +
+> > +	if (!trylock_page(new_page))
+> > +		BUG();
+> > +
+> > +	/* anon mapping, we can simply copy page->mapping to the new page: */
+> > +	new_page->mapping = page->mapping;
+> > +	new_page->index = page->index;
+> > +
+> > +	migrate_page_copy(new_page, page);
+> > +
+> > +	WARN_ON(PageLRU(new_page));
+> > +
+> > +	spin_lock(&mm->page_table_lock);
+> > +	if (unlikely(!pmd_same(*pmd, entry))) {
+> > +		spin_unlock(&mm->page_table_lock);
+> > +		if (lru)
+> > +			putback_lru_page(page);
+> > +
+> > +		unlock_page(new_page);
+> > +		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
+> > +		new_page->mapping = NULL;
+> > +		put_page(new_page);		/* Free it */
+> > +
+> > +		unlock_page(page);
+> > +		put_page(page);			/* Drop the local reference */
+> > +
+> > +		return;
+> > +	}
+> > +
+> > +	entry = mk_pmd(new_page, vma->vm_page_prot);
+> > +	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+> > +	entry = pmd_mkhuge(entry);
+> > +
+> > +	page_add_new_anon_rmap(new_page, vma, haddr);
+> > +
+> > +	set_pmd_at(mm, haddr, pmd, entry);
+> > +	update_mmu_cache_pmd(vma, address, entry);
+> > +	page_remove_rmap(page);
+> >  	spin_unlock(&mm->page_table_lock);
+> > -	if (page)
+> > +
+> > +	put_page(page);			/* Drop the rmap reference */
+> > +
+> > +	if (lru)
+> > +		put_page(page);		/* drop the LRU isolation reference */
+> > +
+> > +	unlock_page(new_page);
+> > +	unlock_page(page);
+> > +	put_page(page);			/* Drop the local reference */
+> > +
+> > +	return;
+> > +
+> > +alloc_fail:
+> > +	if (new_page)
+> > +		put_page(new_page);
+> > +
+> > +	unlock_page(page);
+> > +
+> > +	spin_lock(&mm->page_table_lock);
+> > +	if (unlikely(!pmd_same(*pmd, entry))) {
+> >  		put_page(page);
+> > +		page = NULL;
+> > +		goto unlock;
+> > +	}
+> > +	goto fixup;
+> >  }
+> >  
+> >  int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index 3299949..72d1056 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -417,7 +417,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
+> >   */
+> >  void migrate_page_copy(struct page *newpage, struct page *page)
+> >  {
+> > -	if (PageHuge(page))
+> > +	if (PageHuge(page) || PageTransHuge(page))
+> >  		copy_huge_page(newpage, page);
+> >  	else
+> >  		copy_highpage(newpage, page);
+> > -- 
+> > 1.7.11.7
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
