@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab2KOELi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49168 "EHLO mail.kernel.org"
+	id S2993027Ab2KOELr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:11:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49283 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933367Ab2KOELe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:34 -0500
+	id S2993010Ab2KOELn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 37/66] ALSA: PCM: Fix some races at disconnection
-Date: Wed, 14 Nov 2012 20:10:42 -0800
-Message-Id: <20121115040941.674190429@linuxfoundation.org>
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 34/66] drm: restore open_count if drm_setup fails
+Date: Wed, 14 Nov 2012 20:10:39 -0800
+Message-Id: <20121115040941.464224906@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,102 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ilija Hadzic <ilijahadzic@gmail.com>
 
-commit 9b0573c07f278e9888c352aa9724035c75784ea0 upstream.
+commit 0f1cb1bd94a9c967cd4ad3de51cfdabe61eb5dcc upstream.
 
-Fix races at PCM disconnection:
-- while a PCM device is being opened or closed
-- while the PCM state is being changed without lock in prepare,
-  hw_params, hw_free ops
+If drm_setup (called at first open) fails, the whole
+open call has failed, so we should not keep the
+open_count incremented.
 
-Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- sound/core/pcm.c        |    7 ++++++-
- sound/core/pcm_native.c |   16 ++++++++++++----
- 2 files changed, 18 insertions(+), 5 deletions(-)
 
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -1086,11 +1086,15 @@ static int snd_pcm_dev_disconnect(struct
- 	if (list_empty(&pcm->list))
- 		goto unlock;
- 
-+	mutex_lock(&pcm->open_mutex);
- 	list_del_init(&pcm->list);
- 	for (cidx = 0; cidx < 2; cidx++)
--		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next)
-+		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
-+			snd_pcm_stream_lock_irq(substream);
- 			if (substream->runtime)
- 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
-+			snd_pcm_stream_unlock_irq(substream);
+---
+ drivers/gpu/drm/drm_fops.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -135,8 +135,11 @@ int drm_open(struct inode *inode, struct
+ 	retcode = drm_open_helper(inode, filp, dev);
+ 	if (!retcode) {
+ 		atomic_inc(&dev->counts[_DRM_STAT_OPENS]);
+-		if (!dev->open_count++)
++		if (!dev->open_count++) {
+ 			retcode = drm_setup(dev);
++			if (retcode)
++				dev->open_count--;
 +		}
- 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
- 		notify->n_disconnect(pcm);
  	}
-@@ -1106,6 +1110,7 @@ static int snd_pcm_dev_disconnect(struct
- 		}
- 		snd_unregister_device(devtype, pcm->card, pcm->device);
- 	}
-+	mutex_unlock(&pcm->open_mutex);
-  unlock:
- 	mutex_unlock(&register_mutex);
- 	return 0;
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -369,6 +369,14 @@ static int period_to_usecs(struct snd_pc
- 	return usecs;
- }
- 
-+static void snd_pcm_set_state(struct snd_pcm_substream *substream, int state)
-+{
-+	snd_pcm_stream_lock_irq(substream);
-+	if (substream->runtime->status->state != SNDRV_PCM_STATE_DISCONNECTED)
-+		substream->runtime->status->state = state;
-+	snd_pcm_stream_unlock_irq(substream);
-+}
-+
- static int snd_pcm_hw_params(struct snd_pcm_substream *substream,
- 			     struct snd_pcm_hw_params *params)
- {
-@@ -452,7 +460,7 @@ static int snd_pcm_hw_params(struct snd_
- 		runtime->boundary *= 2;
- 
- 	snd_pcm_timer_resolution_change(substream);
--	runtime->status->state = SNDRV_PCM_STATE_SETUP;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_SETUP);
- 
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
-@@ -464,7 +472,7 @@ static int snd_pcm_hw_params(struct snd_
- 	/* hardware might be unusable from this time,
- 	   so we force application to retry to set
- 	   the correct hardware parameter settings */
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	if (substream->ops->hw_free != NULL)
- 		substream->ops->hw_free(substream);
- 	return err;
-@@ -512,7 +520,7 @@ static int snd_pcm_hw_free(struct snd_pc
- 		return -EBADFD;
- 	if (substream->ops->hw_free)
- 		result = substream->ops->hw_free(substream);
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	pm_qos_remove_request(&substream->latency_pm_qos_req);
- 	return result;
- }
-@@ -1320,7 +1328,7 @@ static void snd_pcm_post_prepare(struct
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	runtime->control->appl_ptr = runtime->status->hw_ptr;
--	runtime->status->state = SNDRV_PCM_STATE_PREPARED;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_PREPARED);
- }
- 
- static struct action_ops snd_pcm_action_prepare = {
+ 	if (!retcode) {
+ 		mutex_lock(&dev->struct_mutex);
 
 
