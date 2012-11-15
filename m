@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992882Ab2KOELG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48776 "EHLO mail.kernel.org"
+	id S2993205Ab2KOEkD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:40:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48838 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992772Ab2KOELB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:01 -0500
+	id S2992772Ab2KOELG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 09/66] target: Avoid integer overflow in se_dev_align_max_sectors()
-Date: Wed, 14 Nov 2012 20:10:14 -0800
-Message-Id: <20121115040939.685289107@linuxfoundation.org>
+        Javier Cardona <javier@cozybit.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 14/66] wireless: drop invalid mesh address extension frames
+Date: Wed, 14 Nov 2012 20:10:19 -0800
+Message-Id: <20121115040940.034381276@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,58 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 3e03989b5868acf69a391a424dc71fcd6cc48167 upstream.
+commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
 
-The expression (max_sectors * block_size) might overflow a u32
-(indeed, since iblock sets max_hw_sectors to UINT_MAX, it is
-guaranteed to overflow and end up with a much-too-small result in many
-common cases).  Fix this by doing an equivalent calculation that
-doesn't require multiplication.
+The mesh header can have address extension by a 4th
+or a 5th and 6th address, but never both. Drop such
+frames in 802.11 -> 802.3 conversion along with any
+frames that have the wrong extension.
 
-While we're touching this code, avoid splitting a printk format across
-two lines and use pr_info(...) instead of printk(KERN_INFO ...).
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reviewed-by: Javier Cardona <javier@cozybit.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ net/wireless/util.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -850,20 +850,20 @@ int se_dev_check_shutdown(struct se_devi
- 
- static u32 se_dev_align_max_sectors(u32 max_sectors, u32 block_size)
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -312,18 +312,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_
+ static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
  {
--	u32 tmp, aligned_max_sectors;
-+	u32 aligned_max_sectors;
-+	u32 alignment;
- 	/*
- 	 * Limit max_sectors to a PAGE_SIZE aligned value for modern
- 	 * transport_allocate_data_tasks() operation.
- 	 */
--	tmp = rounddown((max_sectors * block_size), PAGE_SIZE);
--	aligned_max_sectors = (tmp / block_size);
--	if (max_sectors != aligned_max_sectors) {
--		printk(KERN_INFO "Rounding down aligned max_sectors from %u"
--				" to %u\n", max_sectors, aligned_max_sectors);
--		return aligned_max_sectors;
--	}
-+	alignment = max(1ul, PAGE_SIZE / block_size);
-+	aligned_max_sectors = rounddown(max_sectors, alignment);
- 
--	return max_sectors;
-+	if (max_sectors != aligned_max_sectors)
-+		pr_info("Rounding down aligned max_sectors from %u to %u\n",
-+			max_sectors, aligned_max_sectors);
-+
-+	return aligned_max_sectors;
+ 	int ae = meshhdr->flags & MESH_FLAGS_AE;
+-	/* 7.1.3.5a.2 */
++	/* 802.11-2012, 8.2.4.7.3 */
+ 	switch (ae) {
++	default:
+ 	case 0:
+ 		return 6;
+ 	case MESH_FLAGS_AE_A4:
+ 		return 12;
+ 	case MESH_FLAGS_AE_A5_A6:
+ 		return 18;
+-	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
+-		return 24;
+-	default:
+-		return 6;
+ 	}
  }
  
- void se_dev_set_default_attribs(
+@@ -373,6 +370,8 @@ int ieee80211_data_to_8023(struct sk_buf
+ 			/* make sure meshdr->flags is on the linear part */
+ 			if (!pskb_may_pull(skb, hdrlen + 1))
+ 				return -1;
++			if (meshdr->flags & MESH_FLAGS_AE_A4)
++				return -1;
+ 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
+ 				skb_copy_bits(skb, hdrlen +
+ 					offsetof(struct ieee80211s_hdr, eaddr1),
+@@ -397,6 +396,8 @@ int ieee80211_data_to_8023(struct sk_buf
+ 			/* make sure meshdr->flags is on the linear part */
+ 			if (!pskb_may_pull(skb, hdrlen + 1))
+ 				return -1;
++			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
++				return -1;
+ 			if (meshdr->flags & MESH_FLAGS_AE_A4)
+ 				skb_copy_bits(skb, hdrlen +
+ 					offsetof(struct ieee80211s_hdr, eaddr1),
 
 
