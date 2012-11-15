@@ -1,145 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2KOHj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 02:39:59 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61175 "EHLO
+	id S2992755Ab2KOHlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 02:41:50 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52789 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab2KOHj6 (ORCPT
+	with ESMTP id S1751970Ab2KOHlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 02:39:58 -0500
-Message-ID: <50A49C46.9040406@gmail.com>
-Date: Thu, 15 Nov 2012 15:39:50 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 15 Nov 2012 02:41:49 -0500
+Date: Wed, 14 Nov 2012 23:41:47 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Robert Richter <robert.richter@amd.com>
+cc: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org
+Subject: [patch 1/2] oprofile: move task handoff to oprofile
+Message-ID: <alpine.DEB.2.00.1211142340490.4410@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com> <alpine.LNX.2.00.1211131935410.30540@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1211131935410.30540@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2012 11:50 AM, Hugh Dickins wrote:
-> On Wed, 14 Nov 2012, Jaegeuk Hanse wrote:
->> On 11/07/2012 07:48 AM, Hugh Dickins wrote:
->>> On Tue, 6 Nov 2012, Dave Jones wrote:
->>>> On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
->>>>
->>>>    > -			/* We already confirmed swap, and make no
->>>> allocation */
->>>>    > -			VM_BUG_ON(error);
->>>>    > +			/*
->>>>    > +			 * We already confirmed swap under page lock,
->>>> and make
->>>>    > +			 * no memory allocation here, so usually no
->>>> possibility
->>>>    > +			 * of error; but free_swap_and_cache() only
->>>> trylocks a
->>>>    > +			 * page, so it is just possible that the
->>>> entry has been
->>>>    > +			 * truncated or holepunched since swap was
->>>> confirmed.
->>>>    > +			 * shmem_undo_range() will have done some of
->>>> the
->>>>    > +			 * unaccounting, now delete_from_swap_cache()
->>>> will do
->>>>    > +			 * the rest (including
->>>> mem_cgroup_uncharge_swapcache).
->>>>    > +			 * Reset swap.val? No, leave it so "failed"
->>>> goes back to
->>>>    > +			 * "repeat": reading a hole and writing
->>>> should succeed.
->>>>    > +			 */
->>>>    > +			if (error) {
->>>>    > +				VM_BUG_ON(error != -ENOENT);
->>>>    > +				delete_from_swap_cache(page);
->>>>    > +			}
->>>>    >  		}
->>>>
->>>> I ran with this overnight,
->>> Thanks a lot...
->>>
->>>> and still hit the (new!) VM_BUG_ON
->>> ... but that's even more surprising than your original report.
->>>
->>>> Perhaps we should print out what 'error' was too ?  I'll rebuild with
->>>> that..
->>> Thanks; though I thought the error was going to turn out too boring,
->>> and was preparing a debug patch for you to show the expected and found
->>> values too.  But then got very puzzled...
->>>    
->>>> ------------[ cut here ]------------
->>>> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
->>>> Hardware name: 2012 Client Platform
->>>> Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
->>> That's the very same line number as in your original report, despite
->>> the long comment which the patch adds.  Are you sure that kernel was
->>> built with the patch in?
->>>
->>> I wouldn't usually question you, but I'm going mad trying to understand
->>> how the VM_BUG_ON(error != -ENOENT) fires.  At the time I wrote that
->>> line, and when I was preparing the debug patch, I was thinking that an
->>> error from shmem_radix_tree_replace could also be -EEXIST, for when a
->>> different something rather than nothing is found [*].  But that's not
->>> the case, shmem_radix_tree_replace returns either 0 or -ENOENT.
->>>
->>> So if error != -ENOENT, that means shmem_add_to_page_cache went the
->>> radix_tree_insert route instead of the shmem_radix_tree_replace route;
->>> which means that its 'expected' is NULL, so swp_to_radix_entry(swap)
->>> is NULL; but swp_to_radix_entry() does an "| 2", so however corrupt
->>> the radix_tree might be, I do not understand the new VM_BUG_ON firing.
->>>
->>> Please tell me it was the wrong kernel!
->>> Hugh
->>>
->>> [*] But in thinking it over, I realize that if shmem_radix_tree_replace
->>> had returned -EEXIST for the "wrong something" case, I would have been
->>> wrong to BUG on that; because just as truncation could remove an entry,
->>> something else could immediately after instantiate a new page there.
->> Hi Hugh,
->>
->> As you said, swp_to_radix_entry() does an "| 2", so even if truncation could
->> remove an entry and something else could immediately after instantiate a new
->> page there, but the expected parameter will not be NULL, the result is
->> radix_tree_insert will not be called and shmem_add_to_page_cache will not
->> return -EEXIST, then why trigger BUG_ON ?
-> Why insert the VM_BUG_ON?  Because at the time I thought that it
-> asserted something useful; but I was mistaken, as explained above.
->
-> How can the VM_BUG_ON trigger (without stack corruption, or something
-> of that kind)?  I have no idea.
->
-> We are in agreement: I now think that VM_BUG_ON is misleading and silly,
-> and sent Andrew a further patch to remove it a just couple of hours ago.
->
-> Originally I was waiting to hear further from Dave; but his test
-> machine was giving trouble, and it occurred to me that, never mind
-> whether he says he has hit it again, or he has not hit it again,
-> the answer is the same: don't send that VM_BUG_ON upstream.
->
-> Hugh
+In the discussion surrounding 83dbbdbb3866 ("android, lowmemorykiller:
+remove task handoff notifier"), I promised to isolate the task handoff
+notifier to oprofile.  The bug that was fixed in that commit occurred
+because a task handoff notifier registered before oprofile was not
+freeing the task_struct appropriately.  In a chain of multiple possible
+notifiers, it's impossible to determine which one was called last to
+actually do the freeing, which leads to a task_struct leak.
 
-Thanks Hugh.
+Oprofile is the only user of the task handoff notifier, so move it to the 
+oprofile code so nobody can use it accidently again.  It will be the only
+subsystem allowed to use task handoffs.
 
-Another question. Why the function shmem_fallocate which you add to 
-kernel need call shmem_getpage?
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/oprofile/buffer_sync.c |   18 ++++++++++++++++++
+ include/linux/profile.h        |   35 +++++++++++++----------------------
+ kernel/profile.c               |   20 --------------------
+ 3 files changed, 31 insertions(+), 42 deletions(-)
 
-Regards,
-Jaegeuk
-
->
->> Regards,
->> Jaegeuk
->>
->>> So although I believe my VM_BUG_ON(error != -ENOENT) is safe, it's
->>> not saying what I had intended to say with it, and would have been
->>> wrong to say that anyway.  It just looks stupid to me now, rather
->>> like inserting a VM_BUG_ON(false) - but that does become interesting
->>> when you report that you've hit it.
-
+diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -42,6 +42,24 @@ static LIST_HEAD(dead_tasks);
+ static cpumask_var_t marked_cpus;
+ static DEFINE_SPINLOCK(task_mortuary);
+ static void process_task_mortuary(void);
++static ATOMIC_NOTIFIER_HEAD(task_free_notifier);
++
++static int task_handoff_register(struct notifier_block *n)
++{
++	return atomic_notifier_chain_register(&task_free_notifier, n);
++}
++
++static int task_handoff_unregister(struct notifier_block *n)
++{
++	return atomic_notifier_chain_unregister(&task_free_notifier, n);
++}
++
++int profile_handoff_task(struct task_struct *task)
++{
++	int ret;
++	ret = atomic_notifier_call_chain(&task_free_notifier, 0, task);
++	return (ret == NOTIFY_OK) ? 1 : 0;
++}
+ 
+ /* Take ownership of the task struct and place it on the
+  * list for processing. Only after two full buffer syncs
+diff --git a/include/linux/profile.h b/include/linux/profile.h
+--- a/include/linux/profile.h
++++ b/include/linux/profile.h
+@@ -16,6 +16,7 @@
+ struct proc_dir_entry;
+ struct pt_regs;
+ struct notifier_block;
++struct task_struct;
+ 
+ #if defined(CONFIG_PROFILING) && defined(CONFIG_PROC_FS)
+ void create_prof_cpu_mask(struct proc_dir_entry *de);
+@@ -36,6 +37,18 @@ enum profile_type {
+ 	PROFILE_MUNMAP
+ };
+ 
++#if defined(CONFIG_PROFILING) && defined(CONFIG_OPROFILE)
++/* task is dead, free task struct ? Returns 1 if
++ * the task was taken, 0 if the task should be freed.
++ */
++int profile_handoff_task(struct task_struct *task);
++#else
++static inline int profile_handoff_task(struct task_struct *task)
++{
++	return 0;
++}
++#endif /* CONFIG_PROFILING && CONFIG_OPROFILE */
++
+ #ifdef CONFIG_PROFILING
+ 
+ extern int prof_on __read_mostly;
+@@ -62,23 +75,12 @@ static inline void profile_hit(int type, void *ip)
+ 		profile_hits(type, ip, 1);
+ }
+ 
+-struct task_struct;
+-struct mm_struct;
+-
+ /* task is in do_exit() */
+ void profile_task_exit(struct task_struct * task);
+ 
+-/* task is dead, free task struct ? Returns 1 if
+- * the task was taken, 0 if the task should be freed.
+- */
+-int profile_handoff_task(struct task_struct * task);
+-
+ /* sys_munmap */
+ void profile_munmap(unsigned long addr);
+ 
+-int task_handoff_register(struct notifier_block * n);
+-int task_handoff_unregister(struct notifier_block * n);
+-
+ int profile_event_register(enum profile_type, struct notifier_block * n);
+ int profile_event_unregister(enum profile_type, struct notifier_block * n);
+ 
+@@ -111,16 +113,6 @@ static inline void profile_hit(int type, void *ip)
+ 	return;
+ }
+ 
+-static inline int task_handoff_register(struct notifier_block * n)
+-{
+-	return -ENOSYS;
+-}
+-
+-static inline int task_handoff_unregister(struct notifier_block * n)
+-{
+-	return -ENOSYS;
+-}
+-
+ static inline int profile_event_register(enum profile_type t, struct notifier_block * n)
+ {
+ 	return -ENOSYS;
+@@ -132,7 +124,6 @@ static inline int profile_event_unregister(enum profile_type t, struct notifier_
+ }
+ 
+ #define profile_task_exit(a) do { } while (0)
+-#define profile_handoff_task(a) (0)
+ #define profile_munmap(a) do { } while (0)
+ 
+ static inline int register_timer_hook(int (*hook)(struct pt_regs *))
+diff --git a/kernel/profile.c b/kernel/profile.c
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -137,7 +137,6 @@ int __ref profile_init(void)
+ /* Profile event notifications */
+ 
+ static BLOCKING_NOTIFIER_HEAD(task_exit_notifier);
+-static ATOMIC_NOTIFIER_HEAD(task_free_notifier);
+ static BLOCKING_NOTIFIER_HEAD(munmap_notifier);
+ 
+ void profile_task_exit(struct task_struct *task)
+@@ -145,30 +144,11 @@ void profile_task_exit(struct task_struct *task)
+ 	blocking_notifier_call_chain(&task_exit_notifier, 0, task);
+ }
+ 
+-int profile_handoff_task(struct task_struct *task)
+-{
+-	int ret;
+-	ret = atomic_notifier_call_chain(&task_free_notifier, 0, task);
+-	return (ret == NOTIFY_OK) ? 1 : 0;
+-}
+-
+ void profile_munmap(unsigned long addr)
+ {
+ 	blocking_notifier_call_chain(&munmap_notifier, 0, (void *)addr);
+ }
+ 
+-int task_handoff_register(struct notifier_block *n)
+-{
+-	return atomic_notifier_chain_register(&task_free_notifier, n);
+-}
+-EXPORT_SYMBOL_GPL(task_handoff_register);
+-
+-int task_handoff_unregister(struct notifier_block *n)
+-{
+-	return atomic_notifier_chain_unregister(&task_free_notifier, n);
+-}
+-EXPORT_SYMBOL_GPL(task_handoff_unregister);
+-
+ int profile_event_register(enum profile_type type, struct notifier_block *n)
+ {
+ 	int err = -EINVAL;
