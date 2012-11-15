@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2KOJCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:02:43 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61234 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491Ab2KOJCj (ORCPT
+	id S1756706Ab2KOJEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:04:50 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35448 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab2KOJEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:02:39 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v3 2/2] i2c: i2c-ocores: Add support for the GRLIB port of the controller and custom getreg and setreg functions
-References: <1352834727-16368-1-git-send-email-andreas@gaisler.com>
-	<1352834727-16368-3-git-send-email-andreas@gaisler.com>
-	<87sj8d86lo.fsf@dell.be.48ers.dk> <50A4A9A9.5050903@gaisler.com>
-Date: Thu, 15 Nov 2012 10:02:35 +0100
-In-Reply-To: <50A4A9A9.5050903@gaisler.com> (Andreas Larsson's message of
-	"Thu, 15 Nov 2012 09:36:57 +0100")
-Message-ID: <877gpn6xxw.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Thu, 15 Nov 2012 04:04:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1352944590-8776-1-git-send-email-jwerner@chromium.org>
+References: <CAODwPW873M32d9zFT9fpJT9+PuMbz8htzUxdF1TNE+J1zR3jYA@mail.gmail.com>
+	<1352944590-8776-1-git-send-email-jwerner@chromium.org>
+Date: Thu, 15 Nov 2012 14:34:41 +0530
+Message-ID: <CAM4v1pPhaP=pVnFMXUU_nmrOxhY5yPNtbBdQsT5MH37MndK6LQ@mail.gmail.com>
+Subject: Re: [PATCH] cpuidle: Measure idle state durations with monotonic clock
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Sameer Nanda <snanda@chromium.org>,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andreas" == Andreas Larsson <andreas@gaisler.com> writes:
+Hi all,
 
-Hi,
+The code looks correct and inviting to me as it has led to good cleanups.
+I dont think passing 0 as the argument to the function
+sched_clock_idle_wakeup_event()
+should lead to problems,as it does not do anything useful with the
+passed arguments.
 
- >> Adding a type define (TYPE_OCORES / TYPE_GRLIB) and a 2nd
- >> of_device_id entry with .data = TYPE_GRLIB, and then using that in
- >> the probe routine would be nicer. Have a look at i2c-at91.c for an
- >> example of a driver doing something like that.
+My only curiosity is what was the purpose of passing idle residency time to
+sched_clock_idle_wakeup_event() when this data could always be retrieved from
+dev->last_residency for each cpu,which gets almost immediately updated.
 
- Andreas> Yes, that is a good idea. Do you think casting to and from
- Andreas> void * in the following solution is too ugly and rather have a
- Andreas> struct pointed to, or do you think that would be unnecessary?
+But this does not seem to come in way of this patch for now.Anyway I
+have added Peter to
+the list so that he can opine about this issue if possible and needed.
 
-I find the casting OK.
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-Thanks.
 
--- 
-Bye, Peter Korsgaard
+Regards
+Preeti U Murthy
