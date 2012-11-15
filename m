@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768841Ab2KOT2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 14:28:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:5568 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768776Ab2KOTZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1768792Ab2KOTZ6 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 Nov 2012 14:25:58 -0500
+Received: from mga03.intel.com ([143.182.124.21]:7641 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423636Ab2KOTZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 14:25:57 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="168868136"
+   d="scan'208";a="218336603"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
@@ -17,9 +17,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         David Rientjes <rientjes@google.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v6 04/12] thp: do_huge_pmd_wp_page(): handle huge zero page
-Date: Thu, 15 Nov 2012 21:26:54 +0200
-Message-Id: <1353007622-18393-5-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v6 01/12] thp: huge zero page: basic preparation
+Date: Thu, 15 Nov 2012 21:26:51 +0200
+Message-Id: <1353007622-18393-2-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -29,240 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-On write access to huge zero page we alloc a new huge page and clear it.
+Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled
+with zeros.
 
-If ENOMEM, graceful fallback: we create a new pmd table and set pte
-around fault address to newly allocated normal (4k) page. All other ptes
-in the pmd set to normal zero page.
+For now let's allocate the page on hugepage_init(). We'll switch to lazy
+allocation later.
+
+We are not going to map the huge zero page until we can handle it
+properly on all code paths.
+
+is_huge_zero_{pfn,pmd}() functions will be used by following patches to
+check whether the pfn/pmd is huge zero page.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/mm.h |   8 ++++
- mm/huge_memory.c   | 110 +++++++++++++++++++++++++++++++++++++++++++++--------
- mm/memory.c        |   7 ----
- 3 files changed, 103 insertions(+), 22 deletions(-)
+ mm/huge_memory.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fa06804..fe329da 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -516,6 +516,14 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- }
- #endif
- 
-+#ifndef my_zero_pfn
-+static inline unsigned long my_zero_pfn(unsigned long addr)
-+{
-+	extern unsigned long zero_pfn;
-+	return zero_pfn;
-+}
-+#endif
-+
- /*
-  * Multiple processes may "see" the same page. E.g. for untouched
-  * mappings of /dev/null, all processes see the same page full of
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 183127c..f5589c0 100644
+index 40f17c3..8d7a54b 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -829,6 +829,69 @@ out:
- 	return ret;
+@@ -47,6 +47,7 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
+ /* during fragmentation poll the hugepage allocator once every minute */
+ static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
+ static struct task_struct *khugepaged_thread __read_mostly;
++static unsigned long huge_zero_pfn __read_mostly;
+ static DEFINE_MUTEX(khugepaged_mutex);
+ static DEFINE_SPINLOCK(khugepaged_mm_lock);
+ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+@@ -159,6 +160,29 @@ static int start_khugepaged(void)
+ 	return err;
  }
  
-+static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
-+		struct vm_area_struct *vma, unsigned long address,
-+		pmd_t *pmd, unsigned long haddr)
++static int __init init_huge_zero_page(void)
 +{
-+	pgtable_t pgtable;
-+	pmd_t _pmd;
-+	struct page *page;
-+	int i, ret = 0;
-+	unsigned long mmun_start;	/* For mmu_notifiers */
-+	unsigned long mmun_end;		/* For mmu_notifiers */
++	struct page *hpage;
 +
-+	page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
-+	if (!page) {
-+		ret |= VM_FAULT_OOM;
-+		goto out;
-+	}
++	hpage = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
++			HPAGE_PMD_ORDER);
++	if (!hpage)
++		return -ENOMEM;
 +
-+	if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
-+		put_page(page);
-+		ret |= VM_FAULT_OOM;
-+		goto out;
-+	}
-+
-+	clear_user_highpage(page, address);
-+	__SetPageUptodate(page);
-+
-+	mmun_start = haddr;
-+	mmun_end   = haddr + HPAGE_PMD_SIZE;
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+
-+	spin_lock(&mm->page_table_lock);
-+	pmdp_clear_flush(vma, haddr, pmd);
-+	/* leave pmd empty until pte is filled */
-+
-+	pgtable = pgtable_trans_huge_withdraw(mm);
-+	pmd_populate(mm, &_pmd, pgtable);
-+
-+	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-+		pte_t *pte, entry;
-+		if (haddr == (address & PAGE_MASK)) {
-+			entry = mk_pte(page, vma->vm_page_prot);
-+			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
-+			page_add_new_anon_rmap(page, vma, haddr);
-+		} else {
-+			entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-+			entry = pte_mkspecial(entry);
-+		}
-+		pte = pte_offset_map(&_pmd, haddr);
-+		VM_BUG_ON(!pte_none(*pte));
-+		set_pte_at(mm, haddr, pte, entry);
-+		pte_unmap(pte);
-+	}
-+	smp_wmb(); /* make pte visible before pmd */
-+	pmd_populate(mm, pmd, pgtable);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+
-+	ret |= VM_FAULT_WRITE;
-+out:
-+	return ret;
++	huge_zero_pfn = page_to_pfn(hpage);
++	return 0;
 +}
 +
- static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 					struct vm_area_struct *vma,
- 					unsigned long address,
-@@ -935,19 +998,21 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
- {
- 	int ret = 0;
--	struct page *page, *new_page;
-+	struct page *page = NULL, *new_page;
- 	unsigned long haddr;
- 	unsigned long mmun_start;	/* For mmu_notifiers */
- 	unsigned long mmun_end;		/* For mmu_notifiers */
++static inline bool is_huge_zero_pfn(unsigned long pfn)
++{
++	return pfn == huge_zero_pfn;
++}
++
++static inline bool is_huge_zero_pmd(pmd_t pmd)
++{
++	return is_huge_zero_pfn(pmd_pfn(pmd));
++}
++
+ #ifdef CONFIG_SYSFS
  
- 	VM_BUG_ON(!vma->anon_vma);
-+	haddr = address & HPAGE_PMD_MASK;
-+	if (is_huge_zero_pmd(orig_pmd))
-+		goto alloc;
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, orig_pmd)))
- 		goto out_unlock;
+ static ssize_t double_flag_show(struct kobject *kobj,
+@@ -540,6 +564,10 @@ static int __init hugepage_init(void)
+ 	if (err)
+ 		return err;
  
- 	page = pmd_page(orig_pmd);
- 	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
--	haddr = address & HPAGE_PMD_MASK;
- 	if (page_mapcount(page) == 1) {
- 		pmd_t entry;
- 		entry = pmd_mkyoung(orig_pmd);
-@@ -959,7 +1024,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
- 	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--
-+alloc:
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
- 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-@@ -969,24 +1034,34 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	if (unlikely(!new_page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
--		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
--						   pmd, orig_pmd, page, haddr);
--		if (ret & VM_FAULT_OOM)
--			split_huge_page(page);
--		put_page(page);
-+		if (is_huge_zero_pmd(orig_pmd)) {
-+			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
-+					address, pmd, haddr);
-+		} else {
-+			ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
-+					pmd, orig_pmd, page, haddr);
-+			if (ret & VM_FAULT_OOM)
-+				split_huge_page(page);
-+			put_page(page);
-+		}
++	err = init_huge_zero_page();
++	if (err)
++		goto out;
++
+ 	err = khugepaged_slab_init();
+ 	if (err)
  		goto out;
- 	}
- 	count_vm_event(THP_FAULT_ALLOC);
+@@ -562,6 +590,8 @@ static int __init hugepage_init(void)
  
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		put_page(new_page);
--		split_huge_page(page);
--		put_page(page);
-+		if (page) {
-+			split_huge_page(page);
-+			put_page(page);
-+		}
- 		ret |= VM_FAULT_OOM;
- 		goto out;
- 	}
- 
--	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
-+	if (is_huge_zero_pmd(orig_pmd))
-+		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
-+	else
-+		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
- 	__SetPageUptodate(new_page);
- 
- 	mmun_start = haddr;
-@@ -994,7 +1069,8 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
- 
- 	spin_lock(&mm->page_table_lock);
--	put_page(page);
-+	if (page)
-+		put_page(page);
- 	if (unlikely(!pmd_same(*pmd, orig_pmd))) {
- 		spin_unlock(&mm->page_table_lock);
- 		mem_cgroup_uncharge_page(new_page);
-@@ -1002,7 +1078,6 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out_mn;
- 	} else {
- 		pmd_t entry;
--		VM_BUG_ON(!PageHead(page));
- 		entry = mk_pmd(new_page, vma->vm_page_prot);
- 		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 		entry = pmd_mkhuge(entry);
-@@ -1010,8 +1085,13 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page_add_new_anon_rmap(new_page, vma, haddr);
- 		set_pmd_at(mm, haddr, pmd, entry);
- 		update_mmu_cache_pmd(vma, address, pmd);
--		page_remove_rmap(page);
--		put_page(page);
-+		if (is_huge_zero_pmd(orig_pmd))
-+			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
-+		else {
-+			VM_BUG_ON(!PageHead(page));
-+			page_remove_rmap(page);
-+			put_page(page);
-+		}
- 		ret |= VM_FAULT_WRITE;
- 	}
- 	spin_unlock(&mm->page_table_lock);
-diff --git a/mm/memory.c b/mm/memory.c
-index fb135ba..6edc030 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -724,13 +724,6 @@ static inline int is_zero_pfn(unsigned long pfn)
+ 	return 0;
+ out:
++	if (huge_zero_pfn)
++		__free_page(pfn_to_page(huge_zero_pfn));
+ 	hugepage_exit_sysfs(hugepage_kobj);
+ 	return err;
  }
- #endif
- 
--#ifndef my_zero_pfn
--static inline unsigned long my_zero_pfn(unsigned long addr)
--{
--	return zero_pfn;
--}
--#endif
--
- /*
-  * vm_normal_page -- This function gets the "struct page" associated with a pte.
-  *
 -- 
 1.7.11.7
 
