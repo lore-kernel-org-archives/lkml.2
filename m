@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768088Ab2KOOoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:44:12 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45877 "EHLO
+	id S1768085Ab2KOOrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:47:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44936 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993283Ab2KOOoK (ORCPT
+	with ESMTP id S2992479Ab2KOOrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:44:10 -0500
-Date: Thu, 15 Nov 2012 06:44:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] cuse: do not register multiple devices with the same
- name
-Message-ID: <20121115144404.GA7306@mtj.dyndns.org>
-References: <1352982197-7447-1-git-send-email-dh.herrmann@googlemail.com>
+	Thu, 15 Nov 2012 09:47:37 -0500
+Date: Thu, 15 Nov 2012 06:47:32 -0800
+From: Tejun Heo <htejun@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
+Message-ID: <20121115144732.GB7306@mtj.dyndns.org>
+References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
+ <1352820639-13521-3-git-send-email-mhocko@suse.cz>
+ <20121113161442.GA18227@mtj.dyndns.org>
+ <20121114085129.GC17111@dhcp22.suse.cz>
+ <20121114185245.GF21185@mtj.dyndns.org>
+ <20121115095103.GB11990@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352982197-7447-1-git-send-email-dh.herrmann@googlemail.com>
+In-Reply-To: <20121115095103.GB11990@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 01:23:17PM +0100, David Herrmann wrote:
-> We do not check whether we already registered a CUSE device with a given
-> name so we might end up with two devices with the same name. Sysfs will
-> then complain as it cannot create suitable directories.
+Hello, Michal.
+
+On Thu, Nov 15, 2012 at 10:51:03AM +0100, Michal Hocko wrote:
+> > I'm a bit confused.  Why would that make any difference?  Shouldn't it
+> > be just able to test the condition and continue?
 > 
-> This patch makes the init-command fail if there is already a device with
-> the given name. To avoid race-conditions, we protect the whole
-> registration with a mutex now.
+> Ohh, I misunderstood your proposal. So what you are suggesting is
+> to put all the logic we have in mem_cgroup_iter inside what you call
+> reclaim here + mem_cgroup_iter_break inside the loop, right?
 > 
-> Following the sysfs warnings when registering two devices with the same
-> name:
-...
-> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+> I do not see how this would help us much. mem_cgroup_iter is not the
+> nicest piece of code but it handles quite a complex requirements that we
+> have currently (css reference count, multiple reclaimers racing). So I
+> would rather keep it this way. Further simplifications are welcome of
+> course.
+> 
+> Is there any reason why you are not happy about direct using of
+> cgroup_next_descendant_pre?
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Because I'd like to consider the next functions as implementation
+detail, and having interations structred as loops tend to read better
+and less error-prone.  e.g. when you use next functions directly, it's
+way easier to circumvent locking requirements in a way which isn't
+very obvious.  So, unless it messes up the code too much (and I can't
+see why it would), I'd much prefer if memcg used for_each_*() macros.
 
-But it probably would be better to separate out mutex conversion as a
-separate patch.
-
-Thanks!
+Thanks.
 
 -- 
 tejun
