@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992839Ab2KOGyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 01:54:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22725 "EHLO song.cn.fujitsu.com"
+	id S2992877Ab2KOGys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 01:54:48 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:37757 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S2992721Ab2KOGxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S2992720Ab2KOGxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 01:53:47 -0500
 X-IronPort-AV: E=Sophos;i="4.83,255,1352044800"; 
-   d="scan'208";a="6204041"
+   d="scan'208";a="6204046"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
@@ -23,32 +23,26 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jiang Liu <liuj97@gmail.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: [Patch v5 2/7] acpi,memory-hotplug: deal with eject request in hotplug queue
-Date: Thu, 15 Nov 2012 14:59:32 +0800
-Message-Id: <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
+Subject: [Patch v5 7/7] acpi_memhotplug.c: auto bind the memory device which is hotplugged before the driver is loaded
+Date: Thu, 15 Nov 2012 14:59:37 +0800
+Message-Id: <1352962777-24407-8-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com>
 References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/11/15 14:53:25,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/15 14:53:26,
-	Serialize complete at 2012/11/15 14:53:26
+ 2012/11/15 14:53:27,
+	Serialize complete at 2012/11/15 14:53:27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory device can be removed by 2 ways:
-1. send eject request by SCI
-2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-
-We handle the 1st case in the module acpi_memhotplug, and handle
-the 2nd case in ACPI eject notification. This 2 events may happen
-at the same time, so we may touch acpi_memory_device.res_list at
-the same time. This patch reimplements memory-hotremove support
-through an ACPI eject notification. Now the memory device is
-offlined and hotremoved only in the function acpi_memory_device_remove()
-which is protected by device_lock().
+If the memory device is hotplugged before the driver is loaded, the user
+cannot see this device under the directory /sys/bus/acpi/devices/, and the
+user cannot bind it by hand after the driver is loaded.  This patch
+introduces a new feature to bind such device when the driver is being
+loaded.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -64,130 +58,69 @@ CC: Rafael J. Wysocki <rjw@sisk.pl>
 CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/acpi/acpi_memhotplug.c | 87 +++++-------------------------------------
- 1 file changed, 9 insertions(+), 78 deletions(-)
+ drivers/acpi/acpi_memhotplug.c | 37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 2918be1..6e12042 100644
+index e0f7425..9f1d107 100644
 --- a/drivers/acpi/acpi_memhotplug.c
 +++ b/drivers/acpi/acpi_memhotplug.c
-@@ -272,40 +272,6 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 	return 0;
- }
+@@ -52,6 +52,9 @@ MODULE_LICENSE("GPL");
+ #define MEMORY_POWER_ON_STATE	1
+ #define MEMORY_POWER_OFF_STATE	2
  
--static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
--{
--	acpi_status status;
--	struct acpi_object_list arg_list;
--	union acpi_object arg;
--	unsigned long long current_status;
--
--
--	/* Issue the _EJ0 command */
--	arg_list.count = 1;
--	arg_list.pointer = &arg;
--	arg.type = ACPI_TYPE_INTEGER;
--	arg.integer.value = 1;
--	status = acpi_evaluate_object(mem_device->device->handle,
--				      "_EJ0", &arg_list, NULL);
--	/* Return on _EJ0 failure */
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status, "_EJ0 failed"));
--		return -ENODEV;
--	}
--
--	/* Evalute _STA to check if the device is disabled */
--	status = acpi_evaluate_integer(mem_device->device->handle, "_STA",
--				       NULL, &current_status);
--	if (ACPI_FAILURE(status))
--		return -ENODEV;
--
--	/* Check for device status.  Device should be disabled */
--	if (current_status & ACPI_STA_DEVICE_ENABLED)
--		return -EINVAL;
--
--	return 0;
--}
--
- static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
++static bool auto_probe;
++module_param(auto_probe, bool, S_IRUGO | S_IWUSR);
++
+ static int acpi_memory_device_add(struct acpi_device *device);
+ static int acpi_memory_device_remove(struct acpi_device *device, int type);
+ 
+@@ -494,12 +497,44 @@ acpi_memory_register_notify_handler(acpi_handle handle,
+ 				    u32 level, void *ctxt, void **retv)
  {
- 	int result;
-@@ -325,34 +291,11 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- 	return 0;
- }
+ 	acpi_status status;
+-
++	struct acpi_memory_device *mem_device = NULL;
++	unsigned long long current_status;
  
--static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
--{
--	int result;
--
--	/*
--	 * Ask the VM to offline this memory range.
--	 * Note: Assume that this function returns zero on success
--	 */
--	result = acpi_memory_remove_memory(mem_device);
--	if (result)
--		return result;
--
--	/* Power-off and eject the device */
--	result = acpi_memory_powerdown_device(mem_device);
--	if (result) {
--		/* Set the status of the device to invalid */
--		mem_device->state = MEMORY_INVALID_STATE;
--		return result;
--	}
--
--	mem_device->state = MEMORY_POWER_OFF_STATE;
--	return result;
--}
--
- static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- {
- 	struct acpi_memory_device *mem_device;
- 	struct acpi_device *device;
-+	struct acpi_eject_event *ej_event = NULL;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+ 	status = is_memory_device(handle);
+ 	if (ACPI_FAILURE(status))
+ 		return AE_OK;	/* continue */
  
- 	switch (event) {
-@@ -394,31 +337,19 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 			break;
- 		}
- 
--		/*
--		 * Currently disabling memory device from kernel mode
--		 * TBD: Can also be disabled from user mode scripts
--		 * TBD: Can also be disabled by Callback registration
--		 *      with generic sysfs driver
--		 */
--		if (acpi_memory_disable_device(mem_device)) {
--			printk(KERN_ERR PREFIX "Disable memory device\n");
--			/*
--			 * If _EJ0 was called but failed, _OST is not
--			 * necessary.
--			 */
--			if (mem_device->state == MEMORY_INVALID_STATE)
--				return;
--
-+		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+		if (!ej_event) {
-+			pr_err(PREFIX "No memory, dropping EJECT\n");
- 			break;
- 		}
- 
--		/*
--		 * TBD: Invoke acpi_bus_remove to cleanup data structures
--		 */
-+		ej_event->handle = handle;
-+		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-+					(void *)ej_event);
- 
--		/* _EJ0 succeeded; _OST is not necessary */
-+		/* eject is performed asynchronously */
- 		return;
--
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "Unsupported event [0x%x]\n", event));
++	if (auto_probe) {
++		/* Get device present/absent information from the _STA */
++		status = acpi_evaluate_integer(handle, "_STA", NULL,
++					       &current_status);
++		if (ACPI_FAILURE(status))
++			goto install;
++
++		/*
++		 * Check for device status. Device should be
++		 * present/enabled/functioning.
++		 */
++		if (!(current_status &
++		      (ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED |
++		       ACPI_STA_DEVICE_FUNCTIONING)))
++			goto install;
++
++		if (acpi_memory_get_device(handle, &mem_device))
++			goto install;
++
++		/* We have bound this device while we register the driver */
++		if (mem_device->state == MEMORY_POWER_ON_STATE)
++			goto install;
++
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "\nauto probe memory device\n"));
++
++		if (acpi_memory_enable_device(mem_device))
++			pr_err(PREFIX "Cannot enable memory device\n");
++	}
++
++install:
+ 	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+ 					     acpi_memory_device_notify, NULL);
+ 	/* continue */
 -- 
 1.8.0
 
