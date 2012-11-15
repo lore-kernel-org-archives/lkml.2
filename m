@@ -1,55 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423538Ab2KOJTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:19:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56777 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422860Ab2KOJTj (ORCPT
+	id S1946014Ab2KOJVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:21:03 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46495 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945949Ab2KOJU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:19:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
-Date: Thu, 15 Nov 2012 09:19:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Rob Clark <rob.clark@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <201211130911.09613.arnd@arndb.de> <20121113112430.GF28341@n2100.arm.linux.org.uk>
-In-Reply-To: <20121113112430.GF28341@n2100.arm.linux.org.uk>
+	Thu, 15 Nov 2012 04:20:58 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50A4B3DB.8020702@jp.fujitsu.com>
+Date: Thu, 15 Nov 2012 18:20:27 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-acpi@vger.kernel.org>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
+Subject: Re: [Patch v5 5/7] acpi_memhotplug.c: don't allow to eject the memory
+ device if it is being used
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211150919.37343.arnd@arndb.de>
-X-Provags-ID: V02:K0:7K4uLWyrW41keg4cush7KploAwp/iDLaSlbkwMSRskz
- PZVWKcm+tkjYsHgqeB0VuGFymcxvA1wWrtisrf+TFOxbD8NSWe
- CTZ0He7dv4jkxnmMDPJ+5loarVQy1g5v1QWp3o0Hz3VdCcShqe
- 7bCb30qlcOJYaIIVTXmB4T0XumzrZQGX+AzHhL5CyYrzxXA07x
- 9HnVB/1cV3WsY+YxJCf40H5yXWhjGwZ9lWTtnDX7kTUFGK4f3d
- 5rFCXLlEp5Ua0B9bE3+RGJTstNzb6FRahEZMmcni+SSHI68JZF
- N9//rZdtbaNQrQOrCmwLNIhsDLJvYa7OGe1w2GTqvaQk5E3xWv
- yS6T5y9wgWoz6puWQdcw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012, Russell King - ARM Linux wrote:
-> You're missing something; that is one of the greatest powers of open
-> source.  The many eyes (and minds) effect.  Someone out there probably
-> has a solution to whatever problem, the trick is to find that person. :)
+2012/11/15 15:59, Wen Congyang wrote:
+> We eject the memory device even if it is in use.  It is very dangerous,
+> and it will cause the kernel to be panicked.
 > 
-> I think we have a working solution for this for ARM.  It won't be suitable
-> for every arch, where they have 8-bit and 16-bit registers able to be
-> allocated by the compiler, but for architectures where the minimum register
-> size is 32-bit, what we have below should work.
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
 
-I don't mind at all adding the extension to ARM, and I think it's pretty
-cool that you guys actually found a working solution.
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-The part that worries me is that we are making architecture independent
-code depend on a clever hack that may or may not be possible to implement
-on a given architecture, and that most architecture maintainers wouldn't
-know how to implement correctly even if it's possible.
+Thanks,
+Yasuaki Ishimatsu
 
-	Arnd
+>   drivers/acpi/acpi_memhotplug.c | 42 +++++++++++++++++++++++++++++++++---------
+>   1 file changed, 33 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index e52ad5d..f7e3007 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -78,6 +78,7 @@ struct acpi_memory_info {
+>   	unsigned short caching;	/* memory cache attribute */
+>   	unsigned short write_protect;	/* memory read/write attribute */
+>   	unsigned int enabled:1;
+> +	unsigned int failed:1;
+>   };
+>   
+>   struct acpi_memory_device {
+> @@ -257,9 +258,23 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   			node = memory_add_physaddr_to_nid(info->start_addr);
+>   
+>   		result = add_memory(node, info->start_addr, info->length);
+> -		if (result)
+> +
+> +		/*
+> +		 * If the memory block has been used by the kernel, add_memory()
+> +		 * returns -EEXIST. If add_memory() returns the other error, it
+> +		 * means that this memory block is not used by the kernel.
+> +		 */
+> +		if (result && result != -EEXIST) {
+> +			info->failed = 1;
+>   			continue;
+> -		info->enabled = 1;
+> +		}
+> +
+> +		if (!result)
+> +			info->enabled = 1;
+> +		/*
+> +		 * Add num_enable even if add_memory() returns -EEXIST, so the
+> +		 * device is bound to this driver.
+> +		 */
+>   		num_enabled++;
+>   	}
+>   	if (!num_enabled) {
+> @@ -280,21 +295,30 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   
+>   static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>   {
+> -	int result;
+> +	int result = 0;
+>   	struct acpi_memory_info *info, *n;
+>   
+>   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+> -		if (info->enabled) {
+> -			result = remove_memory(info->start_addr, info->length);
+> -			if (result)
+> -				return result;
+> -		}
+> +		if (info->failed)
+> +			/* The kernel does not use this memory block */
+> +			continue;
+> +
+> +		if (!info->enabled)
+> +			/*
+> +			 * The kernel uses this memory block, but it may be not
+> +			 * managed by us.
+> +			 */
+> +			return -EBUSY;
+> +
+> +		result = remove_memory(info->start_addr, info->length);
+> +		if (result)
+> +			return result;
+>   
+>   		list_del(&info->list);
+>   		kfree(info);
+>   	}
+>   
+> -	return 0;
+> +	return result;
+>   }
+>   
+>   static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> 
+
+
