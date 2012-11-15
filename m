@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992911Ab2KOEr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:47:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48472 "EHLO mail.kernel.org"
+	id S2992802Ab2KOEr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:47:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48482 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992694Ab2KOEK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:26 -0500
+	id S2992700Ab2KOEK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Matthieu CASTET <matthieu.castet@parrot.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 19/38] ALSA: usb-audio: Fix races at disconnection
-Date: Wed, 14 Nov 2012 20:10:16 -0800
-Message-Id: <20121115040934.086144450@linuxfoundation.org>
+Subject: [ 20/38] ALSA: usb-audio: Use rwsem for disconnect protection
+Date: Wed, 14 Nov 2012 20:10:17 -0800
+Message-Id: <20121115040934.150135632@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -28,318 +28,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 978520b75f0a1ce82b17e1e8186417250de6d545 upstream.
+commit 34f3c89fda4fba9fe689db22253ca8db2f5e6386 upstream.
 
-Close some races at disconnection of a USB audio device by adding the
-chip->shutdown_mutex and chip->shutdown check at appropriate places.
+Replace mutex with rwsem for codec->shutdown protection so that
+concurrent accesses are allowed.
 
-The spots to put bandaids are:
-- PCM prepare, hw_params and hw_free
-- where the usb device is accessed for communication or get speed, in
- mixer.c and others; the device speed is now cached in subs->speed
- instead of accessing to chip->dev
-
-The accesses in PCM open and close don't need the mutex protection
-because these are already handled in the core PCM disconnection code.
-
-The autosuspend/autoresume codes are still uncovered by this patch
-because of possible mutex deadlocks.  They'll be covered by the
-upcoming change to rwsem.
-
-Also the mixer codes are untouched, too.  These will be fixed in
-another patch, too.
+Also add the protection to snd_usb_autosuspend() and
+snd_usb_autoresume(), too.
 
 Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- sound/usb/card.h  |    1 
- sound/usb/mixer.c |   65 +++++++++++++++++++++++++++++++++++-------------------
- sound/usb/pcm.c   |   31 +++++++++++++++++++------
- sound/usb/proc.c  |    4 +--
- sound/usb/urb.c   |    9 ++++---
- 5 files changed, 76 insertions(+), 34 deletions(-)
+ sound/usb/card.c     |   12 ++++++++----
+ sound/usb/mixer.c    |   12 ++++++------
+ sound/usb/pcm.c      |   12 ++++++------
+ sound/usb/usbaudio.h |    2 +-
+ 4 files changed, 21 insertions(+), 17 deletions(-)
 
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -86,6 +86,7 @@ struct snd_usb_substream {
- 	struct snd_urb_ctx syncurb[SYNC_URBS];	/* sync urb table */
- 	char *syncbuf;				/* sync buffer for all sync URBs */
- 	dma_addr_t sync_dma;			/* DMA address of syncbuf */
-+	unsigned int speed;		/* USB_SPEED_XXX */
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -335,7 +335,7 @@ static int snd_usb_audio_create(struct u
+ 		return -ENOMEM;
+ 	}
  
- 	u64 formats;			/* format bitmasks (all or'ed) */
- 	unsigned int num_formats;		/* number of supported audio formats (list) */
+-	mutex_init(&chip->shutdown_mutex);
++	init_rwsem(&chip->shutdown_rwsem);
+ 	chip->index = idx;
+ 	chip->dev = dev;
+ 	chip->card = card;
+@@ -555,7 +555,7 @@ static void snd_usb_audio_disconnect(str
+ 	chip = ptr;
+ 	card = chip->card;
+ 	mutex_lock(&register_mutex);
+-	mutex_lock(&chip->shutdown_mutex);
++	down_write(&chip->shutdown_rwsem);
+ 	chip->shutdown = 1;
+ 	chip->num_interfaces--;
+ 	if (chip->num_interfaces <= 0) {
+@@ -573,11 +573,11 @@ static void snd_usb_audio_disconnect(str
+ 			snd_usb_mixer_disconnect(p);
+ 		}
+ 		usb_chip[chip->index] = NULL;
+-		mutex_unlock(&chip->shutdown_mutex);
++		up_write(&chip->shutdown_rwsem);
+ 		mutex_unlock(&register_mutex);
+ 		snd_card_free_when_closed(card);
+ 	} else {
+-		mutex_unlock(&chip->shutdown_mutex);
++		up_write(&chip->shutdown_rwsem);
+ 		mutex_unlock(&register_mutex);
+ 	}
+ }
+@@ -609,16 +609,20 @@ int snd_usb_autoresume(struct snd_usb_au
+ {
+ 	int err = -ENODEV;
+ 
++	down_read(&chip->shutdown_rwsem);
+ 	if (!chip->shutdown && !chip->probing)
+ 		err = usb_autopm_get_interface(chip->pm_intf);
++	up_read(&chip->shutdown_rwsem);
+ 
+ 	return err;
+ }
+ 
+ void snd_usb_autosuspend(struct snd_usb_audio *chip)
+ {
++	down_read(&chip->shutdown_rwsem);
+ 	if (!chip->shutdown && !chip->probing)
+ 		usb_autopm_put_interface(chip->pm_intf);
++	up_read(&chip->shutdown_rwsem);
+ }
+ 
+ static int usb_audio_suspend(struct usb_interface *intf, pm_message_t message)
 --- a/sound/usb/mixer.c
 +++ b/sound/usb/mixer.c
-@@ -287,25 +287,32 @@ static int get_ctl_value_v1(struct usb_m
- 	unsigned char buf[2];
- 	int val_len = cval->val_type >= USB_MIXER_S16 ? 2 : 1;
- 	int timeout = 10;
--	int err;
-+	int idx = 0, err;
- 
+@@ -292,7 +292,7 @@ static int get_ctl_value_v1(struct usb_m
  	err = snd_usb_autoresume(cval->mixer->chip);
  	if (err < 0)
  		return -EIO;
-+	mutex_lock(&chip->shutdown_mutex);
+-	mutex_lock(&chip->shutdown_mutex);
++	down_read(&chip->shutdown_rwsem);
  	while (timeout-- > 0) {
-+		if (chip->shutdown)
-+			break;
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
- 		if (snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), request,
- 				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
--				    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--				    buf, val_len, 100) >= val_len) {
-+				    validx, idx, buf, val_len, 100) >= val_len) {
- 			*value_ret = convert_signed_value(cval, snd_usb_combine_bytes(buf, val_len));
--			snd_usb_autosuspend(cval->mixer->chip);
--			return 0;
-+			err = 0;
-+			goto out;
- 		}
- 	}
--	snd_usb_autosuspend(cval->mixer->chip);
- 	snd_printdd(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
--		    request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type);
--	return -EINVAL;
-+		    request, validx, idx, cval->val_type);
-+	err = -EINVAL;
-+
-+ out:
-+	mutex_unlock(&chip->shutdown_mutex);
-+	snd_usb_autosuspend(cval->mixer->chip);
-+	return err;
+ 		if (chip->shutdown)
+ 			break;
+@@ -310,7 +310,7 @@ static int get_ctl_value_v1(struct usb_m
+ 	err = -EINVAL;
+ 
+  out:
+-	mutex_unlock(&chip->shutdown_mutex);
++	up_read(&chip->shutdown_rwsem);
+ 	snd_usb_autosuspend(cval->mixer->chip);
+ 	return err;
  }
- 
- static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int validx, int *value_ret)
-@@ -313,7 +320,7 @@ static int get_ctl_value_v2(struct usb_m
- 	struct snd_usb_audio *chip = cval->mixer->chip;
- 	unsigned char buf[2 + 3*sizeof(__u16)]; /* enough space for one range */
- 	unsigned char *val;
--	int ret, size;
-+	int idx = 0, ret, size;
- 	__u8 bRequest;
- 
- 	if (request == UAC_GET_CUR) {
-@@ -330,16 +337,22 @@ static int get_ctl_value_v2(struct usb_m
+@@ -337,7 +337,7 @@ static int get_ctl_value_v2(struct usb_m
  	if (ret)
  		goto error;
  
--	ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
-+	mutex_lock(&chip->shutdown_mutex);
-+	if (chip->shutdown)
-+		ret = -ENODEV;
-+	else {
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
-+		ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
+-	mutex_lock(&chip->shutdown_mutex);
++	down_read(&chip->shutdown_rwsem);
+ 	if (chip->shutdown)
+ 		ret = -ENODEV;
+ 	else {
+@@ -346,7 +346,7 @@ static int get_ctl_value_v2(struct usb_m
  			      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
--			      validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--			      buf, size, 1000);
-+			      validx, idx, buf, size, 1000);
-+	}
-+	mutex_unlock(&chip->shutdown_mutex);
+ 			      validx, idx, buf, size, 1000);
+ 	}
+-	mutex_unlock(&chip->shutdown_mutex);
++	up_read(&chip->shutdown_rwsem);
  	snd_usb_autosuspend(chip);
  
  	if (ret < 0) {
- error:
- 		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
--			   request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type);
-+			   request, validx, idx, cval->val_type);
- 		return ret;
- 	}
- 
-@@ -417,7 +430,7 @@ int snd_usb_mixer_set_ctl_value(struct u
- {
- 	struct snd_usb_audio *chip = cval->mixer->chip;
- 	unsigned char buf[2];
--	int val_len, err, timeout = 10;
-+	int idx = 0, val_len, err, timeout = 10;
- 
- 	if (cval->mixer->protocol == UAC_VERSION_1) {
- 		val_len = cval->val_type >= USB_MIXER_S16 ? 2 : 1;
-@@ -440,19 +453,27 @@ int snd_usb_mixer_set_ctl_value(struct u
+@@ -453,7 +453,7 @@ int snd_usb_mixer_set_ctl_value(struct u
  	err = snd_usb_autoresume(chip);
  	if (err < 0)
  		return -EIO;
--	while (timeout-- > 0)
-+	mutex_lock(&chip->shutdown_mutex);
-+	while (timeout-- > 0) {
-+		if (chip->shutdown)
-+			break;
-+		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
- 		if (snd_usb_ctl_msg(chip->dev,
- 				    usb_sndctrlpipe(chip->dev, 0), request,
- 				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
--				    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
--				    buf, val_len, 100) >= 0) {
--			snd_usb_autosuspend(chip);
--			return 0;
-+				    validx, idx, buf, val_len, 100) >= 0) {
-+			err = 0;
-+			goto out;
- 		}
--	snd_usb_autosuspend(chip);
-+	}
- 	snd_printdd(KERN_ERR "cannot set ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d, data = %#x/%#x\n",
--		    request, validx, snd_usb_ctrl_intf(chip) | (cval->id << 8), cval->val_type, buf[0], buf[1]);
--	return -EINVAL;
-+		    request, validx, idx, cval->val_type, buf[0], buf[1]);
-+	err = -EINVAL;
-+
-+ out:
-+	mutex_unlock(&chip->shutdown_mutex);
-+	snd_usb_autosuspend(chip);
-+	return err;
- }
+-	mutex_lock(&chip->shutdown_mutex);
++	down_read(&chip->shutdown_rwsem);
+ 	while (timeout-- > 0) {
+ 		if (chip->shutdown)
+ 			break;
+@@ -471,7 +471,7 @@ int snd_usb_mixer_set_ctl_value(struct u
+ 	err = -EINVAL;
  
- static int set_cur_ctl_value(struct usb_mixer_elem_info *cval, int validx, int value)
+  out:
+-	mutex_unlock(&chip->shutdown_mutex);
++	up_read(&chip->shutdown_rwsem);
+ 	snd_usb_autosuspend(chip);
+ 	return err;
+ }
 --- a/sound/usb/pcm.c
 +++ b/sound/usb/pcm.c
-@@ -43,6 +43,8 @@ static snd_pcm_uframes_t snd_usb_pcm_poi
- 	unsigned int hwptr_done;
- 
- 	subs = (struct snd_usb_substream *)substream->runtime->private_data;
-+	if (subs->stream->chip->shutdown)
-+		return SNDRV_PCM_POS_XRUN;
- 	spin_lock(&subs->lock);
- 	hwptr_done = subs->hwptr_done;
- 	spin_unlock(&subs->lock);
-@@ -347,8 +349,14 @@ static int snd_usb_hw_params(struct snd_
- 	changed = subs->cur_audiofmt != fmt ||
+@@ -350,7 +350,7 @@ static int snd_usb_hw_params(struct snd_
  		subs->period_bytes != params_period_bytes(hw_params) ||
  		subs->cur_rate != rate;
-+
-+	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	if (subs->stream->chip->shutdown) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 	if ((ret = set_format(subs, fmt)) < 0)
--		return ret;
-+		goto unlock;
  
- 	if (subs->cur_rate != rate) {
- 		struct usb_host_interface *alts;
-@@ -357,12 +365,11 @@ static int snd_usb_hw_params(struct snd_
- 		alts = &iface->altsetting[fmt->altset_idx];
- 		ret = snd_usb_init_sample_rate(subs->stream->chip, subs->interface, alts, fmt, rate);
- 		if (ret < 0)
--			return ret;
-+			goto unlock;
- 		subs->cur_rate = rate;
+-	mutex_lock(&subs->stream->chip->shutdown_mutex);
++	down_read(&subs->stream->chip->shutdown_rwsem);
+ 	if (subs->stream->chip->shutdown) {
+ 		ret = -ENODEV;
+ 		goto unlock;
+@@ -380,7 +380,7 @@ static int snd_usb_hw_params(struct snd_
  	}
  
- 	if (changed) {
--		mutex_lock(&subs->stream->chip->shutdown_mutex);
- 		/* format changed */
- 		snd_usb_release_substream_urbs(subs, 0);
- 		/* influenced: period_bytes, channels, rate, format, */
-@@ -370,9 +377,10 @@ static int snd_usb_hw_params(struct snd_
- 						  params_rate(hw_params),
- 						  snd_pcm_format_physical_width(params_format(hw_params)) *
- 							params_channels(hw_params));
--		mutex_unlock(&subs->stream->chip->shutdown_mutex);
- 	}
- 
-+unlock:
-+	mutex_unlock(&subs->stream->chip->shutdown_mutex);
+ unlock:
+-	mutex_unlock(&subs->stream->chip->shutdown_mutex);
++	up_read(&subs->stream->chip->shutdown_rwsem);
  	return ret;
  }
  
-@@ -403,12 +411,18 @@ static int snd_usb_pcm_prepare(struct sn
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct snd_usb_substream *subs = runtime->private_data;
-+	int ret = 0;
+@@ -396,9 +396,9 @@ static int snd_usb_hw_free(struct snd_pc
+ 	subs->cur_audiofmt = NULL;
+ 	subs->cur_rate = 0;
+ 	subs->period_bytes = 0;
+-	mutex_lock(&subs->stream->chip->shutdown_mutex);
++	down_read(&subs->stream->chip->shutdown_rwsem);
+ 	snd_usb_release_substream_urbs(subs, 0);
+-	mutex_unlock(&subs->stream->chip->shutdown_mutex);
++	up_read(&subs->stream->chip->shutdown_rwsem);
+ 	return snd_pcm_lib_free_vmalloc_buffer(substream);
+ }
  
- 	if (! subs->cur_audiofmt) {
- 		snd_printk(KERN_ERR "usbaudio: no format is specified!\n");
+@@ -418,7 +418,7 @@ static int snd_usb_pcm_prepare(struct sn
  		return -ENXIO;
  	}
  
-+	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	if (subs->stream->chip->shutdown) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 	/* some unit conversions in runtime */
- 	subs->maxframesize = bytes_to_frames(runtime, subs->maxpacksize);
- 	subs->curframesize = bytes_to_frames(runtime, subs->curpacksize);
-@@ -419,7 +433,10 @@ static int snd_usb_pcm_prepare(struct sn
- 	subs->phase = 0;
- 	runtime->delay = 0;
+-	mutex_lock(&subs->stream->chip->shutdown_mutex);
++	down_read(&subs->stream->chip->shutdown_rwsem);
+ 	if (subs->stream->chip->shutdown) {
+ 		ret = -ENODEV;
+ 		goto unlock;
+@@ -435,7 +435,7 @@ static int snd_usb_pcm_prepare(struct sn
  
--	return snd_usb_substream_prepare(subs, runtime);
-+	ret = snd_usb_substream_prepare(subs, runtime);
-+ unlock:
-+	mutex_unlock(&subs->stream->chip->shutdown_mutex);
-+	return ret;
+ 	ret = snd_usb_substream_prepare(subs, runtime);
+  unlock:
+-	mutex_unlock(&subs->stream->chip->shutdown_mutex);
++	up_read(&subs->stream->chip->shutdown_rwsem);
+ 	return ret;
  }
  
- static struct snd_pcm_hardware snd_usb_hardware =
-@@ -472,7 +489,7 @@ static int hw_check_valid_format(struct
- 		return 0;
- 	}
- 	/* check whether the period time is >= the data packet interval */
--	if (snd_usb_get_speed(subs->dev) != USB_SPEED_FULL) {
-+	if (subs->speed != USB_SPEED_FULL) {
- 		ptime = 125 * (1 << fp->datainterval);
- 		if (ptime > pt->max || (ptime == pt->max && pt->openmax)) {
- 			hwc_debug("   > check: ptime %u > max %u\n", ptime, pt->max);
-@@ -748,7 +765,7 @@ static int setup_hw_info(struct snd_pcm_
- 		return err;
- 
- 	param_period_time_if_needed = SNDRV_PCM_HW_PARAM_PERIOD_TIME;
--	if (snd_usb_get_speed(subs->dev) == USB_SPEED_FULL)
-+	if (subs->speed == USB_SPEED_FULL)
- 		/* full speed devices have fixed data packet interval */
- 		ptmin = 1000;
- 	if (ptmin == 1000)
---- a/sound/usb/proc.c
-+++ b/sound/usb/proc.c
-@@ -107,7 +107,7 @@ static void proc_dump_substream_formats(
- 			}
- 			snd_iprintf(buffer, "\n");
- 		}
--		if (snd_usb_get_speed(subs->dev) != USB_SPEED_FULL)
-+		if (subs->speed != USB_SPEED_FULL)
- 			snd_iprintf(buffer, "    Data packet interval: %d us\n",
- 				    125 * (1 << fp->datainterval));
- 		// snd_iprintf(buffer, "    Max Packet Size = %d\n", fp->maxpacksize);
-@@ -128,7 +128,7 @@ static void proc_dump_substream_status(s
- 		snd_iprintf(buffer, "]\n");
- 		snd_iprintf(buffer, "    Packet Size = %d\n", subs->curpacksize);
- 		snd_iprintf(buffer, "    Momentary freq = %u Hz (%#x.%04x)\n",
--			    snd_usb_get_speed(subs->dev) == USB_SPEED_FULL
-+			    subs->speed == USB_SPEED_FULL
- 			    ? get_full_speed_hz(subs->freqm)
- 			    : get_high_speed_hz(subs->freqm),
- 			    subs->freqm >> 16, subs->freqm & 0xffff);
---- a/sound/usb/urb.c
-+++ b/sound/usb/urb.c
-@@ -147,8 +147,10 @@ void snd_usb_release_substream_urbs(stru
- 	int i;
- 
- 	/* stop urbs (to be sure) */
--	deactivate_urbs(subs, force, 1);
--	wait_clear_urbs(subs);
-+	if (!subs->stream->chip->shutdown) {
-+		deactivate_urbs(subs, force, 1);
-+		wait_clear_urbs(subs);
-+	}
- 
- 	for (i = 0; i < MAX_URBS; i++)
- 		release_urb_ctx(&subs->dataurb[i]);
-@@ -870,7 +872,8 @@ void snd_usb_init_substream(struct snd_u
- 	subs->dev = as->chip->dev;
- 	subs->txfr_quirk = as->chip->txfr_quirk;
- 	subs->ops = audio_urb_ops[stream];
--	if (snd_usb_get_speed(subs->dev) >= USB_SPEED_HIGH)
-+	subs->speed = snd_usb_get_speed(subs->dev);
-+	if (subs->speed >= USB_SPEED_HIGH)
- 		subs->ops.prepare_sync = prepare_capture_sync_urb_hs;
- 
- 	snd_usb_set_pcm_ops(as->pcm, stream);
+--- a/sound/usb/usbaudio.h
++++ b/sound/usb/usbaudio.h
+@@ -36,7 +36,7 @@ struct snd_usb_audio {
+ 	struct snd_card *card;
+ 	struct usb_interface *pm_intf;
+ 	u32 usb_id;
+-	struct mutex shutdown_mutex;
++	struct rw_semaphore shutdown_rwsem;
+ 	unsigned int shutdown:1;
+ 	unsigned int probing:1;
+ 	unsigned int autosuspended:1;	
 
 
