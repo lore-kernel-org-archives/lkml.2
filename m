@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243Ab2KOF1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 00:27:52 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45967 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2KOF1v (ORCPT
+	id S1751438Ab2KOFdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 00:33:13 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42070 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751008Ab2KOFdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 00:27:51 -0500
-Date: Thu, 15 Nov 2012 16:27:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the arm-soc tree with the i2c-embedded
- tree
-Message-Id: <20121115162739.a114b22ad3a1e0b5a04c6aa9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Nov_2012_16_27_39_+1100_L6mONvX8te8OeSov"
+	Thu, 15 Nov 2012 00:33:12 -0500
+Date: Thu, 15 Nov 2012 14:33:05 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <dchen@diasemi.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Patch v4 2/7] regulator: DA9055 regulator driver
+Message-ID: <20121115053304.GG7599@opensource.wolfsonmicro.com>
+References: <1351758476.22009.10.camel@dhruva>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Dx9iWuMxHO1cCoFc"
+Content-Disposition: inline
+In-Reply-To: <1351758476.22009.10.camel@dhruva>
+X-Cookie: Cold hands, no gloves.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Nov_2012_16_27_39_+1100_L6mONvX8te8OeSov
-Content-Type: text/plain; charset=US-ASCII
+
+--Dx9iWuMxHO1cCoFc
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Thu, Nov 01, 2012 at 01:57:56PM +0530, Ashish Jangam wrote:
+> This is the Regulator patch for the DA9055 PMIC and has got dependency on
+> the DA9055 MFD core.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/plat-omap/i2c.c between commit 49839dc93970 ("Revert "ARM: OMAP:
-convert I2C driver to PM QoS for MPU latency constraints"") from the
-i2c-embedded tree and various commits from the arm-soc tree.
+Applied, thanks.
 
-I used the version from the arm-soc tree (not sure if that is the correct
-choice) and can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__15_Nov_2012_16_27_39_+1100_L6mONvX8te8OeSov
-Content-Type: application/pgp-signature
+--Dx9iWuMxHO1cCoFc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQpH1LAAoJEECxmPOUX5FEfM0P/1OxUFHu0e+qH0NwjdkRgRqQ
-jW8ScDMP/HaYkRaIrXpMdVVWjJceUC3NTloEkpCCPx7wlfs1bohWfZtHL9p5ueHD
-RjSchwBpFN+aE+YeQ7yMgOjuKiJ0JQw46j0w9GOQFQsws3Py3Rp23dpsqlF2hdsA
-UAKnf+LEvq2m0dOoTsvJv+BYhJZCCzl1ADDZws89XyLpiDqlGCHtgiVW+ts3nNdp
-DhUc7byO6FNLPenfWp65yiKFOjWiq0ZpCnhQ9tDhkdh8VulC7sW5ijFrYPBnc64S
-FXNoaR3oW1Ig6JwtNuSYrILfHNo5r437GhmhStXNqbLQvv24mtvS/jNT2kCvpXGY
-iPxk655ROvECSranj9Wb4Lx/gdhXlq8ueAPZ5iPC6eb+dgZWcf834JJEE8PYdRlV
-GUejph8evvTvkYLhzs1H1QWHs6TyaOkvvZh8L3L7mje87mqRArcxtifIhGy2dKiy
-QMcIm6kYt2gSMsmzv1GGOky/qbg6kYikFzz5HhV1MC1P48aKzCBcXhcXCFHw8asK
-OekaETvFEK10Idf0Yoc5OSpWfGDw+dXhySV2y/kaXCy8xkczdwwri/o7SUxm9otQ
-nGg6A2UQJRPhGgRAmA7g/+I4D4TlXK1L9gTx+6941iUXuBAJfn4dOrWh3SLkmWPg
-ytKKAt0ELU90ClAlWw8D
-=vAdp
+iQIcBAEBAgAGBQJQpH3pAAoJELSic+t+oim9PgMQAJhDdaNvayC4mzqA+dsk9avf
+7YRIG+f492aX93uJiL2emLl0zKC4gaIPPB7wmXj5ZnHSuvuON68aqc/VOQL/22zJ
+dIyTvpi1DCoBHE6x8jekr6J4GJJlU/VUTO5NIc39YB+oDT/vEUB61Yxyfa6ECUe7
+zByclRXxzDrmMWSKFrf+VLOPaNut/KlATcEJ5nyMRurIksUViMsNP9s3Fckb8Ouy
+AqKtjaw2ghOyvOtL0gPHgFEQ2n+ixIXewymwEedpJ97AskpME26JZ+2hc6w+UM39
+siew39dp0aRghHHOhqY8J3yg+7iBhocacmob54lpQJZAuBTRDhjmj7yMrxOYdOiN
+Xg51afDj5E3voLD4l3TdIcquG/D+4R0cagAbaSMAvfoq/BQvrg/Cw+NYKTiMk0Rv
++XT63HGkLDjIuOAKdu3G3ZMz2QL9lRWQ/ojWJ6VotLXvh54sT5KUc434V2DHqNDE
+jnBYrm32dq9vziWDez4FqpwSSM3xcV6aL0DEzcYdWSo+QGFu1oU8pFmQX7wNJoct
+YBN1voh5IuuLUg4phzWIhGl+VxGMnQNR/umjPy45zl9vupgyijtazDowW6u2C+/1
+p/AaaFc/dBzHoGw3cxB0eviQx0n1tW4KaeipSyMEKTNUhHCHKOffp14TfryKnNGy
+qB5wZ56uMRXkVQAM2JVX
+=R4A7
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__15_Nov_2012_16_27_39_+1100_L6mONvX8te8OeSov--
+--Dx9iWuMxHO1cCoFc--
