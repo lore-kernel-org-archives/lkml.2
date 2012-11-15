@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933551Ab2KOE0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:26:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49636 "EHLO mail.kernel.org"
+	id S933502Ab2KOE0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:26:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49624 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993154Ab2KOEMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:23 -0500
+	id S2993150Ab2KOEMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Roland Dreier <roland@purestorage.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 08/57] target: Avoid integer overflow in se_dev_align_max_sectors()
-Date: Wed, 14 Nov 2012 20:11:16 -0800
-Message-Id: <20121115040933.723179110@linuxfoundation.org>
+Subject: [ 07/57] target: Dont return success from module_init() if setup fails
+Date: Wed, 14 Nov 2012 20:11:15 -0800
+Message-Id: <20121115040933.667130050@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -28,56 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland Dreier <roland@purestorage.com>
 
-commit 3e03989b5868acf69a391a424dc71fcd6cc48167 upstream.
+commit 0d0f9dfb31e0a6c92063e235417b42df185b3275 upstream.
 
-The expression (max_sectors * block_size) might overflow a u32
-(indeed, since iblock sets max_hw_sectors to UINT_MAX, it is
-guaranteed to overflow and end up with a much-too-small result in many
-common cases).  Fix this by doing an equivalent calculation that
-doesn't require multiplication.
-
-While we're touching this code, avoid splitting a printk format across
-two lines and use pr_info(...) instead of printk(KERN_INFO ...).
+If the call to core_dev_release_virtual_lun0() fails, then nothing
+sets ret to anything other than 0, so even though everything is
+torn down and freed, target_core_init_configfs() will seem to succeed
+and the module will be loaded.  Fix this by passing the return value
+on up the chain.
 
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/target/target_core_configfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -826,20 +826,20 @@ int se_dev_check_shutdown(struct se_devi
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -3197,7 +3197,8 @@ static int __init target_core_init_confi
+ 	if (ret < 0)
+ 		goto out;
  
- u32 se_dev_align_max_sectors(u32 max_sectors, u32 block_size)
- {
--	u32 tmp, aligned_max_sectors;
-+	u32 aligned_max_sectors;
-+	u32 alignment;
- 	/*
- 	 * Limit max_sectors to a PAGE_SIZE aligned value for modern
- 	 * transport_allocate_data_tasks() operation.
- 	 */
--	tmp = rounddown((max_sectors * block_size), PAGE_SIZE);
--	aligned_max_sectors = (tmp / block_size);
--	if (max_sectors != aligned_max_sectors) {
--		printk(KERN_INFO "Rounding down aligned max_sectors from %u"
--				" to %u\n", max_sectors, aligned_max_sectors);
--		return aligned_max_sectors;
--	}
-+	alignment = max(1ul, PAGE_SIZE / block_size);
-+	aligned_max_sectors = rounddown(max_sectors, alignment);
+-	if (core_dev_setup_virtual_lun0() < 0)
++	ret = core_dev_setup_virtual_lun0();
++	if (ret < 0)
+ 		goto out;
  
--	return max_sectors;
-+	if (max_sectors != aligned_max_sectors)
-+		pr_info("Rounding down aligned max_sectors from %u to %u\n",
-+			max_sectors, aligned_max_sectors);
-+
-+	return aligned_max_sectors;
- }
- 
- void se_dev_set_default_attribs(
+ 	return 0;
 
 
