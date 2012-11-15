@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768387Ab2KOQNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 11:13:10 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:58445 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1768347Ab2KOQNI (ORCPT
+	id S1768396Ab2KOQNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 11:13:40 -0500
+Received: from 173-254-64-10.unifiedlayer.com ([173.254.64.10]:58302 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1768352Ab2KOQNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 11:13:08 -0500
-Date: Thu, 15 Nov 2012 08:13:22 -0800
+	Thu, 15 Nov 2012 11:13:39 -0500
+Date: Thu, 15 Nov 2012 08:14:06 -0800
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] x86/Sandy Bridge: reserve pages when integrated
  graphics is present
-Message-ID: <20121115081322.74004a52@jbarnes-desktop>
+Message-ID: <20121115081406.1b19940b@jbarnes-desktop>
 In-Reply-To: <20121115124711.GA31504@khazad-dum.debian.net>
 References: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
 	<20121115124711.GA31504@khazad-dum.debian.net>
@@ -41,8 +41,9 @@ Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
 > still need the workaround anyway, but at least you would be able to be quite
 > heavy-handed on it, and users could be warned of a better fix...
 
-No, this affects the logic on the GPU side, so there's no microcode way
-to fix it.
+Note the array should be called "bad pages" since it's just each page
+at that offset that we can't use.  (In case you were worried we'd need
+to exclude everything between each pair of addresses or something.)
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
