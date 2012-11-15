@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab2KOWDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:03:34 -0500
-Received: from mail.kanadamails.org ([46.105.240.29]:34553 "EHLO
-	mail.kanadamails.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab2KOWDd convert rfc822-to-8bit (ORCPT
+	id S1751724Ab2KOWDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:03:46 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59385 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab2KOWDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:03:33 -0500
-X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Nov 2012 17:03:32 EST
-Message-ID: <8fe98a4bbada4de9ea1512b40727c710@kanadamails.org>
-From: "=?iso-8859-9?B?Q2VyZW4gx0FLSVI=?=" <info@kanadamails.org>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?3W5naWxpemNlINbwcmVuZW1lIFNvcnVudSBUYXJpaCBPbHV5b3I=?=
-	=?iso-8859-9?B?Li4u?=
-Date: Thu, 15 Nov 2012 23:03:42 +0200
+	Thu, 15 Nov 2012 17:03:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 121115-0, 15.11.2012), Outbound message
-X-Antivirus-Status: Clean
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Thu, 15 Nov 2012 23:03:22 +0100
+Message-ID: <CAH9NwWfVBg9srhyfUaHxsfBSoSVyLgDgZUPu_iK6fbQC9krH5A@mail.gmail.com>
+Subject: [PATCH] pata_cs5536: add quirk for broken udma
+To: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        mkp@mkp.net, jgarzik@pobox.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÝNGÝLÝZCE EÐÝTÝMDE SÜPER FIRSAT...
+I am working on a device which uses the cs5536 pata driver. There
+are some broken hardware revisions out in the field, which can be
+detected via DMI. On older versions with an embedded BIOS I
+used libata.dma=0 to disable dma completely.
+Now we are switching to a coreboot/seabios based BIOS where we
+have DMI support and so I think its a good idea to get rid of
+all those hacky kernel parameters as the same image
+is used other devices where libata.dma=0 is not a good idea.
 
-Yýllardan beri tartýþýlan bir konudur Ýngilizcenin nasýl öðrenileceði. Þimdi Kanada Kültür Merkezi ile Ýngilizce öðrenememe sorunu tarih oluyor. 
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/ata/pata_cs5536.c | 32 ++++++++++++++++++++++++++++++
++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-1) Ýþlenen bir saat Ýngilizce özel ders herhangi bir kursta alacaðýnýz 5 saat derse denktir
-2 ) Ýngilizce özel ders uygulamalarýnda siz kendinizi programa uydurmak zorunda kalmazsýnýz, program size uygun olarak düzenlenir.
-3) Kursta size ayrýlan süre son derece kýsýtlý olmasýna karþýn, özel derste sadece size özgü özel eðitim verilir.
-4) Dersin sonunda anlamadan geçtiðiniz bir bölüm olamaz.
-5) Ýngilizce özel ders alýrken size sýra gelmesini beklemezsiniz, çünkü sýra hep sizdedir, dolayýsýyla sürekli pratik yapma þansýnýz olur.
-6) Uygulanan Ýngilizce özel ders siteminde  iþinize, amaçlarýnýza ya da ilgi alanlarýnýza yönelik konulara öncelik tanýnýr.
-7) Ýlk dersten itibaren Ýngilizcenizin geliþtiðini, konuþmaya baþladýðýnýzý ve öðrendiðinizi fark edersiniz.
-8)Hatalarýnýz sürekli düzeltildiði için hata yaparak, hata yapmamayý öðrenirsiniz.
-9 ) Ders günleri ve saatleri, size uygun olarak düzenlenir.
-10) Ýyi bir hesap yapýldýðýnda özel dersin ucuz olarak düþünülen kalabalýk gruplarla yapýlan derslerle aþaðý yukarý ayný fiyata geldiði anlaþýlýr.
+diff --git a/drivers/ata/pata_cs5536.c b/drivers/ata/pata_cs5536.c
+index dec1b6c..0448860 100644
+--- a/drivers/ata/pata_cs5536.c
++++ b/drivers/ata/pata_cs5536.c
+@@ -38,6 +38,7 @@
+ #include <linux/delay.h>
+ #include <linux/libata.h>
+ #include <scsi/scsi_host.h>
++#include <linux/dmi.h>
 
-Mükemmel Ýngilizce öðrenmek ve konuþmak kimse için hayal deðil!
+ #ifdef CONFIG_X86_32
+ #include <asm/msr.h>
+@@ -80,6 +81,21 @@ enum {
+        IDE_ETC_UDMA_MASK       = 0xc0,
+ };
 
-Kanada Kültür Merkezi bünyesinde alacaðýnýz kampanyalý özel ders ücretleri aþaðýda belirtildiði gibidir . 
---	Türk hoca ile özel ders saat ücreti 35 TL 
---	Yabancý hocalardan alacaðýnýz özel ders saati 45 TL'dir. 
++/* Some Bachmann OT200 devices have a non working UDMA support due a
++ * missing resistor.
++ */
++static const struct dmi_system_id udma_quirk_dmi_table[] = {
++       {
++               .ident = "Bachmann electronic OT200",
++               .matches = {
++                       DMI_MATCH(DMI_SYS_VENDOR, "Bachmann electronic"),
++                       DMI_MATCH(DMI_PRODUCT_NAME, "OT200"),
++                       DMI_MATCH(DMI_PRODUCT_VERSION, "1")
++               },
++       },
++       { }
++};
++
+ static int cs5536_read(struct pci_dev *pdev, int reg, u32 *val)
+ {
+        if (unlikely(use_msr)) {
+@@ -242,9 +258,23 @@ static int cs5536_init_one(struct pci_dev *dev,
+const struct pci_device_id *id)
+                .port_ops = &cs5536_port_ops,
+        };
 
-Ücretsiz seviye tespit sýnavý için ofisimize gelmeden bu numaralardan bize ulaþarak randevu alabilirsiniz.
- 
-0 212 252 90 35 - 36
+-       const struct ata_port_info *ppi[] = { &info, &ata_dummy_port_info };
++       static const struct ata_port_info no_udma_info = {
++               .flags = ATA_FLAG_SLAVE_POSS,
++               .pio_mask = ATA_PIO4,
++               .port_ops = &cs5536_port_ops,
++       };
++
++
++       const struct ata_port_info *ppi[2];
+        u32 cfg;
+
++       if (dmi_check_system(udma_quirk_dmi_table))
++               ppi[0] = &no_udma_info;
++       else
++               ppi[0] = &info;
++
++       ppi[1] = &ata_dummy_port_info;
++
+        if (use_msr)
+                printk(KERN_ERR DRV_NAME ": Using MSR regs instead of PCI\n");
 
 
+--
+1.7.12.2.421.g261b511
