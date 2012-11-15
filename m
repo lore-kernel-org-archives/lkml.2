@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993153Ab2KOEja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:39:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48859 "EHLO mail.kernel.org"
+	id S2993191Ab2KOEjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:39:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48846 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992897Ab2KOELJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:09 -0500
+	id S2992886Ab2KOELH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
-        Javier Cardona <javier@cozybit.com>,
+        Paul Stewart <pstew@chromium.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 16/66] mac80211: Only process mesh config header on frames that RA_MATCH
-Date: Wed, 14 Nov 2012 20:10:21 -0800
-Message-Id: <20121115040940.185705729@linuxfoundation.org>
+Subject: [ 15/66] mac80211: use blacklist for duplicate IE check
+Date: Wed, 14 Nov 2012 20:10:20 -0800
+Message-Id: <20121115040940.115121822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -27,43 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Javier Cardona <javier@cozybit.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 555cb715be8ef98b8ec362b23dfc254d432a35b1 upstream.
+commit 9690fb169b433a66485c808e4fc352b8a0f8d866 upstream.
 
-Doing otherwise is wrong, and may wreak havoc on the mpp tables,
-specially if the frame is encrypted.
+Instead of the current whitelist which accepts duplicates
+only for the quiet and vendor IEs, use a blacklist of all
+IEs (that we currently parse) that can't be duplicated.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Signed-off-by: Javier Cardona <javier@cozybit.com>
+This avoids detecting a beacon as corrupt in the future
+when new IEs are added that can be duplicated.
+
+Signed-off-by: Paul Stewart <pstew@chromium.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ net/mac80211/util.c |   42 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 35 insertions(+), 7 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1857,7 +1857,8 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
- 	    mesh_rmc_check(hdr->addr3, mesh_hdr, rx->sdata))
- 		return RX_DROP_MONITOR;
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -637,13 +637,41 @@ u32 ieee802_11_parse_elems_crc(u8 *start
+ 			break;
+ 		}
  
--	if (!ieee80211_is_data(hdr->frame_control))
-+	if (!ieee80211_is_data(hdr->frame_control) ||
-+	    !(status->rx_flags & IEEE80211_RX_RA_MATCH))
- 		return RX_CONTINUE;
+-		if (id != WLAN_EID_VENDOR_SPECIFIC &&
+-		    id != WLAN_EID_QUIET &&
+-		    test_bit(id, seen_elems)) {
+-			elems->parse_error = true;
+-			left -= elen;
+-			pos += elen;
+-			continue;
++		switch (id) {
++		case WLAN_EID_SSID:
++		case WLAN_EID_SUPP_RATES:
++		case WLAN_EID_FH_PARAMS:
++		case WLAN_EID_DS_PARAMS:
++		case WLAN_EID_CF_PARAMS:
++		case WLAN_EID_TIM:
++		case WLAN_EID_IBSS_PARAMS:
++		case WLAN_EID_CHALLENGE:
++		case WLAN_EID_RSN:
++		case WLAN_EID_ERP_INFO:
++		case WLAN_EID_EXT_SUPP_RATES:
++		case WLAN_EID_HT_CAPABILITY:
++		case WLAN_EID_HT_OPERATION:
++		case WLAN_EID_VHT_CAPABILITY:
++		case WLAN_EID_VHT_OPERATION:
++		case WLAN_EID_MESH_ID:
++		case WLAN_EID_MESH_CONFIG:
++		case WLAN_EID_PEER_MGMT:
++		case WLAN_EID_PREQ:
++		case WLAN_EID_PREP:
++		case WLAN_EID_PERR:
++		case WLAN_EID_RANN:
++		case WLAN_EID_CHANNEL_SWITCH:
++		case WLAN_EID_EXT_CHANSWITCH_ANN:
++		case WLAN_EID_COUNTRY:
++		case WLAN_EID_PWR_CONSTRAINT:
++		case WLAN_EID_TIMEOUT_INTERVAL:
++			if (test_bit(id, seen_elems)) {
++				elems->parse_error = true;
++				left -= elen;
++				pos += elen;
++				continue;
++			}
++			break;
+ 		}
  
- 	if (!mesh_hdr->ttl)
-@@ -1901,9 +1902,6 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
- 	}
- 	skb_set_queue_mapping(skb, q);
- 
--	if (!(status->rx_flags & IEEE80211_RX_RA_MATCH))
--		goto out;
--
- 	if (!--mesh_hdr->ttl) {
- 		IEEE80211_IFSTA_MESH_CTR_INC(ifmsh, dropped_frames_ttl);
- 		return RX_DROP_MONITOR;
+ 		if (calc_crc && id < 64 && (filter & (1ULL << id)))
 
 
