@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768911Ab2KOUHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:07:33 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63137 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423636Ab2KOUHb convert rfc822-to-8bit (ORCPT
+	id S1768919Ab2KOUNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:13:45 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47715 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768889Ab2KOUNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:07:31 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        paul@pwsan.com, i.mazanov@gmail.com, jon-hunter@ti.com
-User-Agent: alot/0.3.2+
-To: torvalds@linux-foundation.org
-Message-ID: <20121115200727.7155.72698@nucleus>
-Subject: common clk fixes for 3.7-rc6, part 2
-Date: Thu, 15 Nov 2012 12:07:27 -0800
+	Thu, 15 Nov 2012 15:13:44 -0500
+Date: Thu, 15 Nov 2012 15:13:41 -0500 (EST)
+Message-Id: <20121115.151341.694285418420091290.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: gustavo@padovan.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        ulisses@profusion.mobi, marcel@holtmann.org,
+        vinicius.gomes@openbossa.org, linville@tuxdriver.com
+Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
+ Core
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+References: <20121114.163044.2287972932330697472.davem@davemloft.net>
+	<20121114213819.GT13292@decadent.org.uk>
+	<1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Thu, 15 Nov 2012 20:04:32 +0000
 
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
+> On Wed, 2012-11-14 at 21:38 +0000, Ben Hutchings wrote:
+>> On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
+>> > From: Gustavo Padovan <gustavo@padovan.org>
+>> > Date: Wed, 14 Nov 2012 19:24:26 -0200
+>> > 
+>> > > Hi Ben,
+>> > > 
+>> > > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
+>> > > 
+>> > >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+>> > >> 
+>> > >> ------------------
+>> > >> 
+>> > >> From: Ulisses Furquim <ulisses@profusion.mobi>
+>> > >> 
+>> > >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
+>> > >> 
+>> > >> The handling of SCO audio links and the L2CAP protocol are essential to
+>> > >> any system with Bluetooth thus are always compiled in from now on.
+>> > > 
+>> > > I wonder if this could not break any kind of script or code people have that
+>> > > refer directly to the sco and l2cap modules. Also I don't see this change as
+>> > > really necessary for 3.2.
+>> > 
+>> > Agreed, I wish this had not been merged into -stable, I would have never
+>> > submitted a patch like this myself.
+>> 
+>> This is required by:
+>> 
+>> commit ff03261adc8b4bdd8291f1783c079b53a892b429
+>> Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+>> Date:   Thu Aug 23 21:32:44 2012 -0300
+>> 
+>>     Bluetooth: Fix sending a HCI Authorization Request over LE links
+>>     
+>>     commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+>> 
+>> which was already applied.
+> 
+> So, do you think it's better to revert that in 3.2, or to go ahead with
+> this?
 
-are available in the git repository at:
+I can't believe that just turning on bluetooth is going to force
+enable these sub-protocols too, that's simply rediculous.  That
+change should have never gone into the tree.
 
-  git://git.linaro.org/people/mturquette/linux.git tags/clk-fixes-for-linus
+Do I _REALLY_ have to go back to validating all the bluetooth stuff by
+hand when John Linville sends me pull requests?  Seriously?
 
-for you to fetch changes up to 93532c8a4890871aa0d84dd91b80dad9f58542e0:
+I thought we were beyond that kind of bullshit after the coding style
+fiasco.
 
-  clk: remove inline usage from clk-provider.h (2012-11-15 11:38:34 -0800)
+Actually I have a better idea, how about John stops pulling the
+bluetooth stuff into his tree, and instead the bluetooth folks have to
+submit their changes individually to the netdev list.  I like that
+scheme better.
 
-----------------------------------------------------------------
-GCC 4.7 users get compilation errors from unnecessary use of inline in
-clk-provider.h.  This pull request fixes the regression by removing inline
-usage from those function declarations.
-
-----------------------------------------------------------------
-Igor Mazanov (1):
-      clk: remove inline usage from clk-provider.h
-
- include/linux/clk-provider.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Because I don't want John's wireless work held back by the garbage
+these bluetooth guys keep submitting.
