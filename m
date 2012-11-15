@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946014Ab2KOJVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:21:03 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46495 "EHLO
+	id S1946036Ab2KOJWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:22:55 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48060 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945949Ab2KOJU6 (ORCPT
+	with ESMTP id S933008Ab2KOJWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:20:58 -0500
+	Thu, 15 Nov 2012 04:22:53 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50A4B3DB.8020702@jp.fujitsu.com>
-Date: Thu, 15 Nov 2012 18:20:27 +0900
+Message-ID: <50A4B44F.1040006@jp.fujitsu.com>
+Date: Thu, 15 Nov 2012 18:22:23 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
@@ -26,10 +26,10 @@ CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v5 5/7] acpi_memhotplug.c: don't allow to eject the memory
- device if it is being used
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
+Subject: Re: [Patch v5 6/7] acpi_memhotplug.c: bind the memory device when
+ the driver is being loaded
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-7-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1352962777-24407-7-git-send-email-wency@cn.fujitsu.com>
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,8 +37,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 2012/11/15 15:59, Wen Congyang wrote:
-> We eject the memory device even if it is in use.  It is very dangerous,
-> and it will cause the kernel to be panicked.
+> We had introduced acpi_hotmem_initialized to avoid strange add_memory fail
+> message.  But the memory device may not be used by the kernel, and the
+> device should be bound when the driver is being loaded.  Remove
+> acpi_hotmem_initialized to allow that the device can be bound when the
+> driver is being loaded.
 > 
 > CC: David Rientjes <rientjes@google.com>
 > CC: Jiang Liu <liuj97@gmail.com>
@@ -60,85 +63,46 @@ Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Thanks,
 Yasuaki Ishimatsu
 
->   drivers/acpi/acpi_memhotplug.c | 42 +++++++++++++++++++++++++++++++++---------
->   1 file changed, 33 insertions(+), 9 deletions(-)
+>   drivers/acpi/acpi_memhotplug.c | 12 ------------
+>   1 file changed, 12 deletions(-)
 > 
 > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index e52ad5d..f7e3007 100644
+> index f7e3007..e0f7425 100644
 > --- a/drivers/acpi/acpi_memhotplug.c
 > +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -78,6 +78,7 @@ struct acpi_memory_info {
->   	unsigned short caching;	/* memory cache attribute */
->   	unsigned short write_protect;	/* memory read/write attribute */
->   	unsigned int enabled:1;
-> +	unsigned int failed:1;
+> @@ -87,8 +87,6 @@ struct acpi_memory_device {
+>   	struct list_head res_list;
 >   };
 >   
->   struct acpi_memory_device {
-> @@ -257,9 +258,23 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   			node = memory_add_physaddr_to_nid(info->start_addr);
->   
->   		result = add_memory(node, info->start_addr, info->length);
-> -		if (result)
-> +
-> +		/*
-> +		 * If the memory block has been used by the kernel, add_memory()
-> +		 * returns -EEXIST. If add_memory() returns the other error, it
-> +		 * means that this memory block is not used by the kernel.
-> +		 */
-> +		if (result && result != -EEXIST) {
-> +			info->failed = 1;
->   			continue;
-> -		info->enabled = 1;
-> +		}
-> +
-> +		if (!result)
-> +			info->enabled = 1;
-> +		/*
-> +		 * Add num_enable even if add_memory() returns -EEXIST, so the
-> +		 * device is bound to this driver.
-> +		 */
->   		num_enabled++;
->   	}
->   	if (!num_enabled) {
-> @@ -280,21 +295,30 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   
->   static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+> -static int acpi_hotmem_initialized;
+> -
+>   static acpi_status
+>   acpi_memory_get_resource(struct acpi_resource *resource, void *context)
 >   {
-> -	int result;
-> +	int result = 0;
->   	struct acpi_memory_info *info, *n;
+> @@ -433,15 +431,6 @@ static int acpi_memory_device_add(struct acpi_device *device)
 >   
->   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
-> -		if (info->enabled) {
-> -			result = remove_memory(info->start_addr, info->length);
-> -			if (result)
-> -				return result;
-> -		}
-> +		if (info->failed)
-> +			/* The kernel does not use this memory block */
-> +			continue;
-> +
-> +		if (!info->enabled)
-> +			/*
-> +			 * The kernel uses this memory block, but it may be not
-> +			 * managed by us.
-> +			 */
-> +			return -EBUSY;
-> +
-> +		result = remove_memory(info->start_addr, info->length);
-> +		if (result)
-> +			return result;
+>   	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
 >   
->   		list_del(&info->list);
->   		kfree(info);
+> -	/*
+> -	 * Early boot code has recognized memory area by EFI/E820.
+> -	 * If DSDT shows these memory devices on boot, hotplug is not necessary
+> -	 * for them. So, it just returns until completion of this driver's
+> -	 * start up.
+> -	 */
+> -	if (!acpi_hotmem_initialized)
+> -		return 0;
+> -
+>   	if (!acpi_memory_check_device(mem_device)) {
+>   		/* call add_memory func */
+>   		result = acpi_memory_enable_device(mem_device);
+> @@ -557,7 +546,6 @@ static int __init acpi_memory_device_init(void)
+>   		return -ENODEV;
 >   	}
 >   
-> -	return 0;
-> +	return result;
+> -	acpi_hotmem_initialized = 1;
+>   	return 0;
 >   }
 >   
->   static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
 > 
 
 
