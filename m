@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768735Ab2KOSza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:55:30 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63432 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768711Ab2KOSz2 (ORCPT
+	id S1768720Ab2KOS4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:56:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2216 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423636Ab2KOS4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:55:28 -0500
-Date: Thu, 15 Nov 2012 10:55:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: Re: [RFC] staging: ste_rmi4: merge into the main kernel tree
-Message-ID: <20121115185522.GA4077@core.coreip.homeip.net>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
- <20121113175309.GA3601@polaris.bitmath.org>
- <CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
- <20121114180401.GC29131@core.coreip.homeip.net>
- <CC51EC7B5B7F984AA566DC102237848896F6299E@hkdcw-mail1.synaptics-inc.local>
- <20121115064359.GA17551@core.coreip.homeip.net>
- <CACRpkdZtsTpNiRBzs3rUz48AvoZ4UpcrO-4__xmsb0XezUVFtg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZtsTpNiRBzs3rUz48AvoZ4UpcrO-4__xmsb0XezUVFtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Nov 2012 13:56:49 -0500
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=xbK-PLPXO3cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zHN6p_ESxywA:10 a=g90VSIAhuBSVDwat0fwA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353005806.18025.111.camel@gandalf.local.home>
+Subject: Re: [PATCH RFC] irq_work: Warn if there's still work on cpu_down
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 15 Nov 2012 13:56:46 -0500
+In-Reply-To: <CAFTL4hw+4V5eG4k515YKn_p2BC_cYH_4rboVaQpXorYTom+23w@mail.gmail.com>
+References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
+	 <1352925457-15700-8-git-send-email-fweisbec@gmail.com>
+	 <1352953617.18025.94.camel@gandalf.local.home>
+	 <CAFTL4hzzhd5__VwR7N+VKpq1C27xHGgi4vj87drbcLghJ+Od5g@mail.gmail.com>
+	 <1352997261.18025.103.camel@gandalf.local.home>
+	 <1353001964.18025.107.camel@gandalf.local.home>
+	 <CAFTL4hw+4V5eG4k515YKn_p2BC_cYH_4rboVaQpXorYTom+23w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Thu, Nov 15, 2012 at 06:41:26PM +0100, Linus Walleij wrote:
-> On Thu, Nov 15, 2012 at 7:43 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
+On Thu, 2012-11-15 at 19:12 +0100, Frederic Weisbecker wrote:
+> 2012/11/15 Steven Rostedt <rostedt@goodmis.org>:
+> > If we are in nohz and there's still irq_work to be done when the idle
+> > task is about to go offline. Give a nasty warning.
+> >
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> >
+> > Index: linux-rt.git/kernel/irq_work.c
+> > ===================================================================
+> > --- linux-rt.git.orig/kernel/irq_work.c
+> > +++ linux-rt.git/kernel/irq_work.c
+> > @@ -103,6 +103,9 @@ bool irq_work_needs_cpu(void)
+> >         if (llist_empty(this_list))
+> >                 return false;
+> >
+> > +       /* All work should have been flushed before going offline */
+> > +       WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
 > 
-> > In this case you need to enumerate the benefits of this driver over
-> > unified driver and show why the unified driver can't be fixed.
+> Should we return false in that case? I don't know what can happen if
+> we wait for one more tick while the CPU is offline and apic is
+> deactivated.
 > 
-> The benefit is that the ugliness in
-> drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
-> can be avoided, as today we're unable to pass the compulsory
-> platform data in any sane way. I'm being told that this weak symbol
-> override actually does not really work... especially if there are more
-> than 1 I2C device on the bus :-P
 
-I am confused as to why this would be a benefit of ste_rmi4 over full
-RMI4 implementation from Christopher's group?
+We can just let it go and find out :-)
 
-I think what we really need is to accelerate work on the full driver so
-it is in mainline in 3.9ish.
+Heck, they get the warning, if the system crashes shortly afterwards,
+they know why.
 
-Thanks.
+-- Steve
 
--- 
-Dmitry
+> > +
+> >         return true;
+> >  }
+> >
+> >
+> >
+
+
