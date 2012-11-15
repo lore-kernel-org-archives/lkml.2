@@ -1,48 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992918Ab2KOIHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:07:17 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:3881 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992679Ab2KOIHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:07:16 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50A4A290.3070707@broadcom.com>
-Date: Thu, 15 Nov 2012 09:06:40 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028
- Thunderbird/16.0.2
+	id S2992938Ab2KOILw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:11:52 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64784 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992722Ab2KOILt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 03:11:49 -0500
+Date: Thu, 15 Nov 2012 00:11:47 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+In-Reply-To: <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net>
+Message-ID: <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
+ <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Stephen Rothwell" <sfr@canb.auug.org.au>
-cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Hauke Mehrtens" <hauke@hauke-m.de>
-Subject: Re: linux-next: manual merge of the wireless-next tree with the
- wireless tree
-References: <20121115131707.25e7df1ab635c18e62f0712a@canb.auug.org.au>
-In-Reply-To: <20121115131707.25e7df1ab635c18e62f0712a@canb.auug.org.au>
-X-WSS-ID: 7CBA7D8C3R02744145-19-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2012 03:17 AM, Stephen Rothwell wrote:
-> Hi John,
->
-> Today's linux-next merge of the wireless-next tree got a conflict in
-> drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c between commit
-> d61f978b8f26 ("brcmfmac: fix typo in CONFIG_BRCMISCAN") from the  tree
-> and commit f07998959d57 ("brcmfmac: remove obsolete i-scan and clean up
-> related code") from the wireless-next tree.
->
-> I used the latter (which removed the line that was fixed in the former)
-> and can carry the fix as necessary (no action is required).
->
+On Wed, 14 Nov 2012, Anton Vorontsov wrote:
 
-Agreed. The typo fix is only needed for v3.7.
+> Thanks again for your inspirational comments!
+> 
 
-Gr. AvS
+Heh, not sure I've been too inspirational (probably more annoying than 
+anything else).  I really do want generic memory pressure notifications in 
+the kernel and already have some ideas on how I can tie it into our malloc 
+arenas, so please do keep working on it.
 
+> I think I understand what you're saying, and surely it makes sense, but I
+> don't know how you see this implemented on the API level.
+> 
+> Getting struct {pid, pressure} pairs that cause the pressure at the
+> moment? And the monitor only gets <pids> that are in the same cpuset? How
+> about memcg limits?..
+> 
+
+Depends on whether you want to support mempolicies or not and the argument 
+could go either way:
+
+ - FOR supporting mempolicies: memory that you're mbind() too can become 
+   depleted and since there is no fallback then you have no way to prevent 
+   lots of reclaim and/or invoking the oom killer, it would be 
+   disappointing to not be able to get notifications of such a condition.
+
+ - AGAINST supporting mempolicies: you only need to support memory 
+   isolation for cgroups (memcg and cpusets) and thus can implement your 
+   own memory pressure cgroup that you can use to aggregate tasks and 
+   then replace memcg memory thresholds with co-mounting this new cgroup 
+   that would notify on an eventfd anytime one of the attached processes 
+   experiences memory pressure.
+
+> > Most processes aren't going to care if they are running into memory 
+> > pressure and have no implementation to free memory back to the kernel or 
+> > start ratelimiting themselves.  They will just continue happily along 
+> > until they get the memory they want or they get oom killed.  The ones that 
+> > do, however, or a job scheduler or monitor that is watching over the 
+> > memory usage of a set of tasks, will be able to do something when 
+> > notified.
+> 
+> Yup, this is exactly how we want to use this. In Android we have "Activity
+> Manager" thing, which acts exactly how you describe: it's a tasks monitor.
+> 
+
+In addition to that, I think I can hook into our implementation of malloc 
+which frees memory back to the kernel with MADV_DONTNEED and zaps 
+individual ptes to poke holes in the memory it allocates to actually cache 
+the memory that we free() and then re-use it under normal circumstances to 
+return cache-hot memory on the next allocation but under memory pressure, 
+as triggered by your interface (but for threads attached to a memcg facing 
+memcg limits), drain the memory back to the kernel immediately.
+
+> > In the hopes of a single API that can do all this and not a 
+> > reimplementation for various types of memory limitations (it seems like 
+> > what you're suggesting is at least three different APIs: system-wide via 
+> > vmpressure_fd, memcg via memcg thresholds, and cpusets through an eventual 
+> > cpuset threshold), I'm hoping that we can have a single interface that can 
+> > be polled on to determine when individual processes are encountering 
+> > memory pressure.  And if I'm not running in your oom cpuset, I don't care 
+> > about your memory pressure.
+> 
+> I'm not sure to what exactly you are opposing. :) You don't want to have
+> three "kinds" pressures, or you don't what to have three different
+> interfaces to each of them, or both?
+> 
+
+The three pressures are a separate topic (I think it would be better to 
+have some measure of memory pressure similar to your reclaim scale and 
+allow users to get notifications at levels they define).  I really dislike 
+having multiple interfaces that are all different from one another 
+depending on the context.
+
+Given what we have right now with memory thresholds in memcg, if we were 
+to merge vmpressure_fd, then we're significantly limiting the usecase 
+since applications need not know if they are attached to a memcg or not: 
+it's a type of virtualization that the admin may setup but another admin 
+may be running unconstrained on a system with much more memory.  So for 
+your usecase of a job monitor, that would work fine for global oom 
+conditions but the application no longer has an API to use if it wants to 
+know when it itself is feeling memory pressure.
+
+I think others have voiced their opinion on trying to create a single API 
+for memory pressure notifications as well, it's just a hard problem and 
+takes a lot of work to determine how we can make it easy to use and 
+understand and extendable at the same time.
+
+> > I don't understand, how would this work with cpusets, for example, with 
+> > vmpressure_fd as defined?  The cpuset policy is embedded in the page 
+> > allocator and skips over zones that are not allowed when trying to find a 
+> > page of the specified order.  Imagine a cpuset bound to a single node that 
+> > is under severe memory pressure.  The reclaim logic will get triggered and 
+> > cause a notification on your fd when the rest of the system's nodes may 
+> > have tons of memory available.
+> 
+> Yes, I see your point: we have many ways to limit resources, so it makes
+> it hard to identify the cause of the "pressure" and thus how to deal with
+> it, since the pressure might be caused by different kinds of limits, and
+> freeing memory from one bucket doesn't mean that the memory will be
+> available to the process that is requesting the memory.
+> 
+> So we do want to know whether a specific cpuset is under pressure, whether
+> a specific memcg is under pressure, or whether the system (and kernel
+> itself) lacks memory.
+> 
+> And we want to have a single API for this? Heh. :)
+> 
+
+Might not be too difficult if you implement your own cgroup to aggregate 
+these tasks for which you want to know memory pressure events; it would 
+have to be triggered for the task trying to allocate memory at any given 
+time and how hard it was to allocate that memory in the slowpath, tie it 
+back to that tasks' memory pressure cgroup, and then report the trigger if 
+it's over a user-defined threshold normalized to the 0-100 scale.  Then 
+you could co-mount this cgroup with memcg, cpusets, or just do it for the 
+root cgroup for users who want to monitor the entire system 
+(CONFIG_CGROUPS is enabled by default).
