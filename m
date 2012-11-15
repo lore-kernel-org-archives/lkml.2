@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423317Ab2KNSyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:54:51 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:41489 "EHLO relay.sw.ru"
+	id S1423304Ab2KNSyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:54:49 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:22761 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423244Ab2KNSyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1423250Ab2KNSyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 13:54:45 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -13,9 +13,9 @@ Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
         Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking for dead memcgs
-Date: Thu, 15 Nov 2012 06:54:51 +0400
-Message-Id: <1352948093-2315-6-git-send-email-glommer@parallels.com>
+Subject: [PATCH 3/7] memcg: remove test for current->mm in memcg_stop/resume_kmem_account
+Date: Thu, 15 Nov 2012 06:54:49 +0400
+Message-Id: <1352948093-2315-4-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352948093-2315-1-git-send-email-glommer@parallels.com>
 References: <1352948093-2315-1-git-send-email-glommer@parallels.com>
@@ -23,11 +23,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idea is to synchronously do it, leaving it up to the shrinking
-facilities in vmscan.c and/or others. Not actively retrying shrinking
-may leave the caches alive for more time, but it will remove the ugly
-wakeups. One would argue that if the caches have free objects but are
-not being shrunk, it is because we don't need that memory yet.
+The original reason for the existence of this test, was that
+memcg_kmem_cache_create could be called from either softirq context
+(where memcg_stop/resume_account is not needed), or process context,
+(where memcg_stop/resume_account is needed). Just skipping it
+in-function was the cleanest way to merge both behaviors. The reason for
+that is that we would try to create caches right away through
+memcg_kmem_cache_create if the context would allow us to.
+
+However, the final version of the code that merged did not have this
+behavior and we always queue up new cache creation. Thus, instead of a
+comment explaining why current->mm test is needed, my proposal in this
+patch is to remove memcg_stop/resume_account from the worker thread and
+make sure all callers have a valid mm context.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Michal Hocko <mhocko@suse.cz>
@@ -35,90 +43,45 @@ CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/slab.h |  2 +-
- mm/memcontrol.c      | 17 +++++++----------
- 2 files changed, 8 insertions(+), 11 deletions(-)
+ mm/memcontrol.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 18f8c98..456c327 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -214,7 +214,7 @@ struct memcg_cache_params {
- 			struct kmem_cache *root_cache;
- 			bool dead;
- 			atomic_t nr_pages;
--			struct delayed_work destroy;
-+			struct work_struct destroy;
- 		};
- 	};
- };
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f9c5981..e3d805f 100644
+index c0c6adf..f9c5981 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3077,9 +3077,8 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
+@@ -3063,17 +3063,13 @@ out:
+  */
+ static inline void memcg_stop_kmem_account(void)
  {
- 	struct kmem_cache *cachep;
- 	struct memcg_cache_params *p;
--	struct delayed_work *dw = to_delayed_work(w);
- 
--	p = container_of(dw, struct memcg_cache_params, destroy);
-+	p = container_of(w, struct memcg_cache_params, destroy);
- 
- 	cachep = memcg_params_to_cache(p);
- 
-@@ -3103,8 +3102,6 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
- 		kmem_cache_shrink(cachep);
- 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
- 			return;
--		/* Once per minute should be good enough. */
--		schedule_delayed_work(&cachep->memcg_params->destroy, 60 * HZ);
- 	} else
- 		kmem_cache_destroy(cachep);
- }
-@@ -3127,18 +3124,18 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- 	 * kmem_cache_shrink is enough to shake all the remaining objects and
- 	 * get the page count to 0. In this case, we'll deadlock if we try to
- 	 * cancel the work (the worker runs with an internal lock held, which
--	 * is the same lock we would hold for cancel_delayed_work_sync().)
-+	 * is the same lock we would hold for cancel_work_sync().)
- 	 *
- 	 * Since we can't possibly know who got us here, just refrain from
- 	 * running if there is already work pending
- 	 */
--	if (delayed_work_pending(&cachep->memcg_params->destroy))
-+	if (work_pending(&cachep->memcg_params->destroy))
- 		return;
- 	/*
- 	 * We have to defer the actual destroying to a workqueue, because
- 	 * we might currently be in a context that cannot sleep.
- 	 */
--	schedule_delayed_work(&cachep->memcg_params->destroy, 0);
-+	schedule_work(&cachep->memcg_params->destroy);
+-	if (!current->mm)
+-		return;
+-
++	VM_BUG_ON(!current->mm);
+ 	current->memcg_kmem_skip_account++;
  }
  
- static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
-@@ -3261,7 +3258,7 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 		 * set, so flip it down to guarantee we are in control.
- 		 */
- 		c->memcg_params->dead = false;
--		cancel_delayed_work_sync(&c->memcg_params->destroy);
-+		cancel_work_sync(&c->memcg_params->destroy);
- 		kmem_cache_destroy(c);
- 	}
- 	mutex_unlock(&set_limit_mutex);
-@@ -3285,9 +3282,9 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
- 		cachep->memcg_params->dead = true;
--		INIT_DELAYED_WORK(&cachep->memcg_params->destroy,
-+		INIT_WORK(&cachep->memcg_params->destroy,
- 				  kmem_cache_destroy_work_func);
--		schedule_delayed_work(&cachep->memcg_params->destroy, 0);
-+		schedule_work(&cachep->memcg_params->destroy);
- 	}
- 	mutex_unlock(&memcg->slab_caches_mutex);
+ static inline void memcg_resume_kmem_account(void)
+ {
+-	if (!current->mm)
+-		return;
+-
++	VM_BUG_ON(!current->mm);
+ 	current->memcg_kmem_skip_account--;
  }
+ 
+@@ -3206,11 +3202,7 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 	if (new_cachep)
+ 		goto out;
+ 
+-	/* Don't block progress to enqueue caches for internal infrastructure */
+-	memcg_stop_kmem_account();
+ 	new_cachep = kmem_cache_dup(memcg, cachep);
+-	memcg_resume_kmem_account();
+-
+ 	if (new_cachep == NULL) {
+ 		new_cachep = cachep;
+ 		goto out;
 -- 
 1.7.11.7
 
