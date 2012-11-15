@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767894Ab2KONvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 08:51:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41315 "EHLO mx2.suse.de"
+	id S1767930Ab2KONvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 08:51:21 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:16311 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1767793Ab2KONvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 08:51:10 -0500
-Date: Thu, 15 Nov 2012 14:51:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
-        JJ Ding <jj_ding@emc.com.tw>, Jiri Slaby <jslaby@suse.cz>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification
- implementation
-In-Reply-To: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211151450140.15877@pobox.suse.cz>
-References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1767793Ab2KONvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 08:51:18 -0500
+Message-ID: <50A4F340.9080201@parallels.com>
+Date: Thu, 15 Nov 2012 17:50:56 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Cyrill Gorcunov <gorcunov@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
+        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
+References: <20121114151937.344922058@openvz.org> <20121114152239.936025193@openvz.org>
+In-Reply-To: <20121114152239.936025193@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012, Benjamin Tissoires wrote:
-
-> Microsoft published the protocol specification of HID over i2c:
-> http://msdn.microsoft.com/en-us/library/windows/hardware/hh852380.aspx
+> This allow us to print out fsnotify details such as
+> watchee inode, device, mask and optionally a file handle.
 > 
-> This patch introduces an implementation of this protocol.
+> For inotify objects if kernel compiled with exportfs support
+> the output will be
 > 
-> This implementation does not includes the ACPI part of the specification.
-> This will come when ACPI 5.0 devices enumeration will be available.
+>  | pos:	0
+>  | flags:	02000000
+>  | inotify wd:        3 ino:             9e7e sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 7e9e0000640d1b6d
+>  | inotify wd:        2 ino:             a111 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 11a1000020542153
+>  | inotify wd:        1 ino:            6b149 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 49b1060023552153
 > 
-> Once the ACPI part is done, OEM will not have to declare HID over I2C
-> devices in their platform specific driver.
+> If kernel compiled without exportfs support, the file handle
+> won't be provided but inode and device only.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>  | pos:	0
+>  | flags:	02000000
+>  | inotify wd:        3 ino:             9e7e sdev:   800013 mask:  800afce ignored_mask:        0
+>  | inotify wd:        2 ino:             a111 sdev:   800013 mask:  800afce ignored_mask:        0
+>  | inotify wd:        1 ino:            6b149 sdev:   800013 mask:  800afce ignored_mask:        0
+> 
+> For fanotify the output is like
+> 
+>  | pos:	0
+>  | flags:	02
+>  | fanotify ino:            68f71 sdev:   800013 mask:        1 ignored_mask: 40000000
+>  | fanotify mnt_id:       13 mask:        1 ignored_mask: 40000000
+> 
+> To minimize impact on general fsnotify code the new functionality
+> is gathered in fs/notify/fdinfo.c file.
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: Andrey Vagin <avagin@openvz.org>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: James Bottomley <jbottomley@parallels.com>
+> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Matthew Helsley <matt.helsley@gmail.com>
+> CC: "J. Bruce Fields" <bfields@fieldses.org>
+> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> CC: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
 
-Out of curiosity -- has this been tested on a real device (is there any 
-such device available anyway?), or is that just the implementation of the 
-defined protocol?
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
