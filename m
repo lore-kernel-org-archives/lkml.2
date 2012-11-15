@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423603Ab2KOHvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 02:51:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37079 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752180Ab2KOHvB (ORCPT
+	id S1423622Ab2KOHvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 02:51:20 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48377 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423605Ab2KOHvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 02:51:01 -0500
-Date: Thu, 15 Nov 2012 16:50:53 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
-        g.liakhovetski@gmx.de
-Subject: Re: [PATCH V4 1/2] mfd: add TI TPS80031 mfd core driver
-Message-ID: <20121115075052.GJ7599@opensource.wolfsonmicro.com>
-References: <1352907569-12466-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 15 Nov 2012 02:51:16 -0500
+Date: Wed, 14 Nov 2012 23:51:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nithin Sujir <nsujir@broadcom.com>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Michael Chan <mchan@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Latest 3.6.6 are not compiling due tg3 network driver,
+ hwmon_device_unregister
+In-Reply-To: <DAAFBCC105999F468732FA900576CB4510069F69@IRVEXCHMB08.corp.ad.broadcom.com>
+Message-ID: <alpine.DEB.2.00.1211142349310.4410@chino.kir.corp.google.com>
+References: <8b566c4a9ee622737212dc17291ee238@visp.net.lb> <50A4606D.4020402@broadcom.com> <alpine.DEB.2.00.1211141929510.14414@chino.kir.corp.google.com> <DAAFBCC105999F468732FA900576CB4510069F69@IRVEXCHMB08.corp.ad.broadcom.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="45wMVEkw4XUbiYON"
-Content-Disposition: inline
-In-Reply-To: <1352907569-12466-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Cold hands, no gloves.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 15 Nov 2012, Nithin Sujir wrote:
 
---45wMVEkw4XUbiYON
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > Would you mind submitting this for stable by following the procedure
+> > described in Documentation/stable_kernel_rules.txt?
+> 
+> 
+> Seems to have been taken into stable already. 
+> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commitdiff;h=aecdc33e111b2c447b622e287c6003726daa1426
+> 
 
-On Wed, Nov 14, 2012 at 09:09:28PM +0530, Laxman Dewangan wrote:
-> TPS80031/ TPS80032 Fully Integrated Power Management with Power
-> Path and Battery Charger. The device provides five configurable
-> step-down converters, 11 general purpose LDOs, USB OTG Module,
-> ADC, RTC, 2 PWM, System Voltage Regulator/Battery Charger with
-> Power Path from USB, 32K clock generator.
-
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---45wMVEkw4XUbiYON
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQpJ7QAAoJELSic+t+oim9szQP/jCYIA0Aqz2soutgr1ljXRg2
-FCU0Zbmi08cfDqt3HtoUkeI95BxHvtQ1W7ZFgPwhJufzK3ElWBZgyMjCHvX5RS9g
-YJ7Yq5whjsjFSjajXjJYo//6LRXWEaPo0uIMGsF0dJZKfGmKwuIEZimT/zwQG6i8
-Q21Oi0DT43C+utXp9ok6vt7ZME8DxlIvr3E8c7zDVdXm1s/yV4H4aS65gWhw8FEm
-XHk0uckIoqazLxJcuNlpg3fojuYmyCi85EAH0h+TtfyN1nw9eGGtcDgJdIi9BDxJ
-t/8o6wkqwdZn7Gi3dn2JiDCmXbpm02CFp7LIKVzRIUpC4wraKGz6TcHhs8oZ6TRF
-RZTsWyxpG7pAzqvtB7tHV3JaQcUXwl2lVQuRbIO59SKGH9Dk/D6A7q7r1wzkujgS
-fFg5neU+eMLV/E1QQ2jvAb6OpQ21UNJb3zpW8BCLRdekZIjuMpES1MtwW2pSJWGP
-uEcWuzWfM8u+wkIi7NjY9uCEK1NTfkolEROVfZSRoZGyJU8qZqca0Dd9EDC7RFc6
-/mWcksIu8M24GX0aJxNnomPXPDcQZvajQrqMdOnLAQOsKPsdOK1toZW/4KknGdx8
-eSDz5UVNIVU3GSxDvNB73uCHPfSskVzbbwSCRf2aUp//lC+BRCg+Sj8FeHyCFeFQ
-exFv+uWllstnEnV6jNKx
-=S9bD
------END PGP SIGNATURE-----
-
---45wMVEkw4XUbiYON--
+You're looking at the wrong shortlog (that's 3.7-rc4, not a stable tree), 
+you'll want to backport this on top of 3.6.6 and send it to 
+stable@vger.kernel.org following the procedure in 
+Documentation/stable_kernel_rules.txt.
