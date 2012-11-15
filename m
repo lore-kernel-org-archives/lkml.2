@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993116Ab2KOIuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:50:12 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:58341 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992992Ab2KOIuE (ORCPT
+	id S2993171Ab2KOIum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:50:42 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:56810 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S2992717Ab2KOIui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:50:04 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 2/9] TTY: pty, fix tty buffers leak
-Date: Thu, 15 Nov 2012 09:49:49 +0100
-Message-Id: <1352969396-23760-3-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
-References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
+	Thu, 15 Nov 2012 03:50:38 -0500
+Date: Thu, 15 Nov 2012 14:19:00 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: <chuansheng.liu@intel.com>, <w.sang@pengutronix.de>
+Cc: <linus.walleij@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH 1/7] I2c-nomadik: Fix the usage of
+ wait_for_completion_timeout
+Message-ID: <20121115084858.GA29668@bnru10>
+References: <1352222317.15558.1584.camel@cliu38-desktop-build>
+ <CACRpkdYekQF5111NSNSPeaHdxgS_gpXkCjqT1n-n1_iAdDXbSg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYekQF5111NSNSPeaHdxgS_gpXkCjqT1n-n1_iAdDXbSg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit "TTY: move tty buffers to tty_port", the tty buffers are
-not freed in some drivers. This is because tty_port_destructor is not
-called whenever a tty_port is freed. This was an assumption I counted
-with but was unfortunately untrue. So fix the drivers to fulfil this
-assumption.
+[...]
 
-PTY is one of those, here we just need to use tty_port_put instead of
-kfree. (Assuming tty_port_destructor does not need port->ops to be set
-which we change here too.)
+> From: Chuansheng Liu <chuansheng.liu@intel.com>
+> Date: Tue, Nov 6, 2012 at 6:18 PM
+> Subject: [PATCH 1/7] I2c-nomadik: Fix the usage of wait_for_completion_timeout
+> To: linus.walleij@linaro.org, w.sang@pengutronix.de
+> Cc: linux-arm-kernel@lists.infradead.org,
+> linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+> 
+> 
+> 
+> The return value of wait_for_completion_timeout() is always
+> >= 0 with unsigned int type.
+> 
+> So the condition "ret < 0" or "ret >= 0" is pointless.
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/i2c/busses/i2c-nomadik.c |   14 --------------
+>  1 files changed, 0 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+> index 02c3115..8b2ffcf 100644
+> --- a/drivers/i2c/busses/i2c-nomadik.c
+> +++ b/drivers/i2c/busses/i2c-nomadik.c
+> @@ -435,13 +435,6 @@ static int read_i2c(struct nmk_i2c_dev *dev, u16 flags)
+>         timeout = wait_for_completion_timeout(
+>                 &dev->xfer_complete, dev->adap.timeout);
+> 
+> -       if (timeout < 0) {
+> -               dev_err(&dev->adev->dev,
+> -                       "wait_for_completion_timeout "
+> -                       "returned %d waiting for event\n", timeout);
+> -               status = timeout;
+> -       }
+> -
+No, it is wrong. You need to update the status variable in the case of timeout.
+It is used further in nmk_i2c_xfer_one. You could perhaps use
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/pty.c      | 2 +-
- drivers/tty/tty_port.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+if (timeout == 0) {
+ ...and the rest of the code as is
+}
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 0ce0b3e..a541ec8 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -408,7 +408,7 @@ static void pty_unix98_shutdown(struct tty_struct *tty)
- static void pty_cleanup(struct tty_struct *tty)
- {
- 	tty->port->itty = NULL;
--	kfree(tty->port);
-+	tty_port_put(tty->port);
- }
- 
- /* Traditional BSD devices */
-diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 416b42f..fdc42c2 100644
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -128,7 +128,7 @@ static void tty_port_destructor(struct kref *kref)
- 	if (port->xmit_buf)
- 		free_page((unsigned long)port->xmit_buf);
- 	tty_buffer_free_all(port);
--	if (port->ops->destruct)
-+	if (port->ops && port->ops->destruct)
- 		port->ops->destruct(port);
- 	else
- 		kfree(port);
--- 
-1.8.0
-
-
+regards/srinidhi
