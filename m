@@ -1,35 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab2KOW0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:26:33 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46642 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab2KOW0c (ORCPT
+	id S1751361Ab2KOW2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:28:23 -0500
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:64800 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2KOW2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:26:32 -0500
-Message-ID: <50A56C16.3090009@wwwdotorg.org>
-Date: Thu, 15 Nov 2012 15:26:30 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/6] Device tree updates for host1x support
-References: <1353013679-16773-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1353013679-16773-1-git-send-email-thierry.reding@avionic-design.de>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 17:28:21 -0500
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] kernel-shark: Allow unsetting of all CPUs in filter
+Date: Thu, 15 Nov 2012 14:28:18 -0800
+Message-Id: <1353018498-3828-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2012 02:07 PM, Thierry Reding wrote:
-> This second version of this patch series splits the patches up into more
-> logical chunks as requested by Stephen. Instead of renaming the matching
-> parameters in the clock driver, this version renames the AUXDATA entries
-> to match what the clock driver expects. Furthermore the host1x clock is
-> initialized to 150 MHz instead of the unsupported 144 MHz.
+The button "All CPUs" in CPU filter dialog allows setting of all CPUs
+but doesn't clear CPUs when it is unchecked. Make sure that when the
+"All CPUs" button is unchecked, all the CPUs get unchecked.
 
-Thanks very much. I have applied the series; DT changes to for-3.8/dt,
-and the other changes to for-3.8/soc.
+Tested: In kernelshark, go to Filter->list CPUs and uncheck "All CPUs"
+button. All the CPUs should be unchecked at that point.
+
+Change-Id: If7852cc3452177165adf78c42eb1ebc39a253e86
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ cpu.h          |   11 +++++++++++
+ trace-filter.c |   37 ++++++++++++++++++++++---------------
+ 2 files changed, 33 insertions(+), 15 deletions(-)
+
+diff --git a/cpu.h b/cpu.h
+index 1c2b0d9..05c7f17 100644
+--- a/cpu.h
++++ b/cpu.h
+@@ -29,6 +29,17 @@ static inline int cpu_isset(guint64 *cpu_mask, gint cpu)
+ 	return mask & (1ULL << (cpu & ((1ULL << 6) - 1)));
+ }
+ 
++static inline gboolean cpu_allset(guint64 *cpu_mask, gint max_cpus)
++{
++	gint cpu;
++
++	for (cpu = 0; cpu < max_cpus; cpu++) {
++		if (!cpu_isset(cpu_mask, cpu))
++			return FALSE;
++	}
++	return TRUE;
++}
++
+ static inline void cpu_set(guint64 *cpu_mask, gint cpu)
+ {
+ 	guint64 *mask;
+diff --git a/trace-filter.c b/trace-filter.c
+index c657a18..0d50ef9 100644
+--- a/trace-filter.c
++++ b/trace-filter.c
+@@ -1723,29 +1723,36 @@ void cpu_toggle(gpointer data, GtkWidget *widget)
+ 
+ 	if (strcmp(label, CPU_ALL_CPUS_STR) == 0) {
+ 		cpu_helper->allcpus = active;
+-		if (active) {
+-			/* enable all toggles */
+-			for (cpu = 0; cpu < cpu_helper->cpus; cpu++)
+-				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu]),
+-							     TRUE);
+-		}
++		/* enable/disable all toggles */
++		for (cpu = 0; cpu < cpu_helper->cpus; cpu++)
++			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu]),
++						     active ? TRUE : FALSE);
+ 		return;
+ 	}
+ 
+ 	/* Get the CPU # from the label. Pass "CPU " */
+ 	cpu = atoi(label + 4);
+-	if (active) {
++	if (active)
+ 		cpu_set(cpu_helper->cpu_mask, cpu);
+-		return;
+-	}
+-
+-	cpu_clear(cpu_helper->cpu_mask, cpu);
+-
+-	if (!cpu_helper->allcpus)
+-		return;
++	else
++		cpu_clear(cpu_helper->cpu_mask, cpu);
++
++	cpu_helper->allcpus = cpu_allset(cpu_helper->cpu_mask,
++					 cpu_helper->cpus);
++	/*
++	 * Deactivate sending 'toggled' signal for "All CPUs"
++	 * while we adjust its state
++	 */
++	g_signal_handlers_block_by_func(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
++				        G_CALLBACK (cpu_toggle),
++				        (gpointer) cpu_helper);
+ 
+ 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
+-				     FALSE);
++				     cpu_helper->allcpus);
++
++	g_signal_handlers_unblock_by_func(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
++					  G_CALLBACK (cpu_toggle),
++					  (gpointer) cpu_helper);
+ }
+ 
+ /**
+-- 
+1.7.7.3
+
