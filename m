@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993056Ab2KOEic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:38:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48898 "EHLO mail.kernel.org"
+	id S2992915Ab2KOELM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:11:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48790 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992918Ab2KOELN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:13 -0500
+	id S2992862Ab2KOELC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paulo Zanoni <przanoni@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: =?UTF-8?q?=5B=2020/66=5D=20drm/i915=3A=20clear=20the=20entire=20sdvo=20infoframe=20buffer?=
-Date: Wed, 14 Nov 2012 20:10:25 -0800
-Message-Id: <20121115040940.465012217@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 10/66] iscsi-target: Fix missed wakeup race in TX thread
+Date: Wed, 14 Nov 2012 20:10:15 -0800
+Message-Id: <20121115040939.755138759@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,144 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Roland Dreier <roland@purestorage.com>
 
-commit b6e0e543f75729f207b9c72b0162ae61170635b2 upstream.
+commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
 
-Like in the case of native hdmi, which is fixed already in
+The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
+missed wakeup race:
 
-commit adf00b26d18e1b3570451296e03bcb20e4798cdd
-Author: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Date:   Tue Sep 25 13:23:34 2012 -0300
+ - TX thread finishes handle_immediate_queue() and handle_response_queue(),
+   thinks both queues are empty.
+ - Another thread adds a queue entry and does wake_up_process(), which does
+   nothing because the TX thread is still awake.
+ - TX thread does schedule_timeout() and sleeps forever.
 
-    drm/i915: make sure we write all the DIP data bytes
+In practice this can kill an iSCSI connection if for example an initiator
+does single-threaded writes and the target misses the wakeup window when
+queueing an R2T; in this case the connection will be stuck until the
+initiator loses patience and does some task management operation (or kills
+the connection entirely).
 
-we need to clear the entire sdvo buffer to avoid upsetting the
-display.
+Fix this by converting to wait_event_interruptible(), which does not
+suffer from this sort of race.
 
-Since infoframe buffer writing is now a bit more elaborate, extract it
-into it's own function. This will be useful if we ever get around to
-properly update the ELD for sdvo. Also #define proper names for the
-two buffer indexes with fixed usage.
-
-v2: Cite the right commit above, spotted by Paulo Zanoni.
-
-v3: I'm too stupid to paste the right commit.
-
-v4: Ben Hutchings noticed that I've failed to handle an underflow in
-my loop logic, breaking it for i >= length + 8. Since I've just lost C
-programmer license, use his solution. Also, make the frustrated 0-base
-buffer size a notch more clear.
-
-Reported-and-tested-by: Jürg Billeter <j@bitron.ch>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
-Cc: Paulo Zanoni <przanoni@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c      |   62 ++++++++++++++++++++++-----------
- drivers/gpu/drm/i915/intel_sdvo_regs.h |    2 +
- 2 files changed, 44 insertions(+), 20 deletions(-)
+ drivers/target/iscsi/iscsi_target.c       |    4 +++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_util.h  |    1 +
+ 5 files changed, 26 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -882,6 +882,45 @@ static void intel_sdvo_dump_hdmi_buf(str
- }
- #endif
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3735,7 +3735,9 @@ restart:
+ 		 */
+ 		iscsit_thread_check_cpumask(conn, current, 1);
  
-+static bool intel_sdvo_write_infoframe(struct intel_sdvo *intel_sdvo,
-+				       unsigned if_index, uint8_t tx_rate,
-+				       uint8_t *data, unsigned length)
+-		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
++		wait_event_interruptible(conn->queues_wq,
++					 !iscsit_conn_all_queues_empty(conn) ||
++					 ts->status == ISCSI_THREAD_SET_RESET);
+ 
+ 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
+ 		     signal_pending(current))
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -486,6 +486,7 @@ struct iscsi_tmr_req {
+ };
+ 
+ struct iscsi_conn {
++	wait_queue_head_t	queues_wq;
+ 	/* Authentication Successful for this connection */
+ 	u8			auth_complete;
+ 	/* State connection is currently in */
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -45,6 +45,7 @@ extern spinlock_t sess_idr_lock;
+ 
+ static int iscsi_login_init_conn(struct iscsi_conn *conn)
+ {
++	init_waitqueue_head(&conn->queues_wq);
+ 	INIT_LIST_HEAD(&conn->conn_list);
+ 	INIT_LIST_HEAD(&conn->conn_cmd_list);
+ 	INIT_LIST_HEAD(&conn->immed_queue_list);
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
+ 	atomic_set(&conn->check_immediate_queue, 1);
+ 	spin_unlock_bh(&conn->immed_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
+@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
+ 	atomic_inc(&cmd->response_queue_count);
+ 	spin_unlock_bh(&conn->response_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
+@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_respo
+ 	}
+ }
+ 
++bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
 +{
-+	uint8_t set_buf_index[2] = { if_index, 0 };
-+	uint8_t hbuf_size, tmp[8];
-+	int i;
++	bool empty;
 +
-+	if (!intel_sdvo_set_value(intel_sdvo,
-+				  SDVO_CMD_SET_HBUF_INDEX,
-+				  set_buf_index, 2))
-+		return false;
++	spin_lock_bh(&conn->immed_queue_lock);
++	empty = list_empty(&conn->immed_queue_list);
++	spin_unlock_bh(&conn->immed_queue_lock);
 +
-+	if (!intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_HBUF_INFO,
-+				  &hbuf_size, 1))
-+		return false;
++	if (!empty)
++		return empty;
 +
-+	/* Buffer size is 0 based, hooray! */
-+	hbuf_size++;
++	spin_lock_bh(&conn->response_queue_lock);
++	empty = list_empty(&conn->response_queue_list);
++	spin_unlock_bh(&conn->response_queue_lock);
 +
-+	DRM_DEBUG_KMS("writing sdvo hbuf: %i, hbuf_size %i, hbuf_size: %i\n",
-+		      if_index, length, hbuf_size);
-+
-+	for (i = 0; i < hbuf_size; i += 8) {
-+		memset(tmp, 0, 8);
-+		if (i < length)
-+			memcpy(tmp, data + i, min_t(unsigned, 8, length - i));
-+
-+		if (!intel_sdvo_set_value(intel_sdvo,
-+					  SDVO_CMD_SET_HBUF_DATA,
-+					  tmp, 8))
-+			return false;
-+	}
-+
-+	return intel_sdvo_set_value(intel_sdvo,
-+				    SDVO_CMD_SET_HBUF_TXRATE,
-+				    &tx_rate, 1);
++	return empty;
 +}
 +
- static bool intel_sdvo_set_avi_infoframe(struct intel_sdvo *intel_sdvo)
+ void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
  {
- 	struct dip_infoframe avi_if = {
-@@ -889,11 +928,7 @@ static bool intel_sdvo_set_avi_infoframe
- 		.ver = DIP_VERSION_AVI,
- 		.len = DIP_LEN_AVI,
- 	};
--	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
--	uint8_t set_buf_index[2] = { 1, 0 };
- 	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
--	uint64_t *data = (uint64_t *)sdvo_data;
--	unsigned i;
- 
- 	intel_dip_infoframe_csum(&avi_if);
- 
-@@ -903,22 +938,9 @@ static bool intel_sdvo_set_avi_infoframe
- 	sdvo_data[3] = avi_if.checksum;
- 	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
- 
--	if (!intel_sdvo_set_value(intel_sdvo,
--				  SDVO_CMD_SET_HBUF_INDEX,
--				  set_buf_index, 2))
--		return false;
--
--	for (i = 0; i < sizeof(sdvo_data); i += 8) {
--		if (!intel_sdvo_set_value(intel_sdvo,
--					  SDVO_CMD_SET_HBUF_DATA,
--					  data, 8))
--			return false;
--		data++;
--	}
--
--	return intel_sdvo_set_value(intel_sdvo,
--				    SDVO_CMD_SET_HBUF_TXRATE,
--				    &tx_rate, 1);
-+	return intel_sdvo_write_infoframe(intel_sdvo, SDVO_HBUF_INDEX_AVI_IF,
-+					  SDVO_HBUF_TX_VSYNC,
-+					  sdvo_data, sizeof(sdvo_data));
- }
- 
- static bool intel_sdvo_set_tv_format(struct intel_sdvo *intel_sdvo)
---- a/drivers/gpu/drm/i915/intel_sdvo_regs.h
-+++ b/drivers/gpu/drm/i915/intel_sdvo_regs.h
-@@ -708,6 +708,8 @@ struct intel_sdvo_enhancements_arg {
- #define SDVO_CMD_SET_AUDIO_STAT		0x91
- #define SDVO_CMD_GET_AUDIO_STAT		0x92
- #define SDVO_CMD_SET_HBUF_INDEX		0x93
-+  #define SDVO_HBUF_INDEX_ELD		0
-+  #define SDVO_HBUF_INDEX_AVI_IF	1
- #define SDVO_CMD_GET_HBUF_INDEX		0x94
- #define SDVO_CMD_GET_HBUF_INFO		0x95
- #define SDVO_CMD_SET_HBUF_AV_SPLIT	0x96
+ 	struct iscsi_queue_req *qr, *qr_tmp;
+--- a/drivers/target/iscsi/iscsi_target_util.h
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_ge
+ extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
+ extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
+ extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
++extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
+ extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
+ extern void iscsit_release_cmd(struct iscsi_cmd *);
+ extern void iscsit_free_cmd(struct iscsi_cmd *);
 
 
