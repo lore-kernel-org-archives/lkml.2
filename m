@@ -1,196 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529Ab2KOE1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:27:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11664 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933455Ab2KOE07 (ORCPT
+	id S933501Ab2KOE1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:27:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57817 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S2993129Ab2KOEMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:26:59 -0500
-X-Authority-Analysis: v=2.0 cv=RoZH3VaK c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PgzfAm7JgvwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=e4ZfzG6rw4cA:10 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=_5230WynsYERRVR-4xoA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352953617.18025.94.camel@gandalf.local.home>
-Subject: Re: [PATCH 7/7] printk: Wake up klogd using irq_work
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 14 Nov 2012 23:26:57 -0500
-In-Reply-To: <1352925457-15700-8-git-send-email-fweisbec@gmail.com>
-References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
-	 <1352925457-15700-8-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 23:12:14 -0500
+Date: Thu, 15 Nov 2012 13:12:08 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: [GIT PULL] regulator fixes for 3.7
+Message-ID: <20121115041206.GD7599@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+SfteS7bOf3dGlBC"
+Content-Disposition: inline
+X-Cookie: Cold hands, no gloves.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-14 at 21:37 +0100, Frederic Weisbecker wrote:
-> klogd is woken up asynchronously from the tick in order
-> to do it safely.
-> 
-> However if printk is called when the tick is stopped, the reader
-> won't be woken up until the next interrupt, which might not fire
-> for a while. As a result, the user may miss some message.
-> 
-> To fix this, lets implement the printk tick using a lazy irq work.
-> This subsystem takes care of the timer tick state and can
-> fix up accordingly.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  include/linux/printk.h   |    3 ---
->  init/Kconfig             |    1 +
->  kernel/printk.c          |   36 ++++++++++++++++++++----------------
->  kernel/time/tick-sched.c |    2 +-
->  kernel/timer.c           |    1 -
->  5 files changed, 22 insertions(+), 21 deletions(-)
-> 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index 9afc01e..86c4b62 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -98,9 +98,6 @@ int no_printk(const char *fmt, ...)
->  extern asmlinkage __printf(1, 2)
->  void early_printk(const char *fmt, ...);
->  
-> -extern int printk_needs_cpu(int cpu);
-> -extern void printk_tick(void);
-> -
->  #ifdef CONFIG_PRINTK
->  asmlinkage __printf(5, 0)
->  int vprintk_emit(int facility, int level,
-> diff --git a/init/Kconfig b/init/Kconfig
-> index cdc152c..c575566 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1196,6 +1196,7 @@ config HOTPLUG
->  config PRINTK
->  	default y
->  	bool "Enable support for printk" if EXPERT
-> +	select IRQ_WORK
->  	help
->  	  This option enables normal printk support. Removing it
->  	  eliminates most of the message strings from the kernel image
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 2d607f4..c9104fe 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -42,6 +42,7 @@
->  #include <linux/notifier.h>
->  #include <linux/rculist.h>
->  #include <linux/poll.h>
-> +#include <linux/irq_work.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -1955,30 +1956,32 @@ int is_console_locked(void)
->  static DEFINE_PER_CPU(int, printk_pending);
->  static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
->  
-> -void printk_tick(void)
-> +static void wake_up_klogd_work_func(struct irq_work *irq_work)
->  {
-> -	if (__this_cpu_read(printk_pending)) {
-> -		int pending = __this_cpu_xchg(printk_pending, 0);
-> -		if (pending & PRINTK_PENDING_SCHED) {
-> -			char *buf = __get_cpu_var(printk_sched_buf);
-> -			printk(KERN_WARNING "[sched_delayed] %s", buf);
-> -		}
-> -		if (pending & PRINTK_PENDING_WAKEUP)
-> -			wake_up_interruptible(&log_wait);
-> +	int pending = __this_cpu_xchg(printk_pending, 0);
-> +
-> +	if (pending & PRINTK_PENDING_SCHED) {
-> +		char *buf = __get_cpu_var(printk_sched_buf);
-> +		printk(KERN_WARNING "[sched_delayed] %s", buf);
->  	}
-> -}
->  
-> -int printk_needs_cpu(int cpu)
-> -{
-> -	if (cpu_is_offline(cpu))
-> -		printk_tick();
 
-I'm a little worried about this patch, because of the above code.
-(see below)
+--+SfteS7bOf3dGlBC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -	return __this_cpu_read(printk_pending);
-> +	if (pending & PRINTK_PENDING_WAKEUP)
-> +		wake_up_interruptible(&log_wait);
->  }
->  
-> +static DEFINE_PER_CPU(struct irq_work, wake_up_klogd_work) = {
-> +	.func = wake_up_klogd_work_func,
-> +	.flags = IRQ_WORK_LAZY,
-> +};
-> +
->  void wake_up_klogd(void)
->  {
-> -	if (waitqueue_active(&log_wait))
-> +	preempt_disable();
-> +	if (waitqueue_active(&log_wait)) {
->  		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
-> +		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-> +	}
-> +	preempt_enable();
->  }
->  
->  static void console_cont_flush(char *text, size_t size)
-> @@ -2458,6 +2461,7 @@ int printk_sched(const char *fmt, ...)
->  	va_end(args);
->  
->  	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
-> +	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
->  	local_irq_restore(flags);
->  
->  	return r;
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index f249e8c..822d757 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -289,7 +289,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
->  		time_delta = timekeeping_max_deferment();
->  	} while (read_seqretry(&xtime_lock, seq));
->  
-> -	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
-> +	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
 
-If the CPU is going offline, the printk_tick() would be executed here.
-But now that printk_tick() is done with the irq_work code, it wont be
-executed till the next tick.  Could this cause a missed printk because
-of this, if the cpu is going offline?
+  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
 
-Actually, how does irq_work in general handle cpu offline work?
+are available in the git repository at:
 
--- Steve
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-3.7
 
->  	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
->  		next_jiffies = last_jiffies + 1;
->  		delta_jiffies = 1;
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 367d008..ff3b516 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -1351,7 +1351,6 @@ void update_process_times(int user_tick)
->  	account_process_tick(p, user_tick);
->  	run_local_timers();
->  	rcu_check_callbacks(cpu, user_tick);
-> -	printk_tick();
->  #ifdef CONFIG_IRQ_WORK
->  	if (in_irq())
->  		irq_work_run();
+for you to fetch changes up to ecb48c337b1814aefa9f8b33f4ee93d0ab955902:
 
+  Merge remote-tracking branches 'regulator/fix/gpio', 'regulator/fix/put' and 'regulator/fix/supp-volt' into tmp (2012-11-15 11:16:02 +0900)
 
+----------------------------------------------------------------
+
+regulator: Fixes for v3.7
+
+A few fixes for teardown issues that will be rarely seen, plus a fix for
+a silly bug in regulator_is_supported_voltage() which shows how often
+the answer to the question should be false.
+
+The supported voltage commit is very new as I just edited to add a Cc to
+stable, the code itself has been in -next.
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      Regulator: core: Unregister when gpio request fails.
+
+Charles Keepax (1):
+      regulator: core: Avoid deadlock when regulator_register fails
+
+Marek Szyprowski (1):
+      regulator: fix voltage check in regulator_is_supported_voltage()
+
+Mark Brown (1):
+      Merge remote-tracking branches 'regulator/fix/gpio', 'regulator/fix/put' and 'regulator/fix/supp-volt' into tmp
+
+ drivers/regulator/core.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
+
+--+SfteS7bOf3dGlBC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQpGuIAAoJELSic+t+oim9ibwP+gKehneNyLL/ciJwJHvZf7dK
+UTJx26FqpAZySgQe73ZZJbcIKh33ZuTtqO39kxAOFeCbeUiFQqCVFQc8e/AUJGUQ
+3sKb63C15QHQXSBCJFkPBfyY12VGGQB0leFqvOJChG8GUaxiinWqo9ly0K9YzDgR
+KMIWaxxUc+LchHezTTl3U+OCcypa+2WG3Yy4eukIrxpEAIiLHePBX7zwaKs8MVQ/
+WxfosLso0WWJKIVhk1SoYNRg+Vlbru2I6x6Oh1KCSPMeyG5I2nMKZYf7Kn/bs0Kd
+ZTrnIxNfAA67BjK9xQZaZ0P7k4wI9+SkoVoJPhFZUwxxUuwo5tWG1wOyfzgf8OR+
+ZCDgVzIOvkFsfxmdql8oje35s6GhH7+gkJ22qerUmS0tSsZv9PYl5U9gJHa5SFlG
+z0Qur0i2sVf6NzB8Wnz/H0QfEpAnWQU0MzFKhLmoXAgdoWHfsfILNnXrxIP9aRFV
+VjjwGHV5xmkn0Q6F06NkwuUcL0U8C2sVDJLXGEZlHwiIFoypqo+T9FghL5s3y8Kl
+n2DumuxwXqzY6ttuc4efxigTACwzUOsJk1bPOfuerw1fWbLslbVbWUpH4QLAmQHX
+Lyx07DcoZmw6FuREBtpdKe5Yk065NrzgovuONffFNnSNmnXY9t7uLTCg7UcyqffH
+ElbvwbAxzL7StlWpEA9b
+=4sjq
+-----END PGP SIGNATURE-----
+
+--+SfteS7bOf3dGlBC--
