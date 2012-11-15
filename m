@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993232Ab2KOEMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49571 "EHLO mail.kernel.org"
+	id S2993313Ab2KOEXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:23:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49745 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993105Ab2KOEMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:17 -0500
+	id S2993224Ab2KOEMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 01/57] xen/gntdev: dont leak memory from IOCTL_GNTDEV_MAP_GRANT_REF
-Date: Wed, 14 Nov 2012 20:11:09 -0800
-Message-Id: <20121115040933.318546299@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 18/57] mac80211: check management frame header length
+Date: Wed, 14 Nov 2012 20:11:26 -0800
+Message-Id: <20121115040934.340482888@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,82 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a67baeb77375199bbd842fa308cb565164dd1f19 upstream.
+commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
 
-map->kmap_ops allocated in gntdev_alloc_map() wasn't freed by
-gntdev_put_map().
+Due to pskb_may_pull() checking the skb length, all
+non-management frames are checked on input whether
+their 802.11 header is fully present. Also add that
+check for management frames and remove a check that
+is now duplicate. This prevents accessing skb data
+beyond the frame end.
 
-Add a gntdev_free_map() helper function to free everything allocated
-by gntdev_alloc_map().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/gntdev.c |   36 +++++++++++++++++++-----------------
- 1 file changed, 19 insertions(+), 17 deletions(-)
+ net/mac80211/rx.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -105,6 +105,21 @@ static void gntdev_print_maps(struct gnt
- #endif
- }
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1473,7 +1473,6 @@ ieee80211_rx_h_defragment(struct ieee802
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
-+static void gntdev_free_map(struct grant_map *map)
-+{
-+	if (map == NULL)
-+		return;
-+
-+	if (map->pages)
-+		free_xenballooned_pages(map->count, map->pages);
-+	kfree(map->pages);
-+	kfree(map->grants);
-+	kfree(map->map_ops);
-+	kfree(map->unmap_ops);
-+	kfree(map->kmap_ops);
-+	kfree(map);
-+}
-+
- static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
- {
- 	struct grant_map *add;
-@@ -142,12 +157,7 @@ static struct grant_map *gntdev_alloc_ma
- 	return add;
+ 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   (rx->skb)->len < 24 ||
+ 		   is_multicast_ether_addr(hdr->addr1))) {
+ 		/* not fragmented */
+ 		goto out;
+@@ -2929,10 +2928,15 @@ static void __ieee80211_rx_handle_packet
+ 		     test_bit(SCAN_SW_SCANNING, &local->scanning)))
+ 		status->rx_flags |= IEEE80211_RX_IN_SCAN;
  
- err:
--	kfree(add->pages);
--	kfree(add->grants);
--	kfree(add->map_ops);
--	kfree(add->unmap_ops);
--	kfree(add->kmap_ops);
--	kfree(add);
-+	gntdev_free_map(add);
- 	return NULL;
- }
+-	if (ieee80211_is_mgmt(fc))
+-		err = skb_linearize(skb);
+-	else
++	if (ieee80211_is_mgmt(fc)) {
++		/* drop frame if too short for header */
++		if (skb->len < ieee80211_hdrlen(fc))
++			err = -ENOBUFS;
++		else
++			err = skb_linearize(skb);
++	} else {
+ 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
++	}
  
-@@ -198,17 +208,9 @@ static void gntdev_put_map(struct grant_
- 		evtchn_put(map->notify.event);
- 	}
- 
--	if (map->pages) {
--		if (!use_ptemod)
--			unmap_grant_pages(map, 0, map->count);
--
--		free_xenballooned_pages(map->count, map->pages);
--	}
--	kfree(map->pages);
--	kfree(map->grants);
--	kfree(map->map_ops);
--	kfree(map->unmap_ops);
--	kfree(map);
-+	if (map->pages && !use_ptemod)
-+		unmap_grant_pages(map, 0, map->count);
-+	gntdev_free_map(map);
- }
- 
- /* ------------------------------------------------------------------ */
+ 	if (err) {
+ 		dev_kfree_skb(skb);
 
 
