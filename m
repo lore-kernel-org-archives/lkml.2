@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2KOD7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 22:59:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19568 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab2KOD7n (ORCPT
+	id S2992583Ab2KOD76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 22:59:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65348 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992498Ab2KOD7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 22:59:43 -0500
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dSWLLQtwMLwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_2UvRtBX3U8A:10 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=D7FtBBmPhq-9Irmde2wA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1352951981.18025.90.camel@gandalf.local.home>
-Subject: Re: [PATCH 5/7] irq_work: Don't stop the tick with pending works
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 14 Nov 2012 22:59:41 -0500
-In-Reply-To: <1352925457-15700-6-git-send-email-fweisbec@gmail.com>
-References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
-	 <1352925457-15700-6-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 22:59:55 -0500
+Date: Wed, 14 Nov 2012 19:59:52 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+In-Reply-To: <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net>
+Message-ID: <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com>
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
+ <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-14 at 21:37 +0100, Frederic Weisbecker wrote:
-> Don't stop the tick if we have pending irq works on the
-> queue, otherwise if the arch can't raise self-IPIs, we may not
-> find an opportunity to execute the pending works for a while.
+On Wed, 14 Nov 2012, Anton Vorontsov wrote:
+
+> > I agree that eventfd is the way to go, but I'll also add that this feature 
+> > seems to be implemented at a far too coarse of level.  Memory, and hence 
+> > memory pressure, is constrained by several factors other than just the 
+> > amount of physical RAM which vmpressure_fd is addressing.  What about 
+> > memory pressure caused by cpusets or mempolicies?  (Memcg has its own 
+> > reclaim logic
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  include/linux/irq_work.h |    6 ++++++
->  kernel/irq_work.c        |   11 +++++++++++
->  kernel/time/tick-sched.c |    3 ++-
->  3 files changed, 19 insertions(+), 1 deletions(-)
+> Yes, sure, and my plan for per-cgroups vmpressure was to just add the same
+> hooks into cgroups reclaim logic (as far as I understand, we can use the
+> same scanned/reclaimed ratio + reclaimer priority to determine the
+> pressure).
 > 
-> diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-> index 6a9e8f5..a69704f 100644
-> --- a/include/linux/irq_work.h
-> +++ b/include/linux/irq_work.h
-> @@ -20,4 +20,10 @@ bool irq_work_queue(struct irq_work *work);
->  void irq_work_run(void);
->  void irq_work_sync(struct irq_work *work);
->  
-> +#ifdef CONFIG_IRQ_WORK
-> +bool irq_work_needs_cpu(void);
-> +#else
-> +static bool irq_work_needs_cpu(void) { return false; }
-> +#endif
-> +
->  #endif /* _LINUX_IRQ_WORK_H */
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index 64eddd5..b3c113a 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -99,6 +99,17 @@ bool irq_work_queue(struct irq_work *work)
->  }
->  EXPORT_SYMBOL_GPL(irq_work_queue);
->  
-> +bool irq_work_needs_cpu(void)
-> +{
-> +	struct llist_head *this_list;
-> +
-> +	this_list = &__get_cpu_var(irq_work_list);
-> +	if (llist_empty(this_list))
-> +		return false;
-> +
 
-I wounder if this should just be:
+I don't understand, how would this work with cpusets, for example, with 
+vmpressure_fd as defined?  The cpuset policy is embedded in the page 
+allocator and skips over zones that are not allowed when trying to find a 
+page of the specified order.  Imagine a cpuset bound to a single node that 
+is under severe memory pressure.  The reclaim logic will get triggered and 
+cause a notification on your fd when the rest of the system's nodes may 
+have tons of memory available.  So now an application that actually is 
+using this interface and is trying to be a good kernel citizen decides to 
+free caches back to the kernel, start ratelimiting, etc, when it actually 
+doesn't have any memory allocated on the nearly-oom cpuset so its memory 
+freeing doesn't actually achieve anything.
 
-	return !llist_empty(&this_cpu_read(irq_work_list));
+Rather, I think it's much better to be notified when an individual process 
+invokes various levels of reclaim up to and including the oom killer so 
+that we know the context that memory freeing needs to happen (or, 
+optionally, the set of processes that could be sacrificed so that this 
+higher priority process may allocate memory).
 
--- Steve
+> > and its own memory thresholds implemented on top of eventfd 
+> > that people already use.)  These both cause high levels of reclaim within 
+> > the page allocator whereas there may be an abundance of free memory 
+> > available on the system.
+> 
+> Yes, surely global-level vmpressure should be separate for the per-cgroup
+> memory pressure.
+> 
 
+I disagree, I think if you have a per-thread memory pressure notification 
+if and when it starts down the page allocator slowpath, through the 
+various states of reclaim (perhaps on a scale of 0-100 as described), and 
+including the oom killer that you can target eventual memory freeing that 
+actually is useful.
 
-> +	return true;
-> +}
-> +
->  /*
->   * Run the irq_work entries on this cpu. Requires to be ran from hardirq
->   * context with local IRQs disabled.
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 9e945aa..f249e8c 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -20,6 +20,7 @@
->  #include <linux/profile.h>
->  #include <linux/sched.h>
->  #include <linux/module.h>
-> +#include <linux/irq_work.h>
->  
->  #include <asm/irq_regs.h>
->  
-> @@ -289,7 +290,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
->  	} while (read_seqretry(&xtime_lock, seq));
->  
->  	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
-> -	    arch_needs_cpu(cpu)) {
-> +	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
->  		next_jiffies = last_jiffies + 1;
->  		delta_jiffies = 1;
->  	} else {
+> But we still want the "global vmpressure" thing, so that we could use it
+> without cgroups too. How to do it -- syscall or sysfs+eventfd doesn't
+> matter much (in the sense that I can do eventfd thing if you folks like it
+> :).
+> 
 
+Most processes aren't going to care if they are running into memory 
+pressure and have no implementation to free memory back to the kernel or 
+start ratelimiting themselves.  They will just continue happily along 
+until they get the memory they want or they get oom killed.  The ones that 
+do, however, or a job scheduler or monitor that is watching over the 
+memory usage of a set of tasks, will be able to do something when 
+notified.
 
+In the hopes of a single API that can do all this and not a 
+reimplementation for various types of memory limitations (it seems like 
+what you're suggesting is at least three different APIs: system-wide via 
+vmpressure_fd, memcg via memcg thresholds, and cpusets through an eventual 
+cpuset threshold), I'm hoping that we can have a single interface that can 
+be polled on to determine when individual processes are encountering 
+memory pressure.  And if I'm not running in your oom cpuset, I don't care 
+about your memory pressure.
