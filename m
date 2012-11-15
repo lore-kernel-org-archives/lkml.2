@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993195Ab2KOKhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:37:50 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54002 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992441Ab2KOKhs (ORCPT
+	id S964881Ab2KOKnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:43:39 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:39137 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964838Ab2KOKnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:37:48 -0500
-Date: Thu, 15 Nov 2012 10:42:54 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] TTY: memory leaks patchset
-Message-ID: <20121115104254.3029bca9@pyramind.ukuu.org.uk>
-In-Reply-To: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
-References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 15 Nov 2012 05:43:37 -0500
+Message-ID: <50A4C6B5.9010500@synopsys.com>
+Date: Thu, 15 Nov 2012 16:10:53 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>
+Subject: Re: [RFC Patch v1 38/55] ARC: Low level event capture/logging
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-8-git-send-email-vgupta@synopsys.com> <201211121355.23947.arnd@arndb.de>
+In-Reply-To: <201211121355.23947.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This series should go upstream regardless "TTY: move tty buffers to
-> tty_port" if we decide to revert that commit due to the reported
-> warnings I cannot reproduce and neither catch the root cause.
+On Monday 12 November 2012 07:25 PM, Arnd Bergmann wrote:
+> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>> +EXPORT_SYMBOL(take_snap);
+>> +
+>> ...
+>> +EXPORT_SYMBOL(take_snap2);
+> Where are these functions called?
 
-They seem to be warnings only and very obscure cases. I'd favour that
-patch not being reverted simply because the only way we'll find a pattern
-is by a lot more reports - and it doesn't seem to be anything but an
-annoying log splat.
+These are called from various parts of ARCH code, such as before
+handling signal or TLB flush etc.
 
-Alan
+> Shouldn't this all just be part of the perf module?
+
+These are for low level ARCH specific event snapshotting. Maybe
+perf/ftrace already have some of these in the generic code which
+eventually call the ARCH APIs. Our current perf support is just husk of
+an implementation. Once we have the full perf / ftrace support this
+module - except for the even t capture part could just go away.
+OTOH, I've not seen much usage of this from loadable modules - so if you
+deem correct, I can even remove the export.
+
+> If not, can you make the exports GPL-only?
+
+Am I right in understanding that this is more related to discouraging
+non GPL modules "in general" than having to do with port itself.
+
+>
+> 	Arnd
+
