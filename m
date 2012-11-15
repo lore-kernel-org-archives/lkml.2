@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768680Ab2KOSVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:21:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41623 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768572Ab2KOSVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:21:42 -0500
-Message-ID: <50A5328C.800@redhat.com>
-Date: Thu, 15 Nov 2012 10:21:00 -0800
-From: Andy Grover <agrover@redhat.com>
-Reply-To: andy@groveronline.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120825 Thunderbird/10.0.7
-MIME-Version: 1.0
-To: lrosen@rosenlaw.com
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, kcopenhaver@choate.com,
-        Richard Fontana <rfontana@redhat.com>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>,
-        alan@lxorguk.ukuu.org.uk, bkuhn@sfconservancy.org, tytso@mit.edu,
-        andy@groveronline.com
-Subject: Re: scsi target, likely GPL violation
-References: <509A915B.30105@redhat.com>	 <CAPoiz9wzx_NmuA1ty-U28MGiYr7XKCbDn_e0ZLmz=pNDCqwqFw@mail.gmail.com>	 <509B117A.6070708@genband.com> <509BE460.6010404@redhat.com>	 <1352405111.29589.476.camel@haakon2.linux-iscsi.org>	 <509C22B2.8010600@redhat.com>	 <1352426896.29589.512.camel@haakon2.linux-iscsi.org> <20121109110336.41833034@pyramind.ukuu.org.uk> <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
-In-Reply-To: <14c701cdc059$d6fd28b0$84f77a10$@rosenlaw.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1768674Ab2KOSWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:22:11 -0500
+Received: from 81-89-104-214.blue.kundencontroller.de ([81.89.104.214]:35955
+	"EHLO tomweber.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768375Ab2KOSWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 13:22:09 -0500
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Nov 2012 13:22:09 EST
+From: Thomas Weber <thomas@tomweber.eu>
+To: Tony Lindgren <tony@atomide.com> (maintainer:OMAP SUPPORT)
+Cc: Thomas Weber <thomas@tomweber.eu>,
+        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
+        linux-omap@vger.kernel.org (open list:OMAP SUPPORT),
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM
+	SUB-ARCHITECT...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] ARM: OMAP3: Devkit8000: Add DDC i2c_bus_num
+Date: Thu, 15 Nov 2012 19:12:03 +0100
+Message-Id: <1353003123-7335-1-git-send-email-thomas@tomweber.eu>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Add i2c bus number for DVI output.
+The driver uses this to detect if a panel is connected and to read EDID.
 
-First, I do not, and did not, have access to the proprietary OS, which
-has been referred to. Otherwise, I would have checked it.
+Signed-off-by: Thomas Weber <thomas@tomweber.eu>
+---
+ arch/arm/mach-omap2/board-devkit8000.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Second, I appreciate that my questions and tentative inferences may not
-have been perfect, given that I did not have the complete facts, but I
-did try to obtain them from RTS before raising questions in this forum.
-But I was not successful.
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 1fd161e..6f04f0f 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -139,6 +139,7 @@ static struct omap_dss_device devkit8000_lcd_device = {
+ 
+ static struct tfp410_platform_data dvi_panel = {
+ 	.power_down_gpio	= -1,
++	.i2c_bus_num		= 1,
+ };
+ 
+ static struct omap_dss_device devkit8000_dvi_device = {
+-- 
+1.8.0
 
-Third, in retrospect, I think a more measured approach to the dialog
-may have been a better course. I am interested in understanding the
-situation. My primary goal was to avoid duplicating a lot of work, if
-RTS plans to open-source the new features they have added to the
-proprietary version.
-
-Fourth, my questions about the GPL’s requirements in this context remain.
-
-Finally, I was, in this thread, speaking on my behalf alone and
-at my initiative-- not Red Hat’s, as some may have incorrectly
-concluded. I'll be using a personal email account (CC'd) for this issue
-in the future, in order to make this more explicit.
-
-Regards -- Andy
