@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2KOV3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:29:40 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4427 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2KOV3j (ORCPT
+	id S1751023Ab2KOVcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:32:09 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:41796 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2KOVcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:29:39 -0500
-X-Authority-Analysis: v=2.0 cv=RoZH3VaK c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_41qGextLBQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M0QJ2o_OXdsA:10 a=yPCof4ZbAAAA:8 a=Syg2NRCwGl7ZE89Qe-cA:9 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353013550.7837.2.camel@gandalf.local.home>
-Subject: Re: [patch] ftrace: clear bits properly in reset_iter_read()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Thu, 15 Nov 2012 16:05:50 -0500
-In-Reply-To: <1339261076.13377.90.camel@gandalf.stny.rr.com>
-References: <20120609161027.GD6488@elgon.mountain>
-	 <1339261076.13377.90.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 16:32:08 -0500
+Date: Thu, 15 Nov 2012 19:04:37 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: David Miller <davem@davemloft.net>
+Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        ulisses@profusion.mobi, marcel@holtmann.org,
+        vinicius.gomes@openbossa.org, linville@tuxdriver.com,
+        johan.hedberg@gmail.com
+Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
+ Core
+Message-ID: <20121115210437.GA3358@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	David Miller <davem@davemloft.net>, ben@decadent.org.uk,
+	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+	akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+	ulisses@profusion.mobi, marcel@holtmann.org,
+	vinicius.gomes@openbossa.org, linville@tuxdriver.com,
+	johan.hedberg@gmail.com
+References: <20121114.163044.2287972932330697472.davem@davemloft.net>
+ <20121114213819.GT13292@decadent.org.uk>
+ <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+ <20121115.151341.694285418420091290.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121115.151341.694285418420091290.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Doing my slow clean ups, I find lots of coins under the couch cushions)
+Hi David,
 
-On Sat, 2012-06-09 at 12:57 -0400, Steven Rostedt wrote:
-> On Sat, 2012-06-09 at 19:10 +0300, Dan Carpenter wrote:
-> > There is a typo here where '&' is used instead of '|' and it turns the
-> > statement into a noop.  The original code is equivalent to:
+* David Miller <davem@davemloft.net> [2012-11-15 15:13:41 -0500]:
+
+> From: Ben Hutchings <ben@decadent.org.uk>
+> Date: Thu, 15 Nov 2012 20:04:32 +0000
+> 
+> > On Wed, 2012-11-14 at 21:38 +0000, Ben Hutchings wrote:
+> >> On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
+> >> > From: Gustavo Padovan <gustavo@padovan.org>
+> >> > Date: Wed, 14 Nov 2012 19:24:26 -0200
+> >> > 
+> >> > > Hi Ben,
+> >> > > 
+> >> > > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
+> >> > > 
+> >> > >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> >> > >> 
+> >> > >> ------------------
+> >> > >> 
+> >> > >> From: Ulisses Furquim <ulisses@profusion.mobi>
+> >> > >> 
+> >> > >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
+> >> > >> 
+> >> > >> The handling of SCO audio links and the L2CAP protocol are essential to
+> >> > >> any system with Bluetooth thus are always compiled in from now on.
+> >> > > 
+> >> > > I wonder if this could not break any kind of script or code people have that
+> >> > > refer directly to the sco and l2cap modules. Also I don't see this change as
+> >> > > really necessary for 3.2.
+> >> > 
+> >> > Agreed, I wish this had not been merged into -stable, I would have never
+> >> > submitted a patch like this myself.
+> >> 
+> >> This is required by:
+> >> 
+> >> commit ff03261adc8b4bdd8291f1783c079b53a892b429
+> >> Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+> >> Date:   Thu Aug 23 21:32:44 2012 -0300
+> >> 
+> >>     Bluetooth: Fix sending a HCI Authorization Request over LE links
+> >>     
+> >>     commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+> >> 
+> >> which was already applied.
 > > 
-> > 	iter->flags &= ~((1 << 2) & (1 << 4));
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > ---
-> > This is a static checker fix and I'm not super familiar with ftrace.
-> > Please review carefully.
-> > 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > index a008663..97da2dc 100644
-> > --- a/kernel/trace/ftrace.c
-> > +++ b/kernel/trace/ftrace.c
-> > @@ -2358,7 +2358,7 @@ static void reset_iter_read(struct ftrace_iterator *iter)
-> >  {
-> >  	iter->pos = 0;
-> >  	iter->func_pos = 0;
-> > -	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
-> > +	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
+> > So, do you think it's better to revert that in 3.2, or to go ahead with
+> > this?
 > 
-> Thanks! This is a real minor bug, but as it is a simple fix I will
-> probably queue it up for 3.5 and stable. The reason that it has gone
-> unnoticed for so long is that this would only show up if you did a lseek
-> on the function list file. Which is not a common operation to do.
+> I can't believe that just turning on bluetooth is going to force
+> enable these sub-protocols too, that's simply rediculous.  That
+> change should have never gone into the tree.
+
+I think you should go and try to understand our subsystem better, if one
+wants use bluetooth on linux he/she needs HCI core, L2CAP and SCO. Those were
+three different modules in the past, but at some point we concluded it does not
+makes sense to have the split. L2CAP for example is needed for every bluetooth
+usage out there, it is really part of the core. It useless to load the
+bluetooth core module without l2cap and sco. There is a technical decision
+behind this that we, the bluetooth folk, think it is better this way.
+
+> Do I _REALLY_ have to go back to validating all the bluetooth stuff by
+> hand when John Linville sends me pull requests?  Seriously?
 > 
-> I checked the code and if someone were to do an lseek with these flags
-> set then they would just get the hash list again (and not the function
-> list). It's a bug, yes, but not a big one.
+> I thought we were beyond that kind of bullshit after the coding style
+> fiasco.
 > 
-> I'll queue it up on Monday.
-> 
+> Actually I have a better idea, how about John stops pulling the
+> bluetooth stuff into his tree, and instead the bluetooth folks have to
+> submit their changes individually to the netdev list.  I like that
+> scheme better.
 
-I just didn't say *which* Monday :-p
+We will no put our stuff in netdev. I'll keep pushing patches to
+bluetooth-next, our community needs this tree.
 
-Bah, this got lost in a rebase somehow. Grumble, I should push this out
-now as urgent.
-
--- Steve
-
-> 
-> >  }
-> >  
-> >  static void *t_start(struct seq_file *m, loff_t *pos)
-> 
-
-
+	Gustavo
