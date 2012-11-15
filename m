@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993205Ab2KOEkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:40:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48838 "EHLO mail.kernel.org"
+	id S2993215Ab2KOEkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:40:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48827 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992772Ab2KOELG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:06 -0500
+	id S2992876Ab2KOELF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Javier Cardona <javier@cozybit.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 14/66] wireless: drop invalid mesh address extension frames
-Date: Wed, 14 Nov 2012 20:10:19 -0800
-Message-Id: <20121115040940.034381276@linuxfoundation.org>
+Subject: [ 13/66] cfg80211: fix antenna gain handling
+Date: Wed, 14 Nov 2012 20:10:18 -0800
+Message-Id: <20121115040939.964604698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,63 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
+commit c4a9fafc77a5318f5ed26c509bbcddf03e18c201 upstream.
 
-The mesh header can have address extension by a 4th
-or a 5th and 6th address, but never both. Drop such
-frames in 802.11 -> 802.3 conversion along with any
-frames that have the wrong extension.
+No driver initializes chan->max_antenna_gain to something sensible, and
+the only place where it is being used right now is inside ath9k. This
+leads to ath9k potentially using less tx power than it can use, which can
+decrease performance/range in some rare cases.
 
-Reviewed-by: Javier Cardona <javier@cozybit.com>
+Rather than going through every single driver, this patch initializes
+chan->orig_mag in wiphy_register(), ignoring whatever value the driver
+left in there. If a driver for some reason wishes to limit it independent
+from regulatory rulesets, it can do so internally.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/util.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/wireless/core.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -312,18 +312,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_
- static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
- {
- 	int ae = meshhdr->flags & MESH_FLAGS_AE;
--	/* 7.1.3.5a.2 */
-+	/* 802.11-2012, 8.2.4.7.3 */
- 	switch (ae) {
-+	default:
- 	case 0:
- 		return 6;
- 	case MESH_FLAGS_AE_A4:
- 		return 12;
- 	case MESH_FLAGS_AE_A5_A6:
- 		return 18;
--	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
--		return 24;
--	default:
--		return 6;
- 	}
- }
- 
-@@ -373,6 +370,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A4)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
-@@ -397,6 +396,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A4)
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -506,8 +506,7 @@ int wiphy_register(struct wiphy *wiphy)
+ 		for (i = 0; i < sband->n_channels; i++) {
+ 			sband->channels[i].orig_flags =
+ 				sband->channels[i].flags;
+-			sband->channels[i].orig_mag =
+-				sband->channels[i].max_antenna_gain;
++			sband->channels[i].orig_mag = INT_MAX;
+ 			sband->channels[i].orig_mpwr =
+ 				sband->channels[i].max_power;
+ 			sband->channels[i].band = band;
 
 
