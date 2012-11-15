@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767638Ab2KOESi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:18:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49962 "EHLO mail.kernel.org"
+	id S2993331Ab2KOEM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49842 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993340Ab2KOEM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:59 -0500
+	id S2993263Ab2KOEMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jonathan Kliegman <kliegs@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        =?ISO-8859-15?q?St=C3=A9phane=20Marchesin?= <marcheu@google.com>,
-        Sam Leffler <sleffler@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=2038/57=5D=20netlink=3A=20use=20kfree=5Frcu=28=29=20in=20netlink=5Frelease=28=29?=
-Date: Wed, 14 Nov 2012 20:11:46 -0800
-Message-Id: <20121115040935.557738948@linuxfoundation.org>
+        Chuck Lever <chuck.lever@oracle.com>, NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 27/57] NFS: fix bug in legacy DNS resolver.
+Date: Wed, 14 Nov 2012 20:11:35 -0800
+Message-Id: <20121115040934.889380736@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,102 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: NeilBrown <neilb@suse.de>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 8d96b10639fb402357b75b055b1e82a65ff95050 upstream.
 
-[ Upstream commit 6d772ac5578f711d1ce7b03535d1c95bffb21dff ]
+The DNS resolver's use of the sunrpc cache involves a 'ttl' number
+(relative) rather that a timeout (absolute).  This confused me when
+I wrote
+  commit c5b29f885afe890f953f7f23424045cdad31d3e4
+     "sunrpc: use seconds since boot in expiry cache"
 
-On some suspend/resume operations involving wimax device, we have
-noticed some intermittent memory corruptions in netlink code.
+and I managed to break it.  The effect is that any TTL is interpreted
+as 0, and nothing useful gets into the cache.
 
-Stéphane Marchesin tracked this corruption in netlink_update_listeners()
-and suggested a patch.
+This patch removes the use of get_expiry() - which really expects an
+expiry time - and uses get_uint() instead, treating the int correctly
+as a ttl.
 
-It appears netlink_release() should use kfree_rcu() instead of kfree()
-for the listeners structure as it may be used by other cpus using RCU
-protection.
+This fixes a regression that has been present since 2.6.37, causing
+certain NFS accesses in certain environments to incorrectly fail.
 
-netlink_release() must set to NULL the listeners pointer when
-it is about to be freed.
-
-Also have to protect netlink_update_listeners() and
-netlink_has_listeners() if listeners is NULL.
-
-Add a nl_deref_protected() lockdep helper to properly document which
-locks protects us.
-
-Reported-by: Jonathan Kliegman <kliegs@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Stéphane Marchesin <marcheu@google.com>
-Cc: Sam Leffler <sleffler@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlink/af_netlink.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -137,6 +137,8 @@ static void netlink_destroy_callback(str
- static DEFINE_RWLOCK(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
+---
+ fs/nfs/dns_resolve.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -214,7 +214,7 @@ static int nfs_dns_parse(struct cache_de
+ {
+ 	char buf1[NFS_DNS_HOSTNAME_MAXLEN+1];
+ 	struct nfs_dns_ent key, *item;
+-	unsigned long ttl;
++	unsigned int ttl;
+ 	ssize_t len;
+ 	int ret = -EINVAL;
  
-+#define nl_deref_protected(X) rcu_dereference_protected(X, lockdep_is_held(&nl_table_lock));
-+
- static ATOMIC_NOTIFIER_HEAD(netlink_chain);
+@@ -237,7 +237,8 @@ static int nfs_dns_parse(struct cache_de
+ 	key.namelen = len;
+ 	memset(&key.h, 0, sizeof(key.h));
  
- static inline u32 netlink_group_mask(u32 group)
-@@ -332,6 +334,11 @@ netlink_update_listeners(struct sock *sk
- 	struct hlist_node *node;
- 	unsigned long mask;
- 	unsigned int i;
-+	struct listeners *listeners;
-+
-+	listeners = nl_deref_protected(tbl->listeners);
-+	if (!listeners)
-+		return;
- 
- 	for (i = 0; i < NLGRPLONGS(tbl->groups); i++) {
- 		mask = 0;
-@@ -339,7 +346,7 @@ netlink_update_listeners(struct sock *sk
- 			if (i < NLGRPLONGS(nlk_sk(sk)->ngroups))
- 				mask |= nlk_sk(sk)->groups[i];
- 		}
--		tbl->listeners->masks[i] = mask;
-+		listeners->masks[i] = mask;
- 	}
- 	/* this function is only called with the netlink table "grabbed", which
- 	 * makes sure updates are visible before bind or setsockopt return. */
-@@ -520,7 +527,11 @@ static int netlink_release(struct socket
- 	if (netlink_is_kernel(sk)) {
- 		BUG_ON(nl_table[sk->sk_protocol].registered == 0);
- 		if (--nl_table[sk->sk_protocol].registered == 0) {
--			kfree(nl_table[sk->sk_protocol].listeners);
-+			struct listeners *old;
-+
-+			old = nl_deref_protected(nl_table[sk->sk_protocol].listeners);
-+			RCU_INIT_POINTER(nl_table[sk->sk_protocol].listeners, NULL);
-+			kfree_rcu(old, rcu);
- 			nl_table[sk->sk_protocol].module = NULL;
- 			nl_table[sk->sk_protocol].registered = 0;
- 		}
-@@ -950,7 +961,7 @@ int netlink_has_listeners(struct sock *s
- 	rcu_read_lock();
- 	listeners = rcu_dereference(nl_table[sk->sk_protocol].listeners);
- 
--	if (group - 1 < nl_table[sk->sk_protocol].groups)
-+	if (listeners && group - 1 < nl_table[sk->sk_protocol].groups)
- 		res = test_bit(group - 1, listeners->masks);
- 
- 	rcu_read_unlock();
-@@ -1582,7 +1593,7 @@ int __netlink_change_ngroups(struct sock
- 		new = kzalloc(sizeof(*new) + NLGRPSZ(groups), GFP_ATOMIC);
- 		if (!new)
- 			return -ENOMEM;
--		old = rcu_dereference_protected(tbl->listeners, 1);
-+		old = nl_deref_protected(tbl->listeners);
- 		memcpy(new->masks, old->masks, NLGRPSZ(tbl->groups));
- 		rcu_assign_pointer(tbl->listeners, new);
- 
+-	ttl = get_expiry(&buf);
++	if (get_uint(&buf, &ttl) < 0)
++		goto out;
+ 	if (ttl == 0)
+ 		goto out;
+ 	key.h.expiry_time = ttl + seconds_since_boot();
 
 
