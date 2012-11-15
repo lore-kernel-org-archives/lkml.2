@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993063Ab2KOELz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49341 "EHLO mail.kernel.org"
+	id S933573Ab2KOEao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:30:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49405 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993010Ab2KOELt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:49 -0500
+	id S2993010Ab2KOELz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 48/66] ipv6: Set default hoplimit as zero.
-Date: Wed, 14 Nov 2012 20:10:53 -0800
-Message-Id: <20121115040942.596051625@linuxfoundation.org>
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [ 54/66] net: inet_diag -- Return error code if protocol handler is missed
+Date: Wed, 14 Nov 2012 20:10:59 -0800
+Message-Id: <20121115040943.045361711@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -27,44 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 
-[ Upstream commit 14edd87dc67311556f1254a8f29cf4dd6cb5b7d1 ]
+[ Upstream commit cacb6ba0f36ab14a507f4ee7697e8332899015d2 ]
 
-Commit a02e4b7dae4551(Demark default hoplimit as zero) only changes the
-hoplimit checking condition and default value in ip6_dst_hoplimit, not
-zeros all hoplimit default value.
+We've observed that in case if UDP diag module is not
+supported in kernel the netlink returns NLMSG_DONE without
+notifying a caller that handler is missed.
 
-Keep the zeroing ip6_template_metrics[RTAX_HOPLIMIT - 1] to force it as
-const, cause as a37e6e344910(net: force dst_default_metrics to const
-section)
+This patch makes __inet_diag_dump to return error code instead.
 
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+So as example it become possible to detect such situation
+and handle it gracefully on userspace level.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: David Miller <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/inet_diag.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -219,7 +219,7 @@ static struct dst_ops ip6_dst_blackhole_
- };
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -883,13 +883,16 @@ static int __inet_diag_dump(struct sk_bu
+ 		struct inet_diag_req_v2 *r, struct nlattr *bc)
+ {
+ 	const struct inet_diag_handler *handler;
++	int err = 0;
  
- static const u32 ip6_template_metrics[RTAX_MAX] = {
--	[RTAX_HOPLIMIT - 1] = 255,
-+	[RTAX_HOPLIMIT - 1] = 0,
- };
+ 	handler = inet_diag_lock_handler(r->sdiag_protocol);
+ 	if (!IS_ERR(handler))
+ 		handler->dump(skb, cb, r, bc);
++	else
++		err = PTR_ERR(handler);
+ 	inet_diag_unlock_handler(handler);
  
- static struct rt6_info ip6_null_entry_template = {
-@@ -1241,7 +1241,7 @@ struct dst_entry *icmp6_dst_alloc(struct
- 	rt->rt6i_dst.addr = fl6->daddr;
- 	rt->rt6i_dst.plen = 128;
- 	rt->rt6i_idev     = idev;
--	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 255);
-+	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 0);
+-	return skb->len;
++	return err ? : skb->len;
+ }
  
- 	spin_lock_bh(&icmp6_dst_lock);
- 	rt->dst.next = icmp6_dst_gc_list;
+ static int inet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
 
 
