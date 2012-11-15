@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993435Ab2KOESU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:18:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50006 "EHLO mail.kernel.org"
+	id S1767638Ab2KOESi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:18:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49962 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993354Ab2KOEND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:03 -0500
+	id S2993340Ab2KOEM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Petr Matousek <pmatouse@redhat.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Jonathan Kliegman <kliegs@google.com>,
         Eric Dumazet <edumazet@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        =?ISO-8859-15?q?St=C3=A9phane=20Marchesin?= <marcheu@google.com>,
+        Sam Leffler <sleffler@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 42/57] net: fix divide by zero in tcp algorithm illinois
-Date: Wed, 14 Nov 2012 20:11:50 -0800
-Message-Id: <20121115040935.782062240@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=2038/57=5D=20netlink=3A=20use=20kfree=5Frcu=28=29=20in=20netlink=5Frelease=28=29?=
+Date: Wed, 14 Nov 2012 20:11:46 -0800
+Message-Id: <20121115040935.557738948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,66 +33,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jesper Dangaard Brouer <brouer@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 8f363b77ee4fbf7c3bbcf5ec2c5ca482d396d664 ]
+[ Upstream commit 6d772ac5578f711d1ce7b03535d1c95bffb21dff ]
 
-Reading TCP stats when using TCP Illinois congestion control algorithm
-can cause a divide by zero kernel oops.
+On some suspend/resume operations involving wimax device, we have
+noticed some intermittent memory corruptions in netlink code.
 
-The division by zero occur in tcp_illinois_info() at:
- do_div(t, ca->cnt_rtt);
-where ca->cnt_rtt can become zero (when rtt_reset is called)
+Stéphane Marchesin tracked this corruption in netlink_update_listeners()
+and suggested a patch.
 
-Steps to Reproduce:
- 1. Register tcp_illinois:
-     # sysctl -w net.ipv4.tcp_congestion_control=illinois
- 2. Monitor internal TCP information via command "ss -i"
-     # watch -d ss -i
- 3. Establish new TCP conn to machine
+It appears netlink_release() should use kfree_rcu() instead of kfree()
+for the listeners structure as it may be used by other cpus using RCU
+protection.
 
-Either it fails at the initial conn, or else it needs to wait
-for a loss or a reset.
+netlink_release() must set to NULL the listeners pointer when
+it is about to be freed.
 
-This is only related to reading stats.  The function avg_delay() also
-performs the same divide, but is guarded with a (ca->cnt_rtt > 0) at its
-calling point in update_params().  Thus, simply fix tcp_illinois_info().
+Also have to protect netlink_update_listeners() and
+netlink_has_listeners() if listeners is NULL.
 
-Function tcp_illinois_info() / get_info() is called without
-socket lock.  Thus, eliminate any race condition on ca->cnt_rtt
-by using a local stack variable.  Simply reuse info.tcpv_rttcnt,
-as its already set to ca->cnt_rtt.
-Function avg_delay() is not affected by this race condition, as
-its called with the socket lock.
+Add a nl_deref_protected() lockdep helper to properly document which
+locks protects us.
 
-Cc: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Reported-by: Jonathan Kliegman <kliegs@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Stéphane Marchesin <marcheu@google.com>
+Cc: Sam Leffler <sleffler@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_illinois.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/netlink/af_netlink.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/tcp_illinois.c
-+++ b/net/ipv4/tcp_illinois.c
-@@ -313,11 +313,13 @@ static void tcp_illinois_info(struct soc
- 			.tcpv_rttcnt = ca->cnt_rtt,
- 			.tcpv_minrtt = ca->base_rtt,
- 		};
--		u64 t = ca->sum_rtt;
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -137,6 +137,8 @@ static void netlink_destroy_callback(str
+ static DEFINE_RWLOCK(nl_table_lock);
+ static atomic_t nl_table_users = ATOMIC_INIT(0);
  
--		do_div(t, ca->cnt_rtt);
--		info.tcpv_rtt = t;
-+		if (info.tcpv_rttcnt > 0) {
-+			u64 t = ca->sum_rtt;
++#define nl_deref_protected(X) rcu_dereference_protected(X, lockdep_is_held(&nl_table_lock));
++
+ static ATOMIC_NOTIFIER_HEAD(netlink_chain);
  
-+			do_div(t, info.tcpv_rttcnt);
-+			info.tcpv_rtt = t;
-+		}
- 		nla_put(skb, INET_DIAG_VEGASINFO, sizeof(info), &info);
+ static inline u32 netlink_group_mask(u32 group)
+@@ -332,6 +334,11 @@ netlink_update_listeners(struct sock *sk
+ 	struct hlist_node *node;
+ 	unsigned long mask;
+ 	unsigned int i;
++	struct listeners *listeners;
++
++	listeners = nl_deref_protected(tbl->listeners);
++	if (!listeners)
++		return;
+ 
+ 	for (i = 0; i < NLGRPLONGS(tbl->groups); i++) {
+ 		mask = 0;
+@@ -339,7 +346,7 @@ netlink_update_listeners(struct sock *sk
+ 			if (i < NLGRPLONGS(nlk_sk(sk)->ngroups))
+ 				mask |= nlk_sk(sk)->groups[i];
+ 		}
+-		tbl->listeners->masks[i] = mask;
++		listeners->masks[i] = mask;
  	}
- }
+ 	/* this function is only called with the netlink table "grabbed", which
+ 	 * makes sure updates are visible before bind or setsockopt return. */
+@@ -520,7 +527,11 @@ static int netlink_release(struct socket
+ 	if (netlink_is_kernel(sk)) {
+ 		BUG_ON(nl_table[sk->sk_protocol].registered == 0);
+ 		if (--nl_table[sk->sk_protocol].registered == 0) {
+-			kfree(nl_table[sk->sk_protocol].listeners);
++			struct listeners *old;
++
++			old = nl_deref_protected(nl_table[sk->sk_protocol].listeners);
++			RCU_INIT_POINTER(nl_table[sk->sk_protocol].listeners, NULL);
++			kfree_rcu(old, rcu);
+ 			nl_table[sk->sk_protocol].module = NULL;
+ 			nl_table[sk->sk_protocol].registered = 0;
+ 		}
+@@ -950,7 +961,7 @@ int netlink_has_listeners(struct sock *s
+ 	rcu_read_lock();
+ 	listeners = rcu_dereference(nl_table[sk->sk_protocol].listeners);
+ 
+-	if (group - 1 < nl_table[sk->sk_protocol].groups)
++	if (listeners && group - 1 < nl_table[sk->sk_protocol].groups)
+ 		res = test_bit(group - 1, listeners->masks);
+ 
+ 	rcu_read_unlock();
+@@ -1582,7 +1593,7 @@ int __netlink_change_ngroups(struct sock
+ 		new = kzalloc(sizeof(*new) + NLGRPSZ(groups), GFP_ATOMIC);
+ 		if (!new)
+ 			return -ENOMEM;
+-		old = rcu_dereference_protected(tbl->listeners, 1);
++		old = nl_deref_protected(tbl->listeners);
+ 		memcpy(new->masks, old->masks, NLGRPSZ(tbl->groups));
+ 		rcu_assign_pointer(tbl->listeners, new);
+ 
 
 
