@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768584Ab2KORuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 12:50:44 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:54469 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768535Ab2KORun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 12:50:43 -0500
-Message-ID: <50A52B45.6030907@imgtec.com>
-Date: Thu, 15 Nov 2012 17:49:57 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>, <arnd@arndb.de>,
-        Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>
-Subject: Re: [RFC PATCH v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker
- script
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-27-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1352281674-2186-27-git-send-email-vgupta@synopsys.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1768593Ab2KORws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 12:52:48 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13422 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768567Ab2KORwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 12:52:47 -0500
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=skrZvcOWfsoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=E9MJ4dmaRSoA:10 a=HQDe5QKAFfvOPPeXlHcA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353001964.18025.107.camel@gandalf.local.home>
+Subject: [PATCH RFC] irq_work: Warn if there's still work on cpu_down
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 15 Nov 2012 12:52:44 -0500
+In-Reply-To: <1352997261.18025.103.camel@gandalf.local.home>
+References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
+	 <1352925457-15700-8-git-send-email-fweisbec@gmail.com>
+	 <1352953617.18025.94.camel@gandalf.local.home>
+	 <CAFTL4hzzhd5__VwR7N+VKpq1C27xHGgi4vj87drbcLghJ+Od5g@mail.gmail.com>
+	 <1352997261.18025.103.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_11_15_17_50_10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
+If we are in nohz and there's still irq_work to be done when the idle
+task is about to go offline. Give a nasty warning.
 
-On 07/11/12 09:47, Vineet Gupta wrote:
-> +config ARC
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-I just came across arch/mips/Kconfig which also defines ARC (and ARC32).
-It's only used within arch/mips/, however it's probably more likely that
-your ARC/CONFIG_ARC will find it's way into the generic bits of the
-kernel which could get hit when the other ARC is defined.
+Index: linux-rt.git/kernel/irq_work.c
+===================================================================
+--- linux-rt.git.orig/kernel/irq_work.c
++++ linux-rt.git/kernel/irq_work.c
+@@ -103,6 +103,9 @@ bool irq_work_needs_cpu(void)
+ 	if (llist_empty(this_list))
+ 		return false;
+ 
++	/* All work should have been flushed before going offline */
++	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
++
+ 	return true;
+ }
+ 
 
-Perhaps it's worth getting the other ARC renamed just in case?
-
-Cheers
-James
 
