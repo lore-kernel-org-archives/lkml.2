@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219Ab2KOVZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:25:11 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39829 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2KOVZH (ORCPT
+	id S1751333Ab2KOVZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:25:34 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48394 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab2KOVZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:25:07 -0500
-Date: Thu, 15 Nov 2012 13:25:04 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-In-Reply-To: <20121115085224.GA4635@lizard>
-Message-ID: <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com>
-References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
- <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
- <20121115085224.GA4635@lizard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 15 Nov 2012 16:25:32 -0500
+Date: Thu, 15 Nov 2012 16:08:14 -0500 (EST)
+Message-Id: <20121115.160814.435634108503717660.davem@davemloft.net>
+To: gustavo@padovan.org
+Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        ulisses@profusion.mobi, marcel@holtmann.org,
+        vinicius.gomes@openbossa.org, linville@tuxdriver.com,
+        johan.hedberg@gmail.com
+Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
+ Core
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121115210437.GA3358@joana>
+References: <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+	<20121115.151341.694285418420091290.davem@davemloft.net>
+	<20121115210437.GA3358@joana>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Anton Vorontsov wrote:
+From: Gustavo Padovan <gustavo@padovan.org>
+Date: Thu, 15 Nov 2012 19:04:37 -0200
 
-> Hehe, you're saying that we have to have cgroups=y. :) But some folks were
-> deliberately asking us to make the cgroups optional.
-> 
+> We will no put our stuff in netdev.
 
-Enabling just CONFIG_CGROUPS (which is enabled by default) and no other 
-current cgroups increases the size of the kernel text by less than 0.3% 
-with x86_64 defconfig:
+You very much better post your work there for review purposes or else
+I'm not even going to consider pulling from your tree, and I'm going
+to tell John to not pull your GIT tree in either.
 
-   text	   data	    bss	    dec	    hex	filename
-10330039	1038912	1118208	12487159	 be89f7	vmlinux.disabled
-10360993	1041624	1122304	12524921	 bf1d79	vmlinux.enabled
-
-I understand that users with minimally-enabled configs for an optimized 
-memory footprint will have a higher percentage because their kernel is 
-already smaller (~1.8% increase for allnoconfig), but I think the cost of 
-enabling the cgroups code to be able to mount a vmpressure cgroup (which 
-I'd rename to be "mempressure" to be consistent with "memcg" but it's only 
-an opinion) is relatively small and allows for a much more maintainable 
-and extendable feature to be included: it already provides the 
-cgroup.event_control interface that supports eventfd that makes 
-implementation much easier.  It also makes writing a library on top of the 
-cgroup to be much easier because of the standardization.
-
-I'm more concerned about what to do with the memcg memory thresholds and 
-whether they can be replaced with this new cgroup.  If so, then we'll have 
-to figure out how to map those triggers to use the new cgroup's interface 
-in a way that doesn't break current users that open and pass the fd of 
-memory.usage_in_bytes to cgroup.event_control for memcg.
-
-> OK, here is what I can try to do:
-> 
-> - Implement memory pressure cgroup as you described, by doing so we'd make
->   the thing play well with cpusets and memcg;
-> 
-> - This will be eventfd()-based;
-> 
-
-Should be based on cgroup.event_control, see how memcg interfaces its 
-memory thresholds with this in Documentation/cgroups/memory.txt.
-
-> - Once done, we will have a solution for pretty much every major use-case
->   (i.e. servers, desktops and Android, they all have cgroups enabled);
-> 
-
-Excellent!  I'd be interested in hearing anybody else's opinions, 
-especially those from the memcg world, so we make sure that everybody is 
-happy with the API that you've described.
