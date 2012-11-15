@@ -1,89 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab2KOE6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:58:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44419 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933309Ab2KOE6H (ORCPT
+	id S1750904Ab2KOFKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 00:10:14 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:39366 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2KOFKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:58:07 -0500
-Message-ID: <1352955480.6793.8.camel@phoenix>
-Subject: [PATCH RESEND 3/4] pinctrl: at91: Prevent NULL dereference if
- of_match_device returns NULL
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 15 Nov 2012 12:58:00 +0800
-In-Reply-To: <1352955266.6793.4.camel@phoenix>
-References: <1352955096.6793.1.camel@phoenix>
-	 <1352955266.6793.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 15 Nov 2012 00:10:12 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+References: <20121101145225.GB10269@srcf.ucam.org>
+	<20121102132318.GA3300@redhat.com> <87boffd727.fsf@xmission.com>
+	<20121105180353.GC28720@redhat.com> <87mwyv96mn.fsf@xmission.com>
+	<20121106193419.GH4548@redhat.com> <87k3tynvc0.fsf@xmission.com>
+	<20121108194050.GB27586@redhat.com>
+	<20121108194522.GC27586@redhat.com> <87vcdfn6y2.fsf@xmission.com>
+	<20121109143938.GD4842@redhat.com>
+Date: Wed, 14 Nov 2012 21:09:51 -0800
+In-Reply-To: <20121109143938.GD4842@redhat.com> (Vivek Goyal's message of
+	"Fri, 9 Nov 2012 09:39:38 -0500")
+Message-ID: <87ehjvfo4g.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/TBw6pl3xIRCAMUb/HT2+n0sCD9dhk8Ek=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0721]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: Kdump with signed images
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_match_device() may return NULL.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-This resend CC Jean-Christophe.
+> On Thu, Nov 08, 2012 at 01:03:17PM -0800, Eric W. Biederman wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
+>> 
+>> > On Thu, Nov 08, 2012 at 02:40:50PM -0500, Vivek Goyal wrote:
+>> >> On Tue, Nov 06, 2012 at 03:51:59PM -0800, Eric W. Biederman wrote:
+>> >> 
+>> >> [..]
+>> >> 
+>> >> Thnking more about executable signature verification, I have another question.
+>> >> 
+>> >> While verifyign the signature, we will have to read the whole executable
+>> >> in memory. That sounds bad as we are in kernel mode and will not be killed
+>> >> and if sombody is trying to execute a malformed exceptionally large
+>> >> executable, system will start killing other processess. We can potentially
+>> >> lock all the memory in kernel just by trying to execute a signed huge
+>> >> executable. Not good.
+>> >> 
+>> >
+>> > Also, even if we try to read in whole executable, can't an hacker modify
+>> > pages in swap disk and then they will be faulted back in and bingo hacker
+>> > is running its unsigned code. (assuming root has been compromised otherwise
+>> > why do we have to do all this exercise).
+>> 
+>> You make a decent case for an implicit mlockall(MCL_FUTURE) being
+>> required of signed executables, that are going to be granted privileges
+>> based on signature verification.
+>
+> implicity lockall for signed executables sounds reasonable to avoid the
+> swap hack.
+>
+>> 
+>> As for size if the executable won't fit in memory, there is no point in
+>> checking the signature.
+>
+> Well I am worried about malformed executables. One can sign a huge
+> executable (which is never meant to run successfully) and cause all
+> kind of memory issues. 
 
- drivers/pinctrl/pinctrl-at91.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+Good point what to do with executables with invalid sigantures.  From
+another reply it sounded like one of the bits of IMA/EVM had already
+addressed part of that.
 
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 8490a55..32006c8 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -829,13 +829,18 @@ static int __devinit at91_pinctrl_probe_dt(struct platform_device *pdev,
- 	uint32_t *tmp;
- 	struct device_node *np = pdev->dev.of_node;
- 	struct device_node *child;
-+	const struct of_device_id *match;
- 
- 	if (!np)
- 		return -ENODEV;
- 
-+	match = of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-+	if (!match)
-+		return -ENODEV;
-+
- 	info->dev = &pdev->dev;
--	info->ops = (struct at91_pinctrl_mux_ops*)
--		of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-+	info->ops = (struct at91_pinctrl_mux_ops *) match->data;
-+
- 	at91_pinctrl_child_count(info, np);
- 
- 	if (info->nbanks < 1) {
-@@ -1359,6 +1364,7 @@ static struct of_device_id at91_gpio_of_match[] __devinitdata = {
- static int __devinit at91_gpio_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
- 	struct resource *res;
- 	struct at91_gpio_chip *at91_chip = NULL;
- 	struct gpio_chip *chip;
-@@ -1399,8 +1405,11 @@ static int __devinit at91_gpio_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	at91_chip->ops = (struct at91_pinctrl_mux_ops*)
--		of_match_device(at91_gpio_of_match, &pdev->dev)->data;
-+	match = of_match_device(at91_gpio_of_match, &pdev->dev);
-+	if (!match)
-+		return -ENODEV;
-+
-+	at91_chip->ops = (struct at91_pinctrl_mux_ops *) match->data;
- 	at91_chip->pioc_virq = irq;
- 	at91_chip->pioc_idx = alias_idx;
- 
--- 
-1.7.9.5
+> Can we first look at the signature, decrypt it using certificates in
+> kernel ring, and if we find out that executable was signed by any
+> of the certificates, only then we go on to read in whole executable
+> and try to calculate the digest. May be at the time of signing we can put
+>  a string, say "LINUX", along with digest and then sing/encrypt it. Upon
+> decryption we can check if LINUX is there and if yes, we know it was
+> signed by the certifcate loaded in kernel and then go on to load the
+> full executable and calculate digest.
+
+> Not sure if above is doable or not but if it is, it might reduce the
+> risk significantly as we will not try to integrity verify executables
+> not signed by genuine certificates.
+
+Known plaintext in the signed blob should allow that.  I would be very
+careful with that because it sounds like the kind of thing that opens
+you up to plain-text attacks, but that is mostly my parania and lack of
+experience speaking.
+
+>> It should be fairly straight forward to make the signature checking
+>> process preemptable and killable.
+>
+> hmm..., not sure how to do this. Will have to read more code to understand
+> process killing and see what can I do this while I am in kernel mode
+> and I possibly might have done kernel memory allocations using
+> vmalloc()/kmalloc() etc.
+
+Well basically it is matter of using the killable version of waits
+returning an error code as you unwind, and eventually either
+force_sig(SIGKILL) or do_exit().
+
+There are a lot of times where you can support SIGKILL and just cause
+the process to exit where you can't handle signals.
 
 
+Eric
 
