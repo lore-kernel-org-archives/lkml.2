@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767691Ab2KOMds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 07:33:48 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48376 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993283Ab2KOMdr (ORCPT
+	id S1767699Ab2KOMfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 07:35:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:50808 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993283Ab2KOMfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 07:33:47 -0500
-Date: Thu, 15 Nov 2012 12:33:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Jon Hunter <jon-hunter@ti.com>
-Subject: Re: [PATCH 1/1] ARM: ux500: Describe UART platform registering
- issues more accurately
-Message-ID: <20121115123341.GA14476@gmail.com>
-References: <1352968401-6092-1-git-send-email-lee.jones@linaro.org>
- <201211151223.46989.arnd@arndb.de>
+	Thu, 15 Nov 2012 07:35:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
+Date: Thu, 15 Nov 2012 12:35:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Gilad Ben-Yossef" <gilad@benyossef.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <201211131037.43526.arnd@arndb.de> <50A48882.3030204@synopsys.com>
+In-Reply-To: <50A48882.3030204@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201211151223.46989.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211151235.31735.arnd@arndb.de>
+X-Provags-ID: V02:K0:84quefjv9AuytqDqb7NOo6UEQ7yoRO+Aqzxr0Y8Lqco
+ ZoCwQRCZmonYlj7ZMbjK+WLVYAoOpSgo3JPPPf2Zol0vuIFoRf
+ Qj4YWnPCY/BhkopFYWZxsWZUf+Yfnd4ZP9hl+E9Vn6G7Cp7/SJ
+ 1ovS8E5euxHwDl0X5H9wBLBcuSW64N4dqBHqlOPfsmP6C9vxqI
+ 7EY8BnLFw4ss/ajxcp/STfaE3lTO3KdKmHxvpkcD8duwyBl2rB
+ tsRn9VXJhpt1ZKTo6Ii3ObhGHEQaS4z6sMIbP/SgMcpgtN3Sis
+ uL1jqrDOeqpaWIfK0n7jENfbZikkG+h7VSeJzRg9xR7DVvp9QM
+ KmoG6NkmINeY1koiRHgc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Arnd Bergmann wrote:
-
-> On Thursday 15 November 2012, Lee Jones wrote:
-> > UARTs no longer require call-back information, since the reset
-> > call-back was removed in 43b5f0d69291374f602ad8e1817f329573a59010.
-> > The only AUXDATA dependencies remaining for UARTs are DMA settings.
-> > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Thursday 15 November 2012, Vineet Gupta wrote:
+> So the primary concern here is not breaking the userspace ABI - right ?
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> What is the state of the DMA binding now? We originally wanted to merge
-> it for 3.7, but that didn't work out, so I hope we can get it done for
-> 3.8.
+> For syscalls I agree that we will indeed need to fix the ABI - by fixing
+> uClibc. And if uClibc doesn't merge the fixes we can stay out of tree
+> for uClibc - as we currently already are.
 
-It's dead. The conversation has been stale for weeks.
+I'm sure we can find a solution for uClibc. We already have seven
+architectures using the generic syscalls, including at least one
+(arm64) that is going to run on a large number of installations
+in the future.
 
-Perhaps you'd like to go and poke it? :)
+> For gdbserver, the kernel provides the complete regset ABI. However it
+> also provides a very limited version of old ABI - i.e. ptrace with
+> PEEKUSR/POKEUSR. Note that latter is just a shim layer and it reuses the
+> regset callbacks. This allows us to support the legacy gdbserver. If and
+> when gdbserver upgrades it can switch over to new interface. So all
+> along there will be NO ABI breakage at all. The cost is couple extra
+> functions in kernel which we might have to maintain for some foreseeable
+> future. Agree ?
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It's more a question of principle. The rule is that we don't break user
+space, and ptrace is just another user space interface is this. If
+we merge it now, we will keep it around forever, taking it out later
+is not an option IMHO. My preference would be not to merge the backwards
+compatibility layer for ptrace at all, but I'm willing to listen to
+other people that support your view if you want to keep it. In one
+way, ptrace is less critical than the other system calls, and that is
+because it's already architecture specific.
+
+	Arnd
