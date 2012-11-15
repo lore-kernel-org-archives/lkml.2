@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423620Ab2KOKKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:10:14 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423250Ab2KOKKL (ORCPT
+	id S1423626Ab2KOKPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:15:48 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47909 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423249Ab2KOKPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:10:11 -0500
-Date: Thu, 15 Nov 2012 11:10:08 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [Q] regulators: 3-current-regulated supply
-In-Reply-To: <20121115071838.GI7599@opensource.wolfsonmicro.com>
-Message-ID: <Pine.LNX.4.64.1211151103540.684@axis700.grange>
-References: <Pine.LNX.4.64.1211150749290.684@axis700.grange>
- <20121115071838.GI7599@opensource.wolfsonmicro.com>
+	Thu, 15 Nov 2012 05:15:46 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:n8u5DgfRbUseRa21FDCB2ar2A9dkYhZsrU1cxrrVBtq
- XeEA6egyktfaYOgPv3pcCs/Vc6USIFDul+n/XDlUEcR/rgD+m7
- /CzPS73rActUohkdgKDwqohf9si2af5EjIQGyw3esUgf3dqnLl
- Q63pixxJ89Dm69SaQfhpx3ld5VA1nf6Eo3UVP+MsfGaaNGtog6
- QPBEUL9EVto5Q3uZdyrlg7O2NbCyOQZx/Nejrv3lYctm0Os+b9
- dWu7iKmBqaTtLUWTCVwAiPTtMpsuYi9J1A5PnYR7I97Z6P5gTh
- YcNKOX9CXLH9i6Pt2/irCMEWJtr0GVBpLEAubAg4RF2pKE/hIo
- S6Ee2Jq+qpCThrRozWNXRUDivKxQwl7g6TTPciwtochCoqHiQd
- DVArT3ZvJVK2A==
+In-Reply-To: <20121102102335.GF2905@linux-mips.org>
+References: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org>
+ <20121102095801.GC17860@linux-mips.org> <20121102102335.GF2905@linux-mips.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 15 Nov 2012 10:15:25 +0000
+X-Google-Sender-Auth: bG54QPMM8CSgp6D5HPLioiDYZg4
+Message-ID: <CACxGe6vUGaRG-c3Vr5Zuuohhct6hEM-AhrZ6fmFfd6nyNZdo=Q@mail.gmail.com>
+Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Michal Marek <mmarek@suse.cz>,
+        David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, linux-mips@linux-mips.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark
+On Fri, Nov 2, 2012 at 10:23 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
+> On Fri, Nov 02, 2012 at 10:58:01AM +0100, Ralf Baechle wrote:
+>
+>> Can you fold these MIPS bits into your patch?
+>
+> I missed Lantiq.
+>
+>   Ralf
+>
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+>
+>  arch/mips/cavium-octeon/Makefile | 3 ---
+>  arch/mips/lantiq/dts/Makefile    | 3 ---
+>  arch/mips/netlogic/dts/Makefile  | 3 ---
+>  3 files changed, 9 deletions(-)
+>
+> diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
+> index bc96e29..6e927cf 100644
+> --- a/arch/mips/cavium-octeon/Makefile
+> +++ b/arch/mips/cavium-octeon/Makefile
+> @@ -24,9 +24,6 @@ DTB_FILES = $(patsubst %.dts, %.dtb, $(DTS_FILES))
+>
+>  obj-y += $(patsubst %.dts, %.dtb.o, $(DTS_FILES))
+>
+> -$(obj)/%.dtb: $(src)/%.dts FORCE
+> -       $(call if_changed_dep,dtc)
+> -
+>  # Let's keep the .dtb files around in case we want to look at them.
+>  .SECONDARY:  $(addprefix $(obj)/, $(DTB_FILES))
+>
+> diff --git a/arch/mips/lantiq/dts/Makefile b/arch/mips/lantiq/dts/Makefile
+> index 674fca4..6fa72dd 100644
+> --- a/arch/mips/lantiq/dts/Makefile
+> +++ b/arch/mips/lantiq/dts/Makefile
+> @@ -1,4 +1 @@
+>  obj-$(CONFIG_DT_EASY50712) := easy50712.dtb.o
+> -
+> -$(obj)/%.dtb: $(obj)/%.dts
+> -       $(call if_changed,dtc)
+> diff --git a/arch/mips/netlogic/dts/Makefile b/arch/mips/netlogic/dts/Makefile
+> index 67ae3fe2..d117d46 100644
+> --- a/arch/mips/netlogic/dts/Makefile
+> +++ b/arch/mips/netlogic/dts/Makefile
+> @@ -1,4 +1 @@
+>  obj-$(CONFIG_DT_XLP_EVP) := xlp_evp.dtb.o
+> -
+> -$(obj)/%.dtb: $(obj)/%.dts
+> -       $(call if_changed,dtc)
 
-On Thu, 15 Nov 2012, Mark Brown wrote:
+This actually breaks MIPS builds. MIPS builds the .dtbs in the same
+directory as the .dts files. Everyone else has a dts/ subdirectory,
+which is admittedly a bit insane, but until things are resolved I've
+dropped the above MIPS hunks.
 
-> On Thu, Nov 15, 2012 at 08:15:15AM +0100, Guennadi Liakhovetski wrote:
-> 
-> > parts are pretty simple - DCDC step-down, LDO. The first step-up DCDC 
-> > isn't a problem either. It's the second step-up supply, that I'm having a 
-> > problem with. It's output voltage can be regulated by using either a 
-> > voltage feedback or the three current feedbacks. In the current feedback 
-> > mode one has a choice between a manual mode, in which case you just choose 
-> > one of the feedbacks and everything is simple again, or in automatic mode. 
-> 
-> This almost certainly has no other function than to drive a LED string
-> for a backlight; it's not sensible to represent it via the regulator
-> framework at all.  Just implement it as a backlight and/or LED driver
-> and have done with it unless you can find some other use for it.
+MIPS /could/ be changed to also use a dts directory, but I'd actually
+rather if someone could make all the other platforms build the dtbs in
+the same directory. I've looked at it briefly, but I haven't figured
+out all the make magic needed to do it nicely.
 
-Hm, interesting. In my case it is of course a backlight power source, but 
-wouldn't it be too limiting to also implement it as a backlight driver? I 
-guess I will do that, I'm not too interested in implementing something 
-hugely generic, for which I have no use either, just wondering... So, I 
-would be hiding all the flexibility in this case in platform data, 
-including the selection of the feedback method (voltage vs. current), 
-overvoltage protection and pins used... I guess, I'll just begin with 
-implementing just one mode, the one used on my board and see if any other 
-modes are ever needed.
+g.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
