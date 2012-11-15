@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423618Ab2KOJge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:36:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59332 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422860Ab2KOJgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:36:32 -0500
-Date: Thu, 15 Nov 2012 10:36:28 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Chris MacDonald <chris@fourthandvine.com>
-Subject: Re: [PATCH] HID: usbhid: add quirk HID_QUIRK_NOGET to TPV optical
- touchscreen
-In-Reply-To: <1352912036-6670-1-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211151036190.15877@pobox.suse.cz>
-References: <1352912036-6670-1-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S2993054Ab2KOJkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:40:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:48102 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992490Ab2KOJkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:40:18 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/6] powerpc/book3e: support kexec and kdump
+Date: Thu, 15 Nov 2012 17:39:50 +0800
+Message-ID: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012, Benjamin Tissoires wrote:
+This patchset is used to support kexec and kdump on book3e.
 
-> Without this, the device is blocked in dmesg at:
-> hid-multitouch 0003:25AA:8883.000X: usb_submit_urb(ctrl) failed: -1
-> hid-multitouch 0003:25AA:8883.000X: timeout initializing reports
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Tested on fsl-p5040 DS.
 
-Applied, thanks.
+Tiejun Chen (6):
+      powerpc/book3e: support CONFIG_RELOCATABLE
+      book3e/kexec/kdump: enable kexec for kernel
+      book3e/kexec/kdump: create a 1:1 TLB mapping
+      book3e/kexec/kdump: introduce a kexec kernel flag
+      book3e/kexec/kdump: skip ppc32 kexec specfic
+      book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
 
--- 
-Jiri Kosina
-SUSE Labs
+ arch/powerpc/Kconfig                     |    2 +-
+ arch/powerpc/include/asm/exception-64e.h |    8 ++++
+ arch/powerpc/include/asm/page.h          |    2 +
+ arch/powerpc/include/asm/smp.h           |    3 ++
+ arch/powerpc/kernel/exceptions-64e.S     |   15 ++++++-
+ arch/powerpc/kernel/head_64.S            |   43 +++++++++++++++++--
+ arch/powerpc/kernel/machine_kexec_64.c   |    6 +++
+ arch/powerpc/kernel/misc_64.S            |   67 +++++++++++++++++++++++++++++-
+ arch/powerpc/lib/feature-fixups.c        |    7 ++++
+ arch/powerpc/platforms/85xx/smp.c        |   26 ++++++++++++
+ 10 files changed, 173 insertions(+), 6 deletions(-)
+
+Tiejun
