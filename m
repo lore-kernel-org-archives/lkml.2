@@ -1,71 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab2KOVcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:32:21 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43220 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2KOVcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751562Ab2KOVcT (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 Nov 2012 16:32:19 -0500
-Message-ID: <50A55F57.7080804@us.ibm.com>
-Date: Thu, 15 Nov 2012 15:32:07 -0600
-From: Anthony Liguori <aliguori@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:49862
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751287Ab2KOVcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 16:32:13 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1155h)
+X-WSS-ID: 0MDJT5I-01-3EI-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 3/4] perf, x86: Move MSR address offset calculation to architecture specific files
+Date: Thu, 15 Nov 2012 15:31:52 -0600
+Message-ID: <1353015113-13262-4-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
+References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-To: Gerd Hoffmann <kraxel@redhat.com>
-CC: Andy King <acking@vmware.com>, pv-drivers@vmware.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
-        David Miller <davem@davemloft.net>, georgezhang@vmware.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
-References: <783561822.12637564.1352139592543.JavaMail.root@vmware.com> <509A06AB.2020700@redhat.com>
-In-Reply-To: <509A06AB.2020700@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12111521-2000-0000-0000-000009E45107
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 12:58 AM, Gerd Hoffmann wrote:
-> On 11/05/12 19:19, Andy King wrote:
->> Hi David,
->>
->>> The big and only question is whether anyone can actually use any of
->>> this stuff without your proprietary bits?
->>
->> Do you mean the VMCI calls?  The VMCI driver is in the process of being
->> upstreamed into the drivers/misc tree.  Greg (cc'd on these patches) is
->> actively reviewing that code and we are addressing feedback.
->>
->> Also, there was some interest from RedHat into using vSockets as a unified
->> interface, routed over a hypervisor-specific transport (virtio or
->> otherwise, although for now VMCI is the only one implemented).
->
-> Can you outline how this can be done?  From a quick look over the code
-> it seems like vsock has a hard dependency on vmci, is that correct?
->
-> When making vsock a generic, reusable kernel service it should be the
-> other way around:  vsock should provide the core implementation and an
-> interface where hypervisor-specific transports (vmci, virtio, xenbus,
-> ...) can register themself.
+Move counter index to MSR address offset calculation to architecture
+specific files. This prepares the way for perf_event_amd to enable
+counter addresses that are not contiguous -- for example AMD Family
+15h processors have 6 core performance counters starting at 0xc0010200
+and 4 northbridge performance counters starting at 0xc0010240.
 
-This was already done in a hypervisor neutral way using virtio:
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.h     |   21 +++++---------------
+ arch/x86/kernel/cpu/perf_event_amd.c |   35 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 16 deletions(-)
 
-http://lists.openwall.net/netdev/2008/12/14/8
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 271d257..aacf025 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -325,6 +325,7 @@ struct x86_pmu {
+ 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+ 	unsigned	eventsel;
+ 	unsigned	perfctr;
++	int             (*addr_offset)(int index);
+ 	u64		(*event_map)(int);
+ 	int		max_events;
+ 	int		num_counters;
+@@ -444,28 +445,16 @@ extern u64 __read_mostly hw_cache_extra_regs
+ 
+ u64 x86_perf_event_update(struct perf_event *event);
+ 
+-static inline int x86_pmu_addr_offset(int index)
+-{
+-	int offset;
+-
+-	/* offset = X86_FEATURE_PERFCTR_CORE ? index << 1 : index */
+-	alternative_io(ASM_NOP2,
+-		       "shll $1, %%eax",
+-		       X86_FEATURE_PERFCTR_CORE,
+-		       "=a" (offset),
+-		       "a"  (index));
+-
+-	return offset;
+-}
+-
+ static inline unsigned int x86_pmu_config_addr(int index)
+ {
+-	return x86_pmu.eventsel + x86_pmu_addr_offset(index);
++	return x86_pmu.eventsel +
++		(x86_pmu.addr_offset ? x86_pmu.addr_offset(index) : index);
+ }
+ 
+ static inline unsigned int x86_pmu_event_addr(int index)
+ {
+-	return x86_pmu.perfctr + x86_pmu_addr_offset(index);
++	return x86_pmu.perfctr +
++		(x86_pmu.addr_offset ? x86_pmu.addr_offset(index) : index);
+ }
+ 
+ int x86_setup_perfctr(struct perf_event *event);
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 04ef43f..d6e3337 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -132,6 +132,40 @@ static u64 amd_pmu_event_map(int hw_event)
+ 	return amd_perfmon_event_map[hw_event];
+ }
+ 
++/*
++ * Previously calculated offsets
++ */
++static unsigned int addr_offsets[X86_PMC_IDX_MAX] __read_mostly;
++
++/*
++ * Legacy CPUs:
++ *   4 counters starting at 0xc0010000 each offset by 1
++ *
++ * CPUs with core performance counter extensions:
++ *   6 counters starting at 0xc0010200 each offset by 2
++ */
++static inline int amd_pmu_addr_offset(int index)
++{
++	int offset;
++
++	if (!index)
++		return index;
++
++	offset = addr_offsets[index];
++
++	if (offset)
++		return offset;
++
++	if (!cpu_has_perfctr_core)
++		offset = index;
++	else
++		offset = index << 1;
++
++	addr_offsets[index] = offset;
++
++	return offset;
++}
++
+ static int amd_pmu_hw_config(struct perf_event *event)
+ {
+ 	int ret;
+@@ -570,6 +604,7 @@ static __initconst const struct x86_pmu amd_pmu = {
+ 	.schedule_events	= x86_schedule_events,
+ 	.eventsel		= MSR_K7_EVNTSEL0,
+ 	.perfctr		= MSR_K7_PERFCTR0,
++	.addr_offset            = amd_pmu_addr_offset,
+ 	.event_map		= amd_pmu_event_map,
+ 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+ 	.num_counters		= AMD64_NUM_COUNTERS,
+-- 
+1.7.9.5
 
-The concept was Nacked and that led to the abomination of virtio-serial.  If an 
-address family for virtualization is on the table, we should reconsider 
-AF_VMCHANNEL.
-
-I'd be thrilled to get rid of virtio-serial...
-
-Regards,
-
-Anthony Liguori
-
->
-> cheers,
->    Gerd
 
