@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab2KOU7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:59:33 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58202 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2KOU7c (ORCPT
+	id S1755120Ab2KOU7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:59:43 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:36238 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985Ab2KOU7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:59:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121115204333.GJ11566@mwanda>
-References: <1352496782-7246-1-git-send-email-yamanetoshi@gmail.com>
-	<1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
-	<20121114124110.GG11515@mwanda>
-	<CAOTypNR_dDjg=XA-yP2OhyrLs3LEBPDFSRBORZUPh6Qzo4w8xA@mail.gmail.com>
-	<20121115201817.GO11515@mwanda>
-	<CAOTypNR3Wa1rpc45kG2W1Yv-6rXD==kxx+m9TC=94m08EefkoQ@mail.gmail.com>
-	<20121115204333.GJ11566@mwanda>
-Date: Fri, 16 Nov 2012 05:53:11 +0900
-Message-ID: <CAOTypNTkeU03_gbA8CHAGR8QiF2JPgd=z4YMtd85_v+Zn4frQg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] staging/serqt_usb2: refactor qt_read_bulk_callback()
- in serqt_usb2.c
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 Nov 2012 15:59:41 -0500
+Message-ID: <1353012646.3055.25.camel@ejdallLaptop>
+Subject: Re: [PATCH 7/7] tools/power turbostat: print Watts
+From: Betty Dall <betty.dall@hp.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Date: Thu, 15 Nov 2012 13:50:46 -0700
+In-Reply-To: <f3c7bfa850840c6c96a26796786ffdc7761519ef.1352925508.git.len.brown@intel.com>
+References: <39300ffb9b6666714c60735cf854e1280e4e75f4.1352925508.git.len.brown@intel.com>
+	 <f3c7bfa850840c6c96a26796786ffdc7761519ef.1352925508.git.len.brown@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 5:43 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->
-> Btw:
->> +             dev_dbg(&port->dev, "Line status status.\n");
->                                      ^^^^^^^^^^^^^^^^^^^
-> These kind of debug statements which just tell which function is
-> being called can be deleted.  The function tracer already provides
-> that information.
+On Wed, 2012-11-14 at 15:43 -0500, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+...
 
-I did not know that. Thanks!
+> @@ -1644,7 +1967,7 @@ int main(int argc, char **argv)
+>  	cmdline(argc, argv);
+>  
+>  	if (verbose > 1)
+> -		fprintf(stderr, "turbostat v2.1 October 6, 2012"
+> +		fprintf(stderr, "turbostat v3.0 November 14, 2012"
+>  			" - Len Brown <lenb@kernel.org>\n");
+>  
+>  	turbostat_init();
 
->> +             fn = ProcessLineStatus;
->> +     } else {
->> +             dev_dbg(&port->dev, "Modem status status.\n");
->> +             fn = ProcessModemStatus;
->
-> regards,
-> dan carpenter
->
+I applied these 7 patches in order to a the upstream kernel and this
+last hunk was rejected:
+
+$ cat turbostat.c.rej
+--- tools/power/x86/turbostat/turbostat.c
++++ tools/power/x86/turbostat/turbostat.c
+@@ -1967,7 +2290,7 @@
+ 	cmdline(argc, argv);
+ 
+ 	if (verbose > 1)
+-		fprintf(stderr, "turbostat v2.1 October 6, 2012"
++		fprintf(stderr, "turbostat v3.0 November 14, 2012"
+ 			" - Len Brown <lenb@xxxxxxxxxx>\n");
+ 
+ 	turbostat_init();
 
 
+-Betty
 
--- 
 
-Regards,
-
-YAMANE Toshiaki
