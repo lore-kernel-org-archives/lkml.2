@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992824Ab2KOEsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:48:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48389 "EHLO mail.kernel.org"
+	id S2992842Ab2KOEs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:48:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48378 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992655Ab2KOEKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:15 -0500
+	id S2992642Ab2KOEKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [ 13/38] nfsd: add get_uint for u32s
-Date: Wed, 14 Nov 2012 20:10:10 -0800
-Message-Id: <20121115040933.732529614@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 12/38] NFSv4: nfs4_locku_done must release the sequence id
+Date: Wed, 14 Nov 2012 20:10:09 -0800
+Message-Id: <20121115040933.680223046@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -26,75 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a007c4c3e943ecc054a806c259d95420a188754b upstream.
+commit 2b1bc308f492589f7d49012ed24561534ea2be8c upstream.
 
-I don't think there's a practical difference for the range of values
-these interfaces should see, but it would be safer to be unambiguous.
+If the state recovery machinery is triggered by the call to
+nfs4_async_handle_error() then we can deadlock.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/export.c             |    6 +++---
- include/linux/sunrpc/cache.h |   16 ++++++++++++++++
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4proc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -403,7 +403,7 @@ fsloc_parse(char **mesg, char *buf, stru
- 	int migrated, i, err;
- 
- 	/* listsize */
--	err = get_int(mesg, &fsloc->locations_count);
-+	err = get_uint(mesg, &fsloc->locations_count);
- 	if (err)
- 		return err;
- 	if (fsloc->locations_count > MAX_FS_LOCATIONS)
-@@ -461,7 +461,7 @@ static int secinfo_parse(char **mesg, ch
- 		return -EINVAL;
- 
- 	for (f = exp->ex_flavors; f < exp->ex_flavors + listsize; f++) {
--		err = get_int(mesg, &f->pseudoflavor);
-+		err = get_uint(mesg, &f->pseudoflavor);
- 		if (err)
- 			return err;
- 		/*
-@@ -470,7 +470,7 @@ static int secinfo_parse(char **mesg, ch
- 		 * problem at export time instead of when a client fails
- 		 * to authenticate.
- 		 */
--		err = get_int(mesg, &f->flags);
-+		err = get_uint(mesg, &f->flags);
- 		if (err)
- 			return err;
- 		/* Only some flags are allowed to differ between flavors: */
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -224,6 +224,22 @@ static inline int get_int(char **bpp, in
- 	return 0;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4116,6 +4116,7 @@ static void nfs4_locku_done(struct rpc_t
+ 				nfs_restart_rpc(task,
+ 						 calldata->server->nfs_client);
+ 	}
++	nfs_release_seqid(calldata->arg.seqid);
  }
  
-+static inline int get_uint(char **bpp, unsigned int *anint)
-+{
-+	char buf[50];
-+	int len = qword_get(bpp, buf, sizeof(buf));
-+
-+	if (len < 0)
-+		return -EINVAL;
-+	if (len == 0)
-+		return -ENOENT;
-+
-+	if (kstrtouint(buf, 0, anint))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
- /*
-  * timestamps kept in the cache are expressed in seconds
-  * since boot.  This is the best for measuring differences in
+ static void nfs4_locku_prepare(struct rpc_task *task, void *data)
 
 
