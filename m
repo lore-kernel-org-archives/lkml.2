@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993225Ab2KOKXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:23:22 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:35243 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993178Ab2KOKXT (ORCPT
+	id S2993253Ab2KOKX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:23:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35883 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993178Ab2KOKXY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:23:19 -0500
-Message-ID: <50A4C273.10102@synopsys.com>
-Date: Thu, 15 Nov 2012 15:52:43 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 15 Nov 2012 05:23:24 -0500
+Message-ID: <50A4C28B.8020307@parallels.com>
+Date: Thu, 15 Nov 2012 14:23:07 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>
-Subject: Re: [RFC Patch v1 32/55] ARC: [optim] Cache "current" in Register
- r25
-References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-2-git-send-email-vgupta@synopsys.com> <201211121350.12810.arnd@arndb.de>
-In-Reply-To: <201211121350.12810.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [RFC PATCH v2 00/15] NFSd state containerization
+References: <20121114152018.4708.63125.stgit@localhost.localdomain> <20121114220036.GD539@fieldses.org>
+In-Reply-To: <20121114220036.GD539@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.29.152]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 November 2012 07:20 PM, Arnd Bergmann wrote:
-> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
->>  endmenu # "Platform Board Configuration"
->>  
->> +config ARC_CURR_IN_REG
->> +       bool "Dedicate Register r25 for current_task pointer"
->> +       default y
->> +       help
->> +         This reserved Register R25 to point to Current Task in
->> +         kernel mode. This saves memory access for each such access
->> +
-> This looks like a useful feature if you have 32 GPRs, but why make it
-> optional? Are there cases where you would disable it?
+15.11.2012 02:00, J. Bruce Fields пишет:
+> On Wed, Nov 14, 2012 at 06:20:59PM +0300, Stanislav Kinsbursky wrote:
+>> This patch set is my first attempt to containerize NFSv4 state - i.e. make it
+>> works in networks namespace context.
+>> I admit, that some of this new code could be partially rewritten during future
+>> NFSd containerization.
+>> But the overall idea look more or less correct to me.
+>> So, the main things here are:
+>> 1) making nfs4_client network namespace aware.
+>> 2) Allocating all hashes (except file_hashtbl and reclaim_str_hashtbl) per
+>> network namespace context on NFSd start (not init) and destroying on NFSd
+>> state shutdown.
+>> 3) Allocating of reclaim_str_hashtbl on legacy tracker start and destroying on
+>> legacy tracker stop.
+>> 4) Moving of client_lru and close_lru lists to per-net data.
+>> 5) Making lundromat network namespace aware.
+>
+> These look OK and pass my tests.  Jeff, do the revised recovery bits
+> look OK?
+>
+> Have you done any testing?
 
-Since it touched the low level guts of port, it made sense to start with
-a config option in initial implementation. But I've kept it that way
-since it annotates the code nicely and implicitly documents how to do
-this for any other register + data structure.
+I've done basic testing. I.e. NFS server start/stop in loop, export, share mount 
+on another node and some activity, etc.
+NFS server is not ready yet to work on container, so no such testing has been done.
 
-> Another alternative to caching "current" would be to cache the per-cpu
-> offset, and calculate current from that one.
+>
+> It'd be interesting, for example, to know if there are any pynfs that
+> fail against the server in a non-init network namespace, but pass
+> normally.
+>
+> --b.
+>
 
-Good tip - I'll add this to my TODO list -
 
-> 	Arnd
-
+-- 
+Best regards,
+Stanislav Kinsbursky
