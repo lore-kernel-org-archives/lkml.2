@@ -1,165 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767338Ab2KOLBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:01:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:36963 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993320Ab2KOLAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:00:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="247385201"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 1/3] gpio / ACPI: add ACPI support
-Date: Thu, 15 Nov 2012 13:03:15 +0200
-Message-Id: <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S2993356Ab2KOLCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:02:30 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64675 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993226Ab2KOLC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 06:02:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohponUGQNMvA0T1qhZbTGnK12upy4gcTPq4ZfZ-enLDbf4+w@mail.gmail.com>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+	<1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
+	<1352967218.2080.15.camel@rzhang1-mobl4>
+	<CAJLyvQyu_oU7xx92JTOj6bvF+7-hOJfM=kTHj6JMogaYjC+Jww@mail.gmail.com>
+	<1352970823.2080.22.camel@rzhang1-mobl4>
+	<CAJLyvQxJeNgGc8sQiV_qmKCfvfWQKyR8S5ZMNCtETvJLMQH-oQ@mail.gmail.com>
+	<CAKohponUGQNMvA0T1qhZbTGnK12upy4gcTPq4ZfZ-enLDbf4+w@mail.gmail.com>
+Date: Thu, 15 Nov 2012 19:02:27 +0800
+Message-ID: <CAJLyvQw6D+3nuaOv=g6zKvBDzceWQzhDOxWE7RNt5xt3MsZ=8Q@mail.gmail.com>
+Subject: Re: [PATCH V5 1/2] Thermal: Add ST-Ericsson DB8500 thermal driver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, linaro-kernel@lists.linaro.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, amit.kachhap@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-
-Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
-Needs a gpio controller driver with the acpi handler hook set.
-
-Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
-resources to Linux GPIO's.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/gpio/Kconfig        |    4 ++++
- drivers/gpio/Makefile       |    1 +
- drivers/gpio/gpiolib-acpi.c |   56 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi_gpio.h   |   19 +++++++++++++++
- 4 files changed, 80 insertions(+)
- create mode 100644 drivers/gpio/gpiolib-acpi.c
- create mode 100644 include/linux/acpi_gpio.h
-
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index f11d8e3..5c9b384 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -49,6 +49,10 @@ config OF_GPIO
- 	def_bool y
- 	depends on OF
- 
-+config GPIO_ACPI
-+	def_bool y
-+	depends on ACPI
-+
- config DEBUG_GPIO
- 	bool "Debug GPIO calls"
- 	depends on DEBUG_KERNEL
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 9aeed67..420dbac 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
- 
- obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-+obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
- 
- # Device drivers. Generally keep list sorted alphabetically
- obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-new file mode 100644
-index 0000000..8ef9831
---- /dev/null
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -0,0 +1,56 @@
-+/*
-+ * ACPI helpers for GPIO API
-+ *
-+ * Copyright (C) 2012, Intel Corporation
-+ * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
-+ *          Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/export.h>
-+#include <linux/acpi_gpio.h>
-+#include <linux/acpi.h>
-+
-+static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
-+{
-+	acpi_handle handle = data;
-+
-+	if (!gc->dev)
-+		return false;
-+
-+	return gc->dev->acpi_handle == handle;
-+}
-+
-+/**
-+ * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
-+ * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
-+ * @pin:	ACPI GPIO pin number (0-based, controller-relative)
-+ *
-+ * Returns GPIO number to use with Linux generic GPIO API, or errno error value
-+ */
-+
-+int acpi_get_gpio(char *path, int pin)
-+{
-+	struct gpio_chip *chip;
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	status = acpi_get_handle(NULL, path, &handle);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
-+
-+	chip = gpiochip_find(handle, acpi_gpiochip_find);
-+	if (!chip)
-+		return -ENODEV;
-+
-+	if (!gpio_is_valid(chip->base + pin))
-+		return -EINVAL;
-+
-+	return chip->base + pin;
-+}
-+EXPORT_SYMBOL_GPL(acpi_get_gpio);
-diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-new file mode 100644
-index 0000000..91615a3
---- /dev/null
-+++ b/include/linux/acpi_gpio.h
-@@ -0,0 +1,19 @@
-+#ifndef _LINUX_ACPI_GPIO_H_
-+#define _LINUX_ACPI_GPIO_H_
-+
-+#include <linux/errno.h>
-+
-+#ifdef CONFIG_GPIO_ACPI
-+
-+int acpi_get_gpio(char *path, int pin);
-+
-+#else /* CONFIG_GPIO_ACPI */
-+
-+static inline int acpi_get_gpio(char *path, int pin)
-+{
-+	return -ENODEV;
-+}
-+
-+#endif /* CONFIG_GPIO_ACPI */
-+
-+#endif /* _LINUX_ACPI_GPIO_H_ */
--- 
-1.7.10.4
-
+On 15 November 2012 18:17, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 November 2012 14:53, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
+>> this is a driver for ST-Ericsson u8500 board(Snowball), with a ARM core inside.
+>> so you should compile like this:
+>> make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- u8500_defconfig
+>> make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- uImage
+>
+> Then we must have a DEPENDS_ON in Kconfig entry for these.
+Sorry for the negligence.
+A V6 iteration has been sent out with "depends on ARCH_U8500" added.
+Thank all of you.
+>
+>
+> --
+> viresh
