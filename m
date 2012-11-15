@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992816Ab2KOEnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:43:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48655 "EHLO mail.kernel.org"
+	id S2992849Ab2KOEnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:43:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48621 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992795Ab2KOEKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:47 -0500
+	id S2992783Ab2KOEKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>
-Subject: [ 37/38] xfs: fix reading of wrapped log data
-Date: Wed, 14 Nov 2012 20:10:34 -0800
-Message-Id: <20121115040935.184083496@linuxfoundation.org>
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: =?UTF-8?q?=5B=2034/38=5D=20drm/i915=3A=20fixup=20infoframe=20support=20for=20sdvo?=
+Date: Wed, 14 Nov 2012 20:10:31 -0800
+Message-Id: <20121115040934.986870549@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,39 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 6ce377afd1755eae5c93410ca9a1121dfead7b87 upstream.
+commit 81014b9d0b55fb0b48f26cd2a943359750d532db upstream.
 
-Commit 4439647 ("xfs: reset buffer pointers before freeing them") in
-3.0-rc1 introduced a regression when recovering log buffers that
-wrapped around the end of log. The second part of the log buffer at
-the start of the physical log was being read into the header buffer
-rather than the data buffer, and hence recovery was seeing garbage
-in the data buffer when it got to the region of the log buffer that
-was incorrectly read.
+At least the worst offenders:
+- SDVO specifies that the encoder should compute the ecc. Testing also
+  shows that we must not send the ecc field, so copy the dip_infoframe
+  struct to a temporay place and avoid the ecc field. This way the avi
+  infoframe is exactly 17 bytes long, which agrees with what the spec
+  mandates as a minimal storage capacity (with the ecc field it would
+  be 18 bytes).
+- Only 17 when sending the avi infoframe. The SDVO spec explicitly
+  says that sending more data than what the device announces results
+  in undefined behaviour.
+- Add __attribute__((packed)) to the avi and spd infoframes, for
+  otherwise they're wrongly aligned. Noticed because the avi infoframe
+  ended up being 18 bytes large instead of 17. We haven't noticed this
+  yet because we don't use the uint16_t fields yet (which are the only
+  ones that would be wrongly aligned).
 
-Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+This regression has been introduce by
+
+3c17fe4b8f40a112a85758a9ab2aebf772bdd647 is the first bad commit
+commit 3c17fe4b8f40a112a85758a9ab2aebf772bdd647
+Author: David Härdeman <david@hardeman.nu>
+Date:   Fri Sep 24 21:44:32 2010 +0200
+
+    i915: enable AVI infoframe for intel_hdmi.c [v4]
+
+Patch tested on my g33 with a sdvo hdmi adaptor.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
+Tested-by: Peter Ross <pross@xvid.org> (G35 SDVO-HDMI)
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_log_recover.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_drv.h  |    2 +-
+ drivers/gpu/drm/i915/intel_sdvo.c |   11 +++++++++--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3512,7 +3512,7 @@ xlog_do_recovery_pass(
- 				 *   - order is important.
- 				 */
- 				error = xlog_bread_offset(log, 0,
--						bblks - split_bblks, hbp,
-+						bblks - split_bblks, dbp,
- 						offset + BBTOB(split_bblks));
- 				if (error)
- 					goto bread_err2;
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -204,7 +204,7 @@ struct dip_infoframe {
+ 			uint16_t bottom_bar_start;
+ 			uint16_t left_bar_end;
+ 			uint16_t right_bar_start;
+-		} avi;
++		} __attribute__ ((packed)) avi;
+ 		uint8_t payload[27];
+ 	} __attribute__ ((packed)) body;
+ } __attribute__((packed));
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -870,17 +870,24 @@ static bool intel_sdvo_set_avi_infoframe
+ 	};
+ 	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
+ 	uint8_t set_buf_index[2] = { 1, 0 };
+-	uint64_t *data = (uint64_t *)&avi_if;
++	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
++	uint64_t *data = (uint64_t *)sdvo_data;
+ 	unsigned i;
+ 
+ 	intel_dip_infoframe_csum(&avi_if);
+ 
++	/* sdvo spec says that the ecc is handled by the hw, and it looks like
++	 * we must not send the ecc field, either. */
++	memcpy(sdvo_data, &avi_if, 3);
++	sdvo_data[3] = avi_if.checksum;
++	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
++
+ 	if (!intel_sdvo_set_value(intel_sdvo,
+ 				  SDVO_CMD_SET_HBUF_INDEX,
+ 				  set_buf_index, 2))
+ 		return false;
+ 
+-	for (i = 0; i < sizeof(avi_if); i += 8) {
++	for (i = 0; i < sizeof(sdvo_data); i += 8) {
+ 		if (!intel_sdvo_set_value(intel_sdvo,
+ 					  SDVO_CMD_SET_HBUF_DATA,
+ 					  data, 8))
 
 
