@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992780Ab2KOEsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:48:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48414 "EHLO mail.kernel.org"
+	id S2992824Ab2KOEsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:48:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48389 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992668Ab2KOEKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:18 -0500
+	id S2992655Ab2KOEKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Ems <richard.ems@cape-horn-eng.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 15/38] NFS: Fix Oopses in nfs_lookup_revalidate and nfs4_lookup_revalidate
-Date: Wed, 14 Nov 2012 20:10:12 -0800
-Message-Id: <20121115040933.856407897@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [ 13/38] nfsd: add get_uint for u32s
+Date: Wed, 14 Nov 2012 20:10:10 -0800
+Message-Id: <20121115040933.732529614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -26,87 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-[Fixed upstream as part of 0b728e1911c, but that's a much larger patch,
-this is only the nfs portion backported as needed.]
+commit a007c4c3e943ecc054a806c259d95420a188754b upstream.
 
-Fix the following Oops in 3.5.1:
+I don't think there's a practical difference for the range of values
+these interfaces should see, but it would be safer to be unambiguous.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
- IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- PGD 337c63067 PUD 0
- Oops: 0000 [#1] SMP
- CPU 5
- Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
-
- Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
- RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
- RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
- RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
- RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
- R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
- R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
- FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
- Stack:
-  ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
-  ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
-  ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
- Call Trace:
-  [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
-  [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
-  [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
-  [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
-  [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
-  [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
-  [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
-  [<00002b5348b5f527>] 0x2b5348b5f526
- Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
- RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
-  RSP <ffff8801b418bd38>
- CR2: 0000000000000038
- ---[ end trace 845113ed191985dd ]---
-
-This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
-calling down to the dentry revalidation code with a NULL pointer
-to struct nameidata.
-
-It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-to ->d_revalidate())
-
-Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/dir.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/export.c             |    6 +++---
+ include/linux/sunrpc/cache.h |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1100,7 +1100,7 @@ static int nfs_lookup_revalidate(struct
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -403,7 +403,7 @@ fsloc_parse(char **mesg, char *buf, stru
+ 	int migrated, i, err;
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+ 	/* listsize */
+-	err = get_int(mesg, &fsloc->locations_count);
++	err = get_uint(mesg, &fsloc->locations_count);
+ 	if (err)
+ 		return err;
+ 	if (fsloc->locations_count > MAX_FS_LOCATIONS)
+@@ -461,7 +461,7 @@ static int secinfo_parse(char **mesg, ch
+ 		return -EINVAL;
  
- 	parent = dget_parent(dentry);
-@@ -1498,7 +1498,7 @@ static int nfs_open_revalidate(struct de
- 	struct nfs_open_context *ctx;
- 	int openflags, ret = 0;
+ 	for (f = exp->ex_flavors; f < exp->ex_flavors + listsize; f++) {
+-		err = get_int(mesg, &f->pseudoflavor);
++		err = get_uint(mesg, &f->pseudoflavor);
+ 		if (err)
+ 			return err;
+ 		/*
+@@ -470,7 +470,7 @@ static int secinfo_parse(char **mesg, ch
+ 		 * problem at export time instead of when a client fails
+ 		 * to authenticate.
+ 		 */
+-		err = get_int(mesg, &f->flags);
++		err = get_uint(mesg, &f->flags);
+ 		if (err)
+ 			return err;
+ 		/* Only some flags are allowed to differ between flavors: */
+--- a/include/linux/sunrpc/cache.h
++++ b/include/linux/sunrpc/cache.h
+@@ -224,6 +224,22 @@ static inline int get_int(char **bpp, in
+ 	return 0;
+ }
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
- 
- 	inode = dentry->d_inode;
++static inline int get_uint(char **bpp, unsigned int *anint)
++{
++	char buf[50];
++	int len = qword_get(bpp, buf, sizeof(buf));
++
++	if (len < 0)
++		return -EINVAL;
++	if (len == 0)
++		return -ENOENT;
++
++	if (kstrtouint(buf, 0, anint))
++		return -EINVAL;
++
++	return 0;
++}
++
+ /*
+  * timestamps kept in the cache are expressed in seconds
+  * since boot.  This is the best for measuring differences in
 
 
