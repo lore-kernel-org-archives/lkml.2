@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161272Ab2KOA2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 19:28:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45120 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161081Ab2KOA2T (ORCPT
+	id S1161285Ab2KOA3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 19:29:09 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37536 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161112Ab2KOA3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 19:28:19 -0500
-Date: Wed, 14 Nov 2012 16:27:49 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-6f5298c2139b06925037490367906f3d73955b86@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1352835171-3958-14-git-send-email-fenghua.yu@intel.com>
-References: <1352835171-3958-14-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86/i387.c:
-  Initialize thread xstate only on CPU0 only once
-Git-Commit-ID: 6f5298c2139b06925037490367906f3d73955b86
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Nov 2012 19:29:08 -0500
+Date: Wed, 14 Nov 2012 16:29:06 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 00/11] Introduce huge zero page
+In-Reply-To: <20121114133342.cc7bcd6e.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1211141626220.482@chino.kir.corp.google.com>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <20121114133342.cc7bcd6e.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Nov 2012 16:28:14 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6f5298c2139b06925037490367906f3d73955b86
-Gitweb:     http://git.kernel.org/tip/6f5298c2139b06925037490367906f3d73955b86
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Tue, 13 Nov 2012 11:32:50 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Nov 2012 15:28:11 -0800
+On Wed, 14 Nov 2012, Andrew Morton wrote:
 
-x86/i387.c: Initialize thread xstate only on CPU0 only once
+> For this reason and for general ease-of-testing: can and should we add
+> a knob which will enable users to disable the feature at runtime?  That
+> way if it causes problems or if we suspect it's causing problems, we
+> can easily verify the theory and offer users a temporary fix.
+> 
 
-init_thread_xstate() is only called once to avoid overriding xstate_size during
-boot time or during CPU hotplug.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1352835171-3958-14-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/i387.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 675a050..245a71d 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -175,7 +175,11 @@ void __cpuinit fpu_init(void)
- 		cr0 |= X86_CR0_EM;
- 	write_cr0(cr0);
- 
--	if (!smp_processor_id())
-+	/*
-+	 * init_thread_xstate is only called once to avoid overriding
-+	 * xstate_size during boot time or during CPU hotplug.
-+	 */
-+	if (xstate_size == 0)
- 		init_thread_xstate();
- 
- 	mxcsr_feature_mask_init();
+I think it would be best to add a tunable under 
+/sys/kernel/mm/transparent_hugepage and enable it by default whenever 
+/sys/kernel/mm/transparent_hugepage/enabled is "always" or "madvise" and 
+allocate the huge zero page under such circumstances.  Then we can free it 
+if disabled (or if enabled is set to "never") and avoid all the 
+refcounting and lazy allocation that causes a regression on Kirill's 
+benchmark.
