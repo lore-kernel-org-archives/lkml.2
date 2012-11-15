@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768010Ab2KOO0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:26:23 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:32463 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1767933Ab2KOO0W (ORCPT
+	id S1768024Ab2KOO1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:27:07 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:57521 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767933Ab2KOO1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:26:22 -0500
-Date: Thu, 15 Nov 2012 14:26:21 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/8] Announcement: Enhanced NUMA scheduling with adaptive
- affinity
-In-Reply-To: <20121113072441.GA21386@gmail.com>
-Message-ID: <0000013b04769cf2-b57b16c0-5af0-4e7e-a736-e0aa2d4e4e78-000000@email.amazonses.com>
-References: <20121112160451.189715188@chello.nl> <0000013af701ca15-3acab23b-a16d-4e38-9dc0-efef05cbc5f2-000000@email.amazonses.com> <20121113072441.GA21386@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Thu, 15 Nov 2012 09:27:05 -0500
+Date: Thu, 15 Nov 2012 15:26:52 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] RFC: pinctrl: grab default handler with bus notifiers
+Message-ID: <20121115152652.44c567d5@skate>
+In-Reply-To: <CACRpkdY-tye5LNOwxQ-XrjM-x9RffAvj-tPfsFQA3ZWOY8P-Vw@mail.gmail.com>
+References: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com>
+	<50A15A54.3090803@wwwdotorg.org>
+	<20121113063546.GD18224@opensource.wolfsonmicro.com>
+	<CACRpkdY-tye5LNOwxQ-XrjM-x9RffAvj-tPfsFQA3ZWOY8P-Vw@mail.gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Nov 2012, Ingo Molnar wrote:
+Linus,
 
-> > the pages over both nodes in use.
->
-> I'd not go as far as to claim that to be a general rule: the
-> correct placement depends on the system and workload specifics:
-> how much memory is on each node, how many tasks run on each
-> node, and whether the access patterns and working set of the
-> tasks is symmetric amongst each other - which is not a given at
-> all.
->
-> Say consider a database server that executes small and large
-> queries over a large, memory-shared database, and has worker
-> tasks to clients, to serve each query. Depending on the nature
-> of the queries, interleaving can easily be the wrong thing to
-> do.
+On Thu, 15 Nov 2012 15:03:40 +0100, Linus Walleij wrote:
 
-The interleaving of memory areas that have an equal amount of shared
-accesses from multiple nodes is essential to limit the traffic on the
-interconnect and get top performance.
+> > I have to say that I agree with this, notifiers seem to make life more
+> > complicated for limited gain.  Otherwise I guess we could enhance
+> > notifiers so that they're able to trigger deferrals?
+> 
+> OK I'll have to come up with a patch to the device core
+> instead... it'll be much simpler anyway and if both of you guys
+> can back it I guess Greg might be OK with it too.
 
-I guess through that in a non HPC environment where you are not interested
-in one specific load running at top speed varying contention on the
-interconnect and memory busses are acceptable. But this means that HPC
-loads cannot be auto tuned.
+At ELCE, I've discussed with one person having an interesting use case:
+they are using the same pin for two different purposes during the
+system operation.
 
+At boot time, this pin is muxed as a SPI pin and is used to program the
+bitstream of a FPGA. This is done in Linux, through a userspace
+application.
+
+Then, once it is done, this pin is remuxed as a UART pin, and used to
+communicate with another device on the board.
+
+If the pinctrl configuration is done at probe() time inside the driver
+core, then how can this kind of use case be supported? If each driver
+does its own muxing, we could think of letting the SPI and UART driver
+only do their muxing when the device is opened, and remove their muxing
+when the device is closed, so that such sharing of pins for two
+separate functions could be supported. Is this something we want to
+support?
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
