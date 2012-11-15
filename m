@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992752Ab2KOEuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:50:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48281 "EHLO mail.kernel.org"
+	id S2992740Ab2KOEvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:51:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48243 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933353Ab2KOEKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:02 -0500
+	id S933315Ab2KOEJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:09:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Javier Cardona <javier@cozybit.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 05/38] wireless: drop invalid mesh address extension frames
-Date: Wed, 14 Nov 2012 20:10:02 -0800
-Message-Id: <20121115040933.247418631@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 02/38] rt2800: validate step value for temperature compensation
+Date: Wed, 14 Nov 2012 20:09:59 -0800
+Message-Id: <20121115040933.056862802@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -26,63 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
+commit bf7e1abe434ba9e22e8dc04a4cba4ab504b788b8 upstream.
 
-The mesh header can have address extension by a 4th
-or a 5th and 6th address, but never both. Drop such
-frames in 802.11 -> 802.3 conversion along with any
-frames that have the wrong extension.
+Some hardware has correct (!= 0xff) value of tssi_bounds[4] in the
+EEPROM, but step is equal to 0xff. This results on ridiculous delta
+calculations and completely broke TX power settings.
 
-Reviewed-by: Javier Cardona <javier@cozybit.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-and-tested-by: Pavel Lucik <pavel.lucik@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/util.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -298,18 +298,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_
- static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
- {
- 	int ae = meshhdr->flags & MESH_FLAGS_AE;
--	/* 7.1.3.5a.2 */
-+	/* 802.11-2012, 8.2.4.7.3 */
- 	switch (ae) {
-+	default:
- 	case 0:
- 		return 6;
- 	case MESH_FLAGS_AE_A4:
- 		return 12;
- 	case MESH_FLAGS_AE_A5_A6:
- 		return 18;
--	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
--		return 24;
--	default:
--		return 6;
- 	}
- }
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -1935,7 +1935,7 @@ static int rt2800_get_gain_calibration_d
+ 	/*
+ 	 * Check if temperature compensation is supported.
+ 	 */
+-	if (tssi_bounds[4] == 0xff)
++	if (tssi_bounds[4] == 0xff || step == 0xff)
+ 		return 0;
  
-@@ -359,6 +356,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A4)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
-@@ -383,6 +382,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A4)
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
+ 	/*
 
 
