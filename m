@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992849Ab2KOEnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:43:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48621 "EHLO mail.kernel.org"
+	id S2992776Ab2KOEKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:10:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48586 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992783Ab2KOEKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:43 -0500
+	id S2992667Ab2KOEKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: =?UTF-8?q?=5B=2034/38=5D=20drm/i915=3A=20fixup=20infoframe=20support=20for=20sdvo?=
-Date: Wed, 14 Nov 2012 20:10:31 -0800
-Message-Id: <20121115040934.986870549@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 31/38] ipv6: send unsolicited neighbour advertisements to all-nodes
+Date: Wed, 14 Nov 2012 20:10:28 -0800
+Message-Id: <20121115040934.804057690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,88 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 81014b9d0b55fb0b48f26cd2a943359750d532db upstream.
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-At least the worst offenders:
-- SDVO specifies that the encoder should compute the ecc. Testing also
-  shows that we must not send the ecc field, so copy the dip_infoframe
-  struct to a temporay place and avoid the ecc field. This way the avi
-  infoframe is exactly 17 bytes long, which agrees with what the spec
-  mandates as a minimal storage capacity (with the ecc field it would
-  be 18 bytes).
-- Only 17 when sending the avi infoframe. The SDVO spec explicitly
-  says that sending more data than what the device announces results
-  in undefined behaviour.
-- Add __attribute__((packed)) to the avi and spd infoframes, for
-  otherwise they're wrongly aligned. Noticed because the avi infoframe
-  ended up being 18 bytes large instead of 17. We haven't noticed this
-  yet because we don't use the uint16_t fields yet (which are the only
-  ones that would be wrongly aligned).
+[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
 
-This regression has been introduce by
+As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
+unsolicited neighbour advertisements should be sent to the all-nodes
+multicast address.
 
-3c17fe4b8f40a112a85758a9ab2aebf772bdd647 is the first bad commit
-commit 3c17fe4b8f40a112a85758a9ab2aebf772bdd647
-Author: David Härdeman <david@hardeman.nu>
-Date:   Fri Sep 24 21:44:32 2010 +0200
-
-    i915: enable AVI infoframe for intel_hdmi.c [v4]
-
-Patch tested on my g33 with a sdvo hdmi adaptor.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
-Tested-by: Peter Ross <pross@xvid.org> (G35 SDVO-HDMI)
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/intel_drv.h  |    2 +-
- drivers/gpu/drm/i915/intel_sdvo.c |   11 +++++++++--
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ net/ipv6/ndisc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -204,7 +204,7 @@ struct dip_infoframe {
- 			uint16_t bottom_bar_start;
- 			uint16_t left_bar_end;
- 			uint16_t right_bar_start;
--		} avi;
-+		} __attribute__ ((packed)) avi;
- 		uint8_t payload[27];
- 	} __attribute__ ((packed)) body;
- } __attribute__((packed));
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -870,17 +870,24 @@ static bool intel_sdvo_set_avi_infoframe
- 	};
- 	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
- 	uint8_t set_buf_index[2] = { 1, 0 };
--	uint64_t *data = (uint64_t *)&avi_if;
-+	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
-+	uint64_t *data = (uint64_t *)sdvo_data;
- 	unsigned i;
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -615,7 +615,7 @@ static void ndisc_send_unsol_na(struct n
+ {
+ 	struct inet6_dev *idev;
+ 	struct inet6_ifaddr *ifa;
+-	struct in6_addr mcaddr;
++	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
  
- 	intel_dip_infoframe_csum(&avi_if);
+ 	idev = in6_dev_get(dev);
+ 	if (!idev)
+@@ -623,7 +623,6 @@ static void ndisc_send_unsol_na(struct n
  
-+	/* sdvo spec says that the ecc is handled by the hw, and it looks like
-+	 * we must not send the ecc field, either. */
-+	memcpy(sdvo_data, &avi_if, 3);
-+	sdvo_data[3] = avi_if.checksum;
-+	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
-+
- 	if (!intel_sdvo_set_value(intel_sdvo,
- 				  SDVO_CMD_SET_HBUF_INDEX,
- 				  set_buf_index, 2))
- 		return false;
- 
--	for (i = 0; i < sizeof(avi_if); i += 8) {
-+	for (i = 0; i < sizeof(sdvo_data); i += 8) {
- 		if (!intel_sdvo_set_value(intel_sdvo,
- 					  SDVO_CMD_SET_HBUF_DATA,
- 					  data, 8))
+ 	read_lock_bh(&idev->lock);
+ 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
+-		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
+ 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
+ 			      /*router=*/ !!idev->cnf.forwarding,
+ 			      /*solicited=*/ false, /*override=*/ true,
 
 
