@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992670Ab2KOBvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 20:51:21 -0500
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:44737 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992613Ab2KOBvR (ORCPT
+	id S2992654Ab2KOBvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 20:51:20 -0500
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:42078 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992607Ab2KOBvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 20:51:17 -0500
 From: David Sharp <dhsharp@google.com>
 To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
 Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
         David Sharp <dhsharp@google.com>
-Subject: [PATCH 2/4] kernel-shark: Allow unsetting of all CPUs in filter
-Date: Wed, 14 Nov 2012 17:51:12 -0800
-Message-Id: <1352944274-21699-2-git-send-email-dhsharp@google.com>
+Subject: [PATCH 3/4] kernel-shark: Don't check for system name for sched events
+Date: Wed, 14 Nov 2012 17:51:13 -0800
+Message-Id: <1352944274-21699-3-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1352944274-21699-1-git-send-email-dhsharp@google.com>
 References: <1352944274-21699-1-git-send-email-dhsharp@google.com>
@@ -23,39 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-The button "All CPUs" in CPU filter dialog allows setting of all CPUs
-but doesn't clear CPUs when it is unchecked. Make sure that when the
-"All CPUs" button is unchecked, all the CPUs get unchecked.
+The sched tracepoint names are unique and so there is no need to check
+for the subsystem name while looking up the event ID.
 
-Tested: In kernelshark, go to Filter->list CPUs and uncheck "All CPUs"
-button. All the CPUs should be unchecked at that point.
+This helps kernel shark display the graphs correctly for trace.dat files
+generated from trace collection mechanisms that don't record the subsystem.
 
+Google-Bug-Id: 6333917
 Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 Signed-off-by: David Sharp <dhsharp@google.com>
 ---
- trace-filter.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ trace-graph.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/trace-filter.c b/trace-filter.c
-index c657a18..89cf032 100644
---- a/trace-filter.c
-+++ b/trace-filter.c
-@@ -1723,12 +1723,10 @@ void cpu_toggle(gpointer data, GtkWidget *widget)
+diff --git a/trace-graph.c b/trace-graph.c
+index 4d81219..6f72350 100644
+--- a/trace-graph.c
++++ b/trace-graph.c
+@@ -1016,7 +1016,7 @@ int trace_graph_check_sched_wakeup(struct graph_info *ginfo,
+ 		found = FALSE;
  
- 	if (strcmp(label, CPU_ALL_CPUS_STR) == 0) {
- 		cpu_helper->allcpus = active;
--		if (active) {
--			/* enable all toggles */
--			for (cpu = 0; cpu < cpu_helper->cpus; cpu++)
--				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu]),
--							     TRUE);
--		}
-+		/* enable/disable all toggles */
-+		for (cpu = 0; cpu < cpu_helper->cpus; cpu++)
-+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu]),
-+						     active ? TRUE : FALSE);
- 		return;
- 	}
+ 		event = pevent_find_event_by_name(ginfo->pevent,
+-						  "sched", "sched_wakeup");
++						  NULL, "sched_wakeup");
+ 		if (event) {
+ 			found = TRUE;
+ 			ginfo->event_wakeup_id = event->id;
+@@ -1026,7 +1026,7 @@ int trace_graph_check_sched_wakeup(struct graph_info *ginfo,
+ 
+ 
+ 		event = pevent_find_event_by_name(ginfo->pevent,
+-						  "sched", "sched_wakeup_new");
++						  NULL, "sched_wakeup_new");
+ 		if (event) {
+ 			found = TRUE;
+ 			ginfo->event_wakeup_new_id = event->id;
+@@ -1086,7 +1086,7 @@ int trace_graph_check_sched_switch(struct graph_info *ginfo,
+ 
+ 	if (ginfo->event_sched_switch_id < 0) {
+ 		event = pevent_find_event_by_name(ginfo->pevent,
+-						  "sched", "sched_switch");
++						  NULL, "sched_switch");
+ 		if (!event)
+ 			return 0;
  
 -- 
 1.7.7.3
