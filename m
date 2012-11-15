@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423641Ab2KOLSl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:18:41 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:44342 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423250Ab2KOLSk (ORCPT
+	id S2993342Ab2KOLTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:19:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48645 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993197Ab2KOLTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:18:40 -0500
-Date: Thu, 15 Nov 2012 16:48:23 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: "chuansheng.liu@intel.com" <chuansheng.liu@intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH 1/7] I2c-nomadik: Fix the usage of
- wait_for_completion_timeout
-Message-ID: <20121115111822.GA3911@bnru10>
-References: <1352222317.15558.1584.camel@cliu38-desktop-build>
- <CACRpkdYekQF5111NSNSPeaHdxgS_gpXkCjqT1n-n1_iAdDXbSg@mail.gmail.com>
- <20121115084858.GA29668@bnru10>
- <20121115092953.GA418@pengutronix.de>
- <20121115095741.GA6280@bnru10>
- <20121115101820.GC418@pengutronix.de>
+	Thu, 15 Nov 2012 06:19:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121115101820.GC418@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAN1soZy=nQfqok9pzzg9LX+wStEdJ=eCvdWPG5WA32f6bDbb1Q@mail.gmail.com>
+References: <1352702750.15066.4.camel@phoenix>
+	<CACRpkdbMPokEH80WX+M8yvAWAM-XGend3cts4K0eaj=oke8rLQ@mail.gmail.com>
+	<CAN1soZy=nQfqok9pzzg9LX+wStEdJ=eCvdWPG5WA32f6bDbb1Q@mail.gmail.com>
+Date: Thu, 15 Nov 2012 12:19:46 +0100
+Message-ID: <CACRpkdYmYjb7-qs005Y3K6xrDSpe2Y57xeJiKD1GVzpp4km7jA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: pxa3xx: Use devm_request_and_ioremap
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 11:18:20 +0100, Wolfram Sang wrote:
-> On Thu, Nov 15, 2012 at 03:27:42PM +0530, Srinidhi Kasagar wrote:
-> > On Thu, Nov 15, 2012 at 10:29:53 +0100, Wolfram Sang wrote:
-> > > 
-> > > > > -       if (timeout < 0) {
-> > > > > -               dev_err(&dev->adev->dev,
-> > > > > -                       "wait_for_completion_timeout "
-> > > > > -                       "returned %d waiting for event\n", timeout);
-> > > > > -               status = timeout;
-> > > > > -       }
-> > > > > -
-> > > > No, it is wrong. You need to update the status variable in the case of timeout.
-> > > 
-> > > Looking at the patch context, such code comes later.
-> > But it causes regressions; without looking at the "later" code, we can't afford merging
-> > this code now.
-> 
-> Later as in "a few lines later" not "some time later". Or am I missing
-> something else?
-I was too fast in reading emails after my short vacation...Sorry.
+On Wed, Nov 14, 2012 at 2:47 AM, Haojian Zhuang
+<haojian.zhuang@gmail.com> wrote:
+> On Tue, Nov 13, 2012 at 10:33 PM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Mon, Nov 12, 2012 at 7:45 AM, Axel Lin <axel.lin@ingics.com> wrote:
+>>
+>>> Use managed resources API to simplify the code.
+>>> Also ensure we do request mem_region before ioremap.
+>>>
+>>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>>
+>> Obviously correct, patch applied.
+>>
+>> Yours,
+>> Linus Walleij
+>
+> If the patches on pinctrl-single driver are merged, it will be used as
+> pinctrl driver for PXA/MMP.
+> And this pinctrl-pxa3xx driver would be deleted. So it's not recommend
+> to update code on this
+> driver.
 
-Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+I'll take care if it if there is a conflict, it will all be in the pinctrl
+tree anyway right?
 
-regards/srinidhi
+Yours,
+Linus Walleij
