@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993279Ab2KOEMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49796 "EHLO mail.kernel.org"
+	id S2993348Ab2KOENA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:13:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49941 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993263Ab2KOEMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:40 -0500
+	id S2993263Ab2KOEM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 23/57] nfs: Show original device name verbatim in /proc/*/mount{s,info}
-Date: Wed, 14 Nov 2012 20:11:31 -0800
-Message-Id: <20121115040934.663681519@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 36/57] ALSA: Avoid endless sleep after disconnect
+Date: Wed, 14 Nov 2012 20:11:44 -0800
+Message-Id: <20121115040935.445896659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -27,128 +25,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 97a54868262da1629a3e65121e65b8e8c4419d9f upstream.
+commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
 
-Since commit c7f404b ('vfs: new superblock methods to override
-/proc/*/mount{s,info}'), nfs_path() is used to generate the mounted
-device name reported back to userland.
+When disconnect callback is called, each component should wake up
+sleepers and check card->shutdown flag for avoiding the endless sleep
+blocking the proper resource release.
 
-nfs_path() always generates a trailing slash when the given dentry is
-the root of an NFS mount, but userland may expect the original device
-name to be returned verbatim (as it used to be).  Make this
-canonicalisation optional and change the callers accordingly.
-
-[jrnieder@gmail.com: use flag instead of bool argument]
-Reported-and-tested-by: Chris Hiestand <chiestand@salk.edu>
-Reference: http://bugs.debian.org/669314
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/internal.h      |    5 +++--
- fs/nfs/namespace.c     |   19 ++++++++++++++-----
- fs/nfs/nfs4namespace.c |    3 ++-
- fs/nfs/super.c         |    2 +-
- 4 files changed, 20 insertions(+), 9 deletions(-)
+ sound/core/control.c     |    2 ++
+ sound/core/hwdep.c       |    7 +++++++
+ sound/core/oss/pcm_oss.c |    4 ++++
+ sound/core/pcm.c         |    6 +++++-
+ sound/core/pcm_native.c  |    8 ++++++++
+ sound/core/rawmidi.c     |   20 ++++++++++++++++++++
+ 6 files changed, 46 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -277,8 +277,9 @@ extern void nfs_sb_active(struct super_b
- extern void nfs_sb_deactive(struct super_block *sb);
- 
- /* namespace.c */
-+#define NFS_PATH_CANONICAL 1
- extern char *nfs_path(char **p, struct dentry *dentry,
--		      char *buffer, ssize_t buflen);
-+		      char *buffer, ssize_t buflen, unsigned flags);
- extern struct vfsmount *nfs_d_automount(struct path *path);
- #ifdef CONFIG_NFS_V4
- rpc_authflavor_t nfs_find_best_sec(struct nfs4_secinfo_flavors *);
-@@ -371,7 +372,7 @@ static inline char *nfs_devname(struct d
- 				char *buffer, ssize_t buflen)
- {
- 	char *dummy;
--	return nfs_path(&dummy, dentry, buffer, buflen);
-+	return nfs_path(&dummy, dentry, buffer, buflen, NFS_PATH_CANONICAL);
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1436,6 +1436,8 @@ static ssize_t snd_ctl_read(struct file
+ 			spin_unlock_irq(&ctl->read_lock);
+ 			schedule();
+ 			remove_wait_queue(&ctl->change_sleep, &wait);
++			if (ctl->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			spin_lock_irq(&ctl->read_lock);
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -131,6 +131,10 @@ static int snd_hwdep_open(struct inode *
+ 		mutex_unlock(&hw->open_mutex);
+ 		schedule();
+ 		mutex_lock(&hw->open_mutex);
++		if (hw->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -462,12 +466,15 @@ static int snd_hwdep_dev_disconnect(stru
+ 		mutex_unlock(&register_mutex);
+ 		return -EINVAL;
+ 	}
++	mutex_lock(&hwdep->open_mutex);
++	wake_up(&hwdep->open_wait);
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (hwdep->ossreg)
+ 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
+ #endif
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
+ 	list_del_init(&hwdep->list);
++	mutex_unlock(&hwdep->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
  }
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -1087,12 +1087,16 @@ static int snd_pcm_dev_disconnect(struct
+ 		goto unlock;
  
- /*
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -37,6 +37,7 @@ static struct vfsmount *nfs_do_submount(
-  * @dentry - pointer to dentry
-  * @buffer - result buffer
-  * @buflen - length of buffer
-+ * @flags - options (see below)
-  *
-  * Helper function for constructing the server pathname
-  * by arbitrary hashed dentry.
-@@ -44,8 +45,14 @@ static struct vfsmount *nfs_do_submount(
-  * This is mainly for use in figuring out the path on the
-  * server side when automounting on top of an existing partition
-  * and in generating /proc/mounts and friends.
-+ *
-+ * Supported flags:
-+ * NFS_PATH_CANONICAL: ensure there is exactly one slash after
-+ *		       the original device (export) name
-+ *		       (if unset, the original name is returned verbatim)
-  */
--char *nfs_path(char **p, struct dentry *dentry, char *buffer, ssize_t buflen)
-+char *nfs_path(char **p, struct dentry *dentry, char *buffer, ssize_t buflen,
-+	       unsigned flags)
+ 	mutex_lock(&pcm->open_mutex);
++	wake_up(&pcm->open_wait);
+ 	list_del_init(&pcm->list);
+ 	for (cidx = 0; cidx < 2; cidx++)
+ 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
+ 			snd_pcm_stream_lock_irq(substream);
+-			if (substream->runtime)
++			if (substream->runtime) {
+ 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
++				wake_up(&substream->runtime->sleep);
++				wake_up(&substream->runtime->tsleep);
++			}
+ 			snd_pcm_stream_unlock_irq(substream);
+ 		}
+ 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1508,6 +1508,10 @@ static int snd_pcm_drain(struct snd_pcm_
+ 		down_read(&snd_pcm_link_rwsem);
+ 		snd_pcm_stream_lock_irq(substream);
+ 		remove_wait_queue(&to_check->sleep, &wait);
++		if (card->shutdown) {
++			result = -ENODEV;
++			break;
++		}
+ 		if (tout == 0) {
+ 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
+ 				result = -ESTRPIPE;
+@@ -2158,6 +2162,10 @@ static int snd_pcm_open(struct file *fil
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -424,6 +424,10 @@ static int snd_rawmidi_open(struct inode
+ 		mutex_unlock(&rmidi->open_mutex);
+ 		schedule();
+ 		mutex_lock(&rmidi->open_mutex);
++		if (rmidi->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -995,6 +999,8 @@ static ssize_t snd_rawmidi_read(struct f
+ 			spin_unlock_irq(&runtime->lock);
+ 			schedule();
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail)
+@@ -1238,6 +1244,8 @@ static ssize_t snd_rawmidi_write(struct
+ 			spin_unlock_irq(&runtime->lock);
+ 			timeout = schedule_timeout(30 * HZ);
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail && !timeout)
+@@ -1613,9 +1621,20 @@ static int snd_rawmidi_dev_register(stru
+ static int snd_rawmidi_dev_disconnect(struct snd_device *device)
  {
- 	char *end;
- 	int namelen;
-@@ -78,7 +85,7 @@ rename_retry:
- 		rcu_read_unlock();
- 		goto rename_retry;
- 	}
--	if (*end != '/') {
-+	if ((flags & NFS_PATH_CANONICAL) && *end != '/') {
- 		if (--buflen < 0) {
- 			spin_unlock(&dentry->d_lock);
- 			rcu_read_unlock();
-@@ -95,9 +102,11 @@ rename_retry:
- 		return end;
- 	}
- 	namelen = strlen(base);
--	/* Strip off excess slashes in base string */
--	while (namelen > 0 && base[namelen - 1] == '/')
--		namelen--;
-+	if (flags & NFS_PATH_CANONICAL) {
-+		/* Strip off excess slashes in base string */
-+		while (namelen > 0 && base[namelen - 1] == '/')
-+			namelen--;
+ 	struct snd_rawmidi *rmidi = device->device_data;
++	int dir;
+ 
+ 	mutex_lock(&register_mutex);
++	mutex_lock(&rmidi->open_mutex);
++	wake_up(&rmidi->open_wait);
+ 	list_del_init(&rmidi->list);
++	for (dir = 0; dir < 2; dir++) {
++		struct snd_rawmidi_substream *s;
++		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
++			if (s->runtime)
++				wake_up(&s->runtime->sleep);
++		}
 +	}
- 	buflen -= namelen;
- 	if (buflen < 0) {
- 		spin_unlock(&dentry->d_lock);
---- a/fs/nfs/nfs4namespace.c
-+++ b/fs/nfs/nfs4namespace.c
-@@ -81,7 +81,8 @@ static char *nfs_path_component(const ch
- static char *nfs4_path(struct dentry *dentry, char *buffer, ssize_t buflen)
- {
- 	char *limit;
--	char *path = nfs_path(&limit, dentry, buffer, buflen);
-+	char *path = nfs_path(&limit, dentry, buffer, buflen,
-+			      NFS_PATH_CANONICAL);
- 	if (!IS_ERR(path)) {
- 		char *path_component = nfs_path_component(path, limit);
- 		if (path_component)
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -812,7 +812,7 @@ static int nfs_show_devname(struct seq_f
- 	int err = 0;
- 	if (!page)
- 		return -ENOMEM;
--	devname = nfs_path(&dummy, root, page, PAGE_SIZE);
-+	devname = nfs_path(&dummy, root, page, PAGE_SIZE, 0);
- 	if (IS_ERR(devname))
- 		err = PTR_ERR(devname);
- 	else
++
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (rmidi->ossreg) {
+ 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
+@@ -1630,6 +1649,7 @@ static int snd_rawmidi_dev_disconnect(st
+ 	}
+ #endif /* CONFIG_SND_OSSEMUL */
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
++	mutex_unlock(&rmidi->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
 
 
