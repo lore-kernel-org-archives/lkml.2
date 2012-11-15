@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992790Ab2KOHol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 02:44:41 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13285 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423305Ab2KOHoi (ORCPT
+	id S2992916Ab2KOHoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 02:44:44 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5125 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992799Ab2KOHol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 02:44:38 -0500
+	Thu, 15 Nov 2012 02:44:41 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 14 Nov 2012 23:44:33 -0800
+	by hqnvupgp05.nvidia.com on Wed, 14 Nov 2012 23:44:36 -0800
 From: Danny Huang <dahuang@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
 CC: Danny Huang <dahuang@nvidia.com>
-Subject: [PATCH V2 2/3] ARM: tegra: Add speedo-based process identification
-Date: Thu, 15 Nov 2012 15:42:33 +0800
-Message-ID: <1352965354-650-3-git-send-email-dahuang@nvidia.com>
+Subject: [PATCH V2 3/3] ARM: tegra: T30 speedo-based process identification
+Date: Thu, 15 Nov 2012 15:42:34 +0800
+Message-ID: <1352965354-650-4-git-send-email-dahuang@nvidia.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352965354-650-1-git-send-email-dahuang@nvidia.com>
 References: <1352965354-650-1-git-send-email-dahuang@nvidia.com>
@@ -27,125 +27,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detect CPU and core process ID by checking speedo corner tables.
-This can provide a more accurate process ID.
+This patch adds speedo-based process identification support for T30.
 
 Signed-off-by: Danny Huang <dahuang@nvidia.com>
 ---
  arch/arm/mach-tegra/Makefile         |   1 +
- arch/arm/mach-tegra/fuse.c           |  31 +++++++---
- arch/arm/mach-tegra/fuse.h           |   7 +++
- arch/arm/mach-tegra/tegra20_speedo.c | 109 +++++++++++++++++++++++++++++++++++
- 4 files changed, 140 insertions(+), 8 deletions(-)
- create mode 100644 arch/arm/mach-tegra/tegra20_speedo.c
+ arch/arm/mach-tegra/fuse.c           |  11 +-
+ arch/arm/mach-tegra/fuse.h           |   7 +
+ arch/arm/mach-tegra/tegra30_speedo.c | 292 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 309 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/tegra30_speedo.c
 
 diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 6f224f7..75418f1 100644
+index 75418f1..0979e8b 100644
 --- a/arch/arm/mach-tegra/Makefile
 +++ b/arch/arm/mach-tegra/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
- obj-$(CONFIG_CPU_IDLE)			+= sleep.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra20_clocks.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra20_clocks_data.o
-+obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra20_speedo.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= sleep-tegra20.o
+@@ -21,6 +21,7 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= cpuidle-tegra20.o
+ endif
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= tegra30_clocks.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= tegra30_clocks_data.o
++obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= tegra30_speedo.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= sleep-tegra30.o
  ifeq ($(CONFIG_CPU_IDLE),y)
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= cpuidle-tegra30.o
 diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
-index bd19c2f..9fd02c5 100644
+index 9fd02c5..8121742 100644
 --- a/arch/arm/mach-tegra/fuse.c
 +++ b/arch/arm/mach-tegra/fuse.c
-@@ -35,9 +35,11 @@ int tegra_sku_id;
+@@ -30,11 +30,13 @@
+ #define FUSE_SKU_INFO		0x110
+ 
+ #define TEGRA20_FUSE_SPARE_BIT		0x200
++#define TEGRA30_FUSE_SPARE_BIT		0x244
+ 
+ int tegra_sku_id;
  int tegra_cpu_process_id;
  int tegra_core_process_id;
  int tegra_chip_id;
-+int tegra_soc_speedo_id;
++int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+ int tegra_soc_speedo_id;
  enum tegra_revision tegra_revision;
  
- static int tegra_fuse_spare_bit;
-+static void (*tegra_init_speedo_data)(void);
- 
- /* The BCT to use at boot is specified by board straps that can be read
-  * through a APB misc register and decoded. 2 bits, i.e. 4 possible BCTs.
-@@ -91,6 +93,16 @@ static enum tegra_revision tegra_get_revision(u32 id)
- 	}
- }
- 
-+static void tegra_get_process_id(void)
-+{
-+	u32 reg;
-+
-+	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
-+	tegra_cpu_process_id = (reg >> 6) & 3;
-+	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
-+	tegra_core_process_id = (reg >> 12) & 3;
-+}
-+
- void tegra_init_fuse(void)
- {
- 	u32 id;
-@@ -102,21 +114,24 @@ void tegra_init_fuse(void)
- 	reg = tegra_fuse_readl(FUSE_SKU_INFO);
- 	tegra_sku_id = reg & 0xFF;
- 
--	tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
--
--	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
--	tegra_cpu_process_id = (reg >> 6) & 3;
--
--	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
--	tegra_core_process_id = (reg >> 12) & 3;
--
- 	reg = tegra_apb_readl(TEGRA_APB_MISC_BASE + STRAP_OPT);
- 	tegra_bct_strapping = (reg & RAM_ID_MASK) >> RAM_CODE_SHIFT;
- 
+@@ -120,13 +122,18 @@ void tegra_init_fuse(void)
  	id = readl_relaxed(IO_ADDRESS(TEGRA_APB_MISC_BASE) + 0x804);
  	tegra_chip_id = (id >> 8) & 0xff;
  
-+	tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
-+
-+	switch (tegra_chip_id) {
-+	case TEGRA20:
-+		tegra_init_speedo_data = &tegra20_init_speedo_data;
+-	tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
+-
+ 	switch (tegra_chip_id) {
+ 	case TEGRA20:
++		tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
+ 		tegra_init_speedo_data = &tegra20_init_speedo_data;
+ 		break;
++	case TEGRA30:
++		tegra_fuse_spare_bit = TEGRA30_FUSE_SPARE_BIT;
++		tegra_init_speedo_data = &tegra30_init_speedo_data;
 +		break;
-+	default:
-+		tegra_init_speedo_data = &tegra_get_process_id;
-+	}
-+
- 	tegra_revision = tegra_get_revision(id);
-+	tegra_init_speedo_data();
+ 	default:
++		pr_warn("Tegra: unknown chip id %d\n", tegra_chip_id);
++		tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
+ 		tegra_init_speedo_data = &tegra_get_process_id;
+ 	}
  
- 	pr_info("Tegra Revision: %s SKU: %d CPU Process: %d Core Process: %d\n",
- 		tegra_revision_name[tegra_revision],
 diff --git a/arch/arm/mach-tegra/fuse.h b/arch/arm/mach-tegra/fuse.h
-index aef1223..7347c88 100644
+index 7347c88..ff1383d 100644
 --- a/arch/arm/mach-tegra/fuse.h
 +++ b/arch/arm/mach-tegra/fuse.h
 @@ -42,6 +42,7 @@ extern int tegra_sku_id;
  extern int tegra_cpu_process_id;
  extern int tegra_core_process_id;
  extern int tegra_chip_id;
-+extern int tegra_soc_speedo_id;
++extern int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+ extern int tegra_soc_speedo_id;
  extern enum tegra_revision tegra_revision;
  
- extern int tegra_bct_strapping;
-@@ -51,4 +52,10 @@ void tegra_init_fuse(void);
- bool tegra_spare_fuse(int bit);
- u32 tegra_fuse_readl(unsigned long offset);
+@@ -58,4 +59,10 @@ void tegra20_init_speedo_data(void);
+ static inline void tegra20_init_speedo_data(void) {}
+ #endif
  
-+#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-+void tegra20_init_speedo_data(void);
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++void tegra30_init_speedo_data(void);
 +#else
-+static inline void tegra20_init_speedo_data(void) {}
++static inline void tegra30_init_speedo_data(void) {}
 +#endif
 +
  #endif
-diff --git a/arch/arm/mach-tegra/tegra20_speedo.c b/arch/arm/mach-tegra/tegra20_speedo.c
+diff --git a/arch/arm/mach-tegra/tegra30_speedo.c b/arch/arm/mach-tegra/tegra30_speedo.c
 new file mode 100644
-index 0000000..97feba3
+index 0000000..9dc76ad
 --- /dev/null
-+++ b/arch/arm/mach-tegra/tegra20_speedo.c
-@@ -0,0 +1,109 @@
++++ b/arch/arm/mach-tegra/tegra30_speedo.c
+@@ -0,0 +1,292 @@
 +/*
 + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
 + *
@@ -167,93 +139,276 @@ index 0000000..97feba3
 +
 +#include "fuse.h"
 +
-+#define CPU_SPEEDO_LSBIT		20
-+#define CPU_SPEEDO_MSBIT		29
-+#define CPU_SPEEDO_REDUND_LSBIT		30
-+#define CPU_SPEEDO_REDUND_MSBIT		39
-+#define CPU_SPEEDO_REDUND_OFFS	(CPU_SPEEDO_REDUND_MSBIT - CPU_SPEEDO_MSBIT)
++#define CORE_PROCESS_CORNERS_NUM	1
++#define CPU_PROCESS_CORNERS_NUM		6
 +
-+#define CORE_SPEEDO_LSBIT		40
-+#define CORE_SPEEDO_MSBIT		47
-+#define CORE_SPEEDO_REDUND_LSBIT	48
-+#define CORE_SPEEDO_REDUND_MSBIT	55
-+#define CORE_SPEEDO_REDUND_OFFS	(CORE_SPEEDO_REDUND_MSBIT - CORE_SPEEDO_MSBIT)
++#define FUSE_SPEEDO_CALIB_0	0x114
++#define FUSE_PACKAGE_INFO	0X1FC
++#define FUSE_TEST_PROG_VER	0X128
 +
-+#define SPEEDO_MULT			4
-+
-+#define PROCESS_CORNERS_NUM		4
-+
-+#define SPEEDO_ID_SELECT_0(rev)		((rev) <= 2)
-+#define SPEEDO_ID_SELECT_1(sku)		\
-+	(((sku) != 20) && ((sku) != 23) && ((sku) != 24) && \
-+	 ((sku) != 27) && ((sku) != 28))
++#define G_SPEEDO_BIT_MINUS1	58
++#define G_SPEEDO_BIT_MINUS1_R	59
++#define G_SPEEDO_BIT_MINUS2	60
++#define G_SPEEDO_BIT_MINUS2_R	61
++#define LP_SPEEDO_BIT_MINUS1	62
++#define LP_SPEEDO_BIT_MINUS1_R	63
++#define LP_SPEEDO_BIT_MINUS2	64
++#define LP_SPEEDO_BIT_MINUS2_R	65
 +
 +enum {
-+	SPEEDO_ID_0,
-+	SPEEDO_ID_1,
-+	SPEEDO_ID_2,
-+	SPEEDO_ID_COUNT,
++	THRESHOLD_INDEX_0,
++	THRESHOLD_INDEX_1,
++	THRESHOLD_INDEX_2,
++	THRESHOLD_INDEX_3,
++	THRESHOLD_INDEX_4,
++	THRESHOLD_INDEX_5,
++	THRESHOLD_INDEX_6,
++	THRESHOLD_INDEX_7,
++	THRESHOLD_INDEX_8,
++	THRESHOLD_INDEX_9,
++	THRESHOLD_INDEX_10,
++	THRESHOLD_INDEX_11,
++	THRESHOLD_INDEX_COUNT,
 +};
 +
-+static const u32 cpu_process_speedos[][PROCESS_CORNERS_NUM] = {
-+	{315, 366, 420, UINT_MAX},
-+	{303, 368, 419, UINT_MAX},
-+	{316, 331, 383, UINT_MAX},
++static const u32 core_process_speedos[][CORE_PROCESS_CORNERS_NUM] = {
++	{180},
++	{170},
++	{195},
++	{180},
++	{168},
++	{192},
++	{180},
++	{170},
++	{195},
++	{180},
++	{180},
++	{180},
 +};
 +
-+static const u32 core_process_speedos[][PROCESS_CORNERS_NUM] = {
-+	{165, 195, 224, UINT_MAX},
-+	{165, 195, 224, UINT_MAX},
-+	{165, 195, 224, UINT_MAX},
++static const u32 cpu_process_speedos[][CPU_PROCESS_CORNERS_NUM] = {
++	{306, 338, 360, 376, UINT_MAX},
++	{295, 336, 358, 375, UINT_MAX},
++	{325, 325, 358, 375, UINT_MAX},
++	{325, 325, 358, 375, UINT_MAX},
++	{292, 324, 348, 364, UINT_MAX},
++	{324, 324, 348, 364, UINT_MAX},
++	{324, 324, 348, 364, UINT_MAX},
++	{295, 336, 358, 375, UINT_MAX},
++	{358, 358, 358, 358, 397, UINT_MAX},
++	{364, 364, 364, 364, 397, UINT_MAX},
++	{295, 336, 358, 375, 391, UINT_MAX},
++	{295, 336, 358, 375, 391, UINT_MAX},
 +};
 +
-+void tegra20_init_speedo_data(void)
++static int threshold_index;
++static int package_id;
++
++static void fuse_speedo_calib(u32 *speedo_g, u32 *speedo_lp)
 +{
 +	u32 reg;
-+	u32 val;
++	int ate_ver;
++	int bit_minus1;
++	int bit_minus2;
++
++	reg = tegra_fuse_readl(FUSE_SPEEDO_CALIB_0);
++
++	*speedo_lp = (reg & 0xFFFF) * 4;
++	*speedo_g = ((reg >> 16) & 0xFFFF) * 4;
++
++	ate_ver = tegra_fuse_readl(FUSE_TEST_PROG_VER);
++	pr_info("%s: ATE prog ver %d.%d\n", __func__, ate_ver/10, ate_ver%10);
++
++	if (ate_ver >= 26) {
++		bit_minus1 = tegra_spare_fuse(LP_SPEEDO_BIT_MINUS1);
++		bit_minus1 |= tegra_spare_fuse(LP_SPEEDO_BIT_MINUS1_R);
++		bit_minus2 = tegra_spare_fuse(LP_SPEEDO_BIT_MINUS2);
++		bit_minus2 |= tegra_spare_fuse(LP_SPEEDO_BIT_MINUS2_R);
++		*speedo_lp |= (bit_minus1 << 1) | bit_minus2;
++
++		bit_minus1 = tegra_spare_fuse(G_SPEEDO_BIT_MINUS1);
++		bit_minus1 |= tegra_spare_fuse(G_SPEEDO_BIT_MINUS1_R);
++		bit_minus2 = tegra_spare_fuse(G_SPEEDO_BIT_MINUS2);
++		bit_minus2 |= tegra_spare_fuse(G_SPEEDO_BIT_MINUS2_R);
++		*speedo_g |= (bit_minus1 << 1) | bit_minus2;
++	} else {
++		*speedo_lp |= 0x3;
++		*speedo_g |= 0x3;
++	}
++}
++
++static void rev_sku_to_speedo_ids(int rev, int sku)
++{
++	switch (rev) {
++	case TEGRA_REVISION_A01:
++		tegra_cpu_speedo_id = 0;
++		tegra_soc_speedo_id = 0;
++		threshold_index = THRESHOLD_INDEX_0;
++		break;
++	case TEGRA_REVISION_A02:
++	case TEGRA_REVISION_A03:
++		switch (sku) {
++		case 0x87:
++		case 0x82:
++			tegra_cpu_speedo_id = 1;
++			tegra_soc_speedo_id = 1;
++			threshold_index = THRESHOLD_INDEX_1;
++			break;
++		case 0x81:
++			switch (package_id) {
++			case 1:
++				tegra_cpu_speedo_id = 2;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_2;
++				break;
++			case 2:
++				tegra_cpu_speedo_id = 4;
++				tegra_soc_speedo_id = 1;
++				threshold_index = THRESHOLD_INDEX_7;
++				break;
++			default:
++				pr_err("Tegra3: Unknown pkg %d\n", package_id);
++				BUG();
++				break;
++			}
++			break;
++		case 0x80:
++			switch (package_id) {
++			case 1:
++				tegra_cpu_speedo_id = 5;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_8;
++				break;
++			case 2:
++				tegra_cpu_speedo_id = 6;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_9;
++				break;
++			default:
++				pr_err("Tegra3: Unknown pkg %d\n", package_id);
++				BUG();
++				break;
++			}
++			break;
++		case 0x83:
++			switch (package_id) {
++			case 1:
++				tegra_cpu_speedo_id = 7;
++				tegra_soc_speedo_id = 1;
++				threshold_index = THRESHOLD_INDEX_10;
++				break;
++			case 2:
++				tegra_cpu_speedo_id = 3;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_3;
++				break;
++			default:
++				pr_err("Tegra3: Unknown pkg %d\n", package_id);
++				BUG();
++				break;
++			}
++			break;
++		case 0x8F:
++			tegra_cpu_speedo_id = 8;
++			tegra_soc_speedo_id = 1;
++			threshold_index = THRESHOLD_INDEX_11;
++			break;
++		case 0x08:
++			tegra_cpu_speedo_id = 1;
++			tegra_soc_speedo_id = 1;
++			threshold_index = THRESHOLD_INDEX_4;
++			break;
++		case 0x02:
++			tegra_cpu_speedo_id = 2;
++			tegra_soc_speedo_id = 2;
++			threshold_index = THRESHOLD_INDEX_5;
++			break;
++		case 0x04:
++			tegra_cpu_speedo_id = 3;
++			tegra_soc_speedo_id = 2;
++			threshold_index = THRESHOLD_INDEX_6;
++			break;
++		case 0:
++			switch (package_id) {
++			case 1:
++				tegra_cpu_speedo_id = 2;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_2;
++				break;
++			case 2:
++				tegra_cpu_speedo_id = 3;
++				tegra_soc_speedo_id = 2;
++				threshold_index = THRESHOLD_INDEX_3;
++				break;
++			default:
++				pr_err("Tegra3: Unknown pkg %d\n", package_id);
++				BUG();
++				break;
++			}
++			break;
++		default:
++			pr_warn("Tegra3: Unknown SKU %d\n", sku);
++			tegra_cpu_speedo_id = 0;
++			tegra_soc_speedo_id = 0;
++			threshold_index = THRESHOLD_INDEX_0;
++			break;
++		}
++		break;
++	default:
++		pr_warn("Tegra3: Unknown chip rev %d\n", rev);
++		tegra_cpu_speedo_id = 0;
++		tegra_soc_speedo_id = 0;
++		threshold_index = THRESHOLD_INDEX_0;
++		break;
++	}
++}
++
++void tegra30_init_speedo_data(void)
++{
++	u32 cpu_speedo_val;
++	u32 core_speedo_val;
 +	int i;
 +
-+	BUILD_BUG_ON(ARRAY_SIZE(cpu_process_speedos) != SPEEDO_ID_COUNT);
-+	BUILD_BUG_ON(ARRAY_SIZE(core_process_speedos) != SPEEDO_ID_COUNT);
++	BUILD_BUG_ON(ARRAY_SIZE(cpu_process_speedos) !=
++			THRESHOLD_INDEX_COUNT);
++	BUILD_BUG_ON(ARRAY_SIZE(core_process_speedos) !=
++			THRESHOLD_INDEX_COUNT);
 +
-+	if (SPEEDO_ID_SELECT_0(tegra_revision))
-+		tegra_soc_speedo_id = SPEEDO_ID_0;
-+	else if (SPEEDO_ID_SELECT_1(tegra_sku_id))
-+		tegra_soc_speedo_id = SPEEDO_ID_1;
-+	else
-+		tegra_soc_speedo_id = SPEEDO_ID_2;
++	package_id = tegra_fuse_readl(FUSE_PACKAGE_INFO) & 0x0F;
 +
-+	val = 0;
-+	for (i = CPU_SPEEDO_MSBIT; i >= CPU_SPEEDO_LSBIT; i--) {
-+		reg = tegra_spare_fuse(i) |
-+			tegra_spare_fuse(i + CPU_SPEEDO_REDUND_OFFS);
-+		val = (val << 1) | (reg & 0x1);
-+	}
-+	val = val * SPEEDO_MULT;
-+	pr_debug("%s CPU speedo value %u\n", __func__, val);
++	rev_sku_to_speedo_ids(tegra_revision, tegra_sku_id);
++	fuse_speedo_calib(&cpu_speedo_val, &core_speedo_val);
++	pr_debug("%s CPU speedo value %u\n", __func__, cpu_speedo_val);
++	pr_debug("%s Core speedo value %u\n", __func__, core_speedo_val);
 +
-+	for (i = 0; i < (PROCESS_CORNERS_NUM - 1); i++) {
-+		if (val <= cpu_process_speedos[tegra_soc_speedo_id][i])
++	for (i = 0; i < CPU_PROCESS_CORNERS_NUM; i++) {
++		if (cpu_speedo_val < cpu_process_speedos[threshold_index][i])
 +			break;
 +	}
-+	tegra_cpu_process_id = i;
++	tegra_cpu_process_id = i - 1;
 +
-+	val = 0;
-+	for (i = CORE_SPEEDO_MSBIT; i >= CORE_SPEEDO_LSBIT; i--) {
-+		reg = tegra_spare_fuse(i) |
-+			tegra_spare_fuse(i + CORE_SPEEDO_REDUND_OFFS);
-+		val = (val << 1) | (reg & 0x1);
++	if (tegra_cpu_process_id == -1) {
++		pr_warn("Tegra3: CPU speedo value %3d out of range",
++		       cpu_speedo_val);
++		tegra_cpu_process_id = 0;
++		tegra_cpu_speedo_id = 1;
 +	}
-+	val = val * SPEEDO_MULT;
-+	pr_debug("%s Core speedo value %u\n", __func__, val);
 +
-+	for (i = 0; i < (PROCESS_CORNERS_NUM - 1); i++) {
-+		if (val <= core_process_speedos[tegra_soc_speedo_id][i])
++	for (i = 0; i < CORE_PROCESS_CORNERS_NUM; i++) {
++		if (core_speedo_val < core_process_speedos[threshold_index][i])
 +			break;
 +	}
-+	tegra_core_process_id = i;
++	tegra_core_process_id = i - 1;
 +
-+	pr_info("Tegra2 Soc Speedo ID %d", tegra_soc_speedo_id);
++	if (tegra_core_process_id == -1) {
++		pr_warn("Tegra3: CORE speedo value %3d out of range",
++		       core_speedo_val);
++		tegra_core_process_id = 0;
++		tegra_soc_speedo_id = 1;
++	}
++
++	pr_info("Tegra3: CPU Speedo ID %d, Soc Speedo ID %d",
++		tegra_cpu_speedo_id, tegra_soc_speedo_id);
 +}
 -- 
 1.8.0
