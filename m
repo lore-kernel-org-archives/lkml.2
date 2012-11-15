@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993143Ab2KOEMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49546 "EHLO mail.kernel.org"
+	id S2993248Ab2KOEMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49673 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993105Ab2KOEMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:13 -0500
+	id S2993179Ab2KOEM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Brian Paul <brianp@vmware.com>, Dmitry Torokhov <dtor@vmware.com>,
-        Dave Airlie <airlied@redhat.com>, linux-graphics-maintainer@vmware.com
-Subject: [ 60/66] drm/vmwgfx: Fix hibernation device reset
-Date: Wed, 14 Nov 2012 20:11:05 -0800
-Message-Id: <20121115040943.474892545@linuxfoundation.org>
+        Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 03/57] Input: tsc40 - remove wrong announcement of pressure support
+Date: Wed, 14 Nov 2012 20:11:11 -0800
+Message-Id: <20121115040933.431004925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
-In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
-References: <20121115040939.016421011@linuxfoundation.org>
+In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
+References: <20121115040933.223998671@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
 
-commit 95e8f6a21996c4cc2c4574b231c6e858b749dce3 upstream.
+commit 32ed1911fc79908d704023317d4ddeb3883fd07e upstream.
 
-The device would not reset properly when resuming from hibernation.
+The tsc40 driver announces it supports the pressure event, but will never
+send one. The announcement will cause tslib to wait for such events and
+sending all touch events with a pressure of 0. Removing the announcement
+will make tslib fall back to emulating the pressure on touch events so
+everything works as expected.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Brian Paul <brianp@vmware.com>
-Reviewed-by: Dmitry Torokhov <dtor@vmware.com>
-Cc: linux-graphics-maintainer@vmware.com
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/input/touchscreen/tsc40.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -1099,6 +1099,11 @@ static void vmw_pm_complete(struct devic
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 	struct vmw_private *dev_priv = vmw_priv(dev);
+--- a/drivers/input/touchscreen/tsc40.c
++++ b/drivers/input/touchscreen/tsc40.c
+@@ -107,7 +107,6 @@ static int tsc_connect(struct serio *ser
+ 	__set_bit(BTN_TOUCH, input_dev->keybit);
+ 	input_set_abs_params(ptsc->dev, ABS_X, 0, 0x3ff, 0, 0);
+ 	input_set_abs_params(ptsc->dev, ABS_Y, 0, 0x3ff, 0, 0);
+-	input_set_abs_params(ptsc->dev, ABS_PRESSURE, 0, 0, 0, 0);
  
-+	mutex_lock(&dev_priv->hw_mutex);
-+	vmw_write(dev_priv, SVGA_REG_ID, SVGA_ID_2);
-+	(void) vmw_read(dev_priv, SVGA_REG_ID);
-+	mutex_unlock(&dev_priv->hw_mutex);
-+
- 	/**
- 	 * Reclaim 3d reference held by fbdev and potentially
- 	 * start fifo.
+ 	serio_set_drvdata(serio, ptsc);
+ 
 
 
