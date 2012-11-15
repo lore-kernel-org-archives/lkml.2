@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992611Ab2KOEKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:10:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48300 "EHLO mail.kernel.org"
+	id S933417Ab2KOEti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:49:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48326 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933350Ab2KOEKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:05 -0500
+	id S2992505Ab2KOEKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 08/38] mac80211: check management frame header length
-Date: Wed, 14 Nov 2012 20:10:05 -0800
-Message-Id: <20121115040933.423746573@linuxfoundation.org>
+        Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 10/38] nfsv3: Make v3 mounts fail with ETIMEDOUTs instead EIO on mountd timeouts
+Date: Wed, 14 Nov 2012 20:10:07 -0800
+Message-Id: <20121115040933.542485686@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -25,52 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Scott Mayhew <smayhew@redhat.com>
 
-commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
+commit acce94e68a0f346115fd41cdc298197d2d5a59ad upstream.
 
-Due to pskb_may_pull() checking the skb length, all
-non-management frames are checked on input whether
-their 802.11 header is fully present. Also add that
-check for management frames and remove a check that
-is now duplicate. This prevents accessing skb data
-beyond the frame end.
+In very busy v3 environment, rpc.mountd can respond to the NULL
+procedure but not the MNT procedure in a timely manner causing
+the MNT procedure to time out. The problem is the mount system
+call returns EIO which causes the mount to fail, instead of
+ETIMEDOUT, which would cause the mount to be retried.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This patch sets the RPC_TASK_SOFT|RPC_TASK_TIMEOUT flags to
+the rpc_call_sync() call in nfs_mount() which causes
+ETIMEDOUT to be returned on timed out connections.
+
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ fs/nfs/mount_clnt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1360,7 +1360,6 @@ ieee80211_rx_h_defragment(struct ieee802
- 	frag = sc & IEEE80211_SCTL_FRAG;
+--- a/fs/nfs/mount_clnt.c
++++ b/fs/nfs/mount_clnt.c
+@@ -181,7 +181,7 @@ int nfs_mount(struct nfs_mount_request *
+ 	else
+ 		msg.rpc_proc = &mnt_clnt->cl_procinfo[MOUNTPROC_MNT];
  
- 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   (rx->skb)->len < 24 ||
- 		   is_multicast_ether_addr(hdr->addr1))) {
- 		/* not fragmented */
- 		goto out;
-@@ -2772,10 +2771,15 @@ static void __ieee80211_rx_handle_packet
- 		     test_bit(SCAN_SW_SCANNING, &local->scanning)))
- 		status->rx_flags |= IEEE80211_RX_IN_SCAN;
+-	status = rpc_call_sync(mnt_clnt, &msg, 0);
++	status = rpc_call_sync(mnt_clnt, &msg, RPC_TASK_SOFT|RPC_TASK_TIMEOUT);
+ 	rpc_shutdown_client(mnt_clnt);
  
--	if (ieee80211_is_mgmt(fc))
--		err = skb_linearize(skb);
--	else
-+	if (ieee80211_is_mgmt(fc)) {
-+		/* drop frame if too short for header */
-+		if (skb->len < ieee80211_hdrlen(fc))
-+			err = -ENOBUFS;
-+		else
-+			err = skb_linearize(skb);
-+	} else {
- 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
-+	}
- 
- 	if (err) {
- 		dev_kfree_skb(skb);
+ 	if (status < 0)
 
 
