@@ -1,135 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2KOGds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 01:33:48 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43605 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2KOGdr (ORCPT
+	id S1752634Ab2KOGhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 01:37:39 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:33061 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab2KOGhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 01:33:47 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, sachin.kamat@linaro.org, patches@linaro.org,
-        Jassi Brar <jassisinghbrar@gmail.com>
-Subject: [PATCH 1/1] DMA: PL330: Use devm_* functions
-Date: Thu, 15 Nov 2012 11:57:50 +0530
-Message-Id: <1352960870-6023-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 15 Nov 2012 01:37:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdb-C-z1bWA2+xbuGt8TKSWRaD2xYUKS4M=KNMO0mOKF2g@mail.gmail.com>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+	<1352460548-3494-3-git-send-email-hongbo.zhang@linaro.com>
+	<1352700425.1834.11.camel@rzhang1-mobl4>
+	<CACRpkdb-C-z1bWA2+xbuGt8TKSWRaD2xYUKS4M=KNMO0mOKF2g@mail.gmail.com>
+Date: Thu, 15 Nov 2012 14:37:36 +0800
+Message-ID: <CAJLyvQwhtL3cpb_7Xa25hmQ-Yg4inEF1umaC8rr04A-3x79LAw@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] Thermal: Add ST-Ericsson DB8500 thermal properties
+ and platform data.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>, Zhang Rui <rui.zhang@intel.com>,
+        linux-pm@vger.kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_* functions are device managed and make the code and error
-handling a bit simpler.
+On 13 November 2012 04:46, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Nov 12, 2012 at 7:07 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+>> On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
+>>> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>>>
+>>> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+>>> also adds the platform data to support the old fashion.
+>>>
+>>> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>>> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+>>
+>> hmmm,
+>>
+>> who should take this patch?
+>> I'd like to see ACK from the maintainer of these code before applying
+>> them to thermal tree.
+>
+> I guess it needs to go through Thermal.
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Cc: Jassi Brar <jassisinghbrar@gmail.com>
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/dma/pl330.c |   37 ++++++++++---------------------------
- 1 files changed, 10 insertions(+), 27 deletions(-)
+Thank you Linus Walleij.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 665668b..68aa24c 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2866,7 +2866,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pdat = adev->dev.platform_data;
- 
- 	/* Allocate a new DMAC and its Channels */
--	pdmac = kzalloc(sizeof(*pdmac), GFP_KERNEL);
-+	pdmac = devm_kzalloc(&adev->dev, sizeof(*pdmac), GFP_KERNEL);
- 	if (!pdmac) {
- 		dev_err(&adev->dev, "unable to allocate mem\n");
- 		return -ENOMEM;
-@@ -2878,13 +2878,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
- 
- 	res = &adev->res;
--	request_mem_region(res->start, resource_size(res), "dma-pl330");
--
--	pi->base = ioremap(res->start, resource_size(res));
--	if (!pi->base) {
--		ret = -ENXIO;
--		goto probe_err1;
--	}
-+	pi->base = devm_request_and_ioremap(&adev->dev, res);
-+	if (!pi->base)
-+		return -ENXIO;
- 
- 	amba_set_drvdata(adev, pdmac);
- 
-@@ -2892,11 +2888,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	ret = request_irq(irq, pl330_irq_handler, 0,
- 			dev_name(&adev->dev), pi);
- 	if (ret)
--		goto probe_err2;
-+		return ret;
- 
- 	ret = pl330_add(pi);
- 	if (ret)
--		goto probe_err3;
-+		goto probe_err1;
- 
- 	INIT_LIST_HEAD(&pdmac->desc_pool);
- 	spin_lock_init(&pdmac->pool_lock);
-@@ -2918,7 +2914,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	if (!pdmac->peripherals) {
- 		ret = -ENOMEM;
- 		dev_err(&adev->dev, "unable to allocate pdmac->peripherals\n");
--		goto probe_err4;
-+		goto probe_err2;
- 	}
- 
- 	for (i = 0; i < num_chan; i++) {
-@@ -2962,7 +2958,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	ret = dma_async_device_register(pd);
- 	if (ret) {
- 		dev_err(&adev->dev, "unable to register DMAC\n");
--		goto probe_err4;
-+		goto probe_err2;
- 	}
- 
- 	dev_info(&adev->dev,
-@@ -2975,15 +2971,10 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 
- 	return 0;
- 
--probe_err4:
--	pl330_del(pi);
--probe_err3:
--	free_irq(irq, pi);
- probe_err2:
--	iounmap(pi->base);
-+	pl330_del(pi);
- probe_err1:
--	release_mem_region(res->start, resource_size(res));
--	kfree(pdmac);
-+	free_irq(irq, pi);
- 
- 	return ret;
- }
-@@ -2993,7 +2984,6 @@ static int __devexit pl330_remove(struct amba_device *adev)
- 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
- 	struct dma_pl330_chan *pch, *_p;
- 	struct pl330_info *pi;
--	struct resource *res;
- 	int irq;
- 
- 	if (!pdmac)
-@@ -3020,13 +3010,6 @@ static int __devexit pl330_remove(struct amba_device *adev)
- 	irq = adev->irq[0];
- 	free_irq(irq, pi);
- 
--	iounmap(pi->base);
--
--	res = &adev->res;
--	release_mem_region(res->start, resource_size(res));
--
--	kfree(pdmac);
--
- 	return 0;
- }
- 
--- 
-1.7.4.1
+Hi Rui, I got it.
 
+> Let's hope it's not creating too much conflict...
+>
+> Yours,
+> Linus Walleij
