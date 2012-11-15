@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab2KOXHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 18:07:08 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1777 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2KOXHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 18:07:06 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 15 Nov 2012 15:07:04 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 RESEND] gpio: tegra: read output value when gpio is set in direction_out
-Date: Fri, 16 Nov 2012 04:34:06 +0530
-Message-ID: <1353020646-14867-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1751151Ab2KOXIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 18:08:48 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:52315 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab2KOXIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 18:08:47 -0500
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Nov 2012 18:08:46 EST
+From: Gene Heskett <gheskett@wdtv.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h processors
+Date: Thu, 15 Nov 2012 18:01:22 -0500
+Cc: Boris Ostrovsky <boris.ostrovsky@amd.com>, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, herrmann.der.user@googlemail.com, bp@alien8.de,
+        linux-kernel@vger.kernel.org
+References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com> <20121115204503.GB18032@khazad-dum.debian.net>
+In-Reply-To: <20121115204503.GB18032@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211151801.23160.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read the output value when gpio is set for the output mode for
-gpio_get_value(). Reading input value in direction out does not
-give correct value.
+On Thursday 15 November 2012, Henrique de Moraes Holschuh wrote:
+>On Thu, 15 Nov 2012, Boris Ostrovsky wrote:
+>> Add valid patch size for family 16h processors
+>> 
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+>
+>Is this something that needs to go to -stable ?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
----
-Changes from V1:
-- Keep the if part implementation same the else part to have implementation
-  same kind.
+IMO, and if I had an oar in this water, yes.  Its been missing since the 
+Intel folks started playing with it a couple years back up the log.  I 
+have the amd_ucode files in my /lib/firmware tree,
 
-Not too old patchi but just resending in case of it is missed.
-Adding acked by Stephen as he acked this patch.
+root@coyote:/opt/os9# ls -l /lib/firmware/amd-ucode/
+total 76
+-rw-r--r-- 1 root root   642 2012-01-17 11:50 INSTALL
+-rw-r--r-- 1 root root  9987 2012-01-17 11:50 LICENSE
+-rw-r--r-- 1 root root 12404 2012-01-17 11:50 microcode_amd.bin
+-rw-r--r-- 1 root root  1526 2012-01-17 11:50 microcode_amd.bin.README
+-rw-r--r-- 1 root root  2644 2012-01-17 11:50 microcode_amd_fam15h.bin
+-rw-r--r-- 1 root root   510 2012-01-17 11:50 
+microcode_amd_fam15h.bin.README
+-rw-r--r-- 1 root root  2012 2009-01-20 04:48 microcode_amd.phenom-V83
+-rw-r--r-- 1 root root 15020 2012-01-17 11:50 microcode_amd_solaris.bin
+-rw-r--r-- 1 root root  1685 2012-01-17 11:50 
+microcode_amd_solaris.bin.README
+-rw-r--r-- 1 root root  6227 2012-01-17 11:50 README
+
+but I can't recall the last time I saw the code sign in during dmesg.
+Old, slow 4 core phenom here.  AMD was forgotten about when the loading 
+of it was moved from the kernel options to /etc/init.d/microcode.  For 
+an AMD user, that was not a show stopper, but it wasn't a Good Thing(TM) 
+either.
+
+>
+>>  #define F1XH_MPB_MAX_SIZE 2048
+>>  #define F14H_MPB_MAX_SIZE 1824
+>>  #define F15H_MPB_MAX_SIZE 4096
+>> 
+>> +#define F16H_MPB_MAX_SIZE 3458
+>> 
+>>  	switch (c->x86) {
+>> 
+>>  	case 0x14:
+>> @@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32
+>> patch_size,
+>> 
+>>  	case 0x15:
+>>  		max_size = F15H_MPB_MAX_SIZE;
+>>  		break;
+>> 
+>> +	case 0x16:
+>> +		max_size = F16H_MPB_MAX_SIZE;
+>> +		break;
+>> 
+>>  	default:
+>>  		max_size = F1XH_MPB_MAX_SIZE;
+>>  		break;
+>
+>Because it looks like without this patch, some valid microcode updates
+>would be rejected by the kernel...
 
 
- drivers/gpio/gpio-tegra.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index c7c175a..1163cf1 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -135,6 +135,11 @@ static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
- 
- static int tegra_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
-+	/* If gpio is in output mode then read from the out value */
-+	if ((tegra_gpio_readl(GPIO_OE(offset)) >> GPIO_BIT(offset)) & 1)
-+		return (tegra_gpio_readl(GPIO_OUT(offset)) >>
-+				GPIO_BIT(offset)) & 0x1;
-+
- 	return (tegra_gpio_readl(GPIO_IN(offset)) >> GPIO_BIT(offset)) & 0x1;
- }
- 
+Cheers, Gene
 -- 
-1.7.1.1
-
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
+Some people's mouths work faster than their brains.  They say things they
+haven't even thought of yet.
