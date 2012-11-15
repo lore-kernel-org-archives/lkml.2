@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992621Ab2KOCu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 21:50:57 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38634 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992461Ab2KOCu4 (ORCPT
+	id S2992614Ab2KOCxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 21:53:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45399 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992461Ab2KOCxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 21:50:56 -0500
-Date: Wed, 14 Nov 2012 21:50:55 -0500 (EST)
-Message-Id: <20121114.215055.1156530698069105896.davem@davemloft.net>
-To: xtfeng@gmail.com
-Cc: dannyfeng@tencent.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net: fix tasklet misuse issue
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1352872056-5637-1-git-send-email-xtfeng@gmail.com>
-References: <1352872056-5637-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Nov 2012 21:53:13 -0500
+Date: Wed, 14 Nov 2012 18:49:46 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Colin King <colin.king@canonical.com>
+Cc: Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] pstore: fix NULL pointer dereference in console
+ writes
+Message-ID: <20121115024946.GA12232@lizard>
+References: <1352893793-25260-1-git-send-email-colin.king@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1352893793-25260-1-git-send-email-colin.king@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaotian Feng <xtfeng@gmail.com>
-Date: Wed, 14 Nov 2012 13:47:36 +0800
-
-> In commit 175c0dff, drivers uses tasklet_kill to avoid put disabled tasklet
-> on the tasklet vec. But some of the drivers uses tasklet_init & tasklet_disable
-> in the driver init code, then tasklet_enable when it is opened. This makes
-> tasklet_enable on a killed tasklet and make ksoftirqd crazy then. Normally,
-> drivers should use tasklet_init/tasklet_kill on device open/remove, and use
-> tasklet_disable/tasklet_enable on device suspend/resume.
+On Wed, Nov 14, 2012 at 11:49:53AM +0000, Colin King wrote:
+> From: Colin Ian King <colin.king@canonical.com>
 > 
-> Reported-by: Peter Wu <lekensteyn@gmail.com>
-> Tested-by: Peter Wu <lekensteyn@gmail.com>
-> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+> Passing a NULL id causes a NULL pointer deference in writers
+> such as erst_writer and efi_pstore_write because they expect
+> to update this id.  Pass a dummy id instead.
+> 
+> This avoids a cascade of oopses caused when the initial
+> pstore_console_write passes a null which in turn causes
+> writes to the console causing further oopses in subsequent
+> pstore_console_write calls.
+> 
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+> Acked-by: Kees Cook <keescook@chromium.org>
+> ---
 
-Applied, thanks.
+Ugh. Thanks for the reminder, I completely forgot that I had this bit for
+v3.7.
+
+Applied, thanks! (I also added Cc: stable.)
+
+>  fs/pstore/platform.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index a40da07..947fbe0 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -161,6 +161,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
+>  
+>  	while (s < e) {
+>  		unsigned long flags;
+> +		u64 id;
+>  
+>  		if (c > psinfo->bufsize)
+>  			c = psinfo->bufsize;
+> @@ -172,7 +173,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
+>  			spin_lock_irqsave(&psinfo->buf_lock, flags);
+>  		}
+>  		memcpy(psinfo->buf, s, c);
+> -		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
+> +		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
+>  		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+>  		s += c;
+>  		c = e - s;
+> -- 
+> 1.7.10.4
