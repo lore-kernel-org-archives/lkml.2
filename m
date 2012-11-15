@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767807Ab2KONeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 08:34:24 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:1770 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1767735Ab2KONeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 08:34:22 -0500
-X-IronPort-AV: E=Sophos;i="4.83,257,1352102400"; 
-   d="scan'208";a="710348862"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Thread-Topic: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Thread-Index: AQHNwviEozW+CxsorEGJ6nqK7Kz9MZfra/qA
-Date: Thu, 15 Nov 2012 13:34:16 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9092E2984@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20121106124035.GA20522@infradead.org>
-	 <20121106130705.GC6718@fieldses.org> <20121106131018.GA12211@infradead.org>
-	 <20121106133605.GD6718@fieldses.org> <20121107183355.GA7421@fieldses.org>
-	 <50A0B562.2090807@parallels.com> <20121114210112.GA539@fieldses.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0A40@SACEXCMBX04-PRD.hq.netapp.com>
-	 <20121114214236.GB539@fieldses.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0AE9@SACEXCMBX04-PRD.hq.netapp.com>
-	 <20121114215426.GC539@fieldses.org> <87obize6jp.fsf@xmission.com>
-In-Reply-To: <87obize6jp.fsf@xmission.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <520DBE35F2D5774493D5DBE10454EFB4@tahoe.netapp.com>
+	id S1767817Ab2KONjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 08:39:22 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60765 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933000Ab2KONjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 08:39:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Clark <rob.clark@linaro.org>
+Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
+Date: Thu, 15 Nov 2012 13:39:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <201211150919.37343.arnd@arndb.de> <CAF6AEGv-O_D6nOnEwi5w8NUcv+dQFe7pJBXhUA8xq+tykG4dfg@mail.gmail.com>
+In-Reply-To: <CAF6AEGv-O_D6nOnEwi5w8NUcv+dQFe7pJBXhUA8xq+tykG4dfg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211151339.08016.arnd@arndb.de>
+X-Provags-ID: V02:K0:grPB0L5kKqwZjdiuZ7q3sf0EnU1jqnelbrIA/s0/eOn
+ HBjbjDfrbwRf4v7jOn1jQ7bpe2hzxx2PT7bSr5Wonqz+o3eYOM
+ xaRCNm0vmPAMTNF9xOKUjN03xd9PxGI59h1Ns11qjN8Rci2NGW
+ uwIPsCIL7n0092/KW88tcZwORRpY+4bhlDDRE2Cw1QsdKDCFMb
+ FeOTG7G+Vc08D5uTH6sp4uCqT6YsrBtRX7Rm0i3YmUwWVXBvTD
+ S1mFfYDUkRspqxXafqFyDQuGfmxX+TqbPxSHWZvl1260vS/NVe
+ V3ZjGhEF6Q1l6V7scptxvwqgdFEWpcfNgruAIt6v5hlXfXX9dM
+ PiZSNdrIQg4ON2eA7IyE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAFDYUvc030396
 
-On Wed, 2012-11-14 at 22:14 -0800, Eric W. Biederman wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
-> 
-> > On Wed, Nov 14, 2012 at 09:51:33PM +0000, Myklebust, Trond wrote:
-> >> On Wed, 2012-11-14 at 16:42 -0500, J. Bruce Fields wrote:
-> >> > Simo's patches use them for upcalls to svcgssd.  Those will always be
-> >> > done from server threads.
-> >> 
-> >> Any reason why you can't set that up when you start nfsd?
+On Thursday 15 November 2012, Rob Clark wrote:
+> On Thu, Nov 15, 2012 at 3:19 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 13 November 2012, Russell King - ARM Linux wrote:
+> >> You're missing something; that is one of the greatest powers of open
+> >> source.  The many eyes (and minds) effect.  Someone out there probably
+> >> has a solution to whatever problem, the trick is to find that person. :)
+> >>
+> >> I think we have a working solution for this for ARM.  It won't be suitable
+> >> for every arch, where they have 8-bit and 16-bit registers able to be
+> >> allocated by the compiler, but for architectures where the minimum register
+> >> size is 32-bit, what we have below should work.
 > >
-> > Oh, right, I was thinking of the upcalls themselves--right, the connect
-> > we should be able to do on server start, I agree.
+> > I don't mind at all adding the extension to ARM, and I think it's pretty
+> > cool that you guys actually found a working solution.
 > >
-> >> 
-> >> > > If not, then let's just move
-> >> > > the AF_LOCAL connection back into the process context and out of rpciod.
-> >> > 
-> >> > Remind me how this helps?
-> >> 
-> >> rpciod shares the 'init' process net namespace and chroot properties.
-> >> If, however you call bind() from the (containerised) process that was
-> >> used to start nfsd, then you will be using filesystem root (and net
-> >> namespace) of that container.
-> >
-> > Got it.
+> > The part that worries me is that we are making architecture independent
+> > code depend on a clever hack that may or may not be possible to implement
+> > on a given architecture, and that most architecture maintainers wouldn't
+> > know how to implement correctly even if it's possible.
 > 
-> If you can move the connect and bind into the server start that does
-> sound like a very good and maintainable solution.  I suspect it might
-> even be a smidge better for error handling.
-> 
-> Is there ever a reason to reconnect one of these sockets?
+> I could always send a 3rd version with a comment smashed on about why
+> that works if you think this is a problem..
 
-Not for the rpcbind case, however you can easily get into a situation
-where the user restarts the gss daemon. The good news is that the gss
-upcall code that uses AF_LOCAL hasn't been merged upstream yet, so that
-particular interface is not yet locked in stone.
+Comments are always good, so I'd surely like to see those get added.
+As I said, I don't have any objections to the addition of your patch to
+the ARM code, which sounds useful to have.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+I still haven't heard a conclusive argument why we need to use get_user()
+rather than copy_from_user() in the DRM code. Is this about a fast path
+where you want to shave off a few cycles for each call, or does this
+simplify the code structure, or something else?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Arnd
