@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993380Ab2KOEUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:20:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49871 "EHLO mail.kernel.org"
+	id S2993393Ab2KOEVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:21:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49861 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993290Ab2KOEMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:47 -0500
+	id S2993283Ab2KOEMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 30/57] hwmon: (w83627ehf) Force initial bank selection
-Date: Wed, 14 Nov 2012 20:11:38 -0800
-Message-Id: <20121115040935.069544523@linuxfoundation.org>
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 29/57] drm: restore open_count if drm_setup fails
+Date: Wed, 14 Nov 2012 20:11:37 -0800
+Message-Id: <20121115040935.013421534@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -25,31 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Ilija Hadzic <ilijahadzic@gmail.com>
 
-commit 3300fb4f88688029fff8dfb9ec0734f6e4cba3e7 upstream.
+commit 0f1cb1bd94a9c967cd4ad3de51cfdabe61eb5dcc upstream.
 
-Don't assume bank 0 is selected at device probe time. This may not be
-the case. Force bank selection at first register access to guarantee
-that we read the right registers upon driver loading.
+If drm_setup (called at first open) fails, the whole
+open call has failed, so we should not keep the
+open_count incremented.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83627ehf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/drm_fops.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -2082,6 +2082,7 @@ static int __devinit w83627ehf_probe(str
- 	mutex_init(&data->lock);
- 	mutex_init(&data->update_lock);
- 	data->name = w83627ehf_device_names[sio_data->kind];
-+	data->bank = 0xff;		/* Force initial bank selection */
- 	platform_set_drvdata(pdev, data);
- 
- 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -139,8 +139,11 @@ int drm_open(struct inode *inode, struct
+ 	retcode = drm_open_helper(inode, filp, dev);
+ 	if (!retcode) {
+ 		atomic_inc(&dev->counts[_DRM_STAT_OPENS]);
+-		if (!dev->open_count++)
++		if (!dev->open_count++) {
+ 			retcode = drm_setup(dev);
++			if (retcode)
++				dev->open_count--;
++		}
+ 	}
+ 	if (!retcode) {
+ 		mutex_lock(&dev->struct_mutex);
 
 
