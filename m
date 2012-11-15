@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993295Ab2KOKX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:23:57 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:36778 "HELO
+	id S2993227Ab2KOKX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:23:56 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:12244 "HELO
 	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S2993226Ab2KOKXZ (ORCPT
+	by vger.kernel.org with SMTP id S2993230Ab2KOKXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 05:23:25 -0500
 From: Andreas Larsson <andreas@gaisler.com>
@@ -13,34 +13,66 @@ To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
 Cc: linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         software@gaisler.com
-Subject: [PATCH v4 0/2] i2c: i2c-ocores: Add support for sparc, custom set and get functions, and the GRLIB port of the controller
-Date: Thu, 15 Nov 2012 11:22:57 +0100
-Message-Id: <1352974979-22638-1-git-send-email-andreas@gaisler.com>
+Subject: [PATCH v4 1/2] i2c: i2c-ocores: Add irq support for sparc
+Date: Thu, 15 Nov 2012 11:22:58 +0100
+Message-Id: <1352974979-22638-2-git-send-email-andreas@gaisler.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1352974979-22638-1-git-send-email-andreas@gaisler.com>
+References: <1352974979-22638-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sparc, irqs are not present as an IORESOURCE in the struct platform_device
-representation. By using platform_get_irq instead of platform_get_resource the
-driver works for sparc.
-
-The GRLIB port of the ocores i2c controller needs custom getreg and setreg
-functions to allow for big endian register access and to deal with the fact that
-the PRELOW and PREHIGH registers have been merged into one register.
+Add sparc support by using platform_get_irq instead of platform_get_resource.
+There are no platform resources of type IORESOURCE_IRQ for sparc, but
+platform_get_irq works for sparc. In the non-sparc case platform_get_irq
+internally uses platform_get_resource.
 
 Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
  Changes since v3:
- - Use a separate entry in the of match table for the grlib variant and trigger
-   grlib function usage on type put in the data field of that table entry
+ - None
 
-Andreas Larsson (2):
-  i2c: i2c-ocores: Add irq support for sparc
-  i2c: i2c-ocores: Add support for the GRLIB port of the controller and
-    custom getreg and setreg functions
+ drivers/i2c/busses/i2c-ocores.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
- .../devicetree/bindings/i2c/i2c-ocores.txt         |    2 +-
- drivers/i2c/busses/i2c-ocores.c                    |   90 ++++++++++++++++++--
- 2 files changed, 83 insertions(+), 9 deletions(-)
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index bffd550..1d204cb 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -267,7 +267,8 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct ocores_i2c *i2c;
+ 	struct ocores_i2c_platform_data *pdata;
+-	struct resource *res, *res2;
++	struct resource *res;
++	int irq;
+ 	int ret;
+ 	int i;
+ 
+@@ -275,9 +276,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -ENODEV;
+ 
+-	res2 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (!res2)
+-		return -ENODEV;
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		return irq;
+ 
+ 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
+ 	if (!i2c)
+@@ -313,7 +314,7 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 	ocores_init(i2c);
+ 
+ 	init_waitqueue_head(&i2c->wait);
+-	ret = devm_request_irq(&pdev->dev, res2->start, ocores_isr, 0,
++	ret = devm_request_irq(&pdev->dev, irq, ocores_isr, 0,
+ 			       pdev->name, i2c);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Cannot claim IRQ\n");
+-- 
+1.7.0.4
 
