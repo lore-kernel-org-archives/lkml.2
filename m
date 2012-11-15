@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993168Ab2KOEMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49613 "EHLO mail.kernel.org"
+	id S933548Ab2KOE0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:26:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49647 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993148Ab2KOEMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:20 -0500
+	id S2993167Ab2KOEMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/57] rt2800: validate step value for temperature compensation
-Date: Wed, 14 Nov 2012 20:11:14 -0800
-Message-Id: <20121115040933.611649535@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 09/57] iscsi-target: Fix missed wakeup race in TX thread
+Date: Wed, 14 Nov 2012 20:11:17 -0800
+Message-Id: <20121115040933.785501464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -27,34 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit bf7e1abe434ba9e22e8dc04a4cba4ab504b788b8 upstream.
+commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
 
-Some hardware has correct (!= 0xff) value of tssi_bounds[4] in the
-EEPROM, but step is equal to 0xff. This results on ridiculous delta
-calculations and completely broke TX power settings.
+The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
+missed wakeup race:
 
-Reported-and-tested-by: Pavel Lucik <pavel.lucik@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+ - TX thread finishes handle_immediate_queue() and handle_response_queue(),
+   thinks both queues are empty.
+ - Another thread adds a queue entry and does wake_up_process(), which does
+   nothing because the TX thread is still awake.
+ - TX thread does schedule_timeout() and sleeps forever.
+
+In practice this can kill an iSCSI connection if for example an initiator
+does single-threaded writes and the target misses the wakeup window when
+queueing an R2T; in this case the connection will be stuck until the
+initiator loses patience and does some task management operation (or kills
+the connection entirely).
+
+Fix this by converting to wait_event_interruptible(), which does not
+suffer from this sort of race.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c       |    4 +++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_util.h  |    1 +
+ 5 files changed, 26 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -2235,7 +2235,7 @@ static int rt2800_get_gain_calibration_d
- 	/*
- 	 * Check if temperature compensation is supported.
- 	 */
--	if (tssi_bounds[4] == 0xff)
-+	if (tssi_bounds[4] == 0xff || step == 0xff)
- 		return 0;
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3514,7 +3514,9 @@ restart:
+ 		 */
+ 		iscsit_thread_check_cpumask(conn, current, 1);
  
- 	/*
+-		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
++		wait_event_interruptible(conn->queues_wq,
++					 !iscsit_conn_all_queues_empty(conn) ||
++					 ts->status == ISCSI_THREAD_SET_RESET);
+ 
+ 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
+ 		     signal_pending(current))
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -491,6 +491,7 @@ struct iscsi_tmr_req {
+ };
+ 
+ struct iscsi_conn {
++	wait_queue_head_t	queues_wq;
+ 	/* Authentication Successful for this connection */
+ 	u8			auth_complete;
+ 	/* State connection is currently in */
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -45,6 +45,7 @@ extern spinlock_t sess_idr_lock;
+ 
+ static int iscsi_login_init_conn(struct iscsi_conn *conn)
+ {
++	init_waitqueue_head(&conn->queues_wq);
+ 	INIT_LIST_HEAD(&conn->conn_list);
+ 	INIT_LIST_HEAD(&conn->conn_cmd_list);
+ 	INIT_LIST_HEAD(&conn->immed_queue_list);
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -656,7 +656,7 @@ void iscsit_add_cmd_to_immediate_queue(
+ 	atomic_set(&conn->check_immediate_queue, 1);
+ 	spin_unlock_bh(&conn->immed_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
+@@ -730,7 +730,7 @@ void iscsit_add_cmd_to_response_queue(
+ 	atomic_inc(&cmd->response_queue_count);
+ 	spin_unlock_bh(&conn->response_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
+@@ -784,6 +784,24 @@ static void iscsit_remove_cmd_from_respo
+ 	}
+ }
+ 
++bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
++{
++	bool empty;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	empty = list_empty(&conn->immed_queue_list);
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	if (!empty)
++		return empty;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	empty = list_empty(&conn->response_queue_list);
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	return empty;
++}
++
+ void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
+ {
+ 	struct iscsi_queue_req *qr, *qr_tmp;
+--- a/drivers/target/iscsi/iscsi_target_util.h
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -28,6 +28,7 @@ extern struct iscsi_queue_req *iscsit_ge
+ extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
+ extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
+ extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
++extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
+ extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
+ extern void iscsit_release_cmd(struct iscsi_cmd *);
+ extern void iscsit_free_cmd(struct iscsi_cmd *);
 
 
