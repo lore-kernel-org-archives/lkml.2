@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768158Ab2KOPPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 10:15:47 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41149 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768107Ab2KOPPq (ORCPT
+	id S1768148Ab2KOPRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 10:17:38 -0500
+Received: from mga03.intel.com ([143.182.124.21]:36130 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2992479Ab2KOPRh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 10:15:46 -0500
-Date: Thu, 15 Nov 2012 15:15:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Axel Lin <axel.lin@ingics.com>,
-        Patrice Chotard <patrice.chotard@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] pinctrl: nomadik: Prevent NULL dereference if
- of_match_device returns NULL
-Message-ID: <20121115151541.GC14476@gmail.com>
-References: <1352955096.6793.1.camel@phoenix>
- <1352955365.6793.6.camel@phoenix>
- <CACRpkdbWqFrP7RvXbaR5Bcz1htCL_wSqwUvOi67LmoF_PBjvhg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbWqFrP7RvXbaR5Bcz1htCL_wSqwUvOi67LmoF_PBjvhg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Nov 2012 10:17:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,258,1352102400"; 
+   d="scan'208";a="218226942"
+Message-ID: <1352992647.11158.334.camel@smile>
+Subject: Re: [PATCH 1/2] dw_dmac: check direction properly in
+ dw_dma_cyclic_prep
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 Nov 2012 17:17:27 +0200
+In-Reply-To: <CAOh2x=kxxKgMQQW8zvg+Y9F94YoPc5yK9gPY3_+FE2QMhpq6Ug@mail.gmail.com>
+References: <1352989248-28913-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=nQ+y+_+mikxQUvWj1zBFf1qrrFgmqHFLZyHm9WY3=jAQ@mail.gmail.com>
+	 <CAOh2x=kxxKgMQQW8zvg+Y9F94YoPc5yK9gPY3_+FE2QMhpq6Ug@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Linus Walleij wrote:
-
-> On Thu, Nov 15, 2012 at 5:56 AM, Axel Lin <axel.lin@ingics.com> wrote:
+On Thu, 2012-11-15 at 20:28 +0530, viresh kumar wrote: 
+> On Thu, Nov 15, 2012 at 8:05 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> > On Thu, Nov 15, 2012 at 7:50 PM, Andy Shevchenko
+> > <andriy.shevchenko@linux.intel.com> wrote:
+> >> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> >
+> >> +static inline bool is_slave_direction(enum dma_transfer_direction direction)
+> >> +{
+> >> +       return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
+> >> +}
+> >
+> > I would add this in dmaengine.h and will also include check for DMA_DEV_TO_DEV.
 > 
-> > of_match_device() may return NULL.
-> >
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > ---
-> >  drivers/pinctrl/pinctrl-nomadik.c |   11 ++++++++---
-> >  1 file changed, 8 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-> > index 238060e..40bd1b3 100644
-> > --- a/drivers/pinctrl/pinctrl-nomadik.c
-> > +++ b/drivers/pinctrl/pinctrl-nomadik.c
-> > @@ -1863,9 +1863,14 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
-> >
-> >         if (platid)
-> >                 version = platid->driver_data;
-> > -       else if (np)
-> > -               version = (unsigned int)
-> > -                       of_match_device(nmk_pinctrl_match, &pdev->dev)->data;
-> > +       else if (np) {
-> > +               const struct of_device_id *match;
-> > +
-> > +               match = of_match_device(nmk_pinctrl_match, &pdev->dev);
-> > +               if (!match)
-> > +                       return -ENODEV;
-> > +               version = (unsigned int) match->data;
-> > +       }
-> 
-> AFAICT this can actually happen so patch applied, unless Lee
-> speaks against it.
+> Also, what about is_slave_xfer() name?
 
-At the very least it make the code easy to read.
+No objections.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
