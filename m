@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768651Ab2KOSRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:17:39 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:3336 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768572Ab2KOSRi (ORCPT
+	id S1768650Ab2KOSU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:20:59 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:38675 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768569Ab2KOSU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:17:38 -0500
-Message-ID: <1353003455.2532.50.camel@lorien2>
-Subject: Re: [PATCH RFT linux-next] frv: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: dhowells@redhat.com, Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Thu, 15 Nov 2012 11:17:35 -0700
-In-Reply-To: <1351271717.4013.39.camel@lorien2>
-References: <1351270093.4013.29.camel@lorien2>
-	 <1351271717.4013.39.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 15 Nov 2012 13:20:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <50A52FEC.4080409@wwwdotorg.org>
+References: <CACxGe6vhd_4rcBbYyqtvbySVaY6XpNE+HQq42PZhKe5yt=zcaA@mail.gmail.com>
+ <1352980284-2819-1-git-send-email-grant.likely@secretlab.ca> <50A52FEC.4080409@wwwdotorg.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 15 Nov 2012 18:20:36 +0000
+X-Google-Sender-Auth: vuH6zKx7VEbnte_JvW70zJuAXdI
+Message-ID: <CACxGe6tZOjMXR6CNDzDTSUkcERLiX-2+Qoad0bcPum5Z-Jxaaw@mail.gmail.com>
+Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 11:15 -0600, Shuah Khan wrote:
-> On Fri, 2012-10-26 at 10:48 -0600, Shuah Khan wrote:
-> > Add support for debug_dma_mapping_error() call to avoid warning from
-> > debug_dma_unmap() interface when it checks for mapping error checked
-> > status. Without this patch, device driver failed to check map error
-> > warning is generated.
-> > 
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> 
-> Please ignore this patch if frv doesn't use dma_map_page() and
-> dma_map_single() from arch/mips/include/asm/dma-mapping.
-> 
-> frv defines dma_map_page() and dma_map_single() in
-> arch/frv/mb93090-mb00/pci-dma.c and
-> arch/frv/mb93090-mb00/pci-dma-nommu.c
-> 
-> -- Shuah
-> > ---
-> >  arch/frv/include/asm/dma-mapping.h |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/arch/frv/include/asm/dma-mapping.h b/arch/frv/include/asm/dma-mapping.h
-> > index dfb8110..d8a8aac 100644
-> > --- a/arch/frv/include/asm/dma-mapping.h
-> > +++ b/arch/frv/include/asm/dma-mapping.h
-> > @@ -6,6 +6,7 @@
-> >  #include <asm/cacheflush.h>
-> >  #include <asm/scatterlist.h>
-> >  #include <asm/io.h>
-> > +#include <linux/dma-debug.h>
-> >  
-> >  /*
-> >   * See Documentation/DMA-API.txt for the description of how the
-> > @@ -97,6 +98,7 @@ void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nele
-> >  static inline
-> >  int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-> >  {
-> > +	debug_dma_mapping_error(dev, dma_addr);
-> >  	return 0;
-> >  }
-> >  
-> 
+On Thu, Nov 15, 2012 at 6:09 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/15/2012 04:51 AM, Grant Likely wrote:
+>> Grant Likely wrote:
+>>> Or how about: I could pick up the patch with only the MIPS hunk and
+>>> every other user can be fixed up independently to use the new rule.
+>>
+>> Here's a trial patch to fix up ARM. Does this look correct? This patch
+>> depends on the generic dtb build rule already being applied.
+>
+> I think the patch looks OK technically, except for one minor comment below.
+>
+> One issue with this patch is that it moves *.dts from arch/arm/boot to
+> arch/arm/boot/dts, which means everyone has to adjust their scripts/...
+> that package/install/... the kernel. I guess it's an easy change for
+> people to make, but could easily catch people unawares if they do
+> incremental builds so that arch/arm/boot/*.dtb still exists but is stale.
 
-Marek,
+True. We could temporarily remove or rename if the same file exists in
+the directory below to help people catch that problem. I really would
+like to clean up that build rule to be consistent though.
 
-This one is for frv to go through your tree with the other arch patches
-for debug_dmap_mapping_error(). However, I am not very sure if this
-change is necessary for frv if it doesn't use generic dma interfaces. I
-will defer to you and David on deciding if this patch is needed.
+The other option is to move all the .dts files into the boot
+directory, but I don't think that is a good idea at all.
 
-frv defines dma_map_page() and dma_map_single() in
-arch/frv/mb93090-mb00/pci-dma.c and
- arch/frv/mb93090-mb00/pci-dma-nommu.c
+>> +targets += dtbs
+>
+> Doesn't that make the "dtbs" target always run by default? Perhaps
+> that's reasonable though, and doesn't actually affect anything since the
+> make command for this directory always specifies an explicit target?
+>
+> Or, was that meant to be the following that got removed from ../Makefile?
+>
+> targets += $(dtb-y)
 
-Thanks,
--- Shuah
+Yes it is supposed to be the same thing. Doesn't it effectively do the
+same since dtbs depends on $(dtb-y)?
 
-
+g.
