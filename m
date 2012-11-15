@@ -1,237 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767728Ab2KOMwK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 07:52:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57684 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1767703Ab2KOMwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 07:52:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="249512453"
-Message-ID: <1352983899.2080.26.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V6 2/2] Thermal: Add ST-Ericsson DB8500 thermal
- properties and platform data.
-From: Zhang Rui <rui.zhang@intel.com>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kachhap@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Date: Thu, 15 Nov 2012 20:51:39 +0800
-In-Reply-To: <1352977003-25095-3-git-send-email-hongbo.zhang@linaro.com>
-References: <1352977003-25095-1-git-send-email-hongbo.zhang@linaro.com>
-	 <1352977003-25095-3-git-send-email-hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1767739Ab2KOMwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 07:52:33 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54188 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767700Ab2KOMwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 07:52:32 -0500
+Date: Thu, 15 Nov 2012 12:57:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Forconi <forconi@wavecomm.it>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: KMS Framebuffer on Intel N2600 (GMA3600)
+Message-ID: <20121115125749.3604ebdf@pyramind.ukuu.org.uk>
+In-Reply-To: <1851235145.1360402.1352970575153.JavaMail.root@zmail.sgconsulting.it>
+References: <20121114171755.27b8423b@pyramind.ukuu.org.uk>
+	<1851235145.1360402.1352970575153.JavaMail.root@zmail.sgconsulting.it>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 18:56 +0800, hongbo.zhang wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+On Thu, 15 Nov 2012 09:09:35 +0000 (UTC)
+Forconi <forconi@wavecomm.it> wrote:
+
+> Hi Alan,
+> thanks again for your answer.
 > 
-> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
-> also adds the platform data to support the old fashion.
+> Reading the manual of the board I found this specification:
+> LVDS: 24-bit dual channel via CH7511 thru eDP
 > 
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-applied to thermal next.
-
-thanks,
-rui
-> ---
->  arch/arm/boot/dts/dbx5x0.dtsi      | 14 +++++++++
->  arch/arm/boot/dts/snowball.dts     | 31 ++++++++++++++++++
->  arch/arm/configs/u8500_defconfig   |  2 ++
->  arch/arm/mach-ux500/board-mop500.c | 64 ++++++++++++++++++++++++++++++++++++++
->  4 files changed, 111 insertions(+)
+> The Chrontel CH7511 is a DisplayPort (DP/eDP) to LVDS converter.
 > 
-> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> index 4b0e0ca..731086b 100644
-> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> @@ -203,6 +203,14 @@
->  				reg = <0x80157450 0xC>;
->  			};
->  
-> +			thermal@801573c0 {
-> +				compatible = "stericsson,db8500-thermal";
-> +				reg = <0x801573c0 0x40>;
-> +				interrupts = <21 0x4>, <22 0x4>;
-> +				interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
-> +				status = "disabled";
-> +			 };
-> +
->  			db8500-prcmu-regulators {
->  				compatible = "stericsson,db8500-prcmu-regulator";
->  
-> @@ -660,5 +668,11 @@
->  			ranges = <0 0x50000000 0x4000000>;
->  			status = "disabled";
->  		};
-> +
-> +		cpufreq-cooling {
-> +			compatible = "stericsson,db8500-cpufreq-cooling";
-> +			status = "disabled";
-> +		 };
-> +
->  	};
->  };
-> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-> index 702c0ba..c6f85f0 100644
-> --- a/arch/arm/boot/dts/snowball.dts
-> +++ b/arch/arm/boot/dts/snowball.dts
-> @@ -99,6 +99,33 @@
->  			status = "okay";
->  		};
->  
-> +		prcmu@80157000 {
-> +			thermal@801573c0 {
-> +				num-trips = <4>;
-> +
-> +				trip0-temp = <70000>;
-> +				trip0-type = "active";
-> +				trip0-cdev-num = <1>;
-> +				trip0-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +				trip1-temp = <75000>;
-> +				trip1-type = "active";
-> +				trip1-cdev-num = <1>;
-> +				trip1-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +				trip2-temp = <80000>;
-> +				trip2-type = "active";
-> +				trip2-cdev-num = <1>;
-> +				trip2-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +				trip3-temp = <85000>;
-> +				trip3-type = "critical";
-> +				trip3-cdev-num = <0>;
-> +
-> +				status = "okay";
-> +			 };
-> +		};
-> +
->  		external-bus@50000000 {
->  			status = "okay";
->  
-> @@ -183,5 +210,9 @@
->  				reg = <0x33>;
->  			};
->  		};
-> +
-> +		cpufreq-cooling {
-> +			status = "okay";
-> +		};
->  	};
->  };
-> diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-> index da68454..250625d 100644
-> --- a/arch/arm/configs/u8500_defconfig
-> +++ b/arch/arm/configs/u8500_defconfig
-> @@ -69,6 +69,8 @@ CONFIG_GPIO_TC3589X=y
->  CONFIG_POWER_SUPPLY=y
->  CONFIG_AB8500_BM=y
->  CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
-> +CONFIG_THERMAL=y
-> +CONFIG_CPU_THERMAL=y
->  CONFIG_MFD_STMPE=y
->  CONFIG_MFD_TC3589X=y
->  CONFIG_AB5500_CORE=y
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> index 416d436..b03216b 100644
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -16,6 +16,7 @@
->  #include <linux/io.h>
->  #include <linux/i2c.h>
->  #include <linux/platform_data/i2c-nomadik.h>
-> +#include <linux/platform_data/db8500_thermal.h>
->  #include <linux/gpio.h>
->  #include <linux/amba/bus.h>
->  #include <linux/amba/pl022.h>
-> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
->  };
->  
->  /*
-> + * Thermal Sensor
-> + */
-> +
-> +static struct resource db8500_thsens_resources[] = {
-> +	{
-> +		.name = "IRQ_HOTMON_LOW",
-> +		.start  = IRQ_PRCMU_HOTMON_LOW,
-> +		.end    = IRQ_PRCMU_HOTMON_LOW,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.name = "IRQ_HOTMON_HIGH",
-> +		.start  = IRQ_PRCMU_HOTMON_HIGH,
-> +		.end    = IRQ_PRCMU_HOTMON_HIGH,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct db8500_thsens_platform_data db8500_thsens_data = {
-> +	.trip_points[0] = {
-> +		.temp = 70000,
-> +		.type = THERMAL_TRIP_ACTIVE,
-> +		.cdev_name = {
-> +			[0] = "thermal-cpufreq-0",
-> +		},
-> +	},
-> +	.trip_points[1] = {
-> +		.temp = 75000,
-> +		.type = THERMAL_TRIP_ACTIVE,
-> +		.cdev_name = {
-> +			[0] = "thermal-cpufreq-0",
-> +		},
-> +	},
-> +	.trip_points[2] = {
-> +		.temp = 80000,
-> +		.type = THERMAL_TRIP_ACTIVE,
-> +		.cdev_name = {
-> +			[0] = "thermal-cpufreq-0",
-> +		},
-> +	},
-> +	.trip_points[3] = {
-> +		.temp = 85000,
-> +		.type = THERMAL_TRIP_CRITICAL,
-> +	},
-> +	.num_trips = 4,
-> +};
-> +
-> +static struct platform_device u8500_thsens_device = {
-> +	.name           = "db8500-thermal",
-> +	.resource       = db8500_thsens_resources,
-> +	.num_resources  = ARRAY_SIZE(db8500_thsens_resources),
-> +	.dev	= {
-> +		.platform_data	= &db8500_thsens_data,
-> +	},
-> +};
-> +
-> +static struct platform_device u8500_cpufreq_cooling_device = {
-> +	.name           = "db8500-cpufreq-cooling",
-> +};
-> +
-> +/*
->   * TPS61052
->   */
->  
-> @@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
->  	&snowball_key_dev,
->  	&snowball_sbnet_dev,
->  	&snowball_gpio_en_3v3_regulator_dev,
-> +	&u8500_thsens_device,
-> +	&u8500_cpufreq_cooling_device,
->  };
->  
->  static void __init mop500_init_machine(void)
+> So, what I understand is that the LVDS interface that comes out
+> from the connector on the board is connected to the CH7511 that
+> is connected to the DP/eDP port on the CPU.
+> 
+> Until now I was starting the kernel with video=LVDS-1.....,
+> maybe I have to use another video device like DVI to use the eDP port?
 
+Could help explain why there is no backlight. Initial eDP support got
+added to the driver very recently so it might work but it should still
+have decided itself you have eDP given a current kernel.
 
+Alan
