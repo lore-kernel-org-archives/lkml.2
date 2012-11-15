@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993429Ab2KOENR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:13:17 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56036 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993396Ab2KOENL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:11 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50A46BB6.6070902@jp.fujitsu.com>
-Date: Thu, 15 Nov 2012 13:12:38 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S2993418Ab2KOEPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:15:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50131 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2993051Ab2KOENQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:16 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=2053/57=5D=20drm/radeon/si=3A=20add=20some=20missing=20regs=20to=20the=20VM=20reg=20checker?=
+Date: Wed, 14 Nov 2012 20:12:01 -0800
+Message-Id: <20121115040936.392646347@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
+References: <20121115040933.223998671@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
-References: <1352820639-13521-1-git-send-email-mhocko@suse.cz> <1352820639-13521-3-git-send-email-mhocko@suse.cz> <50A2E3B3.6080007@jp.fujitsu.com> <20121114101052.GD17111@dhcp22.suse.cz>
-In-Reply-To: <20121114101052.GD17111@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/14 19:10), Michal Hocko wrote:
-> On Wed 14-11-12 09:20:03, KAMEZAWA Hiroyuki wrote:
->> (2012/11/14 0:30), Michal Hocko wrote:
-> [...]
->>> @@ -1096,30 +1096,64 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->>>    			mz = mem_cgroup_zoneinfo(root, nid, zid);
->>>    			iter = &mz->reclaim_iter[reclaim->priority];
->>>    			spin_lock(&iter->iter_lock);
->>> +			last_visited = iter->last_visited;
->>>    			if (prev && reclaim->generation != iter->generation) {
->>> +				if (last_visited) {
->>> +					mem_cgroup_put(last_visited);
->>> +					iter->last_visited = NULL;
->>> +				}
->>>    				spin_unlock(&iter->iter_lock);
->>>    				return NULL;
->>>    			}
->>> -			id = iter->position;
->>>    		}
->>>
->>>    		rcu_read_lock();
->>> -		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
->>> -		if (css) {
->>> -			if (css == &root->css || css_tryget(css))
->>> -				memcg = mem_cgroup_from_css(css);
->>> -		} else
->>> -			id = 0;
->>> -		rcu_read_unlock();
->>> +		/*
->>> +		 * Root is not visited by cgroup iterators so it needs a special
->>> +		 * treatment.
->>> +		 */
->>> +		if (!last_visited) {
->>> +			css = &root->css;
->>> +		} else {
->>> +			struct cgroup *next_cgroup;
->>> +
->>> +			next_cgroup = cgroup_next_descendant_pre(
->>> +					last_visited->css.cgroup,
->>> +					root->css.cgroup);
->>
->> Maybe I miss something but.... last_visited is holded by memcg's refcnt.
->> The cgroup pointed by css.cgroup is by cgroup's refcnt which can be freed
->> before memcg is freed and last_visited->css.cgroup is out of RCU cycle.
->> Is this safe ?
->
-> Good spotted. You are right. What I need to do is to check that the
-> last_visited is alive and restart from the root if not. Something like
-> the bellow (incremental patch on top of this one) should help, right?
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 30efd7e..c0a91a3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1105,6 +1105,16 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->   				spin_unlock(&iter->iter_lock);
->   				return NULL;
->   			}
-> +			/*
-> +			 * memcg is still valid because we hold a reference but
-> +			 * its cgroup might have vanished in the meantime so
-> +			 * we have to double check it is alive and restart the
-> +			 * tree walk otherwise.
-> +			 */
-> +			if (last_visited && !css_tryget(&last_visited->css)) {
-> +				mem_cgroup_put(last_visited);
-> +				last_visited = NULL;
-> +			}
->   		}
->
->   		rcu_read_lock();
-> @@ -1136,8 +1146,10 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->   		if (reclaim) {
->   			struct mem_cgroup *curr = memcg;
->
-> -			if (last_visited)
-> +			if (last_visited) {
-> +				css_put(&last_visited->css);
->   				mem_cgroup_put(last_visited);
-> +			}
->
->   			if (css && !memcg)
->   				curr = mem_cgroup_from_css(css);
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I think this will work.
+------------------
 
-Thanks,
--Kame
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit f418b88aad0c42b4caf4d79a0cf8d14a5d0a2284 upstream.
+
+This register is needed for streamout to work properly.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/radeon/si.c  |    1 +
+ drivers/gpu/drm/radeon/sid.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2593,6 +2593,7 @@ static bool si_vm_reg_valid(u32 reg)
+ 	/* check config regs */
+ 	switch (reg) {
+ 	case GRBM_GFX_INDEX:
++	case CP_STRMOUT_CNTL:
+ 	case VGT_VTX_VECT_EJECT_REG:
+ 	case VGT_CACHE_INVALIDATION:
+ 	case VGT_ESGS_RING_SIZE:
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -413,6 +413,7 @@
+ #       define RDERR_INT_ENABLE                         (1 << 0)
+ #       define GUI_IDLE_INT_ENABLE                      (1 << 19)
+ 
++#define	CP_STRMOUT_CNTL					0x84FC
+ #define	SCRATCH_REG0					0x8500
+ #define	SCRATCH_REG1					0x8504
+ #define	SCRATCH_REG2					0x8508
 
 
