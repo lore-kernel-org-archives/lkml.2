@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767687Ab2KOMXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 07:23:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54876 "EHLO
+	id S1767683Ab2KOMZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 07:25:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62766 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1767581Ab2KOMXt (ORCPT
+	with ESMTP id S2993328Ab2KOMZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 07:23:49 -0500
+	Thu, 15 Nov 2012 07:25:37 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 1/1] ARM: ux500: Describe UART platform registering issues more accurately
-Date: Thu, 15 Nov 2012 12:23:46 +0000
+Subject: Re: [PATCH 1/2] Boottime: A tool for automatic measurement of kernel/bootloader boot time
+Date: Thu, 15 Nov 2012 12:25:30 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Jon Hunter <jon-hunter@ti.com>
-References: <1352968401-6092-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1352968401-6092-1-git-send-email-lee.jones@linaro.org>
+Cc: Kyungmin Park <kmpark@infradead.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linus.walleij@stericsson.com, jonas.aberg@stericsson.com,
+        will.deacon@arm.com,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org> <CAH9JG2UX0Wyr-QKw3=tbUXeuEhHe04_cFkkAp6bB2Rr-x7ViHQ@mail.gmail.com> <20121115112543.GC21682@gmail.com>
+In-Reply-To: <20121115112543.GC21682@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211151223.46989.arnd@arndb.de>
-X-Provags-ID: V02:K0:SqJn67KnBsYp2VMSAwkq4wQvwlo61/XYGEQ2HNsBK1i
- Ks0QOHRIJlzJLPEOfEyX0f6TePIMgtjhrxszYoH4LVEJzuc+CI
- 3fSiBYsvhFFmixEqxj2XT17G9/lWQlg/U0PyG85cCd+0WAQ/D0
- 81/Vj/2SYpRzdxELHXQIEGl1yMoOeV6DyeOYxQVjN8RD1a0MBA
- Es1wPfrxVwyvax1lCI8jI8JuBpkT6fJdeyXHnessJ6CI05qQC0
- MlJHn1ssDIjPmApejRUpyW9zqYHG+cNMeuQO0WA/c+ScdnXjz7
- UlGIQQzcN8i4JUVFboZhINmWlLSc2Ro5b/C7xUxPqI7Haicd+o
- ng7yP7NO8SdXQafxTVUs=
+Message-Id: <201211151225.31066.arnd@arndb.de>
+X-Provags-ID: V02:K0:JkpwSqC711g1KZXrYXwChBjxaFAnu1hG85Ly09kZSzk
+ b/fK6yd1e7YAVLgwPyvbueMZME3hdSIno6A5CCRpUx5lHye6Kk
+ ZnyxWJflOq8LXFxL/fAvSoUtmQJAGv4m2h0MS6Nf/XxGKCTYWL
+ qR3AjRN7Hj+P8aW3mnpmSAz5srxIcfoyAqUxAbt0NpaXQq1RWK
+ 4ePsf4+fxr56M7OW2yZOSQU9As0dz8KBL79TFWhy+S12EqIX/c
+ KNrKT91ipKib0IUqhJ1u0vd2ihhhMr4ZAZoA1j55Qcjl762Bil
+ LoECnL2Ckgg2WCCyMMvfeoOehJ3NKfobkH3thGXL9H3Tb9lUKR
+ zFROpLlUabOynlruUrRw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday 15 November 2012, Lee Jones wrote:
-> UARTs no longer require call-back information, since the reset
-> call-back was removed in 43b5f0d69291374f602ad8e1817f329573a59010.
-> The only AUXDATA dependencies remaining for UARTs are DMA settings.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > +/* for automatic boot timing testcases */
+> > > +#define ATAG_BOOTTIME  0x41000403
+> > Where can I refer this ATAG usage? can you point out the reference URL
+> > or patches?
+> 
+> I assumed this would be in Mainline u-boot, but apparently not.
+> On closer inspection of the internal ST-Ericsson u-boot, this
+> functionality appears to be provided by patches which currently
+> exist as delta. So in essence, the bootloader you use will have
+> to be patched in a similar way for you to retrieve information
+> surrounding bootloader boot times.
+> 
+> And there was me thinking it was magic. ;)
+> 
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-What is the state of the DMA binding now? We originally wanted to merge
-it for 3.7, but that didn't work out, so I hope we can get it done for
-3.8.
+And since we're moving away from ATAG on ux500 towards DT, it won't
+even work in the future. How essential is this part for the operation
+of your code?
 
 	Arnd
