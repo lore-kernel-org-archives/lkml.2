@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992666Ab2KOBwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 20:52:41 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62783 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992622Ab2KOBwk (ORCPT
+	id S2992641Ab2KOByv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 20:54:51 -0500
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:52271 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992596Ab2KOByu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 20:52:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352944274-21699-1-git-send-email-dhsharp@google.com>
-References: <1352944274-21699-1-git-send-email-dhsharp@google.com>
+	Wed, 14 Nov 2012 20:54:50 -0500
 From: David Sharp <dhsharp@google.com>
-Date: Wed, 14 Nov 2012 17:52:18 -0800
-Message-ID: <CAJL_ekuL2NjA50eZ-anDefwjAbLBKignXxUvyEPVZvUag5W=Ng@mail.gmail.com>
-Subject: Re: [PATCH 1/4] kernelshark: Fix bug with Plot CPU filtering
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: Venkatesh Pallipadi <venki@google.com>, David Sharp <dhsharp@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.net>, linux-kernel@vger.kernel.org
+Cc: David Sharp <dhsharp@google.com>
+Subject: [PATCH 4/4] kernelshark: Full-height cursor and mark lines
+Date: Wed, 14 Nov 2012 17:48:08 -0800
+Message-Id: <1352944088-21333-4-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1352944088-21333-1-git-send-email-dhsharp@google.com>
+References: <1352944088-21333-1-git-send-email-dhsharp@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sorry for the dups... typoed Steve's domain.
+"width" and "height" were swapped, causing the vertical marker and cursor lines
+to be drawn with the wrong height.
 
-On Wed, Nov 14, 2012 at 5:51 PM, David Sharp <dhsharp@google.com> wrote:
-> From: Venkatesh Pallipadi <venki@google.com>
->
-> Plot CPU filtering in kernelshark has the following bug:
-> 1) Deselect CPU A from Plot CPU list
-> 2) Plot gets updated with no CPU A
-> 3) Deselect CPU B
-> 4) Plot continues to have CPU B
->
-> This is due to a bug in graph_plot_cpus_update_callback(),
-> which seems to be checking old_all_cpus != new_all_cpus before doing any
-> update. This condition is true on 1, but false on 2.
-> Removing that check fixes the problem.
->
-> Tested:
-> Above sequence now does expected filtering.
->
-> Google-bug-id: 4258610
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> Signed-off-by: David Sharp <dhsharp@google.com>
+Signed-off-by: David Sharp <dhsharp@google.com>
+---
+ trace-graph.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/trace-graph.c b/trace-graph.c
+index 6f72350..60e5241 100644
+--- a/trace-graph.c
++++ b/trace-graph.c
+@@ -380,7 +380,7 @@ static void draw_cursor(struct graph_info *ginfo)
+ 	x = convert_time_to_x(ginfo, ginfo->cursor);
+ 
+ 	gdk_draw_line(ginfo->draw->window, ginfo->draw->style->mid_gc[3],
+-		      x, 0, x, ginfo->draw->allocation.width);
++		      x, 0, x, ginfo->draw->allocation.height);
+ }
+ 
+ static void draw_marka(struct graph_info *ginfo)
+@@ -392,7 +392,7 @@ static void draw_marka(struct graph_info *ginfo)
+ 
+ 	x = convert_time_to_x(ginfo, ginfo->marka_time);
+ 	gdk_draw_line(ginfo->draw->window, green,
+-		      x, 0, x, ginfo->draw->allocation.width);
++		      x, 0, x, ginfo->draw->allocation.height);
+ }
+ 
+ static void draw_markb(struct graph_info *ginfo)
+@@ -404,7 +404,7 @@ static void draw_markb(struct graph_info *ginfo)
+ 
+ 	x = convert_time_to_x(ginfo, ginfo->markb_time);
+ 	gdk_draw_line(ginfo->draw->window, red,
+-		      x, 0, x, ginfo->draw->allocation.width);
++		      x, 0, x, ginfo->draw->allocation.height);
+ }
+ 
+ static void update_with_backend(struct graph_info *ginfo,
+@@ -434,7 +434,7 @@ static void
+ draw_line(GtkWidget *widget, gdouble x, struct graph_info *ginfo)
+ {
+ 	gdk_draw_line(widget->window, widget->style->black_gc,
+-		      x, 0, x, widget->allocation.width);
++		      x, 0, x, widget->allocation.height);
+ }
+ 
+ static void clear_line(struct graph_info *ginfo, gint x)
+-- 
+1.7.7.3
+
