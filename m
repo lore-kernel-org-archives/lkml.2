@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993127Ab2KOEMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49504 "EHLO mail.kernel.org"
+	id S2993143Ab2KOEMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49546 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993105Ab2KOEMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:08 -0500
+	id S2993105Ab2KOEMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
-Subject: =?UTF-8?q?=5B=2063/66=5D=20drm/radeon/si=3A=20add=20some=20missing=20regs=20to=20the=20VM=20reg=20checker?=
-Date: Wed, 14 Nov 2012 20:11:08 -0800
-Message-Id: <20121115040943.684677723@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Brian Paul <brianp@vmware.com>, Dmitry Torokhov <dtor@vmware.com>,
+        Dave Airlie <airlied@redhat.com>, linux-graphics-maintainer@vmware.com
+Subject: [ 60/66] drm/vmwgfx: Fix hibernation device reset
+Date: Wed, 14 Nov 2012 20:11:05 -0800
+Message-Id: <20121115040943.474892545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,40 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit f418b88aad0c42b4caf4d79a0cf8d14a5d0a2284 upstream.
+commit 95e8f6a21996c4cc2c4574b231c6e858b749dce3 upstream.
 
-This register is needed for streamout to work properly.
+The device would not reset properly when resuming from hibernation.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Brian Paul <brianp@vmware.com>
+Reviewed-by: Dmitry Torokhov <dtor@vmware.com>
+Cc: linux-graphics-maintainer@vmware.com
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si.c  |    1 +
- drivers/gpu/drm/radeon/sid.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -2472,6 +2472,7 @@ static bool si_vm_reg_valid(u32 reg)
- 	/* check config regs */
- 	switch (reg) {
- 	case GRBM_GFX_INDEX:
-+	case CP_STRMOUT_CNTL:
- 	case VGT_VTX_VECT_EJECT_REG:
- 	case VGT_CACHE_INVALIDATION:
- 	case VGT_ESGS_RING_SIZE:
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -424,6 +424,7 @@
- #       define RDERR_INT_ENABLE                         (1 << 0)
- #       define GUI_IDLE_INT_ENABLE                      (1 << 19)
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -1099,6 +1099,11 @@ static void vmw_pm_complete(struct devic
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
+ 	struct vmw_private *dev_priv = vmw_priv(dev);
  
-+#define	CP_STRMOUT_CNTL					0x84FC
- #define	SCRATCH_REG0					0x8500
- #define	SCRATCH_REG1					0x8504
- #define	SCRATCH_REG2					0x8508
++	mutex_lock(&dev_priv->hw_mutex);
++	vmw_write(dev_priv, SVGA_REG_ID, SVGA_ID_2);
++	(void) vmw_read(dev_priv, SVGA_REG_ID);
++	mutex_unlock(&dev_priv->hw_mutex);
++
+ 	/**
+ 	 * Reclaim 3d reference held by fbdev and potentially
+ 	 * start fifo.
 
 
