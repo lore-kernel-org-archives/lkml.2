@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab2KOVkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:40:36 -0500
-Received: from aserp1050.oracle.com ([141.146.126.70]:49875 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab2KOVkb (ORCPT
+	id S1751746Ab2KOVkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:40:47 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:39871 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab2KOVkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:40:31 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] scsi: prevent stack buffer overflow in host_reset
-Date: Thu, 15 Nov 2012 15:51:46 -0500
-Message-Id: <1353012706-28182-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Thu, 15 Nov 2012 16:40:42 -0500
+X-Sasl-enc: trDIs0NuaSXWqi+T0l00ldiFKiky5oU8CCXD+RzNGZd8 1353012308
+Date: Thu, 15 Nov 2012 18:45:03 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+        herrmann.der.user@googlemail.com, bp@alien8.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h
+ processors
+Message-ID: <20121115204503.GB18032@khazad-dum.debian.net>
+References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-store_host_reset() has tried to re-invent the wheel to compare sysfs strings.
-Unfortunately it did so poorly and never bothered to check the input from
-userspace before overwriting stack with it, so something simple as:
+On Thu, 15 Nov 2012, Boris Ostrovsky wrote:
+> Add valid patch size for family 16h processors
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-echo "WoopsieWoopsie" >
-/sys/devices/pseudo_0/adapter0/host0/scsi_host/host0/host_reset
+Is this something that needs to go to -stable ?
 
-would result in:
+>  #define F1XH_MPB_MAX_SIZE 2048
+>  #define F14H_MPB_MAX_SIZE 1824
+>  #define F15H_MPB_MAX_SIZE 4096
+> +#define F16H_MPB_MAX_SIZE 3458
+>  
+>  	switch (c->x86) {
+>  	case 0x14:
+> @@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
+>  	case 0x15:
+>  		max_size = F15H_MPB_MAX_SIZE;
+>  		break;
+> +	case 0x16:
+> +		max_size = F16H_MPB_MAX_SIZE;
+> +		break;
+>  	default:
+>  		max_size = F1XH_MPB_MAX_SIZE;
+>  		break;
 
-[  316.310101] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff81f5bac7
-[  316.310101]
-[  316.320051] Pid: 6655, comm: sh Tainted: G        W    3.7.0-rc5-next-20121114-sasha-00016-g5c9d68d-dirty #129
-[  316.320051] Call Trace:
-[  316.340058] pps pps0: PPS event at 1352918752.620355751
-[  316.340062] pps pps0: capture assert seq #303
-[  316.320051]  [<ffffffff83b3856b>] panic+0xcd/0x1f4
-[  316.320051]  [<ffffffff81f5bac7>] ? store_host_reset+0xd7/0x100
-[  316.320051]  [<ffffffff8110b996>] __stack_chk_fail+0x16/0x20
-[  316.320051]  [<ffffffff81f5bac7>] store_host_reset+0xd7/0x100
-[  316.320051]  [<ffffffff81e55bb3>] dev_attr_store+0x13/0x30
-[  316.320051]  [<ffffffff812f7db1>] sysfs_write_file+0x101/0x170
-[  316.320051]  [<ffffffff8127acc8>] vfs_write+0xb8/0x180
-[  316.320051]  [<ffffffff8127ae80>] sys_write+0x50/0xa0
-[  316.320051]  [<ffffffff83c03418>] tracesys+0xe1/0xe6
+Because it looks like without this patch, some valid microcode updates
+would be rejected by the kernel...
 
-Fix this by uninventing whatever was going on there and just use sysfs_streq.
-
-Bug introduced by 29443691 ("[SCSI] scsi: Added support for adapter and
-firmware reset").
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- drivers/scsi/scsi_sysfs.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index ce5224c..77ba946 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -249,9 +249,9 @@ static DEVICE_ATTR(active_mode, S_IRUGO | S_IWUSR, show_shost_active_mode, NULL)
- 
- static int check_reset_type(char *str)
- {
--	if (strncmp(str, "adapter", 10) == 0)
-+	if (sysfs_streq(str, "adapter"))
- 		return SCSI_ADAPTER_RESET;
--	else if (strncmp(str, "firmware", 10) == 0)
-+	else if (sysfs_streq(str, "firmware"))
- 		return SCSI_FIRMWARE_RESET;
- 	else
- 		return 0;
-@@ -264,12 +264,9 @@ store_host_reset(struct device *dev, struct device_attribute *attr,
- 	struct Scsi_Host *shost = class_to_shost(dev);
- 	struct scsi_host_template *sht = shost->hostt;
- 	int ret = -EINVAL;
--	char str[10];
- 	int type;
- 
--	sscanf(buf, "%s", str);
--	type = check_reset_type(str);
--
-+	type = check_reset_type(buf);
- 	if (!type)
- 		goto exit_store_host_reset;
- 
 -- 
-1.8.0
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
