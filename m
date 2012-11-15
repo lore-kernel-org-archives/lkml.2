@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab2KOVVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:21:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:57049 "EHLO
+	id S1751243Ab2KOVVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:21:36 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50688 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2KOVUs (ORCPT
+	with ESMTP id S1750923Ab2KOVUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 16:20:48 -0500
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Stephen Warren <swarren@wwwdotorg.org>
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/6] ARM: tegra: Add Tegra30 host1x support
-Date: Thu, 15 Nov 2012 22:07:57 +0100
-Message-Id: <1353013679-16773-5-git-send-email-thierry.reding@avionic-design.de>
+Subject: [PATCH v2 1/6] ARM: tegra: Add Tegra20 host1x support
+Date: Thu, 15 Nov 2012 22:07:54 +0100
+Message-Id: <1353013679-16773-2-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353013679-16773-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1353013679-16773-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:Sx+U5R3NYllHvPEUm3atYGxfHUPxP5oCs75FPxhadF/
- eohcW07urb6I+9dXj0BhbUJIj6ydn6QSUGrg0Emm1zThGAnS2U
- MM5B4uDyuNhxeqSJXHoJKRzlOS3XpB2QXR5LAZicNIMGYMBQyD
- aSRvpdE7oJIfO1+p9Y0YoJje7cowNHcyT+NWnmU2JMnLQyPk1z
- KeZ8kUu1Fp3YqIlBOIlFgGFvoiwV5PM1ZULkseSt8OoDY4HGZ4
- r+v92EOXmDYleHim0NiqQnV5vwHwUUdt569zdZgoStGucW/UGD
- eQ676JfXVxuUsBpuAnfbYnKuItZYp5R5Qs3B+8IPhn43elpBCs
- mz5F7Am2ihU6pXPQ8iVHWLlPT2G/eDen2ol1vfpfD2Bvv285pT
- eo0sQ9EP5h0hG95XLJYR8PfhgGO4OZ278DKb8ipJktPSNV8pgJ
- LOwSa
+X-Provags-ID: V02:K0:iV53RHK78+9EFJhp6DeS5OzTUI7Cz44DSlSdC3k1DRR
+ 5eNKkr9KjgrDI8iZ5PWRvb8mZVeqO8OuoO1nq1POJvavT7QvIv
+ Od03RA01nXzeITu04ZX7ttQUOS+CAbJkSf1VLuqGFHunQEEB55
+ lFnmwXbwLxadEPGreq2ONjmIYFIO34ndgZzWnWNuwnwRh5TqNc
+ WhrNKYBdHv4/cb1Lruej1jNEiD4+bUq8bd2Zg6otfsMXpc2sbh
+ PVvnY6Y3MJcVLhcyDO4iEZgdxnP94GqY0O5/JpiDPeW4mpec44
+ QtA0f9F+TUl619vqSl93z6f1siTqr1eIkX6Qq8CoXBp8tgZ7C4
+ B52Bi+9MDQdSJOPAQnkROV+X/GdBBu2zJL1M28l8r5096TYSgT
+ YoMrgCbxe4Y7FYEyfI8APgR8DLgBRZPM79K14UULBmoAWf1xFM
+ KIhFw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the host1x node along with its children to the Tegra30 DTSI. Board-
+Add the host1x node along with its children to the Tegra20 DTSI. Board-
 specific DTS files are expected to enable the available outputs and
 complement the device tree with data specific to the hardware.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- arch/arm/boot/dts/tegra30.dtsi | 87 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/tegra20.dtsi | 87 ++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 87 insertions(+)
 
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index b8e33c3..529fdb8 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 4519a6f..b8effa1 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
 @@ -4,6 +4,93 @@
- 	compatible = "nvidia,tegra30";
+ 	compatible = "nvidia,tegra20";
  	interrupt-parent = <&intc>;
  
 +	host1x {
-+		compatible = "nvidia,tegra30-host1x", "simple-bus";
++		compatible = "nvidia,tegra20-host1x", "simple-bus";
 +		reg = <0x50000000 0x00024000>;
 +		interrupts = <0 65 0x04   /* mpcore syncpt */
 +			      0 67 0x04>; /* mpcore general */
@@ -59,42 +59,42 @@ index b8e33c3..529fdb8 100644
 +		ranges = <0x54000000 0x54000000 0x04000000>;
 +
 +		mpe {
-+			compatible = "nvidia,tegra30-mpe";
++			compatible = "nvidia,tegra20-mpe";
 +			reg = <0x54040000 0x00040000>;
 +			interrupts = <0 68 0x04>;
 +		};
 +
 +		vi {
-+			compatible = "nvidia,tegra30-vi";
++			compatible = "nvidia,tegra20-vi";
 +			reg = <0x54080000 0x00040000>;
 +			interrupts = <0 69 0x04>;
 +		};
 +
 +		epp {
-+			compatible = "nvidia,tegra30-epp";
++			compatible = "nvidia,tegra20-epp";
 +			reg = <0x540c0000 0x00040000>;
 +			interrupts = <0 70 0x04>;
 +		};
 +
 +		isp {
-+			compatible = "nvidia,tegra30-isp";
++			compatible = "nvidia,tegra20-isp";
 +			reg = <0x54100000 0x00040000>;
 +			interrupts = <0 71 0x04>;
 +		};
 +
 +		gr2d {
-+			compatible = "nvidia,tegra30-gr2d";
++			compatible = "nvidia,tegra20-gr2d";
 +			reg = <0x54140000 0x00040000>;
 +			interrupts = <0 72 0x04>;
 +		};
 +
 +		gr3d {
-+			compatible = "nvidia,tegra30-gr3d";
++			compatible = "nvidia,tegra20-gr3d";
 +			reg = <0x54180000 0x00040000>;
 +		};
 +
 +		dc@54200000 {
-+			compatible = "nvidia,tegra30-dc";
++			compatible = "nvidia,tegra20-dc";
 +			reg = <0x54200000 0x00040000>;
 +			interrupts = <0 73 0x04>;
 +
@@ -104,7 +104,7 @@ index b8e33c3..529fdb8 100644
 +		};
 +
 +		dc@54240000 {
-+			compatible = "nvidia,tegra30-dc";
++			compatible = "nvidia,tegra20-dc";
 +			reg = <0x54240000 0x00040000>;
 +			interrupts = <0 74 0x04>;
 +
@@ -114,21 +114,21 @@ index b8e33c3..529fdb8 100644
 +		};
 +
 +		hdmi {
-+			compatible = "nvidia,tegra30-hdmi";
++			compatible = "nvidia,tegra20-hdmi";
 +			reg = <0x54280000 0x00040000>;
 +			interrupts = <0 75 0x04>;
 +			status = "disabled";
 +		};
 +
 +		tvo {
-+			compatible = "nvidia,tegra30-tvo";
++			compatible = "nvidia,tegra20-tvo";
 +			reg = <0x542c0000 0x00040000>;
 +			interrupts = <0 76 0x04>;
 +			status = "disabled";
 +		};
 +
 +		dsi {
-+			compatible = "nvidia,tegra30-dsi";
++			compatible = "nvidia,tegra20-dsi";
 +			reg = <0x54300000 0x00040000>;
 +			status = "disabled";
 +		};
