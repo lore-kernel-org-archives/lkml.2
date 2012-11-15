@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767618Ab2KOERz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:17:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50020 "EHLO mail.kernel.org"
+	id S2993435Ab2KOESU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:18:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50006 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993363Ab2KOENF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:05 -0500
+	id S2993354Ab2KOEND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 43/57] drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister before mdiobus_free
-Date: Wed, 14 Nov 2012 20:11:51 -0800
-Message-Id: <20121115040935.833304768@linuxfoundation.org>
+Subject: [ 42/57] net: fix divide by zero in tcp algorithm illinois
+Date: Wed, 14 Nov 2012 20:11:50 -0800
+Message-Id: <20121115040935.782062240@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -29,44 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+From: Jesper Dangaard Brouer <brouer@redhat.com>
 
-[ Upstream commit 57c10b61c84bfed68b1b317d6f507a392724b9c4 ]
+[ Upstream commit 8f363b77ee4fbf7c3bbcf5ec2c5ca482d396d664 ]
 
-Based on commit b27393aecf66199f5ddad37c302d3e0cfadbe6c0
+Reading TCP stats when using TCP Illinois congestion control algorithm
+can cause a divide by zero kernel oops.
 
-Calling mdiobus_free without calling mdiobus_unregister causes
-BUG_ON(). This patch fixes the issue.
+The division by zero occur in tcp_illinois_info() at:
+ do_div(t, ca->cnt_rtt);
+where ca->cnt_rtt can become zero (when rtt_reset is called)
 
-The semantic patch that found this issue(http://coccinelle.lip6.fr/):
-// <smpl>
-@@
-expression E;
-@@
-  ... when != mdiobus_unregister(E);
+Steps to Reproduce:
+ 1. Register tcp_illinois:
+     # sysctl -w net.ipv4.tcp_congestion_control=illinois
+ 2. Monitor internal TCP information via command "ss -i"
+     # watch -d ss -i
+ 3. Establish new TCP conn to machine
 
-+ mdiobus_unregister(E);
-  mdiobus_free(E);
-// </smpl>
+Either it fails at the initial conn, or else it needs to wait
+for a loss or a reset.
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+This is only related to reading stats.  The function avg_delay() also
+performs the same divide, but is guarded with a (ca->cnt_rtt > 0) at its
+calling point in update_params().  Thus, simply fix tcp_illinois_info().
+
+Function tcp_illinois_info() / get_info() is called without
+socket lock.  Thus, eliminate any race condition on ca->cnt_rtt
+by using a local stack variable.  Simply reuse info.tcpv_rttcnt,
+as its already set to ca->cnt_rtt.
+Function avg_delay() is not affected by this race condition, as
+its called with the socket lock.
+
+Cc: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/nxp/lpc_eth.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_illinois.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1523,6 +1523,7 @@ static int lpc_eth_drv_remove(struct pla
- 				  pldat->dma_buff_base_p);
- 	free_irq(ndev->irq, ndev);
- 	iounmap(pldat->net_base);
-+	mdiobus_unregister(pldat->mii_bus);
- 	mdiobus_free(pldat->mii_bus);
- 	clk_disable(pldat->clk);
- 	clk_put(pldat->clk);
+--- a/net/ipv4/tcp_illinois.c
++++ b/net/ipv4/tcp_illinois.c
+@@ -313,11 +313,13 @@ static void tcp_illinois_info(struct soc
+ 			.tcpv_rttcnt = ca->cnt_rtt,
+ 			.tcpv_minrtt = ca->base_rtt,
+ 		};
+-		u64 t = ca->sum_rtt;
+ 
+-		do_div(t, ca->cnt_rtt);
+-		info.tcpv_rtt = t;
++		if (info.tcpv_rttcnt > 0) {
++			u64 t = ca->sum_rtt;
+ 
++			do_div(t, info.tcpv_rttcnt);
++			info.tcpv_rtt = t;
++		}
+ 		nla_put(skb, INET_DIAG_VEGASINFO, sizeof(info), &info);
+ 	}
+ }
 
 
