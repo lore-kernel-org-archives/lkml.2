@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151Ab2KOXIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 18:08:48 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:52315 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab2KOXIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 18:08:47 -0500
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Nov 2012 18:08:46 EST
-From: Gene Heskett <gheskett@wdtv.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h processors
-Date: Thu, 15 Nov 2012 18:01:22 -0500
-Cc: Boris Ostrovsky <boris.ostrovsky@amd.com>, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de, herrmann.der.user@googlemail.com, bp@alien8.de,
-        linux-kernel@vger.kernel.org
-References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com> <20121115204503.GB18032@khazad-dum.debian.net>
-In-Reply-To: <20121115204503.GB18032@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+	id S1751169Ab2KOXLn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 18:11:43 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25465 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab2KOXLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 18:11:42 -0500
+X-Authority-Analysis: v=2.0 cv=RoZH3VaK c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_hlxZwuNuxYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=kQC1szw6xFsA:10 a=CKLZwLOsXKyUI4niKqQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353021100.9391.0.camel@gandalf.local.home>
+Subject: Re: [PATCH] kernel-shark: Allow unsetting of all CPUs in filter
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 15 Nov 2012 18:11:40 -0500
+In-Reply-To: <1353018498-3828-1-git-send-email-vnagarnaik@google.com>
+References: <1353018498-3828-1-git-send-email-vnagarnaik@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211151801.23160.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 November 2012, Henrique de Moraes Holschuh wrote:
->On Thu, 15 Nov 2012, Boris Ostrovsky wrote:
->> Add valid patch size for family 16h processors
->> 
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
->
->Is this something that needs to go to -stable ?
+On Thu, 2012-11-15 at 14:28 -0800, Vaibhav Nagarnaik wrote:
 
-IMO, and if I had an oar in this water, yes.  Its been missing since the 
-Intel folks started playing with it a couple years back up the log.  I 
-have the amd_ucode files in my /lib/firmware tree,
+> +	else
+> +		cpu_clear(cpu_helper->cpu_mask, cpu);
+> +
+> +	cpu_helper->allcpus = cpu_allset(cpu_helper->cpu_mask,
+> +					 cpu_helper->cpus);
+> +	/*
+> +	 * Deactivate sending 'toggled' signal for "All CPUs"
+> +	 * while we adjust its state
+> +	 */
+> +	g_signal_handlers_block_by_func(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
+> +				        G_CALLBACK (cpu_toggle),
+> +				        (gpointer) cpu_helper);
 
-root@coyote:/opt/os9# ls -l /lib/firmware/amd-ucode/
-total 76
--rw-r--r-- 1 root root   642 2012-01-17 11:50 INSTALL
--rw-r--r-- 1 root root  9987 2012-01-17 11:50 LICENSE
--rw-r--r-- 1 root root 12404 2012-01-17 11:50 microcode_amd.bin
--rw-r--r-- 1 root root  1526 2012-01-17 11:50 microcode_amd.bin.README
--rw-r--r-- 1 root root  2644 2012-01-17 11:50 microcode_amd_fam15h.bin
--rw-r--r-- 1 root root   510 2012-01-17 11:50 
-microcode_amd_fam15h.bin.README
--rw-r--r-- 1 root root  2012 2009-01-20 04:48 microcode_amd.phenom-V83
--rw-r--r-- 1 root root 15020 2012-01-17 11:50 microcode_amd_solaris.bin
--rw-r--r-- 1 root root  1685 2012-01-17 11:50 
-microcode_amd_solaris.bin.README
--rw-r--r-- 1 root root  6227 2012-01-17 11:50 README
+Kind of hacky, but it works.
 
-but I can't recall the last time I saw the code sign in during dmesg.
-Old, slow 4 core phenom here.  AMD was forgotten about when the loading 
-of it was moved from the kernel options to /etc/init.d/microcode.  For 
-an AMD user, that was not a show stopper, but it wasn't a Good Thing(TM) 
-either.
+Applied, Thanks!
 
->
->>  #define F1XH_MPB_MAX_SIZE 2048
->>  #define F14H_MPB_MAX_SIZE 1824
->>  #define F15H_MPB_MAX_SIZE 4096
->> 
->> +#define F16H_MPB_MAX_SIZE 3458
->> 
->>  	switch (c->x86) {
->> 
->>  	case 0x14:
->> @@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32
->> patch_size,
->> 
->>  	case 0x15:
->>  		max_size = F15H_MPB_MAX_SIZE;
->>  		break;
->> 
->> +	case 0x16:
->> +		max_size = F16H_MPB_MAX_SIZE;
->> +		break;
->> 
->>  	default:
->>  		max_size = F1XH_MPB_MAX_SIZE;
->>  		break;
->
->Because it looks like without this patch, some valid microcode updates
->would be rejected by the kernel...
+-- Steve
+
+>  
+>  	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
+> -				     FALSE);
+> +				     cpu_helper->allcpus);
+> +
+> +	g_signal_handlers_unblock_by_func(GTK_TOGGLE_BUTTON(cpu_helper->buttons[cpu_helper->cpus]),
+> +					  G_CALLBACK (cpu_toggle),
+> +					  (gpointer) cpu_helper);
+>  }
+>  
+>  /**
 
 
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
-Some people's mouths work faster than their brains.  They say things they
-haven't even thought of yet.
