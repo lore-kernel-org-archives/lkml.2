@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992920Ab2KOINp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:13:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50253 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992492Ab2KOINn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:13:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="249421693"
-Message-ID: <1352967218.2080.15.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V5 1/2] Thermal: Add ST-Ericsson DB8500 thermal driver.
-From: Zhang Rui <rui.zhang@intel.com>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, amit.kachhap@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Date: Thu, 15 Nov 2012 16:13:38 +0800
-In-Reply-To: <1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
-References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
-	 <1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755444Ab2KOIOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:14:21 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55682 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab2KOIOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 03:14:19 -0500
+Date: Thu, 15 Nov 2012 00:14:17 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 03/11] thp: copy_huge_pmd(): copy huge zero page
+In-Reply-To: <20121115080133.GA9676@otc-wbsnb-06>
+Message-ID: <alpine.DEB.2.00.1211150013220.4410@chino.kir.corp.google.com>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-4-git-send-email-kirill.shutemov@linux.intel.com> <alpine.DEB.2.00.1211141433150.13515@chino.kir.corp.google.com> <20121115080133.GA9676@otc-wbsnb-06>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+On Thu, 15 Nov 2012, Kirill A. Shutemov wrote:
+
+> > > @@ -778,6 +790,11 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+> > >  		pte_free(dst_mm, pgtable);
+> > >  		goto out_unlock;
+> > >  	}
+> > > +	if (is_huge_zero_pmd(pmd)) {
+> > > +		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
+> > > +		ret = 0;
+> > > +		goto out_unlock;
+> > > +	}
+> > 
+> > You said in the introduction message in this series that you still allow 
+> > splitting of the pmd, so why no check for pmd_trans_splitting() before 
+> > this?
 > 
-> This driver is based on the thermal management framework in thermal_sys.c. A
-> thermal zone device is created with the trip points to which cooling devices
-> can be bound, the current cooling device is cpufreq, e.g. CPU frequency is
-> clipped down to cool the CPU, and other cooling devices can be added and bound
-> to the trip points dynamically.  The platform specific PRCMU interrupts are
-> used to active thermal update when trip points are reached.
+> pmd_trans_splitting() returns true only for pmd which points to a page
+> under spliiting. It never happens with huge zero page.
+> We only split a pmd to a page table without touching the page.
+> mm->page_table_lock is enough to protect against that.
 > 
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Reviewed-by: Francesco Lavra <francescolavra.fl@gmail.com>
 
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index e1cb6bd..54c8fd0 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -31,6 +31,26 @@ config CPU_THERMAL
->  	  and not the ACPI interface.
->  	  If you want this support, you should say Y here.
->  
-> +config DB8500_THERMAL
-> +	bool "DB8500 thermal management"
-
-why is this bool?
-
-thanks,
-rui
-
-
+Comment in the code?
