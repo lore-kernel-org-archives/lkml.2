@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283Ab2KOVcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:32:13 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:54472 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750733Ab2KOVcK (ORCPT
+	id S1751619Ab2KOVcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:32:21 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43220 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab2KOVcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:32:10 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1155h)
-X-WSS-ID: 0MDJT5G-02-3KG-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 1/4] perf, amd: Rework northbridge event constraints handler
-Date: Thu, 15 Nov 2012 15:31:50 -0600
-Message-ID: <1353015113-13262-2-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
-References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
+	Thu, 15 Nov 2012 16:32:19 -0500
+Message-ID: <50A55F57.7080804@us.ibm.com>
+Date: Thu, 15 Nov 2012 15:32:07 -0600
+From: Anthony Liguori <aliguori@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Gerd Hoffmann <kraxel@redhat.com>
+CC: Andy King <acking@vmware.com>, pv-drivers@vmware.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        David Miller <davem@davemloft.net>, georgezhang@vmware.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
+References: <783561822.12637564.1352139592543.JavaMail.root@vmware.com> <509A06AB.2020700@redhat.com>
+In-Reply-To: <509A06AB.2020700@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12111521-2000-0000-0000-000009E45107
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <rric@kernel.org>
+On 11/07/2012 12:58 AM, Gerd Hoffmann wrote:
+> On 11/05/12 19:19, Andy King wrote:
+>> Hi David,
+>>
+>>> The big and only question is whether anyone can actually use any of
+>>> this stuff without your proprietary bits?
+>>
+>> Do you mean the VMCI calls?  The VMCI driver is in the process of being
+>> upstreamed into the drivers/misc tree.  Greg (cc'd on these patches) is
+>> actively reviewing that code and we are addressing feedback.
+>>
+>> Also, there was some interest from RedHat into using vSockets as a unified
+>> interface, routed over a hypervisor-specific transport (virtio or
+>> otherwise, although for now VMCI is the only one implemented).
+>
+> Can you outline how this can be done?  From a quick look over the code
+> it seems like vsock has a hard dependency on vmci, is that correct?
+>
+> When making vsock a generic, reusable kernel service it should be the
+> other way around:  vsock should provide the core implementation and an
+> interface where hypervisor-specific transports (vmci, virtio, xenbus,
+> ...) can register themself.
 
-Code simplification. No functional changes.
+This was already done in a hypervisor neutral way using virtio:
 
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/kernel/cpu/perf_event_amd.c |   68 +++++++++++++---------------------
- 1 file changed, 26 insertions(+), 42 deletions(-)
+http://lists.openwall.net/netdev/2008/12/14/8
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 4528ae7..d60c5c7 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -256,9 +256,8 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct amd_nb *nb = cpuc->amd_nb;
--	struct perf_event *old = NULL;
--	int max = x86_pmu.num_counters;
--	int i, j, k = -1;
-+	struct perf_event *old;
-+	int idx, new = -1;
- 
- 	/*
- 	 * if not NB event or no NB, then no constraints
-@@ -276,48 +275,33 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 	 * because of successive calls to x86_schedule_events() from
- 	 * hw_perf_group_sched_in() without hw_perf_enable()
- 	 */
--	for (i = 0; i < max; i++) {
--		/*
--		 * keep track of first free slot
--		 */
--		if (k == -1 && !nb->owners[i])
--			k = i;
-+	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-+		if (new == -1 || hwc->idx == idx)
-+			/* assign free slot, prefer hwc->idx */
-+			old = cmpxchg(nb->owners + idx, NULL, event);
-+		else if (nb->owners[idx] == event)
-+			/* event already present */
-+			old = event;
-+		else
-+			continue;
-+
-+		if (old && old != event)
-+			continue;
-+
-+		/* reassign to this slot */
-+		if (new != -1)
-+			cmpxchg(nb->owners + new, event, NULL);
-+		new = idx;
- 
- 		/* already present, reuse */
--		if (nb->owners[i] == event)
--			goto done;
--	}
--	/*
--	 * not present, so grab a new slot
--	 * starting either at:
--	 */
--	if (hwc->idx != -1) {
--		/* previous assignment */
--		i = hwc->idx;
--	} else if (k != -1) {
--		/* start from free slot found */
--		i = k;
--	} else {
--		/*
--		 * event not found, no slot found in
--		 * first pass, try again from the
--		 * beginning
--		 */
--		i = 0;
--	}
--	j = i;
--	do {
--		old = cmpxchg(nb->owners+i, NULL, event);
--		if (!old)
-+		if (old == event)
- 			break;
--		if (++i == max)
--			i = 0;
--	} while (i != j);
--done:
--	if (!old)
--		return &nb->event_constraints[i];
--
--	return &emptyconstraint;
-+	}
-+
-+	if (new == -1)
-+		return &emptyconstraint;
-+
-+	return &nb->event_constraints[new];
- }
- 
- static struct amd_nb *amd_alloc_nb(int cpu)
--- 
-1.7.9.5
+The concept was Nacked and that led to the abomination of virtio-serial.  If an 
+address family for virtualization is on the table, we should reconsider 
+AF_VMCHANNEL.
 
+I'd be thrilled to get rid of virtio-serial...
+
+Regards,
+
+Anthony Liguori
+
+>
+> cheers,
+>    Gerd
 
