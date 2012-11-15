@@ -1,132 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab2KOFKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 00:10:14 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39366 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2KOFKM (ORCPT
+	id S1751084Ab2KOFX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 00:23:56 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50384 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733Ab2KOFXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 00:10:12 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
-References: <20121101145225.GB10269@srcf.ucam.org>
-	<20121102132318.GA3300@redhat.com> <87boffd727.fsf@xmission.com>
-	<20121105180353.GC28720@redhat.com> <87mwyv96mn.fsf@xmission.com>
-	<20121106193419.GH4548@redhat.com> <87k3tynvc0.fsf@xmission.com>
-	<20121108194050.GB27586@redhat.com>
-	<20121108194522.GC27586@redhat.com> <87vcdfn6y2.fsf@xmission.com>
-	<20121109143938.GD4842@redhat.com>
-Date: Wed, 14 Nov 2012 21:09:51 -0800
-In-Reply-To: <20121109143938.GD4842@redhat.com> (Vivek Goyal's message of
-	"Fri, 9 Nov 2012 09:39:38 -0500")
-Message-ID: <87ehjvfo4g.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 15 Nov 2012 00:23:55 -0500
+Date: Thu, 15 Nov 2012 14:23:48 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, lrg@ti.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tps6586x: move regulator dt parsing to regulator
+ driver
+Message-ID: <20121115052346.GF7599@opensource.wolfsonmicro.com>
+References: <1350569169-27455-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/TBw6pl3xIRCAMUb/HT2+n0sCD9dhk8Ek=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0721]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: Kdump with signed images
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BzCohdixPhurzSK4"
+Content-Disposition: inline
+In-Reply-To: <1350569169-27455-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Cold hands, no gloves.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Thu, Nov 08, 2012 at 01:03:17PM -0800, Eric W. Biederman wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
->> 
->> > On Thu, Nov 08, 2012 at 02:40:50PM -0500, Vivek Goyal wrote:
->> >> On Tue, Nov 06, 2012 at 03:51:59PM -0800, Eric W. Biederman wrote:
->> >> 
->> >> [..]
->> >> 
->> >> Thnking more about executable signature verification, I have another question.
->> >> 
->> >> While verifyign the signature, we will have to read the whole executable
->> >> in memory. That sounds bad as we are in kernel mode and will not be killed
->> >> and if sombody is trying to execute a malformed exceptionally large
->> >> executable, system will start killing other processess. We can potentially
->> >> lock all the memory in kernel just by trying to execute a signed huge
->> >> executable. Not good.
->> >> 
->> >
->> > Also, even if we try to read in whole executable, can't an hacker modify
->> > pages in swap disk and then they will be faulted back in and bingo hacker
->> > is running its unsigned code. (assuming root has been compromised otherwise
->> > why do we have to do all this exercise).
->> 
->> You make a decent case for an implicit mlockall(MCL_FUTURE) being
->> required of signed executables, that are going to be granted privileges
->> based on signature verification.
->
-> implicity lockall for signed executables sounds reasonable to avoid the
-> swap hack.
->
->> 
->> As for size if the executable won't fit in memory, there is no point in
->> checking the signature.
->
-> Well I am worried about malformed executables. One can sign a huge
-> executable (which is never meant to run successfully) and cause all
-> kind of memory issues. 
+--BzCohdixPhurzSK4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Good point what to do with executables with invalid sigantures.  From
-another reply it sounded like one of the bits of IMA/EVM had already
-addressed part of that.
+On Thu, Oct 18, 2012 at 07:36:09PM +0530, Laxman Dewangan wrote:
+> Moving regulator node parsing to regulator driver in place
+> of parsing it on mfd driver.
 
-> Can we first look at the signature, decrypt it using certificates in
-> kernel ring, and if we find out that executable was signed by any
-> of the certificates, only then we go on to read in whole executable
-> and try to calculate the digest. May be at the time of signing we can put
->  a string, say "LINUX", along with digest and then sing/encrypt it. Upon
-> decryption we can check if LINUX is there and if yes, we know it was
-> signed by the certifcate loaded in kernel and then go on to load the
-> full executable and calculate digest.
+Applied, thanks.
 
-> Not sure if above is doable or not but if it is, it might reduce the
-> risk significantly as we will not try to integrity verify executables
-> not signed by genuine certificates.
+--BzCohdixPhurzSK4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Known plaintext in the signed blob should allow that.  I would be very
-careful with that because it sounds like the kind of thing that opens
-you up to plain-text attacks, but that is mostly my parania and lack of
-experience speaking.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->> It should be fairly straight forward to make the signature checking
->> process preemptable and killable.
->
-> hmm..., not sure how to do this. Will have to read more code to understand
-> process killing and see what can I do this while I am in kernel mode
-> and I possibly might have done kernel memory allocations using
-> vmalloc()/kmalloc() etc.
+iQIcBAEBAgAGBQJQpHxHAAoJELSic+t+oim9LfMP/3wnSETwziVkZhuKTRzxc5Al
+pdS9RXnnY3noJHfC4JFhRjhhv4w/cNC/AY0ZrUWPGGO+INEbYW/yb2H/3YFOjeVF
+cQnEXaeFbaD5bRSW8m2J7SWmq0VRZSI50tbmMcrlD6XgDaAyRh7sOuFH5IvbtHQE
+Calep+P3TRp2EbIwXko7LMJudgEpd6Tux799wIJfYaBXhWo3LgCPCXIpFIj70OFv
+pyBgdtu2anp/Wtovmj9XuKAFwx1QhOuLnVkfXFflVZhfeCtseh3sNK6gWTKU9IME
+cVcoLTeC4e9pHBa1hQI8Oc9tX7ZRIgzJR4tlLsYiNrut83azU/roC5NuW/2gEp8t
+GOPv+pBatdtG0fskPw3K19AOhozXshyQ5veoYA4j3jyk0avqeX9duL4xGMzxzkzi
+4kuxe0g0n4YYVoJTQ+E1FdbCLXWjc9Gr1VK8V94NwD5Cmowo7+mY+qYPbjrq7Cfr
+szjS8fRqhT+SSmsbh1zQH+gf9THOifrFiJZNcIwKN4fc8oVldJfdm1sEFYwNeg1X
+4H80wuRHjUkVWvdwY4Jbrxnpl6DmdLKB5Wh3pA4XZt6EO6I2vtnkocZC5KYIOVjd
+sw8f1FW5lXE3TxnpcjXKe/luhvokwwsTBvh0+x8OZuYqkL9mS7KuWNjBq6tgHYgP
+B1Xblgv0x5TubS6nJaMq
+=+LUI
+-----END PGP SIGNATURE-----
 
-Well basically it is matter of using the killable version of waits
-returning an error code as you unwind, and eventually either
-force_sig(SIGKILL) or do_exit().
-
-There are a lot of times where you can support SIGKILL and just cause
-the process to exit where you can't handle signals.
-
-
-Eric
-
+--BzCohdixPhurzSK4--
