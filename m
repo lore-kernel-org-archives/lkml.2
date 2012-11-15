@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab2KOViH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:38:07 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34968 "EHLO
+	id S1751402Ab2KOViF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:38:05 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34967 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab2KOViD (ORCPT
+	with ESMTP id S1750804Ab2KOViD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 16:38:03 -0500
-Subject: Re: [PATCH-v2 2/3] target: Add/check max_write_same_len device
- attribute + update block limits VPD
+Subject: Re: [PATCH-v2 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0
+ emulation support
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliot <Elliott@hp.com>
-In-Reply-To: <1353010439-4600-3-git-send-email-nab@linux-iscsi.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+In-Reply-To: <1353010439-4600-4-git-send-email-nab@linux-iscsi.org>
 References: <1353010439-4600-1-git-send-email-nab@linux-iscsi.org>
-	 <1353010439-4600-3-git-send-email-nab@linux-iscsi.org>
+	 <1353010439-4600-4-git-send-email-nab@linux-iscsi.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Nov 2012 12:38:06 -0800
-Message-ID: <1353011886.11597.4.camel@haakon2.linux-iscsi.org>
+Date: Thu, 15 Nov 2012 12:39:17 -0800
+Message-ID: <1353011957.11597.5.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -32,62 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Thu, 2012-11-15 at 20:13 +0000, Nicholas A. Bellinger wrote:
 > From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> This patch adds a new max_write_same_len device attribute for use with
-> WRITE_SAME w/ UNMAP=0 backend emulation.  This can be useful for
-> lowering the default backend value (IBLOCK uses 0xFFFF).
+> This patch adds support for emulation of WRITE_SAME w/ UNMAP=0 within
+> iblock_execute_write_same() backend code.
 > 
-> Also, update block limits VPD emulation code in spc_emulate_evpd_b0() to
-> report MAXIMUM WRITE SAME LENGTH, and enforce max_write_same_len during
-> sbc_parse() -> sbc_setup_write_same() CDB sanity checking for all emulated
-> WRITE_SAME w/ UNMAP=0 cases.
+> The emulation uses a bio_add_page() call for each sector, and by default
+> enforces a limit of max_write_same_len=0xFFFF (65536) sectors following
+> what scsi_debug reports per default for MAXIMUM WRITE SAME LENGTH.
+> 
+> It also sets max_write_same_len to the operational default at setup ->
+> iblock_configure_device() time.
+> 
+> (hch: Move unmap logic into iblock_execute_write_same_unmap + add
+>       check for single sector SGLs in iblock_execute_write_same)
+> (mkp: Update comment for 0xFFFF magic constant)
 > 
 > Cc: Christoph Hellwig <hch@lst.de>
 > Cc: Martin K. Petersen <martin.petersen@oracle.com>
 > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 > ---
->  drivers/target/target_core_configfs.c |    4 ++++
->  drivers/target/target_core_device.c   |   11 +++++++++++
->  drivers/target/target_core_internal.h |    1 +
->  drivers/target/target_core_sbc.c      |    8 ++++++++
->  drivers/target/target_core_spc.c      |    8 +++++++-
->  include/target/target_core_base.h     |    3 +++
->  6 files changed, 34 insertions(+), 1 deletions(-)
+>  drivers/target/target_core_iblock.c |   91 ++++++++++++++++++++++++++++++++---
+>  1 files changed, 84 insertions(+), 7 deletions(-)
 > 
+> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+> index 53f4501..5abbd55 100644
+> --- a/drivers/target/target_core_iblock.c
+> +++ b/drivers/target/target_core_iblock.c
 
-<SNIP>
-
-> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-> index a5a8f46..8dd8a802 100644
-> --- a/drivers/target/target_core_sbc.c
-> +++ b/drivers/target/target_core_sbc.c
-> @@ -238,6 +238,8 @@ static inline unsigned long long transport_lba_64_ext(unsigned char *cdb)
->  static sense_reason_t
->  sbc_setup_write_same(struct se_cmd *cmd, unsigned char *flags, struct sbc_ops *ops)
->  {
+> +static sense_reason_t
+> +iblock_execute_write_same(struct se_cmd *cmd)
+> +{
+> +	struct iblock_req *ibr;
+> +	struct scatterlist *sg;
+> +	struct bio *bio;
+> +	struct bio_list list;
+> +	sector_t block_lba = cmd->t_task_lba;
 > +	unsigned int sectors = spc_get_write_same_sectors(cmd);
 > +
->  	if ((flags[0] & 0x04) || (flags[0] & 0x02)) {
->  		pr_err("WRITE_SAME PBDATA and LBDATA"
->  			" bits not supported for Block Discard"
-> @@ -258,6 +260,12 @@ sbc_setup_write_same(struct se_cmd *cmd, unsigned char *flags, struct sbc_ops *o
->  	if (!ops->execute_write_same)
->  		return TCM_UNSUPPORTED_SCSI_OPCODE;
->  
 > +	if (sectors > cmd->se_dev->dev_attrib.max_write_same_len) {
 > +		pr_warn("WRITE_SAME sectors: %u exceeds max_write_same_len: %u\n",
 > +			sectors, cmd->se_dev->dev_attrib.max_write_same_len);
 > +		return TCM_INVALID_CDB_FIELD;
 > +	}
-> +
->  	cmd->execute_cmd = ops->execute_write_same;
->  	return 0;
->  }
 
-Now moving the max_write_same_len check above directly ahead of the
-UNMAP conditional branch, so that both WRITE_SAME w/ UNMAP=[1,0] are
-properly checked against this value as per hch's + Robert's input.
+<SNIP>
 
-Thanks!
+Forgot to remove this now redundant check for max_write_same_len.
 
---nab
+Dropping now..
 
