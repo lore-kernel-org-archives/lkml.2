@@ -1,142 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992847Ab2KOJXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:23:48 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14569 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933008Ab2KOJXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:23:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="asc'?scan'208";a="168668049"
-Date: Thu, 15 Nov 2012 11:24:51 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 07/11] thp: implement splitting pmd for huge zero page
-Message-ID: <20121115092451.GE9676@otc-wbsnb-06>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1352300463-12627-8-git-send-email-kirill.shutemov@linux.intel.com>
- <alpine.DEB.2.00.1211141524010.22537@chino.kir.corp.google.com>
+	id S2992972Ab2KOJX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:23:59 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44930 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933097Ab2KOJXx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:23:53 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Oiv9uiLrevHtW1RS"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211141524010.22537@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352970823.2080.22.camel@rzhang1-mobl4>
+References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
+	<1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
+	<1352967218.2080.15.camel@rzhang1-mobl4>
+	<CAJLyvQyu_oU7xx92JTOj6bvF+7-hOJfM=kTHj6JMogaYjC+Jww@mail.gmail.com>
+	<1352970823.2080.22.camel@rzhang1-mobl4>
+Date: Thu, 15 Nov 2012 17:23:52 +0800
+Message-ID: <CAJLyvQxJeNgGc8sQiV_qmKCfvfWQKyR8S5ZMNCtETvJLMQH-oQ@mail.gmail.com>
+Subject: Re: [PATCH V5 1/2] Thermal: Add ST-Ericsson DB8500 thermal driver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, amit.kachhap@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+this is a driver for ST-Ericsson u8500 board(Snowball), with a ARM core inside.
+so you should compile like this:
+make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- u8500_defconfig
+make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- uImage
 
---Oiv9uiLrevHtW1RS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 14, 2012 at 03:28:15PM -0800, David Rientjes wrote:
-> On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
->=20
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > index 90e651c..f36bc7d 100644
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -1611,6 +1611,7 @@ int split_huge_page(struct page *page)
-> >  	struct anon_vma *anon_vma;
-> >  	int ret =3D 1;
-> > =20
-> > +	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
-> >  	BUG_ON(!PageAnon(page));
-> >  	anon_vma =3D page_lock_anon_vma(page);
-> >  	if (!anon_vma)
-> > @@ -2509,23 +2510,63 @@ static int khugepaged(void *none)
-> >  	return 0;
-> >  }
-> > =20
-> > +static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
-> > +		unsigned long haddr, pmd_t *pmd)
-> > +{
->=20
-> This entire function duplicates other code in mm/huge_memory.c which give=
-s=20
-> even more incentive into breaking do_huge_pmd_wp_zero_page_fallback() int=
-o=20
-> logical helper functions and reusing them for both page and !page. =20
-> Duplicating all this code throughout the thp code just becomes a=20
-> maintenance nightmare down the road.
-
-Okay, I'll try.
-
-> > +	pgtable_t pgtable;
-> > +	pmd_t _pmd;
-> > +	int i;
-> > +
-> > +	pmdp_clear_flush(vma, haddr, pmd);
-> > +	/* leave pmd empty until pte is filled */
-> > +
-> > +	pgtable =3D get_pmd_huge_pte(vma->vm_mm);
-> > +	pmd_populate(vma->vm_mm, &_pmd, pgtable);
-> > +
-> > +	for (i =3D 0; i < HPAGE_PMD_NR; i++, haddr +=3D PAGE_SIZE) {
-> > +		pte_t *pte, entry;
-> > +		entry =3D pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-> > +		entry =3D pte_mkspecial(entry);
-> > +		pte =3D pte_offset_map(&_pmd, haddr);
-> > +		VM_BUG_ON(!pte_none(*pte));
-> > +		set_pte_at(vma->vm_mm, haddr, pte, entry);
-> > +		pte_unmap(pte);
-> > +	}
-> > +	smp_wmb(); /* make pte visible before pmd */
-> > +	pmd_populate(vma->vm_mm, pmd, pgtable);
-> > +}
-> > +
-> >  void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long a=
-ddress,
-> >  		pmd_t *pmd)
-> >  {
-> >  	struct page *page;
-> > +	struct mm_struct *mm =3D vma->vm_mm;
-> >  	unsigned long haddr =3D address & HPAGE_PMD_MASK;
-> > +	unsigned long mmun_start;	/* For mmu_notifiers */
-> > +	unsigned long mmun_end;		/* For mmu_notifiers */
-> > =20
-> >  	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
-> > =20
-> > -	spin_lock(&vma->vm_mm->page_table_lock);
-> > +	mmun_start =3D haddr;
-> > +	mmun_end   =3D address + HPAGE_PMD_SIZE;
->=20
-> address or haddr?
-
-haddr. I'll fix.
-
---=20
- Kirill A. Shutemov
-
---Oiv9uiLrevHtW1RS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQpLTjAAoJEAd+omnVudOM+wsQALniVCI+LqtwvOmAIyDo4nBx
-ENFer1WxW3asHbwxe2XRTG9J75xjoOu4VZMWe6EqFr9iqpdDFZFcCqfPHJKOTNQv
-UEA7bCPh4IWtQ4kqBri3VbXnmt13/5RUhyH3MaNcIYZTp+kqR2QlsCIjOi1Pozcf
-z6J1aHfWt5KNzHdi/8j4Gxb0XxknRO1k6cRjhs+r4bomV4hMnNhOIEapILsFqwNT
-cyQICoV2Sz24CWuP+8zn8cKNe/ZjS6u5FVzDfQ6TQZw/ZydUnCYkcMiIL6Zf0+KS
-xjN8QiGjg+/3JchmeA9jDX3zIoy7okOBFpDi9WL43/RO/6aBx0Xf+NVWvNKJV5KD
-mLoEa2bkpABEpnkJq5PNPOT3lE86+NtF1pFHR+YTA5tImLUDp5hIvjMOGIWknR0u
-MJ/DLeaCJfZC6bFbuHXEcIOAVbYQR1BZrphSg9IN4n3qM0efA0YqQ8mCcQ/K38Z8
-fPcENmkOeJQR7OSG+2SAFsNivyTGgVlHCzG2/psYRVDF6GHAofdohz+rsQfOosI7
-pD/23EzIAvN1iHDn1sTWhkwdnwWQpI1VksVVuPsSVclBmZ7XVEzsWiVRDVCd9p6P
-7nh7ZbfSEQ3R0ZUjAUXpUefGrwbksiVI0s/Qwk2duajiFM+u5UC5wHOX9SSIFk0U
-/RLWPjeVHo1e+n42QXix
-=Iumx
------END PGP SIGNATURE-----
-
---Oiv9uiLrevHtW1RS--
+On 15 November 2012 17:13, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Thu, 2012-11-15 at 16:32 +0800, Hongbo Zhang wrote:
+>> On 15 November 2012 16:13, Zhang Rui <rui.zhang@intel.com> wrote:
+>> > On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
+>> >> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>> >>
+>> >> This driver is based on the thermal management framework in thermal_sys.c. A
+>> >> thermal zone device is created with the trip points to which cooling devices
+>> >> can be bound, the current cooling device is cpufreq, e.g. CPU frequency is
+>> >> clipped down to cool the CPU, and other cooling devices can be added and bound
+>> >> to the trip points dynamically.  The platform specific PRCMU interrupts are
+>> >> used to active thermal update when trip points are reached.
+>> >>
+>> >> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>> >> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> >> Reviewed-by: Francesco Lavra <francescolavra.fl@gmail.com>
+>> >
+>> >> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>> >> index e1cb6bd..54c8fd0 100644
+>> >> --- a/drivers/thermal/Kconfig
+>> >> +++ b/drivers/thermal/Kconfig
+>> >> @@ -31,6 +31,26 @@ config CPU_THERMAL
+>> >>         and not the ACPI interface.
+>> >>         If you want this support, you should say Y here.
+>> >>
+>> >> +config DB8500_THERMAL
+>> >> +     bool "DB8500 thermal management"
+>> >
+>> > why is this bool?
+>>
+>> platform specific PRCMU interfaces are used, and those interfaces are
+>> not exported, so my driver cannot be compiled as a module.
+>>
+> ok.
+> But I still alway get this error message when set DB8500_THERMAL,
+> include/linux/mfd/dbx500-prcmu.h:459:19: error: redefinition of
+> ‘prcmu_abb_read’
+> include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of
+> ‘prcmu_abb_read’ was here
+> include/linux/mfd/dbx500-prcmu.h:464:19: error: redefinition of
+> ‘prcmu_abb_write’
+> include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of
+> ‘prcmu_abb_write’ was here
+> include/linux/mfd/dbx500-prcmu.h:475:19: error: redefinition of
+> ‘prcmu_config_clkout’
+> include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of
+> ‘prcmu_config_clkout’ was here
+> include/linux/mfd/dbx500-prcmu.h:537:19: error: redefinition of
+> ‘prcmu_ac_wake_req’
+> include/linux/mfd/db8500-prcmu.h:683:19: note: previous definition of
+> ‘prcmu_ac_wake_req’ was here
+> include/linux/mfd/dbx500-prcmu.h:542:20: error: redefinition of
+> ‘prcmu_ac_sleep_req’
+> include/linux/mfd/db8500-prcmu.h:688:20: note: previous definition of
+> ‘prcmu_ac_sleep_req’ was here
+>
+> $ grep prcmu_abb_read include/linux/mfd/*
+> include/linux/mfd/db8500-prcmu.h:int prcmu_abb_read(u8 slave, u8 reg, u8
+> *value, u8 size);
+> include/linux/mfd/db8500-prcmu.h:static inline int prcmu_abb_read(u8
+> slave, u8 reg, u8 *value, u8 size)
+> include/linux/mfd/dbx500-prcmu.h:int prcmu_abb_read(u8 slave, u8 reg, u8
+> *value, u8 size);
+> include/linux/mfd/dbx500-prcmu.h:static inline int prcmu_abb_read(u8
+> slave, u8 reg, u8 *value, u8 size)
+>
+> this functions are defined in both db8500-prmcu.h and dbx500-prcmu.h,
+> plus linux/mfd/dbx500-prcmu.h includes linux/mfd/db8500-prcmu.h.
+>
+> I do not know how it works before, but this is a bug to me.
+>
+> thanks,
+> rui
+>
