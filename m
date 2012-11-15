@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993060Ab2KOEcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:32:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49297 "EHLO mail.kernel.org"
+	id S2993133Ab2KOEdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:33:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49275 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993011Ab2KOELp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:45 -0500
+	id S2993000Ab2KOELn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 44/66] ipv4: Fix flushing of cached routing informations
-Date: Wed, 14 Nov 2012 20:10:49 -0800
-Message-Id: <20121115040942.305349800@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 42/66] ALSA: Avoid endless sleep after disconnect
+Date: Wed, 14 Nov 2012 20:10:47 -0800
+Message-Id: <20121115040942.165674081@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -28,47 +26,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 13d82bf50dce632355fcccafa4fe44a9b5e706d8 ]
+commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
 
-Currently we can not flush cached pmtu/redirect informations via
-the ipv4_sysctl_rtcache_flush sysctl. We need to check the rt_genid
-of the old route and reset the nh exeption if the old route is
-expired when we bind a new route to a nh exeption.
+When disconnect callback is called, each component should wake up
+sleepers and check card->shutdown flag for avoiding the endless sleep
+blocking the proper resource release.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/core/control.c     |    2 ++
+ sound/core/hwdep.c       |    7 +++++++
+ sound/core/oss/pcm_oss.c |    4 ++++
+ sound/core/pcm.c         |    6 +++++-
+ sound/core/pcm_native.c  |    8 ++++++++
+ sound/core/rawmidi.c     |   20 ++++++++++++++++++++
+ 6 files changed, 46 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1166,8 +1166,12 @@ static bool rt_bind_exception(struct rta
- 	spin_lock_bh(&fnhe_lock);
- 
- 	if (daddr == fnhe->fnhe_daddr) {
--		struct rtable *orig;
--
-+		struct rtable *orig = rcu_dereference(fnhe->fnhe_rth);
-+		if (orig && rt_is_expired(orig)) {
-+			fnhe->fnhe_gw = 0;
-+			fnhe->fnhe_pmtu = 0;
-+			fnhe->fnhe_expires = 0;
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1436,6 +1436,8 @@ static ssize_t snd_ctl_read(struct file
+ 			spin_unlock_irq(&ctl->read_lock);
+ 			schedule();
+ 			remove_wait_queue(&ctl->change_sleep, &wait);
++			if (ctl->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			spin_lock_irq(&ctl->read_lock);
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -131,6 +131,10 @@ static int snd_hwdep_open(struct inode *
+ 		mutex_unlock(&hw->open_mutex);
+ 		schedule();
+ 		mutex_lock(&hw->open_mutex);
++		if (hw->card->shutdown) {
++			err = -ENODEV;
++			break;
 +		}
- 		if (fnhe->fnhe_pmtu) {
- 			unsigned long expires = fnhe->fnhe_expires;
- 			unsigned long diff = expires - jiffies;
-@@ -1184,7 +1188,6 @@ static bool rt_bind_exception(struct rta
- 		} else if (!rt->rt_gateway)
- 			rt->rt_gateway = daddr;
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -462,12 +466,15 @@ static int snd_hwdep_dev_disconnect(stru
+ 		mutex_unlock(&register_mutex);
+ 		return -EINVAL;
+ 	}
++	mutex_lock(&hwdep->open_mutex);
++	wake_up(&hwdep->open_wait);
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (hwdep->ossreg)
+ 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
+ #endif
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
+ 	list_del_init(&hwdep->list);
++	mutex_unlock(&hwdep->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -1087,12 +1087,16 @@ static int snd_pcm_dev_disconnect(struct
+ 		goto unlock;
  
--		orig = rcu_dereference(fnhe->fnhe_rth);
- 		rcu_assign_pointer(fnhe->fnhe_rth, rt);
- 		if (orig)
- 			rt_free(orig);
+ 	mutex_lock(&pcm->open_mutex);
++	wake_up(&pcm->open_wait);
+ 	list_del_init(&pcm->list);
+ 	for (cidx = 0; cidx < 2; cidx++)
+ 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
+ 			snd_pcm_stream_lock_irq(substream);
+-			if (substream->runtime)
++			if (substream->runtime) {
+ 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
++				wake_up(&substream->runtime->sleep);
++				wake_up(&substream->runtime->tsleep);
++			}
+ 			snd_pcm_stream_unlock_irq(substream);
+ 		}
+ 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1518,6 +1518,10 @@ static int snd_pcm_drain(struct snd_pcm_
+ 		down_read(&snd_pcm_link_rwsem);
+ 		snd_pcm_stream_lock_irq(substream);
+ 		remove_wait_queue(&to_check->sleep, &wait);
++		if (card->shutdown) {
++			result = -ENODEV;
++			break;
++		}
+ 		if (tout == 0) {
+ 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
+ 				result = -ESTRPIPE;
+@@ -2168,6 +2172,10 @@ static int snd_pcm_open(struct file *fil
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -424,6 +424,10 @@ static int snd_rawmidi_open(struct inode
+ 		mutex_unlock(&rmidi->open_mutex);
+ 		schedule();
+ 		mutex_lock(&rmidi->open_mutex);
++		if (rmidi->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -995,6 +999,8 @@ static ssize_t snd_rawmidi_read(struct f
+ 			spin_unlock_irq(&runtime->lock);
+ 			schedule();
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail)
+@@ -1238,6 +1244,8 @@ static ssize_t snd_rawmidi_write(struct
+ 			spin_unlock_irq(&runtime->lock);
+ 			timeout = schedule_timeout(30 * HZ);
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail && !timeout)
+@@ -1613,9 +1621,20 @@ static int snd_rawmidi_dev_register(stru
+ static int snd_rawmidi_dev_disconnect(struct snd_device *device)
+ {
+ 	struct snd_rawmidi *rmidi = device->device_data;
++	int dir;
+ 
+ 	mutex_lock(&register_mutex);
++	mutex_lock(&rmidi->open_mutex);
++	wake_up(&rmidi->open_wait);
+ 	list_del_init(&rmidi->list);
++	for (dir = 0; dir < 2; dir++) {
++		struct snd_rawmidi_substream *s;
++		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
++			if (s->runtime)
++				wake_up(&s->runtime->sleep);
++		}
++	}
++
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (rmidi->ossreg) {
+ 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
+@@ -1630,6 +1649,7 @@ static int snd_rawmidi_dev_disconnect(st
+ 	}
+ #endif /* CONFIG_SND_OSSEMUL */
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
++	mutex_unlock(&rmidi->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
 
 
