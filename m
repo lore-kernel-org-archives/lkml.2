@@ -1,157 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767583Ab2KOEN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:13:27 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29757 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1767565Ab2KOENW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:22 -0500
-Message-ID: <50A46BBD.3060701@oracle.com>
-Date: Thu, 15 Nov 2012 12:12:45 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1767596Ab2KOENp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:13:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50190 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2993417Ab2KOENX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:23 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: =?UTF-8?q?=5B=2054/57=5D=20drm/i915=3A=20fixup=20infoframe=20support=20for=20sdvo?=
+Date: Wed, 14 Nov 2012 20:12:02 -0800
+Message-Id: <20121115040936.442864553@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
+References: <20121115040933.223998671@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Andreas Dilger <aedilger@gmail.com>,
-        John Sobecki <john.sobecki@oracle.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>, "Ted Ts'o" <tytso@mit.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        jakub@redhat.com, drepper@redhat.com,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH v4] binfmt_elf.c: use get_random_int() to fix entropy depleting
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-The problems have been fixed in this version as per Kees's comments for v3.
+------------------
 
-Hi Kees,
-Would you please ACK this patch if you think it is ok except the strength
-of these various RNGs you are concerned?
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
+commit 81014b9d0b55fb0b48f26cd2a943359750d532db upstream.
 
-Changes:
---------
-v4->v3:
-- s/random_stack_user()/get_atrandom_bytes()/
-- Move this function to ahead of its use to avoid the predeclaration.
+At least the worst offenders:
+- SDVO specifies that the encoder should compute the ecc. Testing also
+  shows that we must not send the ecc field, so copy the dip_infoframe
+  struct to a temporay place and avoid the ecc field. This way the avi
+  infoframe is exactly 17 bytes long, which agrees with what the spec
+  mandates as a minimal storage capacity (with the ecc field it would
+  be 18 bytes).
+- Only 17 when sending the avi infoframe. The SDVO spec explicitly
+  says that sending more data than what the device announces results
+  in undefined behaviour.
+- Add __attribute__((packed)) to the avi and spd infoframes, for
+  otherwise they're wrongly aligned. Noticed because the avi infoframe
+  ended up being 18 bytes large instead of 17. We haven't noticed this
+  yet because we don't use the uint16_t fields yet (which are the only
+  ones that would be wrongly aligned).
 
-v3->v2:
-- Tweak code comments of random_stack_user().
-- Remove redundant bits mask and shift upon the random variable.
+This regression has been introduce by
 
-v2->v1:
-- Fix random copy to check up buffer length that are not 4-byte multiples.
+3c17fe4b8f40a112a85758a9ab2aebf772bdd647 is the first bad commit
+commit 3c17fe4b8f40a112a85758a9ab2aebf772bdd647
+Author: David Härdeman <david@hardeman.nu>
+Date:   Fri Sep 24 21:44:32 2010 +0200
 
-v3 can be found at:
-http://www.spinics.net/lists/linux-fsdevel/msg59597.html
-v2 can be found at:
-http://www.spinics.net/lists/linux-fsdevel/msg59418.html
-v1 can be found at:
-http://www.spinics.net/lists/linux-fsdevel/msg59128.html
+    i915: enable AVI infoframe for intel_hdmi.c [v4]
 
+Patch tested on my g33 with a sdvo hdmi adaptor.
 
-Thanks,
--Jeff
-
-
-Entropy is quickly depleted under normal operations like ls(1), cat(1),
-etc...  between 2.6.30 to current mainline, for instance:
-
-$ cat /proc/sys/kernel/random/entropy_avail
-3428
-$ cat /proc/sys/kernel/random/entropy_avail
-2911
-$cat /proc/sys/kernel/random/entropy_avail
-2620
-
-We observed this problem has been occurring since 2.6.30 with
-fs/binfmt_elf.c: create_elf_tables()->get_random_bytes(), introduced by
-f06295b44c296c8f ("ELF: implement AT_RANDOM for glibc PRNG seeding").
-
-/*
- * Generate 16 random bytes for userspace PRNG seeding.
- */
-get_random_bytes(k_rand_bytes, sizeof(k_rand_bytes));
-
-The patch introduces a wrapper around get_random_int() which has lower
-overhead than calling get_random_bytes() directly.
-
-With this patch applied:
-$ cat /proc/sys/kernel/random/entropy_avail
-2731
-$ cat /proc/sys/kernel/random/entropy_avail
-2802
-$ cat /proc/sys/kernel/random/entropy_avail
-2878
-
-Analyzed by John Sobecki.
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andreas Dilger <aedilger@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnn@arndb.de>
-Cc: John Sobecki <john.sobecki@oracle.com>
-Cc: James Morris <james.l.morris@oracle.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Ted Ts'o <tytso@mit.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Ulrich Drepper <drepper@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
+Tested-by: Peter Ross <pross@xvid.org> (G35 SDVO-HDMI)
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_elf.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/i915/intel_drv.h  |    4 ++--
+ drivers/gpu/drm/i915/intel_sdvo.c |   11 +++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index fbd9f60..ab4428e 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -139,6 +139,25 @@ static int padzero(unsigned long elf_bss)
- #define ELF_BASE_PLATFORM NULL
- #endif
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -247,12 +247,12 @@ struct dip_infoframe {
+ 			uint16_t bottom_bar_start;
+ 			uint16_t left_bar_end;
+ 			uint16_t right_bar_start;
+-		} avi;
++		} __attribute__ ((packed)) avi;
+ 		struct {
+ 			uint8_t vn[8];
+ 			uint8_t pd[16];
+ 			uint8_t sdi;
+-		} spd;
++		} __attribute__ ((packed)) spd;
+ 		uint8_t payload[27];
+ 	} __attribute__ ((packed)) body;
+ } __attribute__((packed));
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -877,17 +877,24 @@ static bool intel_sdvo_set_avi_infoframe
+ 	};
+ 	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
+ 	uint8_t set_buf_index[2] = { 1, 0 };
+-	uint64_t *data = (uint64_t *)&avi_if;
++	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
++	uint64_t *data = (uint64_t *)sdvo_data;
+ 	unsigned i;
  
-+/*
-+ * Use get_random_int() to implement AT_RANDOM while avoiding depletion
-+ * of the entropy pool.
-+ */
-+static void get_atrandom_bytes(unsigned char *buf, size_t nbytes)
-+{
-+	unsigned char *p = buf;
+ 	intel_dip_infoframe_csum(&avi_if);
+ 
++	/* sdvo spec says that the ecc is handled by the hw, and it looks like
++	 * we must not send the ecc field, either. */
++	memcpy(sdvo_data, &avi_if, 3);
++	sdvo_data[3] = avi_if.checksum;
++	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
 +
-+	while (nbytes) {
-+		unsigned int random_variable;
-+		size_t chunk = min(nbytes, sizeof(random_variable));
-+
-+		random_variable = get_random_int();
-+		memcpy(p, &random_variable, chunk);
-+		p += chunk;
-+		nbytes -= chunk;
-+	}
-+}
-+
- static int
- create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
- 		unsigned long load_addr, unsigned long interp_load_addr)
-@@ -200,7 +219,7 @@ create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
- 	/*
- 	 * Generate 16 random bytes for userspace PRNG seeding.
- 	 */
--	get_random_bytes(k_rand_bytes, sizeof(k_rand_bytes));
-+	get_atrandom_bytes(k_rand_bytes, sizeof(k_rand_bytes));
- 	u_rand_bytes = (elf_addr_t __user *)
- 		       STACK_ALLOC(p, sizeof(k_rand_bytes));
- 	if (__copy_to_user(u_rand_bytes, k_rand_bytes, sizeof(k_rand_bytes)))
--- 
-1.7.4.1
+ 	if (!intel_sdvo_set_value(intel_sdvo,
+ 				  SDVO_CMD_SET_HBUF_INDEX,
+ 				  set_buf_index, 2))
+ 		return false;
+ 
+-	for (i = 0; i < sizeof(avi_if); i += 8) {
++	for (i = 0; i < sizeof(sdvo_data); i += 8) {
+ 		if (!intel_sdvo_set_value(intel_sdvo,
+ 					  SDVO_CMD_SET_HBUF_DATA,
+ 					  data, 8))
+
+
