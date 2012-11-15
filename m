@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768593Ab2KORws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 12:52:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13422 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768567Ab2KORwr (ORCPT
+	id S1768608Ab2KORww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 12:52:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60472 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768567Ab2KORwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 12:52:47 -0500
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=skrZvcOWfsoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=E9MJ4dmaRSoA:10 a=HQDe5QKAFfvOPPeXlHcA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353001964.18025.107.camel@gandalf.local.home>
-Subject: [PATCH RFC] irq_work: Warn if there's still work on cpu_down
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 15 Nov 2012 12:52:44 -0500
-In-Reply-To: <1352997261.18025.103.camel@gandalf.local.home>
-References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
-	 <1352925457-15700-8-git-send-email-fweisbec@gmail.com>
-	 <1352953617.18025.94.camel@gandalf.local.home>
-	 <CAFTL4hzzhd5__VwR7N+VKpq1C27xHGgi4vj87drbcLghJ+Od5g@mail.gmail.com>
-	 <1352997261.18025.103.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 12:52:50 -0500
+Date: Thu, 15 Nov 2012 15:52:43 -0200
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [ 27/82] gpiolib: Dont return -EPROBE_DEFER to sysfs, or for
+ invalid gpios
+Message-ID: <20121115175242.GA10102@herton-Z68MA-D2H-B3>
+References: <20121114053933.726869752@decadent.org.uk>
+ <20121114053937.652708298@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121114053937.652708298@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we are in nohz and there's still irq_work to be done when the idle
-task is about to go offline. Give a nasty warning.
+On Wed, Nov 14, 2012 at 05:40:00AM +0000, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Mathias Nyman <mathias.nyman@linux.intel.com>
+> 
+> commit ad2fab36d7922401c4576fb7ea9b21a47a29a17f upstream.
+> 
+> gpios requested with invalid numbers, or gpios requested from userspace via sysfs
+> should not try to be deferred on failure.
+> 
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/gpio/gpiolib.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 5d6c71e..1c8d9e3 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -623,9 +623,11 @@ static ssize_t export_store(struct class *class,
+>  	 */
+>  
+>  	status = gpio_request(gpio, "sysfs");
+> -	if (status < 0)
+> +	if (status < 0) {
+> +		if (status == -EPROBE_DEFER)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This one fails to build here:
+linux/drivers/gpio/gpiolib.c: In function 'export_store':
+linux/drivers/gpio/gpiolib.c:625:18: error: 'EPROBE_DEFER' undeclared (first use in this function)
+linux/drivers/gpio/gpiolib.c:625:18: note: each undeclared identifier is reported only once for each function it appears in
 
-Index: linux-rt.git/kernel/irq_work.c
-===================================================================
---- linux-rt.git.orig/kernel/irq_work.c
-+++ linux-rt.git/kernel/irq_work.c
-@@ -103,6 +103,9 @@ bool irq_work_needs_cpu(void)
- 	if (llist_empty(this_list))
- 		return false;
- 
-+	/* All work should have been flushed before going offline */
-+	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-+
- 	return true;
- }
- 
+There is no EPROBE_DEFER functionality on 3.2 and in gpio_request, so I
+think the patch can be safely dropped.
 
+[...]
 
+-- 
+[]'s
+Herton
