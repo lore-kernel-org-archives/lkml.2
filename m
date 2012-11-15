@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2KOWMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:12:33 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40258 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751757Ab2KOWMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:12:31 -0500
-Message-ID: <1353017551.20648.18.camel@joe-AO722>
-Subject: Re: [PATCH 1/8] staging: line6: wrap >80 char lines in capture.c
-From: Joe Perches <joe@perches.com>
-To: Markus Grabner <grabner@icg.tugraz.at>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>, devel@driverdev.osuosl.org,
-        line6linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 15 Nov 2012 14:12:31 -0800
-In-Reply-To: <1602710.lBylyCQOHr@medialab>
-References: <1352636686-31170-1-git-send-email-stefanha@gmail.com>
-	 <1352636686-31170-2-git-send-email-stefanha@gmail.com>
-	 <20121114143305.GH11515@mwanda> <1602710.lBylyCQOHr@medialab>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1751429Ab2KOWRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:17:44 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:24365 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab2KOWRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 17:17:42 -0500
+Message-ID: <1353017366.12509.19.camel@misato.fc.hp.com>
+Subject: Re: [Patch v5 2/7] acpi,memory-hotplug: deal with eject request in
+ hotplug queue
+From: Toshi Kani <toshi.kani@hp.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
+Date: Thu, 15 Nov 2012 15:09:26 -0700
+In-Reply-To: <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com>
+	 <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 22:03 +0100, Markus Grabner wrote:
-> Am Mittwoch, 14. November 2012, 17:33:05 schrieb Dan Carpenter:
-> > The reason this is hitting the 80 character limit is because
-> > "LINE6_INDEX_PCM_ALSA_CAPTURE_STREAM" is 35 characters long.  It
-> > isn't even clear from the name what it holds.  It's just a very crap
-> > name.
-> Please refer to the file pcm.h for a detailed documentation of this and 
-> similar names (in fact, the documentation explains the LINE6_BIT_PCM_* names 
-> instead, but I bevlieve the correspondence is obvious). It's hard to define a 
-> shorter name which is at the same time descriptive, consistent, and not to be 
-> confused with related names.
+On Thu, 2012-11-15 at 14:59 +0800, Wen Congyang wrote:
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
 > 
-> Should such documentation be moved to a separate file (e.g., 
-> "Documentation/sound/alsa/line6usb.txt")?
+> We handle the 1st case in the module acpi_memhotplug, and handle
+> the 2nd case in ACPI eject notification. This 2 events may happen
+> at the same time, so we may touch acpi_memory_device.res_list at
+> the same time. This patch reimplements memory-hotremove support
+> through an ACPI eject notification. Now the memory device is
+> offlined and hotremoved only in the function acpi_memory_device_remove()
+> which is protected by device_lock().
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 
-Documenting poor naming choices doesn't make it better.
+Thanks for the update.  It looks good.
+
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+
+-Toshi
+
 
 
