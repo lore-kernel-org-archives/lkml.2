@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992740Ab2KOEvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:51:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48243 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933315Ab2KOEJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:09:59 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 02/38] rt2800: validate step value for temperature compensation
-Date: Wed, 14 Nov 2012 20:09:59 -0800
-Message-Id: <20121115040933.056862802@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
-In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
-References: <20121115040932.918082372@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S2992878Ab2KOEvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:51:48 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46662 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992529Ab2KOEvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:51:47 -0500
+Message-ID: <1352955096.6793.1.camel@phoenix>
+Subject: [PATCH 1/4] pinctrl: dove: Prevent NULL dereference if
+ of_match_device returns NULL
+From: Axel Lin <axel.lin@ingics.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 15 Nov 2012 12:51:36 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+of_match_device() may return NULL.
 
-------------------
-
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-
-commit bf7e1abe434ba9e22e8dc04a4cba4ab504b788b8 upstream.
-
-Some hardware has correct (!= 0xff) value of tssi_bounds[4] in the
-EEPROM, but step is equal to 0xff. This results on ridiculous delta
-calculations and completely broke TX power settings.
-
-Reported-and-tested-by: Pavel Lucik <pavel.lucik@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/mvebu/pinctrl-dove.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -1935,7 +1935,7 @@ static int rt2800_get_gain_calibration_d
- 	/*
- 	 * Check if temperature compensation is supported.
- 	 */
--	if (tssi_bounds[4] == 0xff)
-+	if (tssi_bounds[4] == 0xff || step == 0xff)
- 		return 0;
+diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
+index ffe74b2..a8b9b42 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -578,8 +578,12 @@ static struct of_device_id dove_pinctrl_of_match[] __devinitdata = {
+ 
+ static int __devinit dove_pinctrl_probe(struct platform_device *pdev)
+ {
+-	const struct of_device_id *match =
+-		of_match_device(dove_pinctrl_of_match, &pdev->dev);
++	const struct of_device_id *match;
++
++	match = of_match_device(dove_pinctrl_of_match, &pdev->dev);
++	if (!match)
++		return -ENODEV;
++
+ 	pdev->dev.platform_data = match->data;
  
  	/*
+-- 
+1.7.9.5
+
 
 
