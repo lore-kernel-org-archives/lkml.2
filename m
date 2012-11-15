@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab2KOIpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:45:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:54985 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569Ab2KOIpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:45:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="asc'?scan'208";a="219992294"
-Date: Thu, 15 Nov 2012 10:46:35 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 05/11] thp: change_huge_pmd(): keep huge zero page
- write-protected
-Message-ID: <20121115084635.GC9676@otc-wbsnb-06>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1352300463-12627-6-git-send-email-kirill.shutemov@linux.intel.com>
- <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com>
+	id S1756716Ab2KOIpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:45:40 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58782 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756569Ab2KOIpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 03:45:39 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50A4AB9E.4030106@jp.fujitsu.com>
+Date: Thu, 15 Nov 2012 17:45:18 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/Uq4LBwYP4y1W6pO"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 2/4] mm, oom: cleanup pagefault oom handler
+References: <alpine.DEB.2.00.1211140111190.32125@chino.kir.corp.google.com> <alpine.DEB.2.00.1211140113020.32125@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1211140113020.32125@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/11/14 18:15), David Rientjes wrote:
+> To lock the entire system from parallel oom killing, it's possible to
+> pass in a zonelist with all zones rather than using
+> for_each_populated_zone() for the iteration.  This obsoletes
+> try_set_system_oom() and clear_system_oom() so that they can be removed.
+>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
---/Uq4LBwYP4y1W6pO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm sorry if I missed something...
 
-On Wed, Nov 14, 2012 at 03:12:54PM -0800, David Rientjes wrote:
-> On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
->=20
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > index d767a7c..05490b3 100644
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -1259,6 +1259,8 @@ int change_huge_pmd(struct vm_area_struct *vma, p=
-md_t *pmd,
-> >  		pmd_t entry;
-> >  		entry =3D pmdp_get_and_clear(mm, addr, pmd);
-> >  		entry =3D pmd_modify(entry, newprot);
-> > +		if (is_huge_zero_pmd(entry))
-> > +			entry =3D pmd_wrprotect(entry);
-> >  		set_pmd_at(mm, addr, pmd, entry);
-> >  		spin_unlock(&vma->vm_mm->page_table_lock);
-> >  		ret =3D 1;
->=20
-> Nack, this should be handled in pmd_modify().
+> ---
+>   mm/oom_kill.c |   49 +++++++------------------------------------------
+>   1 files changed, 7 insertions(+), 42 deletions(-)
+>
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -591,43 +591,6 @@ void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_mask)
+>   	spin_unlock(&zone_scan_lock);
+>   }
+>
+> -/*
+> - * Try to acquire the oom killer lock for all system zones.  Returns zero if a
+> - * parallel oom killing is taking place, otherwise locks all zones and returns
+> - * non-zero.
+> - */
+> -static int try_set_system_oom(void)
+> -{
+> -	struct zone *zone;
+> -	int ret = 1;
+> -
+> -	spin_lock(&zone_scan_lock);
+> -	for_each_populated_zone(zone)
+> -		if (zone_is_oom_locked(zone)) {
+> -			ret = 0;
+> -			goto out;
+> -		}
+> -	for_each_populated_zone(zone)
+> -		zone_set_flag(zone, ZONE_OOM_LOCKED);
+> -out:
+> -	spin_unlock(&zone_scan_lock);
+> -	return ret;
+> -}
+> -
+> -/*
+> - * Clears ZONE_OOM_LOCKED for all system zones so that failed allocation
+> - * attempts or page faults may now recall the oom killer, if necessary.
+> - */
+> -static void clear_system_oom(void)
+> -{
+> -	struct zone *zone;
+> -
+> -	spin_lock(&zone_scan_lock);
+> -	for_each_populated_zone(zone)
+> -		zone_clear_flag(zone, ZONE_OOM_LOCKED);
+> -	spin_unlock(&zone_scan_lock);
+> -}
+> -
+>   /**
+>    * out_of_memory - kill the "best" process when we run out of memory
+>    * @zonelist: zonelist pointer
+> @@ -708,15 +671,17 @@ out:
+>
+>   /*
+>    * The pagefault handler calls here because it is out of memory, so kill a
+> - * memory-hogging task.  If a populated zone has ZONE_OOM_LOCKED set, a parallel
+> - * oom killing is already in progress so do nothing.  If a task is found with
+> - * TIF_MEMDIE set, it has been killed so do nothing and allow it to exit.
+> + * memory-hogging task.  If any populated zone has ZONE_OOM_LOCKED set, a
+> + * parallel oom killing is already in progress so do nothing.
+>    */
+>   void pagefault_out_of_memory(void)
+>   {
+> -	if (try_set_system_oom()) {
+> +	struct zonelist *zonelist = node_zonelist(first_online_node,
+> +						  GFP_KERNEL);
 
-I disagree. It means we will have to enable hzp per arch. Bad idea.
 
-What's wrong with the check?
+why GFP_KERNEL ? not GFP_HIGHUSER_MOVABLE ?
 
---=20
- Kirill A. Shutemov
+Thanks,
+-Kame
 
---/Uq4LBwYP4y1W6pO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +
+> +	if (try_set_zonelist_oom(zonelist, GFP_KERNEL)) {
+>   		out_of_memory(NULL, 0, 0, NULL, false);
+> -		clear_system_oom();
+> +		clear_zonelist_oom(zonelist, GFP_KERNEL);
+>   	}
+>   	schedule_timeout_killable(1);
+>   }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQpKvrAAoJEAd+omnVudOMbAIQALQYjNB3Ykp89rdxhWu5HWvV
-qp0eBB9WHuD3AK9ezQVWFY8jKijlxELc/NPbJStlfe5PMSkYtUkpl3Iju8n3khd0
-BUA1tSrdLOnAW3efpisTN9BvBP+0mPrY9TynPGuYDjO2qFOOLoXNYqUmeE9GmVFv
-HGVcfxQ4I2331qFr9m35+/Wt4W/Fe+QqIDsQ725ESr8YFDNcyp4wKXo2roZER4+h
-nT27KQmktCyTNlu9htYecHKR3RgonxUyoWd4WRlo+ofWiJhVdQP92QcQuQUgS56u
-46UG9S+vDcs5TaJUg/T7RuFNLylUuq3S192NTs29Ou7EqTwWw13o+DjRmP24reRS
-VutQaklLFcW6dKUW79rk8f/6WUPgjGfk2eF4Ix6ceR0CaxA8EjZPcWoWb1orob+M
-mf4qTt0wXURcF3wvgS7S1eI7bi/8z+x+bjWVNPF1gHZAeUDsalN+NWeT6Lk2pil0
-mIgjeLBBnrhHRppgpWFZaqaIqPDxjsmA6bMcHzpZyG/zfHhj10McdT24Olyh0tbr
-8zHXZSA2X7R/V4nrgp6/UM7Vx+36b6FEYZBBMs8rSsoYj0H4DaXRBrECInbXATEq
-Nv+qeuUnB5D3B8e9V1bilTii57JXIcTozsJMUSVBW6yuTm5IVFPSpbQsHb7QzFAp
-z6rStm5r0x2rRYIGSnw0
-=eKdr
------END PGP SIGNATURE-----
-
---/Uq4LBwYP4y1W6pO--
