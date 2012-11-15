@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933514Ab2KOEYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:24:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49705 "EHLO mail.kernel.org"
+	id S933539Ab2KOEY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:24:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49684 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993195Ab2KOEM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:29 -0500
+	id S2993187Ab2KOEM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
         Javier Cardona <javier@cozybit.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 14/57] mac80211: Only process mesh config header on frames that RA_MATCH
-Date: Wed, 14 Nov 2012 20:11:22 -0800
-Message-Id: <20121115040934.093170093@linuxfoundation.org>
+Subject: [ 12/57] wireless: drop invalid mesh address extension frames
+Date: Wed, 14 Nov 2012 20:11:20 -0800
+Message-Id: <20121115040933.965891870@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -27,43 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Javier Cardona <javier@cozybit.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 555cb715be8ef98b8ec362b23dfc254d432a35b1 upstream.
+commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
 
-Doing otherwise is wrong, and may wreak havoc on the mpp tables,
-specially if the frame is encrypted.
+The mesh header can have address extension by a 4th
+or a 5th and 6th address, but never both. Drop such
+frames in 802.11 -> 802.3 conversion along with any
+frames that have the wrong extension.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Signed-off-by: Javier Cardona <javier@cozybit.com>
+Reviewed-by: Javier Cardona <javier@cozybit.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ net/wireless/util.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1900,7 +1900,8 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
- 	    mesh_rmc_check(hdr->addr3, mesh_hdr, rx->sdata))
- 		return RX_DROP_MONITOR;
- 
--	if (!ieee80211_is_data(hdr->frame_control))
-+	if (!ieee80211_is_data(hdr->frame_control) ||
-+	    !(status->rx_flags & IEEE80211_RX_RA_MATCH))
- 		return RX_CONTINUE;
- 
- 	if (!mesh_hdr->ttl)
-@@ -1944,9 +1945,6 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -293,18 +293,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_
+ static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
+ {
+ 	int ae = meshhdr->flags & MESH_FLAGS_AE;
+-	/* 7.1.3.5a.2 */
++	/* 802.11-2012, 8.2.4.7.3 */
+ 	switch (ae) {
++	default:
+ 	case 0:
+ 		return 6;
+ 	case MESH_FLAGS_AE_A4:
+ 		return 12;
+ 	case MESH_FLAGS_AE_A5_A6:
+ 		return 18;
+-	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
+-		return 24;
+-	default:
+-		return 6;
  	}
- 	skb_set_queue_mapping(skb, q);
+ }
  
--	if (!(status->rx_flags & IEEE80211_RX_RA_MATCH))
--		goto out;
--
- 	if (!--mesh_hdr->ttl) {
- 		IEEE80211_IFSTA_MESH_CTR_INC(ifmsh, dropped_frames_ttl);
- 		return RX_DROP_MONITOR;
+@@ -354,6 +351,8 @@ int ieee80211_data_to_8023(struct sk_buf
+ 			/* make sure meshdr->flags is on the linear part */
+ 			if (!pskb_may_pull(skb, hdrlen + 1))
+ 				return -1;
++			if (meshdr->flags & MESH_FLAGS_AE_A4)
++				return -1;
+ 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
+ 				skb_copy_bits(skb, hdrlen +
+ 					offsetof(struct ieee80211s_hdr, eaddr1),
+@@ -378,6 +377,8 @@ int ieee80211_data_to_8023(struct sk_buf
+ 			/* make sure meshdr->flags is on the linear part */
+ 			if (!pskb_may_pull(skb, hdrlen + 1))
+ 				return -1;
++			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
++				return -1;
+ 			if (meshdr->flags & MESH_FLAGS_AE_A4)
+ 				skb_copy_bits(skb, hdrlen +
+ 					offsetof(struct ieee80211s_hdr, eaddr1),
 
 
