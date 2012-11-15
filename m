@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964874Ab2KOKVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:21:45 -0500
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:39966 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964838Ab2KOKVo (ORCPT
+	id S2993079Ab2KOKXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:23:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37216 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992441Ab2KOKW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:21:44 -0500
-Date: Thu, 15 Nov 2012 11:00:12 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH RESEND 3/4] pinctrl: at91: Prevent NULL dereference if
- of_match_device returns NULL
-Message-ID: <20121115100012.GA4398@game.jcrosoft.org>
-References: <1352955096.6793.1.camel@phoenix>
- <1352955266.6793.4.camel@phoenix>
- <1352955480.6793.8.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352955480.6793.8.camel@phoenix>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13666736021301275398
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+	Thu, 15 Nov 2012 05:22:58 -0500
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com
+Cc: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Subject: [RFC PATCH v2 0/3] acpi: Introduce prepare_remove device operation
+Date: Thu, 15 Nov 2012 11:22:47 +0100
+Message-Id: <1352974970-6643-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:58 Thu 15 Nov     , Axel Lin wrote:
-> of_match_device() may return NULL.
-this is not possible on at91
+As discussed in https://patchwork.kernel.org/patch/1581581/
+the driver core remove function needs to always succeed. This means we need
+to know that the device can be successfully removed before acpi_bus_trim / 
+acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+eject or driver unbind of memory devices fails e.g with:
 
-and I do a oups here as if we have a NULL pointer which means the driver is
-wrong
+echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
 
-Best Regards,
-J.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> This resend CC Jean-Christophe.
-> 
->  drivers/pinctrl/pinctrl-at91.c |   17 +++++++++++++----
->  1 file changed, 13 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index 8490a55..32006c8 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -829,13 +829,18 @@ static int __devinit at91_pinctrl_probe_dt(struct platform_device *pdev,
->  	uint32_t *tmp;
->  	struct device_node *np = pdev->dev.of_node;
->  	struct device_node *child;
-> +	const struct of_device_id *match;
->  
->  	if (!np)
->  		return -ENODEV;
->  
-> +	match = of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-> +	if (!match)
-> +		return -ENODEV;
-> +
->  	info->dev = &pdev->dev;
-> -	info->ops = (struct at91_pinctrl_mux_ops*)
-> -		of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-> +	info->ops = (struct at91_pinctrl_mux_ops *) match->data;
-> +
->  	at91_pinctrl_child_count(info, np);
->  
->  	if (info->nbanks < 1) {
-> @@ -1359,6 +1364,7 @@ static struct of_device_id at91_gpio_of_match[] __devinitdata = {
->  static int __devinit at91_gpio_probe(struct platform_device *pdev)
->  {
->  	struct device_node *np = pdev->dev.of_node;
-> +	const struct of_device_id *match;
->  	struct resource *res;
->  	struct at91_gpio_chip *at91_chip = NULL;
->  	struct gpio_chip *chip;
-> @@ -1399,8 +1405,11 @@ static int __devinit at91_gpio_probe(struct platform_device *pdev)
->  		goto err;
->  	}
->  
-> -	at91_chip->ops = (struct at91_pinctrl_mux_ops*)
-> -		of_match_device(at91_gpio_of_match, &pdev->dev)->data;
-> +	match = of_match_device(at91_gpio_of_match, &pdev->dev);
-> +	if (!match)
-> +		return -ENODEV;
-> +
-> +	at91_chip->ops = (struct at91_pinctrl_mux_ops *) match->data;
->  	at91_chip->pioc_virq = irq;
->  	at91_chip->pioc_idx = alias_idx;
->  
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
+since the ACPI core goes ahead and ejects the device regardless of whether the
+the memory is still in use or not.
+
+For this reason a new acpi_device operation called prepare_remove is introduced.
+This operation should be registered for acpi devices whose removal (from kernel
+perspective) can fail.  Memory devices fall in this category.
+A similar operation is introduced in bus_type to safely handle driver unbind
+from the device driver core.
+
+acpi_bus_hot_remove_device and driver_unbind are changed to handle removal in 2
+steps:
+- preparation for removal i.e. perform part of removal that can fail. Should
+  succeed for device and all its children.
+- if above step was successfull, proceed to actual device removal
+
+With this patchset, only acpi memory devices use the new prepare_remove
+device operation. The actual memory removal (VM-related offline and other memory
+cleanups) is moved to prepare_remove. The old remove operation just cleans up
+the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
+haven't tested yet with an ACPI container which contains memory devices.
+
+v1->v2:
+- new patch to introduce bus_type prepare_remove callback. Needed to prepare
+removal on driver unbinding from device-driver core.
+- v1 patches 1 and 2 simplified and merged in one. acpi_bus_trim does not require
+argument changes.
+
+Comments welcome.
+
+Vasilis Liaskovitis (3):
+  driver core: Introduce prepare_remove in bus_type
+  acpi: Introduce prepare_remove operation in acpi_device_ops
+  acpi_memhotplug: Add prepare_remove operation
+
+ drivers/acpi/acpi_memhotplug.c |   22 ++++++++++++++++++++--
+ drivers/acpi/scan.c            |   21 ++++++++++++++++++++-
+ drivers/base/bus.c             |   36 ++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h        |    2 ++
+ include/linux/device.h         |    2 ++
+ 5 files changed, 80 insertions(+), 3 deletions(-)
+
+-- 
+1.7.9
+
