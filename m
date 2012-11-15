@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945976Ab2KODKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 22:10:24 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:62013 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945909Ab2KODKX (ORCPT
+	id S933324Ab2KODVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 22:21:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36648 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933227Ab2KODVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 22:10:23 -0500
-Date: Wed, 14 Nov 2012 19:06:53 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>,
-        Colin King <colin.king@canonical.com>
-Subject: [GIT PULL] linux-pstore.git
-Message-ID: <20121115030652.GA27185@lizard.sbx05977.paloaca.wayport.net>
+	Wed, 14 Nov 2012 22:21:17 -0500
+Date: Wed, 14 Nov 2012 19:21:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+In-Reply-To: <20121107114321.GA32265@shutemov.name>
+Message-ID: <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
 
-Please pull a small fixup for the persistent storage subsystem. A small
-buglet can prevent kernel booting on a APEI-enabled machines w/
-CONFIG_PSTORE_CONSOLE=y (this is N by default, though).
+> > > Sorry, I didn't follow previous discussion on this, but could you
+> > > explain what's wrong with memory notifications from memcg?
+> > > As I can see you can get pretty similar functionality using memory
+> > > thresholds on the root cgroup. What's the point?
+> > 
+> > Why should you be required to use cgroups to get VM pressure events to
+> > userspace?
+> 
+> Valid point. But in fact you have it on most systems anyway.
+> 
+> I personally don't like to have a syscall per small feature.
+> Isn't it better to have a file-based interface which can be used with
+> normal file syscalls: open()/read()/poll()?
+> 
 
-Thanks!
+I agree that eventfd is the way to go, but I'll also add that this feature 
+seems to be implemented at a far too coarse of level.  Memory, and hence 
+memory pressure, is constrained by several factors other than just the 
+amount of physical RAM which vmpressure_fd is addressing.  What about 
+memory pressure caused by cpusets or mempolicies?  (Memcg has its own 
+reclaim logic and its own memory thresholds implemented on top of eventfd 
+that people already use.)  These both cause high levels of reclaim within 
+the page allocator whereas there may be an abundance of free memory 
+available on the system.
 
-The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
-
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/cbou/linux-pstore.git tags/for-v3.7-fixes
-
-for you to fetch changes up to 70a6f46d7b0ec03653b9ab3f8063a9717a4a53ef:
-
-  pstore: Fix NULL pointer dereference in console writes (2012-11-14 18:30:21 -0800)
-
-----------------------------------------------------------------
-A small fixup for the persistent storage subsystem. The bug can prevent
-kernel booting on a APEI-enabled machines w/ CONFIG_PSTORE_CONSOLE=y (this
-is N by default, though).
-
-----------------------------------------------------------------
-Colin Ian King (1):
-      pstore: Fix NULL pointer dereference in console writes
-
- fs/pstore/platform.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-
-commit 70a6f46d7b0ec03653b9ab3f8063a9717a4a53ef
-Author: Colin Ian King <colin.king@canonical.com>
-Date:   Wed Nov 14 11:49:53 2012 +0000
-
-    pstore: Fix NULL pointer dereference in console writes
-    
-    Passing a NULL id causes a NULL pointer deference in writers such as
-    erst_writer and efi_pstore_write because they expect to update this id.
-    Pass a dummy id instead.
-    
-    This avoids a cascade of oopses caused when the initial
-    pstore_console_write passes a null which in turn causes writes to the
-    console causing further oopses in subsequent pstore_console_write calls.
-    
-    Signed-off-by: Colin Ian King <colin.king@canonical.com>
-    Acked-by: Kees Cook <keescook@chromium.org>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index a40da07..947fbe0 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -161,6 +161,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
- 
- 	while (s < e) {
- 		unsigned long flags;
-+		u64 id;
- 
- 		if (c > psinfo->bufsize)
- 			c = psinfo->bufsize;
-@@ -172,7 +173,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
- 			spin_lock_irqsave(&psinfo->buf_lock, flags);
- 		}
- 		memcpy(psinfo->buf, s, c);
--		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-+		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 		s += c;
- 		c = e - s;
+I don't think we want several implementations of memory pressure 
+notifications, so a more generic and flexible interface is going to be 
+needed and I think it can't be done in an extendable way through this 
+vmpressure_fd syscall.  Unfortunately, I think that means polling on a 
+per-thread notifier.
