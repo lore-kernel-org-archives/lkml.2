@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993366Ab2KOENF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:13:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49983 "EHLO mail.kernel.org"
+	id S1767568Ab2KOENW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:13:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50120 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993263Ab2KOENB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:01 -0500
+	id S2993417Ab2KOENP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 40/57] ipv6: Set default hoplimit as zero.
-Date: Wed, 14 Nov 2012 20:11:48 -0800
-Message-Id: <20121115040935.677700020@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=2052/57=5D=20drm/radeon/cayman=3A=20add=20some=20missing=20regs=20to=20the=20VM=20reg=20checker?=
+Date: Wed, 14 Nov 2012 20:12:00 -0800
+Message-Id: <20121115040936.330931137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,45 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Alex Deucher <alexander.deucher@amd.com>
 
-From: Li RongQing <roy.qing.li@gmail.com>
+commit 860fe2f05fa2eacac84368e23547ec8cf3cc6652 upstream.
 
-[ Upstream commit 14edd87dc67311556f1254a8f29cf4dd6cb5b7d1 ]
+These regs were being wronly rejected leading to rendering
+issues.
 
-Commit a02e4b7dae4551(Demark default hoplimit as zero) only changes the
-hoplimit checking condition and default value in ip6_dst_hoplimit, not
-zeros all hoplimit default value.
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=56876
 
-Keep the zeroing ip6_template_metrics[RTAX_HOPLIMIT - 1] to force it as
-const, cause as a37e6e344910(net: force dst_default_metrics to const
-section)
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -203,7 +203,7 @@ static struct dst_ops ip6_dst_blackhole_
- };
+---
+ drivers/gpu/drm/radeon/evergreen_cs.c |    3 +++
+ drivers/gpu/drm/radeon/evergreend.h   |    4 ++++
+ 2 files changed, 7 insertions(+)
+
+--- a/drivers/gpu/drm/radeon/evergreen_cs.c
++++ b/drivers/gpu/drm/radeon/evergreen_cs.c
+@@ -2671,6 +2671,9 @@ static bool evergreen_vm_reg_valid(u32 r
+ 	/* check config regs */
+ 	switch (reg) {
+ 	case GRBM_GFX_INDEX:
++	case CP_STRMOUT_CNTL:
++	case CP_COHER_CNTL:
++	case CP_COHER_SIZE:
+ 	case VGT_VTX_VECT_EJECT_REG:
+ 	case VGT_CACHE_INVALIDATION:
+ 	case VGT_GS_VERTEX_REUSE:
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -77,6 +77,10 @@
  
- static const u32 ip6_template_metrics[RTAX_MAX] = {
--	[RTAX_HOPLIMIT - 1] = 255,
-+	[RTAX_HOPLIMIT - 1] = 0,
- };
+ #define	CONFIG_MEMSIZE					0x5428
  
- static struct rt6_info ip6_null_entry_template = {
-@@ -1135,7 +1135,7 @@ struct dst_entry *icmp6_dst_alloc(struct
- 	rt->rt6i_dst.addr = fl6->daddr;
- 	rt->rt6i_dst.plen = 128;
- 	rt->rt6i_idev     = idev;
--	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 255);
-+	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 0);
- 
- 	spin_lock_bh(&icmp6_dst_lock);
- 	rt->dst.next = icmp6_dst_gc_list;
++#define	CP_STRMOUT_CNTL					0x84FC
++
++#define	CP_COHER_CNTL					0x85F0
++#define	CP_COHER_SIZE					0x85F4
+ #define	CP_COHER_BASE					0x85F8
+ #define CP_ME_CNTL					0x86D8
+ #define		CP_ME_HALT					(1 << 28)
 
 
