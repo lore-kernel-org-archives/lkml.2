@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768648Ab2KOSIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:08:51 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:9004 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768597Ab2KOSIu (ORCPT
+	id S1768644Ab2KOSJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:09:53 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48792 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768597Ab2KOSJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:08:50 -0500
-Message-ID: <1353002927.2532.46.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] ia64: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: tony.luck@intel.com, m.szyprowski@samsung.com
-Cc: fenghua.yu@intel.com, arnd@arndb.de, andrzej.p@samsung.com,
-        kyungmin.park@samsung.com, linux-ia64@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Thu, 15 Nov 2012 11:08:47 -0700
-In-Reply-To: <1351266308.4013.5.camel@lorien2>
-References: <1351207286.6851.13.camel@lorien2>
-	 <1351266308.4013.5.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 15 Nov 2012 13:09:52 -0500
+Message-ID: <50A52FEC.4080409@wwwdotorg.org>
+Date: Thu, 15 Nov 2012 11:09:48 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+References: <CACxGe6vhd_4rcBbYyqtvbySVaY6XpNE+HQq42PZhKe5yt=zcaA@mail.gmail.com> <1352980284-2819-1-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1352980284-2819-1-git-send-email-grant.likely@secretlab.ca>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 09:45 -0600, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
+On 11/15/2012 04:51 AM, Grant Likely wrote:
+> Grant Likely wrote:
+>> Or how about: I could pick up the patch with only the MIPS hunk and
+>> every other user can be fixed up independently to use the new rule.
 > 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> ---
->  arch/ia64/include/asm/dma-mapping.h |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/ia64/include/asm/dma-mapping.h b/arch/ia64/include/asm/dma-mapping.h
-> index 4f5e814..cf3ab7e 100644
-> --- a/arch/ia64/include/asm/dma-mapping.h
-> +++ b/arch/ia64/include/asm/dma-mapping.h
-> @@ -58,6 +58,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
->  static inline int dma_mapping_error(struct device *dev, dma_addr_t daddr)
->  {
->  	struct dma_map_ops *ops = platform_dma_get_ops(dev);
-> +	debug_dma_mapping_error(dev, daddr);
->  	return ops->mapping_error(dev, daddr);
->  }
+> Here's a trial patch to fix up ARM. Does this look correct? This patch
+> depends on the generic dtb build rule already being applied.
+
+I think the patch looks OK technically, except for one minor comment below.
+
+One issue with this patch is that it moves *.dts from arch/arm/boot to
+arch/arm/boot/dts, which means everyone has to adjust their scripts/...
+that package/install/... the kernel. I guess it's an easy change for
+people to make, but could easily catch people unawares if they do
+incremental builds so that arch/arm/boot/*.dtb still exists but is stale.
+
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index f37cf9f..2aef042 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -104,4 +104,8 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+>  	wm8505-ref.dtb \
+>  	wm8650-mid.dtb
 >  
+> +targets += dtbs
 
-Marek,
+Doesn't that make the "dtbs" target always run by default? Perhaps
+that's reasonable though, and doesn't actually affect anything since the
+make command for this directory always specifies an explicit target?
 
-This one is for ia64 to go through your tree with all the other arch
-debug_dma_mapping_error() patches.
+Or, was that meant to be the following that got removed from ../Makefile?
 
-Thanks,
--- Shuah
+targets += $(dtb-y)
+
+>  endif
+> +
+> +dtbs: $(addprefix $(obj)/, $(dtb-y))
+> +clean-files := *.dtb
 
