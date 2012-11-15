@@ -1,44 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423622Ab2KOHvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 02:51:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48377 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423605Ab2KOHvQ (ORCPT
+	id S1755531Ab2KOH5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 02:57:40 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42796 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab2KOH5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 02:51:16 -0500
-Date: Wed, 14 Nov 2012 23:51:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Nithin Sujir <nsujir@broadcom.com>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        Michael Chan <mchan@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Latest 3.6.6 are not compiling due tg3 network driver,
- hwmon_device_unregister
-In-Reply-To: <DAAFBCC105999F468732FA900576CB4510069F69@IRVEXCHMB08.corp.ad.broadcom.com>
-Message-ID: <alpine.DEB.2.00.1211142349310.4410@chino.kir.corp.google.com>
-References: <8b566c4a9ee622737212dc17291ee238@visp.net.lb> <50A4606D.4020402@broadcom.com> <alpine.DEB.2.00.1211141929510.14414@chino.kir.corp.google.com> <DAAFBCC105999F468732FA900576CB4510069F69@IRVEXCHMB08.corp.ad.broadcom.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 15 Nov 2012 02:57:39 -0500
+From: Jim Cromie <jim.cromie@gmail.com>
+To: jbaron@redhat.com, linux-kernel@vger.kernel.org
+Cc: Jim Cromie <jim.cromie@gmail.com>, Jianpeng Ma <majianpeng@gmail.com>,
+        Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH] dyndbg: add pr_errs before -EINVALs
+Date: Thu, 15 Nov 2012 00:57:18 -0700
+Message-Id: <1352966238-22491-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.487.ga3935e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Nithin Sujir wrote:
+Ma noted that dynamic-debug is silent about many query errors, so add
+pr_err()s to explain those errors, and tweak a few others.  Also parse
+flags 1st, so that match-spec errs are slightly clearer.
 
-> > Would you mind submitting this for stable by following the procedure
-> > described in Documentation/stable_kernel_rules.txt?
-> 
-> 
-> Seems to have been taken into stable already. 
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commitdiff;h=aecdc33e111b2c447b622e287c6003726daa1426
-> 
+To: Jason Baron <jbaron@redhat.com>
+CC: Jianpeng Ma <majianpeng@gmail.com>
+CC: Joe Perches <joe@perches.com>
+CC: Greg KH <gregkh@linuxfoundation.org>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c | 51 +++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 37 insertions(+), 14 deletions(-)
 
-You're looking at the wrong shortlog (that's 3.7-rc4, not a stable tree), 
-you'll want to backport this on top of 3.6.6 and send it to 
-stable@vger.kernel.org following the procedure in 
-Documentation/stable_kernel_rules.txt.
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index e7f7d99..9b289d9 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -222,8 +222,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 			int quote = *buf++;
+ 			for (end = buf ; *end && *end != quote ; end++)
+ 				;
+-			if (!*end)
++			if (!*end) {
++				pr_err("unclosed quote: %s\n", buf);
+ 				return -EINVAL;	/* unclosed quote */
++			}
+ 		} else {
+ 			for (end = buf ; *end && !isspace(*end) ; end++)
+ 				;
+@@ -231,8 +233,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 		}
+ 
+ 		/* `buf' is start of word, `end' is one past its end */
+-		if (nwords == maxwords)
++		if (nwords == maxwords) {
++			pr_err("too many words, legal max <=%d\n", maxwords);
+ 			return -EINVAL;	/* ran out of words[] before bytes */
++		}
+ 		if (*end)
+ 			*end++ = '\0';	/* terminate the word */
+ 		words[nwords++] = buf;
+@@ -264,7 +268,11 @@ static inline int parse_lineno(const char *str, unsigned int *val)
+ 		return 0;
+ 	}
+ 	*val = simple_strtoul(str, &end, 10);
+-	return end == NULL || end == str || *end != '\0' ? -EINVAL : 0;
++	if (end == NULL || end == str || *end != '\0') {
++		pr_err("bad line-number: %s\n", str);
++		return -EINVAL;
++	}
++	return 0;
+ }
+ 
+ /*
+@@ -315,8 +323,8 @@ static int check_set(const char **dest, char *src, char *name)
+ 
+ 	if (*dest) {
+ 		rc = -EINVAL;
+-		pr_err("match-spec:%s val:%s overridden by %s",
+-			name, *dest, src);
++		pr_err("match-spec %s used 2x: %s then %s\n",
++		       name, *dest, src);
+ 	}
+ 	*dest = src;
+ 	return rc;
+@@ -344,8 +352,10 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 	int rc;
+ 
+ 	/* check we have an even number of words */
+-	if (nwords % 2 != 0)
++	if (nwords % 2 != 0) {
++		pr_err("expecting pairs of match-spec <value>\n"); 
+ 		return -EINVAL;
++	}
+ 	memset(query, 0, sizeof(*query));
+ 
+ 	if (modname)
+@@ -366,18 +376,22 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			char *first = words[i+1];
+ 			char *last = strchr(first, '-');
+ 			if (query->first_lineno || query->last_lineno) {
+-				pr_err("match-spec:line given 2 times\n");
++				pr_err("match-spec: line used 2x\n");
+ 				return -EINVAL;
+ 			}
+ 			if (last)
+ 				*last++ = '\0';
+-			if (parse_lineno(first, &query->first_lineno) < 0)
++			if (parse_lineno(first, &query->first_lineno) < 0) {
++				pr_err("line-number is <0\n");
+ 				return -EINVAL;
++			}
+ 			if (last) {
+ 				/* range <first>-<last> */
+ 				if (parse_lineno(last, &query->last_lineno)
+ 				    < query->first_lineno) {
+-					pr_err("last-line < 1st-line\n");
++					pr_err("last-line:%d < 1st-line:%d\n",
++						query->last_lineno,
++						query->first_lineno);
+ 					return -EINVAL;
+ 				}
+ 			} else {
+@@ -413,6 +427,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		op = *str++;
+ 		break;
+ 	default:
++		pr_err("bad flag-op %c, at start of %s\n", *str, str);
+ 		return -EINVAL;
+ 	}
+ 	vpr_info("op='%c'\n", op);
+@@ -424,8 +439,10 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 				break;
+ 			}
+ 		}
+-		if (i < 0)
++		if (i < 0) {
++			pr_err("unknown flag '%c' in \"%s\"\n", *str, str);
+ 			return -EINVAL;
++		}
+ 	}
+ 	vpr_info("flags=0x%x\n", flags);
+ 
+@@ -457,13 +474,19 @@ static int ddebug_exec_query(char *query_string, const char *modname)
+ 	char *words[MAXWORDS];
+ 
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+-	if (nwords <= 0)
++	if (nwords <= 0) {
++		pr_err("tokenize failed\n");
+ 		return -EINVAL;
+-	if (ddebug_parse_query(words, nwords-1, &query, modname))
++	}
++	/* check flags 1st (last arg) so query is pairs of spec,val */
++	if (ddebug_parse_flags(words[nwords-1], &flags, &mask)) {
++		pr_err("flags parse failed\n");
+ 		return -EINVAL;
+-	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
++	}
++	if (ddebug_parse_query(words, nwords-1, &query, modname)) {
++		pr_err("query parse failed\n");
+ 		return -EINVAL;
+-
++	}
+ 	/* actually go and implement the change */
+ 	nfound = ddebug_change(&query, flags, mask);
+ 	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
+-- 
+1.7.10.1.487.ga3935e6
+
