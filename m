@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993487Ab2KOQPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 11:15:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993458Ab2KOQPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 11:15:08 -0500
-Date: Thu, 15 Nov 2012 17:15:04 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <htejun@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
-Message-ID: <20121115161504.GF11990@dhcp22.suse.cz>
-References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
- <1352820639-13521-3-git-send-email-mhocko@suse.cz>
- <20121113161442.GA18227@mtj.dyndns.org>
- <20121114085129.GC17111@dhcp22.suse.cz>
- <20121114185245.GF21185@mtj.dyndns.org>
- <20121115095103.GB11990@dhcp22.suse.cz>
- <20121115144732.GB7306@mtj.dyndns.org>
- <20121115151255.GE11990@dhcp22.suse.cz>
- <20121115153124.GD7306@mtj.dyndns.org>
+	id S1768391Ab2KOQPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 11:15:40 -0500
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:49817 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S2993458Ab2KOQPi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 11:15:38 -0500
+Message-ID: <50A51515.3020206@stericsson.com>
+Date: Thu, 15 Nov 2012 17:15:17 +0100
+From: =?ISO-8859-1?Q?Per_F=F6rlin?= <per.forlin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121115153124.GD7306@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Fredrik SODERSTEDT <fredrik.soderstedt@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dt: platform: Extract device name from device tree blob
+References: <1352732343-1199-1-git-send-email-per.forlin@stericsson.com> <CACxGe6vjLA3j-bc_048UrdB5Q=8pV8=LPSVUnU_k3anX23vwyw@mail.gmail.com> <50A17E30.7030807@stericsson.com> <20121115155246.C4EC83E194B@localhost>
+In-Reply-To: <20121115155246.C4EC83E194B@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-11-12 07:31:24, Tejun Heo wrote:
-> Hello, Michal.
+On 11/15/2012 04:52 PM, Grant Likely wrote:
+> On Mon, 12 Nov 2012 23:54:40 +0100, Per Förlin <per.forlin@stericsson.com> wrote:
+>> On 11/12/2012 04:20 PM, Grant Likely wrote:
+>>> On Mon, Nov 12, 2012 at 2:59 PM, Per Forlin <per.forlin@stericsson.com> wrote:
+>>>> Add support to extract device name from device tree blob.
+>>>> If the property "dev-name" is set in the DTS this name will
+>>>> be used when creating the device.
+>>>> The auxdata_lookup has precedence and will override
+>>>> the "dev-name" property.
+>>>
+>>> Using a 'dev-name' property has the same problem that the 'cell-index'
+>>> properties have in that it is encoding part of the global namespace
+>>> local to the node and it becomes easy to create collisions. Instead of
+>>> this check to see if one of the properties in /aliases points to the
+>>> node and use that for the name.
+>>>
+>>> g.
+>>>
+>> Thanks Grant for your feedback,
+>>
+>> Extract from exynos5250.dtsi:
+>> -----------
+>> 	aliases {
+>> 		spi0 = &spi_0;
+>> 		spi1 = &spi_1;
+>> 		spi2 = &spi_2;
+>> 	};
+>>
+>> 	spi_0: spi@12d20000 {
+>> ...
+>> 	};
+>>
+>> 	spi_1: spi@12d30000 {
+>> ...
+>> 	};
+>>
+>> 	spi_2: spi@12d40000 {
+>> ...
+>> 	};
+>> ---------------
+>>
+>> Alias refers to the device node. The device node is not aware of the alias.
+>>
+>> How to get a device name from the aliases.
+>> 1. Traverse all aliases for each device node (time consuming if there are many aliases)
+>> 2. Make a new function of_alias_get_name(), today there is only of_alias_get_id()
+>> 3. The functionality of setting device_name based on alias name needs to be optional because one may want to use aliases without changing the name of the device.
+>> All this is feasible but perhaps not optimal.
+>>
+>> I don't really see how come name space is a big issue in this case. The name space of "dev-name" is local to the device node. A child device node can use the same dev-name as the parent (unless I'm mistaken which happens quite often). Introducing yet another property name pollutes the name space of the device node. Still I think the pros are stronger than the cons.
+>>
+>> Do you still prefer to use the name of the Alias? Could you please elaborate a bit more how this can be done in practice?
+>> I would agree with you if there was a reference from the device node to the alias.
 > 
-> On Thu, Nov 15, 2012 at 04:12:55PM +0100, Michal Hocko wrote:
-> > > Because I'd like to consider the next functions as implementation
-> > > detail, and having interations structred as loops tend to read better
-> > > and less error-prone.  e.g. when you use next functions directly, it's
-> > > way easier to circumvent locking requirements in a way which isn't
-> > > very obvious. 
-> > 
-> > The whole point behind mem_cgroup_iter is to hide all the complexity
-> > behind memcg iteration. Memcg code either use for_each_mem_cgroup_tree
-> > for !reclaim case and mem_cgroup_iter otherwise.
-> > 
-> > > So, unless it messes up the code too much (and I can't see why it
-> > > would), I'd much prefer if memcg used for_each_*() macros.
-> > 
-> > As I said this would mean that the current mem_cgroup_iter code would
-> > have to be inverted which doesn't simplify the code much. I'd rather
-> > hide all the grossy details inside the memcg iterator.
-> > Or am I still missing your suggestion?
+> Oh, I see what you're trying to do. As Lee pointed out you're trying to
+> make the Linux internal way of matching up clocks and regulators happy.
+> That is very much a Linux-kernel internal thing and should be solved in
+> the kernel. Trying to solve it with fixed names in the device tree will
+> cause problems down the road.
 > 
-> One way or the other, I don't think the code complexity would change
-> much.  Again, I'd much *prefer* if memcg used what other controllers
-> would be using, but that's a preference and if necessary we can keep
-> the next functions as exposed APIs. 
+> I though you were wanting to have logical names for the devices that
+> make sense to the user which is how aliases is used now.
+> 
+> So, no, don't do this.
+> 
+> g.
+> 
+Hi,
 
-Yes please.
+I came to the same conclusion when I dag into it some more. I replied to my own comment and concluded (https://lkml.org/lkml/2012/11/13/309).
+The solution is to move clocks and regulators into the DTS. When this is done there will be no need for setting a specific device-name (all those auxdata_lookup can be removed)
 
-> I think the issue I have is that I can't see much technical
-> justification for that. If the code becomes much simpler by choosing
-> one over the other, sure, but is that the case here?
+BR
+Per
 
-Yes and I've tried to say that already. Memcg needs hierarchy, css
-ref counting and concurrent reclaim (per-zone per-priority) aware
-iteration. All of that is hidden in mem_cgroup_iter currently so the
-caller doesn't have to care about it at all. Which makes shrink_zone
-not care about memcg that much.
-
-cgroup_for_each_descendant_pre is not suitable at least because it
-doesn't provide a way to start a walk at a selected node (which is
-shared per-zone per-priority in memcg case).
-Even if cgroup_for_each_descendant_pre had start parameter there
-is still a lot of house keeping that callers would have to handle
-(css_tryget to start with, update of the cached possible not mentioning
-use_hierarchy thingy or mem_cgroup_disabled).
-We also try to not pollute mm/vmscan.c as much as possible so we
-definitely do not want to bring all this into shrink_zone.
-
-This all sounds like too much of a hassle if it is exposed so I would
-really like to stay with mem_cgroup_iter and slowly simplify it until it
-can go away (if that is possible at all).
-
-> Isn't it mostly just about where to put the same things?
-
-Unfortunately no. We wouldn't grow own iterator in such a case.
-
-> If so, what would be the rationale for requiring a different
-> interface?
-
-Does the above explain it?
-
--- 
-Michal Hocko
-SUSE Labs
