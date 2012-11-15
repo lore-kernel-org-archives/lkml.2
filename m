@@ -1,331 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab2KOVd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:33:27 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:39261
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751048Ab2KOVcL (ORCPT
+	id S1751202Ab2KOVgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:36:39 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:61612 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2KOVgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:32:11 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1155h)
-X-WSS-ID: 0MDJT5I-01-3EK-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 4/4] perf, amd: Enable northbridge performance counters on AMD family 15h
-Date: Thu, 15 Nov 2012 15:31:53 -0600
-Message-ID: <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
-References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
+	Thu, 15 Nov 2012 16:36:38 -0500
+Date: Thu, 15 Nov 2012 19:07:48 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, ulisses@profusion.mobi, marcel@holtmann.org,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
+ Core
+Message-ID: <20121115210748.GB3358@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Ben Hutchings <ben@decadent.org.uk>,
+	David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org, akpm@linux-foundation.org,
+	alan@lxorguk.ukuu.org.uk, ulisses@profusion.mobi,
+	marcel@holtmann.org,
+	Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+References: <20121114053933.726869752@decadent.org.uk>
+ <20121114053933.935584768@decadent.org.uk>
+ <20121114212426.GA1866@joana>
+ <20121114.163044.2287972932330697472.davem@davemloft.net>
+ <20121114213819.GT13292@decadent.org.uk>
+ <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On AMD family 15h processors, there are 4 new performance counters
-(in addition to 6 core performance counters) that can be used for
-counting northbridge events (i.e. DRAM accesses). Their bit fields are
-almost identical to the core performance counters. However, unlike the
-core performance counters, these MSRs are shared between multiple
-cores (that share the same northbridge). We will reuse the same code
-path as existing family 10h northbridge event constraints handler
-logic to enforce this sharing.
+Hi Ben,
 
-These new counters are indexed contiguously right above the existing
-core performance counters, and their indexes correspond to RDPMC ECX
-values.
+* Ben Hutchings <ben@decadent.org.uk> [2012-11-15 20:04:32 +0000]:
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/include/asm/cpufeature.h    |    2 +
- arch/x86/include/asm/msr-index.h     |    2 +
- arch/x86/include/asm/perf_event.h    |    6 ++
- arch/x86/kernel/cpu/perf_event_amd.c |  116 +++++++++++++++++++++++++++-------
- 4 files changed, 104 insertions(+), 22 deletions(-)
+> On Wed, 2012-11-14 at 21:38 +0000, Ben Hutchings wrote:
+> > On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
+> > > From: Gustavo Padovan <gustavo@padovan.org>
+> > > Date: Wed, 14 Nov 2012 19:24:26 -0200
+> > > 
+> > > > Hi Ben,
+> > > > 
+> > > > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
+> > > > 
+> > > >> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > > >> 
+> > > >> ------------------
+> > > >> 
+> > > >> From: Ulisses Furquim <ulisses@profusion.mobi>
+> > > >> 
+> > > >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
+> > > >> 
+> > > >> The handling of SCO audio links and the L2CAP protocol are essential to
+> > > >> any system with Bluetooth thus are always compiled in from now on.
+> > > > 
+> > > > I wonder if this could not break any kind of script or code people have that
+> > > > refer directly to the sco and l2cap modules. Also I don't see this change as
+> > > > really necessary for 3.2.
+> > > 
+> > > Agreed, I wish this had not been merged into -stable, I would have never
+> > > submitted a patch like this myself.
+> > 
+> > This is required by:
+> > 
+> > commit ff03261adc8b4bdd8291f1783c079b53a892b429
+> > Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+> > Date:   Thu Aug 23 21:32:44 2012 -0300
+> > 
+> >     Bluetooth: Fix sending a HCI Authorization Request over LE links
+> >     
+> >     commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+> > 
+> > which was already applied.
+> 
+> So, do you think it's better to revert that in 3.2, or to go ahead with
+> this?
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 8c297aa..b05c722 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -167,6 +167,7 @@
- #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
- #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
-+#define X86_FEATURE_PERFCTR_NB  (6*32+24) /* core performance counter extensions */
- 
- /*
-  * Auxiliary flags: Linux defined - For features scattered in various
-@@ -308,6 +309,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
- #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
-+#define cpu_has_perfctr_nb	boot_cpu_has(X86_FEATURE_PERFCTR_NB)
- #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 7f0edce..e67ff1e 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -157,6 +157,8 @@
- /* Fam 15h MSRs */
- #define MSR_F15H_PERF_CTL		0xc0010200
- #define MSR_F15H_PERF_CTR		0xc0010201
-+#define MSR_F15H_NB_PERF_CTL		0xc0010240
-+#define MSR_F15H_NB_PERF_CTR		0xc0010241
- 
- /* Fam 10h MSRs */
- #define MSR_FAM10H_MMIO_CONF_BASE	0xc0010058
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 4fabcdf..a610ddb 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -29,9 +29,14 @@
- #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
- #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
- 
-+#define AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE		(1ULL << 36)
- #define AMD_PERFMON_EVENTSEL_GUESTONLY			(1ULL << 40)
- #define AMD_PERFMON_EVENTSEL_HOSTONLY			(1ULL << 41)
- 
-+#define AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT		37
-+#define AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK		\
-+	(0xFULL << AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT)
-+
- #define AMD64_EVENTSEL_EVENT	\
- 	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
- #define INTEL_ARCH_EVENT_MASK	\
-@@ -48,6 +53,7 @@
- 	 AMD64_EVENTSEL_EVENT)
- #define AMD64_NUM_COUNTERS				4
- #define AMD64_NUM_COUNTERS_CORE				6
-+#define AMD64_NUM_COUNTERS_NB				4
- 
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		0x3c
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index d6e3337..2fb7b8c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -143,10 +143,15 @@ static unsigned int addr_offsets[X86_PMC_IDX_MAX] __read_mostly;
-  *
-  * CPUs with core performance counter extensions:
-  *   6 counters starting at 0xc0010200 each offset by 2
-+ *
-+ * CPUs with north bridge performance counter extensions:
-+ *   4 additional counters starting at 0xc0010240 each offset by 2
-+ *   (indexed right above either one of the above core counters)
-  */
- static inline int amd_pmu_addr_offset(int index)
- {
- 	int offset;
-+	int ncore;
- 
- 	if (!index)
- 		return index;
-@@ -156,31 +161,28 @@ static inline int amd_pmu_addr_offset(int index)
- 	if (offset)
- 		return offset;
- 
--	if (!cpu_has_perfctr_core)
-+	if (!cpu_has_perfctr_core) {
- 		offset = index;
--	else
-+		ncore = AMD64_NUM_COUNTERS;
-+	} else {
- 		offset = index << 1;
-+		ncore = AMD64_NUM_COUNTERS_CORE;
-+	}
-+
-+	/* find offset of NB counters with respect to x86_pmu.eventsel */
-+	if (cpu_has_perfctr_nb) {
-+		if (index >= ncore && index < (ncore + AMD64_NUM_COUNTERS_NB))
-+			offset = (MSR_F15H_NB_PERF_CTL - x86_pmu.eventsel) +
-+				 ((index - ncore) << 1);
-+	}
- 
- 	addr_offsets[index] = offset;
- 
- 	return offset;
- }
- 
--static int amd_pmu_hw_config(struct perf_event *event)
-+static int __amd_core_hw_config(struct perf_event *event)
- {
--	int ret;
--
--	/* pass precise event sampling to ibs: */
--	if (event->attr.precise_ip && get_ibs_caps())
--		return -ENOENT;
--
--	ret = x86_pmu_hw_config(event);
--	if (ret)
--		return ret;
--
--	if (has_branch_stack(event))
--		return -EOPNOTSUPP;
--
- 	if (event->attr.exclude_host && event->attr.exclude_guest)
- 		/*
- 		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
-@@ -194,10 +196,24 @@ static int amd_pmu_hw_config(struct perf_event *event)
- 	else if (event->attr.exclude_guest)
- 		event->hw.config |= AMD_PERFMON_EVENTSEL_HOSTONLY;
- 
--	if (event->attr.type != PERF_TYPE_RAW)
--		return 0;
-+	return 0;
-+}
-+
-+static int __amd_nb_hw_config(struct perf_event *event)
-+{
-+	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-+	    event->attr.exclude_host || event->attr.exclude_guest)
-+		return -EINVAL;
- 
--	event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
-+	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_USR;
-+	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_OS;
-+
-+	if (event->hw.config & ~(AMD64_EVENTSEL_EVENT        |
-+				 ARCH_PERFMON_EVENTSEL_UMASK |
-+				 ARCH_PERFMON_EVENTSEL_INT   |
-+				 AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE |
-+				 AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK))
-+		return -EINVAL;
- 
- 	return 0;
- }
-@@ -215,6 +231,11 @@ static inline int amd_is_nb_event(struct hw_perf_event *hwc)
- 	return (hwc->config & 0xe0) == 0xe0;
- }
- 
-+static inline int amd_is_perfctr_nb_event(struct hw_perf_event *hwc)
-+{
-+	return cpu_has_perfctr_nb && amd_is_nb_event(hwc);
-+}
-+
- static inline int amd_has_nb(struct cpu_hw_events *cpuc)
- {
- 	struct amd_nb *nb = cpuc->amd_nb;
-@@ -222,6 +243,30 @@ static inline int amd_has_nb(struct cpu_hw_events *cpuc)
- 	return nb && nb->nb_id != -1;
- }
- 
-+static int amd_pmu_hw_config(struct perf_event *event)
-+{
-+	int ret;
-+
-+	/* pass precise event sampling to ibs: */
-+	if (event->attr.precise_ip && get_ibs_caps())
-+		return -ENOENT;
-+
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
-+
-+	ret = x86_pmu_hw_config(event);
-+	if (ret)
-+		return ret;
-+
-+	if (event->attr.type == PERF_TYPE_RAW)
-+		event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
-+
-+	if (amd_is_perfctr_nb_event(&event->hw))
-+		return __amd_nb_hw_config(event);
-+
-+	return __amd_core_hw_config(event);
-+}
-+
- static void __amd_put_nb_event_constraints(struct cpu_hw_events *cpuc,
- 					   struct perf_event *event)
- {
-@@ -323,6 +368,16 @@ __amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *ev
- 	if (new == -1)
- 		return &emptyconstraint;
- 
-+	/* set up interrupts to be delivered only to this core */
-+	if (cpu_has_perfctr_nb) {
-+		struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
-+
-+		hwc->config |= AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE;
-+		hwc->config &= ~AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK;
-+		hwc->config |= (0ULL | (c->cpu_core_id)) <<
-+			AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT;
-+	}
-+
- 	return &nb->event_constraints[new];
- }
- 
-@@ -520,6 +575,7 @@ static struct event_constraint amd_f15_PMC3  = EVENT_CONSTRAINT(0, 0x08, 0);
- static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT_OVERLAP(0, 0x09, 0);
- static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
- static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
-+static struct event_constraint amd_f15_NBPMC30 = EVENT_CONSTRAINT(0, 0x3C0, 0);
- 
- static struct event_constraint *
- amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *event)
-@@ -586,8 +642,11 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
- 			return &amd_f15_PMC20;
- 		}
- 	case AMD_EVENT_NB:
--		/* not yet implemented */
--		return &emptyconstraint;
-+		if (cpuc->is_fake)
-+			return &amd_f15_NBPMC30;
-+
-+		return __amd_get_nb_event_constraints(cpuc, event,
-+						      &amd_f15_NBPMC30);
- 	default:
- 		return &emptyconstraint;
- 	}
-@@ -625,7 +684,7 @@ static __initconst const struct x86_pmu amd_pmu = {
- 
- static int setup_event_constraints(void)
- {
--	if (boot_cpu_data.x86 >= 0x15)
-+	if (boot_cpu_data.x86 == 0x15)
- 		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
- 	return 0;
- }
-@@ -655,6 +714,18 @@ static int setup_perfctr_core(void)
- 	return 0;
- }
- 
-+static int setup_perfctr_nb(void)
-+{
-+	if (!cpu_has_perfctr_nb)
-+		return -ENODEV;
-+
-+	x86_pmu.num_counters += AMD64_NUM_COUNTERS_NB;
-+
-+	printk(KERN_INFO "perf: AMD northbridge performance counters detected\n");
-+
-+	return 0;
-+}
-+
- __init int amd_pmu_init(void)
- {
- 	/* Performance-monitoring supported from K7 and later: */
-@@ -665,6 +736,7 @@ __init int amd_pmu_init(void)
- 
- 	setup_event_constraints();
- 	setup_perfctr_core();
-+	setup_perfctr_nb();
- 
- 	/* Events are common for all AMDs */
- 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
--- 
-1.7.9.5
+I suggest you to revert it. There is a much simpler solution if revert, fix
+the patch and apply it again. No need to push this module merge patch here.
 
+The problem seems to be only a missing EXPORT_SYMBOL of the smp.c method. That
+should fix it. If you want me to fix that just ask me.
 
+	Gustavo
