@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993109Ab2KOEMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49474 "EHLO mail.kernel.org"
+	id S933570Ab2KOE2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:28:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49497 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993074Ab2KOEMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:05 -0500
+	id S2993097Ab2KOEMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 51/66] drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister before mdiobus_free
-Date: Wed, 14 Nov 2012 20:10:56 -0800
-Message-Id: <20121115040942.815069685@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=2062/66=5D=20drm/radeon/cayman=3A=20add=20some=20missing=20regs=20to=20the=20VM=20reg=20checker?=
+Date: Wed, 14 Nov 2012 20:11:07 -0800
+Message-Id: <20121115040943.614731224@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,45 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Alex Deucher <alexander.deucher@amd.com>
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+commit 860fe2f05fa2eacac84368e23547ec8cf3cc6652 upstream.
 
-[ Upstream commit 57c10b61c84bfed68b1b317d6f507a392724b9c4 ]
+These regs were being wronly rejected leading to rendering
+issues.
 
-Based on commit b27393aecf66199f5ddad37c302d3e0cfadbe6c0
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=56876
 
-Calling mdiobus_free without calling mdiobus_unregister causes
-BUG_ON(). This patch fixes the issue.
-
-The semantic patch that found this issue(http://coccinelle.lip6.fr/):
-// <smpl>
-@@
-expression E;
-@@
-  ... when != mdiobus_unregister(E);
-
-+ mdiobus_unregister(E);
-  mdiobus_free(E);
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/nxp/lpc_eth.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1524,6 +1524,7 @@ static int lpc_eth_drv_remove(struct pla
- 				  pldat->dma_buff_base_p);
- 	free_irq(ndev->irq, ndev);
- 	iounmap(pldat->net_base);
-+	mdiobus_unregister(pldat->mii_bus);
- 	mdiobus_free(pldat->mii_bus);
- 	clk_disable(pldat->clk);
- 	clk_put(pldat->clk);
+---
+ drivers/gpu/drm/radeon/evergreen_cs.c |    3 +++
+ drivers/gpu/drm/radeon/evergreend.h   |    4 ++++
+ 2 files changed, 7 insertions(+)
+
+--- a/drivers/gpu/drm/radeon/evergreen_cs.c
++++ b/drivers/gpu/drm/radeon/evergreen_cs.c
+@@ -2725,6 +2725,9 @@ static bool evergreen_vm_reg_valid(u32 r
+ 	/* check config regs */
+ 	switch (reg) {
+ 	case GRBM_GFX_INDEX:
++	case CP_STRMOUT_CNTL:
++	case CP_COHER_CNTL:
++	case CP_COHER_SIZE:
+ 	case VGT_VTX_VECT_EJECT_REG:
+ 	case VGT_CACHE_INVALIDATION:
+ 	case VGT_GS_VERTEX_REUSE:
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -87,6 +87,10 @@
+ 
+ #define	CONFIG_MEMSIZE					0x5428
+ 
++#define	CP_STRMOUT_CNTL					0x84FC
++
++#define	CP_COHER_CNTL					0x85F0
++#define	CP_COHER_SIZE					0x85F4
+ #define	CP_COHER_BASE					0x85F8
+ #define	CP_STALLED_STAT1			0x8674
+ #define	CP_STALLED_STAT2			0x8678
 
 
