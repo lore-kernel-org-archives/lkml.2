@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992727Ab2KOEKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:10:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48446 "EHLO mail.kernel.org"
+	id S2992798Ab2KOEqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:46:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48529 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992667Ab2KOEKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:22 -0500
+	id S2992730Ab2KOEKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 17/38] hwmon: (w83627ehf) Force initial bank selection
-Date: Wed, 14 Nov 2012 20:10:14 -0800
-Message-Id: <20121115040933.981846722@linuxfoundation.org>
+        Elliot Hughes <enh@google.com>, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/38] tcp: fix FIONREAD/SIOCINQ
+Date: Wed, 14 Nov 2012 20:10:23 -0800
+Message-Id: <20121115040934.500024361@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -25,31 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
 
-commit 3300fb4f88688029fff8dfb9ec0734f6e4cba3e7 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Don't assume bank 0 is selected at device probe time. This may not be
-the case. Force bank selection at first register access to guarantee
-that we read the right registers upon driver loading.
+[ Upstream commit a3374c42aa5f7237e87ff3b0622018636b0c847e ]
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+tcp_ioctl() tries to take into account if tcp socket received a FIN
+to report correct number bytes in receive queue.
+
+But its flaky because if the application ate the last skb,
+we return 1 instead of 0.
+
+Correct way to detect that FIN was received is to test SOCK_DONE.
+
+Reported-by: Elliot Hughes <enh@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hwmon/w83627ehf.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1834,6 +1834,7 @@ static int __devinit w83627ehf_probe(str
- 	mutex_init(&data->lock);
- 	mutex_init(&data->update_lock);
- 	data->name = w83627ehf_device_names[sio_data->kind];
-+	data->bank = 0xff;		/* Force initial bank selection */
- 	platform_set_drvdata(pdev, data);
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -481,14 +481,12 @@ int tcp_ioctl(struct sock *sk, int cmd,
+ 			 !tp->urg_data ||
+ 			 before(tp->urg_seq, tp->copied_seq) ||
+ 			 !before(tp->urg_seq, tp->rcv_nxt)) {
+-			struct sk_buff *skb;
  
- 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
+ 			answ = tp->rcv_nxt - tp->copied_seq;
+ 
+-			/* Subtract 1, if FIN is in queue. */
+-			skb = skb_peek_tail(&sk->sk_receive_queue);
+-			if (answ && skb)
+-				answ -= tcp_hdr(skb)->fin;
++			/* Subtract 1, if FIN was received */
++			if (answ && sock_flag(sk, SOCK_DONE))
++				answ--;
+ 		} else
+ 			answ = tp->urg_seq - tp->copied_seq;
+ 		release_sock(sk);
 
 
