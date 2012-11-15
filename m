@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767562Ab2KOESy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:18:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49951 "EHLO mail.kernel.org"
+	id S1767650Ab2KOETP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:19:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49926 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993333Ab2KOEM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:58 -0500
+	id S2993323Ab2KOEMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Ems <richard.ems@cape-horn-eng.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 28/57] NFS: Fix Oopses in nfs_lookup_revalidate and nfs4_lookup_revalidate
-Date: Wed, 14 Nov 2012 20:11:36 -0800
-Message-Id: <20121115040934.949746131@linuxfoundation.org>
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 35/57] ALSA: Add a reference counter to card instance
+Date: Wed, 14 Nov 2012 20:11:43 -0800
+Message-Id: <20121115040935.386657819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,87 +26,415 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[Fixed upstream as part of 0b728e1911c, but that's a much larger patch,
-this is only the nfs portion backported as needed.]
+commit a0830dbd4e42b38aefdf3fb61ba5019a1a99ea85 upstream.
 
-Fix the following Oops in 3.5.1:
+For more strict protection for wild disconnections, a refcount is
+introduced to the card instance, and let it up/down when an object is
+referred via snd_lookup_*() in the open ops.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
- IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- PGD 337c63067 PUD 0
- Oops: 0000 [#1] SMP
- CPU 5
- Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+The free-after-last-close check is also changed to check this refcount
+instead of the empty list, too.
 
- Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
- RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
- RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
- RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
- RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
- R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
- R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
- FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
- Stack:
-  ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
-  ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
-  ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
- Call Trace:
-  [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
-  [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
-  [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
-  [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
-  [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
-  [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
-  [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
-  [<00002b5348b5f527>] 0x2b5348b5f526
- Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
- RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
-  RSP <ffff8801b418bd38>
- CR2: 0000000000000038
- ---[ end trace 845113ed191985dd ]---
-
-This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
-calling down to the dentry revalidation code with a NULL pointer
-to struct nameidata.
-
-It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-to ->d_revalidate())
-
-Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/dir.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/sound/core.h          |    3 ++
+ sound/core/compress_offload.c |    9 +++++--
+ sound/core/control.c          |    3 ++
+ sound/core/hwdep.c            |    5 +++-
+ sound/core/init.c             |   50 +++++++++++++++++++++++++-----------------
+ sound/core/oss/mixer_oss.c    |   10 ++++++--
+ sound/core/oss/pcm_oss.c      |    2 +
+ sound/core/pcm_native.c       |    9 +++++--
+ sound/core/rawmidi.c          |    6 ++++-
+ sound/core/sound.c            |   11 +++++++--
+ sound/core/sound_oss.c        |   10 ++++++--
+ 11 files changed, 86 insertions(+), 32 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1103,7 +1103,7 @@ static int nfs_lookup_revalidate(struct
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -132,6 +132,7 @@ struct snd_card {
+ 	int shutdown;			/* this card is going down */
+ 	int free_on_last_close;		/* free in context of file_release */
+ 	wait_queue_head_t shutdown_sleep;
++	atomic_t refcount;		/* refcount for disconnection */
+ 	struct device *dev;		/* device assigned to this card */
+ 	struct device *card_dev;	/* cardX object for sysfs */
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+@@ -189,6 +190,7 @@ struct snd_minor {
+ 	const struct file_operations *f_ops;	/* file operations */
+ 	void *private_data;		/* private data for f_ops->open */
+ 	struct device *dev;		/* device for sysfs */
++	struct snd_card *card_ptr;	/* assigned card instance */
+ };
  
- 	parent = dget_parent(dentry);
-@@ -1502,7 +1502,7 @@ static int nfs_open_revalidate(struct de
- 	struct iattr attr;
- 	int openflags, ret = 0;
+ /* return a device pointer linked to each sound device as a parent */
+@@ -295,6 +297,7 @@ int snd_card_info_done(void);
+ int snd_component_add(struct snd_card *card, const char *component);
+ int snd_card_file_add(struct snd_card *card, struct file *file);
+ int snd_card_file_remove(struct snd_card *card, struct file *file);
++void snd_card_unref(struct snd_card *card);
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+ #define snd_card_set_dev(card, devptr) ((card)->dev = (devptr))
  
- 	inode = dentry->d_inode;
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -102,12 +102,15 @@ static int snd_compr_open(struct inode *
+ 
+ 	if (dirn != compr->direction) {
+ 		pr_err("this device doesn't support this direction\n");
++		snd_card_unref(compr->card);
+ 		return -EINVAL;
+ 	}
+ 
+ 	data = kzalloc(sizeof(*data), GFP_KERNEL);
+-	if (!data)
++	if (!data) {
++		snd_card_unref(compr->card);
+ 		return -ENOMEM;
++	}
+ 	data->stream.ops = compr->ops;
+ 	data->stream.direction = dirn;
+ 	data->stream.private_data = compr->private_data;
+@@ -115,6 +118,7 @@ static int snd_compr_open(struct inode *
+ 	runtime = kzalloc(sizeof(*runtime), GFP_KERNEL);
+ 	if (!runtime) {
+ 		kfree(data);
++		snd_card_unref(compr->card);
+ 		return -ENOMEM;
+ 	}
+ 	runtime->state = SNDRV_PCM_STATE_OPEN;
+@@ -128,7 +132,8 @@ static int snd_compr_open(struct inode *
+ 		kfree(runtime);
+ 		kfree(data);
+ 	}
+-	return ret;
++	snd_card_unref(compr->card);
++	return 0;
+ }
+ 
+ static int snd_compr_free(struct inode *inode, struct file *f)
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -86,6 +86,7 @@ static int snd_ctl_open(struct inode *in
+ 	write_lock_irqsave(&card->ctl_files_rwlock, flags);
+ 	list_add_tail(&ctl->list, &card->ctl_files);
+ 	write_unlock_irqrestore(&card->ctl_files_rwlock, flags);
++	snd_card_unref(card);
+ 	return 0;
+ 
+       __error:
+@@ -93,6 +94,8 @@ static int snd_ctl_open(struct inode *in
+       __error2:
+ 	snd_card_file_remove(card, file);
+       __error1:
++	if (card)
++		snd_card_unref(card);
+       	return err;
+ }
+ 
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -100,8 +100,10 @@ static int snd_hwdep_open(struct inode *
+ 	if (hw == NULL)
+ 		return -ENODEV;
+ 
+-	if (!try_module_get(hw->card->module))
++	if (!try_module_get(hw->card->module)) {
++		snd_card_unref(hw->card);
+ 		return -EFAULT;
++	}
+ 
+ 	init_waitqueue_entry(&wait, current);
+ 	add_wait_queue(&hw->open_wait, &wait);
+@@ -148,6 +150,7 @@ static int snd_hwdep_open(struct inode *
+ 	mutex_unlock(&hw->open_mutex);
+ 	if (err < 0)
+ 		module_put(hw->card->module);
++	snd_card_unref(hw->card);
+ 	return err;
+ }
+ 
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -213,6 +213,7 @@ int snd_card_create(int idx, const char
+ 	spin_lock_init(&card->files_lock);
+ 	INIT_LIST_HEAD(&card->files_list);
+ 	init_waitqueue_head(&card->shutdown_sleep);
++	atomic_set(&card->refcount, 0);
+ #ifdef CONFIG_PM
+ 	mutex_init(&card->power_lock);
+ 	init_waitqueue_head(&card->power_sleep);
+@@ -446,21 +447,36 @@ static int snd_card_do_free(struct snd_c
+ 	return 0;
+ }
+ 
++/**
++ * snd_card_unref - release the reference counter
++ * @card: the card instance
++ *
++ * Decrements the reference counter.  When it reaches to zero, wake up
++ * the sleeper and call the destructor if needed.
++ */
++void snd_card_unref(struct snd_card *card)
++{
++	if (atomic_dec_and_test(&card->refcount)) {
++		wake_up(&card->shutdown_sleep);
++		if (card->free_on_last_close)
++			snd_card_do_free(card);
++	}
++}
++EXPORT_SYMBOL(snd_card_unref);
++
+ int snd_card_free_when_closed(struct snd_card *card)
+ {
+-	int free_now = 0;
+-	int ret = snd_card_disconnect(card);
+-	if (ret)
+-		return ret;
++	int ret;
+ 
+-	spin_lock(&card->files_lock);
+-	if (list_empty(&card->files_list))
+-		free_now = 1;
+-	else
+-		card->free_on_last_close = 1;
+-	spin_unlock(&card->files_lock);
++	atomic_inc(&card->refcount);
++	ret = snd_card_disconnect(card);
++	if (ret) {
++		atomic_dec(&card->refcount);
++		return ret;
++	}
+ 
+-	if (free_now)
++	card->free_on_last_close = 1;
++	if (atomic_dec_and_test(&card->refcount))
+ 		snd_card_do_free(card);
+ 	return 0;
+ }
+@@ -474,7 +490,7 @@ int snd_card_free(struct snd_card *card)
+ 		return ret;
+ 
+ 	/* wait, until all devices are ready for the free operation */
+-	wait_event(card->shutdown_sleep, list_empty(&card->files_list));
++	wait_event(card->shutdown_sleep, !atomic_read(&card->refcount));
+ 	snd_card_do_free(card);
+ 	return 0;
+ }
+@@ -886,6 +902,7 @@ int snd_card_file_add(struct snd_card *c
+ 		return -ENODEV;
+ 	}
+ 	list_add(&mfile->list, &card->files_list);
++	atomic_inc(&card->refcount);
+ 	spin_unlock(&card->files_lock);
+ 	return 0;
+ }
+@@ -908,7 +925,6 @@ EXPORT_SYMBOL(snd_card_file_add);
+ int snd_card_file_remove(struct snd_card *card, struct file *file)
+ {
+ 	struct snd_monitor_file *mfile, *found = NULL;
+-	int last_close = 0;
+ 
+ 	spin_lock(&card->files_lock);
+ 	list_for_each_entry(mfile, &card->files_list, list) {
+@@ -923,19 +939,13 @@ int snd_card_file_remove(struct snd_card
+ 			break;
+ 		}
+ 	}
+-	if (list_empty(&card->files_list))
+-		last_close = 1;
+ 	spin_unlock(&card->files_lock);
+-	if (last_close) {
+-		wake_up(&card->shutdown_sleep);
+-		if (card->free_on_last_close)
+-			snd_card_do_free(card);
+-	}
+ 	if (!found) {
+ 		snd_printk(KERN_ERR "ALSA card file remove problem (%p)\n", file);
+ 		return -ENOENT;
+ 	}
+ 	kfree(found);
++	snd_card_unref(card);
+ 	return 0;
+ }
+ 
+--- a/sound/core/oss/mixer_oss.c
++++ b/sound/core/oss/mixer_oss.c
+@@ -52,14 +52,19 @@ static int snd_mixer_oss_open(struct ino
+ 					 SNDRV_OSS_DEVICE_TYPE_MIXER);
+ 	if (card == NULL)
+ 		return -ENODEV;
+-	if (card->mixer_oss == NULL)
++	if (card->mixer_oss == NULL) {
++		snd_card_unref(card);
+ 		return -ENODEV;
++	}
+ 	err = snd_card_file_add(card, file);
+-	if (err < 0)
++	if (err < 0) {
++		snd_card_unref(card);
+ 		return err;
++	}
+ 	fmixer = kzalloc(sizeof(*fmixer), GFP_KERNEL);
+ 	if (fmixer == NULL) {
+ 		snd_card_file_remove(card, file);
++		snd_card_unref(card);
+ 		return -ENOMEM;
+ 	}
+ 	fmixer->card = card;
+@@ -68,6 +73,7 @@ static int snd_mixer_oss_open(struct ino
+ 	if (!try_module_get(card->module)) {
+ 		kfree(fmixer);
+ 		snd_card_file_remove(card, file);
++		snd_card_unref(card);
+ 		return -EFAULT;
+ 	}
+ 	return 0;
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2457,6 +2457,8 @@ static int snd_pcm_oss_open(struct inode
+       __error2:
+       	snd_card_file_remove(pcm->card, file);
+       __error1:
++	if (pcm)
++		snd_card_unref(pcm->card);
+ 	return err;
+ }
+ 
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1631,6 +1631,7 @@ static int snd_pcm_link(struct snd_pcm_s
+ 	write_unlock_irq(&snd_pcm_link_rwlock);
+ 	up_write(&snd_pcm_link_rwsem);
+  _nolock:
++	snd_card_unref(substream1->pcm->card);
+ 	fput(file);
+ 	if (res < 0)
+ 		kfree(group);
+@@ -2105,7 +2106,9 @@ static int snd_pcm_playback_open(struct
+ 		return err;
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_PLAYBACK);
+-	return snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_PLAYBACK);
++	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_PLAYBACK);
++	snd_card_unref(pcm->card);
++	return err;
+ }
+ 
+ static int snd_pcm_capture_open(struct inode *inode, struct file *file)
+@@ -2116,7 +2119,9 @@ static int snd_pcm_capture_open(struct i
+ 		return err;
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_CAPTURE);
+-	return snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_CAPTURE);
++	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_CAPTURE);
++	snd_card_unref(pcm->card);
++	return err;
+ }
+ 
+ static int snd_pcm_open(struct file *file, struct snd_pcm *pcm, int stream)
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -379,8 +379,10 @@ static int snd_rawmidi_open(struct inode
+ 	if (rmidi == NULL)
+ 		return -ENODEV;
+ 
+-	if (!try_module_get(rmidi->card->module))
++	if (!try_module_get(rmidi->card->module)) {
++		snd_card_unref(rmidi->card);
+ 		return -ENXIO;
++	}
+ 
+ 	mutex_lock(&rmidi->open_mutex);
+ 	card = rmidi->card;
+@@ -440,6 +442,7 @@ static int snd_rawmidi_open(struct inode
+ #endif
+ 	file->private_data = rawmidi_file;
+ 	mutex_unlock(&rmidi->open_mutex);
++	snd_card_unref(rmidi->card);
+ 	return 0;
+ 
+  __error:
+@@ -447,6 +450,7 @@ static int snd_rawmidi_open(struct inode
+  __error_card:
+ 	mutex_unlock(&rmidi->open_mutex);
+ 	module_put(rmidi->card->module);
++	snd_card_unref(rmidi->card);
+ 	return err;
+ }
+ 
+--- a/sound/core/sound.c
++++ b/sound/core/sound.c
+@@ -99,6 +99,10 @@ static void snd_request_other(int minor)
+  *
+  * Checks that a minor device with the specified type is registered, and returns
+  * its user data pointer.
++ *
++ * This function increments the reference counter of the card instance
++ * if an associated instance with the given minor number and type is found.
++ * The caller must call snd_card_unref() appropriately later.
+  */
+ void *snd_lookup_minor_data(unsigned int minor, int type)
+ {
+@@ -109,9 +113,11 @@ void *snd_lookup_minor_data(unsigned int
+ 		return NULL;
+ 	mutex_lock(&sound_mutex);
+ 	mreg = snd_minors[minor];
+-	if (mreg && mreg->type == type)
++	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-	else
++		if (mreg->card_ptr)
++			atomic_inc(&mreg->card_ptr->refcount);
++	} else
+ 		private_data = NULL;
+ 	mutex_unlock(&sound_mutex);
+ 	return private_data;
+@@ -276,6 +282,7 @@ int snd_register_device_for_dev(int type
+ 	preg->device = dev;
+ 	preg->f_ops = f_ops;
+ 	preg->private_data = private_data;
++	preg->card_ptr = card;
+ 	mutex_lock(&sound_mutex);
+ #ifdef CONFIG_SND_DYNAMIC_MINORS
+ 	minor = snd_find_free_minor(type);
+--- a/sound/core/sound_oss.c
++++ b/sound/core/sound_oss.c
+@@ -40,6 +40,9 @@
+ static struct snd_minor *snd_oss_minors[SNDRV_OSS_MINORS];
+ static DEFINE_MUTEX(sound_oss_mutex);
+ 
++/* NOTE: This function increments the refcount of the associated card like
++ * snd_lookup_minor_data(); the caller must call snd_card_unref() appropriately
++ */
+ void *snd_lookup_oss_minor_data(unsigned int minor, int type)
+ {
+ 	struct snd_minor *mreg;
+@@ -49,9 +52,11 @@ void *snd_lookup_oss_minor_data(unsigned
+ 		return NULL;
+ 	mutex_lock(&sound_oss_mutex);
+ 	mreg = snd_oss_minors[minor];
+-	if (mreg && mreg->type == type)
++	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-	else
++		if (mreg->card_ptr)
++			atomic_inc(&mreg->card_ptr->refcount);
++	} else
+ 		private_data = NULL;
+ 	mutex_unlock(&sound_oss_mutex);
+ 	return private_data;
+@@ -123,6 +128,7 @@ int snd_register_oss_device(int type, st
+ 	preg->device = dev;
+ 	preg->f_ops = f_ops;
+ 	preg->private_data = private_data;
++	preg->card_ptr = card;
+ 	mutex_lock(&sound_oss_mutex);
+ 	snd_oss_minors[minor] = preg;
+ 	minor_unit = SNDRV_MINOR_OSS_DEVICE(minor);
 
 
