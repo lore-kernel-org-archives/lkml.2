@@ -1,92 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993243Ab2KOKwD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:52:03 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48017 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992442Ab2KOKwA (ORCPT
+	id S2993287Ab2KOKwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:52:23 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56327
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S2992442Ab2KOKwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:52:00 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v4 2/2] i2c: i2c-ocores: Add support for the GRLIB port of the controller and custom getreg and setreg functions
-References: <1352974979-22638-1-git-send-email-andreas@gaisler.com>
-	<1352974979-22638-3-git-send-email-andreas@gaisler.com>
-Date: Thu, 15 Nov 2012 11:51:56 +0100
-In-Reply-To: <1352974979-22638-3-git-send-email-andreas@gaisler.com> (Andreas
-	Larsson's message of "Thu, 15 Nov 2012 11:22:59 +0100")
-Message-ID: <87390b6svn.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Thu, 15 Nov 2012 05:52:21 -0500
+Date: Thu, 15 Nov 2012 05:52:20 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH 1/3] target/sbc: Make WRITE_SAME check differentiate
+ between UNMAP=[1,0]
+Message-ID: <20121115105220.GB28956@infradead.org>
+References: <1352405238-23267-1-git-send-email-nab@linux-iscsi.org>
+ <1352405238-23267-2-git-send-email-nab@linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352405238-23267-2-git-send-email-nab@linux-iscsi.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andreas" == Andreas Larsson <andreas@gaisler.com> writes:
+> +	if (flags[0] & 0x08)
+> +		cmd->se_cmd_flags |= SCF_WRITE_SAME_DISCARD;
 
-Hi,
+I don't like this flag at all.  We can still simply check the CDB
+during ->execute_cmd and avoid this redundant flag.
 
- Andreas> The registers in the GRLIB port of the controller are 32-bit
- Andreas> and in big endian byte order. The PRELOW and PREHIGH registers
- Andreas> are merged into one register. The subsequent registers have
- Andreas> their offset decreased accordingly. Hence the register access
- Andreas> needs to be handled in a non-standard manner using custom
- Andreas> getreg and setreg functions.
-
- Andreas> A type is added as the data of the of match table entries. A
- Andreas> new entry with a different compatible string is added to the
- Andreas> table. The type of that entry triggers usage of the grlib
- Andreas> functions.
-
- Andreas> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
- Andreas> ---
- Andreas>  Changes since v3:
- Andreas>  - Use a separate entry in the of match table for the grlib
- Andreas>  variant and trigger grlib function usage on type put in the
- Andreas>  data field of that table entry
-
-Thanks. A few more comments:
-
-
- Andreas>  static inline void oc_setreg(struct ocores_i2c *i2c, int reg, u8 value)
- Andreas>  {
- Andreas> -	if (i2c->reg_io_width == 4)
- Andreas> +	if (i2c->setreg)
- Andreas> +		i2c->setreg(i2c, reg, value);
- Andreas> +	else if (i2c->reg_io_width == 4)
- Andreas>  		iowrite32(value, i2c->base + (reg << i2c->reg_shift));
- Andreas>  	else if (i2c->reg_io_width == 2)
- Andreas>  		iowrite16(value, i2c->base + (reg << i2c->reg_shift));
-
-It would have been nice to add oc_getreg_8/16/32 functions and always
-use the function pointers - But ok, that can be done later.
-
- 
- Andreas>  #ifdef CONFIG_OF
- Andreas> +static int ocores_i2c_get_type(struct platform_device *pdev);
- Andreas> +
-
-Why not just move the implementation up here instead of the forward
-declaration?
-
- 
- Andreas> +static int ocores_i2c_get_type(struct platform_device *pdev)
- Andreas> +{
- Andreas> +	const struct of_device_id *match;
- Andreas> +
- Andreas> +	match = of_match_node(ocores_i2c_match, pdev->dev.of_node);
- Andreas> +	if (match)
- Andreas> +		return (int)match->data;
-
-Can this ever fail? If not, you might as well do the of_match_node
-inline in the probe instead of this helper.
-
-Other than that it looks good.
-
--- 
-Bye, Peter Korsgaard
+Except for that bit the changes look fine, but should not be a patch
+on their own.  Without an actual implementation this relaxation is
+actively harmful.
