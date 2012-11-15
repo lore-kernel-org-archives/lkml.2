@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768946Ab2KOUU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:20:56 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60480 "EHLO
+	id S1423720Ab2KOUUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:20:50 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60473 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768930Ab2KOUUx (ORCPT
+	with ESMTP id S1423636Ab2KOUUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:20:53 -0500
+	Thu, 15 Nov 2012 15:20:47 -0500
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>,
         "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH-v2 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation support
-Date: Thu, 15 Nov 2012 20:13:59 +0000
-Message-Id: <1353010439-4600-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH-v2 1/3] target/sbc: Seperate WRITE_SAME based on UNMAP flag in sbc_ops
+Date: Thu, 15 Nov 2012 20:13:57 +0000
+Message-Id: <1353010439-4600-2-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1353010439-4600-1-git-send-email-nab@linux-iscsi.org>
 References: <1353010439-4600-1-git-send-email-nab@linux-iscsi.org>
@@ -26,152 +25,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for emulation of WRITE_SAME w/ UNMAP=0 within
-iblock_execute_write_same() backend code.
+This patch adds a new sbc_ops->execute_write_same_unmap() caller for use
+with WRITE_SAME w/ UNMAP=1, and performs the ->execute_cmd() setup based
+this bit within sbc_setup_write_same() code.
 
-The emulation uses a bio_add_page() call for each sector, and by default
-enforces a limit of max_write_same_len=0xFFFF (65536) sectors following
-what scsi_debug reports per default for MAXIMUM WRITE SAME LENGTH.
+Also, makes the changes in sbc_parse_cdb() to handle a sense_reason_t
+return from sbc_setup_write_same() on error.
 
-It also sets max_write_same_len to the operational default at setup ->
-iblock_configure_device() time.
-
-(hch: Move unmap logic into iblock_execute_write_same_unmap + add
-      check for single sector SGLs in iblock_execute_write_same)
-(mkp: Update comment for 0xFFFF magic constant)
-
-Cc: Christoph Hellwig <hch@lst.de>
+Reported-by: Christoph Hellwig <hch@lst.de>
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_iblock.c |   91 ++++++++++++++++++++++++++++++++---
- 1 files changed, 84 insertions(+), 7 deletions(-)
+ drivers/target/target_core_sbc.c     |   51 +++++++++++++++------------------
+ include/target/target_core_backend.h |    1 +
+ 2 files changed, 24 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 53f4501..5abbd55 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -151,6 +151,11 @@ static int iblock_configure_device(struct se_device *dev)
- 		pr_debug("IBLOCK: BLOCK Discard support available,"
- 				" disabled by default\n");
- 	}
-+	/*
-+	 * Enable write same emulation for IBLOCK and use 0xFFFF as
-+	 * the samller WRITE_SAME(10) only has a two-byte block count.
-+	 */
-+	dev->dev_attrib.max_write_same_len = 0xFFFF;
- 
- 	if (blk_queue_nonrot(q))
- 		dev->dev_attrib.is_nonrot = 1;
-@@ -375,17 +380,20 @@ err:
- 	return ret;
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index b802421..a5a8f46 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -235,26 +235,30 @@ static inline unsigned long long transport_lba_64_ext(unsigned char *cdb)
+ 	return ((unsigned long long)__v2) | (unsigned long long)__v1 << 32;
  }
  
-+static struct bio *iblock_get_bio(struct se_cmd *, sector_t, u32);
-+static void iblock_submit_bios(struct bio_list *, int);
-+static void iblock_complete_cmd(struct se_cmd *);
-+
- static sense_reason_t
--iblock_execute_write_same(struct se_cmd *cmd)
-+iblock_execute_write_same_unmap(struct se_cmd *cmd)
+-static int sbc_write_same_supported(struct se_device *dev,
+-		unsigned char *flags)
++static sense_reason_t
++sbc_setup_write_same(struct se_cmd *cmd, unsigned char *flags, struct sbc_ops *ops)
  {
- 	struct iblock_dev *ib_dev = IBLOCK_DEV(cmd->se_dev);
--	int ret;
-+	int rc;
- 
--	ret = blkdev_issue_discard(ib_dev->ibd_bd, cmd->t_task_lba,
--				   spc_get_write_same_sectors(cmd), GFP_KERNEL,
--				   0);
--	if (ret < 0) {
--		pr_debug("blkdev_issue_discard() failed for WRITE_SAME\n");
-+	rc = blkdev_issue_discard(ib_dev->ibd_bd, cmd->t_task_lba,
-+			spc_get_write_same_sectors(cmd), GFP_KERNEL, 0);
-+	if (rc < 0) {
-+		pr_warn("blkdev_issue_discard() failed: %d\n", rc);
- 		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+ 	if ((flags[0] & 0x04) || (flags[0] & 0x02)) {
+ 		pr_err("WRITE_SAME PBDATA and LBDATA"
+ 			" bits not supported for Block Discard"
+ 			" Emulation\n");
+-		return -ENOSYS;
++		return TCM_UNSUPPORTED_SCSI_OPCODE;
  	}
+-
+ 	/*
+-	 * Currently for the emulated case we only accept
+-	 * tpws with the UNMAP=1 bit set.
++	 * Special case for WRITE_SAME w/ UNMAP=1 that ends up getting
++	 * translated into block discard requests within backend code.
+ 	 */
+-	if (!(flags[0] & 0x08)) {
+-		pr_err("WRITE_SAME w/o UNMAP bit not"
+-			" supported for Block Discard Emulation\n");
+-		return -ENOSYS;
++	if (flags[0] & 0x08) {
++		if (!ops->execute_write_same_unmap)
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
++		cmd->execute_cmd = ops->execute_write_same_unmap;
++		return 0;
+ 	}
++	if (!ops->execute_write_same)
++		return TCM_UNSUPPORTED_SCSI_OPCODE;
  
-@@ -393,6 +401,74 @@ iblock_execute_write_same(struct se_cmd *cmd)
++	cmd->execute_cmd = ops->execute_write_same;
  	return 0;
  }
  
-+static sense_reason_t
-+iblock_execute_write_same(struct se_cmd *cmd)
-+{
-+	struct iblock_req *ibr;
-+	struct scatterlist *sg;
-+	struct bio *bio;
-+	struct bio_list list;
-+	sector_t block_lba = cmd->t_task_lba;
-+	unsigned int sectors = spc_get_write_same_sectors(cmd);
-+
-+	if (sectors > cmd->se_dev->dev_attrib.max_write_same_len) {
-+		pr_warn("WRITE_SAME sectors: %u exceeds max_write_same_len: %u\n",
-+			sectors, cmd->se_dev->dev_attrib.max_write_same_len);
-+		return TCM_INVALID_CDB_FIELD;
-+	}
-+	sg = &cmd->t_data_sg[0];
-+
-+	if (cmd->t_data_nents > 1 ||
-+	    sg->length != cmd->se_dev->dev_attrib.block_size) {
-+		pr_err("WRITE_SAME: Illegal SGL t_data_nents: %u length: %u"
-+			" block_size: %u\n", cmd->t_data_nents, sg->length,
-+			cmd->se_dev->dev_attrib.block_size);
-+		return TCM_INVALID_CDB_FIELD;
-+	}
-+
-+	ibr = kzalloc(sizeof(struct iblock_req), GFP_KERNEL);
-+	if (!ibr)
-+		goto fail;
-+	cmd->priv = ibr;
-+
-+	bio = iblock_get_bio(cmd, block_lba, 1);
-+	if (!bio)
-+		goto fail_free_ibr;
-+
-+	bio_list_init(&list);
-+	bio_list_add(&list, bio);
-+
-+	atomic_set(&ibr->pending, 1);
-+
-+	while (sectors) {
-+		while (bio_add_page(bio, sg_page(sg), sg->length, sg->offset)
-+				!= sg->length) {
-+
-+			bio = iblock_get_bio(cmd, block_lba, 1);
-+			if (!bio)
-+				goto fail_put_bios;
-+
-+			atomic_inc(&ibr->pending);
-+			bio_list_add(&list, bio);
-+		}
-+
-+		/* Always in 512 byte units for Linux/Block */
-+		block_lba += sg->length >> IBLOCK_LBA_SHIFT;
-+		sectors -= 1;
-+	}
-+
-+	iblock_submit_bios(&list, WRITE);
-+	return 0;
-+
-+fail_put_bios:
-+	while ((bio = bio_list_pop(&list)))
-+		bio_put(bio);
-+fail_free_ibr:
-+	kfree(ibr);
-+fail:
-+	return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+}
-+
- enum {
- 	Opt_udev_path, Opt_readonly, Opt_force, Opt_err
- };
-@@ -701,6 +777,7 @@ static struct sbc_ops iblock_sbc_ops = {
- 	.execute_rw		= iblock_execute_rw,
- 	.execute_sync_cache	= iblock_execute_sync_cache,
- 	.execute_write_same	= iblock_execute_write_same,
-+	.execute_write_same_unmap = iblock_execute_write_same_unmap,
- 	.execute_unmap		= iblock_execute_unmap,
+@@ -418,9 +422,6 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 				cmd->se_cmd_flags |= SCF_FUA;
+ 			break;
+ 		case WRITE_SAME_32:
+-			if (!ops->execute_write_same)
+-				return TCM_UNSUPPORTED_SCSI_OPCODE;
+-
+ 			sectors = transport_get_sectors_32(cdb);
+ 			if (!sectors) {
+ 				pr_err("WSNZ=1, WRITE_SAME w/sectors=0 not"
+@@ -431,9 +432,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 			size = sbc_get_size(cmd, 1);
+ 			cmd->t_task_lba = get_unaligned_be64(&cdb[12]);
+ 
+-			if (sbc_write_same_supported(dev, &cdb[10]) < 0)
+-				return TCM_UNSUPPORTED_SCSI_OPCODE;
+-			cmd->execute_cmd = ops->execute_write_same;
++			ret = sbc_setup_write_same(cmd, &cdb[10], ops);
++			if (ret < 0)
++				return ret;
+ 			break;
+ 		default:
+ 			pr_err("VARIABLE_LENGTH_CMD service action"
+@@ -495,9 +496,6 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = ops->execute_unmap;
+ 		break;
+ 	case WRITE_SAME_16:
+-		if (!ops->execute_write_same)
+-			return TCM_UNSUPPORTED_SCSI_OPCODE;
+-
+ 		sectors = transport_get_sectors_16(cdb);
+ 		if (!sectors) {
+ 			pr_err("WSNZ=1, WRITE_SAME w/sectors=0 not supported\n");
+@@ -507,14 +505,11 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		size = sbc_get_size(cmd, 1);
+ 		cmd->t_task_lba = get_unaligned_be64(&cdb[2]);
+ 
+-		if (sbc_write_same_supported(dev, &cdb[1]) < 0)
+-			return TCM_UNSUPPORTED_SCSI_OPCODE;
+-		cmd->execute_cmd = ops->execute_write_same;
++		ret = sbc_setup_write_same(cmd, &cdb[1], ops);
++		if (ret < 0)
++			return ret;
+ 		break;
+ 	case WRITE_SAME:
+-		if (!ops->execute_write_same)
+-			return TCM_UNSUPPORTED_SCSI_OPCODE;
+-
+ 		sectors = transport_get_sectors_10(cdb);
+ 		if (!sectors) {
+ 			pr_err("WSNZ=1, WRITE_SAME w/sectors=0 not supported\n");
+@@ -528,9 +523,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		 * Follow sbcr26 with WRITE_SAME (10) and check for the existence
+ 		 * of byte 1 bit 3 UNMAP instead of original reserved field
+ 		 */
+-		if (sbc_write_same_supported(dev, &cdb[1]) < 0)
+-			return TCM_UNSUPPORTED_SCSI_OPCODE;
+-		cmd->execute_cmd = ops->execute_write_same;
++		ret = sbc_setup_write_same(cmd, &cdb[1], ops);
++		if (ret < 0)
++			return ret;
+ 		break;
+ 	case VERIFY:
+ 		size = 0;
+diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
+index aa86809..3393ab1 100644
+--- a/include/target/target_core_backend.h
++++ b/include/target/target_core_backend.h
+@@ -41,6 +41,7 @@ struct sbc_ops {
+ 	sense_reason_t (*execute_rw)(struct se_cmd *cmd);
+ 	sense_reason_t (*execute_sync_cache)(struct se_cmd *cmd);
+ 	sense_reason_t (*execute_write_same)(struct se_cmd *cmd);
++	sense_reason_t (*execute_write_same_unmap)(struct se_cmd *cmd);
+ 	sense_reason_t (*execute_unmap)(struct se_cmd *cmd);
  };
  
 -- 
