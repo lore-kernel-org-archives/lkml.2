@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992776Ab2KOEKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:10:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48586 "EHLO mail.kernel.org"
+	id S2992856Ab2KOEoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:44:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992667Ab2KOEKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:38 -0500
+	id S2992778Ab2KOEKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Zijie Pan <zijie.pan@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/38] ipv6: send unsolicited neighbour advertisements to all-nodes
-Date: Wed, 14 Nov 2012 20:10:28 -0800
-Message-Id: <20121115040934.804057690@linuxfoundation.org>
+Subject: [ 24/38] sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
+Date: Wed, 14 Nov 2012 20:10:21 -0800
+Message-Id: <20121115040934.382898542@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -27,39 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Zijie Pan <zijie.pan@6wind.com>
 
-[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
+[ Upstream commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec ]
 
-As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
-unsolicited neighbour advertisements should be sent to the all-nodes
-multicast address.
+Bug introduced by commit edfee0339e681a784ebacec7e8c2dc97dc6d2839
+(sctp: check src addr when processing SACK to update transport state)
 
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Zijie Pan <zijie.pan@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ndisc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/sctp/sm_sideeffect.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -615,7 +615,7 @@ static void ndisc_send_unsol_na(struct n
- {
- 	struct inet6_dev *idev;
- 	struct inet6_ifaddr *ifa;
--	struct in6_addr mcaddr;
-+	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -1604,8 +1604,9 @@ static int sctp_cmd_interpreter(sctp_eve
+ 					asoc->outqueue.outstanding_bytes;
+ 			sackh.num_gap_ack_blocks = 0;
+ 			sackh.num_dup_tsns = 0;
++			chunk->subh.sack_hdr = &sackh;
+ 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
+-					SCTP_SACKH(&sackh));
++					SCTP_CHUNK(chunk));
+ 			break;
  
- 	idev = in6_dev_get(dev);
- 	if (!idev)
-@@ -623,7 +623,6 @@ static void ndisc_send_unsol_na(struct n
- 
- 	read_lock_bh(&idev->lock);
- 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
--		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
- 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
- 			      /*router=*/ !!idev->cnf.forwarding,
- 			      /*solicited=*/ false, /*override=*/ true,
+ 		case SCTP_CMD_DISCARD_PACKET:
 
 
