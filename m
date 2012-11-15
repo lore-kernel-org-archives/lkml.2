@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768884Ab2KOT1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 14:27:04 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20154 "EHLO mga02.intel.com"
+	id S1768874Ab2KOT1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 14:27:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:65277 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768832Ab2KOT0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 14:26:04 -0500
+	id S1768809Ab2KOT0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 14:26:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="220239078"
+   d="scan'208";a="242837203"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
@@ -17,9 +17,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         David Rientjes <rientjes@google.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v6 10/12] thp: implement refcounting for huge zero page
-Date: Thu, 15 Nov 2012 21:27:00 +0200
-Message-Id: <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v6 08/12] thp: setup huge zero page on non-write page fault
+Date: Thu, 15 Nov 2012 21:26:58 +0200
+Message-Id: <1353007622-18393-9-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -29,244 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-after the first allocation. Here's implementation of lockless refcounting
-for huge zero page.
+All code paths seems covered. Now we can map huge zero page on read page
+fault.
 
-We have two basic primitives: {get,put}_huge_zero_page(). They
-manipulate reference counter.
+We setup it in do_huge_pmd_anonymous_page() if area around fault address
+is suitable for THP and we've got read page fault.
 
-If counter is 0, get_huge_zero_page() allocates a new huge page and
-takes two references: one for caller and one for shrinker. We free the
-page only in shrinker callback if counter is 1 (only shrinker has the
-reference).
-
-put_huge_zero_page() only decrements counter. Counter is never zero
-in put_huge_zero_page() since shrinker holds on reference.
-
-Freeing huge zero page in shrinker callback helps to avoid frequent
-allocate-free.
-
-Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
-parallel (40 processes) read page faulting comparing to lazy huge page
-allocation.  I think it's pretty reasonable for synthetic benchmark.
+If we fail to setup huge zero page (ENOMEM) we fallback to
+handle_pte_fault() as we normally do in THP.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c | 112 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 87 insertions(+), 25 deletions(-)
+ mm/huge_memory.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index bad9c8f..923ea75 100644
+index 015a13a..ca3f6f2 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -18,6 +18,7 @@
- #include <linux/freezer.h>
- #include <linux/mman.h>
- #include <linux/pagemap.h>
-+#include <linux/shrinker.h>
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
- #include "internal.h"
-@@ -47,7 +48,6 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
- /* during fragmentation poll the hugepage allocator once every minute */
- static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
- static struct task_struct *khugepaged_thread __read_mostly;
--static unsigned long huge_zero_pfn __read_mostly;
- static DEFINE_MUTEX(khugepaged_mutex);
- static DEFINE_SPINLOCK(khugepaged_mm_lock);
- static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
-@@ -160,31 +160,74 @@ static int start_khugepaged(void)
- 	return err;
- }
- 
--static int init_huge_zero_pfn(void)
-+static atomic_t huge_zero_refcount;
-+static unsigned long huge_zero_pfn __read_mostly;
-+
-+static inline bool is_huge_zero_pfn(unsigned long pfn)
- {
--	struct page *hpage;
--	unsigned long pfn;
-+	unsigned long zero_pfn = ACCESS_ONCE(huge_zero_pfn);
-+	return zero_pfn && pfn == zero_pfn;
-+}
-+
-+static inline bool is_huge_zero_pmd(pmd_t pmd)
-+{
-+	return is_huge_zero_pfn(pmd_pfn(pmd));
-+}
-+
-+static unsigned long get_huge_zero_page(void)
-+{
-+	struct page *zero_page;
-+retry:
-+	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
-+		return ACCESS_ONCE(huge_zero_pfn);
- 
--	hpage = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
-+	zero_page = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
- 			HPAGE_PMD_ORDER);
--	if (!hpage)
--		return -ENOMEM;
--	pfn = page_to_pfn(hpage);
--	if (cmpxchg(&huge_zero_pfn, 0, pfn))
--		__free_page(hpage);
--	return 0;
-+	if (!zero_page)
-+		return 0;
-+	preempt_disable();
-+	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-+		preempt_enable();
-+		__free_page(zero_page);
-+		goto retry;
-+	}
-+
-+	/* We take additional reference here. It will be put back by shrinker */
-+	atomic_set(&huge_zero_refcount, 2);
-+	preempt_enable();
-+	return ACCESS_ONCE(huge_zero_pfn);
- }
- 
--static inline bool is_huge_zero_pfn(unsigned long pfn)
-+static void put_huge_zero_page(void)
- {
--	return huge_zero_pfn && pfn == huge_zero_pfn;
-+	/*
-+	 * Counter should never go to zero here. Only shrinker can put
-+	 * last reference.
-+	 */
-+	BUG_ON(atomic_dec_and_test(&huge_zero_refcount));
- }
- 
--static inline bool is_huge_zero_pmd(pmd_t pmd)
-+static int shrink_huge_zero_page(struct shrinker *shrink,
-+		struct shrink_control *sc)
- {
--	return is_huge_zero_pfn(pmd_pfn(pmd));
-+	if (!sc->nr_to_scan)
-+		/* we can free zero page only if last reference remains */
-+		return atomic_read(&huge_zero_refcount) == 1 ? HPAGE_PMD_NR : 0;
-+
-+	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
-+		unsigned long zero_pfn = xchg(&huge_zero_pfn, 0);
-+		BUG_ON(zero_pfn == 0);
-+		__free_page(__pfn_to_page(zero_pfn));
-+	}
-+
-+	return 0;
- }
- 
-+static struct shrinker huge_zero_page_shrinker = {
-+	.shrink = shrink_huge_zero_page,
-+	.seeks = DEFAULT_SEEKS,
-+};
-+
- #ifdef CONFIG_SYSFS
- 
- static ssize_t double_flag_show(struct kobject *kobj,
-@@ -576,6 +619,8 @@ static int __init hugepage_init(void)
- 		goto out;
- 	}
- 
-+	register_shrinker(&huge_zero_page_shrinker);
-+
- 	/*
- 	 * By default disable transparent hugepages on smaller systems,
- 	 * where the extra memory used could hurt more than TLB overhead
-@@ -698,10 +743,11 @@ static inline struct page *alloc_hugepage(int defrag)
- #endif
- 
- static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
--		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
-+		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
-+		unsigned long zero_pfn)
- {
- 	pmd_t entry;
--	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
-+	entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
- 	entry = pmd_wrprotect(entry);
- 	entry = pmd_mkhuge(entry);
- 	set_pmd_at(mm, haddr, pmd, entry);
-@@ -724,15 +770,19 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -726,6 +726,16 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
  			return VM_FAULT_OOM;
- 		if (!(flags & FAULT_FLAG_WRITE)) {
- 			pgtable_t pgtable;
--			if (unlikely(!huge_zero_pfn && init_huge_zero_pfn())) {
--				count_vm_event(THP_FAULT_FALLBACK);
--				goto out;
--			}
-+			unsigned long zero_pfn;
- 			pgtable = pte_alloc_one(mm, haddr);
- 			if (unlikely(!pgtable))
- 				goto out;
-+			zero_pfn = get_huge_zero_page();
-+			if (unlikely(!zero_pfn)) {
-+				pte_free(mm, pgtable);
-+				count_vm_event(THP_FAULT_FALLBACK);
+ 		if (unlikely(khugepaged_enter(vma)))
+ 			return VM_FAULT_OOM;
++		if (!(flags & FAULT_FLAG_WRITE)) {
++			pgtable_t pgtable;
++			pgtable = pte_alloc_one(mm, haddr);
++			if (unlikely(!pgtable))
 +				goto out;
-+			}
- 			spin_lock(&mm->page_table_lock);
--			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
-+			set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-+					zero_pfn);
- 			spin_unlock(&mm->page_table_lock);
- 			return 0;
- 		}
-@@ -806,7 +856,15 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	 * a page table.
- 	 */
- 	if (is_huge_zero_pmd(pmd)) {
--		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
-+		unsigned long zero_pfn;
-+		/*
-+		 * get_huge_zero_page() will never allocate a new page here,
-+		 * since we already have a zero page to copy. It just takes a
-+		 * reference.
-+		 */
-+		zero_pfn = get_huge_zero_page();
-+		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
-+				zero_pfn);
- 		ret = 0;
- 		goto out_unlock;
- 	}
-@@ -894,6 +952,7 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
- 	smp_wmb(); /* make pte visible before pmd */
- 	pmd_populate(mm, pmd, pgtable);
- 	spin_unlock(&mm->page_table_lock);
-+	put_huge_zero_page();
- 
- 	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
- 
-@@ -1095,9 +1154,10 @@ alloc:
- 		page_add_new_anon_rmap(new_page, vma, haddr);
- 		set_pmd_at(mm, haddr, pmd, entry);
- 		update_mmu_cache_pmd(vma, address, pmd);
--		if (is_huge_zero_pmd(orig_pmd))
-+		if (is_huge_zero_pmd(orig_pmd)) {
- 			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
--		else {
-+			put_huge_zero_page();
-+		} else {
- 			VM_BUG_ON(!PageHead(page));
- 			page_remove_rmap(page);
- 			put_page(page);
-@@ -1174,6 +1234,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		if (is_huge_zero_pmd(orig_pmd)) {
- 			tlb->mm->nr_ptes--;
- 			spin_unlock(&tlb->mm->page_table_lock);
-+			put_huge_zero_page();
- 		} else {
- 			page = pmd_page(orig_pmd);
- 			page_remove_rmap(page);
-@@ -2531,6 +2592,7 @@ static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
- 	}
- 	smp_wmb(); /* make pte visible before pmd */
- 	pmd_populate(mm, pmd, pgtable);
-+	put_huge_zero_page();
- }
- 
- void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
++			spin_lock(&mm->page_table_lock);
++			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
++			spin_unlock(&mm->page_table_lock);
++			return 0;
++		}
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+ 		if (unlikely(!page)) {
 -- 
 1.7.11.7
 
