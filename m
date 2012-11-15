@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751097Ab2KOV2C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:28:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33771 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab2KOV2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:28:01 -0500
-Date: Thu, 15 Nov 2012 21:27:54 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Larry Woodman <lwoodman@redhat.com>
-Subject: Re: Benchmark results: "Enhanced NUMA scheduling with adaptive
- affinity"
-Message-ID: <20121115212754.GW8218@suse.de>
-References: <20121112160451.189715188@chello.nl>
- <20121112184833.GA17503@gmail.com>
- <20121115100805.GS8218@suse.de>
- <50A53A00.5060904@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50A53A00.5060904@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751295Ab2KOV23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:28:29 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:54511 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2KOV22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 16:28:28 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Dave Airlie <airlied@redhat.com>
+Cc: Rob Clark <rob@ti.com>, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] NVIDIA Tegra DRM driver
+Date: Thu, 15 Nov 2012 22:28:21 +0100
+Message-Id: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.0
+X-Provags-ID: V02:K0:NsRXl4zkgdiACBkYVL+O/rggBOamo19TV44TojyVVGo
+ 5sHaG9Fr/OXrNh0PuPjEB36BGkIaj+tJ0GaNn2CqbcWThKsLOJ
+ oBIJYrhV7HiC5VcUaSOCvuc58LqmeJAxKolRgKQB6ZD5uLMfu9
+ rV78ipBvScEMMhdeDaBdUB9XUHYExxQxzrJMWdW4K1RyWrrMib
+ aNLTej6pXDVBluW4gskoXmKPthtEtPch1vizbCu2IWt7hqGbTu
+ 9uNgPsK9Rv3YVFGjpRc3sWJFZBp81xxMc/RxkLXmIK/yci5J1v
+ Antmak4+nXcBMCWBRKGceSgojUrvlV8TMde7ZnC6fS863usuhG
+ vOnG2/rkDQ5mv4+fxgL3nW/LTimQo7vwuFr5dvWY4sOIJTZ1Yt
+ 5SneBUaVlZ+Yl3n22VfcVIyK4KoCzqPos/W0Q6zheUxj4oejAS
+ EKM+x
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 01:52:48PM -0500, Rik van Riel wrote:
-> On 11/15/2012 05:08 AM, Mel Gorman wrote:
-> >On Mon, Nov 12, 2012 at 07:48:33PM +0100, Ingo Molnar wrote:
-> >>Here are some preliminary performance figures, comparing the
-> >>vanilla kernel against the CONFIG_SCHED_NUMA=y kernel.
-> >>
-> >>Java SPEC benchmark, running on a 4 node, 64 GB, 32-way server
-> >>system (higher numbers are better):
-> >
-> >Ok, I used a 4-node, 64G, 48-way server system. We have different CPUs
-> >but the same number of nodes. In case it makes a difference each of my
-> >machines nodes are the same size.
-> 
-> Mel, do you have info on exactly what model system you
-> were running these tests on?
-> 
+This third version of the patch series cleans up some minor issues that
+were found in the previous versions, such as deferred probe not working
+properly and the display remaining enabled after the driver is removed.
 
-Dell PowerEdge R810
-CPU Intel(R) Xeon(R) CPU E7- 4807 @ 1.87GHz
-RAM 64G
-Single disk
+I've also put the two patches in this series into the tegra/drm/for-3.8
+branch of my repository on gitorious[0].
 
-4 JVMs, one per node
-SpecJBB configured to run in multi JVM configuration
-No special binding
-JVM switches -Xmx12882m
+Thierry
 
-All run through an unreleased version of MMTests. I'll make a release of
-mmtests either tomorrow or Monday when I get the chance.
+[0]: git://gitorious.org/thierryreding/linux.git
 
-> Obviously your results are very different from the ones
-> that Ingo saw. It would be most helpful if we could find
-> a similar system in one of the Red Hat labs, so Ingo can
-> play around with it and see what's going on :)
-> 
+Thierry Reding (2):
+  drm: Add NVIDIA Tegra20 support
+  drm: tegra: Add HDMI support
 
-Also compare how the benchmark is actually configured and which figures
-he's reporting. I'm posting up the throughput for each warehouse and the
-peak throughput.
-
-It is possible Ingo's figures are based on other patches in the tip tree
-that have not been identified. If that's the case it's interesting in
-itself.
+ .../bindings/gpu/nvidia,tegra20-host1x.txt         |  191 +++
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/tegra/Kconfig                      |   23 +
+ drivers/gpu/drm/tegra/Makefile                     |    7 +
+ drivers/gpu/drm/tegra/dc.c                         |  833 ++++++++++++
+ drivers/gpu/drm/tegra/dc.h                         |  388 ++++++
+ drivers/gpu/drm/tegra/drm.c                        |  115 ++
+ drivers/gpu/drm/tegra/drm.h                        |  234 ++++
+ drivers/gpu/drm/tegra/fb.c                         |   56 +
+ drivers/gpu/drm/tegra/hdmi.c                       | 1334 ++++++++++++++++++++
+ drivers/gpu/drm/tegra/hdmi.h                       |  575 +++++++++
+ drivers/gpu/drm/tegra/host1x.c                     |  322 +++++
+ drivers/gpu/drm/tegra/output.c                     |  272 ++++
+ drivers/gpu/drm/tegra/rgb.c                        |  228 ++++
+ 15 files changed, 4581 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpu/nvidia,tegra20-host1x.txt
+ create mode 100644 drivers/gpu/drm/tegra/Kconfig
+ create mode 100644 drivers/gpu/drm/tegra/Makefile
+ create mode 100644 drivers/gpu/drm/tegra/dc.c
+ create mode 100644 drivers/gpu/drm/tegra/dc.h
+ create mode 100644 drivers/gpu/drm/tegra/drm.c
+ create mode 100644 drivers/gpu/drm/tegra/drm.h
+ create mode 100644 drivers/gpu/drm/tegra/fb.c
+ create mode 100644 drivers/gpu/drm/tegra/hdmi.c
+ create mode 100644 drivers/gpu/drm/tegra/hdmi.h
+ create mode 100644 drivers/gpu/drm/tegra/host1x.c
+ create mode 100644 drivers/gpu/drm/tegra/output.c
+ create mode 100644 drivers/gpu/drm/tegra/rgb.c
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.0
+
