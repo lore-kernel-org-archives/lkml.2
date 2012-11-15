@@ -1,50 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab2KOV5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:57:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35704 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab2KOV5s convert rfc822-to-8bit (ORCPT
+	id S1750988Ab2KOWB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:01:27 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63419 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2KOWBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:57:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <50A55CFE.3030107@cs.tu-berlin.de>
-References: <1352848389-23114-1-git-send-email-schnhrr@cs.tu-berlin.de>
- <1352995520.26800.2.camel@rig.fritz.box> <50A55CFE.3030107@cs.tu-berlin.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 15 Nov 2012 22:57:26 +0100
-Message-ID: <CAPXgP12k25=BZ7=9xdxWDratzh7T+1=jOKBOAmqEZbgiTxZGYA@mail.gmail.com>
-Subject: Re: [PATCH 00/12] printk() fixes, optimizations, and clean ups
-To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Nov 2012 17:01:25 -0500
+From: Rob Clark <rob.clark@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Rob Clark <rob@ti.com>
+Subject: [PATCH] ARM: add get_user() support for 8 byte types
+Date: Thu, 15 Nov 2012 16:01:19 -0600
+Message-Id: <1353016879-15007-1-git-send-email-rob.clark@linaro.org>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 10:22 PM, "Jan H. Schönherr"
-<schnhrr@cs.tu-berlin.de> wrote:
-> Am 15.11.2012 17:05, schrieb Kay Sievers:
->> This with all your patches applied:
->> [    1.032804] input: ImExPS/2 Generic Explorer Mouse as /devices/platform/i8042/serio1/input/input2
->> [    1.063915] List of all partitions:
->> [    1.065521] 0800       117220824 sda  driver: sd
->> [    1.067444]   0801         1048576 sda1 1fcbc57f-4bfc-4c2b-91a3-9c84fbcd9af1  0802        30720000 sda2 084917b7-8be2-4e86-838d-f771a9902e08  0803        15360000 sda3 180053b6-6697-4f4c-b331-4925773197ff  0804        54730752 sda4 b67dfc6e-d06f-4b11-bd52-96c09163aca9  0805        15360000 sda5 6d0d537c-3107-4057-a57b-5379a0cd8e31No filesystem could mount root, tried:  btrfs
->> [    1.077120] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,1)
->>
->> Something seems broken in the patches regarding the console or newline logic.
->
-> (Just to mention it: I did do quite some testing, but this case must have
-> escaped me.)
+From: Rob Clark <rob@ti.com>
 
-Yeah, don't tell me, it was not really fun to discover all the weird
-edges here because nobody wants to have rules. :)
+A new atomic modeset/pageflip ioctl being developed in DRM requires
+get_user() to work for 64bit types (in addition to just put_user()).
 
-> Please, try the patch below on top of everything. If this works, I'll prepare
-> a -v2 where everything is sorted into the correct patches.
+v1: original
+v2: pass correct size to check_uaccess, and better handling of narrowing
+    double word read with __get_user_xb() (Russell King's suggestion)
+v3: explain in comment about why this works for narrowing fetch to 1,
+    2, or 4 byte type on ARM.
 
-Looks all fine now.
+Signed-off-by: Rob Clark <rob@ti.com>
+---
+ arch/arm/include/asm/uaccess.h | 22 +++++++++++++++++++++-
+ arch/arm/lib/getuser.S         | 17 ++++++++++++++++-
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-Kay
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 7e1f760..4cfa793 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -100,6 +100,7 @@ static inline void set_fs(mm_segment_t fs)
+ extern int __get_user_1(void *);
+ extern int __get_user_2(void *);
+ extern int __get_user_4(void *);
++extern int __get_user_8(void *);
+ 
+ #define __GUP_CLOBBER_1	"lr", "cc"
+ #ifdef CONFIG_CPU_USE_DOMAINS
+@@ -108,6 +109,7 @@ extern int __get_user_4(void *);
+ #define __GUP_CLOBBER_2 "lr", "cc"
+ #endif
+ #define __GUP_CLOBBER_4	"lr", "cc"
++#define __GUP_CLOBBER_8	"lr", "cc"
+ 
+ #define __get_user_x(__r2,__p,__e,__l,__s)				\
+ 	   __asm__ __volatile__ (					\
+@@ -118,11 +120,23 @@ extern int __get_user_4(void *);
+ 		: "0" (__p), "r" (__l)					\
+ 		: __GUP_CLOBBER_##__s)
+ 
++/*
++ * Narrowing a double-word get into a single 32bit word register, which works
++ * for 1, 2, or 4 byte types on ARM because there are no integer registers
++ * smaller than 32bit
++ */
++#ifdef BIG_ENDIAN
++#define __get_user_xb(__r2,__p,__e,__l,__s)				\
++	__get_user_x(__r2,(uintptr_t)__p + 4,__e,__l,__s)
++#else
++#define __get_user_xb __get_user_x
++#endif
++
+ #define __get_user_check(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
+ 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
+-		register unsigned long __r2 asm("r2");			\
++		register typeof(x) __r2 asm("r2");			\
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
+@@ -135,6 +149,12 @@ extern int __get_user_4(void *);
+ 		case 4:							\
+ 			__get_user_x(__r2, __p, __e, __l, 4);		\
+ 			break;						\
++		case 8:							\
++			if (sizeof((x)) < 8)				\
++				__get_user_xb(__r2, __p, __e, __l, 4);	\
++			else						\
++				__get_user_x(__r2, __p, __e, __l, 8);	\
++			break;						\
+ 		default: __e = __get_user_bad(); break;			\
+ 		}							\
+ 		x = (typeof(*(p))) __r2;				\
+diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
+index 9b06bb4..ed98707 100644
+--- a/arch/arm/lib/getuser.S
++++ b/arch/arm/lib/getuser.S
+@@ -18,7 +18,7 @@
+  * Inputs:	r0 contains the address
+  *		r1 contains the address limit, which must be preserved
+  * Outputs:	r0 is the error code
+- *		r2 contains the zero-extended value
++ *		r2, r3 contains the zero-extended value
+  *		lr corrupted
+  *
+  * No other registers must be altered.  (see <asm/uaccess.h>
+@@ -66,6 +66,19 @@ ENTRY(__get_user_4)
+ 	mov	pc, lr
+ ENDPROC(__get_user_4)
+ 
++ENTRY(__get_user_8)
++	check_uaccess r0, 8, r1, r2, __get_user_bad
++#ifdef CONFIG_THUMB2_KERNEL
++5: TUSER(ldr)	r2, [r0]
++6: TUSER(ldr)	r3, [r0, #4]
++#else
++5: TUSER(ldr)	r2, [r0], #4
++6: TUSER(ldr)	r3, [r0]
++#endif
++	mov	r0, #0
++	mov	pc, lr
++ENDPROC(__get_user_8)
++
+ __get_user_bad:
+ 	mov	r2, #0
+ 	mov	r0, #-EFAULT
+@@ -77,4 +90,6 @@ ENDPROC(__get_user_bad)
+ 	.long	2b, __get_user_bad
+ 	.long	3b, __get_user_bad
+ 	.long	4b, __get_user_bad
++	.long	5b, __get_user_bad
++	.long	6b, __get_user_bad
+ .popsection
+-- 
+1.8.0
+
