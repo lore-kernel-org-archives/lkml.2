@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767621Ab2KOLpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:45:13 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:50680 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993197Ab2KOLpK (ORCPT
+	id S1767642Ab2KOLr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:47:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58966 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993197Ab2KOLrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:45:10 -0500
-Message-ID: <50A4D5BB.6010301@ahsoftware.de>
-Date: Thu, 15 Nov 2012 12:44:59 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 15 Nov 2012 06:47:25 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mmc: Standardise capability type
+Date: Thu, 15 Nov 2012 11:47:14 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+References: <1352896551-17948-1-git-send-email-lee.jones@linaro.org> <CACRpkdZ+V1aiQ-c62v9jdv93wMGu9hrSnXj_a9jx3uOTbot44A@mail.gmail.com>
+In-Reply-To: <CACRpkdZ+V1aiQ-c62v9jdv93wMGu9hrSnXj_a9jx3uOTbot44A@mail.gmail.com>
 MIME-Version: 1.0
-To: Till Harbaum <till@harbaum.org>
-CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
- for bus-drivers.
-References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de> <1352920954.19432.2.camel@Nokia-N900> <50A42A91.2000202@ahsoftware.de> <1639554.ZUOmHr6Yka@lxtiha>
-In-Reply-To: <1639554.ZUOmHr6Yka@lxtiha>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201211151147.14858.arnd@arndb.de>
+X-Provags-ID: V02:K0:A37YLo/PaxnWphlfF/UsP/pXnfIiUol4RjIBGsARxIP
+ 8xZvfytohzVPCnKwHfflK2zYbu4N3rTGtw2F8R7bSOp/HWIxVq
+ 0IIhTX90PfjbMhcKXQ52EPeYh7h0RfCQlvVhz/o42pPERlxtVF
+ 2tJTgGYSHBGyD5pLBjFzQY4NhQlY4296zfYeJhM07BTAJoyh3C
+ CytXRRFmKUTs3yZ0AAc4E2gPyciO9C5MOXame7+852zSJqQeUB
+ mFn0vSXsihu+lPmrkRaSILHQIypl1zNEk+kFmIx+Q74YdkhBYh
+ j+BLBCKqXUWbwwNxkXMXe8cS/kgl7FaLbE7rMCou8bq2EXE4LZ
+ ZNbNkwyLyVABAwnp7NZ8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thursday 15 November 2012, Linus Walleij wrote:
+> 
+> On Wed, Nov 14, 2012 at 1:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > There are discrepancies with regards to how MMC capabilities
+> > are carried throughout the subsystem. Let's standardise them
+> > to elevate any confusion.
+> >
+> > Cc: Chris Ball <cjb@laptop.org>
+> > Cc: linux-mmc@vger.kernel.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Looks good to me, and these are obviously
+> u32 bitfields by design, so:
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-Am 15.11.2012 12:04, schrieb Till Harbaum:
-
-> There's actually one thing you can do: You device doesn't seem to expose
-> the i2c bus, anyway. What you have is an rtc connected via usb. So why not
-> move all the i2c intelligence into the device? Do pure usb-rtc's exist?
-> Could you perhaps even make your device compatible to one of these?
-> Then a driver for this would imho have good chances to find their way into
-> the kernel.
-
-Sorry, but I'm satisfied with what I've done and I didn't do it just to 
-get "something" into the kernel. I don't need my patches to become part 
-of in the kernel, I can handle them by myself. And my free resources to 
-submit patches just became exhausted (again). Maybe in some weeks or 
-month ..., I don't know.
-
-Regards,
-
-Alexander
+Acked-by: Arnd Bergmann <arnd@arndb.de>
