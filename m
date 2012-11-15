@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767609Ab2KOERl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:17:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50030 "EHLO mail.kernel.org"
+	id S1767618Ab2KOERz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:17:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50020 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993367Ab2KOENF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S2993363Ab2KOENF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 23:13:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tom Parkin <tparkin@katalix.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Roland Stigge <stigge@antcom.de>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 44/57] l2tp: fix oops in l2tp_eth_create() error path
-Date: Wed, 14 Nov 2012 20:11:52 -0800
-Message-Id: <20121115040935.889897252@linuxfoundation.org>
+Subject: [ 43/57] drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister before mdiobus_free
+Date: Wed, 14 Nov 2012 20:11:51 -0800
+Message-Id: <20121115040935.833304768@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -27,35 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Tom Parkin <tparkin@katalix.com>
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-[ Upstream commit 789336360e0a2aeb9750c16ab704a02cbe035e9e ]
+[ Upstream commit 57c10b61c84bfed68b1b317d6f507a392724b9c4 ]
 
-When creating an L2TPv3 Ethernet session, if register_netdev() should fail for
-any reason (for example, automatic naming for "l2tpeth%d" interfaces hits the
-32k-interface limit), the netdev is freed in the error path.  However, the
-l2tp_eth_sess structure's dev pointer is left uncleared, and this results in
-l2tp_eth_delete() then attempting to unregister the same netdev later in the
-session teardown.  This results in an oops.
+Based on commit b27393aecf66199f5ddad37c302d3e0cfadbe6c0
 
-To avoid this, clear the session dev pointer in the error path.
+Calling mdiobus_free without calling mdiobus_unregister causes
+BUG_ON(). This patch fixes the issue.
 
-Signed-off-by: Tom Parkin <tparkin@katalix.com>
+The semantic patch that found this issue(http://coccinelle.lip6.fr/):
+// <smpl>
+@@
+expression E;
+@@
+  ... when != mdiobus_unregister(E);
+
++ mdiobus_unregister(E);
+  mdiobus_free(E);
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Tested-by: Roland Stigge <stigge@antcom.de>
+Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_eth.c |    1 +
+ drivers/net/ethernet/nxp/lpc_eth.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/net/l2tp/l2tp_eth.c
-+++ b/net/l2tp/l2tp_eth.c
-@@ -269,6 +269,7 @@ static int l2tp_eth_create(struct net *n
- 
- out_del_dev:
- 	free_netdev(dev);
-+	spriv->dev = NULL;
- out_del_session:
- 	l2tp_session_delete(session);
- out:
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1523,6 +1523,7 @@ static int lpc_eth_drv_remove(struct pla
+ 				  pldat->dma_buff_base_p);
+ 	free_irq(ndev->irq, ndev);
+ 	iounmap(pldat->net_base);
++	mdiobus_unregister(pldat->mii_bus);
+ 	mdiobus_free(pldat->mii_bus);
+ 	clk_disable(pldat->clk);
+ 	clk_put(pldat->clk);
 
 
