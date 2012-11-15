@@ -1,269 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768807Ab2KOTZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 14:25:59 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65277 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423673Ab2KOTZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 14:25:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="242837186"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v6 00/12] Introduce huge zero page
-Date: Thu, 15 Nov 2012 21:26:50 +0200
-Message-Id: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1768866Ab2KOT2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 14:28:23 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36034 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768796Ab2KOT2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 14:28:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQU3PM+2=Kt8XwAe6OuVMJUvRzimnfp3MEJgZi+EJMbXHw@mail.gmail.com>
+References: <20121112193044.GA11615@phenom.dumpdata.com>
+	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
+	<1352755122-25660-22-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1211131707380.28049@kaball.uk.xensource.com>
+	<CAE9FiQU1HGyw8ZLu8KdmR3ikyZ=YTG+8dUoDAVbO4Bc1hEPPgQ@mail.gmail.com>
+	<50A2A706.1090608@zytor.com>
+	<CAE9FiQU3PM+2=Kt8XwAe6OuVMJUvRzimnfp3MEJgZi+EJMbXHw@mail.gmail.com>
+Date: Thu, 15 Nov 2012 11:28:00 -0800
+X-Google-Sender-Auth: zvp8FSQcdrhlMoNMsoC8r59QBKI
+Message-ID: <CAE9FiQX=oRbqVCDyBALDoiQWHh=544r-PAcuwV075Ei3S8THwQ@mail.gmail.com>
+Subject: Re: [PATCH 21/46] x86, mm: setup page table in top-down
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Tue, Nov 13, 2012 at 12:36 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Nov 13, 2012 at 12:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 11/13/2012 11:59 AM, Yinghai Lu wrote:
+>>>>
+>>>> The changes to init_mem_mapping are a bit iffy but they aren't too
+>>>> unreasonable.
+>>>> Overall the patch is OK even though I would certainly appreciate more
+>>>> comments and better variable names (real_end?), see below.
+>>>
+>>> real_end is not good?
+>>>
+>>> xen put big reserved range between real_end and end.
+>>>
+>>> that real_end is some kind of end of real usable areas.
+>>>
+>>> so change to real_usable_end  or usable_end?
+>>>
+>>
+>> A description of a variable that includes the words "some kind of"
+>> clearly indicates major confusion.  We need to know what the semantics
+>> are, here.
+>
+> originally, we map range in this sequence:
+> 1. map [0, 1M],
+> 2. map 2M near max_pfn. and end is max_pfn<<PAGE_SHIFT
+> 3. use new mapped area, to map low range.
+> 4. change step size if more ram get mapped.
+> 5. goto 3, until reach 1M.
+>
+> now for xen, there is big chunk range under max_pfn and they are reserved
+> in memblock.reserved.
+> so even we map them, we still can not use them for page table.
+>
+> so 2 become:
+> 2a. find real_end under max_pfn that we can use it for page table
+> 2b, map [real_end - 2M, real_end)
+>
+> and need to add
+> 6. map [real_end, max_pfn<<PAGE_SHIFT)
 
-During testing I noticed big (up to 2.5 times) memory consumption overhead
-on some workloads (e.g. ft.A from NPB) if THP is enabled.
+hi, peter,
 
-The main reason for that big difference is lacking zero page in THP case.
-We have to allocate a real page on read page fault.
+I updated for-x86-mm branch at
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
 
-A program to demonstrate the issue:
-#include <assert.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#define MB 1024*1024
-
-int main(int argc, char **argv)
-{
-        char *p;
-        int i;
-
-        posix_memalign((void **)&p, 2 * MB, 200 * MB);
-        for (i = 0; i < 200 * MB; i+= 4096)
-                assert(p[i] == 0);
-        pause();
-        return 0;
-}
-
-With thp-never RSS is about 400k, but with thp-always it's 200M.
-After the patcheset thp-always RSS is 400k too.
-
-Design overview.
-
-Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled with
-zeros.  The way how we allocate it changes in the patchset:
-
-- [01/10] simplest way: hzp allocated on boot time in hugepage_init();
-- [09/10] lazy allocation on first use;
-- [10/10] lockless refcounting + shrinker-reclaimable hzp;
-
-We setup it in do_huge_pmd_anonymous_page() if area around fault address
-is suitable for THP and we've got read page fault.
-If we fail to setup hzp (ENOMEM) we fallback to handle_pte_fault() as we
-normally do in THP.
-
-On wp fault to hzp we allocate real memory for the huge page and clear it.
-If ENOMEM, graceful fallback: we create a new pmd table and set pte around
-fault address to newly allocated normal (4k) page. All other ptes in the
-pmd set to normal zero page.
-
-We cannot split hzp (and it's bug if we try), but we can split the pmd
-which points to it. On splitting the pmd we create a table with all ptes
-set to normal zero page.
-
-Patchset organized in bisect-friendly way:
- Patches 01-07: prepare all code paths for hzp
- Patch 08: all code paths are covered: safe to setup hzp
- Patch 09: lazy allocation
- Patch 10: lockless refcounting for hzp
- Patch 11: vmstat events for hzp allocation
- Patch 12: sysfs knob to disable hzp
-
-v6:
- - updates based on feedback from David Rientjes;
- - sysfs knob to disable hzp;
-v5:
- - implement HZP_ALLOC and HZP_ALLOC_FAILED events;
-v4:
- - Rebase to v3.7-rc1;
- - Update commit message;
-v3:
- - fix potential deadlock in refcounting code on preemptive kernel.
- - do not mark huge zero page as movable.
- - fix typo in comment.
- - Reviewed-by tag from Andrea Arcangeli.
-v2:
- - Avoid find_vma() if we've already had vma on stack.
-   Suggested by Andrea Arcangeli.
- - Implement refcounting for huge zero page.
-
---------------------------------------------------------------------------
-
-By hpa request I've tried alternative approach for hzp implementation (see
-Virtual huge zero page patchset): pmd table with all entries set to zero
-page. This way should be more cache friendly, but it increases TLB
-pressure.
-
-The problem with virtual huge zero page: it requires per-arch enabling.
-We need a way to mark that pmd table has all ptes set to zero page.
-
-Some numbers to compare two implementations (on 4s Westmere-EX):
-
-Mirobenchmark1
-==============
-
-test:
-        posix_memalign((void **)&p, 2 * MB, 8 * GB);
-        for (i = 0; i < 100; i++) {
-                assert(memcmp(p, p + 4*GB, 4*GB) == 0);
-                asm volatile ("": : :"memory");
-        }
-
-hzp:
- Performance counter stats for './test_memcmp' (5 runs):
-
-      32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-                40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
-                 0 CPU-migrations            #    0.000 K/sec
-             4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
-    76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
-    36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
-     1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
-   134,355,715,816 instructions              #    1.75  insns per cycle
-                                             #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
-    13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
-         1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
-
-      32.413866442 seconds time elapsed                                          ( +-  0.13% )
-
-vhzp:
- Performance counter stats for './test_memcmp' (5 runs):
-
-      30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-                38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
-                 0 CPU-migrations            #    0.000 K/sec
-             4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
-    71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
-    31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
-       773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
-   134,982,215,437 instructions              #    1.88  insns per cycle
-                                             #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
-    13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
-         1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
-
-      30.381324695 seconds time elapsed                                          ( +-  0.13% )
-
-Mirobenchmark2
-==============
-
-test:
-        posix_memalign((void **)&p, 2 * MB, 8 * GB);
-        for (i = 0; i < 1000; i++) {
-                char *_p = p;
-                while (_p < p+4*GB) {
-                        assert(*_p == *(_p+4*GB));
-                        _p += 4096;
-                        asm volatile ("": : :"memory");
-                }
-        }
-
-hzp:
- Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-
-       3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
-                 9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
-             4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
-     8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
-     5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
-     2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
-     9,494,670,537 instructions              #    1.14  insns per cycle
-                                             #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
-     2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
-           158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
-     3,168,102,115 L1-dcache-loads
-          #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
-     1,048,710,998 L1-dcache-misses
-         #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
-     1,047,699,685 LLC-load
-                 #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
-             2,287 LLC-misses
-               #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
-     3,166,187,367 dTLB-loads
-               #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
-         4,266,538 dTLB-misses
-              #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
-
-       3.513339813 seconds time elapsed                                          ( +-  0.26% )
-
-vhzp:
- Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-
-      27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
-                62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
-             4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
-    64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
-    61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
-    56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
-    10,033,724,846 instructions              #    0.15  insns per cycle
-                                             #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
-     2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
-         1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
-     3,302,006,540 L1-dcache-loads
-          #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
-       271,374,358 L1-dcache-misses
-         #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
-        20,385,476 LLC-load
-                 #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
-            76,754 LLC-misses
-               #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
-     3,309,927,290 dTLB-loads
-               #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
-     2,098,967,427 dTLB-misses
-              #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
-
-      27.364448741 seconds time elapsed                                          ( +-  0.24% )
-
---------------------------------------------------------------------------
-
-I personally prefer implementation present in this patchset. It doesn't
-touch arch-specific code.
-
-Kirill A. Shutemov (12):
-  thp: huge zero page: basic preparation
-  thp: zap_huge_pmd(): zap huge zero pmd
-  thp: copy_huge_pmd(): copy huge zero page
-  thp: do_huge_pmd_wp_page(): handle huge zero page
-  thp: change_huge_pmd(): keep huge zero page write-protected
-  thp: change split_huge_page_pmd() interface
-  thp: implement splitting pmd for huge zero page
-  thp: setup huge zero page on non-write page fault
-  thp: lazy huge zero page allocation
-  thp: implement refcounting for huge zero page
-  thp, vmstat: implement HZP_ALLOC and HZP_ALLOC_FAILED events
-  thp: introduce sysfs knob to disable huge zero page
-
- Documentation/vm/transhuge.txt |  19 ++-
- arch/x86/kernel/vm86_32.c      |   2 +-
- fs/proc/task_mmu.c             |   2 +-
- include/linux/huge_mm.h        |  18 ++-
- include/linux/mm.h             |   8 +
- include/linux/vm_event_item.h  |   2 +
- mm/huge_memory.c               | 339 +++++++++++++++++++++++++++++++++++++----
- mm/memory.c                    |  11 +-
- mm/mempolicy.c                 |   2 +-
- mm/mprotect.c                  |   2 +-
- mm/mremap.c                    |   2 +-
- mm/pagewalk.c                  |   2 +-
- mm/vmstat.c                    |   2 +
- 13 files changed, 364 insertions(+), 47 deletions(-)
-
--- 
-1.7.11.7
-
+with updated changlog and acked-by from Stefano for some patches.
