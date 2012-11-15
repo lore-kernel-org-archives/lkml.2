@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab2KOEfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:35:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49030 "EHLO mail.kernel.org"
+	id S933543Ab2KOEfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:35:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49061 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992978Ab2KOELY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:24 -0500
+	id S933356Ab2KOEL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Bryan Schumaker <bjschuma@netapp.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 29/66] NFSv4: nfs4_locku_done must release the sequence id
-Date: Wed, 14 Nov 2012 20:10:34 -0800
-Message-Id: <20121115040941.114631352@linuxfoundation.org>
+Subject: [ 31/66] NFS: Wait for session recovery to finish before returning
+Date: Wed, 14 Nov 2012 20:10:36 -0800
+Message-Id: <20121115040941.255779659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -25,29 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 2b1bc308f492589f7d49012ed24561534ea2be8c upstream.
+commit 399f11c3d872bd748e1575574de265a6304c7c43 upstream.
 
-If the state recovery machinery is triggered by the call to
-nfs4_async_handle_error() then we can deadlock.
+Currently, we will schedule session recovery and then return to the
+caller of nfs4_handle_exception.  This works for most cases, but causes
+a hang on the following test case:
 
+	Client				Server
+	------				------
+	Open file over NFS v4.1
+	Write to file
+					Expire client
+	Try to lock file
+
+The server will return NFS4ERR_BADSESSION, prompting the client to
+schedule recovery.  However, the client will continue placing lock
+attempts and the open recovery never seems to be scheduled.  The
+simplest solution is to wait for session recovery to run before retrying
+the lock.
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/nfs4proc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 --- a/fs/nfs/nfs4proc.c
 +++ b/fs/nfs/nfs4proc.c
-@@ -4390,6 +4390,7 @@ static void nfs4_locku_done(struct rpc_t
- 			if (nfs4_async_handle_error(task, calldata->server, NULL) == -EAGAIN)
- 				rpc_restart_call_prepare(task);
- 	}
-+	nfs_release_seqid(calldata->arg.seqid);
- }
- 
- static void nfs4_locku_prepare(struct rpc_task *task, void *data)
+@@ -331,8 +331,7 @@ static int nfs4_handle_exception(struct
+ 			dprintk("%s ERROR: %d Reset session\n", __func__,
+ 				errorcode);
+ 			nfs4_schedule_session_recovery(clp->cl_session, errorcode);
+-			exception->retry = 1;
+-			break;
++			goto wait_on_recovery;
+ #endif /* defined(CONFIG_NFS_V4_1) */
+ 		case -NFS4ERR_FILE_OPEN:
+ 			if (exception->timeout > HZ) {
 
 
