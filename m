@@ -1,82 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768866Ab2KOT2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 14:28:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36034 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768796Ab2KOT2B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 14:28:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU3PM+2=Kt8XwAe6OuVMJUvRzimnfp3MEJgZi+EJMbXHw@mail.gmail.com>
-References: <20121112193044.GA11615@phenom.dumpdata.com>
-	<1352755122-25660-1-git-send-email-yinghai@kernel.org>
-	<1352755122-25660-22-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1211131707380.28049@kaball.uk.xensource.com>
-	<CAE9FiQU1HGyw8ZLu8KdmR3ikyZ=YTG+8dUoDAVbO4Bc1hEPPgQ@mail.gmail.com>
-	<50A2A706.1090608@zytor.com>
-	<CAE9FiQU3PM+2=Kt8XwAe6OuVMJUvRzimnfp3MEJgZi+EJMbXHw@mail.gmail.com>
-Date: Thu, 15 Nov 2012 11:28:00 -0800
-X-Google-Sender-Auth: zvp8FSQcdrhlMoNMsoC8r59QBKI
-Message-ID: <CAE9FiQX=oRbqVCDyBALDoiQWHh=544r-PAcuwV075Ei3S8THwQ@mail.gmail.com>
-Subject: Re: [PATCH 21/46] x86, mm: setup page table in top-down
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1768841Ab2KOT2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 14:28:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5568 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1768776Ab2KOTZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 14:25:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
+   d="scan'208";a="168868136"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH v6 04/12] thp: do_huge_pmd_wp_page(): handle huge zero page
+Date: Thu, 15 Nov 2012 21:26:54 +0200
+Message-Id: <1353007622-18393-5-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 12:36 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Nov 13, 2012 at 12:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 11/13/2012 11:59 AM, Yinghai Lu wrote:
->>>>
->>>> The changes to init_mem_mapping are a bit iffy but they aren't too
->>>> unreasonable.
->>>> Overall the patch is OK even though I would certainly appreciate more
->>>> comments and better variable names (real_end?), see below.
->>>
->>> real_end is not good?
->>>
->>> xen put big reserved range between real_end and end.
->>>
->>> that real_end is some kind of end of real usable areas.
->>>
->>> so change to real_usable_end  or usable_end?
->>>
->>
->> A description of a variable that includes the words "some kind of"
->> clearly indicates major confusion.  We need to know what the semantics
->> are, here.
->
-> originally, we map range in this sequence:
-> 1. map [0, 1M],
-> 2. map 2M near max_pfn. and end is max_pfn<<PAGE_SHIFT
-> 3. use new mapped area, to map low range.
-> 4. change step size if more ram get mapped.
-> 5. goto 3, until reach 1M.
->
-> now for xen, there is big chunk range under max_pfn and they are reserved
-> in memblock.reserved.
-> so even we map them, we still can not use them for page table.
->
-> so 2 become:
-> 2a. find real_end under max_pfn that we can use it for page table
-> 2b, map [real_end - 2M, real_end)
->
-> and need to add
-> 6. map [real_end, max_pfn<<PAGE_SHIFT)
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-hi, peter,
+On write access to huge zero page we alloc a new huge page and clear it.
 
-I updated for-x86-mm branch at
-	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-mm
+If ENOMEM, graceful fallback: we create a new pmd table and set pte
+around fault address to newly allocated normal (4k) page. All other ptes
+in the pmd set to normal zero page.
 
-with updated changlog and acked-by from Stefano for some patches.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm.h |   8 ++++
+ mm/huge_memory.c   | 110 +++++++++++++++++++++++++++++++++++++++++++++--------
+ mm/memory.c        |   7 ----
+ 3 files changed, 103 insertions(+), 22 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index fa06804..fe329da 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -516,6 +516,14 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+ }
+ #endif
+ 
++#ifndef my_zero_pfn
++static inline unsigned long my_zero_pfn(unsigned long addr)
++{
++	extern unsigned long zero_pfn;
++	return zero_pfn;
++}
++#endif
++
+ /*
+  * Multiple processes may "see" the same page. E.g. for untouched
+  * mappings of /dev/null, all processes see the same page full of
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 183127c..f5589c0 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -829,6 +829,69 @@ out:
+ 	return ret;
+ }
+ 
++static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
++		struct vm_area_struct *vma, unsigned long address,
++		pmd_t *pmd, unsigned long haddr)
++{
++	pgtable_t pgtable;
++	pmd_t _pmd;
++	struct page *page;
++	int i, ret = 0;
++	unsigned long mmun_start;	/* For mmu_notifiers */
++	unsigned long mmun_end;		/* For mmu_notifiers */
++
++	page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
++	if (!page) {
++		ret |= VM_FAULT_OOM;
++		goto out;
++	}
++
++	if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
++		put_page(page);
++		ret |= VM_FAULT_OOM;
++		goto out;
++	}
++
++	clear_user_highpage(page, address);
++	__SetPageUptodate(page);
++
++	mmun_start = haddr;
++	mmun_end   = haddr + HPAGE_PMD_SIZE;
++	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
++
++	spin_lock(&mm->page_table_lock);
++	pmdp_clear_flush(vma, haddr, pmd);
++	/* leave pmd empty until pte is filled */
++
++	pgtable = pgtable_trans_huge_withdraw(mm);
++	pmd_populate(mm, &_pmd, pgtable);
++
++	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
++		pte_t *pte, entry;
++		if (haddr == (address & PAGE_MASK)) {
++			entry = mk_pte(page, vma->vm_page_prot);
++			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
++			page_add_new_anon_rmap(page, vma, haddr);
++		} else {
++			entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
++			entry = pte_mkspecial(entry);
++		}
++		pte = pte_offset_map(&_pmd, haddr);
++		VM_BUG_ON(!pte_none(*pte));
++		set_pte_at(mm, haddr, pte, entry);
++		pte_unmap(pte);
++	}
++	smp_wmb(); /* make pte visible before pmd */
++	pmd_populate(mm, pmd, pgtable);
++	spin_unlock(&mm->page_table_lock);
++
++	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
++
++	ret |= VM_FAULT_WRITE;
++out:
++	return ret;
++}
++
+ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+ 					unsigned long address,
+@@ -935,19 +998,21 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+ {
+ 	int ret = 0;
+-	struct page *page, *new_page;
++	struct page *page = NULL, *new_page;
+ 	unsigned long haddr;
+ 	unsigned long mmun_start;	/* For mmu_notifiers */
+ 	unsigned long mmun_end;		/* For mmu_notifiers */
+ 
+ 	VM_BUG_ON(!vma->anon_vma);
++	haddr = address & HPAGE_PMD_MASK;
++	if (is_huge_zero_pmd(orig_pmd))
++		goto alloc;
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, orig_pmd)))
+ 		goto out_unlock;
+ 
+ 	page = pmd_page(orig_pmd);
+ 	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+-	haddr = address & HPAGE_PMD_MASK;
+ 	if (page_mapcount(page) == 1) {
+ 		pmd_t entry;
+ 		entry = pmd_mkyoung(orig_pmd);
+@@ -959,7 +1024,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
+-
++alloc:
+ 	if (transparent_hugepage_enabled(vma) &&
+ 	    !transparent_hugepage_debug_cow())
+ 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+@@ -969,24 +1034,34 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	if (unlikely(!new_page)) {
+ 		count_vm_event(THP_FAULT_FALLBACK);
+-		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+-						   pmd, orig_pmd, page, haddr);
+-		if (ret & VM_FAULT_OOM)
+-			split_huge_page(page);
+-		put_page(page);
++		if (is_huge_zero_pmd(orig_pmd)) {
++			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
++					address, pmd, haddr);
++		} else {
++			ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
++					pmd, orig_pmd, page, haddr);
++			if (ret & VM_FAULT_OOM)
++				split_huge_page(page);
++			put_page(page);
++		}
+ 		goto out;
+ 	}
+ 	count_vm_event(THP_FAULT_ALLOC);
+ 
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		put_page(new_page);
+-		split_huge_page(page);
+-		put_page(page);
++		if (page) {
++			split_huge_page(page);
++			put_page(page);
++		}
+ 		ret |= VM_FAULT_OOM;
+ 		goto out;
+ 	}
+ 
+-	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
++	if (is_huge_zero_pmd(orig_pmd))
++		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
++	else
++		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
+ 	__SetPageUptodate(new_page);
+ 
+ 	mmun_start = haddr;
+@@ -994,7 +1069,8 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 
+ 	spin_lock(&mm->page_table_lock);
+-	put_page(page);
++	if (page)
++		put_page(page);
+ 	if (unlikely(!pmd_same(*pmd, orig_pmd))) {
+ 		spin_unlock(&mm->page_table_lock);
+ 		mem_cgroup_uncharge_page(new_page);
+@@ -1002,7 +1078,6 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto out_mn;
+ 	} else {
+ 		pmd_t entry;
+-		VM_BUG_ON(!PageHead(page));
+ 		entry = mk_pmd(new_page, vma->vm_page_prot);
+ 		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		entry = pmd_mkhuge(entry);
+@@ -1010,8 +1085,13 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		update_mmu_cache_pmd(vma, address, pmd);
+-		page_remove_rmap(page);
+-		put_page(page);
++		if (is_huge_zero_pmd(orig_pmd))
++			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
++		else {
++			VM_BUG_ON(!PageHead(page));
++			page_remove_rmap(page);
++			put_page(page);
++		}
+ 		ret |= VM_FAULT_WRITE;
+ 	}
+ 	spin_unlock(&mm->page_table_lock);
+diff --git a/mm/memory.c b/mm/memory.c
+index fb135ba..6edc030 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -724,13 +724,6 @@ static inline int is_zero_pfn(unsigned long pfn)
+ }
+ #endif
+ 
+-#ifndef my_zero_pfn
+-static inline unsigned long my_zero_pfn(unsigned long addr)
+-{
+-	return zero_pfn;
+-}
+-#endif
+-
+ /*
+  * vm_normal_page -- This function gets the "struct page" associated with a pte.
+  *
+-- 
+1.7.11.7
+
