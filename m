@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992987Ab2KOEhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:37:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48932 "EHLO mail.kernel.org"
+	id S2992990Ab2KOEht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:37:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48923 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992940Ab2KOELR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:17 -0500
+	id S2992933Ab2KOELQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 23/66] mac80211: check management frame header length
-Date: Wed, 14 Nov 2012 20:10:28 -0800
-Message-Id: <20121115040940.684591921@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 22/66] drm/i915: Only kick out vesafb if we takeover the fbcon with KMS
+Date: Wed, 14 Nov 2012 20:10:27 -0800
+Message-Id: <20121115040940.616195253@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -25,52 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
+commit 1623392af9da983f3ad088a75076c9da05e5600d upstream.
 
-Due to pskb_may_pull() checking the skb length, all
-non-management frames are checked on input whether
-their 802.11 header is fully present. Also add that
-check for management frames and remove a check that
-is now duplicate. This prevents accessing skb data
-beyond the frame end.
+Otherwise we may remove the only console for a nomodeset system.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+We became more aggressive in our kicking with
+commit e188719a2891f01b3100dca4ae3a055fb5a7ab52
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Jun 12 11:28:17 2012 +0200
+
+    drm/i915: kick any firmware framebuffers before claiming the gtt
+
+Reported-and-tested-by: monnier@iro.umontreal.ca
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54615
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1430,7 +1430,6 @@ ieee80211_rx_h_defragment(struct ieee802
- 	frag = sc & IEEE80211_SCTL_FRAG;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1484,7 +1484,8 @@ int i915_driver_load(struct drm_device *
+ 		goto put_gmch;
+ 	}
  
- 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   (rx->skb)->len < 24 ||
- 		   is_multicast_ether_addr(hdr->addr1))) {
- 		/* not fragmented */
- 		goto out;
-@@ -2867,10 +2866,15 @@ static void __ieee80211_rx_handle_packet
- 	if (ieee80211_is_data(fc) || ieee80211_is_mgmt(fc))
- 		local->dot11ReceivedFragmentCount++;
+-	i915_kick_out_firmware_fb(dev_priv);
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		i915_kick_out_firmware_fb(dev_priv);
  
--	if (ieee80211_is_mgmt(fc))
--		err = skb_linearize(skb);
--	else
-+	if (ieee80211_is_mgmt(fc)) {
-+		/* drop frame if too short for header */
-+		if (skb->len < ieee80211_hdrlen(fc))
-+			err = -ENOBUFS;
-+		else
-+			err = skb_linearize(skb);
-+	} else {
- 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
-+	}
+ 	pci_set_master(dev->pdev);
  
- 	if (err) {
- 		dev_kfree_skb(skb);
 
 
