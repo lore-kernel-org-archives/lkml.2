@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993209Ab2KOKdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:33:19 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49527 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993059Ab2KOKdR (ORCPT
+	id S2993219Ab2KOKff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:35:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44270 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992442Ab2KOKfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:33:17 -0500
+	Thu, 15 Nov 2012 05:35:34 -0500
+Date: Thu, 15 Nov 2012 10:35:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, jonas.aberg@stericsson.com,
+        linux@arm.linux.org.uk, linus.walleij@stericsson.com, arnd@arndb.de
+Subject: Re: [PATCH 0/2] Boottime: measure bootloader and kernel bootup time
+Message-ID: <20121115103528.GA21682@gmail.com>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org>
+ <20121115101508.GB4398@game.jcrosoft.org>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vUGaRG-c3Vr5Zuuohhct6hEM-AhrZ6fmFfd6nyNZdo=Q@mail.gmail.com>
-References: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org>
- <20121102095801.GC17860@linux-mips.org> <20121102102335.GF2905@linux-mips.org>
- <CACxGe6vUGaRG-c3Vr5Zuuohhct6hEM-AhrZ6fmFfd6nyNZdo=Q@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 15 Nov 2012 10:32:56 +0000
-X-Google-Sender-Auth: YWeb62tD22qAD65bEgUigr_QRlg
-Message-ID: <CACxGe6vhd_4rcBbYyqtvbySVaY6XpNE+HQq42PZhKe5yt=zcaA@mail.gmail.com>
-Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Michal Marek <mmarek@suse.cz>,
-        David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, linux-mips@linux-mips.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121115101508.GB4398@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 10:15 AM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Fri, Nov 2, 2012 at 10:23 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
->> On Fri, Nov 02, 2012 at 10:58:01AM +0100, Ralf Baechle wrote:
->>
->>> Can you fold these MIPS bits into your patch?
->>
->> I missed Lantiq.
->>
->>   Ralf
->>
->> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
->>
->>  arch/mips/cavium-octeon/Makefile | 3 ---
->>  arch/mips/lantiq/dts/Makefile    | 3 ---
->>  arch/mips/netlogic/dts/Makefile  | 3 ---
->>  3 files changed, 9 deletions(-)
->>
->> diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
->> index bc96e29..6e927cf 100644
->> --- a/arch/mips/cavium-octeon/Makefile
->> +++ b/arch/mips/cavium-octeon/Makefile
->> @@ -24,9 +24,6 @@ DTB_FILES = $(patsubst %.dts, %.dtb, $(DTS_FILES))
->>
->>  obj-y += $(patsubst %.dts, %.dtb.o, $(DTS_FILES))
->>
->> -$(obj)/%.dtb: $(src)/%.dts FORCE
->> -       $(call if_changed_dep,dtc)
->> -
->>  # Let's keep the .dtb files around in case we want to look at them.
->>  .SECONDARY:  $(addprefix $(obj)/, $(DTB_FILES))
->>
->> diff --git a/arch/mips/lantiq/dts/Makefile b/arch/mips/lantiq/dts/Makefile
->> index 674fca4..6fa72dd 100644
->> --- a/arch/mips/lantiq/dts/Makefile
->> +++ b/arch/mips/lantiq/dts/Makefile
->> @@ -1,4 +1 @@
->>  obj-$(CONFIG_DT_EASY50712) := easy50712.dtb.o
->> -
->> -$(obj)/%.dtb: $(obj)/%.dts
->> -       $(call if_changed,dtc)
->> diff --git a/arch/mips/netlogic/dts/Makefile b/arch/mips/netlogic/dts/Makefile
->> index 67ae3fe2..d117d46 100644
->> --- a/arch/mips/netlogic/dts/Makefile
->> +++ b/arch/mips/netlogic/dts/Makefile
->> @@ -1,4 +1 @@
->>  obj-$(CONFIG_DT_XLP_EVP) := xlp_evp.dtb.o
->> -
->> -$(obj)/%.dtb: $(obj)/%.dts
->> -       $(call if_changed,dtc)
->
-> This actually breaks MIPS builds. MIPS builds the .dtbs in the same
-> directory as the .dts files. Everyone else has a dts/ subdirectory,
-> which is admittedly a bit insane, but until things are resolved I've
-> dropped the above MIPS hunks.
->
-> MIPS /could/ be changed to also use a dts directory, but I'd actually
-> rather if someone could make all the other platforms build the dtbs in
-> the same directory. I've looked at it briefly, but I haven't figured
-> out all the make magic needed to do it nicely.
+On Thu, 15 Nov 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-On second thought. I'm dropping this patch entirely for now. I don't
-want to put in a generic rule that expects files in weird locations.
-If we can fix up all the architectures to build dtb in the dts
-directory, then it is better for each architecture to have a separate
-fixup patch instead of changing everyone at once.
+> On 10:04 Thu 15 Nov     , Lee Jones wrote:
+> > This patchset supplies a new tool which measures boottime inclusive
+> > of bootloader involvement. It seems to be accurate and adds no
+> > latency to the booting of the system.
+> > 
+> > In the first round of testing we booted the kernel 3 times each with
+> > boottime enabled and disabled. Actually, when it was disabled, the
+> > code was completely removed from the kernel source and the kernel was
+> > rebuilt. The difference between present & enabled and completely
+> > removed was very little indeed. In fact, averaging out the 3 runs of
+> > each, when boottime was enabled the system booted 4ms _faster_, go
+> > figure!
+> > 
+> >              Enabled    Disabled
+> >   1st run    2.983093   2.985168
+> >   2nd run    2.973266   2.971801
+> >   3rd run    2.975402   2.987304
+> >   Average    2.977254   2.981424   -0.004171 (-4ms)
+> > 
+> > 
+> > For the next round of testing, we delayed the bootloader for varying
+> > amounts of time, then started to remove key components from kernel
+> > functionality to see if the boottime system would pick-up on them.
+> > 
+> >   /* Hang around in the bootloader for a while. */
+> >   $ cat /sys/kernel/debug/boottime/summary 
+> >     kernel: 42864 msecs
+> >     total: 42864 msecs
+> >     kernel: cpu0 system: 56% idle: 43% iowait: 0% irq: 0% 
+> >             cpu1 system: 4% idle: 95% iowait: 0% irq: 0%
+> > 
+> >   /* Hang around in the bootloader for a smaller amount of time. */
+> >     kernel: 12351 msecs
+> >     total: 12351 msecs
+> >     kernel: cpu0 system: 56% idle: 43% iowait: 0% irq: 0% 
+> >             cpu1 system: 2% idle: 97% iowait: 0% irq: 0%
+> >   
+> >   /* Instant boot. (1st run) */
+> >     kernel: 7833 msecs
+> >     total: 7833 msecs
+> >     kernel: cpu0 system: 55% idle: 44% iowait: 0% irq: 0% 
+> >             cpu1 system: 3% idle: 96% iowait: 0% irq: 0%
+> > 
+> >   /* Instant boot. (2nd run) */
+> >     kernel: 7817 msecs
+> >     total: 7817 msecs
+> >     kernel: cpu0 system: 53% idle: 46% iowait: 0% irq: 0% 
+> >             cpu1 system: 8% idle: 91% iowait: 0% irq: 0%
+> > 
+> >   /* Instant boot. (3rd run) */
+> >     kernel: 7747 msecs
+> >     total: 7747 msecs
+> >     kernel: cpu0 system: 56% idle: 42% iowait: 0% irq: 0% 
+> >             cpu1 system: 2% idle: 97% iowait: 0% irq: 0%
+> 7/8s? on a u9500 wow it's really slow
 
-Or how about: I could pick up the patch with only the MIPS hunk and
-every other user can be fixed up independently to use the new rule.
+No, this is a u8500.
 
-g.
+> I do 2/3s here
+
+Really? You installed this quick.
+
+Are you sure you did it correctly?
+
+Don't forget, this times from power-on to userspace.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
