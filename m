@@ -1,161 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423644Ab2KOJm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:42:56 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48113 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992967Ab2KOJkV (ORCPT
+	id S1756726Ab2KOJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:44:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34924 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab2KOJoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:40:21 -0500
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/6] book3e/kexec/kdump: create a 1:1 TLB mapping
-Date: Thu, 15 Nov 2012 17:39:53 +0800
-Message-ID: <1352972396-13489-4-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
-References: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 15 Nov 2012 04:44:24 -0500
+From: Zheng Li <zheng.x.li@oracle.com>
+To: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com,
+        zheng.x.li@oracle.com
+Subject: [PATCH] bonding: rlb mode of bond should not alter ARP originating via bridge
+Date: Thu, 15 Nov 2012 17:47:41 +0800
+Message-Id: <1352972861-17577-1-git-send-email-zheng.x.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-book3e have no real MMU mode so we have to create a 1:1 TLB
-mapping to make sure we can access the real physical address.
-And correct something to support this pseudo real mode on book3e.
+ARP traffic passing through a bridge and out via the bond (when the bond is a 
+port of the bridge) should not have its source MAC address adjusted by the 
+receive load balance code in rlb_arp_xmit.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Andy Gospodarek <andy@greyhouse.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+
 ---
- arch/powerpc/kernel/head_64.S |    9 ++++---
- arch/powerpc/kernel/misc_64.S |   55 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_alb.c |    6 ++++++
+ drivers/net/bonding/bonding.h  |   13 +++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index aa7df52..d51ffc0 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -425,12 +425,12 @@ _STATIC(__after_prom_start)
- 	tovirt(r3,r3)			/* on booke, we already run at PAGE_OFFSET */
- #endif
- 	mr.	r4,r26			/* In some cases the loader may  */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r4,r4)
-+#endif
- 	beq	9f			/* have already put us at zero */
- 	li	r6,0x100		/* Start offset, the first 0x100 */
- 					/* bytes were copied earlier.	 */
--#ifdef CONFIG_PPC_BOOK3E
--	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
--#endif
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index e15cc11..75f6f0d 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
+ 	struct arp_pkt *arp = arp_pkt(skb);
+ 	struct slave *tx_slave = NULL;
  
- #ifdef CONFIG_RELOCATABLE
- /*
-@@ -472,6 +472,9 @@ _STATIC(__after_prom_start)
- p_end:	.llong	_end - _stext
- 
- 4:	/* Now copy the rest of the kernel up to _end */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r26,r26)
-+#endif
- 	addis	r5,r26,(p_end - _stext)@ha
- 	ld	r5,(p_end - _stext)@l(r5)	/* get _end */
- 5:	bl	.copy_and_flush		/* copy the rest */
-diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index c2acf8c..ffe6043 100644
---- a/arch/powerpc/kernel/misc_64.S
-+++ b/arch/powerpc/kernel/misc_64.S
-@@ -449,6 +449,49 @@ kexec_flag:
- 
- 
- #ifdef CONFIG_KEXEC
-+#ifdef CONFIG_PPC_BOOK3E
-+/* BOOK3E have no a real MMU mode so we have to setup the initial TLB
-+ * for a core to map v:0 to p:0 as 1:1. This current implementation
-+ * assume that 1G is enough for kexec.
-+ */
-+#include <asm/mmu.h>
-+kexec_create_tlb:
-+	/* Invalidate all TLBs to avoid any TLB conflict. */
-+	PPC_TLBILX_ALL(0,R0)
-+	sync
-+	isync
++	/* Only modify ARP's MAC if it originates locally;
++	 * don't change ARPs arriving via a bridge.
++	 */
++	if (!bond_slave_has_mac(bond, arp->mac_src))
++		return NULL;
 +
-+	mfspr	r10,SPRN_TLB1CFG
-+	andi.	r10,r10,TLBnCFG_N_ENTRY	/* Extract # entries */
-+	subi	r10,r10,1		/* Often its always safe to use last */
-+	lis	r9,MAS0_TLBSEL(1)@h
-+	rlwimi	r9,r10,16,4,15		/* Setup MAS0 = TLBSEL | ESEL(r9) */
-+
-+/* Setup a temp mapping v:0 to p:0 as 1:1 and return to it.
-+ */
-+#ifdef CONFIG_SMP
-+#define M_IF_SMP	MAS2_M
-+#else
-+#define M_IF_SMP	0
-+#endif
-+	mtspr	SPRN_MAS0,r9
-+
-+	lis	r9,(MAS1_VALID|MAS1_IPROT)@h
-+	ori	r9,r9,(MAS1_TSIZE(BOOK3E_PAGESZ_1GB))@l
-+	mtspr	SPRN_MAS1,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | M_IF_SMP)
-+	mtspr	SPRN_MAS2,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | MAS3_SR | MAS3_SW | MAS3_SX)
-+	mtspr	SPRN_MAS3,r9
-+	li	r9,0
-+	mtspr	SPRN_MAS7,r9
-+
-+	tlbwe
-+	isync
-+	blr
-+#endif
+ 	if (arp->op_code == htons(ARPOP_REPLY)) {
+ 		/* the arp must be sent on the selected
+ 		* rx channel
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index f8af2fc..6dded56 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -22,6 +22,7 @@
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+ #include <linux/inetdevice.h>
++#include <linux/etherdevice.h>
+ #include "bond_3ad.h"
+ #include "bond_alb.h"
  
- /* kexec_smp_wait(void)
-  *
-@@ -462,6 +505,10 @@ kexec_flag:
-  */
- _GLOBAL(kexec_smp_wait)
- 	lhz	r3,PACAHWCPUID(r13)
-+#ifdef CONFIG_PPC_BOOK3E
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
-+#endif
- 	bl	real_mode
- 
- 	li	r4,KEXEC_STATE_REAL_MODE
-@@ -478,6 +525,7 @@ _GLOBAL(kexec_smp_wait)
-  * don't overwrite r3 here, it is live for kexec_wait above.
-  */
- real_mode:	/* assume normal blr return */
-+#ifndef CONFIG_PPC_BOOK3E
- 1:	li	r9,MSR_RI
- 	li	r10,MSR_DR|MSR_IR
- 	mflr	r11		/* return address to SRR0 */
-@@ -489,7 +537,10 @@ real_mode:	/* assume normal blr return */
- 	mtspr	SPRN_SRR1,r10
- 	mtspr	SPRN_SRR0,r11
- 	rfid
--
-+#else
-+	/* the real mode is nothing for book3e. */
-+	blr
-+#endif
- 
- /*
-  * kexec_sequence(newstack, start, image, control, clear_all())
-@@ -538,6 +589,8 @@ _GLOBAL(kexec_sequence)
- 	mtmsrd	r3,1
- #else
- 	wrteei	0
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
+@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
+ }
  #endif
  
- 	/* copy dest pages, flush whole dest image */
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++					       const u8 *mac)
++{
++	int i = 0;
++	struct slave *tmp;
++
++	bond_for_each_slave(bond, tmp, i)
++		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++			return tmp;
++
++	return NULL;
++}
+ 
+ /* exported from bond_main.c */
+ extern int bond_net_id;
 -- 
-1.7.9.5
+1.7.6.5
 
