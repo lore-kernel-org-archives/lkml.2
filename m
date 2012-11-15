@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993313Ab2KOEXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:23:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49745 "EHLO mail.kernel.org"
+	id S2993217Ab2KOEMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49588 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993224Ab2KOEMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:34 -0500
+	id S2993146Ab2KOEMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 18/57] mac80211: check management frame header length
-Date: Wed, 14 Nov 2012 20:11:26 -0800
-Message-Id: <20121115040934.340482888@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 04/57] ath9k: fix stale pointers potentially causing access to freed skbs
+Date: Wed, 14 Nov 2012 20:11:12 -0800
+Message-Id: <20121115040933.494617295@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -25,52 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
+commit 8c6e30936a7893a85f6222084f0f26aceb81137a upstream.
 
-Due to pskb_may_pull() checking the skb length, all
-non-management frames are checked on input whether
-their 802.11 header is fully present. Also add that
-check for management frames and remove a check that
-is now duplicate. This prevents accessing skb data
-beyond the frame end.
+bf->bf_next is only while buffers are chained as part of an A-MPDU
+in the tx queue. When a tid queue is flushed (e.g. on tearing down
+an aggregation session), frames can be enqueued again as normal
+transmission, without bf_next being cleared. This can lead to the
+old pointer being dereferenced again later.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This patch might fix crashes and "Failed to stop TX DMA!" messages.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1473,7 +1473,6 @@ ieee80211_rx_h_defragment(struct ieee802
- 	frag = sc & IEEE80211_SCTL_FRAG;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -337,6 +337,7 @@ static struct ath_buf *ath_tx_get_buffer
+ 	}
  
- 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   (rx->skb)->len < 24 ||
- 		   is_multicast_ether_addr(hdr->addr1))) {
- 		/* not fragmented */
- 		goto out;
-@@ -2929,10 +2928,15 @@ static void __ieee80211_rx_handle_packet
- 		     test_bit(SCAN_SW_SCANNING, &local->scanning)))
- 		status->rx_flags |= IEEE80211_RX_IN_SCAN;
+ 	bf = list_first_entry(&sc->tx.txbuf, struct ath_buf, list);
++	bf->bf_next = NULL;
+ 	list_del(&bf->list);
  
--	if (ieee80211_is_mgmt(fc))
--		err = skb_linearize(skb);
--	else
-+	if (ieee80211_is_mgmt(fc)) {
-+		/* drop frame if too short for header */
-+		if (skb->len < ieee80211_hdrlen(fc))
-+			err = -ENOBUFS;
-+		else
-+			err = skb_linearize(skb);
-+	} else {
- 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
-+	}
+ 	spin_unlock_bh(&sc->tx.txbuflock);
+@@ -1760,6 +1761,7 @@ static void ath_tx_send_normal(struct at
+ 	list_add_tail(&bf->list, &bf_head);
+ 	bf->bf_state.bf_type = 0;
  
- 	if (err) {
- 		dev_kfree_skb(skb);
++	bf->bf_next = NULL;
+ 	bf->bf_lastbf = bf;
+ 	ath_tx_fill_desc(sc, bf, txq, fi->framelen);
+ 	ath_tx_txqaddbuf(sc, txq, &bf_head, false);
 
 
