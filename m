@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768249Ab2KOPM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 10:12:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44962 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768148Ab2KOPM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 10:12:58 -0500
-Date: Thu, 15 Nov 2012 16:12:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <htejun@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC 2/5] memcg: rework mem_cgroup_iter to use cgroup iterators
-Message-ID: <20121115151255.GE11990@dhcp22.suse.cz>
-References: <1352820639-13521-1-git-send-email-mhocko@suse.cz>
- <1352820639-13521-3-git-send-email-mhocko@suse.cz>
- <20121113161442.GA18227@mtj.dyndns.org>
- <20121114085129.GC17111@dhcp22.suse.cz>
- <20121114185245.GF21185@mtj.dyndns.org>
- <20121115095103.GB11990@dhcp22.suse.cz>
- <20121115144732.GB7306@mtj.dyndns.org>
+	id S1768158Ab2KOPPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 10:15:47 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41149 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768107Ab2KOPPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 10:15:46 -0500
+Date: Thu, 15 Nov 2012 15:15:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Axel Lin <axel.lin@ingics.com>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] pinctrl: nomadik: Prevent NULL dereference if
+ of_match_device returns NULL
+Message-ID: <20121115151541.GC14476@gmail.com>
+References: <1352955096.6793.1.camel@phoenix>
+ <1352955365.6793.6.camel@phoenix>
+ <CACRpkdbWqFrP7RvXbaR5Bcz1htCL_wSqwUvOi67LmoF_PBjvhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121115144732.GB7306@mtj.dyndns.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbWqFrP7RvXbaR5Bcz1htCL_wSqwUvOi67LmoF_PBjvhg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-11-12 06:47:32, Tejun Heo wrote:
-> Hello, Michal.
+On Thu, 15 Nov 2012, Linus Walleij wrote:
+
+> On Thu, Nov 15, 2012 at 5:56 AM, Axel Lin <axel.lin@ingics.com> wrote:
 > 
-> On Thu, Nov 15, 2012 at 10:51:03AM +0100, Michal Hocko wrote:
-> > > I'm a bit confused.  Why would that make any difference?  Shouldn't it
-> > > be just able to test the condition and continue?
-> > 
-> > Ohh, I misunderstood your proposal. So what you are suggesting is
-> > to put all the logic we have in mem_cgroup_iter inside what you call
-> > reclaim here + mem_cgroup_iter_break inside the loop, right?
-> > 
-> > I do not see how this would help us much. mem_cgroup_iter is not the
-> > nicest piece of code but it handles quite a complex requirements that we
-> > have currently (css reference count, multiple reclaimers racing). So I
-> > would rather keep it this way. Further simplifications are welcome of
-> > course.
-> > 
-> > Is there any reason why you are not happy about direct using of
-> > cgroup_next_descendant_pre?
+> > of_match_device() may return NULL.
+> >
+> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > ---
+> >  drivers/pinctrl/pinctrl-nomadik.c |   11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+> > index 238060e..40bd1b3 100644
+> > --- a/drivers/pinctrl/pinctrl-nomadik.c
+> > +++ b/drivers/pinctrl/pinctrl-nomadik.c
+> > @@ -1863,9 +1863,14 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+> >
+> >         if (platid)
+> >                 version = platid->driver_data;
+> > -       else if (np)
+> > -               version = (unsigned int)
+> > -                       of_match_device(nmk_pinctrl_match, &pdev->dev)->data;
+> > +       else if (np) {
+> > +               const struct of_device_id *match;
+> > +
+> > +               match = of_match_device(nmk_pinctrl_match, &pdev->dev);
+> > +               if (!match)
+> > +                       return -ENODEV;
+> > +               version = (unsigned int) match->data;
+> > +       }
 > 
-> Because I'd like to consider the next functions as implementation
-> detail, and having interations structred as loops tend to read better
-> and less error-prone.  e.g. when you use next functions directly, it's
-> way easier to circumvent locking requirements in a way which isn't
-> very obvious. 
+> AFAICT this can actually happen so patch applied, unless Lee
+> speaks against it.
 
-The whole point behind mem_cgroup_iter is to hide all the complexity
-behind memcg iteration. Memcg code either use for_each_mem_cgroup_tree
-for !reclaim case and mem_cgroup_iter otherwise.
+At the very least it make the code easy to read.
 
-> So, unless it messes up the code too much (and I can't see why it
-> would), I'd much prefer if memcg used for_each_*() macros.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-As I said this would mean that the current mem_cgroup_iter code would
-have to be inverted which doesn't simplify the code much. I'd rather
-hide all the grossy details inside the memcg iterator.
-Or am I still missing your suggestion?
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
