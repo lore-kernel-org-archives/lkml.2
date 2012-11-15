@@ -1,48 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab2KOVyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:54:51 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:12074 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2KOVys (ORCPT
+	id S1751716Ab2KOVyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:54:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54497 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab2KOVys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 16:54:48 -0500
-Message-ID: <1353011874.3055.22.camel@ejdallLaptop>
-Subject: Re: turbostat tool update for Linux-3.8
-From: Betty Dall <betty.dall@hp.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 15 Nov 2012 13:37:54 -0700
-In-Reply-To: <1352925804-6746-1-git-send-email-lenb@kernel.org>
-References: <1352925804-6746-1-git-send-email-lenb@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Date: Thu, 15 Nov 2012 13:53:58 -0800
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-7471da210c8decd9aac2df38f60d98aed84edc85@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, jun.zhang@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, wei.yang@windriver.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, jun.zhang@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, wei.yang@windriver.com
+In-Reply-To: <20120912135059.GZ8285@erda.amd.com>
+References: <20120912135059.GZ8285@erda.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-32:
+  Fix invalid stack address while in softirq
+Git-Commit-ID: 7471da210c8decd9aac2df38f60d98aed84edc85
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 15 Nov 2012 13:54:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-14 at 15:43 -0500, Len Brown wrote:
-> Here are some turbostat patches I have staged.
-> The 1st two I've requested be pulled into 3.7,
-> the rest are for 3.8
-> 
-> The final patch allows turbostat to print Watts
-> as measured by hardware RAPL counters -- something
-> that people have been asking for.
-> 
-> Please let me know if you see troubles with any of these patches.
+Commit-ID:  7471da210c8decd9aac2df38f60d98aed84edc85
+Gitweb:     http://git.kernel.org/tip/7471da210c8decd9aac2df38f60d98aed84edc85
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Mon, 3 Sep 2012 20:54:48 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 15 Nov 2012 13:02:26 -0800
 
-Hi Len,
+x86-32: Fix invalid stack address while in softirq
 
-I tested out these patches on an IvyBridge system and see the new Watts
-fields. They look like reasonable numbers to me. I ran with the system
-idle and then with lookbusy -c 50 and saw the Watts increase. Is there
-anything else to do to validate the numbers? In one case I saw that the
-Pkg_W for the system was off by .01, e.g. socket 0 was 28.33 and socket
-1 was 29.74 and the system total was 58.08 instead of 58.07. That is
-probably fine and just rounding up.
+In 32 bit the stack address provided by kernel_stack_pointer() may
+point to an invalid range causing NULL pointer access or page faults
+while in NMI (see trace below). This happens if called in softirq
+context and if the stack is empty. The address at &regs->sp is then
+out of range.
 
--Betty
+Fixing this by checking if regs and &regs->sp are in the same stack
+context. Otherwise return the previous stack pointer stored in struct
+thread_info. If that address is invalid too, return address of regs.
 
+ BUG: unable to handle kernel NULL pointer dereference at 0000000a
+ IP: [<c1004237>] print_context_stack+0x6e/0x8d
+ *pde = 00000000
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ Pid: 4434, comm: perl Not tainted 3.6.0-rc3-oprofile-i386-standard-g4411a05 #4 Hewlett-Packard HP xw9400 Workstation/0A1Ch
+ EIP: 0060:[<c1004237>] EFLAGS: 00010093 CPU: 0
+ EIP is at print_context_stack+0x6e/0x8d
+ EAX: ffffe000 EBX: 0000000a ECX: f4435f94 EDX: 0000000a
+ ESI: f4435f94 EDI: f4435f94 EBP: f5409ec0 ESP: f5409ea0
+  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ CR0: 8005003b CR2: 0000000a CR3: 34ac9000 CR4: 000007d0
+ DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+ DR6: ffff0ff0 DR7: 00000400
+ Process perl (pid: 4434, ti=f5408000 task=f5637850 task.ti=f4434000)
+ Stack:
+  000003e8 ffffe000 00001ffc f4e39b00 00000000 0000000a f4435f94 c155198c
+  f5409ef0 c1003723 c155198c f5409f04 00000000 f5409edc 00000000 00000000
+  f5409ee8 f4435f94 f5409fc4 00000001 f5409f1c c12dce1c 00000000 c155198c
+ Call Trace:
+  [<c1003723>] dump_trace+0x7b/0xa1
+  [<c12dce1c>] x86_backtrace+0x40/0x88
+  [<c12db712>] ? oprofile_add_sample+0x56/0x84
+  [<c12db731>] oprofile_add_sample+0x75/0x84
+  [<c12ddb5b>] op_amd_check_ctrs+0x46/0x260
+  [<c12dd40d>] profile_exceptions_notify+0x23/0x4c
+  [<c1395034>] nmi_handle+0x31/0x4a
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13950ed>] do_nmi+0xa0/0x2ff
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13949e5>] nmi_stack_correct+0x28/0x2d
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c1003603>] ? do_softirq+0x4b/0x7f
+  <IRQ>
+  [<c102a06f>] irq_exit+0x35/0x5b
+  [<c1018f56>] smp_apic_timer_interrupt+0x6c/0x7a
+  [<c1394746>] apic_timer_interrupt+0x2a/0x30
+ Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 ad 42 03 00 85 c0 8b 55 e0 75 a6 eb cc
+ EIP: [<c1004237>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5409ea0
+ CR2: 000000000000000a
+ ---[ end trace 62afee3481b00012 ]---
+ Kernel panic - not syncing: Fatal exception in interrupt
+
+V2:
+* add comments to kernel_stack_pointer()
+* always return a valid stack address by falling back to the address
+  of regs
+
+Reported-by: Yang Wei <wei.yang@windriver.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Link: http://lkml.kernel.org/r/20120912135059.GZ8285@erda.amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jun Zhang <jun.zhang@intel.com>
+---
+ arch/x86/include/asm/ptrace.h | 15 ++++-----------
+ arch/x86/kernel/ptrace.c      | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index dcfde52..19f16eb 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -205,21 +205,14 @@ static inline bool user_64bit_mode(struct pt_regs *regs)
+ }
+ #endif
+ 
+-/*
+- * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
+- * when it traps.  The previous stack will be directly underneath the saved
+- * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
+- *
+- * This is valid only for kernel mode traps.
+- */
+-static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+-{
+ #ifdef CONFIG_X86_32
+-	return (unsigned long)(&regs->sp);
++extern unsigned long kernel_stack_pointer(struct pt_regs *regs);
+ #else
++static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
+ 	return regs->sp;
+-#endif
+ }
++#endif
+ 
+ #define GET_IP(regs) ((regs)->ip)
+ #define GET_FP(regs) ((regs)->bp)
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index b00b33a..2484e33 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -166,6 +166,34 @@ static inline bool invalid_selector(u16 value)
+ 
+ #define FLAG_MASK		FLAG_MASK_32
+ 
++/*
++ * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
++ * when it traps.  The previous stack will be directly underneath the saved
++ * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
++ *
++ * Now, if the stack is empty, '&regs->sp' is out of range. In this
++ * case we try to take the previous stack. To always return a non-null
++ * stack pointer we fall back to regs as stack if no previous stack
++ * exists.
++ *
++ * This is valid only for kernel mode traps.
++ */
++unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
++	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
++	unsigned long sp = (unsigned long)&regs->sp;
++	struct thread_info *tinfo;
++
++	if (context == (sp & ~(THREAD_SIZE - 1)))
++		return sp;
++
++	tinfo = (struct thread_info *)context;
++	if (tinfo->previous_esp)
++		return tinfo->previous_esp;
++
++	return (unsigned long)regs;
++}
++
+ static unsigned long *pt_regs_access(struct pt_regs *regs, unsigned long regno)
+ {
+ 	BUILD_BUG_ON(offsetof(struct pt_regs, bx) != 0);
