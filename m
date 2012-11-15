@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768552Ab2KORe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 12:34:57 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:12705 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992479Ab2KORe4 (ORCPT
+	id S1768559Ab2KORjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 12:39:32 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:57905 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768505Ab2KORja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 12:34:56 -0500
-Message-ID: <1353000891.2532.22.camel@lorien2>
-Subject: Re: [PATCH v2 linux-next] microblaze: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: monstr@monstr.eu, Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: kyungmin.park@samsung.com, m.szyprowski@samsung.com, arnd@arndb.de,
-        andrzej.p@samsung.com, microblaze-uclinux@itee.uq.edu.au,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Thu, 15 Nov 2012 10:34:51 -0700
-In-Reply-To: <1351266812.4013.8.camel@lorien2>
-References: <1351207747.6851.15.camel@lorien2> <508A49D3.2080303@monstr.eu>
-	 <1351263531.2712.3.camel@lorien2> <1351266812.4013.8.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 15 Nov 2012 12:39:30 -0500
+MIME-Version: 1.0
+X-Originating-IP: [109.186.86.248]
+In-Reply-To: <CALLhW=46xUZzuEBaQD7vsOTQOGR7bwXMSM_mugN_gWa-oqwfuw@mail.gmail.com>
+References: <1352860489-19960-1-git-send-email-omar.luna@linaro.org>
+ <1352860489-19960-3-git-send-email-omar.luna@linaro.org> <CAK=WgbZm+sjavwb_Li_W5ygm0XuS9YMYfQEkdoB188Uir0arGg@mail.gmail.com>
+ <CALLhW=46xUZzuEBaQD7vsOTQOGR7bwXMSM_mugN_gWa-oqwfuw@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 15 Nov 2012 19:39:08 +0200
+Message-ID: <CAK=WgbaTupjayMLmgptfLtNkkk_GZL8RYQrYn8O7FG5GpANswg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] ARM: OMAP3/4: iommu: adapt to runtime pm
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>,
+        Russell King <linux@arm.linux.org.uk>, Ido Yariv <ido@wizery.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 09:53 -0600, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
-> 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> Acked-by: Michal Simek <monstr@monstr.eu>
+Hi Omar,
 
-Marek,
+On Thu, Nov 15, 2012 at 6:53 PM, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
+> On 14 November 2012 03:54, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>> Most of the above questions imply this patch not only converts the
+>> iommu to runtime PM, but may carry additional changes that may imply
+>> previous implementation is sub-optimal. I hope we can clearly document
+>> the motivation behind these changes too (maybe even consider
+>> extracting them to a different patch ?).
+>
+> I didn't want to extract this changes into different patches since
+> they could be included in this one, otherwise it would look like lines
+> adding and then deleting runtime pm functions.
+>
+> I do agree description is missing, again I thought I had done this
+> somewhere but looks like I didn't, will update these. If you think
+> these should be different patches please let me know, otherwise I
+> would like to keep a single *documented* patch.
 
-This is for microblaze to go through your tree.
+It seems like there are 3 different logical changes here:
+
+1. remove clk_* invocations from iommu_fault_handler()
+2. keep clocks enabled as long as iommu is enabled
+3. convert to runtime pm
+
+If we split this to three patches in this order, you won't have to add
+and remove runtime pm functions.
+
+Let's do it, please. It's a small nuisance now, but may be really
+helpful in the future when someone tries to debug stuff and understand
+the motivation behind these changes. It'd make it much easier for you
+to document the changes, too: you have an entire commit log per
+change.
 
 Thanks,
--- Shuah
-> ---
->  arch/microblaze/include/asm/dma-mapping.h |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-> index 01d2282..46460f1 100644
-> --- a/arch/microblaze/include/asm/dma-mapping.h
-> +++ b/arch/microblaze/include/asm/dma-mapping.h
-> @@ -114,6 +114,8 @@ static inline void __dma_sync(unsigned long paddr,
->  static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
->  {
->  	struct dma_map_ops *ops = get_dma_ops(dev);
-> +
-> +	debug_dma_mapping_error(dev, dma_addr);
->  	if (ops->mapping_error)
->  		return ops->mapping_error(dev, dma_addr);
->  
-
-
+Ohad.
