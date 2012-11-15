@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964881Ab2KOKnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:43:39 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:39137 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964838Ab2KOKnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:43:37 -0500
-Message-ID: <50A4C6B5.9010500@synopsys.com>
-Date: Thu, 15 Nov 2012 16:10:53 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>
-Subject: Re: [RFC Patch v1 38/55] ARC: Low level event capture/logging
-References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-8-git-send-email-vgupta@synopsys.com> <201211121355.23947.arnd@arndb.de>
-In-Reply-To: <201211121355.23947.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+	id S2993233Ab2KOKrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:47:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63549 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2992442Ab2KOKrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 05:47:22 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <50A48912.20606@linux.vnet.ibm.com>
+References: <50A48912.20606@linux.vnet.ibm.com> <1378.1352379110@warthog.procyon.org.uk> <CA+5PVA5vMyNmQYCLX315Jc+kN9zQuZo_h0Devpjfr43TezE-qA@mail.gmail.com> <18065.1352820271@warthog.procyon.org.uk> <CA+5PVA6qaxCzr8RBV616D3kEXyj9XjS3okeZXhJJL1R4+-Yv_A@mail.gmail.com> <20121113163458.GA1023@ghostprotocols.net> <50A488DD.6090106@linux.vnet.ibm.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Josh Boyer <jwboyer@gmail.com>, mingo@kernel.org,
+        haodong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de, bp@alien8.de,
+        namhyung@gmail.com, torvalds@linux-foundation.org, paulus@samba.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 2/2] perf kvm: fix building perf kvm on PowerPC
+Date: Thu, 15 Nov 2012 10:46:54 +0000
+Message-ID: <6764.1352976414@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 November 2012 07:25 PM, Arnd Bergmann wrote:
-> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
->> +EXPORT_SYMBOL(take_snap);
->> +
->> ...
->> +EXPORT_SYMBOL(take_snap2);
-> Where are these functions called?
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-These are called from various parts of ARCH code, such as before
-handling signal or TLB flush etc.
+> Now, 'perf kvm stat' is only supported on x86, let its code depend
+> on ARCH_X86 to fix building it on other architectures
 
-> Shouldn't this all just be part of the perf module?
+Other parts of perf do this sort of thing:
 
-These are for low level ARCH specific event snapshotting. Maybe
-perf/ftrace already have some of these in the generic code which
-eventually call the ARCH APIs. Our current perf support is just husk of
-an implementation. Once we have the full perf / ftrace support this
-module - except for the even t capture part could just go away.
-OTOH, I've not seen much usage of this from loadable modules - so if you
-deem correct, I can even remove the export.
+	#if defined(__x86_64__) || defined(__i386__)
 
-> If not, can you make the exports GPL-only?
-
-Am I right in understanding that this is more related to discouraging
-non GPL modules "in general" than having to do with port itself.
-
->
-> 	Arnd
-
+David
