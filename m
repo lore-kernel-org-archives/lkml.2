@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768654Ab2KOSMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:12:35 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59716 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768597Ab2KOSMe (ORCPT
+	id S1768671Ab2KOSMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:12:40 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59603 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768656Ab2KOSMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:12:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353001964.18025.107.camel@gandalf.local.home>
-References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
-	<1352925457-15700-8-git-send-email-fweisbec@gmail.com>
-	<1352953617.18025.94.camel@gandalf.local.home>
-	<CAFTL4hzzhd5__VwR7N+VKpq1C27xHGgi4vj87drbcLghJ+Od5g@mail.gmail.com>
-	<1352997261.18025.103.camel@gandalf.local.home>
-	<1353001964.18025.107.camel@gandalf.local.home>
-Date: Thu, 15 Nov 2012 19:12:33 +0100
-Message-ID: <CAFTL4hw+4V5eG4k515YKn_p2BC_cYH_4rboVaQpXorYTom+23w@mail.gmail.com>
-Subject: Re: [PATCH RFC] irq_work: Warn if there's still work on cpu_down
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 Nov 2012 13:12:38 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 2/2] Add documentation for tca6507 devicetree bindings.
+To: Marek Belisko <marek.belisko@open-nandra.com>, cooloney@gmail.com,
+        rpurdie@rpsys.net
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+In-Reply-To: <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
+References: <1352755511-28436-1-git-send-email-marek.belisko@open-nandra.com> <1352755511-28436-2-git-send-email-marek.belisko@open-nandra.com>
+Date: Thu, 15 Nov 2012 18:12:34 +0000
+Message-Id: <20121115181234.37B173E199F@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/15 Steven Rostedt <rostedt@goodmis.org>:
-> If we are in nohz and there's still irq_work to be done when the idle
-> task is about to go offline. Give a nasty warning.
->
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->
-> Index: linux-rt.git/kernel/irq_work.c
-> ===================================================================
-> --- linux-rt.git.orig/kernel/irq_work.c
-> +++ linux-rt.git/kernel/irq_work.c
-> @@ -103,6 +103,9 @@ bool irq_work_needs_cpu(void)
->         if (llist_empty(this_list))
->                 return false;
->
-> +       /* All work should have been flushed before going offline */
-> +       WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+On Mon, 12 Nov 2012 22:25:11 +0100, Marek Belisko <marek.belisko@open-nandra.com> wrote:
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+>  Documentation/devicetree/bindings/leds/tca6507.txt |   40 ++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
+> new file mode 100644
+> index 0000000..a49eb0c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
+> @@ -0,0 +1,40 @@
+> +LEDs conected to tca6507
+> +
+> +Required properties:
+> +- compatible : should be : "ti,tca6507".
+> +
+> +Each led is represented as a sub-node of the ti,tca6507 device.
+> +
+> +LED sub-node properties:
+> +- label : label for this LED
+> +- reg : number of LED line (could be from 0 to 6)
+> +- linux,default-trigger :  (optional) This parameter, if present, is a
+> +  string defining the trigger assigned to the LED.  Current triggers are:
+> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
+> +		  system
+> +    "default-on" - LED will turn on
+> +    "heartbeat" - LED "double" flashes at a load average based rate
+> +    "ide-disk" - LED indicates disk activity
+> +    "timer" - LED flashes at a fixed, configurable rate
 
-Should we return false in that case? I don't know what can happen if
-we wait for one more tick while the CPU is offline and apic is
-deactivated.
+This is cut-and-paste from bindings/gpio/led.txt. It should be split
+into a separate file and referenced by both bindings. Otherwise the
+binding looks fine.
 
 > +
->         return true;
->  }
->
->
->
+> +Examples:
+> +
+> +tca6507@45 {
+> +	compatible = "ti,tca6507";
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+> +	reg = <0x45>;
+> +
+> +	led0: red_aux@0 {
+> +		label = "red:aux";
+> +		reg = <0x0>;
+> +	};
+> +
+> +	led1: green_aux@1 {
+
+Don't use underscores in node names. Use '-'. (There isn't a technical
+reason for this. It is just convention)
+
+g.
+
