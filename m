@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993415Ab2KOENO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:13:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50065 "EHLO mail.kernel.org"
+	id S1767591Ab2KOEP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:15:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50104 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993349Ab2KOENJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:09 -0500
+	id S2993411Ab2KOENO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 47/57] ipv6: send unsolicited neighbour advertisements to all-nodes
-Date: Wed, 14 Nov 2012 20:11:55 -0800
-Message-Id: <20121115040936.050437711@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Brian Paul <brianp@vmware.com>, Dmitry Torokhov <dtor@vmware.com>,
+        Dave Airlie <airlied@redhat.com>, linux-graphics-maintainer@vmware.com
+Subject: [ 51/57] drm/vmwgfx: Fix a case where the code would BUG when trying to pin GMR memory
+Date: Wed, 14 Nov 2012 20:11:59 -0800
+Message-Id: <20121115040936.265759937@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,40 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+commit afcc87aa6a233e52df73552dc1dc9ae3881b7cc8 upstream.
 
-[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
-
-As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
-unsolicited neighbour advertisements should be sent to the all-nodes
-multicast address.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Brian Paul <brianp@vmware.com>
+Reviewed-by: Dmitry Torokhov <dtor@vmware.com>
+Cc: linux-graphics-maintainer@vmware.com
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ndisc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -593,7 +593,7 @@ static void ndisc_send_unsol_na(struct n
- {
- 	struct inet6_dev *idev;
- 	struct inet6_ifaddr *ifa;
--	struct in6_addr mcaddr;
-+	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c
+@@ -306,7 +306,7 @@ void vmw_bo_pin(struct ttm_buffer_object
  
- 	idev = in6_dev_get(dev);
- 	if (!idev)
-@@ -601,7 +601,6 @@ static void ndisc_send_unsol_na(struct n
+ 	BUG_ON(!atomic_read(&bo->reserved));
+ 	BUG_ON(old_mem_type != TTM_PL_VRAM &&
+-	       old_mem_type != VMW_PL_FLAG_GMR);
++	       old_mem_type != VMW_PL_GMR);
  
- 	read_lock_bh(&idev->lock);
- 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
--		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
- 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
- 			      /*router=*/ !!idev->cnf.forwarding,
- 			      /*solicited=*/ false, /*override=*/ true,
+ 	pl_flags = TTM_PL_FLAG_VRAM | VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED;
+ 	if (pin)
 
 
