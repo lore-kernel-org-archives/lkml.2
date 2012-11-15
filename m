@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933577Ab2KOE3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:29:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49486 "EHLO mail.kernel.org"
+	id S933602Ab2KOE3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:29:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49452 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993093Ab2KOEMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:06 -0500
+	id S2993078Ab2KOEMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Brian Paul <brianp@vmware.com>, Dmitry Torokhov <dtor@vmware.com>,
-        Dave Airlie <airlied@redhat.com>, linux-graphics-maintainer@vmware.com
-Subject: [ 61/66] drm/vmwgfx: Fix a case where the code would BUG when trying to pin GMR memory
-Date: Wed, 14 Nov 2012 20:11:06 -0800
-Message-Id: <20121115040943.545145653@linuxfoundation.org>
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 58/66] mmc: sh_mmcif: fix use after free
+Date: Wed, 14 Nov 2012 20:11:03 -0800
+Message-Id: <20121115040943.335940983@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -27,31 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit afcc87aa6a233e52df73552dc1dc9ae3881b7cc8 upstream.
+commit a0d28ba01ebd048b4ba418142b37f5cf80e6d156 upstream.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Brian Paul <brianp@vmware.com>
-Reviewed-by: Dmitry Torokhov <dtor@vmware.com>
-Cc: linux-graphics-maintainer@vmware.com
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+A recent commit "mmc: sh_mmcif: fix clock management" has introduced a
+use after free bug in sh_mmcif.c: in sh_mmcif_remove() the call to
+mmc_free_host() frees private driver data, therefore using it afterwards
+is a bug. Revert that hunk.
+
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c |    2 +-
+ drivers/mmc/host/sh_mmcif.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c
-@@ -306,7 +306,7 @@ void vmw_bo_pin(struct ttm_buffer_object
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1464,9 +1464,9 @@ static int __devexit sh_mmcif_remove(str
  
- 	BUG_ON(!atomic_read(&bo->reserved));
- 	BUG_ON(old_mem_type != TTM_PL_VRAM &&
--	       old_mem_type != VMW_PL_FLAG_GMR);
-+	       old_mem_type != VMW_PL_GMR);
+ 	platform_set_drvdata(pdev, NULL);
  
- 	pl_flags = TTM_PL_FLAG_VRAM | VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED;
- 	if (pin)
++	clk_disable(host->hclk);
+ 	mmc_free_host(host->mmc);
+ 	pm_runtime_put_sync(&pdev->dev);
+-	clk_disable(host->hclk);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+ 	return 0;
 
 
