@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab2KOVxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:53:43 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:41701 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2KOVxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:53:42 -0500
-Date: Thu, 15 Nov 2012 15:53:08 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] char/tpm: simplify duration calculation and
- eliminate sparse warning.
-Message-ID: <20121115215307.GA12000@ennui.austin.ibm.com>
-References: <1352759838-27175-1-git-send-email-peterhuewe@gmx.de>
- <1352759838-27175-2-git-send-email-peterhuewe@gmx.de>
- <20121114221826.GC533@ennui.austin.ibm.com>
- <201211142337.06884.PeterHuewe@gmx.de>
- <20121115164242.GD533@ennui.austin.ibm.com>
- <fa7287de-06dd-40b4-9d9a-56fcc8a5f670@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fa7287de-06dd-40b4-9d9a-56fcc8a5f670@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111521-5112-0000-0000-00000E9CD794
+	id S1751785Ab2KOVyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:54:51 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:12074 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2KOVys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 16:54:48 -0500
+Message-ID: <1353011874.3055.22.camel@ejdallLaptop>
+Subject: Re: turbostat tool update for Linux-3.8
+From: Betty Dall <betty.dall@hp.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 Nov 2012 13:37:54 -0700
+In-Reply-To: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+References: <1352925804-6746-1-git-send-email-lenb@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 06:25:54PM +0100, Peter Huewe wrote:
-> Shall I resend a v2?
+On Wed, 2012-11-14 at 15:43 -0500, Len Brown wrote:
+> Here are some turbostat patches I have staged.
+> The 1st two I've requested be pulled into 3.7,
+> the rest are for 3.8
+> 
+> The final patch allows turbostat to print Watts
+> as measured by hardware RAPL counters -- something
+> that people have been asking for.
+> 
+> Please let me know if you see troubles with any of these patches.
 
-  Please do - thanks!
+Hi Len,
 
-> Peter
+I tested out these patches on an IvyBridge system and see the new Watts
+fields. They look like reasonable numbers to me. I ran with the system
+idle and then with lookbusy -c 50 and saw the Watts increase. Is there
+anything else to do to validate the numbers? In one case I saw that the
+Pkg_W for the system was off by .01, e.g. socket 0 was 28.33 and socket
+1 was 29.74 and the system total was 58.08 instead of 58.07. That is
+probably fine and just rounding up.
+
+-Betty
 
