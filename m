@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab2KOEX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:23:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49728 "EHLO mail.kernel.org"
+	id S933499Ab2KOEYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:24:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49718 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993213Ab2KOEMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:32 -0500
+	id S2993202Ab2KOEMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Egbert Eich <eich@suse.de>, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 16/57] DRM/Radeon: Fix Load Detection on legacy primary DAC.
-Date: Wed, 14 Nov 2012 20:11:24 -0800
-Message-Id: <20121115040934.219731568@linuxfoundation.org>
+        Javier Cardona <javier@cozybit.com>, Javier Lopez <jlopex@cozybit.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 15/57] mac80211: dont inspect Sequence Control field on control frames
+Date: Wed, 14 Nov 2012 20:11:23 -0800
+Message-Id: <20121115040934.156198828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -25,29 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Javier Cardona <javier@cozybit.com>
 
-commit 83325d072185899b706de2956170b246585aaec9 upstream.
+commit f7fbf70ee9db6da6033ae50d100e017ac1f26555 upstream.
 
-An uninitialized variable led to broken load detection.
+Per IEEE Std. 802.11-2012, Sec 8.2.4.4.1, the sequence Control field is
+not present in control frames.  We noticed this problem when processing
+Block Ack Requests.
 
-Signed-off-by: Egbert Eich <eich@suse.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Javier Cardona <javier@cozybit.com>
+Signed-off-by: Javier Lopez <jlopex@cozybit.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/rx.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -650,6 +650,7 @@ static enum drm_connector_status radeon_
- 	tmp |= RADEON_DAC_RANGE_CNTL_PS2 | RADEON_DAC_CMP_EN;
- 	WREG32(RADEON_DAC_CNTL, tmp);
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1465,6 +1465,10 @@ ieee80211_rx_h_defragment(struct ieee802
  
-+	tmp = dac_macro_cntl;
- 	tmp &= ~(RADEON_DAC_PDWN_R |
- 		 RADEON_DAC_PDWN_G |
- 		 RADEON_DAC_PDWN_B);
+ 	hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	fc = hdr->frame_control;
++
++	if (ieee80211_is_ctl(fc))
++		return RX_CONTINUE;
++
+ 	sc = le16_to_cpu(hdr->seq_ctrl);
+ 	frag = sc & IEEE80211_SCTL_FRAG;
+ 
 
 
