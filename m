@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768013Ab2KOPZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 10:25:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25087 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423166Ab2KOPZp (ORCPT
+	id S1768064Ab2KOPZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 10:25:50 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:40884 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423166Ab2KOPZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 10:25:45 -0500
-To: dgilbert@interlog.com
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation support
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1352405238-23267-1-git-send-email-nab@linux-iscsi.org>
-	<1352405238-23267-4-git-send-email-nab@linux-iscsi.org>
-	<20121115110432.GD28956@infradead.org> <50A5043E.1030301@interlog.com>
-Date: Thu, 15 Nov 2012 10:25:32 -0500
-In-Reply-To: <50A5043E.1030301@interlog.com> (Douglas Gilbert's message of
-	"Thu, 15 Nov 2012 10:03:26 -0500")
-Message-ID: <yq1ehju28ib.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	Thu, 15 Nov 2012 10:25:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1352953617.18025.94.camel@gandalf.local.home>
+References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
+	<1352925457-15700-8-git-send-email-fweisbec@gmail.com>
+	<1352953617.18025.94.camel@gandalf.local.home>
+Date: Thu, 15 Nov 2012 16:25:46 +0100
+Message-ID: <CAFTL4hzzhd5__VwR7N+VKpq1C27xHGgi4vj87drbcLghJ+Od5g@mail.gmail.com>
+Subject: Re: [PATCH 7/7] printk: Wake up klogd using irq_work
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Doug" == Douglas Gilbert <dgilbert@interlog.com> writes:
+2012/11/15 Steven Rostedt <rostedt@goodmis.org>:
+> On Wed, 2012-11-14 at 21:37 +0100, Frederic Weisbecker wrote:
+>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+>> index f249e8c..822d757 100644
+>> --- a/kernel/time/tick-sched.c
+>> +++ b/kernel/time/tick-sched.c
+>> @@ -289,7 +289,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+>>               time_delta = timekeeping_max_deferment();
+>>       } while (read_seqretry(&xtime_lock, seq));
+>>
+>> -     if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
+>> +     if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+>
+> If the CPU is going offline, the printk_tick() would be executed here.
+> But now that printk_tick() is done with the irq_work code, it wont be
+> executed till the next tick.  Could this cause a missed printk because
+> of this, if the cpu is going offline?
+>
+> Actually, how does irq_work in general handle cpu offline work?
 
-Doug> On 12-11-15 06:04 AM, Christoph Hellwig wrote:
->>> + /*
->>> + * Enable WRITE_SAME emulation for IBLOCK, use scsi_debug.c default
->>> + */
->> 
->> Why would we care what scsi_debug.c uses?
+Good point, and that's not trivial to solve.
 
-Doug> Would you prefer no hint of where the magic number came from? At
-Doug> least somebody who cares when they see that comment might contact
-Doug> Martin Petersen and ask why he chose that value.
+The hotplug down sequence does:
 
-And the answer is that WRITE SAME(10) takes a two-byte block count.
+----->
+CPU that offilines                                          CPU offlining
+-----------------
+---------------------
+cpu_down() {
+    __stop_machine(take_cpu_down)
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+take_cpu_down() {
+
+__cpu_disable() {
+
+    * disable irqs in hw
+
+    * clear from online mask
+                                                                       }
+
+move all tasks somewhere
+                                                                   }
+while (!idle_cpu(offlining))
+    cpu_relax()
+
+cpu_die();
+<---------
+
+So the offlining CPU goes to idle in the end once irqs are disabled in
+the apic level. Does that include the timer tick? If so then the last
+resort to offline without irq works in the queue is to make
+take_cpu_down() ask for a retry if there are pending irq works during
+its execution.
+
+Now if we have printk() calls between __cpu_disable() and the idle
+loop, they will be lost until the next onlining. Unless we do an
+explicit call to printk_tick() from the idle loop if the CPU is
+offline.
+
+Note that !CONFIG_NO_HZ doesn't seem to handle that. Which makes me
+wonder if the tick is really part of the whole IRQ disablement done in
+__cpu_disable().
