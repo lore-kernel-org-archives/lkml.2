@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768950Ab2KOUYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:24:18 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35275 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768917Ab2KOUYQ (ORCPT
+	id S1423713Ab2KOU0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:26:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:55887 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423686Ab2KOU0i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:24:16 -0500
-Date: Thu, 15 Nov 2012 21:24:11 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, bp@alien8.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h
- processors
-Message-ID: <20121115202411.GA6520@tweety>
-References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+	Thu, 15 Nov 2012 15:26:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
+   d="scan'208";a="247643021"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjMYQD//4mJQIAB4wgAgADGiTA=
+Date: Thu, 15 Nov 2012 20:26:36 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
+References: <509B5038.8090304@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+ <50A30656.6090508@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
+ <50A43828.6000702@oracle.com>
+In-Reply-To: <50A43828.6000702@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 01:41:50PM -0500, Boris Ostrovsky wrote:
-> Add valid patch size for family 16h processors
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+>-----Original Message-----
+>From: Joe Jin [mailto:joe.jin@oracle.com]
+>Sent: Wednesday, November 14, 2012 4:33 PM
+>To: Dave, Tushar N
+>Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org; Mary Mcgrath
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>On 11/14/12 11:45, Dave, Tushar N wrote:
+>>> -----Original Message-----
+>>> From: Joe Jin [mailto:joe.jin@oracle.com]
+>>> Sent: Tuesday, November 13, 2012 6:48 PM
+>>> To: Dave, Tushar N
+>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>>> kernel@vger.kernel.org; Mary Mcgrath
+>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
+>>>
+>>> On 11/09/12 04:35, Dave, Tushar N wrote:
+>>>> All devices in path from root complex to 82571, should have *same*
+>>>> max
+>>> payload size otherwise it can cause hang.
+>>>> Can you double check this?
+>>>
+>>> Hi Tushar,
+>>>
+>>> Checked with hardware vendor and they said no way to modify the max
+>>> payload size from BIOS, can I modify it from driver side?
+>>
+>> If you want to change value for 82571 device you can do it from eeprom
+>but for other upstream devices I am not sure. I will check with my team.
+>
+>Hi Tushar,
+>
+>Would you please help to fine the offset of max payload size in eeprom?
+>I'd like to have a try to modify it by ethtool.
 
+It is defined using bit 8 of word 0x1A.
+Bit value 0 = 128B , bit value 1 = 256B
 
-Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
-
-
-Thanks,
-Andreas
-
-> ---
->  arch/x86/kernel/microcode_amd.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-> index 7720ff5..58790e8 100644
-> --- a/arch/x86/kernel/microcode_amd.c
-> +++ b/arch/x86/kernel/microcode_amd.c
-> @@ -190,6 +190,7 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
->  #define F1XH_MPB_MAX_SIZE 2048
->  #define F14H_MPB_MAX_SIZE 1824
->  #define F15H_MPB_MAX_SIZE 4096
-> +#define F16H_MPB_MAX_SIZE 3458
->  
->  	switch (c->x86) {
->  	case 0x14:
-> @@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
->  	case 0x15:
->  		max_size = F15H_MPB_MAX_SIZE;
->  		break;
-> +	case 0x16:
-> +		max_size = F16H_MPB_MAX_SIZE;
-> +		break;
->  	default:
->  		max_size = F1XH_MPB_MAX_SIZE;
->  		break;
-> -- 
-> 1.7.10.4
-> 
-> 
+-Tushar
