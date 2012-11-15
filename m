@@ -1,102 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992815Ab2KOH2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 02:28:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37241 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992693Ab2KOH2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 02:28:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,254,1352102400"; 
-   d="asc'?scan'208";a="247319992"
-Date: Thu, 15 Nov 2012 09:29:55 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 00/11] Introduce huge zero page
-Message-ID: <20121115072955.GA9387@otc-wbsnb-06>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20121114133342.cc7bcd6e.akpm@linux-foundation.org>
+	id S2992860Ab2KOHc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 02:32:28 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46556 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992781Ab2KOHc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 02:32:26 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
-Content-Disposition: inline
-In-Reply-To: <20121114133342.cc7bcd6e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50A46BBD.3060701@oracle.com>
+References: <50A46BBD.3060701@oracle.com>
+Date: Wed, 14 Nov 2012 23:32:25 -0800
+X-Google-Sender-Auth: BFDPzbw4QAjAYMPc5BYrFN6R7yA
+Message-ID: <CAGXu5jJYbxbnNsP7tPxtShFd8d8zfVbi+pBEhyb4MZ+t+m4tXQ@mail.gmail.com>
+Subject: Re: [PATCH v4] binfmt_elf.c: use get_random_int() to fix entropy depleting
+From: Kees Cook <keescook@chromium.org>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <aedilger@gmail.com>,
+        John Sobecki <john.sobecki@oracle.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>, "Ted Ts'o" <tytso@mit.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        jakub@redhat.com, drepper@redhat.com,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 14, 2012 at 8:12 PM, Jeff Liu <jeff.liu@oracle.com> wrote:
+> Hello,
+>
+> The problems have been fixed in this version as per Kees's comments for v3.
+>
+> Hi Kees,
+> Would you please ACK this patch if you think it is ok except the strength
+> of these various RNGs you are concerned?
+>
+>
+> Changes:
+> --------
+> v4->v3:
+> - s/random_stack_user()/get_atrandom_bytes()/
+> - Move this function to ahead of its use to avoid the predeclaration.
+>
+> v3->v2:
+> - Tweak code comments of random_stack_user().
+> - Remove redundant bits mask and shift upon the random variable.
+>
+> v2->v1:
+> - Fix random copy to check up buffer length that are not 4-byte multiples.
+>
+> v3 can be found at:
+> http://www.spinics.net/lists/linux-fsdevel/msg59597.html
+> v2 can be found at:
+> http://www.spinics.net/lists/linux-fsdevel/msg59418.html
+> v1 can be found at:
+> http://www.spinics.net/lists/linux-fsdevel/msg59128.html
+>
+>
+> Thanks,
+> -Jeff
+>
+>
+> Entropy is quickly depleted under normal operations like ls(1), cat(1),
+> etc...  between 2.6.30 to current mainline, for instance:
+>
+> $ cat /proc/sys/kernel/random/entropy_avail
+> 3428
+> $ cat /proc/sys/kernel/random/entropy_avail
+> 2911
+> $cat /proc/sys/kernel/random/entropy_avail
+> 2620
+>
+> We observed this problem has been occurring since 2.6.30 with
+> fs/binfmt_elf.c: create_elf_tables()->get_random_bytes(), introduced by
+> f06295b44c296c8f ("ELF: implement AT_RANDOM for glibc PRNG seeding").
+>
+> /*
+>  * Generate 16 random bytes for userspace PRNG seeding.
+>  */
+> get_random_bytes(k_rand_bytes, sizeof(k_rand_bytes));
+>
+> The patch introduces a wrapper around get_random_int() which has lower
+> overhead than calling get_random_bytes() directly.
+>
+> With this patch applied:
+> $ cat /proc/sys/kernel/random/entropy_avail
+> 2731
+> $ cat /proc/sys/kernel/random/entropy_avail
+> 2802
+> $ cat /proc/sys/kernel/random/entropy_avail
+> 2878
+>
+> Analyzed by John Sobecki.
+>
+> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Andreas Dilger <aedilger@gmail.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: Arnd Bergmann <arnn@arndb.de>
+> Cc: John Sobecki <john.sobecki@oracle.com>
+> Cc: James Morris <james.l.morris@oracle.com>
+> Cc: Jakub Jelinek <jakub@redhat.com>
+> Cc: Ted Ts'o <tytso@mit.edu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Ulrich Drepper <drepper@redhat.com>
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Kees Cook <keescook@chromium.org>
 
-On Wed, Nov 14, 2012 at 01:33:42PM -0800, Andrew Morton wrote:
-> On Wed,  7 Nov 2012 17:00:52 +0200
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
->=20
-> > Andrew, here's updated huge zero page patchset.
->=20
-> There is still a distinct lack of reviewed-by's and acked-by's on this
-> patchset.
->=20
-> On 13 Sep, Andrea did indicate that he "reviewed the whole patchset and
-> it looks fine to me".  But that information failed to make it into the
-> changelogs, which is bad.
+-Kees
 
-As I said before, I had to drop Andrea's reviewed-by on rebase to
-v3.7-rc1. I had to solve few not-that-trivial conflicts and I was not sure
-if the reviewed-by is still applicable.
-
-> I grabbed the patchset.  I might hold it over until 3.9 depending on
-> additional review/test feedback and upon whether Andrea can be
-> persuaded to take another look at it all.
->=20
-> I'm still a bit concerned over the possibility that some workloads will
-> cause a high-frequency free/alloc/memset cycle on that huge zero page.=20
-> We'll see how it goes...
->=20
-> For this reason and for general ease-of-testing: can and should we add
-> a knob which will enable users to disable the feature at runtime?  That
-> way if it causes problems or if we suspect it's causing problems, we
-> can easily verify the theory and offer users a temporary fix.
->=20
-> Such a knob could be a boot-time option, but a post-boot /proc thing
-> would be much nicer.
-
-Okay, I'll add sysfs knob.
-
-BTW, we already have build time knob: just revert last two patches in the
-series. It will bring lazy allocation instead of refcounting.
-
---=20
- Kirill A. Shutemov
-
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQpJnzAAoJEAd+omnVudOMtwwQAL/CCVFGb7j5GyMcGl5/3L2M
-jfRl+hyN+y3mjcl7N1naMpwNASUiWGJU9Vea/5isc25j+YLZmn8dKqn+BBuvP9gl
-VUBnoKRzkn3mLhSQT6cVkDjeg3tFkwMG5HAkeLhfJsEqYv+C+TOsu8qdO0Pep2vK
-lCx+tvyjHG3/cqIMu+zd1b9gZnLqJaQwJMYllidAJ1NvPotvLxFSdbkzc0GHsdUF
-iVLAaqYrLUUHosnNin2Qw6JUZS+zLFXX9jnxD2ggAMfLTz092fAIPCZtkyyVK40g
-WDMg+sQScqGX8o8fN/68TDbL4DRNqHbiO7H7TUwA38KM0l8vThZib42kAmJDQjVn
-wcaPnGsqVIk4ijxd+d1z/OqHLx8h4eC0etA5034egiIrqFImGC+kyaqaA5sIyfpQ
-f7gRlxRxEs2Brx+E7oUfTX8cJUVwxGA2kmQYMrc29lAJ80RaBxPUfAHyeJtJJOEZ
-Ron7Pufo571fXO/DA5PQ1xRcB1xLvkYL3Dj3sbJuUkAw+STkK0oNXmrnLvsrHKAX
-WlrvLJxfxYmUaoc1nKY5NpjiIlSv/Mi2zSHOuiAIoe6eVfV5ceLzseeaPei9UyNt
-Y5Bm3py4yJGJceNzW3kJegPZa3ywPStaRw+iUqRtFPfiBN+nfHeIjv1SOBk31DVB
-NdZGcXORE/BhqFr5qjUm
-=6V53
------END PGP SIGNATURE-----
-
---2oS5YaxWCcQjTEyO--
+-- 
+Kees Cook
+Chrome OS Security
