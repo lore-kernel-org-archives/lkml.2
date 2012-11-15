@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993106Ab2KOEbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:31:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49374 "EHLO mail.kernel.org"
+	id S2993086Ab2KOEcA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:32:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49351 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993046Ab2KOELw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:52 -0500
+	id S2993030Ab2KOELu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zijie Pan <zijie.pan@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Hemant Kumar <hemantk@codeaurora.org>, Oliver Neukum <oneukum@suse.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 43/66] sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
-Date: Wed, 14 Nov 2012 20:10:48 -0800
-Message-Id: <20121115040942.235782503@linuxfoundation.org>
+Subject: [ 49/66] net: usb: Fix memory leak on Tx data path
+Date: Wed, 14 Nov 2012 20:10:54 -0800
+Message-Id: <20121115040942.675835689@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -29,34 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Zijie Pan <zijie.pan@6wind.com>
+From: Hemant Kumar <hemantk@codeaurora.org>
 
-[ Upstream commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec ]
+[ Upstream commit 39707c2a3ba5011038b363f84d37c8a98d2d9db1 ]
 
-Bug introduced by commit edfee0339e681a784ebacec7e8c2dc97dc6d2839
-(sctp: check src addr when processing SACK to update transport state)
+Driver anchors the tx urbs and defers the urb submission if
+a transmit request comes when the interface is suspended.
+Anchoring urb increments the urb reference count. These
+deferred urbs are later accessed by calling usb_get_from_anchor()
+for submission during interface resume. usb_get_from_anchor()
+unanchors the urb but urb reference count remains same.
+This causes the urb reference count to remain non-zero
+after usb_free_urb() gets called and urb never gets freed.
+Hence call usb_put_urb() after anchoring the urb to properly
+balance the reference count for these deferred urbs. Also,
+unanchor these deferred urbs during disconnect, to free them
+up.
 
-Signed-off-by: Zijie Pan <zijie.pan@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/sm_sideeffect.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/usb/usbnet.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1634,8 +1634,9 @@ static int sctp_cmd_interpreter(sctp_eve
- 					asoc->outqueue.outstanding_bytes;
- 			sackh.num_gap_ack_blocks = 0;
- 			sackh.num_dup_tsns = 0;
-+			chunk->subh.sack_hdr = &sackh;
- 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
--					SCTP_SACKH(&sackh));
-+					SCTP_CHUNK(chunk));
- 			break;
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1158,6 +1158,7 @@ netdev_tx_t usbnet_start_xmit (struct sk
+ 		usb_anchor_urb(urb, &dev->deferred);
+ 		/* no use to process more packets */
+ 		netif_stop_queue(net);
++		usb_put_urb(urb);
+ 		spin_unlock_irqrestore(&dev->txq.lock, flags);
+ 		netdev_dbg(dev->net, "Delaying transmission for resumption\n");
+ 		goto deferred;
+@@ -1310,6 +1311,8 @@ void usbnet_disconnect (struct usb_inter
  
- 		case SCTP_CMD_DISCARD_PACKET:
+ 	cancel_work_sync(&dev->kevent);
+ 
++	usb_scuttle_anchored_urbs(&dev->deferred);
++
+ 	if (dev->driver_info->unbind)
+ 		dev->driver_info->unbind (dev, intf);
+ 
 
 
