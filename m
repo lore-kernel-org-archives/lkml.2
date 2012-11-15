@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333Ab2KODnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 22:43:40 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4223 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab2KODni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 22:43:38 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <50A464E4.1080105@broadcom.com>
-Date: Wed, 14 Nov 2012 19:43:32 -0800
-From: "Nithin Nayak Sujir" <nsujir@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028
- Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "David Rientjes" <rientjes@google.com>
-cc: "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "Denys Fedoryshchenko" <denys@visp.net.lb>,
-        "Michael Chan" <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Latest 3.6.6 are not compiling due tg3 network driver,
- hwmon_device_unregister
-References: <8b566c4a9ee622737212dc17291ee238@visp.net.lb>
- <50A4606D.4020402@broadcom.com>
- <alpine.DEB.2.00.1211141929510.14414@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1211141929510.14414@chino.kir.corp.google.com>
-X-WSS-ID: 7CBABBFD1QK2812891-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+	id S1755616Ab2KOD7p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 22:59:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19568 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab2KOD7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 22:59:43 -0500
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dSWLLQtwMLwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_2UvRtBX3U8A:10 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=D7FtBBmPhq-9Irmde2wA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1352951981.18025.90.camel@gandalf.local.home>
+Subject: Re: [PATCH 5/7] irq_work: Don't stop the tick with pending works
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 14 Nov 2012 22:59:41 -0500
+In-Reply-To: <1352925457-15700-6-git-send-email-fweisbec@gmail.com>
+References: <1352925457-15700-1-git-send-email-fweisbec@gmail.com>
+	 <1352925457-15700-6-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-11-14 at 21:37 +0100, Frederic Weisbecker wrote:
+> Don't stop the tick if we have pending irq works on the
+> queue, otherwise if the arch can't raise self-IPIs, we may not
+> find an opportunity to execute the pending works for a while.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  include/linux/irq_work.h |    6 ++++++
+>  kernel/irq_work.c        |   11 +++++++++++
+>  kernel/time/tick-sched.c |    3 ++-
+>  3 files changed, 19 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+> index 6a9e8f5..a69704f 100644
+> --- a/include/linux/irq_work.h
+> +++ b/include/linux/irq_work.h
+> @@ -20,4 +20,10 @@ bool irq_work_queue(struct irq_work *work);
+>  void irq_work_run(void);
+>  void irq_work_sync(struct irq_work *work);
+>  
+> +#ifdef CONFIG_IRQ_WORK
+> +bool irq_work_needs_cpu(void);
+> +#else
+> +static bool irq_work_needs_cpu(void) { return false; }
+> +#endif
+> +
+>  #endif /* _LINUX_IRQ_WORK_H */
+> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> index 64eddd5..b3c113a 100644
+> --- a/kernel/irq_work.c
+> +++ b/kernel/irq_work.c
+> @@ -99,6 +99,17 @@ bool irq_work_queue(struct irq_work *work)
+>  }
+>  EXPORT_SYMBOL_GPL(irq_work_queue);
+>  
+> +bool irq_work_needs_cpu(void)
+> +{
+> +	struct llist_head *this_list;
+> +
+> +	this_list = &__get_cpu_var(irq_work_list);
+> +	if (llist_empty(this_list))
+> +		return false;
+> +
 
-On 11/14/2012 07:30 PM, David Rientjes wrote:
-> On Wed, 14 Nov 2012, Nithin Nayak Sujir wrote:
->
->> This was fixed by
->>
->> commit de0a41484c47d783dd4d442914815076aa2caac2
->> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
->> Date:   Mon Oct 1 11:43:49 2012 -0400
->>
->>      tg3: unconditionally select HWMON support when tg3 is enabled.
->>
-> Would you mind submitting this for stable by following the procedure
-> described in Documentation/stable_kernel_rules.txt?
->
+I wounder if this should just be:
 
-Will do. Thank you for bringing this to our attention.
+	return !llist_empty(&this_cpu_read(irq_work_list));
 
-Nithin.
+-- Steve
+
+
+> +	return true;
+> +}
+> +
+>  /*
+>   * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+>   * context with local IRQs disabled.
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 9e945aa..f249e8c 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/profile.h>
+>  #include <linux/sched.h>
+>  #include <linux/module.h>
+> +#include <linux/irq_work.h>
+>  
+>  #include <asm/irq_regs.h>
+>  
+> @@ -289,7 +290,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+>  	} while (read_seqretry(&xtime_lock, seq));
+>  
+>  	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
+> -	    arch_needs_cpu(cpu)) {
+> +	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+>  		next_jiffies = last_jiffies + 1;
+>  		delta_jiffies = 1;
+>  	} else {
 
 
