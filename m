@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767652Ab2KOL7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:59:31 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40936 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993257Ab2KOL7a (ORCPT
+	id S2993421Ab2KOMEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 07:04:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60919 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993257Ab2KOMEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:59:30 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] arm/dts: Add basic support for gta04 (Openmoko next generation) board.
-To: Belisko Marek <marek.belisko@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-In-Reply-To: <CAAfyv34D4bTO=k8niM42CDQFb0tP4uOnvX_KPT3+F6z59jPg3Q@mail.gmail.com>
-References: <1351633367-19082-1-git-send-email-marek.belisko@open-nandra.com> <CAAfyv34D4bTO=k8niM42CDQFb0tP4uOnvX_KPT3+F6z59jPg3Q@mail.gmail.com>
-Date: Thu, 15 Nov 2012 11:59:25 +0000
-Message-Id: <20121115115925.2FE453E09BB@localhost>
+	Thu, 15 Nov 2012 07:04:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [RFC Patch v1 38/55] ARC: Low level event capture/logging
+Date: Thu, 15 Nov 2012 12:04:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <201211121355.23947.arnd@arndb.de> <50A4C6B5.9010500@synopsys.com>
+In-Reply-To: <50A4C6B5.9010500@synopsys.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211151204.13203.arnd@arndb.de>
+X-Provags-ID: V02:K0:O7CCg1G8H+sCvQWxVaAq3PcQpnJIqOClWgZc/NoEYid
+ Qafl961lOJ08OmFPhwLTQ3H5Pj1hNGfaRg+CUNKhsKws12+8Tz
+ Hw/Ls9jXhP2X2UceO7ZOkKL4blzIeCCIZluTdkvMu+DAAuJ6YZ
+ 0Dq19RkwjJZ6AcatjSvYwaowkkusxUznYlVVxxWUVYY2V51Jlt
+ lDEChQGjMfInDaJm0XJMyxB/vGH6Tv8ll7oJh8hcz1MQ0hd5Pl
+ 9qWAfkbdHmfK++Z/vKHgqvrndfZgDO8cIq8GlT6IVJRSO1ect8
+ QXDq2QCTLJnWLwcgByrZ1ZUkBy5gY5bNzW28fbdhyYyJ1SvTK7
+ pK1dogaEMi1dpElGj5KA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 21:26:58 +0100, Belisko Marek <marek.belisko@gmail.com> wrote:
-> CC' Grant & Rob
-
-Hi Marek
-
-Since this is an OMAP board, you should send the changes to Tony and
-they should be merged through the arm-soc tree.
-
-g.
-
+On Thursday 15 November 2012, Vineet Gupta wrote:
+> On Monday 12 November 2012 07:25 PM, Arnd Bergmann wrote:
+> > On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+> >> +EXPORT_SYMBOL(take_snap);
+> >> +
+> >> ...
+> >> +EXPORT_SYMBOL(take_snap2);
+> > Where are these functions called?
 > 
-> On Tue, Oct 30, 2012 at 10:42 PM, Marek Belisko
-> <marek.belisko@open-nandra.com> wrote:
-> > Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> > ---
-> >  arch/arm/boot/dts/omap3-gta04.dts |   65 +++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 65 insertions(+)
-> >  create mode 100644 arch/arm/boot/dts/omap3-gta04.dts
-> >
-> > diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-> > new file mode 100644
-> > index 0000000..76efd13
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/omap3-gta04.dts
-> > @@ -0,0 +1,65 @@
-> > +/*
-> > + * Copyright (C) 2012 Marek Belisko <marek.belisko@open-nandra.com>
-> > + *
-> > + * Based on omap3-beagle-xm.dts
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +/dts-v1/;
-> > +
-> > +/include/ "omap3.dtsi"
-> > +
-> > +/ {
-> > +       model = "OMAP3 GTA04";
-> > +       compatible = "ti,omap3-gta04", "ti,omap3";
-> > +
-> > +       memory {
-> > +               device_type = "memory";
-> > +               reg = <0x80000000 0x20000000>; /* 512 MB */
-> > +       };
-> > +
-> > +       gpio-keys {
-> > +               compatible = "gpio-keys";
-> > +               #address-cells = <1>;
-> > +               #size-cells = <0>;
-> > +               aux-button {
-> > +                       label = "AUX";
-> > +                       linux,code = <169>;
-> > +                       gpios = <&gpio1 7 1>;
-> > +                       gpio-key,wakeup;
-> > +               };
-> > +       };
-> > +};
-> > +
-> > +&i2c1 {
-> > +       clock-frequency = <2600000>;
-> > +
-> > +       twl: twl@48 {
-> > +               reg = <0x48>;
-> > +               interrupts = <7>; /* SYS_NIRQ cascaded to intc */
-> > +               interrupt-parent = <&intc>;
-> > +       };
-> > +};
-> > +
-> > +/include/ "twl4030.dtsi"
-> > +
-> > +&i2c2 {
-> > +       clock-frequency = <400000>;
-> > +       /* Pressure Sensor */
-> > +       bmp085@77 {
-> > +               compatible = "bosch,bmp085";
-> > +               reg = <0x77>;
-> > +       };
-> > +};
-> > +
-> > +&i2c3 {
-> > +       clock-frequency = <100000>;
-> > +};
-> > +
-> > +&mmc1 {
-> > +       vmmc-supply = <&vmmc1>;
-> > +       bus-width = <4>;
-> > +};
-> > +
-> > --
-> > 1.7.9.5
-> >
+> These are called from various parts of ARCH code, such as before
+> handling signal or TLB flush etc.
 > 
+> > Shouldn't this all just be part of the perf module?
 > 
+> These are for low level ARCH specific event snapshotting. Maybe
+> perf/ftrace already have some of these in the generic code which
+> eventually call the ARCH APIs. Our current perf support is just husk of
+> an implementation. Once we have the full perf / ftrace support this
+> module - except for the even t capture part could just go away.
+> OTOH, I've not seen much usage of this from loadable modules - so if you
+> deem correct, I can even remove the export.
 > 
-> -- 
-> as simple and primitive as possible
-> -------------------------------------------------
-> Marek Belisko - OPEN-NANDRA
-> Freelance Developer
+> > If not, can you make the exports GPL-only?
 > 
-> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-> Tel: +421 915 052 184
-> skype: marekwhite
-> twitter: #opennandra
-> web: http://open-nandra.com
+> Am I right in understanding that this is more related to discouraging
+> non GPL modules "in general" than having to do with port itself.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Mostly yes. I understand that there are some reasons why people want
+to mark symbols as generally available, e.g. for standard interfaces
+that have traditionally been available to every module. My rule is
+usually that any newly introduced symbols should be EXPORT_SYMBOL_GPL
+by default, unless there is a (documented) reason to use EXPORT_SYMBOL
+instead. This is particularly true for low-level interfaces like the
+one here.
+
+If you can just remove the export, that is probably the best solution.
+
+On a related note, any global symbol (exported or not) should normally
+have a prefix that identifies the subsystem it belongs to. A global
+identifier like "take_snap" can potentially conflict with symbols in
+other parts of the kernel.
+
+	Arnd
