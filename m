@@ -1,89 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993199Ab2KOIvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:51:02 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63779 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992995Ab2KOIuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:50:12 -0500
-Date: Thu, 15 Nov 2012 09:50:03 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>, Mark Zhang <markz@nvidia.com>
-Subject: Re: [PATCH 0/2] Device tree updates for host1x support
-Message-ID: <20121115085003.GB16575@avionic-0098.mockup.avionic-design.de>
-References: <1352467202-27903-1-git-send-email-thierry.reding@avionic-design.de>
- <509D3EB1.8040703@wwwdotorg.org>
- <20121109184409.GB7663@avionic-0098.mockup.avionic-design.de>
- <509D7145.9000203@wwwdotorg.org>
- <50A4A61A.9090506@nvidia.com>
+	id S2993222Ab2KOIvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:51:17 -0500
+Received: from mga14.intel.com ([143.182.124.37]:22014 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2993193Ab2KOIvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 03:51:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
+   d="asc'?scan'208";a="218101351"
+Date: Thu, 15 Nov 2012 10:52:00 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 06/11] thp: change split_huge_page_pmd() interface
+Message-ID: <20121115085200.GD9676@otc-wbsnb-06>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1352300463-12627-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.00.1211141516570.22537@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZfOjI3PrQbgiZnxM"
+	protocol="application/pgp-signature"; boundary="fXStkuK2IQBfcDe+"
 Content-Disposition: inline
-In-Reply-To: <50A4A61A.9090506@nvidia.com>
+In-Reply-To: <alpine.DEB.2.00.1211141516570.22537@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:2RzbTTRhHMdsW1Zj7rv49JZDVRftHEE8hYcEr/hPzmi
- dAhAa/8bOxtrVsLTPmjC/Rw2AezVSxVuUelhBiQ2mWNU1V5QGP
- q3GraVbk+QdmXNB98MWbqqjqcJOScRmyoZlinBc+9/SEswlRuU
- HZvlh9+LkR1LSHMyt8mLaeZpF5S49W16dKNZD1gdCP+Vjd6MYy
- 1ZLECQ+GP/2Yk/vIX1oz7REwhfZDcQpsESZeEuMWZ8JZoAIcAC
- R2uShMjqlDvSHchVZconEK+NVhDyKPJSwvXZtBNb7AtHrD7sfC
- 1VFAFGGXNWK/rCJLVxczmSP913g1FIaY2H7V7DdN9kE443aE2z
- 2/oRmoz13SELFfWsS6kCToJJ+s5VukwdivYOoZYf/0gcKFlQtN
- jU+/ShrbXaOSE4g/5krJbn6ppTuO+c7UwU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZfOjI3PrQbgiZnxM
+--fXStkuK2IQBfcDe+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 15, 2012 at 01:51:46PM +0530, Prashant Gaikwad wrote:
-> On Saturday 10 November 2012 02:40 AM, Stephen Warren wrote:
-> >On 11/09/2012 11:44 AM, Thierry Reding wrote:
-> >>On Fri, Nov 09, 2012 at 10:34:41AM -0700, Stephen Warren wrote:
-> >...
-> >>>I really hope soon that Tegra will support DT bindings for clocks
-> >>>so we can get rid of the AUXDATA, but unfortunately I haven't
-> >>>seen any movement towards this:-(
-> >>Oh yes, please. We wouldn't have any of the above problem if we
-> >>had proper DT bindings for this. Who needs to be prodded to speed
-> >>this up?
-> >I believe one of Peter De Schrijver or Prashant Gaikwad are supposed
-> >to be working on this.
-> I am working on it, will send patches soon.
+On Wed, Nov 14, 2012 at 03:22:03PM -0800, David Rientjes wrote:
+> On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
+>=20
+> > diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhug=
+e.txt
+> > index f734bb2..677a599 100644
+> > --- a/Documentation/vm/transhuge.txt
+> > +++ b/Documentation/vm/transhuge.txt
+> > @@ -276,7 +276,7 @@ unaffected. libhugetlbfs will also work fine as usu=
+al.
+> >  =3D=3D Graceful fallback =3D=3D
+> > =20
+> >  Code walking pagetables but unware about huge pmds can simply call
+> > -split_huge_page_pmd(mm, pmd) where the pmd is the one returned by
+> > +split_huge_page_pmd(vma, pmd, addr) where the pmd is the one returned =
+by
+> >  pmd_offset. It's trivial to make the code transparent hugepage aware
+> >  by just grepping for "pmd_offset" and adding split_huge_page_pmd where
+> >  missing after pmd_offset returns the pmd. Thanks to the graceful
+> > @@ -299,7 +299,7 @@ diff --git a/mm/mremap.c b/mm/mremap.c
+> >  		return NULL;
+> > =20
+> >  	pmd =3D pmd_offset(pud, addr);
+> > -+	split_huge_page_pmd(mm, pmd);
+> > ++	split_huge_page_pmd(vma, pmd, addr);
+> >  	if (pmd_none_or_clear_bad(pmd))
+> >  		return NULL;
+> > =20
+> > diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+> > index 5c9687b..1dfe69c 100644
+> > --- a/arch/x86/kernel/vm86_32.c
+> > +++ b/arch/x86/kernel/vm86_32.c
+> > @@ -182,7 +182,7 @@ static void mark_screen_rdonly(struct mm_struct *mm)
+> >  	if (pud_none_or_clear_bad(pud))
+> >  		goto out;
+> >  	pmd =3D pmd_offset(pud, 0xA0000);
+> > -	split_huge_page_pmd(mm, pmd);
+> > +	split_huge_page_pmd_mm(mm, 0xA0000, pmd);
+> >  	if (pmd_none_or_clear_bad(pmd))
+> >  		goto out;
+> >  	pte =3D pte_offset_map_lock(mm, pmd, 0xA0000, &ptl);
+>=20
+> Why not be consistent and make this split_huge_page_pmd_mm(mm, pmd, addr)?
+>=20
+> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > index 90c63f9..291a0d1 100644
+> > --- a/fs/proc/task_mmu.c
+> > +++ b/fs/proc/task_mmu.c
+> > @@ -643,7 +643,7 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigne=
+d long addr,
+> >  	spinlock_t *ptl;
+> >  	struct page *page;
+> > =20
+> > -	split_huge_page_pmd(walk->mm, pmd);
+> > +	split_huge_page_pmd(vma, addr, pmd);
+>=20
+> Ah, it's because the change to the documentation is wrong: the format is=
+=20
+> actually split_huge_page_pmd(vma, addr, pmd).
 
-Excellent. I'm very much looking forward to this.
+Thanks, will fix.
 
-Thierry
+> >  	if (pmd_trans_unstable(pmd))
+> >  		return 0;
+> > =20
+> > diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> > index b31cb7d..856f080 100644
+> > --- a/include/linux/huge_mm.h
+> > +++ b/include/linux/huge_mm.h
+> > @@ -91,12 +91,14 @@ extern int handle_pte_fault(struct mm_struct *mm,
+> >  			    struct vm_area_struct *vma, unsigned long address,
+> >  			    pte_t *pte, pmd_t *pmd, unsigned int flags);
+> >  extern int split_huge_page(struct page *page);
+> > -extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+> > -#define split_huge_page_pmd(__mm, __pmd)				\
+> > +extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+> > +		unsigned long address, pmd_t *pmd);
+> > +#define split_huge_page_pmd(__vma, __address, __pmd)			\
+> >  	do {								\
+> >  		pmd_t *____pmd =3D (__pmd);				\
+> >  		if (unlikely(pmd_trans_huge(*____pmd)))			\
+> > -			__split_huge_page_pmd(__mm, ____pmd);		\
+> > +			__split_huge_page_pmd(__vma, __address,		\
+> > +					____pmd);			\
+> >  	}  while (0)
+> >  #define wait_split_huge_page(__anon_vma, __pmd)				\
+> >  	do {								\
+> > @@ -106,6 +108,8 @@ extern void __split_huge_page_pmd(struct mm_struct =
+*mm, pmd_t *pmd);
+> >  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+> >  		       pmd_trans_huge(*____pmd));			\
+> >  	} while (0)
+> > +extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long=
+ address,
+> > +		pmd_t *pmd);
+> >  #if HPAGE_PMD_ORDER > MAX_ORDER
+> >  #error "hugepages can't be allocated by the buddy allocator"
+> >  #endif
+> > @@ -173,10 +177,12 @@ static inline int split_huge_page(struct page *pa=
+ge)
+> >  {
+> >  	return 0;
+> >  }
+> > -#define split_huge_page_pmd(__mm, __pmd)	\
+> > +#define split_huge_page_pmd(__vma, __address, __pmd)	\
+> >  	do { } while (0)
+> >  #define wait_split_huge_page(__anon_vma, __pmd)	\
+> >  	do { } while (0)
+> > +#define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
+> > +	do { } while (0)
+> >  #define compound_trans_head(page) compound_head(page)
+> >  static inline int hugepage_madvise(struct vm_area_struct *vma,
+> >  				   unsigned long *vm_flags, int advice)
+> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > index 05490b3..90e651c 100644
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -2509,19 +2509,23 @@ static int khugepaged(void *none)
+> >  	return 0;
+> >  }
+> > =20
+> > -void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
+> > +void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long a=
+ddress,
+> > +		pmd_t *pmd)
+> >  {
+> >  	struct page *page;
+> > +	unsigned long haddr =3D address & HPAGE_PMD_MASK;
+> >=20
+>=20
+> Just do
+>=20
+> 	struct mm_struct *mm =3D vma->vm_mm;
+>=20
+> here and it makes everything else simpler.
 
---ZfOjI3PrQbgiZnxM
-Content-Type: application/pgp-signature
+Okay.
+
+> > -	spin_lock(&mm->page_table_lock);
+> > +	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
+> > +
+> > +	spin_lock(&vma->vm_mm->page_table_lock);
+> >  	if (unlikely(!pmd_trans_huge(*pmd))) {
+> > -		spin_unlock(&mm->page_table_lock);
+> > +		spin_unlock(&vma->vm_mm->page_table_lock);
+> >  		return;
+> >  	}
+> >  	page =3D pmd_page(*pmd);
+> >  	VM_BUG_ON(!page_count(page));
+> >  	get_page(page);
+> > -	spin_unlock(&mm->page_table_lock);
+> > +	spin_unlock(&vma->vm_mm->page_table_lock);
+> > =20
+> >  	split_huge_page(page);
+> > =20
+
+--=20
+ Kirill A. Shutemov
+
+--fXStkuK2IQBfcDe+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQpKy7AAoJEN0jrNd/PrOhmBoQAIOKr7LN80EoYd/jL4dw3HF6
-GCpWWhskCDfKrdrpdtDP6UofZZdxJvGoif+V0Y88g1x18mva29cY8mYiqlnZn33z
-KbHEyPUdGZ1H4JihNOX5nhsBo3KLq8EMWylmB1fqhnH6t2UK3MWURej8GQtvPO/o
-rSRzB6aOXoHEk6TSt8mMJSNQWrk/++bT104zeUrxPeVgrdut1sNIvEbGrGdnlr9a
-NNahLiCMjOAe5i3093beGjsFD9jWO8j2O5mu5HpJ0Ma9kzfs5mYoeUlFcCo2ikSn
-2X4HyXqi8bf21/ZSzaLmM5ar6PnjXEhUX/2rJWoVx6oHxocHoavDf9uqdf/K82MG
-atQN+AqbfAP/frwIhAKdaC83oL+kaZRqhLEl/UvEwn4zLDlxDAO7bSTPs8NpBBLp
-s6y8kF1z+gDJ2zf5NSmJZlGTpx8uCMaTqyvd2I76XS+Z6Iynhe8YszTqc5XLBv77
-bbf0OWjqigMr7J9gsoDX8yH2bqnu3ddA3+d1CG5Ic6CRMuw/k3tv3tJAhmdnqQxm
-/C4wWvjiMw7sZk/SWijotArnX5W3nNjbzyuKQqAIrGBkPMQkhc6byuNFkZeNHYUE
-eIMVTF77orKR4MCevCb5a4X9ZUth4XgaI0VMFstT6rrpdz9OhjEIORHohNlWrk85
-Yj2Effh1e397ULpLyREV
-=KPA3
+iQIcBAEBAgAGBQJQpK0wAAoJEAd+omnVudOM0KcP/A3s7sj93lp0PUv3rkitDEyY
+z4g3S+ocV6U3BbPw1cjY0uGt8egLjYcRPEhuhe7zMO7QACDNqlvrVTPXKWDQOMy8
+v0MDjrU28oCp/0EkkSwFk9AyOOmicxMaQRPljvg5s9v66r6FLN738GoscprzJS5e
+Ct2KBsFhCP8hQX8l+zmYHWrtm7jK84gw7a5WKcGqXQw1DJe4KYDjxzyeUgKdNa29
+77xSTsfoUwzEwpU4o6ZtWg9N3Y0mw5rpoyJnjTeeQTyymyLLIEcHMXPGkOw9WBv2
+GXg/qR+o8x6CVoweMXEITEtNmIwkALoNEU2ReAwkujoCGl+lrBiRlb8MAGwEM8wC
+LV9N73Zz4ZGL/VHa5NEja77K/Ri2OH4XtlhCqAnfNA2LHmeAMrGkJeS8ZNcGMsPF
+veFypHLrAJewN34J04v9oxwU9HrWiOsrl2Sul7ivD7LXO4n/UyYpKawUiU96gub2
+24Wf3FacpEK9pQOdWJQnpbsOCCQLDJWpQkAa/pU0ko0CNN4eNYeIapCpczbdsw+d
+OVXF1GtbjKzBmaGnuGdcCZezAodALFXfrJwtIEg56iE28MQlGtO+Z663rTrM3DtN
+qTYmxpoEG7jKh0ZWKm/uRyrEyc5GqaNhNXRlTd6TMWBhgWq8VXjZxmGTIqeJfOFX
+0gjtC0N4uQb/TcoR9vMM
+=CSfF
 -----END PGP SIGNATURE-----
 
---ZfOjI3PrQbgiZnxM--
+--fXStkuK2IQBfcDe+--
