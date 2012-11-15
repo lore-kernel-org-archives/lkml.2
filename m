@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933539Ab2KOEY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:24:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49684 "EHLO mail.kernel.org"
+	id S933523Ab2KOEY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:24:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49694 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993187Ab2KOEM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:27 -0500
+	id S2993188Ab2KOEM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Javier Cardona <javier@cozybit.com>,
+        Paul Stewart <pstew@chromium.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 12/57] wireless: drop invalid mesh address extension frames
-Date: Wed, 14 Nov 2012 20:11:20 -0800
-Message-Id: <20121115040933.965891870@linuxfoundation.org>
+Subject: [ 13/57] mac80211: use blacklist for duplicate IE check
+Date: Wed, 14 Nov 2012 20:11:21 -0800
+Message-Id: <20121115040934.028043119@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -28,61 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
+commit 9690fb169b433a66485c808e4fc352b8a0f8d866 upstream.
 
-The mesh header can have address extension by a 4th
-or a 5th and 6th address, but never both. Drop such
-frames in 802.11 -> 802.3 conversion along with any
-frames that have the wrong extension.
+Instead of the current whitelist which accepts duplicates
+only for the quiet and vendor IEs, use a blacklist of all
+IEs (that we currently parse) that can't be duplicated.
 
-Reviewed-by: Javier Cardona <javier@cozybit.com>
+This avoids detecting a beacon as corrupt in the future
+when new IEs are added that can be duplicated.
+
+Signed-off-by: Paul Stewart <pstew@chromium.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/util.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/mac80211/util.c |   39 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 32 insertions(+), 7 deletions(-)
 
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -293,18 +293,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_
- static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
- {
- 	int ae = meshhdr->flags & MESH_FLAGS_AE;
--	/* 7.1.3.5a.2 */
-+	/* 802.11-2012, 8.2.4.7.3 */
- 	switch (ae) {
-+	default:
- 	case 0:
- 		return 6;
- 	case MESH_FLAGS_AE_A4:
- 		return 12;
- 	case MESH_FLAGS_AE_A5_A6:
- 		return 18;
--	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
--		return 24;
--	default:
--		return 6;
- 	}
- }
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -592,13 +592,38 @@ u32 ieee802_11_parse_elems_crc(u8 *start
+ 			break;
+ 		}
  
-@@ -354,6 +351,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A4)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
-@@ -378,6 +377,8 @@ int ieee80211_data_to_8023(struct sk_buf
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A4)
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
+-		if (id != WLAN_EID_VENDOR_SPECIFIC &&
+-		    id != WLAN_EID_QUIET &&
+-		    test_bit(id, seen_elems)) {
+-			elems->parse_error = true;
+-			left -= elen;
+-			pos += elen;
+-			continue;
++		switch (id) {
++		case WLAN_EID_SSID:
++		case WLAN_EID_SUPP_RATES:
++		case WLAN_EID_FH_PARAMS:
++		case WLAN_EID_DS_PARAMS:
++		case WLAN_EID_CF_PARAMS:
++		case WLAN_EID_TIM:
++		case WLAN_EID_IBSS_PARAMS:
++		case WLAN_EID_CHALLENGE:
++		case WLAN_EID_RSN:
++		case WLAN_EID_ERP_INFO:
++		case WLAN_EID_EXT_SUPP_RATES:
++		case WLAN_EID_HT_CAPABILITY:
++		case WLAN_EID_MESH_ID:
++		case WLAN_EID_MESH_CONFIG:
++		case WLAN_EID_PEER_MGMT:
++		case WLAN_EID_PREQ:
++		case WLAN_EID_PREP:
++		case WLAN_EID_PERR:
++		case WLAN_EID_RANN:
++		case WLAN_EID_CHANNEL_SWITCH:
++		case WLAN_EID_EXT_CHANSWITCH_ANN:
++		case WLAN_EID_COUNTRY:
++		case WLAN_EID_PWR_CONSTRAINT:
++		case WLAN_EID_TIMEOUT_INTERVAL:
++			if (test_bit(id, seen_elems)) {
++				elems->parse_error = true;
++				left -= elen;
++				pos += elen;
++				continue;
++			}
++			break;
+ 		}
+ 
+ 		if (calc_crc && id < 64 && (filter & (1ULL << id)))
 
 
