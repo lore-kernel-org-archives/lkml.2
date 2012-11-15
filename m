@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573Ab2KOEao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:30:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49405 "EHLO mail.kernel.org"
+	id S2993083Ab2KOEbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:31:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49395 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993010Ab2KOELz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:55 -0500
+	id S2993055Ab2KOELy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [ 54/66] net: inet_diag -- Return error code if protocol handler is missed
-Date: Wed, 14 Nov 2012 20:10:59 -0800
-Message-Id: <20121115040943.045361711@linuxfoundation.org>
+        Pavel Emelyanov <xemul@parallels.com>,
+        Giorgos Mavrikas <gmavrikas@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 53/66] tcp-repair: Handle zero-length data put in rcv queue
+Date: Wed, 14 Nov 2012 20:10:58 -0800
+Message-Id: <20121115040942.963040043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -29,49 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Cyrill Gorcunov <gorcunov@openvz.org>
+From: Pavel Emelyanov <xemul@parallels.com>
 
-[ Upstream commit cacb6ba0f36ab14a507f4ee7697e8332899015d2 ]
+[ Upstream commit c454e6111d1ef4268fe98e87087216e51c2718c3 ]
 
-We've observed that in case if UDP diag module is not
-supported in kernel the netlink returns NLMSG_DONE without
-notifying a caller that handler is missed.
+When sending data into a tcp socket in repair state we should check
+for the amount of data being 0 explicitly. Otherwise we'll have an skb
+with seq == end_seq in rcv queue, but tcp doesn't expect this to happen
+(in particular a warn_on in tcp_recvmsg shoots).
 
-This patch makes __inet_diag_dump to return error code instead.
-
-So as example it become possible to detect such situation
-and handle it gracefully on userspace level.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: David Miller <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Reported-by: Giorgos Mavrikas <gmavrikas@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_diag.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_input.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -883,13 +883,16 @@ static int __inet_diag_dump(struct sk_bu
- 		struct inet_diag_req_v2 *r, struct nlattr *bc)
- {
- 	const struct inet_diag_handler *handler;
-+	int err = 0;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4556,6 +4556,9 @@ int tcp_send_rcvq(struct sock *sk, struc
+ 	struct tcphdr *th;
+ 	bool fragstolen;
  
- 	handler = inet_diag_lock_handler(r->sdiag_protocol);
- 	if (!IS_ERR(handler))
- 		handler->dump(skb, cb, r, bc);
-+	else
-+		err = PTR_ERR(handler);
- 	inet_diag_unlock_handler(handler);
- 
--	return skb->len;
-+	return err ? : skb->len;
- }
- 
- static int inet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
++	if (size == 0)
++		return 0;
++
+ 	skb = alloc_skb(size + sizeof(*th), sk->sk_allocation);
+ 	if (!skb)
+ 		goto err;
 
 
