@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992990Ab2KOEht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:37:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48923 "EHLO mail.kernel.org"
+	id S2992930Ab2KOELP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:11:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48803 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992933Ab2KOELQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:16 -0500
+	id S2992863Ab2KOELD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 22/66] drm/i915: Only kick out vesafb if we takeover the fbcon with KMS
-Date: Wed, 14 Nov 2012 20:10:27 -0800
-Message-Id: <20121115040940.616195253@linuxfoundation.org>
+        Steve Hodgson <steve@purestorage.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 11/66] target: Fix incorrect usage of nested IRQ spinlocks in ABORT_TASK path
+Date: Wed, 14 Nov 2012 20:10:16 -0800
+Message-Id: <20121115040939.825253857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,40 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Steve Hodgson <steve@purestorage.com>
 
-commit 1623392af9da983f3ad088a75076c9da05e5600d upstream.
+commit ab74b3d62f05192bf8fb8f169e7999d1183b2e08 upstream.
 
-Otherwise we may remove the only console for a nomodeset system.
+This patch changes core_tmr_abort_task() to use spin_lock -> spin_unlock
+around se_cmd->t_state_lock while spin_lock_irqsave is held via
+se_sess->sess_cmd_lock.
 
-We became more aggressive in our kicking with
-commit e188719a2891f01b3100dca4ae3a055fb5a7ab52
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Jun 12 11:28:17 2012 +0200
-
-    drm/i915: kick any firmware framebuffers before claiming the gtt
-
-Reported-and-tested-by: monnier@iro.umontreal.ca
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54615
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/target_core_tmr.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1484,7 +1484,8 @@ int i915_driver_load(struct drm_device *
- 		goto put_gmch;
- 	}
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -140,15 +140,15 @@ void core_tmr_abort_task(
+ 		printk("ABORT_TASK: Found referenced %s task_tag: %u\n",
+ 			se_cmd->se_tfo->get_fabric_name(), ref_tag);
  
--	i915_kick_out_firmware_fb(dev_priv);
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		i915_kick_out_firmware_fb(dev_priv);
+-		spin_lock_irq(&se_cmd->t_state_lock);
++		spin_lock(&se_cmd->t_state_lock);
+ 		if (se_cmd->transport_state & CMD_T_COMPLETE) {
+ 			printk("ABORT_TASK: ref_tag: %u already complete, skipping\n", ref_tag);
+-			spin_unlock_irq(&se_cmd->t_state_lock);
++			spin_unlock(&se_cmd->t_state_lock);
+ 			spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+ 			goto out;
+ 		}
+ 		se_cmd->transport_state |= CMD_T_ABORTED;
+-		spin_unlock_irq(&se_cmd->t_state_lock);
++		spin_unlock(&se_cmd->t_state_lock);
  
- 	pci_set_master(dev->pdev);
- 
+ 		list_del_init(&se_cmd->se_cmd_list);
+ 		kref_get(&se_cmd->cmd_kref);
 
 
