@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767901Ab2KOODq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:03:46 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57171 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1767872Ab2KOODn (ORCPT
+	id S1767886Ab2KOOE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:04:59 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56680 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767797Ab2KOOE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:03:43 -0500
+	Thu, 15 Nov 2012 09:04:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121113063546.GD18224@opensource.wolfsonmicro.com>
-References: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com>
-	<50A15A54.3090803@wwwdotorg.org>
-	<20121113063546.GD18224@opensource.wolfsonmicro.com>
-Date: Thu, 15 Nov 2012 15:03:40 +0100
-Message-ID: <CACRpkdY-tye5LNOwxQ-XrjM-x9RffAvj-tPfsFQA3ZWOY8P-Vw@mail.gmail.com>
-Subject: Re: [PATCH] RFC: pinctrl: grab default handler with bus notifiers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <alpine.LNX.2.00.1211151450140.15877@pobox.suse.cz>
+References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
+	<alpine.LNX.2.00.1211151450140.15877@pobox.suse.cz>
+Date: Thu, 15 Nov 2012 15:04:54 +0100
+Message-ID: <CAN+gG=FeNBzdbBcH6uSWB_rUOS6PjyjpVSuY3b--g1mXo17fXA@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification implementation
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
+        JJ Ding <jj_ding@emc.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 7:35 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Nov 12, 2012 at 01:21:40PM -0700, Stephen Warren wrote:
->> On 11/11/2012 05:22 AM, Linus Walleij wrote:
+On Thu, Nov 15, 2012 at 2:51 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 12 Nov 2012, Benjamin Tissoires wrote:
 >
->> > Another solution that was discussed was whether to move
->> > the default pinctrl handle and state grab to the device
->> > core as an optional field in struct device itself, but
->> > I'd like to first propose this less intrusive mechanism.
+>> Microsoft published the protocol specification of HID over i2c:
+>> http://msdn.microsoft.com/en-us/library/windows/hardware/hh852380.aspx
+>>
+>> This patch introduces an implementation of this protocol.
+>>
+>> This implementation does not includes the ACPI part of the specification.
+>> This will come when ACPI 5.0 devices enumeration will be available.
+>>
+>> Once the ACPI part is done, OEM will not have to declare HID over I2C
+>> devices in their platform specific driver.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 >
->> I think doing that approach makes a lot more sense; wouldn't it
->> completely avoid the issues with deferred probe that this notifier-based
->> method can't solve? It would also be very much in line with e.g.
->> dev_get_regmap() - if every resource that a driver required were handled
->> like that, then deferred probe could be significantly isolated into the
->> driver core rather than in every driver...
->
-> I have to say that I agree with this, notifiers seem to make life more
-> complicated for limited gain.  Otherwise I guess we could enhance
-> notifiers so that they're able to trigger deferrals?
+> Out of curiosity -- has this been tested on a real device (is there any
+> such device available anyway?), or is that just the implementation of the
+> defined protocol?
 
-OK I'll have to come up with a patch to the device core
-instead... it'll be much simpler anyway and if both of you guys
-can back it I guess Greg might be OK with it too.
+It has been tested on an ELAN microelectronics device (a prototype),
+on an odroid-x board. That's how we figure out the bug in the
+set_report command.
+I think we manage to test all main features of the protocol
+(get_report, irqs, hid descriptor, report descriptors, set_report).
 
-Yours,
-Linus Walleij
+I'm currently waiting for a Synaptics touchpad to check if it's also
+working with their devices.
+
+The thing is that HID over i2c for x86 platform will presumably
+require the Haswell platform from Intel (we need ACPI 5 for
+enumeration), but it would be very nice to get this in the kernel just
+before hardware arrive on the market :)
+However, I won't be surprise if android OEMs also start using this
+specification because it won't force them to write kernel drivers...
+
+Cheers,
+Benjamin
+
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
