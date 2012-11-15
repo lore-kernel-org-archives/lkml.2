@@ -1,141 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423635Ab2KOJkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:40:47 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:60748 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933217Ab2KOJko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:40:44 -0500
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/6] book3e/kexec/kdump: introduce a kexec kernel flag
-Date: Thu, 15 Nov 2012 17:39:54 +0800
-Message-ID: <1352972396-13489-5-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
-References: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
+	id S1423651Ab2KOJk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:40:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59561 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423637Ab2KOJkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:40:51 -0500
+Date: Thu, 15 Nov 2012 10:40:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, arekm@pld-linux.org,
+        baggins@pld-linux.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, jack@suse.cz, linux-mm@kvack.org
+Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at
+ arch/x86/kernel/smp.c:123 native_smp_send_reschedule)
+Message-ID: <20121115094046.GD1394@quack.suse.cz>
+References: <56378024.A3Kec8xZj0@pawels>
+ <2413953.H7iie8v1th@pawels>
+ <50A302C9.2060800@linux.vnet.ibm.com>
+ <1984533.1jAeFKDqSR@localhost>
+ <50A44854.6040905@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50A44854.6040905@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to introduce a flag to indicate we're already running
-a kexec kernel then we can go proper path. For example, We
-shouldn't access spin_table from the bootloader to up any secondary
-cpu for kexec kernel, and kexec kernel already know how to jump to
-generic_secondary_smp_init.
+On Thu 15-11-12 09:41:40, Michael Wang wrote:
+> On 11/15/2012 05:10 AM, Paweł Sikora wrote:
+> > On Wednesday 14 of November 2012 10:32:41 Michael Wang wrote:
+> >> On 11/13/2012 05:40 PM, Paweł Sikora wrote:
+> >>> On Monday 12 of November 2012 13:33:39 Paweł Sikora wrote:
+> >>>> On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
+> >>>>> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
+> >>>>>> On 11/12/2012 03:16 PM, Paweł Sikora wrote:
+> >>>>>>> On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
+> >>>>>>>> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
+> >>>>>>>>> Hi,
+> >>>>>>>>>
+> >>>>>>>>> during playing with new ups i've caught an nice oops on reboot:
+> >>>>>>>>>
+> >>>>>>>>> http://imgbin.org/index.php?page=image&id=10253
+> >>>>>>>>>
+> >>>>>>>>> probably the upstream is also affected.
+> >>>>>>>>
+> >>>>>>>> Hi, Paweł
+> >>>>>>>>
+> >>>>>>>> Are you using a clean 3.6.6 without any modify?
+> >>>>>>>
+> >>>>>>> yes, pure 3.6.6 form git tree with modular config.
+> >>>>>>>
+> >>>>>>>> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
+> >>>>>>>> any design on switch itself back later(or the time is too long), are you
+> >>>>>>>> accidentally using some bad designed module?
+> >>>>>>>
+> >>>>>>> hmm, hard to say. mostly all modules are loaded automatically by kernel.
+> >>>>>>
+> >>>>>> Could you please provide the whole dmesg in text? your picture lost the
+> >>>>>> print info of the hung task.
+> >>>>>
+> >>>>> i've grabbed the console via rs232 but there's no more info (see attached txt).
+> >>>>
+> >>>> hmm, i have one observation.
+> >>>>
+> >>>> during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
+> >>>> afaics this file descriptor points to vnc log file on a remote machine, e.g.:
+> >>>>
+> >>>> # ps aux|grep xfwm4
+> >>>> eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4 
+> >>>>
+> >>>> # readlink -m /proc/1748/fd/1
+> >>>> /remote/dragon/ahome/eda/.vnc/odra:11.log
+> >>>>
+> >>>> # mount|grep ahome
+> >>>> dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
+> >>>>
+> >>>>
+> >>>> so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
+> >>>> and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
+> >>>>
+> >>>
+> >>> ok, now i have full sysrq+w backtraces from shutdown process. i hope i'll help you.
+> >>
+> >> This can only tell us what's the task in UNINTERRUPTABLE state, but with
+> >> out time info, we can't find out which one is the hung task...
+> 
+> So it's blocked on __lock_page() for too long?
+> Add more experts in mm aspect to cc.
+  It's really NFS related. E.g. in trace
+https://lkml.org/lkml/2012/11/14/657 we are waiting on PageWriteback bit
+in fact - i.e. we have submitted data to the NFS server and are waiting for
+its response that the data was written.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
- arch/powerpc/include/asm/smp.h    |    3 +++
- arch/powerpc/kernel/head_64.S     |   12 ++++++++++++
- arch/powerpc/kernel/misc_64.S     |    6 ++++++
- arch/powerpc/platforms/85xx/smp.c |   14 ++++++++++++++
- 4 files changed, 35 insertions(+)
-
-diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
-index e807e9d..aadbe9b 100644
---- a/arch/powerpc/include/asm/smp.h
-+++ b/arch/powerpc/include/asm/smp.h
-@@ -190,6 +190,9 @@ extern void generic_secondary_thread_init(void);
- extern unsigned long __secondary_hold_spinloop;
- extern unsigned long __secondary_hold_acknowledge;
- extern char __secondary_hold;
-+#ifdef CONFIG_KEXEC
-+extern unsigned long __run_at_kexec;
-+#endif
- 
- extern void __early_start(void);
- #endif /* __ASSEMBLY__ */
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index d51ffc0..9c30d9f 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -89,6 +89,12 @@ __secondary_hold_spinloop:
- __secondary_hold_acknowledge:
- 	.llong	0x0
- 
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	.globl	__run_at_kexec
-+__run_at_kexec:
-+	.llong	0x0	/* Flag for the secondary kernel from kexec. */
-+#endif
-+
- #ifdef CONFIG_RELOCATABLE
- 	/* This flag is set to 1 by a loader if the kernel should run
- 	 * at the loaded address instead of the linked address.  This
-@@ -441,6 +447,12 @@ _STATIC(__after_prom_start)
- #if defined(CONFIG_PPC_BOOK3E)
- 	tovirt(r26,r26)			/* on booke, we already run at PAGE_OFFSET */
- #endif
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	/* If relocated we need to restore this flag on that relocated address. */
-+	ld	r7,__run_at_kexec-_stext(r3)
-+	std	r7,__run_at_kexec-_stext(r26)
-+#endif
-+
- 	lwz	r7,__run_at_load-_stext(r26)
- #if defined(CONFIG_PPC_BOOK3E)
- 	tophys(r26,r26)			/* Restore for the remains. */
-diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index ffe6043..b81f8ac 100644
---- a/arch/powerpc/kernel/misc_64.S
-+++ b/arch/powerpc/kernel/misc_64.S
-@@ -608,6 +608,12 @@ _GLOBAL(kexec_sequence)
- 	bl	.copy_and_flush	/* (dest, src, copy limit, start offset) */
- 1:	/* assume normal blr return */
- 
-+	/* notify we're going into kexec kernel for SMP. */
-+	LOAD_REG_ADDR(r3,__run_at_kexec)
-+	li	r4,1
-+	std	r4,0(r3)
-+	sync
-+
- 	/* release other cpus to the new kernel secondary start at 0x60 */
- 	mflr	r5
- 	li	r6,1
-diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index 6fcfa12..c7febd5 100644
---- a/arch/powerpc/platforms/85xx/smp.c
-+++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -137,6 +137,9 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
- 	int hw_cpu = get_hard_smp_processor_id(nr);
- 	int ioremappable;
- 	int ret = 0;
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	unsigned long *ptr;
-+#endif
- 
- 	WARN_ON(nr < 0 || nr >= NR_CPUS);
- 	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
-@@ -213,6 +216,14 @@ out:
- #else
- 	smp_generic_kick_cpu(nr);
- 
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	ptr  = (unsigned long *)((unsigned long)&__run_at_kexec);
-+	/* We shouldn't access spin_table from the bootloader to up any
-+	 * secondary cpu for kexec kernel, and kexec kernel already
-+	 * know how to jump to generic_secondary_smp_init.
-+	 */
-+	if (!*ptr) {
-+#endif
- 	out_be32(&spin_table->pir, hw_cpu);
- 	out_be64((u64 *)(&spin_table->addr_h),
- 	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
-@@ -220,6 +231,9 @@ out:
- 	if (!ioremappable)
- 		flush_dcache_range((ulong)spin_table,
- 			(ulong)spin_table + sizeof(struct epapr_spin_table));
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	}
-+#endif
- #endif
- 
- 	local_irq_restore(flags);
+								Honza
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
