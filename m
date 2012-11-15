@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab2KOVza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:55:30 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50492 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab2KOVz3 (ORCPT
+	id S1751860Ab2KOVzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:55:47 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56404 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2KOVzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:55:29 -0500
-Date: Thu, 15 Nov 2012 22:55:23 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de, bp@alien8.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h
- processors
-Message-ID: <20121115215523.GB6520@tweety>
-References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
- <20121115204503.GB18032@khazad-dum.debian.net>
- <50A55E04.9020606@amd.com>
+	Thu, 15 Nov 2012 16:55:46 -0500
+Date: Thu, 15 Nov 2012 21:55:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Jonas Bonn <jonas@southpole.se>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: new execve/kernel_thread design
+Message-ID: <20121115215529.GU2616@ZenIV.linux.org.uk>
+References: <20121016223508.GR2616@ZenIV.linux.org.uk>
+ <CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
+ <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
+ <20121017160702.GY2616@ZenIV.linux.org.uk>
+ <20121017161953.GZ2616@ZenIV.linux.org.uk>
+ <CAHTX3dJN4Jun2KVXpda1wTrwkjT0mmH4fYmUUwq69d9sCTjXnA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50A55E04.9020606@amd.com>
+In-Reply-To: <CAHTX3dJN4Jun2KVXpda1wTrwkjT0mmH4fYmUUwq69d9sCTjXnA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 04:26:28PM -0500, Boris Ostrovsky wrote:
+On Thu, Nov 15, 2012 at 05:41:16PM +0100, Michal Simek wrote:
+> Here is the branch based on rc5 (information below)
+> and here is giweb.
+> http://developer.petalogix.com/git/gitweb.cgi?p=linux-2.6-microblaze.git;a=shortlog;h=refs/heads/viro/arch-microblaze-rc5
 > 
+> I have also looked at your sys_fork / sys_vfork / sys_clone unification
+> and I have fixed it for Microblaze.
 > 
-> On 11/15/2012 03:45 PM, Henrique de Moraes Holschuh wrote:
-> >On Thu, 15 Nov 2012, Boris Ostrovsky wrote:
-> >>Add valid patch size for family 16h processors
-> >>
-> >>Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-> >
-> >Is this something that needs to go to -stable ?
-> >
-> >>  #define F1XH_MPB_MAX_SIZE 2048
-> >>  #define F14H_MPB_MAX_SIZE 1824
-> >>  #define F15H_MPB_MAX_SIZE 4096
-> >>+#define F16H_MPB_MAX_SIZE 3458
-> >>
-> >>  	switch (c->x86) {
-> >>  	case 0x14:
-> >>@@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
-> >>  	case 0x15:
-> >>  		max_size = F15H_MPB_MAX_SIZE;
-> >>  		break;
-> >>+	case 0x16:
-> >>+		max_size = F16H_MPB_MAX_SIZE;
-> >>+		break;
-> >>  	default:
-> >>  		max_size = F1XH_MPB_MAX_SIZE;
-> >>  		break;
-> >
-> >Because it looks like without this patch, some valid microcode updates
-> >would be rejected by the kernel...
+> Also I have done some tests on it for sure.
 > 
-> Right, patch loading will fail.
-> 
-> I wasn't sure whether stable would be appropriate since this is
-> support for new HW. OTOH since this would result in loss of
-> functionality one could consider this a bug.
+> I would add sys_execve/kernel_execve/kernel_thread patches to my next branch.
+> Are you OK with that?
 
-Yes, it seems that a
+Umm...  In principle - yes, but I've a couple of question abouts those.
 
- Cc: <stable@vger.kernel.org>
+1) What's that set_fs(USER_DS) in start_thread() for?  Note that we do the same
+thing in flush_old_exec(), at the same time we remove PF_KTHREAD from
+current->flags.
 
-(at least for 3.2, 3.4, 3.6)
+While we are at it, if we *ever* hit do_signal() with KERNEL_DS, we are
+very deep in trouble.  set_fs(USER_DS) in setup_{rt_,}frame() is pointless.
 
-can't hurt to ensure that most recent kernel releases properly handle
-ucode updates for family 16h CPUs (whenever they come out).
-
-
-Andreas
+2) your definition of current_pt_regs() is an exact copy of on in
+include/linux/ptrace.h; why is "microblaze: Define current_pt_regs"
+needed at all?  IOW, I'd rather added #include <linux/ptrace.h> to
+arch/microblaze/kernel/process.c instead...
