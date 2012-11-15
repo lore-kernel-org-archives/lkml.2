@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750921Ab2KOWBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:01:50 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51713 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2KOWBq (ORCPT
+	id S1751231Ab2KOWDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:03:34 -0500
+Received: from mail.kanadamails.org ([46.105.240.29]:34553 "EHLO
+	mail.kanadamails.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab2KOWDd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:01:46 -0500
+	Thu, 15 Nov 2012 17:03:33 -0500
+X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Nov 2012 17:03:32 EST
+Message-ID: <8fe98a4bbada4de9ea1512b40727c710@kanadamails.org>
+From: "=?iso-8859-9?B?Q2VyZW4gx0FLSVI=?=" <info@kanadamails.org>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?3W5naWxpemNlINbwcmVuZW1lIFNvcnVudSBUYXJpaCBPbHV5b3I=?=
+	=?iso-8859-9?B?Li4u?=
+Date: Thu, 15 Nov 2012 23:03:42 +0200
 MIME-Version: 1.0
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Thu, 15 Nov 2012 23:01:22 +0100
-Message-ID: <CAH9NwWfPFnNxss0Ne4JRH4DQLZCPE3MAGGK7xfCvfz0+6_aO9w@mail.gmail.com>
-Subject: [PATCH RESEND] leds-ot200: Fix error caused by shifted mask
-To: linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 121115-0, 15.11.2012), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the development of this driver an in-house register
-documentation was used. The last weeks some integration tests
-were done and this problem was found. It turned out that
-the released register documentation is wrong.
+ÝNGÝLÝZCE EÐÝTÝMDE SÜPER FIRSAT...
 
-The fix is very simple: shift all mask by one.
+Yýllardan beri tartýþýlan bir konudur Ýngilizcenin nasýl öðrenileceði. Þimdi Kanada Kültür Merkezi ile Ýngilizce öðrenememe sorunu tarih oluyor. 
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
----
- drivers/leds/leds-ot200.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+1) Ýþlenen bir saat Ýngilizce özel ders herhangi bir kursta alacaðýnýz 5 saat derse denktir
+2 ) Ýngilizce özel ders uygulamalarýnda siz kendinizi programa uydurmak zorunda kalmazsýnýz, program size uygun olarak düzenlenir.
+3) Kursta size ayrýlan süre son derece kýsýtlý olmasýna karþýn, özel derste sadece size özgü özel eðitim verilir.
+4) Dersin sonunda anlamadan geçtiðiniz bir bölüm olamaz.
+5) Ýngilizce özel ders alýrken size sýra gelmesini beklemezsiniz, çünkü sýra hep sizdedir, dolayýsýyla sürekli pratik yapma þansýnýz olur.
+6) Uygulanan Ýngilizce özel ders siteminde  iþinize, amaçlarýnýza ya da ilgi alanlarýnýza yönelik konulara öncelik tanýnýr.
+7) Ýlk dersten itibaren Ýngilizcenizin geliþtiðini, konuþmaya baþladýðýnýzý ve öðrendiðinizi fark edersiniz.
+8)Hatalarýnýz sürekli düzeltildiði için hata yaparak, hata yapmamayý öðrenirsiniz.
+9 ) Ders günleri ve saatleri, size uygun olarak düzenlenir.
+10) Ýyi bir hesap yapýldýðýnda özel dersin ucuz olarak düþünülen kalabalýk gruplarla yapýlan derslerle aþaðý yukarý ayný fiyata geldiði anlaþýlýr.
 
-diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-index c464682..676e729 100644
---- a/drivers/leds/leds-ot200.c
-+++ b/drivers/leds/leds-ot200.c
-@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
-        {
-                .name = "led_1",
-                .port = 0x49,
--               .mask = BIT(7),
-+               .mask = BIT(6),
-        },
-        {
-                .name = "led_2",
-                .port = 0x49,
--               .mask = BIT(6),
-+               .mask = BIT(5),
-        },
-        {
-                .name = "led_3",
-                .port = 0x49,
--               .mask = BIT(5),
-+               .mask = BIT(4),
-        },
-        {
-                .name = "led_4",
-                .port = 0x49,
--               .mask = BIT(4),
-+               .mask = BIT(3),
-        },
-        {
-                .name = "led_5",
-                .port = 0x49,
--               .mask = BIT(3),
-+               .mask = BIT(2),
-        },
-        {
-                .name = "led_6",
-                .port = 0x49,
--               .mask = BIT(2),
-+               .mask = BIT(1),
-        },
-        {
-                .name = "led_7",
-                .port = 0x49,
--               .mask = BIT(1),
-+               .mask = BIT(0),
-        }
- };
+Mükemmel Ýngilizce öðrenmek ve konuþmak kimse için hayal deðil!
+
+Kanada Kültür Merkezi bünyesinde alacaðýnýz kampanyalý özel ders ücretleri aþaðýda belirtildiði gibidir . 
+--	Türk hoca ile özel ders saat ücreti 35 TL 
+--	Yabancý hocalardan alacaðýnýz özel ders saati 45 TL'dir. 
+
+Ücretsiz seviye tespit sýnavý için ofisimize gelmeden bu numaralardan bize ulaþarak randevu alabilirsiniz.
+ 
+0 212 252 90 35 - 36
 
 
---
-1.7.12.2.421.g261b511
