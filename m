@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993091Ab2KOEME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49431 "EHLO mail.kernel.org"
+	id S2993127Ab2KOEMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49504 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993074Ab2KOEL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:58 -0500
+	id S2993105Ab2KOEMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 56/66] ipv6: send unsolicited neighbour advertisements to all-nodes
-Date: Wed, 14 Nov 2012 20:11:01 -0800
-Message-Id: <20121115040943.193386880@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Subject: =?UTF-8?q?=5B=2063/66=5D=20drm/radeon/si=3A=20add=20some=20missing=20regs=20to=20the=20VM=20reg=20checker?=
+Date: Wed, 14 Nov 2012 20:11:08 -0800
+Message-Id: <20121115040943.684677723@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,40 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Alex Deucher <alexander.deucher@amd.com>
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+commit f418b88aad0c42b4caf4d79a0cf8d14a5d0a2284 upstream.
 
-[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
+This register is needed for streamout to work properly.
 
-As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
-unsolicited neighbour advertisements should be sent to the all-nodes
-multicast address.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ndisc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -535,7 +535,7 @@ static void ndisc_send_unsol_na(struct n
- {
- 	struct inet6_dev *idev;
- 	struct inet6_ifaddr *ifa;
--	struct in6_addr mcaddr;
-+	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
+---
+ drivers/gpu/drm/radeon/si.c  |    1 +
+ drivers/gpu/drm/radeon/sid.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2472,6 +2472,7 @@ static bool si_vm_reg_valid(u32 reg)
+ 	/* check config regs */
+ 	switch (reg) {
+ 	case GRBM_GFX_INDEX:
++	case CP_STRMOUT_CNTL:
+ 	case VGT_VTX_VECT_EJECT_REG:
+ 	case VGT_CACHE_INVALIDATION:
+ 	case VGT_ESGS_RING_SIZE:
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -424,6 +424,7 @@
+ #       define RDERR_INT_ENABLE                         (1 << 0)
+ #       define GUI_IDLE_INT_ENABLE                      (1 << 19)
  
- 	idev = in6_dev_get(dev);
- 	if (!idev)
-@@ -543,7 +543,6 @@ static void ndisc_send_unsol_na(struct n
- 
- 	read_lock_bh(&idev->lock);
- 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
--		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
- 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
- 			      /*router=*/ !!idev->cnf.forwarding,
- 			      /*solicited=*/ false, /*override=*/ true,
++#define	CP_STRMOUT_CNTL					0x84FC
+ #define	SCRATCH_REG0					0x8500
+ #define	SCRATCH_REG1					0x8504
+ #define	SCRATCH_REG2					0x8508
 
 
