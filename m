@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992842Ab2KOEs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:48:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48378 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992642Ab2KOEKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S2992635Ab2KOEKN (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Nov 2012 23:10:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48315 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933367Ab2KOEKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 12/38] NFSv4: nfs4_locku_done must release the sequence id
-Date: Wed, 14 Nov 2012 20:10:09 -0800
-Message-Id: <20121115040933.680223046@linuxfoundation.org>
+        Antonio Quartulli <ordex@autistici.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 09/38] mac80211: fix SSID copy on IBSS JOIN
+Date: Wed, 14 Nov 2012 20:10:06 -0800
+Message-Id: <20121115040933.483551629@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -25,29 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Antonio Quartulli <ordex@autistici.org>
 
-commit 2b1bc308f492589f7d49012ed24561534ea2be8c upstream.
+commit badecb001a310408d3473b1fc2ed5aefd0bc92a9 upstream.
 
-If the state recovery machinery is triggered by the call to
-nfs4_async_handle_error() then we can deadlock.
+The 'ssid' field of the cfg80211_ibss_params is a u8 pointer and
+its length is likely to be less than IEEE80211_MAX_SSID_LEN most
+of the time.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This patch fixes the ssid copy in ieee80211_ibss_join() by using
+the SSID length to prevent it from reading beyond the string.
+
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+[rewrapped commit message, small rewording]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/ibss.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4116,6 +4116,7 @@ static void nfs4_locku_done(struct rpc_t
- 				nfs_restart_rpc(task,
- 						 calldata->server->nfs_client);
- 	}
-+	nfs_release_seqid(calldata->arg.seqid);
- }
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -940,7 +940,7 @@ int ieee80211_ibss_join(struct ieee80211
+ 	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+ 	sdata->u.ibss.ibss_join_req = jiffies;
  
- static void nfs4_locku_prepare(struct rpc_task *task, void *data)
+-	memcpy(sdata->u.ibss.ssid, params->ssid, IEEE80211_MAX_SSID_LEN);
++	memcpy(sdata->u.ibss.ssid, params->ssid, params->ssid_len);
+ 	sdata->u.ibss.ssid_len = params->ssid_len;
+ 
+ 	mutex_unlock(&sdata->u.ibss.mtx);
 
 
