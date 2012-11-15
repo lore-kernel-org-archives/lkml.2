@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768740Ab2KOTFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 14:05:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42317 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423636Ab2KOTFm (ORCPT
+	id S1768761Ab2KOTGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 14:06:03 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48225 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768646Ab2KOTGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 14:05:42 -0500
+	Thu, 15 Nov 2012 14:06:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121115185522.GA4077@core.coreip.homeip.net>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
-	<20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
-	<20121113175309.GA3601@polaris.bitmath.org>
-	<CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
-	<20121114180401.GC29131@core.coreip.homeip.net>
-	<CC51EC7B5B7F984AA566DC102237848896F6299E@hkdcw-mail1.synaptics-inc.local>
-	<20121115064359.GA17551@core.coreip.homeip.net>
-	<CACRpkdZtsTpNiRBzs3rUz48AvoZ4UpcrO-4__xmsb0XezUVFtg@mail.gmail.com>
-	<20121115185522.GA4077@core.coreip.homeip.net>
-Date: Thu, 15 Nov 2012 20:05:41 +0100
-Message-ID: <CACRpkdbB5ijaRLmiB2DbFGunJQUUAM2+nhwBOOqSkMWQZVNHTQ@mail.gmail.com>
-Subject: Re: [RFC] staging: ste_rmi4: merge into the main kernel tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
+In-Reply-To: <CAK=WgbaTupjayMLmgptfLtNkkk_GZL8RYQrYn8O7FG5GpANswg@mail.gmail.com>
+References: <1352860489-19960-1-git-send-email-omar.luna@linaro.org>
+	<1352860489-19960-3-git-send-email-omar.luna@linaro.org>
+	<CAK=WgbZm+sjavwb_Li_W5ygm0XuS9YMYfQEkdoB188Uir0arGg@mail.gmail.com>
+	<CALLhW=46xUZzuEBaQD7vsOTQOGR7bwXMSM_mugN_gWa-oqwfuw@mail.gmail.com>
+	<CAK=WgbaTupjayMLmgptfLtNkkk_GZL8RYQrYn8O7FG5GpANswg@mail.gmail.com>
+Date: Thu, 15 Nov 2012 13:05:58 -0600
+Message-ID: <CALLhW=6yKs8Moq6zAP06E6Nevhj8v5C-BGSgNyCsQbYXoJpLxQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] ARM: OMAP3/4: iommu: adapt to runtime pm
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Tony Lindgren <tony@atomide.com>, Joerg Roedel <joro@8bytes.org>,
+        Russell King <linux@arm.linux.org.uk>, Ido Yariv <ido@wizery.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 7:55 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Thu, Nov 15, 2012 at 06:41:26PM +0100, Linus Walleij wrote:
->>
->> The benefit is that the ugliness in
->> drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
->> can be avoided, as today we're unable to pass the compulsory
->> platform data in any sane way. I'm being told that this weak symbol
->> override actually does not really work... especially if there are more
->> than 1 I2C device on the bus :-P
+On 15 November 2012 11:39, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>> I do agree description is missing, again I thought I had done this
+>> somewhere but looks like I didn't, will update these. If you think
+>> these should be different patches please let me know, otherwise I
+>> would like to keep a single *documented* patch.
 >
-> I am confused as to why this would be a benefit of ste_rmi4 over full
-> RMI4 implementation from Christopher's group?
+> It seems like there are 3 different logical changes here:
+>
+> 1. remove clk_* invocations from iommu_fault_handler()
+> 2. keep clocks enabled as long as iommu is enabled
+> 3. convert to runtime pm
+>
+> If we split this to three patches in this order, you won't have to add
+> and remove runtime pm functions.
+>
+> Let's do it, please. It's a small nuisance now, but may be really
+> helpful in the future when someone tries to debug stuff and understand
+> the motivation behind these changes. It'd make it much easier for you
+> to document the changes, too: you have an entire commit log per
+> change.
 
-So we don't need to keep our real platform data and board files
-out-of-tree like we've done for the last 2 years or so.
+Ok, not a problem then.
 
-But I only said it's a benefit, not that I think it's a good idea.
+Cheers,
 
-> I think what we really need is to accelerate work on the full driver so
-> it is in mainline in 3.9ish.
-
-Yep, agreed.
-
-Yours,
-Linus Walleij
+Omar
