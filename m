@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab2KOWRo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:17:44 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:24365 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2KOWRm (ORCPT
+	id S1751001Ab2KOWUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:20:40 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33788 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2KOWUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:17:42 -0500
-Message-ID: <1353017366.12509.19.camel@misato.fc.hp.com>
-Subject: Re: [Patch v5 2/7] acpi,memory-hotplug: deal with eject request in
- hotplug queue
-From: Toshi Kani <toshi.kani@hp.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Date: Thu, 15 Nov 2012 15:09:26 -0700
-In-Reply-To: <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com>
-	 <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Thu, 15 Nov 2012 17:20:39 -0500
+Message-ID: <50A56AB4.70606@wwwdotorg.org>
+Date: Thu, 15 Nov 2012 15:20:36 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] NVIDIA Tegra DRM driver
+References: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 14:59 +0800, Wen Congyang wrote:
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+On 11/15/2012 02:28 PM, Thierry Reding wrote:
+> This third version of the patch series cleans up some minor issues that
+> were found in the previous versions, such as deferred probe not working
+> properly and the display remaining enabled after the driver is removed.
 > 
-> We handle the 1st case in the module acpi_memhotplug, and handle
-> the 2nd case in ACPI eject notification. This 2 events may happen
-> at the same time, so we may touch acpi_memory_device.res_list at
-> the same time. This patch reimplements memory-hotremove support
-> through an ACPI eject notification. Now the memory device is
-> offlined and hotremoved only in the function acpi_memory_device_remove()
-> which is protected by device_lock().
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> CC: Rafael J. Wysocki <rjw@sisk.pl>
-> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> I've also put the two patches in this series into the tegra/drm/for-3.8
+> branch of my repository on gitorious[0].
 
-Thanks for the update.  It looks good.
+The series,
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
--Toshi
-
-
+(on Harmony, using the HDMI output)
 
