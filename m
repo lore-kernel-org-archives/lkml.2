@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992614Ab2KOCxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 21:53:14 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45399 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992461Ab2KOCxN (ORCPT
+	id S933303Ab2KOC5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 21:57:04 -0500
+Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:51726 "EHLO
+	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933167Ab2KOC5C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 21:53:13 -0500
-Date: Wed, 14 Nov 2012 18:49:46 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Colin King <colin.king@canonical.com>
-Cc: Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] pstore: fix NULL pointer dereference in console
- writes
-Message-ID: <20121115024946.GA12232@lizard>
-References: <1352893793-25260-1-git-send-email-colin.king@canonical.com>
+	Wed, 14 Nov 2012 21:57:02 -0500
+From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Henrik Rydberg <rydberg@euromail.se>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: RE: [RFC] staging: ste_rmi4: merge into the main kernel tree
+Thread-Topic: [RFC] staging: ste_rmi4: merge into the main kernel tree
+Thread-Index: AQHNwo8ZLxFuveX6UkK/mNwkyTKwrJfpGaGAgAEcNlA=
+Date: Thu, 15 Nov 2012 02:56:45 +0000
+Message-ID: <CC51EC7B5B7F984AA566DC102237848896F6299E@hkdcw-mail1.synaptics-inc.local>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
+ <20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
+ <20121113175309.GA3601@polaris.bitmath.org>
+ <CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
+ <20121114180401.GC29131@core.coreip.homeip.net>
+In-Reply-To: <20121114180401.GC29131@core.coreip.homeip.net>
+Accept-Language: en-US, zh-TW
+Content-Language: zh-HK
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.14.51.94]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1352893793-25260-1-git-send-email-colin.king@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 11:49:53AM +0000, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
-> 
-> Passing a NULL id causes a NULL pointer deference in writers
-> such as erst_writer and efi_pstore_write because they expect
-> to update this id.  Pass a dummy id instead.
-> 
-> This avoids a cascade of oopses caused when the initial
-> pstore_console_write passes a null which in turn causes
-> writes to the console causing further oopses in subsequent
-> pstore_console_write calls.
-> 
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> Acked-by: Kees Cook <keescook@chromium.org>
-> ---
+Hi Dmitry,
 
-Ugh. Thanks for the reminder, I completely forgot that I had this bit for
-v3.7.
-
-Applied, thanks! (I also added Cc: stable.)
-
->  fs/pstore/platform.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> > As I know, currently there is no synaptics RMI4 touchscreen driver in the
+> > main tree. In order to support our customers effectively, is it able to merge
+> > staging ste_rmi4 driver into the main kernel.org tree? If it is accepted, should
+> > I send a patch for this change?
 > 
-> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-> index a40da07..947fbe0 100644
-> --- a/fs/pstore/platform.c
-> +++ b/fs/pstore/platform.c
-> @@ -161,6 +161,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
->  
->  	while (s < e) {
->  		unsigned long flags;
-> +		u64 id;
->  
->  		if (c > psinfo->bufsize)
->  			c = psinfo->bufsize;
-> @@ -172,7 +173,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
->  			spin_lock_irqsave(&psinfo->buf_lock, flags);
->  		}
->  		memcpy(psinfo->buf, s, c);
-> -		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-> +		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
->  		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
->  		s += c;
->  		c = e - s;
-> -- 
-> 1.7.10.4
+> I believe that we should keep ste_rmi4 in staging, not as reflection of
+> its code quality, but rather because it is a temporary solution until
+> full-fledged RMI4 driver is merged.
+> 
+> Please have Greg commit the patch that Henrik reviewed to staging and
+> then work with Christopher Heiny group on getting the full featured
+> driver into mainline.
+
+Thank you for the prompt reply. The ste_rmi4 driver is actually not intended to be
+a temporary solution for the full-fledged driver. We have requests from a number
+of our customers and partners (Qualcomm, Samsung, Intel etc.) urging us to have
+a driver available in the kernel mainline that is specific to touchscreen with simple
+architecture and supporting our S3200 family of Touch Controllers and above. We
+are committing resources to continue to maintain this driver and provide updates
+to support future touch controller revisions from Synaptics.
+It would be greatly appreciated if this driver can be considered for inclusion in the
+kernel mainline.
+
+Thank you.
+
+Alexandra Chin
