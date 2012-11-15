@@ -1,224 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993355Ab2KOK52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 05:57:28 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51190 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993327Ab2KOK5Y (ORCPT
+	id S2993307Ab2KOK75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 05:59:57 -0500
+Received: from mo5.mail-out.ovh.net ([178.32.228.5]:41926 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993220Ab2KOK7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 05:57:24 -0500
-From: "hongbo.zhang" <hongbo.zhang@linaro.org>
-To: linux-pm@vger.kernel.org, rui.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org, amit.kachhap@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Subject: [PATCH V6 2/2] Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
-Date: Thu, 15 Nov 2012 18:56:43 +0800
-Message-Id: <1352977003-25095-3-git-send-email-hongbo.zhang@linaro.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352977003-25095-1-git-send-email-hongbo.zhang@linaro.com>
-References: <1352977003-25095-1-git-send-email-hongbo.zhang@linaro.com>
+	Thu, 15 Nov 2012 05:59:55 -0500
+Date: Thu, 15 Nov 2012 11:57:52 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, jonas.aberg@stericsson.com,
+        linux@arm.linux.org.uk, linus.walleij@stericsson.com, arnd@arndb.de
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 0/2] Boottime: measure bootloader and kernel bootup time
+Message-ID: <20121115105752.GC4398@game.jcrosoft.org>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org>
+ <20121115101508.GB4398@game.jcrosoft.org>
+ <20121115103528.GA21682@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121115103528.GA21682@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 14640639440150637567
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehlihhnrghrohdrohhrghenucfjughrpeffhffvuffkfhggtggugfgjfgesthektfdttderje
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehlihhnrghrohdrohhrghenucfjughrpeffhffvuffkfhggtggugfgjfgesthektfdttderje
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+On 10:35 Thu 15 Nov     , Lee Jones wrote:
+> On Thu, 15 Nov 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> 
+> > On 10:04 Thu 15 Nov     , Lee Jones wrote:
+> > > This patchset supplies a new tool which measures boottime inclusive
+> > > of bootloader involvement. It seems to be accurate and adds no
+> > > latency to the booting of the system.
+> > > 
+> > > In the first round of testing we booted the kernel 3 times each with
+> > > boottime enabled and disabled. Actually, when it was disabled, the
+> > > code was completely removed from the kernel source and the kernel was
+> > > rebuilt. The difference between present & enabled and completely
+> > > removed was very little indeed. In fact, averaging out the 3 runs of
+> > > each, when boottime was enabled the system booted 4ms _faster_, go
+> > > figure!
+> > > 
+> > >              Enabled    Disabled
+> > >   1st run    2.983093   2.985168
+> > >   2nd run    2.973266   2.971801
+> > >   3rd run    2.975402   2.987304
+> > >   Average    2.977254   2.981424   -0.004171 (-4ms)
+> > > 
+> > > 
+> > > For the next round of testing, we delayed the bootloader for varying
+> > > amounts of time, then started to remove key components from kernel
+> > > functionality to see if the boottime system would pick-up on them.
+> > > 
+> > >   /* Hang around in the bootloader for a while. */
+> > >   $ cat /sys/kernel/debug/boottime/summary 
+> > >     kernel: 42864 msecs
+> > >     total: 42864 msecs
+> > >     kernel: cpu0 system: 56% idle: 43% iowait: 0% irq: 0% 
+> > >             cpu1 system: 4% idle: 95% iowait: 0% irq: 0%
+> > > 
+> > >   /* Hang around in the bootloader for a smaller amount of time. */
+> > >     kernel: 12351 msecs
+> > >     total: 12351 msecs
+> > >     kernel: cpu0 system: 56% idle: 43% iowait: 0% irq: 0% 
+> > >             cpu1 system: 2% idle: 97% iowait: 0% irq: 0%
+> > >   
+> > >   /* Instant boot. (1st run) */
+> > >     kernel: 7833 msecs
+> > >     total: 7833 msecs
+> > >     kernel: cpu0 system: 55% idle: 44% iowait: 0% irq: 0% 
+> > >             cpu1 system: 3% idle: 96% iowait: 0% irq: 0%
+> > > 
+> > >   /* Instant boot. (2nd run) */
+> > >     kernel: 7817 msecs
+> > >     total: 7817 msecs
+> > >     kernel: cpu0 system: 53% idle: 46% iowait: 0% irq: 0% 
+> > >             cpu1 system: 8% idle: 91% iowait: 0% irq: 0%
+> > > 
+> > >   /* Instant boot. (3rd run) */
+> > >     kernel: 7747 msecs
+> > >     total: 7747 msecs
+> > >     kernel: cpu0 system: 56% idle: 42% iowait: 0% irq: 0% 
+> > >             cpu1 system: 2% idle: 97% iowait: 0% irq: 0%
+> > 7/8s? on a u9500 wow it's really slow
+> 
+> No, this is a u8500.
+> 
+> > I do 2/3s here
+> 
+> Really? You installed this quick.
+> 
+> Are you sure you did it correctly?
+yes we spend less than 2s (~ 1.5s) in the bootloader
 
-This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
-also adds the platform data to support the old fashion.
+I measure it via scope
+> 
+> Don't forget, this times from power-on to userspace.
+yes
 
-Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi      | 14 +++++++++
- arch/arm/boot/dts/snowball.dts     | 31 ++++++++++++++++++
- arch/arm/configs/u8500_defconfig   |  2 ++
- arch/arm/mach-ux500/board-mop500.c | 64 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 111 insertions(+)
+to the shell prompt
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 4b0e0ca..731086b 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -203,6 +203,14 @@
- 				reg = <0x80157450 0xC>;
- 			};
- 
-+			thermal@801573c0 {
-+				compatible = "stericsson,db8500-thermal";
-+				reg = <0x801573c0 0x40>;
-+				interrupts = <21 0x4>, <22 0x4>;
-+				interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
-+				status = "disabled";
-+			 };
-+
- 			db8500-prcmu-regulators {
- 				compatible = "stericsson,db8500-prcmu-regulator";
- 
-@@ -660,5 +668,11 @@
- 			ranges = <0 0x50000000 0x4000000>;
- 			status = "disabled";
- 		};
-+
-+		cpufreq-cooling {
-+			compatible = "stericsson,db8500-cpufreq-cooling";
-+			status = "disabled";
-+		 };
-+
- 	};
- };
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index 702c0ba..c6f85f0 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -99,6 +99,33 @@
- 			status = "okay";
- 		};
- 
-+		prcmu@80157000 {
-+			thermal@801573c0 {
-+				num-trips = <4>;
-+
-+				trip0-temp = <70000>;
-+				trip0-type = "active";
-+				trip0-cdev-num = <1>;
-+				trip0-cdev-name0 = "thermal-cpufreq-0";
-+
-+				trip1-temp = <75000>;
-+				trip1-type = "active";
-+				trip1-cdev-num = <1>;
-+				trip1-cdev-name0 = "thermal-cpufreq-0";
-+
-+				trip2-temp = <80000>;
-+				trip2-type = "active";
-+				trip2-cdev-num = <1>;
-+				trip2-cdev-name0 = "thermal-cpufreq-0";
-+
-+				trip3-temp = <85000>;
-+				trip3-type = "critical";
-+				trip3-cdev-num = <0>;
-+
-+				status = "okay";
-+			 };
-+		};
-+
- 		external-bus@50000000 {
- 			status = "okay";
- 
-@@ -183,5 +210,9 @@
- 				reg = <0x33>;
- 			};
- 		};
-+
-+		cpufreq-cooling {
-+			status = "okay";
-+		};
- 	};
- };
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index da68454..250625d 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -69,6 +69,8 @@ CONFIG_GPIO_TC3589X=y
- CONFIG_POWER_SUPPLY=y
- CONFIG_AB8500_BM=y
- CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
-+CONFIG_THERMAL=y
-+CONFIG_CPU_THERMAL=y
- CONFIG_MFD_STMPE=y
- CONFIG_MFD_TC3589X=y
- CONFIG_AB5500_CORE=y
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 416d436..b03216b 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -16,6 +16,7 @@
- #include <linux/io.h>
- #include <linux/i2c.h>
- #include <linux/platform_data/i2c-nomadik.h>
-+#include <linux/platform_data/db8500_thermal.h>
- #include <linux/gpio.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/pl022.h>
-@@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
- };
- 
- /*
-+ * Thermal Sensor
-+ */
-+
-+static struct resource db8500_thsens_resources[] = {
-+	{
-+		.name = "IRQ_HOTMON_LOW",
-+		.start  = IRQ_PRCMU_HOTMON_LOW,
-+		.end    = IRQ_PRCMU_HOTMON_LOW,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "IRQ_HOTMON_HIGH",
-+		.start  = IRQ_PRCMU_HOTMON_HIGH,
-+		.end    = IRQ_PRCMU_HOTMON_HIGH,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct db8500_thsens_platform_data db8500_thsens_data = {
-+	.trip_points[0] = {
-+		.temp = 70000,
-+		.type = THERMAL_TRIP_ACTIVE,
-+		.cdev_name = {
-+			[0] = "thermal-cpufreq-0",
-+		},
-+	},
-+	.trip_points[1] = {
-+		.temp = 75000,
-+		.type = THERMAL_TRIP_ACTIVE,
-+		.cdev_name = {
-+			[0] = "thermal-cpufreq-0",
-+		},
-+	},
-+	.trip_points[2] = {
-+		.temp = 80000,
-+		.type = THERMAL_TRIP_ACTIVE,
-+		.cdev_name = {
-+			[0] = "thermal-cpufreq-0",
-+		},
-+	},
-+	.trip_points[3] = {
-+		.temp = 85000,
-+		.type = THERMAL_TRIP_CRITICAL,
-+	},
-+	.num_trips = 4,
-+};
-+
-+static struct platform_device u8500_thsens_device = {
-+	.name           = "db8500-thermal",
-+	.resource       = db8500_thsens_resources,
-+	.num_resources  = ARRAY_SIZE(db8500_thsens_resources),
-+	.dev	= {
-+		.platform_data	= &db8500_thsens_data,
-+	},
-+};
-+
-+static struct platform_device u8500_cpufreq_cooling_device = {
-+	.name           = "db8500-cpufreq-cooling",
-+};
-+
-+/*
-  * TPS61052
-  */
- 
-@@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
- 	&snowball_key_dev,
- 	&snowball_sbnet_dev,
- 	&snowball_gpio_en_3v3_regulator_dev,
-+	&u8500_thsens_device,
-+	&u8500_cpufreq_cooling_device,
- };
- 
- static void __init mop500_init_machine(void)
--- 
-1.8.0
+and gexbox 13s IIRC application
 
+Best Regards,
+J.
+> 
+> -- 
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
