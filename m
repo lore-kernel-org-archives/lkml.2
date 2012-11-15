@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768754Ab2KOS7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:59:05 -0500
-Received: from fieldses.org ([174.143.236.118]:60393 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1768657Ab2KOS7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:59:03 -0500
-Date: Thu, 15 Nov 2012 13:58:53 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>, simo@redhat.com
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121115185853.GA22448@fieldses.org>
-References: <20121106133605.GD6718@fieldses.org>
- <20121107183355.GA7421@fieldses.org>
- <50A0B562.2090807@parallels.com>
- <20121114210112.GA539@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0A40@SACEXCMBX04-PRD.hq.netapp.com>
- <20121114214236.GB539@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9092E0AE9@SACEXCMBX04-PRD.hq.netapp.com>
- <20121114215426.GC539@fieldses.org>
- <87obize6jp.fsf@xmission.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9092E2984@SACEXCMBX04-PRD.hq.netapp.com>
+	id S1768740Ab2KOTFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 14:05:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42317 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423636Ab2KOTFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 14:05:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9092E2984@SACEXCMBX04-PRD.hq.netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121115185522.GA4077@core.coreip.homeip.net>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
+	<20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
+	<20121113175309.GA3601@polaris.bitmath.org>
+	<CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
+	<20121114180401.GC29131@core.coreip.homeip.net>
+	<CC51EC7B5B7F984AA566DC102237848896F6299E@hkdcw-mail1.synaptics-inc.local>
+	<20121115064359.GA17551@core.coreip.homeip.net>
+	<CACRpkdZtsTpNiRBzs3rUz48AvoZ4UpcrO-4__xmsb0XezUVFtg@mail.gmail.com>
+	<20121115185522.GA4077@core.coreip.homeip.net>
+Date: Thu, 15 Nov 2012 20:05:41 +0100
+Message-ID: <CACRpkdbB5ijaRLmiB2DbFGunJQUUAM2+nhwBOOqSkMWQZVNHTQ@mail.gmail.com>
+Subject: Re: [RFC] staging: ste_rmi4: merge into the main kernel tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 01:34:16PM +0000, Myklebust, Trond wrote:
-> On Wed, 2012-11-14 at 22:14 -0800, Eric W. Biederman wrote:
-> > "J. Bruce Fields" <bfields@fieldses.org> writes:
-> > 
-> > > On Wed, Nov 14, 2012 at 09:51:33PM +0000, Myklebust, Trond wrote:
-> > >> On Wed, 2012-11-14 at 16:42 -0500, J. Bruce Fields wrote:
-> > >> > Simo's patches use them for upcalls to svcgssd.  Those will always be
-> > >> > done from server threads.
-> > >> 
-> > >> Any reason why you can't set that up when you start nfsd?
-> > >
-> > > Oh, right, I was thinking of the upcalls themselves--right, the connect
-> > > we should be able to do on server start, I agree.
-> > >
-> > >> 
-> > >> > > If not, then let's just move
-> > >> > > the AF_LOCAL connection back into the process context and out of rpciod.
-> > >> > 
-> > >> > Remind me how this helps?
-> > >> 
-> > >> rpciod shares the 'init' process net namespace and chroot properties.
-> > >> If, however you call bind() from the (containerised) process that was
-> > >> used to start nfsd, then you will be using filesystem root (and net
-> > >> namespace) of that container.
-> > >
-> > > Got it.
-> > 
-> > If you can move the connect and bind into the server start that does
-> > sound like a very good and maintainable solution.  I suspect it might
-> > even be a smidge better for error handling.
-> > 
-> > Is there ever a reason to reconnect one of these sockets?
-> 
-> Not for the rpcbind case, however you can easily get into a situation
-> where the user restarts the gss daemon. The good news is that the gss
-> upcall code that uses AF_LOCAL hasn't been merged upstream yet, so that
-> particular interface is not yet locked in stone.
+On Thu, Nov 15, 2012 at 7:55 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Nov 15, 2012 at 06:41:26PM +0100, Linus Walleij wrote:
+>>
+>> The benefit is that the ugliness in
+>> drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
+>> can be avoided, as today we're unable to pass the compulsory
+>> platform data in any sane way. I'm being told that this weak symbol
+>> override actually does not really work... especially if there are more
+>> than 1 I2C device on the bus :-P
+>
+> I am confused as to why this would be a benefit of ste_rmi4 over full
+> RMI4 implementation from Christopher's group?
 
-I think we do want to be able to allow the daemon to be restarted.
+So we don't need to keep our real platform data and board files
+out-of-tree like we've done for the last 2 years or so.
 
-I guess we can have it call into the rpc server code when it starts up
-and the server could do the connect then?  We need some way for
-userspace to tell the server that the new upcall is supported anyway.
+But I only said it's a benefit, not that I think it's a good idea.
 
---b.
+> I think what we really need is to accelerate work on the full driver so
+> it is in mainline in 3.9ish.
+
+Yep, agreed.
+
+Yours,
+Linus Walleij
