@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768919Ab2KOUNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:13:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47715 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768889Ab2KOUNo (ORCPT
+	id S1423696Ab2KOUSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:18:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44898 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423636Ab2KOUSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:13:44 -0500
-Date: Thu, 15 Nov 2012 15:13:41 -0500 (EST)
-Message-Id: <20121115.151341.694285418420091290.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: gustavo@padovan.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        ulisses@profusion.mobi, marcel@holtmann.org,
-        vinicius.gomes@openbossa.org, linville@tuxdriver.com
-Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
- Core
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
-References: <20121114.163044.2287972932330697472.davem@davemloft.net>
-	<20121114213819.GT13292@decadent.org.uk>
-	<1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 15:18:47 -0500
+Date: Thu, 15 Nov 2012 23:18:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: YAMANE Toshiaki <yamanetoshi@gmail.com>
+Cc: devel@driverdev.osuosl.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 2/4] staging/serqt_usb2: refactor qt_read_bulk_callback()
+ in serqt_usb2.c
+Message-ID: <20121115201817.GO11515@mwanda>
+References: <1352496782-7246-1-git-send-email-yamanetoshi@gmail.com>
+ <1352496836-7280-1-git-send-email-yamanetoshi@gmail.com>
+ <20121114124110.GG11515@mwanda>
+ <CAOTypNR_dDjg=XA-yP2OhyrLs3LEBPDFSRBORZUPh6Qzo4w8xA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOTypNR_dDjg=XA-yP2OhyrLs3LEBPDFSRBORZUPh6Qzo4w8xA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Thu, 15 Nov 2012 20:04:32 +0000
-
-> On Wed, 2012-11-14 at 21:38 +0000, Ben Hutchings wrote:
->> On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
->> > From: Gustavo Padovan <gustavo@padovan.org>
->> > Date: Wed, 14 Nov 2012 19:24:26 -0200
->> > 
->> > > Hi Ben,
->> > > 
->> > > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]:
->> > > 
->> > >> 3.2-stable review patch.  If anyone has any objections, please let me know.
->> > >> 
->> > >> ------------------
->> > >> 
->> > >> From: Ulisses Furquim <ulisses@profusion.mobi>
->> > >> 
->> > >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
->> > >> 
->> > >> The handling of SCO audio links and the L2CAP protocol are essential to
->> > >> any system with Bluetooth thus are always compiled in from now on.
->> > > 
->> > > I wonder if this could not break any kind of script or code people have that
->> > > refer directly to the sco and l2cap modules. Also I don't see this change as
->> > > really necessary for 3.2.
->> > 
->> > Agreed, I wish this had not been merged into -stable, I would have never
->> > submitted a patch like this myself.
->> 
->> This is required by:
->> 
->> commit ff03261adc8b4bdd8291f1783c079b53a892b429
->> Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
->> Date:   Thu Aug 23 21:32:44 2012 -0300
->> 
->>     Bluetooth: Fix sending a HCI Authorization Request over LE links
->>     
->>     commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
->> 
->> which was already applied.
+On Fri, Nov 16, 2012 at 05:01:55AM +0900, YAMANE Toshiaki wrote:
+> On Wed, Nov 14, 2012 at 9:41 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> >
+> > Why can't we test whether i == (RxCount - 3) earlier and handle
+> > the errors there?  That way we wouldn't need to pass the limit
+> > variable.
+> >
+> > In fact, this whole function is sort of nasty.  We start by doing
+> > a switch (data[i + 2]) { then we combine the 0x00 and 0x01 and call
+> > this function which separates them out and sets a function pointer
+> > and then calls the function point?  Get rid of this whole function.
+> >
+> > You shouldn't need to use function pointers to do this; that's too
+> > many levels of abstraction.
 > 
-> So, do you think it's better to revert that in 3.2, or to go ahead with
-> this?
+> I feel it so diffcult to consider the fixing this patch more.
+> 
+> There are some reasons why I have become such a description.
+> - The purpose of this patch is the resolution of the
+>   line over 80 characters issue
+> - I Wrote the code to be aware of the following:
+> -- Do not change the procedure
+> -- The shallow nest
+> -- To avoid the redundancy
+> 
+> If I do not use a function pointer, which take the form below.
+> 
+>         if (0x00 == data[i + 2])
+>                 dev_dbg(&port->dev, "Line status status.\n");
+>         else
+>                 dev_dbg(&port->dev, "Modem status status.\n");
+> 
+>         if (i > limit) {
+>                 dev_dbg(&port->dev,
+>                         "Illegal escape seuences in received data\n");
+>                 return 0;
+>         }
+> 
+>         if (0x00 == data[i + 2])
+>                 ProcessLineStatus(qt_port, data[i + 3]);
+>         else
+>                 ProcessModemStatus(qt_port, data[i + 3]);
+> 
+> 	return 1;
+> 
+> I also feel it may be...
+> 
+> And I am against to move the dev_dbg procedure call to
+> qt_status_change_check procedure because the nesting will be so deep.
 
-I can't believe that just turning on bluetooth is going to force
-enable these sub-protocols too, that's simply rediculous.  That
-change should have never gone into the tree.
+In the end, the new version is more confusing than the original
+code.  Checkpatch.pl is not a king which must be obeyed.  The only
+thing which matters is how easy it is for a human to understand the
+code.
 
-Do I _REALLY_ have to go back to validating all the bluetooth stuff by
-hand when John Linville sends me pull requests?  Seriously?
+> 
+> >>       if (urb->status) {
+> >>               qt_port->ReadBulkStopped = 1;
+> >> -             dev_dbg(&urb->dev->dev, "%s - nonzero write bulk status received: %d\n",
+> >> +             dev_dbg(&urb->dev->dev,
+> >> +                     "%s - nonzero write bulk status received: %d\n",
+> >>                       __func__, urb->status);
+> >
+> > Don't mix in these unrelated 80 character limit changes.
+> 
+> I think the purpose of refactoring is the resolution of the line over 80
+> characters issue. I think that the separation of the patch should stop taking
+> because they are already applied in the linux-next tree.
+> 
 
-I thought we were beyond that kind of bullshit after the coding style
-fiasco.
+Yes, once it is merged into linux-next then it is too late to send a
+version 2 patch.
 
-Actually I have a better idea, how about John stops pulling the
-bluetooth stuff into his tree, and instead the bluetooth folks have to
-submit their changes individually to the netdev list.  I like that
-scheme better.
+I'm explaining that as a reviewer it is confusing for me to figure
+out when you do unrelated things in the same patch and mix
+everything up.
 
-Because I don't want John's wireless work held back by the garbage
-these bluetooth guys keep submitting.
+regards,
+dan carpenter
+
