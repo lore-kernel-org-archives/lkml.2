@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab2KOVzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:55:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56404 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2KOVzq (ORCPT
+	id S1751896Ab2KOVzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:55:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54542 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2KOVzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:55:46 -0500
-Date: Thu, 15 Nov 2012 21:55:29 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Jonas Bonn <jonas@southpole.se>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: new execve/kernel_thread design
-Message-ID: <20121115215529.GU2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
- <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
- <20121017160702.GY2616@ZenIV.linux.org.uk>
- <20121017161953.GZ2616@ZenIV.linux.org.uk>
- <CAHTX3dJN4Jun2KVXpda1wTrwkjT0mmH4fYmUUwq69d9sCTjXnA@mail.gmail.com>
+	Thu, 15 Nov 2012 16:55:48 -0500
+Date: Thu, 15 Nov 2012 13:55:01 -0800
+From: tip-bot for Boris Ostrovsky <boris.ostrovsky@amd.com>
+Message-ID: <tip-59e0b603b429d7fe654f5c7ea82f2ac7b427504c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, boris.ostrovsky@amd.com,
+        herrmann.der.user@googlemail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@amd.com, herrmann.der.user@googlemail.com,
+        tglx@linutronix.de, stable@vger.kernel.org, hpa@linux.intel.com
+In-Reply-To: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode, AMD:
+  Add support for family 16h processors
+Git-Commit-ID: 59e0b603b429d7fe654f5c7ea82f2ac7b427504c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAHTX3dJN4Jun2KVXpda1wTrwkjT0mmH4fYmUUwq69d9sCTjXnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 15 Nov 2012 13:55:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 05:41:16PM +0100, Michal Simek wrote:
-> Here is the branch based on rc5 (information below)
-> and here is giweb.
-> http://developer.petalogix.com/git/gitweb.cgi?p=linux-2.6-microblaze.git;a=shortlog;h=refs/heads/viro/arch-microblaze-rc5
-> 
-> I have also looked at your sys_fork / sys_vfork / sys_clone unification
-> and I have fixed it for Microblaze.
-> 
-> Also I have done some tests on it for sure.
-> 
-> I would add sys_execve/kernel_execve/kernel_thread patches to my next branch.
-> Are you OK with that?
+Commit-ID:  59e0b603b429d7fe654f5c7ea82f2ac7b427504c
+Gitweb:     http://git.kernel.org/tip/59e0b603b429d7fe654f5c7ea82f2ac7b427504c
+Author:     Boris Ostrovsky <boris.ostrovsky@amd.com>
+AuthorDate: Thu, 15 Nov 2012 13:41:50 -0500
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 15 Nov 2012 13:06:07 -0800
 
-Umm...  In principle - yes, but I've a couple of question abouts those.
+x86, microcode, AMD: Add support for family 16h processors
 
-1) What's that set_fs(USER_DS) in start_thread() for?  Note that we do the same
-thing in flush_old_exec(), at the same time we remove PF_KTHREAD from
-current->flags.
+Add valid patch size for family 16h processors.
 
-While we are at it, if we *ever* hit do_signal() with KERNEL_DS, we are
-very deep in trouble.  set_fs(USER_DS) in setup_{rt_,}frame() is pointless.
+[ hpa: promoting to urgent/stable since it is hw enabling and trivial ]
 
-2) your definition of current_pt_regs() is an exact copy of on in
-include/linux/ptrace.h; why is "microblaze: Define current_pt_regs"
-needed at all?  IOW, I'd rather added #include <linux/ptrace.h> to
-arch/microblaze/kernel/process.c instead...
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Link: http://lkml.kernel.org/r/1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/microcode_amd.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index b3e67ba..efdec7c 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -190,6 +190,7 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
+ #define F1XH_MPB_MAX_SIZE 2048
+ #define F14H_MPB_MAX_SIZE 1824
+ #define F15H_MPB_MAX_SIZE 4096
++#define F16H_MPB_MAX_SIZE 3458
+ 
+ 	switch (c->x86) {
+ 	case 0x14:
+@@ -198,6 +199,9 @@ static unsigned int verify_patch_size(int cpu, u32 patch_size,
+ 	case 0x15:
+ 		max_size = F15H_MPB_MAX_SIZE;
+ 		break;
++	case 0x16:
++		max_size = F16H_MPB_MAX_SIZE;
++		break;
+ 	default:
+ 		max_size = F1XH_MPB_MAX_SIZE;
+ 		break;
