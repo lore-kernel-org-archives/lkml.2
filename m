@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993075Ab2KOEL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49362 "EHLO mail.kernel.org"
+	id S2993091Ab2KOEME (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49431 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993041Ab2KOELv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:51 -0500
+	id S2993074Ab2KOEL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Petr Matousek <pmatouse@redhat.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 50/66] net: fix divide by zero in tcp algorithm illinois
-Date: Wed, 14 Nov 2012 20:10:55 -0800
-Message-Id: <20121115040942.738788784@linuxfoundation.org>
+Subject: [ 56/66] ipv6: send unsolicited neighbour advertisements to all-nodes
+Date: Wed, 14 Nov 2012 20:11:01 -0800
+Message-Id: <20121115040943.193386880@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -30,66 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jesper Dangaard Brouer <brouer@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 8f363b77ee4fbf7c3bbcf5ec2c5ca482d396d664 ]
+[ Upstream commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b ]
 
-Reading TCP stats when using TCP Illinois congestion control algorithm
-can cause a divide by zero kernel oops.
+As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
+unsolicited neighbour advertisements should be sent to the all-nodes
+multicast address.
 
-The division by zero occur in tcp_illinois_info() at:
- do_div(t, ca->cnt_rtt);
-where ca->cnt_rtt can become zero (when rtt_reset is called)
-
-Steps to Reproduce:
- 1. Register tcp_illinois:
-     # sysctl -w net.ipv4.tcp_congestion_control=illinois
- 2. Monitor internal TCP information via command "ss -i"
-     # watch -d ss -i
- 3. Establish new TCP conn to machine
-
-Either it fails at the initial conn, or else it needs to wait
-for a loss or a reset.
-
-This is only related to reading stats.  The function avg_delay() also
-performs the same divide, but is guarded with a (ca->cnt_rtt > 0) at its
-calling point in update_params().  Thus, simply fix tcp_illinois_info().
-
-Function tcp_illinois_info() / get_info() is called without
-socket lock.  Thus, eliminate any race condition on ca->cnt_rtt
-by using a local stack variable.  Simply reuse info.tcpv_rttcnt,
-as its already set to ca->cnt_rtt.
-Function avg_delay() is not affected by this race condition, as
-its called with the socket lock.
-
-Cc: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_illinois.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv6/ndisc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_illinois.c
-+++ b/net/ipv4/tcp_illinois.c
-@@ -313,11 +313,13 @@ static void tcp_illinois_info(struct soc
- 			.tcpv_rttcnt = ca->cnt_rtt,
- 			.tcpv_minrtt = ca->base_rtt,
- 		};
--		u64 t = ca->sum_rtt;
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -535,7 +535,7 @@ static void ndisc_send_unsol_na(struct n
+ {
+ 	struct inet6_dev *idev;
+ 	struct inet6_ifaddr *ifa;
+-	struct in6_addr mcaddr;
++	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
  
--		do_div(t, ca->cnt_rtt);
--		info.tcpv_rtt = t;
-+		if (info.tcpv_rttcnt > 0) {
-+			u64 t = ca->sum_rtt;
+ 	idev = in6_dev_get(dev);
+ 	if (!idev)
+@@ -543,7 +543,6 @@ static void ndisc_send_unsol_na(struct n
  
-+			do_div(t, info.tcpv_rttcnt);
-+			info.tcpv_rtt = t;
-+		}
- 		nla_put(skb, INET_DIAG_VEGASINFO, sizeof(info), &info);
- 	}
- }
+ 	read_lock_bh(&idev->lock);
+ 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
+-		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
+ 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
+ 			      /*router=*/ !!idev->cnf.forwarding,
+ 			      /*solicited=*/ false, /*override=*/ true,
 
 
