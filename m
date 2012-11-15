@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992711Ab2KOEK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:10:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48457 "EHLO mail.kernel.org"
+	id S2992854Ab2KOErB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:47:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48492 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992664Ab2KOEKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:23 -0500
+	id S2992708Ab2KOEK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Matthieu CASTET <matthieu.castet@parrot.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 18/38] ALSA: PCM: Fix some races at disconnection
-Date: Wed, 14 Nov 2012 20:10:15 -0800
-Message-Id: <20121115040934.035319375@linuxfoundation.org>
+Subject: [ 21/38] ALSA: usb-audio: Fix races at disconnection in mixer_quirks.c
+Date: Wed, 14 Nov 2012 20:10:18 -0800
+Message-Id: <20121115040934.206075713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -26,102 +26,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 9b0573c07f278e9888c352aa9724035c75784ea0 upstream.
+commit 888ea7d5ac6815ba16b3b3a20f665a92c7af6724 upstream.
 
-Fix races at PCM disconnection:
-- while a PCM device is being opened or closed
-- while the PCM state is being changed without lock in prepare,
-  hw_params, hw_free ops
+Similar like the previous commit, cover with chip->shutdown_rwsem
+and chip->shutdown checks.
 
 Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- sound/core/pcm.c        |    7 ++++++-
- sound/core/pcm_native.c |   16 ++++++++++++----
- 2 files changed, 18 insertions(+), 5 deletions(-)
+ sound/usb/mixer_quirks.c |   37 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 33 insertions(+), 4 deletions(-)
 
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -1045,11 +1045,15 @@ static int snd_pcm_dev_disconnect(struct
- 	if (list_empty(&pcm->list))
- 		goto unlock;
+--- a/sound/usb/mixer_quirks.c
++++ b/sound/usb/mixer_quirks.c
+@@ -186,6 +186,11 @@ static int snd_audigy2nx_led_put(struct
+ 	if (value > 1)
+ 		return -EINVAL;
+ 	changed = value != mixer->audigy2nx_leds[index];
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown) {
++		err = -ENODEV;
++		goto out;
++	}
+ 	if (mixer->chip->usb_id == USB_ID(0x041e, 0x3042))
+ 		err = snd_usb_ctl_msg(mixer->chip->dev,
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
+@@ -202,6 +207,8 @@ static int snd_audigy2nx_led_put(struct
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
+ 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+ 			      value, index + 2, NULL, 0, 100);
++ out:
++	up_read(&mixer->chip->shutdown_rwsem);
+ 	if (err < 0)
+ 		return err;
+ 	mixer->audigy2nx_leds[index] = value;
+@@ -295,11 +302,16 @@ static void snd_audigy2nx_proc_read(stru
  
-+	mutex_lock(&pcm->open_mutex);
- 	list_del_init(&pcm->list);
- 	for (cidx = 0; cidx < 2; cidx++)
--		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next)
-+		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
-+			snd_pcm_stream_lock_irq(substream);
- 			if (substream->runtime)
- 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
-+			snd_pcm_stream_unlock_irq(substream);
-+		}
- 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
- 		notify->n_disconnect(pcm);
- 	}
-@@ -1065,6 +1069,7 @@ static int snd_pcm_dev_disconnect(struct
- 		}
- 		snd_unregister_device(devtype, pcm->card, pcm->device);
- 	}
-+	mutex_unlock(&pcm->open_mutex);
-  unlock:
- 	mutex_unlock(&register_mutex);
- 	return 0;
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -368,6 +368,14 @@ static int period_to_usecs(struct snd_pc
- 	return usecs;
- }
+ 	for (i = 0; jacks[i].name; ++i) {
+ 		snd_iprintf(buffer, "%s: ", jacks[i].name);
+-		err = snd_usb_ctl_msg(mixer->chip->dev,
++		down_read(&mixer->chip->shutdown_rwsem);
++		if (mixer->chip->shutdown)
++			err = 0;
++		else
++			err = snd_usb_ctl_msg(mixer->chip->dev,
+ 				      usb_rcvctrlpipe(mixer->chip->dev, 0),
+ 				      UAC_GET_MEM, USB_DIR_IN | USB_TYPE_CLASS |
+ 				      USB_RECIP_INTERFACE, 0,
+ 				      jacks[i].unitid << 8, buf, 3, 100);
++		up_read(&mixer->chip->shutdown_rwsem);
+ 		if (err == 3 && (buf[0] == 3 || buf[0] == 6))
+ 			snd_iprintf(buffer, "%02x %02x\n", buf[1], buf[2]);
+ 		else
+@@ -329,10 +341,15 @@ static int snd_xonar_u1_switch_put(struc
+ 	else
+ 		new_status = old_status & ~0x02;
+ 	changed = new_status != old_status;
+-	err = snd_usb_ctl_msg(mixer->chip->dev,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		err = -ENODEV;
++	else
++		err = snd_usb_ctl_msg(mixer->chip->dev,
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x08,
+ 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+ 			      50, 0, &new_status, 1, 100);
++	up_read(&mixer->chip->shutdown_rwsem);
+ 	if (err < 0)
+ 		return err;
+ 	mixer->xonar_u1_status = new_status;
+@@ -371,11 +388,17 @@ static int snd_nativeinstruments_control
+ 	u8 bRequest = (kcontrol->private_value >> 16) & 0xff;
+ 	u16 wIndex = kcontrol->private_value & 0xffff;
+ 	u8 tmp;
++	int ret;
  
-+static void snd_pcm_set_state(struct snd_pcm_substream *substream, int state)
-+{
-+	snd_pcm_stream_lock_irq(substream);
-+	if (substream->runtime->status->state != SNDRV_PCM_STATE_DISCONNECTED)
-+		substream->runtime->status->state = state;
-+	snd_pcm_stream_unlock_irq(substream);
-+}
-+
- static int snd_pcm_hw_params(struct snd_pcm_substream *substream,
- 			     struct snd_pcm_hw_params *params)
- {
-@@ -451,7 +459,7 @@ static int snd_pcm_hw_params(struct snd_
- 		runtime->boundary *= 2;
+-	int ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		ret = -ENODEV;
++	else
++		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+ 				  0, cpu_to_le16(wIndex),
+ 				  &tmp, sizeof(tmp), 1000);
++	up_read(&mixer->chip->shutdown_rwsem);
  
- 	snd_pcm_timer_resolution_change(substream);
--	runtime->status->state = SNDRV_PCM_STATE_SETUP;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_SETUP);
+ 	if (ret < 0) {
+ 		snd_printk(KERN_ERR
+@@ -396,11 +419,17 @@ static int snd_nativeinstruments_control
+ 	u8 bRequest = (kcontrol->private_value >> 16) & 0xff;
+ 	u16 wIndex = kcontrol->private_value & 0xffff;
+ 	u16 wValue = ucontrol->value.integer.value[0];
++	int ret;
  
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
-@@ -463,7 +471,7 @@ static int snd_pcm_hw_params(struct snd_
- 	/* hardware might be unusable from this time,
- 	   so we force application to retry to set
- 	   the correct hardware parameter settings */
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	if (substream->ops->hw_free != NULL)
- 		substream->ops->hw_free(substream);
- 	return err;
-@@ -511,7 +519,7 @@ static int snd_pcm_hw_free(struct snd_pc
- 		return -EBADFD;
- 	if (substream->ops->hw_free)
- 		result = substream->ops->hw_free(substream);
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	pm_qos_remove_request(&substream->latency_pm_qos_req);
- 	return result;
- }
-@@ -1319,7 +1327,7 @@ static void snd_pcm_post_prepare(struct
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	runtime->control->appl_ptr = runtime->status->hw_ptr;
--	runtime->status->state = SNDRV_PCM_STATE_PREPARED;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_PREPARED);
- }
+-	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		ret = -ENODEV;
++	else
++		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+ 				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
+ 				  NULL, 0, 1000);
++	up_read(&mixer->chip->shutdown_rwsem);
  
- static struct action_ops snd_pcm_action_prepare = {
+ 	if (ret < 0) {
+ 		snd_printk(KERN_ERR
 
 
