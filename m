@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992576Ab2KOBaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 20:30:01 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63735 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S2992522Ab2KOBaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 20:30:00 -0500
-X-IronPort-AV: E=Sophos;i="4.83,254,1352044800"; 
-   d="scan'208";a="6199945"
-Message-ID: <50A4444A.7050305@cn.fujitsu.com>
-Date: Thu, 15 Nov 2012 09:24:26 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Toshi Kani <toshi.kani@hp.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v4 1/7] acpi,memory-hotplug: introduce a mutex lock to
- protect the list in acpi_memory_device
-References: <1352372693-32411-1-git-send-email-wency@cn.fujitsu.com> <1352754038.12509.16.camel@misato.fc.hp.com> <50A1AAC5.8000506@cn.fujitsu.com> <2008916.VzTIR8JBPq@vostro.rjw.lan>
-In-Reply-To: <2008916.VzTIR8JBPq@vostro.rjw.lan>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/15 09:18:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/15 09:29:49,
-	Serialize complete at 2012/11/15 09:29:49
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S2992585Ab2KOBaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 20:30:20 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:58225 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992522Ab2KOBaO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 20:30:14 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-d7-50a445a4acd4
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+References: <1352469878-4532-1-git-send-email-thierry.reding@avionic-design.de>
+In-reply-to: <1352469878-4532-1-git-send-email-thierry.reding@avionic-design.de>
+Subject: Re: [PATCH] backlight: Add of_find_backlight_by_node() function
+Date: Thu, 15 Nov 2012 10:30:11 +0900
+Message-id: <004201cdc2d0$c1920210$44b60630$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2+g0iAWySaBkDDQt6otgruBRgKJgETNj4g
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zY90lrksCDDY+E7Y40feB1eLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWc6mhgLFgrVPHm0wG2BsbJ/F2MnBwSAiYSbVvvM0PY
+	YhIX7q1nA7GFBJYxSizYHwtTs/PCIaAaLqD4dEaJc7tPMEE4vxgl3q7uAOtgE1CT+PLlMDuI
+	LSKQJjFvWx8LSBGzwDFGifXrbjBCjPWXeNS6nAXE5hQIkPj84ytYXFjAQ2Lz5a9gg1gEVCU+
+	rJoCVMPBwStgK7F7QhRImFdAUOLH5HtgrcwCWhLrdx5ngrDlJTavecsMUi4hoC7x6K8uiCki
+	YCSxY4cbRIWIxL4X7xghhgtIfJt8iAWiWlZi0wGwtyQENrFLnP15jw3iX0mJgytusExglJiF
+	ZPEsJItnIVk8C8mKBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzFCIkx6B+OqBotDjAIc
+	jEo8vBYfFwcIsSaWFVfmHmKU4GBWEuF9cRAoxJuSWFmVWpQfX1Sak1p8iNEH6PKJzFKiyfnA
+	6M8riTc0NjYxMzE1Mbc0NTfFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgXHpgtd/Tt+P
+	nRUn7uUhb7Y5c0mA8O+J/r/Ct16UED548FWJhczST3XcFdn9burcIWpVH30uylr0/Y83OV1Q
+	GyK10bn+2vlFLDMU/u67OP1w9M6ZJi8eXv288dzPDzJ6FrP7Y3wLv0x+YcXD9t3u6bnDeaJ/
+	1/xYtXBZhJLjrrrgdRMMVeXsVCqUWIozEg21mIuKEwEsl7mS3QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jQd0lrksCDHa/57U40feB1eLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmnOpoYCxYK1Tx
+	5tMBtgbGyfxdjJwcEgImEjsvHGKGsMUkLtxbz9bFyMUhJDCdUeLc7hNMEM4vRom3qzvYQKrY
+	BNQkvnw5zA5iiwikSczb1scCUsQscIxRYv26G4wgCSEBf4lHrctZQGxOgQCJzz++gsWFBTwk
+	Nl/+CjaIRUBV4sOqKUA1HBy8ArYSuydEgYR5BQQlfky+B9bKLKAlsX7ncSYIW15i85q3zCDl
+	EgLqEo/+6oKYIgJGEjt2uEFUiEjse/GOcQKj0Cwkg2YhGTQLyaBZSFoWMLKsYhRNLUguKE5K
+	zzXSK07MLS7NS9dLzs/dxAiO4GfSOxhXNVgcYhTgYFTi4bX4uDhAiDWxrLgy9xCjBAezkgjv
+	i4NAId6UxMqq1KL8+KLSnNTiQ4w+QG9OZJYSTc4HJpe8knhDYxMzI0sjMwsjE3NzHMJK4rzN
+	HikBQgLpiSWp2ampBalFMOOYODilGhhli5d283nWfN8+yfmK/KnUE5dD/nzV2yfotW1aW+fS
+	A44HS5NmnZsfZWLGpJXwT2rLoZ12B/5uCU0/bWETmHtlu+VxxiNfDQ8FTl+fv+XV62eaku84
+	lt36+qLtY9RKMQXJtUdnJQrFOsrJrDq3ZWlvxKe35XkinhXZszlP9WvqFZdeZcv5VFqixFKc
+	kWioxVxUnAgA6lv//g0DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/15/2012 07:34 AM, Rafael J. Wysocki Wrote:
-> On Tuesday, November 13, 2012 10:04:53 AM Wen Congyang wrote:
->> At 11/13/2012 05:00 AM, Toshi Kani Wrote:
->>> On Thu, 2012-11-08 at 19:04 +0800, Wen Congyang wrote:
->>>> The memory device can be removed by 2 ways:
->>>> 1. send eject request by SCI
->>>> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>>>
->>>> This 2 events may happen at the same time, so we may touch
->>>> acpi_memory_device.res_list at the same time. This patch
->>>> introduce a lock to protect this list.
->>>
->>> Hi Wen,
->>>
->>> This race condition is not unique in memory hot-remove as the sysfs
->>> eject interface is created for all objects with _EJ0.  For CPU
->>> hot-remove, I addressed this race condition by making the notify handler
->>> to run the hot-remove operation on kacpi_hotplug_wq by calling
->>> acpi_os_hotplug_execute().  This serializes the hot-remove operations
->>> among the two events since the sysfs eject also runs on
->>> kacpi_hotplug_wq.  This way is much simpler and is easy to maintain,
->>> although it does not allow both operations to run simultaneously (which
->>> I do not think we need).  Can it be used for memory hot-remove as well?
->>
->> Good idea. I will update it.
+On Friday, November 09, 2012 11:05 PM Thierry Reding wrote
 > 
-> Still waiting. :-)
+> This function finds the struct backlight_device for a given device tree
+> node. A dummy function is provided so that it safely compiles out if OF
+> support is disabled.
 > 
-> But if you want that in v3.8, please repost ASAP.
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-I think I will send it today. It is in test now.
+CC'ed Andrew Morton
 
-Thanks
-Wen Congyang
+Hi Thierry Reding,
 
+The patch itself looks good.
+Could you explain when this API is used?
+Thank you.
+
+
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/video/backlight/backlight.c | 17 +++++++++++++++++
+>  include/linux/backlight.h           | 10 ++++++++++
+>  2 files changed, 27 insertions(+)
 > 
-> Thanks,
-> Rafael
+> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> index 297db2f..0d1ed4f 100644
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+> @@ -370,6 +370,23 @@ void backlight_device_unregister(struct backlight_device *bd)
+>  }
+>  EXPORT_SYMBOL(backlight_device_unregister);
 > 
+> +#if IS_ENABLED(CONFIG_OF)
+> +static int of_parent_match(struct device *dev, void *data)
+> +{
+> +	return dev->parent && dev->parent->of_node == data;
+> +}
+> +
+> +struct backlight_device *of_find_backlight_by_node(struct device_node *node)
+> +{
+> +	struct device *dev;
+> +
+> +	dev = class_find_device(backlight_class, NULL, node, of_parent_match);
+> +
+> +	return dev ? to_backlight_device(dev) : NULL;
+> +}
+> +EXPORT_SYMBOL(of_find_backlight_by_node);
+> +#endif
+> +
+>  static void __exit backlight_class_exit(void)
+>  {
+>  	class_destroy(backlight_class);
+> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+> index 5ffc6dd..11840e9 100644
+> --- a/include/linux/backlight.h
+> +++ b/include/linux/backlight.h
+> @@ -134,4 +134,14 @@ struct generic_bl_info {
+>  	void (*kick_battery)(void);
+>  };
 > 
+> +#if IS_ENABLED(CONFIG_OF)
+> +struct backlight_device *of_find_backlight_by_node(struct device_node *node);
+> +#else
+> +static inline struct backlight_device *
+> +of_find_backlight_by_node(struct device_node *node)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  #endif
+> --
+> 1.8.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
