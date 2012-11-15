@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767634Ab2KOEQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:16:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50095 "EHLO mail.kernel.org"
+	id S2993397Ab2KOENL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:13:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49995 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993403Ab2KOENN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:13:13 -0500
+	id S2993351Ab2KOENC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Brian Paul <brianp@vmware.com>, Dmitry Torokhov <dtor@vmware.com>,
-        Dave Airlie <airlied@redhat.com>, linux-graphics-maintainer@vmware.com
-Subject: [ 50/57] drm/vmwgfx: Fix hibernation device reset
-Date: Wed, 14 Nov 2012 20:11:58 -0800
-Message-Id: <20121115040936.215059445@linuxfoundation.org>
+        Hemant Kumar <hemantk@codeaurora.org>, Oliver Neukum <oneukum@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 41/57] net: usb: Fix memory leak on Tx data path
+Date: Wed, 14 Nov 2012 20:11:49 -0800
+Message-Id: <20121115040935.729949451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -27,36 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 95e8f6a21996c4cc2c4574b231c6e858b749dce3 upstream.
+From: Hemant Kumar <hemantk@codeaurora.org>
 
-The device would not reset properly when resuming from hibernation.
+[ Upstream commit 39707c2a3ba5011038b363f84d37c8a98d2d9db1 ]
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Brian Paul <brianp@vmware.com>
-Reviewed-by: Dmitry Torokhov <dtor@vmware.com>
-Cc: linux-graphics-maintainer@vmware.com
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Driver anchors the tx urbs and defers the urb submission if
+a transmit request comes when the interface is suspended.
+Anchoring urb increments the urb reference count. These
+deferred urbs are later accessed by calling usb_get_from_anchor()
+for submission during interface resume. usb_get_from_anchor()
+unanchors the urb but urb reference count remains same.
+This causes the urb reference count to remain non-zero
+after usb_free_urb() gets called and urb never gets freed.
+Hence call usb_put_urb() after anchoring the urb to properly
+balance the reference count for these deferred urbs. Also,
+unanchor these deferred urbs during disconnect, to free them
+up.
+
+Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/usb/usbnet.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -1102,6 +1102,11 @@ static void vmw_pm_complete(struct devic
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 	struct vmw_private *dev_priv = vmw_priv(dev);
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1158,6 +1158,7 @@ netdev_tx_t usbnet_start_xmit (struct sk
+ 		usb_anchor_urb(urb, &dev->deferred);
+ 		/* no use to process more packets */
+ 		netif_stop_queue(net);
++		usb_put_urb(urb);
+ 		spin_unlock_irqrestore(&dev->txq.lock, flags);
+ 		netdev_dbg(dev->net, "Delaying transmission for resumption\n");
+ 		goto deferred;
+@@ -1299,6 +1300,8 @@ void usbnet_disconnect (struct usb_inter
  
-+	mutex_lock(&dev_priv->hw_mutex);
-+	vmw_write(dev_priv, SVGA_REG_ID, SVGA_ID_2);
-+	(void) vmw_read(dev_priv, SVGA_REG_ID);
-+	mutex_unlock(&dev_priv->hw_mutex);
+ 	cancel_work_sync(&dev->kevent);
+ 
++	usb_scuttle_anchored_urbs(&dev->deferred);
 +
- 	/**
- 	 * Reclaim 3d reference held by fbdev and potentially
- 	 * start fifo.
+ 	if (dev->driver_info->unbind)
+ 		dev->driver_info->unbind (dev, intf);
+ 
 
 
