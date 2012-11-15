@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993376Ab2KOLA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:00:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26096 "EHLO mga09.intel.com"
+	id S1767338Ab2KOLBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:01:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:36963 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993321Ab2KOLAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:00:10 -0500
+	id S2993320Ab2KOLAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 06:00:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="220035774"
+   d="scan'208";a="247385201"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: lenb@kernel.org, rafael.j.wysocki@intel.com,
@@ -17,9 +17,9 @@ Cc: lenb@kernel.org, rafael.j.wysocki@intel.com,
         w.sang@pengutronix.de, bhelgaas@google.com,
         mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 2/3] spi / ACPI: add ACPI enumeration support
-Date: Thu, 15 Nov 2012 13:03:16 +0200
-Message-Id: <1352977397-2280-3-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 1/3] gpio / ACPI: add ACPI support
+Date: Thu, 15 Nov 2012 13:03:15 +0200
+Message-Id: <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -27,259 +27,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-configure the SPI slave devices behind the SPI controller. This patch adds
-support for this to the SPI core.
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-In addition we bind ACPI nodes to SPI devices. This makes it possible for
-the slave drivers to get the ACPI handle for further configuration.
+Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
+Needs a gpio controller driver with the acpi handler hook set.
 
+Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
+resources to Linux GPIO's.
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/spi/spi.c |  201 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 200 insertions(+), 1 deletion(-)
+ drivers/gpio/Kconfig        |    4 ++++
+ drivers/gpio/Makefile       |    1 +
+ drivers/gpio/gpiolib-acpi.c |   56 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi_gpio.h   |   19 +++++++++++++++
+ 4 files changed, 80 insertions(+)
+ create mode 100644 drivers/gpio/gpiolib-acpi.c
+ create mode 100644 include/linux/acpi_gpio.h
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 84c2861..e39a484 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -35,6 +35,8 @@
- #include <linux/sched.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
-+#include <linux/ioport.h>
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index f11d8e3..5c9b384 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -49,6 +49,10 @@ config OF_GPIO
+ 	def_bool y
+ 	depends on OF
+ 
++config GPIO_ACPI
++	def_bool y
++	depends on ACPI
++
+ config DEBUG_GPIO
+ 	bool "Debug GPIO calls"
+ 	depends on DEBUG_KERNEL
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 9aeed67..420dbac 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+new file mode 100644
+index 0000000..8ef9831
+--- /dev/null
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -0,0 +1,56 @@
++/*
++ * ACPI helpers for GPIO API
++ *
++ * Copyright (C) 2012, Intel Corporation
++ * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
++ *          Mika Westerberg <mika.westerberg@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/errno.h>
++#include <linux/gpio.h>
++#include <linux/export.h>
++#include <linux/acpi_gpio.h>
 +#include <linux/acpi.h>
- 
- static void spidev_release(struct device *dev)
- {
-@@ -93,6 +95,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
- 	if (of_driver_match_device(dev, drv))
- 		return 1;
- 
-+	/* Then try ACPI */
-+	if (acpi_driver_match_device(dev, drv))
-+		return 1;
 +
- 	if (sdrv->id_table)
- 		return !!spi_match_id(sdrv->id_table, spi);
- 
-@@ -888,6 +894,196 @@ static void of_register_spi_devices(struct spi_master *master)
- static void of_register_spi_devices(struct spi_master *master) { }
- #endif
- 
-+#ifdef CONFIG_ACPI
-+static int acpi_spi_add_resource(struct acpi_resource *ares, void *data)
++static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
 +{
-+	struct acpi_resource_spi_serialbus *sb;
-+	struct spi_device *spi = data;
++	acpi_handle handle = data;
 +
-+	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return 0;
++	if (!gc->dev)
++		return false;
 +
-+	sb = &ares->data.spi_serial_bus;
-+	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_SPI)
-+		return 0;
-+
-+	spi->chip_select = sb->device_selection;
-+	spi->max_speed_hz = sb->connection_speed;
-+
-+	if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-+		spi->mode |= SPI_CPHA;
-+	if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-+		spi->mode |= SPI_CPOL;
-+	if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-+		spi->mode |= SPI_CS_HIGH;
-+
-+	return 1;
++	return gc->dev->acpi_handle == handle;
 +}
 +
-+static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
++/**
++ * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
++ * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
++ * @pin:	ACPI GPIO pin number (0-based, controller-relative)
++ *
++ * Returns GPIO number to use with Linux generic GPIO API, or errno error value
++ */
++
++int acpi_get_gpio(char *path, int pin)
 +{
-+	struct spi_master *master = data;
-+	struct resource_list_entry *rentry;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	struct spi_device *spi;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	spi = spi_alloc_device(master);
-+	if (!spi) {
-+		dev_err(&master->dev, "failed to allocate SPI device for %s\n",
-+			dev_name(&adev->dev));
-+		return AE_NO_MEMORY;
-+	}
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_spi_add_resource, spi);
-+	if (ret < 0)
-+		goto fail_put_dev;
-+
-+	list_for_each_entry(rentry, &resource_list, node) {
-+		struct resource *r = &rentry->res;
-+
-+		if (resource_type(r) == IORESOURCE_IRQ) {
-+			spi->irq = r->start;
-+			break;
-+		}
-+	}
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (!spi->max_speed_hz)
-+		goto fail_put_dev;
-+
-+	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
-+	if (spi_add_device(spi)) {
-+		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
-+			dev_name(&adev->dev));
-+		goto fail_put_dev;
-+	}
-+
-+	return AE_OK;
-+
-+fail_put_dev:
-+	spi_dev_put(spi);
-+
-+	return AE_OK;
-+}
-+
-+static void acpi_register_spi_devices(struct spi_master *master)
-+{
-+	acpi_status status;
++	struct gpio_chip *chip;
 +	acpi_handle handle;
++	acpi_status status;
 +
-+	handle = master->dev.acpi_handle;
-+	if (!handle)
-+		return;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-+				     acpi_spi_add_device, NULL,
-+				     master, NULL);
++	status = acpi_get_handle(NULL, path, &handle);
 +	if (ACPI_FAILURE(status))
-+		dev_warn(&master->dev, "failed to enumerate SPI slaves\n");
-+}
-+
-+struct acpi_spi_find {
-+	acpi_handle handle;
-+	u16 chip_select;
-+	bool found;
-+};
-+
-+static int acpi_spi_find_child_address(struct acpi_resource *ares, void *data)
-+{
-+	struct acpi_resource_spi_serialbus *sb;
-+	struct acpi_spi_find *spi_find = data;
-+
-+	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return 1;
-+
-+	sb = &ares->data.spi_serial_bus;
-+	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_SPI)
-+		return 1;
-+
-+	if (sb->device_selection == spi_find->chip_select)
-+		spi_find->found = true;
-+
-+	return 1;
-+}
-+
-+static acpi_status acpi_spi_find_child(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
-+{
-+	struct acpi_spi_find *spi_find = data;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_spi_find_child_address, spi_find);
-+	if (ret < 0)
-+		return AE_OK;
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (spi_find->found) {
-+		spi_find->handle = handle;
-+		return AE_CTRL_TERMINATE;
-+	}
-+	return AE_OK;
-+}
-+
-+static int acpi_spi_find_device(struct device *dev, acpi_handle *handle)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	struct spi_master *master = spi->master;
-+	struct acpi_spi_find spi_find;
-+	acpi_handle parent;
-+	acpi_status status;
-+
-+	parent = master->dev.acpi_handle;
-+	if (!parent)
 +		return -ENODEV;
 +
-+	memset(&spi_find, 0, sizeof(spi_find));
-+	spi_find.chip_select = spi->chip_select;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1,
-+				     acpi_spi_find_child, NULL,
-+				     &spi_find, NULL);
-+	if (ACPI_FAILURE(status) || !spi_find.handle)
++	chip = gpiochip_find(handle, acpi_gpiochip_find);
++	if (!chip)
 +		return -ENODEV;
 +
-+	*handle = spi_find.handle;
-+	return 0;
++	if (!gpio_is_valid(chip->base + pin))
++		return -EINVAL;
++
++	return chip->base + pin;
 +}
++EXPORT_SYMBOL_GPL(acpi_get_gpio);
+diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
+new file mode 100644
+index 0000000..91615a3
+--- /dev/null
++++ b/include/linux/acpi_gpio.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_ACPI_GPIO_H_
++#define _LINUX_ACPI_GPIO_H_
 +
-+static struct acpi_bus_type acpi_spi_bus = {
-+	.bus = &spi_bus_type,
-+	.find_device = acpi_spi_find_device,
-+};
++#include <linux/errno.h>
 +
-+static void acpi_spi_bus_register(void)
++#ifdef CONFIG_GPIO_ACPI
++
++int acpi_get_gpio(char *path, int pin);
++
++#else /* CONFIG_GPIO_ACPI */
++
++static inline int acpi_get_gpio(char *path, int pin)
 +{
-+	register_acpi_bus_type(&acpi_spi_bus);
++	return -ENODEV;
 +}
-+#else
-+static inline void acpi_register_spi_devices(struct spi_master *master) {}
-+static inline void acpi_spi_bus_register(void) {}
-+#endif /* CONFIG_ACPI */
 +
- static void spi_master_release(struct device *dev)
- {
- 	struct spi_master *master;
-@@ -1023,8 +1219,9 @@ int spi_register_master(struct spi_master *master)
- 		spi_match_master_to_boardinfo(master, &bi->board_info);
- 	mutex_unlock(&board_lock);
- 
--	/* Register devices from the device tree */
-+	/* Register devices from the device tree and ACPI */
- 	of_register_spi_devices(master);
-+	acpi_register_spi_devices(master);
- done:
- 	return status;
- }
-@@ -1550,6 +1747,8 @@ static int __init spi_init(void)
- 	status = class_register(&spi_master_class);
- 	if (status < 0)
- 		goto err2;
++#endif /* CONFIG_GPIO_ACPI */
 +
-+	acpi_spi_bus_register();
- 	return 0;
- 
- err2:
++#endif /* _LINUX_ACPI_GPIO_H_ */
 -- 
 1.7.10.4
 
