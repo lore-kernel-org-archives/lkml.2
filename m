@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab2KOETx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:19:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49904 "EHLO mail.kernel.org"
+	id S2993301Ab2KOEMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49849 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993308Ab2KOEMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:52 -0500
+	id S2993282Ab2KOEMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 33/57] ALSA: usb-audio: Use rwsem for disconnect protection
-Date: Wed, 14 Nov 2012 20:11:41 -0800
-Message-Id: <20121115040935.259779204@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 20/57] mac80211: make sure data is accessible in EAPOL check
+Date: Wed, 14 Nov 2012 20:11:28 -0800
+Message-Id: <20121115040934.479070696@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,197 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 34f3c89fda4fba9fe689db22253ca8db2f5e6386 upstream.
+commit 6dbda2d00d466225f9db1dc695ff852443f28832 upstream.
 
-Replace mutex with rwsem for codec->shutdown protection so that
-concurrent accesses are allowed.
+The code to allow EAPOL frames even when the station
+isn't yet marked associated needs to check that the
+incoming frame is long enough and due to paged RX it
+also can't assume skb->data contains the right data,
+it must use skb_copy_bits(). Fix this to avoid using
+data that doesn't really exist.
 
-Also add the protection to snd_usb_autosuspend() and
-snd_usb_autoresume(), too.
-
-Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- sound/usb/card.c     |   12 ++++++++----
- sound/usb/mixer.c    |   12 ++++++------
- sound/usb/pcm.c      |   12 ++++++------
- sound/usb/usbaudio.h |    2 +-
- 4 files changed, 21 insertions(+), 17 deletions(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -336,7 +336,7 @@ static int snd_usb_audio_create(struct u
- 		return -ENOMEM;
- 	}
+---
+ net/mac80211/rx.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -874,14 +874,16 @@ ieee80211_rx_h_check(struct ieee80211_rx
+ 		 */
+ 		if (rx->sta && rx->sdata->vif.type == NL80211_IFTYPE_STATION &&
+ 		    ieee80211_is_data_present(hdr->frame_control)) {
+-			u16 ethertype;
+-			u8 *payload;
++			unsigned int hdrlen;
++			__be16 ethertype;
  
--	mutex_init(&chip->shutdown_mutex);
-+	init_rwsem(&chip->shutdown_rwsem);
- 	chip->index = idx;
- 	chip->dev = dev;
- 	chip->card = card;
-@@ -556,7 +556,7 @@ static void snd_usb_audio_disconnect(str
- 
- 	card = chip->card;
- 	mutex_lock(&register_mutex);
--	mutex_lock(&chip->shutdown_mutex);
-+	down_write(&chip->shutdown_rwsem);
- 	chip->shutdown = 1;
- 	chip->num_interfaces--;
- 	if (chip->num_interfaces <= 0) {
-@@ -574,11 +574,11 @@ static void snd_usb_audio_disconnect(str
- 			snd_usb_mixer_disconnect(p);
+-			payload = rx->skb->data +
+-				ieee80211_hdrlen(hdr->frame_control);
+-			ethertype = (payload[6] << 8) | payload[7];
+-			if (cpu_to_be16(ethertype) ==
+-			    rx->sdata->control_port_protocol)
++			hdrlen = ieee80211_hdrlen(hdr->frame_control);
++
++			if (rx->skb->len < hdrlen + 8)
++				return RX_DROP_MONITOR;
++
++			skb_copy_bits(rx->skb, hdrlen + 6, &ethertype, 2);
++			if (ethertype == rx->sdata->control_port_protocol)
+ 				return RX_CONTINUE;
  		}
- 		usb_chip[chip->index] = NULL;
--		mutex_unlock(&chip->shutdown_mutex);
-+		up_write(&chip->shutdown_rwsem);
- 		mutex_unlock(&register_mutex);
- 		snd_card_free_when_closed(card);
- 	} else {
--		mutex_unlock(&chip->shutdown_mutex);
-+		up_write(&chip->shutdown_rwsem);
- 		mutex_unlock(&register_mutex);
- 	}
- }
-@@ -610,16 +610,20 @@ int snd_usb_autoresume(struct snd_usb_au
- {
- 	int err = -ENODEV;
  
-+	down_read(&chip->shutdown_rwsem);
- 	if (!chip->shutdown && !chip->probing)
- 		err = usb_autopm_get_interface(chip->pm_intf);
-+	up_read(&chip->shutdown_rwsem);
- 
- 	return err;
- }
- 
- void snd_usb_autosuspend(struct snd_usb_audio *chip)
- {
-+	down_read(&chip->shutdown_rwsem);
- 	if (!chip->shutdown && !chip->probing)
- 		usb_autopm_put_interface(chip->pm_intf);
-+	up_read(&chip->shutdown_rwsem);
- }
- 
- static int usb_audio_suspend(struct usb_interface *intf, pm_message_t message)
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -292,7 +292,7 @@ static int get_ctl_value_v1(struct usb_m
- 	err = snd_usb_autoresume(cval->mixer->chip);
- 	if (err < 0)
- 		return -EIO;
--	mutex_lock(&chip->shutdown_mutex);
-+	down_read(&chip->shutdown_rwsem);
- 	while (timeout-- > 0) {
- 		if (chip->shutdown)
- 			break;
-@@ -310,7 +310,7 @@ static int get_ctl_value_v1(struct usb_m
- 	err = -EINVAL;
- 
-  out:
--	mutex_unlock(&chip->shutdown_mutex);
-+	up_read(&chip->shutdown_rwsem);
- 	snd_usb_autosuspend(cval->mixer->chip);
- 	return err;
- }
-@@ -337,7 +337,7 @@ static int get_ctl_value_v2(struct usb_m
- 	if (ret)
- 		goto error;
- 
--	mutex_lock(&chip->shutdown_mutex);
-+	down_read(&chip->shutdown_rwsem);
- 	if (chip->shutdown)
- 		ret = -ENODEV;
- 	else {
-@@ -346,7 +346,7 @@ static int get_ctl_value_v2(struct usb_m
- 			      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
- 			      validx, idx, buf, size);
- 	}
--	mutex_unlock(&chip->shutdown_mutex);
-+	up_read(&chip->shutdown_rwsem);
- 	snd_usb_autosuspend(chip);
- 
- 	if (ret < 0) {
-@@ -453,7 +453,7 @@ int snd_usb_mixer_set_ctl_value(struct u
- 	err = snd_usb_autoresume(chip);
- 	if (err < 0)
- 		return -EIO;
--	mutex_lock(&chip->shutdown_mutex);
-+	down_read(&chip->shutdown_rwsem);
- 	while (timeout-- > 0) {
- 		if (chip->shutdown)
- 			break;
-@@ -471,7 +471,7 @@ int snd_usb_mixer_set_ctl_value(struct u
- 	err = -EINVAL;
- 
-  out:
--	mutex_unlock(&chip->shutdown_mutex);
-+	up_read(&chip->shutdown_rwsem);
- 	snd_usb_autosuspend(chip);
- 	return err;
- }
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -376,7 +376,7 @@ static int snd_usb_hw_params(struct snd_
- 		subs->period_bytes != params_period_bytes(hw_params) ||
- 		subs->cur_rate != rate;
- 
--	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	down_read(&subs->stream->chip->shutdown_rwsem);
- 	if (subs->stream->chip->shutdown) {
- 		ret = -ENODEV;
- 		goto unlock;
-@@ -406,7 +406,7 @@ static int snd_usb_hw_params(struct snd_
- 	}
- 
- unlock:
--	mutex_unlock(&subs->stream->chip->shutdown_mutex);
-+	up_read(&subs->stream->chip->shutdown_rwsem);
- 	return ret;
- }
- 
-@@ -422,9 +422,9 @@ static int snd_usb_hw_free(struct snd_pc
- 	subs->cur_audiofmt = NULL;
- 	subs->cur_rate = 0;
- 	subs->period_bytes = 0;
--	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	down_read(&subs->stream->chip->shutdown_rwsem);
- 	snd_usb_release_substream_urbs(subs, 0);
--	mutex_unlock(&subs->stream->chip->shutdown_mutex);
-+	up_read(&subs->stream->chip->shutdown_rwsem);
- 	return snd_pcm_lib_free_vmalloc_buffer(substream);
- }
- 
-@@ -444,7 +444,7 @@ static int snd_usb_pcm_prepare(struct sn
- 		return -ENXIO;
- 	}
- 
--	mutex_lock(&subs->stream->chip->shutdown_mutex);
-+	down_read(&subs->stream->chip->shutdown_rwsem);
- 	if (subs->stream->chip->shutdown) {
- 		ret = -ENODEV;
- 		goto unlock;
-@@ -463,7 +463,7 @@ static int snd_usb_pcm_prepare(struct sn
- 
- 	ret = snd_usb_substream_prepare(subs, runtime);
-  unlock:
--	mutex_unlock(&subs->stream->chip->shutdown_mutex);
-+	up_read(&subs->stream->chip->shutdown_rwsem);
- 	return ret;
- }
- 
---- a/sound/usb/usbaudio.h
-+++ b/sound/usb/usbaudio.h
-@@ -36,7 +36,7 @@ struct snd_usb_audio {
- 	struct snd_card *card;
- 	struct usb_interface *pm_intf;
- 	u32 usb_id;
--	struct mutex shutdown_mutex;
-+	struct rw_semaphore shutdown_rwsem;
- 	unsigned int shutdown:1;
- 	unsigned int probing:1;
- 	unsigned int autosuspended:1;	
 
 
