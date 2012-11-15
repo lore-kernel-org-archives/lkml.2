@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992892Ab2KOELJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48766 "EHLO mail.kernel.org"
+	id S2993153Ab2KOEja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:39:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48859 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992858Ab2KOELA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:00 -0500
+	id S2992897Ab2KOELJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 01/66] xen/gntdev: dont leak memory from IOCTL_GNTDEV_MAP_GRANT_REF
-Date: Wed, 14 Nov 2012 20:10:06 -0800
-Message-Id: <20121115040939.123152224@linuxfoundation.org>
+        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
+        Javier Cardona <javier@cozybit.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 16/66] mac80211: Only process mesh config header on frames that RA_MATCH
+Date: Wed, 14 Nov 2012 20:10:21 -0800
+Message-Id: <20121115040940.185705729@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,82 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Javier Cardona <javier@cozybit.com>
 
-commit a67baeb77375199bbd842fa308cb565164dd1f19 upstream.
+commit 555cb715be8ef98b8ec362b23dfc254d432a35b1 upstream.
 
-map->kmap_ops allocated in gntdev_alloc_map() wasn't freed by
-gntdev_put_map().
+Doing otherwise is wrong, and may wreak havoc on the mpp tables,
+specially if the frame is encrypted.
 
-Add a gntdev_free_map() helper function to free everything allocated
-by gntdev_alloc_map().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
+Signed-off-by: Javier Cardona <javier@cozybit.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/gntdev.c |   36 +++++++++++++++++++-----------------
- 1 file changed, 19 insertions(+), 17 deletions(-)
+ net/mac80211/rx.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -105,6 +105,21 @@ static void gntdev_print_maps(struct gnt
- #endif
- }
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1857,7 +1857,8 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
+ 	    mesh_rmc_check(hdr->addr3, mesh_hdr, rx->sdata))
+ 		return RX_DROP_MONITOR;
  
-+static void gntdev_free_map(struct grant_map *map)
-+{
-+	if (map == NULL)
-+		return;
-+
-+	if (map->pages)
-+		free_xenballooned_pages(map->count, map->pages);
-+	kfree(map->pages);
-+	kfree(map->grants);
-+	kfree(map->map_ops);
-+	kfree(map->unmap_ops);
-+	kfree(map->kmap_ops);
-+	kfree(map);
-+}
-+
- static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
- {
- 	struct grant_map *add;
-@@ -142,12 +157,7 @@ static struct grant_map *gntdev_alloc_ma
- 	return add;
+-	if (!ieee80211_is_data(hdr->frame_control))
++	if (!ieee80211_is_data(hdr->frame_control) ||
++	    !(status->rx_flags & IEEE80211_RX_RA_MATCH))
+ 		return RX_CONTINUE;
  
- err:
--	kfree(add->pages);
--	kfree(add->grants);
--	kfree(add->map_ops);
--	kfree(add->unmap_ops);
--	kfree(add->kmap_ops);
--	kfree(add);
-+	gntdev_free_map(add);
- 	return NULL;
- }
- 
-@@ -198,17 +208,9 @@ static void gntdev_put_map(struct grant_
- 		evtchn_put(map->notify.event);
+ 	if (!mesh_hdr->ttl)
+@@ -1901,9 +1902,6 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
  	}
+ 	skb_set_queue_mapping(skb, q);
  
--	if (map->pages) {
--		if (!use_ptemod)
--			unmap_grant_pages(map, 0, map->count);
+-	if (!(status->rx_flags & IEEE80211_RX_RA_MATCH))
+-		goto out;
 -
--		free_xenballooned_pages(map->count, map->pages);
--	}
--	kfree(map->pages);
--	kfree(map->grants);
--	kfree(map->map_ops);
--	kfree(map->unmap_ops);
--	kfree(map);
-+	if (map->pages && !use_ptemod)
-+		unmap_grant_pages(map, 0, map->count);
-+	gntdev_free_map(map);
- }
- 
- /* ------------------------------------------------------------------ */
+ 	if (!--mesh_hdr->ttl) {
+ 		IEEE80211_IFSTA_MESH_CTR_INC(ifmsh, dropped_frames_ttl);
+ 		return RX_DROP_MONITOR;
 
 
