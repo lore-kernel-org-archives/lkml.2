@@ -1,108 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946036Ab2KOJWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:22:55 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48060 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933008Ab2KOJWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:22:53 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50A4B44F.1040006@jp.fujitsu.com>
-Date: Thu, 15 Nov 2012 18:22:23 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S2992847Ab2KOJXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:23:48 -0500
+Received: from mga03.intel.com ([143.182.124.21]:14569 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933008Ab2KOJXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:23:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
+   d="asc'?scan'208";a="168668049"
+Date: Thu, 15 Nov 2012 11:24:51 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 07/11] thp: implement splitting pmd for huge zero page
+Message-ID: <20121115092451.GE9676@otc-wbsnb-06>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1352300463-12627-8-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.00.1211141524010.22537@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-acpi@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v5 6/7] acpi_memhotplug.c: bind the memory device when
- the driver is being loaded
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-7-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1352962777-24407-7-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Oiv9uiLrevHtW1RS"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1211141524010.22537@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/15 15:59, Wen Congyang wrote:
-> We had introduced acpi_hotmem_initialized to avoid strange add_memory fail
-> message.  But the memory device may not be used by the kernel, and the
-> device should be bound when the driver is being loaded.  Remove
-> acpi_hotmem_initialized to allow that the device can be bound when the
-> driver is being loaded.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> CC: Rafael J. Wysocki <rjw@sisk.pl>
-> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+--Oiv9uiLrevHtW1RS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Yasuaki Ishimatsu
+On Wed, Nov 14, 2012 at 03:28:15PM -0800, David Rientjes wrote:
+> On Wed, 7 Nov 2012, Kirill A. Shutemov wrote:
+>=20
+> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > index 90e651c..f36bc7d 100644
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -1611,6 +1611,7 @@ int split_huge_page(struct page *page)
+> >  	struct anon_vma *anon_vma;
+> >  	int ret =3D 1;
+> > =20
+> > +	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
+> >  	BUG_ON(!PageAnon(page));
+> >  	anon_vma =3D page_lock_anon_vma(page);
+> >  	if (!anon_vma)
+> > @@ -2509,23 +2510,63 @@ static int khugepaged(void *none)
+> >  	return 0;
+> >  }
+> > =20
+> > +static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+> > +		unsigned long haddr, pmd_t *pmd)
+> > +{
+>=20
+> This entire function duplicates other code in mm/huge_memory.c which give=
+s=20
+> even more incentive into breaking do_huge_pmd_wp_zero_page_fallback() int=
+o=20
+> logical helper functions and reusing them for both page and !page. =20
+> Duplicating all this code throughout the thp code just becomes a=20
+> maintenance nightmare down the road.
 
->   drivers/acpi/acpi_memhotplug.c | 12 ------------
->   1 file changed, 12 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index f7e3007..e0f7425 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -87,8 +87,6 @@ struct acpi_memory_device {
->   	struct list_head res_list;
->   };
->   
-> -static int acpi_hotmem_initialized;
-> -
->   static acpi_status
->   acpi_memory_get_resource(struct acpi_resource *resource, void *context)
->   {
-> @@ -433,15 +431,6 @@ static int acpi_memory_device_add(struct acpi_device *device)
->   
->   	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
->   
-> -	/*
-> -	 * Early boot code has recognized memory area by EFI/E820.
-> -	 * If DSDT shows these memory devices on boot, hotplug is not necessary
-> -	 * for them. So, it just returns until completion of this driver's
-> -	 * start up.
-> -	 */
-> -	if (!acpi_hotmem_initialized)
-> -		return 0;
-> -
->   	if (!acpi_memory_check_device(mem_device)) {
->   		/* call add_memory func */
->   		result = acpi_memory_enable_device(mem_device);
-> @@ -557,7 +546,6 @@ static int __init acpi_memory_device_init(void)
->   		return -ENODEV;
->   	}
->   
-> -	acpi_hotmem_initialized = 1;
->   	return 0;
->   }
->   
-> 
+Okay, I'll try.
 
+> > +	pgtable_t pgtable;
+> > +	pmd_t _pmd;
+> > +	int i;
+> > +
+> > +	pmdp_clear_flush(vma, haddr, pmd);
+> > +	/* leave pmd empty until pte is filled */
+> > +
+> > +	pgtable =3D get_pmd_huge_pte(vma->vm_mm);
+> > +	pmd_populate(vma->vm_mm, &_pmd, pgtable);
+> > +
+> > +	for (i =3D 0; i < HPAGE_PMD_NR; i++, haddr +=3D PAGE_SIZE) {
+> > +		pte_t *pte, entry;
+> > +		entry =3D pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
+> > +		entry =3D pte_mkspecial(entry);
+> > +		pte =3D pte_offset_map(&_pmd, haddr);
+> > +		VM_BUG_ON(!pte_none(*pte));
+> > +		set_pte_at(vma->vm_mm, haddr, pte, entry);
+> > +		pte_unmap(pte);
+> > +	}
+> > +	smp_wmb(); /* make pte visible before pmd */
+> > +	pmd_populate(vma->vm_mm, pmd, pgtable);
+> > +}
+> > +
+> >  void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long a=
+ddress,
+> >  		pmd_t *pmd)
+> >  {
+> >  	struct page *page;
+> > +	struct mm_struct *mm =3D vma->vm_mm;
+> >  	unsigned long haddr =3D address & HPAGE_PMD_MASK;
+> > +	unsigned long mmun_start;	/* For mmu_notifiers */
+> > +	unsigned long mmun_end;		/* For mmu_notifiers */
+> > =20
+> >  	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
+> > =20
+> > -	spin_lock(&vma->vm_mm->page_table_lock);
+> > +	mmun_start =3D haddr;
+> > +	mmun_end   =3D address + HPAGE_PMD_SIZE;
+>=20
+> address or haddr?
 
+haddr. I'll fix.
+
+--=20
+ Kirill A. Shutemov
+
+--Oiv9uiLrevHtW1RS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQpLTjAAoJEAd+omnVudOM+wsQALniVCI+LqtwvOmAIyDo4nBx
+ENFer1WxW3asHbwxe2XRTG9J75xjoOu4VZMWe6EqFr9iqpdDFZFcCqfPHJKOTNQv
+UEA7bCPh4IWtQ4kqBri3VbXnmt13/5RUhyH3MaNcIYZTp+kqR2QlsCIjOi1Pozcf
+z6J1aHfWt5KNzHdi/8j4Gxb0XxknRO1k6cRjhs+r4bomV4hMnNhOIEapILsFqwNT
+cyQICoV2Sz24CWuP+8zn8cKNe/ZjS6u5FVzDfQ6TQZw/ZydUnCYkcMiIL6Zf0+KS
+xjN8QiGjg+/3JchmeA9jDX3zIoy7okOBFpDi9WL43/RO/6aBx0Xf+NVWvNKJV5KD
+mLoEa2bkpABEpnkJq5PNPOT3lE86+NtF1pFHR+YTA5tImLUDp5hIvjMOGIWknR0u
+MJ/DLeaCJfZC6bFbuHXEcIOAVbYQR1BZrphSg9IN4n3qM0efA0YqQ8mCcQ/K38Z8
+fPcENmkOeJQR7OSG+2SAFsNivyTGgVlHCzG2/psYRVDF6GHAofdohz+rsQfOosI7
+pD/23EzIAvN1iHDn1sTWhkwdnwWQpI1VksVVuPsSVclBmZ7XVEzsWiVRDVCd9p6P
+7nh7ZbfSEQ3R0ZUjAUXpUefGrwbksiVI0s/Qwk2duajiFM+u5UC5wHOX9SSIFk0U
+/RLWPjeVHo1e+n42QXix
+=Iumx
+-----END PGP SIGNATURE-----
+
+--Oiv9uiLrevHtW1RS--
