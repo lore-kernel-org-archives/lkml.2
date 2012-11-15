@@ -1,131 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423297Ab2KOJQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:16:13 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51259 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422999Ab2KOJQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:16:10 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50A4B2B8.9030406@jp.fujitsu.com>
-Date: Thu, 15 Nov 2012 18:15:36 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1423607Ab2KOJQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:16:30 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56638 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1422860Ab2KOJQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:16:25 -0500
+X-IronPort-AV: E=Sophos;i="4.83,256,1352044800"; 
+   d="scan'208";a="6205839"
+Message-ID: <50A4B45D.5000905@cn.fujitsu.com>
+Date: Thu, 15 Nov 2012 17:22:37 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-acpi@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v5 3/7] acpi_memhotplug.c: fix memory leak when memory
- device is unbound from the module acpi_memhotplug
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-4-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1352962777-24407-4-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Jiang Liu <liuj97@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Jianguo Wu <wujianguo@huawei.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset
+ 7f1290f2f2a4d
+References: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com> <20121106124315.79deb2bc.akpm@linux-foundation.org> <50A3B013.4030207@gmail.com>
+In-Reply-To: <50A3B013.4030207@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/15 17:16:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/15 17:16:17,
+	Serialize complete at 2012/11/15 17:16:17
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/15 15:59, Wen Congyang wrote:
-> We allocate memory to store acpi_memory_info, so we should free it before
-> freeing mem_device.
+Hi, Liu Jiang
+
+At 11/14/2012 10:52 PM, Jiang Liu Wrote:
+> On 11/07/2012 04:43 AM, Andrew Morton wrote:
+>> On Tue, 6 Nov 2012 09:31:57 +0800
+>> Jiang Liu <jiang.liu@huawei.com> wrote:
+>>
+>>> Changeset 7f1290f2f2 tries to fix a issue when calculating
+>>> zone->present_pages, but it causes a regression to 32bit systems with
+>>> HIGHMEM. With that changeset, function reset_zone_present_pages()
+>>> resets all zone->present_pages to zero, and fixup_zone_present_pages()
+>>> is called to recalculate zone->present_pages when boot allocator frees
+>>> core memory pages into buddy allocator. Because highmem pages are not
+>>> freed by bootmem allocator, all highmem zones' present_pages becomes
+>>> zero.
+>>>
+>>> Actually there's no need to recalculate present_pages for highmem zone
+>>> because bootmem allocator never allocates pages from them. So fix the
+>>> regression by skipping highmem in function reset_zone_present_pages()
+>>> and fixup_zone_present_pages().
+>>>
+>>> ...
+>>>
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
+>>>  	for_each_node_state(nid, N_HIGH_MEMORY) {
+>>>  		for (i = 0; i < MAX_NR_ZONES; i++) {
+>>>  			z = NODE_DATA(nid)->node_zones + i;
+>>> -			z->present_pages = 0;
+>>> +			if (!is_highmem(z))
+>>> +				z->present_pages = 0;
+>>>  		}
+>>>  	}
+>>>  }
+>>> @@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
+>>>  
+>>>  	for (i = 0; i < MAX_NR_ZONES; i++) {
+>>>  		z = NODE_DATA(nid)->node_zones + i;
+>>> +		if (is_highmem(z))
+>>> +			continue;
+>>> +
+>>>  		zone_start_pfn = z->zone_start_pfn;
+>>>  		zone_end_pfn = zone_start_pfn + z->spanned_pages;
+>>> -
+>>> -		/* if the two regions intersect */
+>>>  		if (!(zone_start_pfn >= end_pfn	|| zone_end_pfn <= start_pfn))
+>>>  			z->present_pages += min(end_pfn, zone_end_pfn) -
+>>>  					    max(start_pfn, zone_start_pfn);
+>>
+>> This ...  isn't very nice.  It is embeds within
+>> reset_zone_present_pages() and fixup_zone_present_pages() knowledge
+>> about their caller's state.  Or, more specifically, it is emebedding
+>> knowledge about the overall state of the system when these functions
+>> are called.
+>>
+>> I mean, a function called "reset_zone_present_pages" should reset
+>> ->present_pages!
+>>
+>> The fact that fixup_zone_present_page() has multiple call sites makes
+>> this all even more risky.  And what are the interactions between this
+>> and memory hotplug?
+>>
+>> Can we find a cleaner fix?
+>>
+>> Please tell us more about what's happening here.  Is it the case that
+>> reset_zone_present_pages() is being called *after* highmem has been
+>> populated?  If so, then fixup_zone_present_pages() should work
+>> correctly for highmem?  Or is it the case that highmem hasn't yet been
+>> setup?  IOW, what is the sequence of operations here?
+>>
+>> Is the problem that we're *missing* a call to
+>> fixup_zone_present_pages(), perhaps?  If we call
+>> fixup_zone_present_pages() after highmem has been populated,
+>> fixup_zone_present_pages() should correctly fill in the highmem zone's
+>> ->present_pages?
+> Hi Andrew,
+> 	Sorry for the late response:(
+> 	I have done more investigations according to your suggestions. Currently
+> we have only called fixup_zone_present_pages() for memory freed by bootmem
+> allocator and missed HIGHMEM pages. We could also call fixup_zone_present_pages()
+> for HIGHMEM pages, but that will need to change arch specific code for x86, powerpc,
+> sparc, microblaze, arm, mips, um and tile etc. Seems a little overhead.
+> 	And sadly enough, I found the quick fix is still incomplete. The original
+> patch still have another issue that, reset_zone_present_pages() is only called
+> for IA64, so it will cause trouble for other arches which make use of "bootmem.c".
+> 	Then I feel a little guilty and tried to find a cleaner solution without
+> touching arch specific code. But things are more complex than my expectation and
+> I'm still working on that.
+> 	So how about totally reverting the changeset 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+> and I will post another version once I found a cleaner way?
+
+I think fixup_zone_present_pages() are very useful for memory hotplug.
+
+We calculate zone->present_pages in free_area_init_core(), but its value is wrong.
+So it is why we fix it in fixup_zone_present_pages().
+
+What about this:
+1. init zone->present_pages to the present pages in this zone(include bootmem)
+2. don't reset zone->present_pages for HIGHMEM pages
+
+We don't allocate bootmem from HIGHMEM. So its present pages is inited in step1
+and there is no need to fix it in step2.
+
+Is it OK?
+
+If it is OK, I will resend the patch for step1(the patch is from laijs).
+
+Thanks
+Wen Congyang
+
+> 	Thanks!
+> 	Gerry
 > 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> CC: Rafael J. Wysocki <rjw@sisk.pl>
-> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
-
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-Thanks,
-Yasuaki Ishimatsu
-
->   drivers/acpi/acpi_memhotplug.c | 27 +++++++++++++++++++++------
->   1 file changed, 21 insertions(+), 6 deletions(-)
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 > 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 6e12042..c5e7b6d 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -125,12 +125,20 @@ acpi_memory_get_resource(struct acpi_resource *resource, void *context)
->   	return AE_OK;
->   }
->   
-> +static void
-> +acpi_memory_free_device_resources(struct acpi_memory_device *mem_device)
-> +{
-> +	struct acpi_memory_info *info, *n;
-> +
-> +	list_for_each_entry_safe(info, n, &mem_device->res_list, list)
-> +		kfree(info);
-> +	INIT_LIST_HEAD(&mem_device->res_list);
-> +}
-> +
->   static int
->   acpi_memory_get_device_resources(struct acpi_memory_device *mem_device)
->   {
->   	acpi_status status;
-> -	struct acpi_memory_info *info, *n;
-> -
->   
->   	if (!list_empty(&mem_device->res_list))
->   		return 0;
-> @@ -138,9 +146,7 @@ acpi_memory_get_device_resources(struct acpi_memory_device *mem_device)
->   	status = acpi_walk_resources(mem_device->device->handle, METHOD_NAME__CRS,
->   				     acpi_memory_get_resource, mem_device);
->   	if (ACPI_FAILURE(status)) {
-> -		list_for_each_entry_safe(info, n, &mem_device->res_list, list)
-> -			kfree(info);
-> -		INIT_LIST_HEAD(&mem_device->res_list);
-> +		acpi_memory_free_device_resources(mem_device);
->   		return -EINVAL;
->   	}
->   
-> @@ -363,6 +369,15 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
->   	return;
->   }
->   
-> +static void acpi_memory_device_free(struct acpi_memory_device *mem_device)
-> +{
-> +	if (!mem_device)
-> +		return;
-> +
-> +	acpi_memory_free_device_resources(mem_device);
-> +	kfree(mem_device);
-> +}
-> +
->   static int acpi_memory_device_add(struct acpi_device *device)
->   {
->   	int result;
-> @@ -427,7 +442,7 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
->   	if (result)
->   		return result;
->   
-> -	kfree(mem_device);
-> +	acpi_memory_device_free(mem_device);
->   
->   	return 0;
->   }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-
 
