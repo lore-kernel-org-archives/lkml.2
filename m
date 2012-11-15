@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993356Ab2KOLCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:02:30 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64675 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993226Ab2KOLC2 (ORCPT
+	id S2993364Ab2KOLEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:04:15 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62976 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993226Ab2KOLEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:02:28 -0500
+	Thu, 15 Nov 2012 06:04:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKohponUGQNMvA0T1qhZbTGnK12upy4gcTPq4ZfZ-enLDbf4+w@mail.gmail.com>
-References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
-	<1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
-	<1352967218.2080.15.camel@rzhang1-mobl4>
-	<CAJLyvQyu_oU7xx92JTOj6bvF+7-hOJfM=kTHj6JMogaYjC+Jww@mail.gmail.com>
-	<1352970823.2080.22.camel@rzhang1-mobl4>
-	<CAJLyvQxJeNgGc8sQiV_qmKCfvfWQKyR8S5ZMNCtETvJLMQH-oQ@mail.gmail.com>
-	<CAKohponUGQNMvA0T1qhZbTGnK12upy4gcTPq4ZfZ-enLDbf4+w@mail.gmail.com>
-Date: Thu, 15 Nov 2012 19:02:27 +0800
-Message-ID: <CAJLyvQw6D+3nuaOv=g6zKvBDzceWQzhDOxWE7RNt5xt3MsZ=8Q@mail.gmail.com>
-Subject: Re: [PATCH V5 1/2] Thermal: Add ST-Ericsson DB8500 thermal driver.
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Zhang Rui <rui.zhang@intel.com>, linaro-kernel@lists.linaro.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, amit.kachhap@linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
+In-Reply-To: <1352768407.19229.1.camel@phoenix>
+References: <1352768407.19229.1.camel@phoenix>
+Date: Thu, 15 Nov 2012 12:04:12 +0100
+Message-ID: <CACRpkdbXTa=b4Aja9FByzfu4c+bQcB0Ae0rKf033gi4WsEyS+A@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: imx: Fix the logic checking if not able to find
+ pin reg map
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <dong.aisheng@linaro.org>,
+        Devendra Naga <devendra.aaru@gmail.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2012 18:17, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 15 November 2012 14:53, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
->> this is a driver for ST-Ericsson u8500 board(Snowball), with a ARM core inside.
->> so you should compile like this:
->> make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- u8500_defconfig
->> make  ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- uImage
+On Tue, Nov 13, 2012 at 2:00 AM, Axel Lin <axel.lin@ingics.com> wrote:
+
+> Current code sets "pin_reg = &info->pin_regs[i];" in each loop iteration,
+> so in the case of no-match, pin_reg is not NULL.
 >
-> Then we must have a DEPENDS_ON in Kconfig entry for these.
-Sorry for the negligence.
-A V6 iteration has been sent out with "depends on ARCH_U8500" added.
-Thank all of you.
->
->
-> --
-> viresh
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+
+Thanks, applied with Dong's ACK.
+
+Yours,
+Linus Walleij
