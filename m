@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992915Ab2KOELM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48790 "EHLO mail.kernel.org"
+	id S2993099Ab2KOEis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:38:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48888 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992862Ab2KOELC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:02 -0500
+	id S2992912Ab2KOELM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 10/66] iscsi-target: Fix missed wakeup race in TX thread
-Date: Wed, 14 Nov 2012 20:10:15 -0800
-Message-Id: <20121115040939.755138759@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 19/66] drm/udl: fix stride issues scanning out stride != width*bpp
+Date: Wed, 14 Nov 2012 20:10:24 -0800
+Message-Id: <20121115040940.394780400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -28,130 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
+commit 3916e1d71b62b120888aa50bcc8d9a6200fc19a7 upstream.
 
-The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
-missed wakeup race:
+When buffer sharing with the i915 and using a 1680x1050 monitor,
+the i915 gives is a 6912 buffer for the 6720 width, the code doesn't
+render this properly as it uses one value to set the base address for
+reading from the vmap and for where to start on the device.
 
- - TX thread finishes handle_immediate_queue() and handle_response_queue(),
-   thinks both queues are empty.
- - Another thread adds a queue entry and does wake_up_process(), which does
-   nothing because the TX thread is still awake.
- - TX thread does schedule_timeout() and sleeps forever.
+This fixes it by calculating the values correctly for the device and
+for the pixmap. No idea how I haven't seen this before now.
 
-In practice this can kill an iSCSI connection if for example an initiator
-does single-threaded writes and the target misses the wakeup window when
-queueing an R2T; in this case the connection will be stuck until the
-initiator loses patience and does some task management operation (or kills
-the connection entirely).
-
-Fix this by converting to wait_event_interruptible(), which does not
-suffer from this sort of race.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c       |    4 +++-
- drivers/target/iscsi/iscsi_target_core.h  |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
- drivers/target/iscsi/iscsi_target_util.h  |    1 +
- 5 files changed, 26 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/udl/udl_drv.h      |    2 +-
+ drivers/gpu/drm/udl/udl_fb.c       |   12 +++++++-----
+ drivers/gpu/drm/udl/udl_transfer.c |    5 +++--
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3735,7 +3735,9 @@ restart:
- 		 */
- 		iscsit_thread_check_cpumask(conn, current, 1);
+--- a/drivers/gpu/drm/udl/udl_drv.h
++++ b/drivers/gpu/drm/udl/udl_drv.h
+@@ -104,7 +104,7 @@ udl_fb_user_fb_create(struct drm_device
  
--		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
-+		wait_event_interruptible(conn->queues_wq,
-+					 !iscsit_conn_all_queues_empty(conn) ||
-+					 ts->status == ISCSI_THREAD_SET_RESET);
+ int udl_render_hline(struct drm_device *dev, int bpp, struct urb **urb_ptr,
+ 		     const char *front, char **urb_buf_ptr,
+-		     u32 byte_offset, u32 byte_width,
++		     u32 byte_offset, u32 device_byte_offset, u32 byte_width,
+ 		     int *ident_ptr, int *sent_ptr);
  
- 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
- 		     signal_pending(current))
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -486,6 +486,7 @@ struct iscsi_tmr_req {
- };
+ int udl_dumb_create(struct drm_file *file_priv,
+--- a/drivers/gpu/drm/udl/udl_fb.c
++++ b/drivers/gpu/drm/udl/udl_fb.c
+@@ -114,9 +114,10 @@ static void udlfb_dpy_deferred_io(struct
+ 	list_for_each_entry(cur, &fbdefio->pagelist, lru) {
  
- struct iscsi_conn {
-+	wait_queue_head_t	queues_wq;
- 	/* Authentication Successful for this connection */
- 	u8			auth_complete;
- 	/* State connection is currently in */
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -45,6 +45,7 @@ extern spinlock_t sess_idr_lock;
- 
- static int iscsi_login_init_conn(struct iscsi_conn *conn)
- {
-+	init_waitqueue_head(&conn->queues_wq);
- 	INIT_LIST_HEAD(&conn->conn_list);
- 	INIT_LIST_HEAD(&conn->conn_cmd_list);
- 	INIT_LIST_HEAD(&conn->immed_queue_list);
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
- 	atomic_set(&conn->check_immediate_queue, 1);
- 	spin_unlock_bh(&conn->immed_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
-@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
- 	atomic_inc(&cmd->response_queue_count);
- 	spin_unlock_bh(&conn->response_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
-@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_respo
+ 		if (udl_render_hline(dev, (ufbdev->ufb.base.bits_per_pixel / 8),
+-				  &urb, (char *) info->fix.smem_start,
+-				  &cmd, cur->index << PAGE_SHIFT,
+-				  PAGE_SIZE, &bytes_identical, &bytes_sent))
++				     &urb, (char *) info->fix.smem_start,
++				     &cmd, cur->index << PAGE_SHIFT,
++				     cur->index << PAGE_SHIFT,
++				     PAGE_SIZE, &bytes_identical, &bytes_sent))
+ 			goto error;
+ 		bytes_rendered += PAGE_SIZE;
  	}
- }
- 
-+bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
-+{
-+	bool empty;
-+
-+	spin_lock_bh(&conn->immed_queue_lock);
-+	empty = list_empty(&conn->immed_queue_list);
-+	spin_unlock_bh(&conn->immed_queue_lock);
-+
-+	if (!empty)
-+		return empty;
-+
-+	spin_lock_bh(&conn->response_queue_lock);
-+	empty = list_empty(&conn->response_queue_list);
-+	spin_unlock_bh(&conn->response_queue_lock);
-+
-+	return empty;
-+}
-+
- void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
+@@ -187,10 +188,11 @@ int udl_handle_damage(struct udl_framebu
+ 	for (i = y; i < y + height ; i++) {
+ 		const int line_offset = fb->base.pitches[0] * i;
+ 		const int byte_offset = line_offset + (x * bpp);
+-
++		const int dev_byte_offset = (fb->base.width * bpp * i) + (x * bpp);
+ 		if (udl_render_hline(dev, bpp, &urb,
+ 				     (char *) fb->obj->vmapping,
+-				     &cmd, byte_offset, width * bpp,
++				     &cmd, byte_offset, dev_byte_offset,
++				     width * bpp,
+ 				     &bytes_identical, &bytes_sent))
+ 			goto error;
+ 	}
+--- a/drivers/gpu/drm/udl/udl_transfer.c
++++ b/drivers/gpu/drm/udl/udl_transfer.c
+@@ -213,11 +213,12 @@ static void udl_compress_hline16(
+  */
+ int udl_render_hline(struct drm_device *dev, int bpp, struct urb **urb_ptr,
+ 		     const char *front, char **urb_buf_ptr,
+-		     u32 byte_offset, u32 byte_width,
++		     u32 byte_offset, u32 device_byte_offset,
++		     u32 byte_width,
+ 		     int *ident_ptr, int *sent_ptr)
  {
- 	struct iscsi_queue_req *qr, *qr_tmp;
---- a/drivers/target/iscsi/iscsi_target_util.h
-+++ b/drivers/target/iscsi/iscsi_target_util.h
-@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_ge
- extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
- extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
- extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
-+extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
- extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
- extern void iscsit_release_cmd(struct iscsi_cmd *);
- extern void iscsit_free_cmd(struct iscsi_cmd *);
+ 	const u8 *line_start, *line_end, *next_pixel;
+-	u32 base16 = 0 + (byte_offset / bpp) * 2;
++	u32 base16 = 0 + (device_byte_offset / bpp) * 2;
+ 	struct urb *urb = *urb_ptr;
+ 	u8 *cmd = *urb_buf_ptr;
+ 	u8 *cmd_end = (u8 *) urb->transfer_buffer + urb->transfer_buffer_length;
 
 
