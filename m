@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab2KOXDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 18:03:16 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57621 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2KOXDO (ORCPT
+	id S1751130Ab2KOXHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 18:07:08 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1777 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab2KOXHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 18:03:14 -0500
-Date: Thu, 15 Nov 2012 15:03:11 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wen Congyang <wency@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v5 1/7] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-In-Reply-To: <1352962777-24407-2-git-send-email-wency@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1211151501180.27188@chino.kir.corp.google.com>
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-2-git-send-email-wency@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 15 Nov 2012 18:07:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 15 Nov 2012 15:07:04 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
+CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 RESEND] gpio: tegra: read output value when gpio is set in direction_out
+Date: Fri, 16 Nov 2012 04:34:06 +0530
+Message-ID: <1353020646-14867-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012, Wen Congyang wrote:
+Read the output value when gpio is set for the output mode for
+gpio_get_value(). Reading input value in direction out does not
+give correct value.
 
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> 
-> In the 1st case, acpi_memory_disable_device() will be called.
-> In the 2nd case, acpi_memory_device_remove() will be called.
-> acpi_memory_device_remove() will also be called when we unbind the
-> memory device from the driver acpi_memhotplug or a driver initialization
-> fails.
-> 
-> acpi_memory_disable_device() has already implemented a code which
-> offlines memory and releases acpi_memory_info struct. But
-> acpi_memory_device_remove() has not implemented it yet.
-> 
-> So the patch move offlining memory and releasing acpi_memory_info struct
-> codes to a new function acpi_memory_remove_memory(). And it is used by both
-> acpi_memory_device_remove() and acpi_memory_disable_device().
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Rafael J. Wysocki <rjw@sisk.pl>
-> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from V1:
+- Keep the if part implementation same the else part to have implementation
+  same kind.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Not too old patchi but just resending in case of it is missed.
+Adding acked by Stephen as he acked this patch.
+
+
+ drivers/gpio/gpio-tegra.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index c7c175a..1163cf1 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -135,6 +135,11 @@ static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+ 
+ static int tegra_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
++	/* If gpio is in output mode then read from the out value */
++	if ((tegra_gpio_readl(GPIO_OE(offset)) >> GPIO_BIT(offset)) & 1)
++		return (tegra_gpio_readl(GPIO_OUT(offset)) >>
++				GPIO_BIT(offset)) & 0x1;
++
+ 	return (tegra_gpio_readl(GPIO_IN(offset)) >> GPIO_BIT(offset)) & 0x1;
+ }
+ 
+-- 
+1.7.1.1
+
