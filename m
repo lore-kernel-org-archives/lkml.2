@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767699Ab2KOMfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 07:35:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:50808 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993283Ab2KOMfm (ORCPT
+	id S1423671Ab2KOMrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 07:47:17 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46200 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1423250Ab2KOMrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 07:35:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
-Date: Thu, 15 Nov 2012 12:35:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "Gilad Ben-Yossef" <gilad@benyossef.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <201211131037.43526.arnd@arndb.de> <50A48882.3030204@synopsys.com>
-In-Reply-To: <50A48882.3030204@synopsys.com>
+	Thu, 15 Nov 2012 07:47:15 -0500
+X-Sasl-enc: GXj+tMhPMOWOslhNQRHd1sYUXNXiYLqmegyoZ4g4cerG 1352983635
+Date: Thu, 15 Nov 2012 10:47:11 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/Sandy Bridge: reserve pages when integrated graphics
+ is present
+Message-ID: <20121115124711.GA31504@khazad-dum.debian.net>
+References: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211151235.31735.arnd@arndb.de>
-X-Provags-ID: V02:K0:84quefjv9AuytqDqb7NOo6UEQ7yoRO+Aqzxr0Y8Lqco
- ZoCwQRCZmonYlj7ZMbjK+WLVYAoOpSgo3JPPPf2Zol0vuIFoRf
- Qj4YWnPCY/BhkopFYWZxsWZUf+Yfnd4ZP9hl+E9Vn6G7Cp7/SJ
- 1ovS8E5euxHwDl0X5H9wBLBcuSW64N4dqBHqlOPfsmP6C9vxqI
- 7EY8BnLFw4ss/ajxcp/STfaE3lTO3KdKmHxvpkcD8duwyBl2rB
- tsRn9VXJhpt1ZKTo6Ii3ObhGHEQaS4z6sMIbP/SgMcpgtN3Sis
- uL1jqrDOeqpaWIfK0n7jENfbZikkG+h7VSeJzRg9xR7DVvp9QM
- KmoG6NkmINeY1koiRHgc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352925811-2598-1-git-send-email-jbarnes@virtuousgeek.org>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 November 2012, Vineet Gupta wrote:
-> So the primary concern here is not breaking the userspace ABI - right ?
-> 
-> For syscalls I agree that we will indeed need to fix the ABI - by fixing
-> uClibc. And if uClibc doesn't merge the fixes we can stay out of tree
-> for uClibc - as we currently already are.
+On Wed, 14 Nov 2012, Jesse Barnes wrote:
+> +		unsigned long bad_ranges[] = {
+> +			0x20050000,
+> +			0x20110000,
+> +			0x20130000,
+> +			0x20138000,
+> +			0x40004000,
 
-I'm sure we can find a solution for uClibc. We already have seven
-architectures using the generic syscalls, including at least one
-(arm64) that is going to run on a large number of installations
-in the future.
+Yikes.  Can this be fixed through a microcode update?  The kernel would
+still need the workaround anyway, but at least you would be able to be quite
+heavy-handed on it, and users could be warned of a better fix...
 
-> For gdbserver, the kernel provides the complete regset ABI. However it
-> also provides a very limited version of old ABI - i.e. ptrace with
-> PEEKUSR/POKEUSR. Note that latter is just a shim layer and it reuses the
-> regset callbacks. This allows us to support the legacy gdbserver. If and
-> when gdbserver upgrades it can switch over to new interface. So all
-> along there will be NO ABI breakage at all. The cost is couple extra
-> functions in kernel which we might have to maintain for some foreseeable
-> future. Agree ?
-
-It's more a question of principle. The rule is that we don't break user
-space, and ptrace is just another user space interface is this. If
-we merge it now, we will keep it around forever, taking it out later
-is not an option IMHO. My preference would be not to merge the backwards
-compatibility layer for ptrace at all, but I'm willing to listen to
-other people that support your view if you want to keep it. In one
-way, ptrace is less critical than the other system calls, and that is
-because it's already architecture specific.
-
-	Arnd
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
