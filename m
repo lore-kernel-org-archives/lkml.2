@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946027Ab2KOA6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 19:58:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10409 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984Ab2KOA6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 19:58:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,254,1352102400"; 
-   d="scan'208";a="249300160"
-Message-ID: <1352941107.2143.12.camel@rzhang1-mobl4>
-Subject: [PATCH] Thermal: Add Linux/Thermal subsystem info in MAINTAINER file
-From: Zhang Rui <rui.zhang@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        durga <durgadoss.r@intel.com>, "Zhang, Rui" <rui.zhang@intel.com>,
-        Amit Kachhap <amit.kachhap@linaro.org>, jhbird.choi@samsung.com,
-        kuninori.morimoto.gx@renesas.com, eduardo.valentin@ti.com,
-        "hongbo.zhang" <hongbo.zhang@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Date: Thu, 15 Nov 2012 08:58:27 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1946040Ab2KOA7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 19:59:55 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55890 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932984Ab2KOA7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 19:59:53 -0500
+Message-ID: <50A43E5E.9040905@xenotime.net>
+Date: Wed, 14 Nov 2012 16:59:10 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org
+Subject: [PATCH 1/2] asm-generic: add __WARN() to bug.h
+References: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
+In-Reply-To: <20121114163042.64f0c0495663331b9c2d60d6@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Linux/Thermal subsystem info in MAINTAINER file.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-All the changes made to the generic thermal layer, or
-platform thermal drivers that make use of the thermal layer,
-should be sent to linux-pm@vger.kernel.org for discussion.
+Add __WARN() macro for the case of CONFIG_BUG is not enabled.
+This fixes a build error in mm/balloon_compaction.c.
 
-And as the maintainer, I will only apply the patches that have been
-sent to linux-pm@vger.kernel.org.
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org
 ---
- MAINTAINERS |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/asm-generic/bug.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 59203e7..2d8512b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7210,6 +7210,14 @@ L:	linux-xtensa@linux-xtensa.org
- S:	Maintained
- F:	arch/xtensa/
+--- linux-next-20121114.orig/include/asm-generic/bug.h
++++ linux-next-20121114/include/asm-generic/bug.h
+@@ -129,6 +129,10 @@ extern void warn_slowpath_null(const cha
+ })
+ #endif
  
-+THERMAL
-+M:      Zhang Rui <rui.zhang@intel.com>
-+L:      linux-pm@vger.kernel.org
-+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
-+S:      Supported
-+F:      drivers/thermal/
-+F:      include/linux/thermal.h
++#ifndef __WARN
++#define __WARN()	do {} while (0)
++#endif
 +
- THINKPAD ACPI EXTRAS DRIVER
- M:	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
- L:	ibm-acpi-devel@lists.sourceforge.net
--- 
-1.7.9.5
-
-
-
+ #define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
+ 
+ #endif
