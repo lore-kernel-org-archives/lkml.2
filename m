@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993463Ab2KOOjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:39:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59300 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993283Ab2KOOjs (ORCPT
+	id S2993466Ab2KOOmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:42:18 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:58113 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993440Ab2KOOmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:39:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Clark <rob.clark@linaro.org>
-Subject: Re: [PATCH] ARM: add get_user() support for 8 byte types
-Date: Thu, 15 Nov 2012 14:39:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-References: <1352495853-9790-1-git-send-email-rob.clark@linaro.org> <201211151339.08016.arnd@arndb.de> <CAF6AEGuJReNtwUZX6HVZCE8GHuyEAyC8bM0GqZuVMV1=DrGJVw@mail.gmail.com>
-In-Reply-To: <CAF6AEGuJReNtwUZX6HVZCE8GHuyEAyC8bM0GqZuVMV1=DrGJVw@mail.gmail.com>
+	Thu, 15 Nov 2012 09:42:16 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211151439.41393.arnd@arndb.de>
-X-Provags-ID: V02:K0:Fv7bnTvXwqxxK1QABDNYQs8ZQGjFVsj8/k8Feke0cXm
- JMvSUxMmvWcuUC2dBGHmqQDsc1VwBQsTUlJM/D6tn+YEPgCFwB
- sUdw9pUh7PibzTzvI8L8nBR7LdAMdU7SUjYvpTlEN1Qp87+AIT
- Q9wBrQ/N+N3iVL9iS/72S4T+Jmq3agyE4dIsS3a60es5RvHy8E
- SQ/9OkUa/eKkf5l5RtVgmKZO2M9lIdwPZfux9G23PKgOz1L+J8
- YfDtVWpeD8TUwqmW397oWR02/KHWF1aW703a8FbUXvID33atI4
- lz4Wh5sdmjOg+V5MEtx/MAPpQL+Mz6+QXB4rDKDMzS7ttIztQH
- JS0EMju4bGGvgvWxllRY=
+In-Reply-To: <201211151436.23088.arnd@arndb.de>
+References: <201211141218.02105.arnd@arndb.de>
+	<201211150914.22835.arnd@arndb.de>
+	<CAMe9rOpziKa6QLfjX9iXtfj_X2QAyDAV2p8NEd8Wd7yFwTrpNg@mail.gmail.com>
+	<201211151436.23088.arnd@arndb.de>
+Date: Thu, 15 Nov 2012 06:42:16 -0800
+Message-ID: <CAMe9rOqvEFp=J-93WVgmF9K-hspq4z444a8PCJWC3tiSRkteOg@mail.gmail.com>
+Subject: Re: new architectures, time_t __kernel_long_t
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        Vineet.Gupta1@synopsys.com, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 November 2012, Rob Clark wrote:
-> > I still haven't heard a conclusive argument why we need to use get_user()
-> > rather than copy_from_user() in the DRM code. Is this about a fast path
-> > where you want to shave off a few cycles for each call, or does this
-> > simplify the code structure, or something else?
-> 
-> well, it is mostly because it seemed like a good idea to first try to
-> solve the root issue, rather than having to fix things up in each
-> driver when someone from x86-world introduces a 64b get_user()..
+On Thu, Nov 15, 2012 at 6:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 15 November 2012, H.J. Lu wrote:
+>> On Thu, Nov 15, 2012 at 1:14 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Wednesday 14 November 2012, H. Peter Anvin wrote:
+>> >> On 11/14/2012 04:18 AM, Arnd Bergmann wrote:
+>> >> > Since we are in the review phase for two new architectures that we
+>> >> > should be merging into the mainline kernel, I think we need to
+>> >> > come up with a solution for making them use a proper 64-bit time_t.
+>> >> >
+>> >> > Right now, the only 32-bit user space interface we have to use 64-bit
+>> >> > time_t is the x32 side of x86-64, and that works by overriding all
+>> >> > "long" sized types to be 64 bit at the ABI level, which we don't
+>> >> > want for pure 32 bit architectures.
+>> >>
+>> >> Sort of.  Either way, the kernel headers aren't really x32-clean yet, so
+>> >> we have an opportunity to do things more cleanly as we are implementing
+>> >> this.
+>> >
+>> > Ah, I didn't know that. How does one build an x32 libc then?
+>>
+>> Glibc has been providing its own types for years.
+>> Kernel provided types used to be wrong for ia32
+>> on x86-64.
+>
+> What about ioctls and other calls then that actually do rely on the
+> kernel headers and use the __kernel_*_t types?
+>
 
-As pointed out by hpa earlier, x86-32 doesn't have a 64b get_user
-either. I don't think we have a lot of drivers that are used only
-on 64-bit x86 and on 32-bit ARM but not on 32-bit x86.
+Glibc defines __syscall_slong_t and __syscall_ulong_t.
 
-> There are some other arch's that don't have 64b get_user(), but I
-> don't think any that have any DRM drivers.  If 64b get_user() is
-> really not intended to be supported by all archs, it is better to
-> remove it from x86 and the other arch's that do currently support it,
-> rather than making it possible to write drivers that are broken on
-> some archs.
-
-The majority of architectures we support have PCI and should be able
-to build the regular (radeon, nouveau, MGA, VIA, ...) DRM drivers
-AFAICT.
-
-	Arnd
+-- 
+H.J.
