@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054Ab2KOWpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 17:45:49 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49094 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2KOWps (ORCPT
+	id S1751007Ab2KOWtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 17:49:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64152 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2KOWtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 17:45:48 -0500
-Date: Thu, 15 Nov 2012 17:45:46 -0500 (EST)
-Message-Id: <20121115.174546.336072708541078221.davem@davemloft.net>
-To: xemul@parallels.com
-Cc: avagin@openvz.org, netdev@vger.kernel.org, criu@openvz.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [PATCH] tcp: fix retransmission in repair mode
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50A4F7F3.5080500@parallels.com>
-References: <1352988197-14414-1-git-send-email-avagin@openvz.org>
-	<50A4F7F3.5080500@parallels.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 17:49:49 -0500
+Date: Thu, 15 Nov 2012 14:49:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 42/66] ALSA: Avoid endless sleep after disconnect
+Message-ID: <20121115224945.GE16377@kroah.com>
+References: <20121115040939.016421011@linuxfoundation.org>
+ <20121115040942.165674081@linuxfoundation.org>
+ <s5h8va3ba5k.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h8va3ba5k.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Emelyanov <xemul@parallels.com>
-Date: Thu, 15 Nov 2012 18:10:59 +0400
-
-> On 11/15/2012 06:03 PM, Andrey Vagin wrote:
->> From: Andrew Vagin <avagin@openvz.org>
->> 
->> Currently if a socket was repaired with a few packet in a write queue,
->> a kernel bug may be triggered:
->> 
->> kernel BUG at net/ipv4/tcp_output.c:2330!
->> RIP: 0010:[<ffffffff8155784f>] tcp_retransmit_skb+0x5ff/0x610
->> 
->> According to the initial realization v3.4-rc2-963-gc0e88ff,
->> all skb-s should look like already posted. This patch fixes code
->> according with this sentence.
->> 
->> Here are three points, which were not done in the initial patch:
->> 1. A tcp send head should not be changed
->> 2. Initialize TSO state of a skb
->> 3. Reset the retransmission time
->> 
->> This patch moves logic from tcp_sendmsg to tcp_write_xmit. A packet
->> passes the ussual way, but isn't sent to network. This patch solves
->> all described problems and handles tcp_sendpages.
- ...
->> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+On Thu, Nov 15, 2012 at 08:25:11AM +0100, Takashi Iwai wrote:
+> At Wed, 14 Nov 2012 20:10:47 -0800,
+> Greg Kroah-Hartman wrote:
+> > 
+> > 3.6-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Acked-by: Pavel Emelyanov <xemul@parallels.com>
+> It turned out that this patch series for fixing USB-audio
+> disconnection races need two more commits.  One is already in Linus
+> tree,
+> 
+>     commit 8bb4d9ce08b0a92ca174e41d92c180328f86173f
+>         ALSA: Fix card refcount unbalance
+>     
+> and another is included in the pull request I sent out to Linus right
+> now,
+> 
+>     commit 10e44239f67d0b6fb74006e61a7e883b8075247a
+>         ALSA: usb-audio: Fix mutex deadlock at disconnection
+>     
+> Please pick them up when possible, too.
 
-Applied and queued up for -stable, thanks.
+Both now picked up, thanks.
+
+> Sorry for inconvenience.
+
+No problems at all, thanks for letting me know.
+
+greg k-h
