@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992583Ab2KOD76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 22:59:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65348 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992498Ab2KOD7z (ORCPT
+	id S1423590Ab2KOEBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:01:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43260 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423543Ab2KOEBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 22:59:55 -0500
-Date: Wed, 14 Nov 2012 19:59:52 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-In-Reply-To: <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net>
-Message-ID: <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com>
-References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
- <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 Nov 2012 23:01:51 -0500
+Date: Thu, 15 Nov 2012 15:01:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: manual merge of the spi tree with Linus' tree
+Message-Id: <20121115150139.178644970192d226e73e94e6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Nov_2012_15_01_39_+1100__RZVL_p6POMT3Oeq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012, Anton Vorontsov wrote:
+--Signature=_Thu__15_Nov_2012_15_01_39_+1100__RZVL_p6POMT3Oeq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > I agree that eventfd is the way to go, but I'll also add that this feature 
-> > seems to be implemented at a far too coarse of level.  Memory, and hence 
-> > memory pressure, is constrained by several factors other than just the 
-> > amount of physical RAM which vmpressure_fd is addressing.  What about 
-> > memory pressure caused by cpusets or mempolicies?  (Memcg has its own 
-> > reclaim logic
-> 
-> Yes, sure, and my plan for per-cgroups vmpressure was to just add the same
-> hooks into cgroups reclaim logic (as far as I understand, we can use the
-> same scanned/reclaimed ratio + reclaimer priority to determine the
-> pressure).
-> 
+Hi Grant,
 
-I don't understand, how would this work with cpusets, for example, with 
-vmpressure_fd as defined?  The cpuset policy is embedded in the page 
-allocator and skips over zones that are not allowed when trying to find a 
-page of the specified order.  Imagine a cpuset bound to a single node that 
-is under severe memory pressure.  The reclaim logic will get triggered and 
-cause a notification on your fd when the rest of the system's nodes may 
-have tons of memory available.  So now an application that actually is 
-using this interface and is trying to be a good kernel citizen decides to 
-free caches back to the kernel, start ratelimiting, etc, when it actually 
-doesn't have any memory allocated on the nearly-oom cpuset so its memory 
-freeing doesn't actually achieve anything.
+Today's linux-next merge of the spi tree got a conflict in
+drivers/spi/spi-xcomm.c between commit b31659004337 ("spi: Add
+AD-FMCOMMS1-EBZ I2C-SPI bridge driver") from Linus' tree and commit
+0e312dcca718 ("spi/xcomm: Add AD-FMCOMMS1-EBZ I2C-SPI bridge driver")
+from the spi tree.
 
-Rather, I think it's much better to be notified when an individual process 
-invokes various levels of reclaim up to and including the oom killer so 
-that we know the context that memory freeing needs to happen (or, 
-optionally, the set of processes that could be sacrificed so that this 
-higher priority process may allocate memory).
+OK, so the former commit added this driver back before v3.6-rc1 with an
+author date of 2012-07-20, the latter is adding a slightly modified
+version of the dirver with an author date of 2012-05-22.
 
-> > and its own memory thresholds implemented on top of eventfd 
-> > that people already use.)  These both cause high levels of reclaim within 
-> > the page allocator whereas there may be an abundance of free memory 
-> > available on the system.
-> 
-> Yes, surely global-level vmpressure should be separate for the per-cgroup
-> memory pressure.
-> 
+I used the former version , please sort this out.
 
-I disagree, I think if you have a per-thread memory pressure notification 
-if and when it starts down the page allocator slowpath, through the 
-various states of reclaim (perhaps on a scale of 0-100 as described), and 
-including the oom killer that you can target eventual memory freeing that 
-actually is useful.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> But we still want the "global vmpressure" thing, so that we could use it
-> without cgroups too. How to do it -- syscall or sysfs+eventfd doesn't
-> matter much (in the sense that I can do eventfd thing if you folks like it
-> :).
-> 
+--Signature=_Thu__15_Nov_2012_15_01_39_+1100__RZVL_p6POMT3Oeq
+Content-Type: application/pgp-signature
 
-Most processes aren't going to care if they are running into memory 
-pressure and have no implementation to free memory back to the kernel or 
-start ratelimiting themselves.  They will just continue happily along 
-until they get the memory they want or they get oom killed.  The ones that 
-do, however, or a job scheduler or monitor that is watching over the 
-memory usage of a set of tasks, will be able to do something when 
-notified.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-In the hopes of a single API that can do all this and not a 
-reimplementation for various types of memory limitations (it seems like 
-what you're suggesting is at least three different APIs: system-wide via 
-vmpressure_fd, memcg via memcg thresholds, and cpusets through an eventual 
-cpuset threshold), I'm hoping that we can have a single interface that can 
-be polled on to determine when individual processes are encountering 
-memory pressure.  And if I'm not running in your oom cpuset, I don't care 
-about your memory pressure.
+iQIcBAEBCAAGBQJQpGkjAAoJEECxmPOUX5FEGuAP/1IfZVlwn2xqsDyAhn6Xxk4T
+BJ/LoMnNxet2CT5A+IZltNRwoQBV2ske/Ke9aoK1p8fZtULgopg6VN2o8hmvi9Hw
+v2gf9kk/ra5qIs3WAS8FbXa178Dcj1jWIlhY+j+o1pEXRnayDSUDuGzMX5/jPy6V
+/tCCG7vOsFEhpnRlJljXqXqhER7YCRRSYnk36fPRYiihrOY1OQX3+v1SGSYYY0n0
+/iNy1ARR8P/k9AxvjmFT9XoVCtzUAzI0YOEDyAUR++ZuzuHzaHHc+wmslrcsKE6+
+08MrQp04pu8dIe88QlmYJGNgx3yekydPcNLUtArUT8ew0ZqJjVUQOvjQS+ywSwsU
+eKL99Evyba+ThaNiThSxHf7LgCISFuHrW/yaR00wxa9GuAohK15gxEtG0HnI2qDx
+CZoC9UYd/VXxw97tGiH5H87nB5Fj9AkvsPGQbhdkfmCMsQoTtytdbQewtKEbKsVO
+107ocIbJNi5tUiGPshApgjo64DvSouMIC4KSruOVE5BdPA9bJ05VFK6EC8XqJdNc
+kMqVZr4dJh0E7mhrvnZQDUVP8xuODy4EkGPfKsqNfXHm47I/Vcde/HdfC/UQVets
+9HIlABjSLRVYrD2Svvc8WeE/u+YL/mxMcKxkJ9iCfCQeTosdNETojTfAME+Nzldb
+lYjm/0SNHsoSPODAqsyD
+=M2oX
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Nov_2012_15_01_39_+1100__RZVL_p6POMT3Oeq--
