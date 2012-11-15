@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993034Ab2KOEgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:36:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48987 "EHLO mail.kernel.org"
+	id S2993039Ab2KOEg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:36:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48975 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992965Ab2KOELW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:22 -0500
+	id S2992958Ab2KOELV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steve Dickson <steved@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 27/66] nfsv3: Make v3 mounts fail with ETIMEDOUTs instead EIO on mountd timeouts
-Date: Wed, 14 Nov 2012 20:10:32 -0800
-Message-Id: <20121115040940.966788145@linuxfoundation.org>
+        Antonio Quartulli <ordex@autistici.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 26/66] mac80211: fix SSID copy on IBSS JOIN
+Date: Wed, 14 Nov 2012 20:10:31 -0800
+Message-Id: <20121115040940.898562942@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -26,38 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Mayhew <smayhew@redhat.com>
+From: Antonio Quartulli <ordex@autistici.org>
 
-commit acce94e68a0f346115fd41cdc298197d2d5a59ad upstream.
+commit badecb001a310408d3473b1fc2ed5aefd0bc92a9 upstream.
 
-In very busy v3 environment, rpc.mountd can respond to the NULL
-procedure but not the MNT procedure in a timely manner causing
-the MNT procedure to time out. The problem is the mount system
-call returns EIO which causes the mount to fail, instead of
-ETIMEDOUT, which would cause the mount to be retried.
+The 'ssid' field of the cfg80211_ibss_params is a u8 pointer and
+its length is likely to be less than IEEE80211_MAX_SSID_LEN most
+of the time.
 
-This patch sets the RPC_TASK_SOFT|RPC_TASK_TIMEOUT flags to
-the rpc_call_sync() call in nfs_mount() which causes
-ETIMEDOUT to be returned on timed out connections.
+This patch fixes the ssid copy in ieee80211_ibss_join() by using
+the SSID length to prevent it from reading beyond the string.
 
-Signed-off-by: Steve Dickson <steved@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+[rewrapped commit message, small rewording]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/mount_clnt.c |    2 +-
+ net/mac80211/ibss.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/mount_clnt.c
-+++ b/fs/nfs/mount_clnt.c
-@@ -181,7 +181,7 @@ int nfs_mount(struct nfs_mount_request *
- 	else
- 		msg.rpc_proc = &mnt_clnt->cl_procinfo[MOUNTPROC_MNT];
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1074,7 +1074,7 @@ int ieee80211_ibss_join(struct ieee80211
+ 	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+ 	sdata->u.ibss.ibss_join_req = jiffies;
  
--	status = rpc_call_sync(mnt_clnt, &msg, 0);
-+	status = rpc_call_sync(mnt_clnt, &msg, RPC_TASK_SOFT|RPC_TASK_TIMEOUT);
- 	rpc_shutdown_client(mnt_clnt);
+-	memcpy(sdata->u.ibss.ssid, params->ssid, IEEE80211_MAX_SSID_LEN);
++	memcpy(sdata->u.ibss.ssid, params->ssid, params->ssid_len);
+ 	sdata->u.ibss.ssid_len = params->ssid_len;
  
- 	if (status < 0)
+ 	mutex_unlock(&sdata->u.ibss.mtx);
 
 
