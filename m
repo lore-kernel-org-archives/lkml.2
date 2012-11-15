@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993248Ab2KOEMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:12:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49673 "EHLO mail.kernel.org"
+	id S2993264Ab2KOEMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:12:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49774 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993179Ab2KOEM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:26 -0500
+	id S2993247Ab2KOEMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 03/57] Input: tsc40 - remove wrong announcement of pressure support
-Date: Wed, 14 Nov 2012 20:11:11 -0800
-Message-Id: <20121115040933.431004925@linuxfoundation.org>
+        Antonio Quartulli <ordex@autistici.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 21/57] mac80211: fix SSID copy on IBSS JOIN
+Date: Wed, 14 Nov 2012 20:11:29 -0800
+Message-Id: <20121115040934.548756221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,33 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+From: Antonio Quartulli <ordex@autistici.org>
 
-commit 32ed1911fc79908d704023317d4ddeb3883fd07e upstream.
+commit badecb001a310408d3473b1fc2ed5aefd0bc92a9 upstream.
 
-The tsc40 driver announces it supports the pressure event, but will never
-send one. The announcement will cause tslib to wait for such events and
-sending all touch events with a pressure of 0. Removing the announcement
-will make tslib fall back to emulating the pressure on touch events so
-everything works as expected.
+The 'ssid' field of the cfg80211_ibss_params is a u8 pointer and
+its length is likely to be less than IEEE80211_MAX_SSID_LEN most
+of the time.
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This patch fixes the ssid copy in ieee80211_ibss_join() by using
+the SSID length to prevent it from reading beyond the string.
+
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+[rewrapped commit message, small rewording]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/touchscreen/tsc40.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/mac80211/ibss.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/touchscreen/tsc40.c
-+++ b/drivers/input/touchscreen/tsc40.c
-@@ -107,7 +107,6 @@ static int tsc_connect(struct serio *ser
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
- 	input_set_abs_params(ptsc->dev, ABS_X, 0, 0x3ff, 0, 0);
- 	input_set_abs_params(ptsc->dev, ABS_Y, 0, 0x3ff, 0, 0);
--	input_set_abs_params(ptsc->dev, ABS_PRESSURE, 0, 0, 0, 0);
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1110,7 +1110,7 @@ int ieee80211_ibss_join(struct ieee80211
+ 	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+ 	sdata->u.ibss.ibss_join_req = jiffies;
  
- 	serio_set_drvdata(serio, ptsc);
+-	memcpy(sdata->u.ibss.ssid, params->ssid, IEEE80211_MAX_SSID_LEN);
++	memcpy(sdata->u.ibss.ssid, params->ssid, params->ssid_len);
+ 	sdata->u.ibss.ssid_len = params->ssid_len;
  
+ 	mutex_unlock(&sdata->u.ibss.mtx);
 
 
