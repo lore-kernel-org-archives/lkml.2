@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993018Ab2KOEiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:38:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48910 "EHLO mail.kernel.org"
+	id S2993056Ab2KOEic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:38:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48898 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992929Ab2KOELP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:15 -0500
+	id S2992918Ab2KOELN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rhys <rhyspuk@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Paulo Zanoni <przanoni@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: =?UTF-8?q?=5B=2021/66=5D=20drm/i915=3A=20fix=20overlay=20on=20i830M?=
-Date: Wed, 14 Nov 2012 20:10:26 -0800
-Message-Id: <20121115040940.540633203@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=2020/66=5D=20drm/i915=3A=20clear=20the=20entire=20sdvo=20infoframe=20buffer?=
+Date: Wed, 14 Nov 2012 20:10:25 -0800
+Message-Id: <20121115040940.465012217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -31,77 +32,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit a9193983f4f292a82a00c72971c17ec0ee8c6c15 upstream.
+commit b6e0e543f75729f207b9c72b0162ae61170635b2 upstream.
 
-The overlay on the i830M has a peculiar failure mode: It works the
-first time around after boot-up, but consistenly hangs the second time
-it's used.
+Like in the case of native hdmi, which is fixed already in
 
-Chris Wilson has dug out a nice errata:
+commit adf00b26d18e1b3570451296e03bcb20e4798cdd
+Author: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Date:   Tue Sep 25 13:23:34 2012 -0300
 
-"1.5.12 Clock Gating Disable for Display Register
-Address Offset:	06200h–06203h
+    drm/i915: make sure we write all the DIP data bytes
 
-"Bit 3
-Ovrunit Clock Gating Disable.
-0 = Clock gating controlled by unit enabling logic
-1 = Disable clock gating function
-DevALM Errata ALM049: Overlay Clock Gating Must be Disabled:  Overlay
-& L2 Cache clock gating must be disabled in order to prevent device
-hangs when turning off overlay.SW must turn off Ovrunit clock gating
-(6200h) and L2 Cache clock gating (C8h)."
+we need to clear the entire sdvo buffer to avoid upsetting the
+display.
 
-Now I've nowhere found that 0xc8 register and hence couldn't apply the
-l2 cache workaround. But I've remembered that part of the magic that
-the OVERLAY_ON/OFF commands are supposed to do is to rearrange cache
-allocations so that the overlay scaler has some scratch space.
+Since infoframe buffer writing is now a bit more elaborate, extract it
+into it's own function. This will be useful if we ever get around to
+properly update the ELD for sdvo. Also #define proper names for the
+two buffer indexes with fixed usage.
 
-And while pondering how that could explain the hang the 2nd time we
-enable the overlay, I've remembered that the old ums overlay code did
-_not_ issue the OVERLAY_OFF cmd.
+v2: Cite the right commit above, spotted by Paulo Zanoni.
 
-And indeed, disabling the OFF cmd results in the overlay working
-flawlessly, so I guess we can workaround the lack of the above
-workaround by simply never disabling the overlay engine once it's
-enabled.
+v3: I'm too stupid to paste the right commit.
 
-Note that we have the first part of the above w/a already implemented
-in i830_init_clock_gating - leave that as-is to avoid surprises.
+v4: Ben Hutchings noticed that I've failed to handle an underflow in
+my loop logic, breaking it for i >= length + 8. Since I've just lost C
+programmer license, use his solution. Also, make the frustrated 0-base
+buffer size a notch more clear.
 
-v2: Add a comment in the code.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47827
-Tested-by: Rhys <rhyspuk@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-and-tested-by: Jürg Billeter <j@bitron.ch>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=25732
+Cc: Paulo Zanoni <przanoni@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_overlay.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c      |   62 ++++++++++++++++++++++-----------
+ drivers/gpu/drm/i915/intel_sdvo_regs.h |    2 +
+ 2 files changed, 44 insertions(+), 20 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -431,9 +431,17 @@ static int intel_overlay_off(struct inte
- 	intel_ring_emit(ring, flip_addr);
- 	intel_ring_emit(ring, MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
- 	/* turn overlay off */
--	intel_ring_emit(ring, MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
--	intel_ring_emit(ring, flip_addr);
--	intel_ring_emit(ring, MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	if (IS_I830(dev)) {
-+		/* Workaround: Don't disable the overlay fully, since otherwise
-+		 * it dies on the next OVERLAY_ON cmd. */
-+		intel_ring_emit(ring, MI_NOOP);
-+		intel_ring_emit(ring, MI_NOOP);
-+		intel_ring_emit(ring, MI_NOOP);
-+	} else {
-+		intel_ring_emit(ring, MI_OVERLAY_FLIP | MI_OVERLAY_OFF);
-+		intel_ring_emit(ring, flip_addr);
-+		intel_ring_emit(ring, MI_WAIT_FOR_EVENT | MI_WAIT_FOR_OVERLAY_FLIP);
-+	}
- 	intel_ring_advance(ring);
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -882,6 +882,45 @@ static void intel_sdvo_dump_hdmi_buf(str
+ }
+ #endif
  
- 	return intel_overlay_do_wait_request(overlay, request,
++static bool intel_sdvo_write_infoframe(struct intel_sdvo *intel_sdvo,
++				       unsigned if_index, uint8_t tx_rate,
++				       uint8_t *data, unsigned length)
++{
++	uint8_t set_buf_index[2] = { if_index, 0 };
++	uint8_t hbuf_size, tmp[8];
++	int i;
++
++	if (!intel_sdvo_set_value(intel_sdvo,
++				  SDVO_CMD_SET_HBUF_INDEX,
++				  set_buf_index, 2))
++		return false;
++
++	if (!intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_HBUF_INFO,
++				  &hbuf_size, 1))
++		return false;
++
++	/* Buffer size is 0 based, hooray! */
++	hbuf_size++;
++
++	DRM_DEBUG_KMS("writing sdvo hbuf: %i, hbuf_size %i, hbuf_size: %i\n",
++		      if_index, length, hbuf_size);
++
++	for (i = 0; i < hbuf_size; i += 8) {
++		memset(tmp, 0, 8);
++		if (i < length)
++			memcpy(tmp, data + i, min_t(unsigned, 8, length - i));
++
++		if (!intel_sdvo_set_value(intel_sdvo,
++					  SDVO_CMD_SET_HBUF_DATA,
++					  tmp, 8))
++			return false;
++	}
++
++	return intel_sdvo_set_value(intel_sdvo,
++				    SDVO_CMD_SET_HBUF_TXRATE,
++				    &tx_rate, 1);
++}
++
+ static bool intel_sdvo_set_avi_infoframe(struct intel_sdvo *intel_sdvo)
+ {
+ 	struct dip_infoframe avi_if = {
+@@ -889,11 +928,7 @@ static bool intel_sdvo_set_avi_infoframe
+ 		.ver = DIP_VERSION_AVI,
+ 		.len = DIP_LEN_AVI,
+ 	};
+-	uint8_t tx_rate = SDVO_HBUF_TX_VSYNC;
+-	uint8_t set_buf_index[2] = { 1, 0 };
+ 	uint8_t sdvo_data[4 + sizeof(avi_if.body.avi)];
+-	uint64_t *data = (uint64_t *)sdvo_data;
+-	unsigned i;
+ 
+ 	intel_dip_infoframe_csum(&avi_if);
+ 
+@@ -903,22 +938,9 @@ static bool intel_sdvo_set_avi_infoframe
+ 	sdvo_data[3] = avi_if.checksum;
+ 	memcpy(&sdvo_data[4], &avi_if.body, sizeof(avi_if.body.avi));
+ 
+-	if (!intel_sdvo_set_value(intel_sdvo,
+-				  SDVO_CMD_SET_HBUF_INDEX,
+-				  set_buf_index, 2))
+-		return false;
+-
+-	for (i = 0; i < sizeof(sdvo_data); i += 8) {
+-		if (!intel_sdvo_set_value(intel_sdvo,
+-					  SDVO_CMD_SET_HBUF_DATA,
+-					  data, 8))
+-			return false;
+-		data++;
+-	}
+-
+-	return intel_sdvo_set_value(intel_sdvo,
+-				    SDVO_CMD_SET_HBUF_TXRATE,
+-				    &tx_rate, 1);
++	return intel_sdvo_write_infoframe(intel_sdvo, SDVO_HBUF_INDEX_AVI_IF,
++					  SDVO_HBUF_TX_VSYNC,
++					  sdvo_data, sizeof(sdvo_data));
+ }
+ 
+ static bool intel_sdvo_set_tv_format(struct intel_sdvo *intel_sdvo)
+--- a/drivers/gpu/drm/i915/intel_sdvo_regs.h
++++ b/drivers/gpu/drm/i915/intel_sdvo_regs.h
+@@ -708,6 +708,8 @@ struct intel_sdvo_enhancements_arg {
+ #define SDVO_CMD_SET_AUDIO_STAT		0x91
+ #define SDVO_CMD_GET_AUDIO_STAT		0x92
+ #define SDVO_CMD_SET_HBUF_INDEX		0x93
++  #define SDVO_HBUF_INDEX_ELD		0
++  #define SDVO_HBUF_INDEX_AVI_IF	1
+ #define SDVO_CMD_GET_HBUF_INDEX		0x94
+ #define SDVO_CMD_GET_HBUF_INFO		0x95
+ #define SDVO_CMD_SET_HBUF_AV_SPLIT	0x96
 
 
