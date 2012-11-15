@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993047Ab2KOELw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:11:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49329 "EHLO mail.kernel.org"
+	id S2993106Ab2KOEbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:31:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49374 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993029Ab2KOELs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:48 -0500
+	id S2993046Ab2KOELw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Kazantsev <mk.fraggod@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Zijie Pan <zijie.pan@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 47/66] net: fix secpath kmemleak
-Date: Wed, 14 Nov 2012 20:10:52 -0800
-Message-Id: <20121115040942.526241268@linuxfoundation.org>
+Subject: [ 43/66] sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
+Date: Wed, 14 Nov 2012 20:10:48 -0800
+Message-Id: <20121115040942.235782503@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -28,53 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Zijie Pan <zijie.pan@6wind.com>
 
-[ Upstream commit 3d861f661006606bf159fd6bd973e83dbf21d0f9 ]
+[ Upstream commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec ]
 
-Mike Kazantsev found 3.5 kernels and beyond were leaking memory,
-and tracked the faulty commit to a1c7fff7e18f59e ("net:
-netdev_alloc_skb() use build_skb()")
+Bug introduced by commit edfee0339e681a784ebacec7e8c2dc97dc6d2839
+(sctp: check src addr when processing SACK to update transport state)
 
-While this commit seems fine, it uncovered a bug introduced
-in commit bad43ca8325 ("net: introduce skb_try_coalesce()), in function
-kfree_skb_partial()"):
-
-If head is stolen, we free the sk_buff,
-without removing references on secpath (skb->sp).
-
-So IPsec + IP defrag/reassembly (using skb coalescing), or
-TCP coalescing could leak secpath objects.
-
-Fix this bug by calling skb_release_head_state(skb) to properly
-release all possible references to linked objects.
-
-Reported-by: Mike Kazantsev <mk.fraggod@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Bisected-by: Mike Kazantsev <mk.fraggod@gmail.com>
-Tested-by: Mike Kazantsev <mk.fraggod@gmail.com>
+Signed-off-by: Zijie Pan <zijie.pan@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/sctp/sm_sideeffect.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3384,10 +3384,12 @@ EXPORT_SYMBOL(__skb_warn_lro_forwarding)
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -1634,8 +1634,9 @@ static int sctp_cmd_interpreter(sctp_eve
+ 					asoc->outqueue.outstanding_bytes;
+ 			sackh.num_gap_ack_blocks = 0;
+ 			sackh.num_dup_tsns = 0;
++			chunk->subh.sack_hdr = &sackh;
+ 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
+-					SCTP_SACKH(&sackh));
++					SCTP_CHUNK(chunk));
+ 			break;
  
- void kfree_skb_partial(struct sk_buff *skb, bool head_stolen)
- {
--	if (head_stolen)
-+	if (head_stolen) {
-+		skb_release_head_state(skb);
- 		kmem_cache_free(skbuff_head_cache, skb);
--	else
-+	} else {
- 		__kfree_skb(skb);
-+	}
- }
- EXPORT_SYMBOL(kfree_skb_partial);
- 
+ 		case SCTP_CMD_DISCARD_PACKET:
 
 
