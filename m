@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993311Ab2KOI4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:56:54 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:58344 "EHLO
+	id S1767586Ab2KOI47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:56:59 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:58346 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992991Ab2KOIuE (ORCPT
+	with ESMTP id S2992592Ab2KOIuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Nov 2012 03:50:04 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 5/9] MMC: sdio, use kref from tty_port
-Date: Thu, 15 Nov 2012 09:49:52 +0100
-Message-Id: <1352969396-23760-6-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 3/9] ISDN: capi, use kref from tty_port
+Date: Thu, 15 Nov 2012 09:49:50 +0100
+Message-Id: <1352969396-23760-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
 References: <1352969396-23760-1-git-send-email-jslaby@suse.cz>
@@ -30,78 +30,94 @@ Here it is enough to switch to refcounting in tty_port.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mmc/card/sdio_uart.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ drivers/isdn/capi/capi.c | 36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mmc/card/sdio_uart.c b/drivers/mmc/card/sdio_uart.c
-index 369f7ba..bd57a11 100644
---- a/drivers/mmc/card/sdio_uart.c
-+++ b/drivers/mmc/card/sdio_uart.c
-@@ -66,7 +66,6 @@ struct uart_icount {
- 
- struct sdio_uart_port {
- 	struct tty_port		port;
--	struct kref		kref;
- 	unsigned int		index;
- 	struct sdio_func	*func;
- 	struct mutex		func_lock;
-@@ -92,7 +91,6 @@ static int sdio_uart_add_port(struct sdio_uart_port *port)
- {
- 	int index, ret = -EBUSY;
- 
--	kref_init(&port->kref);
- 	mutex_init(&port->func_lock);
- 	spin_lock_init(&port->write_lock);
- 	if (kfifo_alloc(&port->xmit_fifo, FIFO_SIZE, GFP_KERNEL))
-@@ -122,23 +120,15 @@ static struct sdio_uart_port *sdio_uart_port_get(unsigned index)
- 	spin_lock(&sdio_uart_table_lock);
- 	port = sdio_uart_table[index];
- 	if (port)
--		kref_get(&port->kref);
-+		tty_port_get(&port->port);
- 	spin_unlock(&sdio_uart_table_lock);
- 
- 	return port;
- }
- 
--static void sdio_uart_port_destroy(struct kref *kref)
--{
--	struct sdio_uart_port *port =
--		container_of(kref, struct sdio_uart_port, kref);
--	kfifo_free(&port->xmit_fifo);
--	kfree(port);
--}
--
- static void sdio_uart_port_put(struct sdio_uart_port *port)
- {
--	kref_put(&port->kref, sdio_uart_port_destroy);
-+	tty_port_put(&port->port);
- }
- 
- static void sdio_uart_port_remove(struct sdio_uart_port *port)
-@@ -736,6 +726,14 @@ static void sdio_uart_shutdown(struct tty_port *tport)
- 	sdio_uart_release_func(port);
- }
- 
-+static void sdio_uart_port_destroy(struct tty_port *tport)
-+{
-+	struct sdio_uart_port *port =
-+		container_of(tport, struct sdio_uart_port, port);
-+	kfifo_free(&port->xmit_fifo);
-+	kfree(port);
-+}
-+
- /**
-  *	sdio_uart_install	-	install method
-  *	@driver: the driver in use (sdio_uart in our case)
-@@ -1044,6 +1042,7 @@ static const struct tty_port_operations sdio_uart_port_ops = {
- 	.carrier_raised = uart_carrier_raised,
- 	.shutdown = sdio_uart_shutdown,
- 	.activate = sdio_uart_activate,
-+	.destruct = sdio_uart_port_destroy,
+diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
+index c679867..89562a8 100644
+--- a/drivers/isdn/capi/capi.c
++++ b/drivers/isdn/capi/capi.c
+@@ -77,8 +77,6 @@ struct ackqueue_entry {
  };
  
- static const struct tty_operations sdio_uart_ops = {
+ struct capiminor {
+-	struct kref kref;
+-
+ 	unsigned int      minor;
+ 
+ 	struct capi20_appl	*ap;
+@@ -190,7 +188,20 @@ static void capiminor_del_all_ack(struct capiminor *mp)
+ 
+ /* -------- struct capiminor ---------------------------------------- */
+ 
+-static const struct tty_port_operations capiminor_port_ops; /* we have none */
++static void capiminor_destroy(struct tty_port *port)
++{
++	struct capiminor *mp = container_of(port, struct capiminor, port);
++
++	kfree_skb(mp->outskb);
++	skb_queue_purge(&mp->inqueue);
++	skb_queue_purge(&mp->outqueue);
++	capiminor_del_all_ack(mp);
++	kfree(mp);
++}
++
++static const struct tty_port_operations capiminor_port_ops = {
++	.destruct = capiminor_destroy,
++};
+ 
+ static struct capiminor *capiminor_alloc(struct capi20_appl *ap, u32 ncci)
+ {
+@@ -204,8 +215,6 @@ static struct capiminor *capiminor_alloc(struct capi20_appl *ap, u32 ncci)
+ 		return NULL;
+ 	}
+ 
+-	kref_init(&mp->kref);
+-
+ 	mp->ap = ap;
+ 	mp->ncci = ncci;
+ 	INIT_LIST_HEAD(&mp->ackqueue);
+@@ -247,21 +256,10 @@ err_out2:
+ 	spin_unlock(&capiminors_lock);
+ 
+ err_out1:
+-	kfree(mp);
++	tty_port_put(&mp->port);
+ 	return NULL;
+ }
+ 
+-static void capiminor_destroy(struct kref *kref)
+-{
+-	struct capiminor *mp = container_of(kref, struct capiminor, kref);
+-
+-	kfree_skb(mp->outskb);
+-	skb_queue_purge(&mp->inqueue);
+-	skb_queue_purge(&mp->outqueue);
+-	capiminor_del_all_ack(mp);
+-	kfree(mp);
+-}
+-
+ static struct capiminor *capiminor_get(unsigned int minor)
+ {
+ 	struct capiminor *mp;
+@@ -269,7 +267,7 @@ static struct capiminor *capiminor_get(unsigned int minor)
+ 	spin_lock(&capiminors_lock);
+ 	mp = capiminors[minor];
+ 	if (mp)
+-		kref_get(&mp->kref);
++		tty_port_get(&mp->port);
+ 	spin_unlock(&capiminors_lock);
+ 
+ 	return mp;
+@@ -277,7 +275,7 @@ static struct capiminor *capiminor_get(unsigned int minor)
+ 
+ static inline void capiminor_put(struct capiminor *mp)
+ {
+-	kref_put(&mp->kref, capiminor_destroy);
++	tty_port_put(&mp->port);
+ }
+ 
+ static void capiminor_free(struct capiminor *mp)
 -- 
 1.8.0
 
