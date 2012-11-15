@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768667Ab2KOSbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:31:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993480Ab2KOSbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:31:37 -0500
-Message-ID: <1353004289.2233.94.camel@bling.home>
-Subject: Re: [PATCH v2 1/3] VFIO: unregister IOMMU notifier on error
- recovery path
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hanjun Guo <guohanjun@huawei.com>
-Date: Thu, 15 Nov 2012 11:31:29 -0700
-In-Reply-To: <1352997798-18891-1-git-send-email-jiang.liu@huawei.com>
-References: <1352997798-18891-1-git-send-email-jiang.liu@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1768693Ab2KOSbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:31:43 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54580 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768673Ab2KOSbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 13:31:41 -0500
+Message-ID: <50A5350A.3070109@wwwdotorg.org>
+Date: Thu, 15 Nov 2012 11:31:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+References: <CACxGe6vhd_4rcBbYyqtvbySVaY6XpNE+HQq42PZhKe5yt=zcaA@mail.gmail.com> <1352980284-2819-1-git-send-email-grant.likely@secretlab.ca> <50A52FEC.4080409@wwwdotorg.org> <CACxGe6tZOjMXR6CNDzDTSUkcERLiX-2+Qoad0bcPum5Z-Jxaaw@mail.gmail.com>
+In-Reply-To: <CACxGe6tZOjMXR6CNDzDTSUkcERLiX-2+Qoad0bcPum5Z-Jxaaw@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 00:43 +0800, Jiang Liu wrote:
-> On error recovery path in function vfio_create_group(), it should
-> unregister the IOMMU notifier for the new VFIO group. Otherwise it may
-> cause invalid memory access later when handling bus notifications.
+On 11/15/2012 11:20 AM, Grant Likely wrote:
+> On Thu, Nov 15, 2012 at 6:09 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 11/15/2012 04:51 AM, Grant Likely wrote:
+>>> Grant Likely wrote:
+>>>> Or how about: I could pick up the patch with only the MIPS hunk and
+>>>> every other user can be fixed up independently to use the new rule.
+>>>
+>>> Here's a trial patch to fix up ARM. Does this look correct? This patch
+>>> depends on the generic dtb build rule already being applied.
+>>
+>> I think the patch looks OK technically, except for one minor comment below.
+>>
+>> One issue with this patch is that it moves *.dts from arch/arm/boot to
+>> arch/arm/boot/dts, which means everyone has to adjust their scripts/...
+>> that package/install/... the kernel. I guess it's an easy change for
+>> people to make, but could easily catch people unawares if they do
+>> incremental builds so that arch/arm/boot/*.dtb still exists but is stale.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  drivers/vfio/vfio.c |   31 +++++++++++++++----------------
->  1 file changed, 15 insertions(+), 16 deletions(-)
+> True. We could temporarily remove or rename if the same file exists in
+> the directory below to help people catch that problem. I really would
+> like to clean up that build rule to be consistent though.
+> 
+> The other option is to move all the .dts files into the boot
+> directory, but I don't think that is a good idea at all.
 
+Maybe we can just add "rm *.dtb" to the following rules in
+boot/Makefile, before calling the child make?
 
-Applied all 3, thanks!
+%.dtb: scripts
+-	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
 
-Alex
+ dtbs: scripts
+-	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) dtbs
 
-> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-> index 17830c9..3359ec2 100644
-> --- a/drivers/vfio/vfio.c
-> +++ b/drivers/vfio/vfio.c
-> @@ -191,6 +191,17 @@ static void vfio_container_put(struct vfio_container *container)
->  	kref_put(&container->kref, vfio_container_release);
->  }
->  
-> +static void vfio_group_unlock_and_free(struct vfio_group *group)
-> +{
-> +	mutex_unlock(&vfio.group_lock);
-> +	/*
-> +	 * Unregister outside of lock.  A spurious callback is harmless now
-> +	 * that the group is no longer in vfio.group_list.
-> +	 */
-> +	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
-> +	kfree(group);
-> +}
-> +
->  /**
->   * Group objects - create, release, get, put, search
->   */
-> @@ -229,8 +240,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
->  
->  	minor = vfio_alloc_group_minor(group);
->  	if (minor < 0) {
-> -		mutex_unlock(&vfio.group_lock);
-> -		kfree(group);
-> +		vfio_group_unlock_and_free(group);
->  		return ERR_PTR(minor);
->  	}
->  
-> @@ -239,8 +249,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
->  		if (tmp->iommu_group == iommu_group) {
->  			vfio_group_get(tmp);
->  			vfio_free_group_minor(minor);
-> -			mutex_unlock(&vfio.group_lock);
-> -			kfree(group);
-> +			vfio_group_unlock_and_free(group);
->  			return tmp;
->  		}
->  	}
-> @@ -249,8 +258,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
->  			    group, "%d", iommu_group_id(iommu_group));
->  	if (IS_ERR(dev)) {
->  		vfio_free_group_minor(minor);
-> -		mutex_unlock(&vfio.group_lock);
-> -		kfree(group);
-> +		vfio_group_unlock_and_free(group);
->  		return (struct vfio_group *)dev; /* ERR_PTR */
->  	}
->  
-> @@ -274,16 +282,7 @@ static void vfio_group_release(struct kref *kref)
->  	device_destroy(vfio.class, MKDEV(MAJOR(vfio.devt), group->minor));
->  	list_del(&group->vfio_next);
->  	vfio_free_group_minor(group->minor);
-> -
-> -	mutex_unlock(&vfio.group_lock);
-> -
-> -	/*
-> -	 * Unregister outside of lock.  A spurious callback is harmless now
-> -	 * that the group is no longer in vfio.group_list.
-> -	 */
-> -	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
-> -
-> -	kfree(group);
-> +	vfio_group_unlock_and_free(group);
->  }
->  
->  static void vfio_group_put(struct vfio_group *group)
+>>> +targets += dtbs
+>>
+>> Doesn't that make the "dtbs" target always run by default? Perhaps
+>> that's reasonable though, and doesn't actually affect anything since the
+>> make command for this directory always specifies an explicit target?
+>>
+>> Or, was that meant to be the following that got removed from ../Makefile?
+>>
+>> targets += $(dtb-y)
+> 
+> Yes it is supposed to be the same thing. Doesn't it effectively do the
+> same since dtbs depends on $(dtb-y)?
 
+Ah, I think so yes.
 
-
+I guess anyway that $(targets) is presumably ignored if an explicit
+build target is requested from make.
