@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992798Ab2KOEqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:46:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48529 "EHLO mail.kernel.org"
+	id S2992811Ab2KOEqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:46:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48512 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992730Ab2KOEKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:33 -0500
+	id S2992725Ab2KOEKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elliot Hughes <enh@google.com>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/38] tcp: fix FIONREAD/SIOCINQ
-Date: Wed, 14 Nov 2012 20:10:23 -0800
-Message-Id: <20121115040934.500024361@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 23/38] ALSA: Avoid endless sleep after disconnect
+Date: Wed, 14 Nov 2012 20:10:20 -0800
+Message-Id: <20121115040934.328800960@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -28,48 +25,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
 
-[ Upstream commit a3374c42aa5f7237e87ff3b0622018636b0c847e ]
+When disconnect callback is called, each component should wake up
+sleepers and check card->shutdown flag for avoiding the endless sleep
+blocking the proper resource release.
 
-tcp_ioctl() tries to take into account if tcp socket received a FIN
-to report correct number bytes in receive queue.
-
-But its flaky because if the application ate the last skb,
-we return 1 instead of 0.
-
-Correct way to detect that FIN was received is to test SOCK_DONE.
-
-Reported-by: Elliot Hughes <enh@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ sound/core/control.c     |    2 ++
+ sound/core/hwdep.c       |    7 +++++++
+ sound/core/oss/pcm_oss.c |    4 ++++
+ sound/core/pcm.c         |    6 +++++-
+ sound/core/pcm_native.c  |    8 ++++++++
+ sound/core/rawmidi.c     |   20 ++++++++++++++++++++
+ 6 files changed, 46 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -481,14 +481,12 @@ int tcp_ioctl(struct sock *sk, int cmd,
- 			 !tp->urg_data ||
- 			 before(tp->urg_seq, tp->copied_seq) ||
- 			 !before(tp->urg_seq, tp->rcv_nxt)) {
--			struct sk_buff *skb;
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1363,6 +1363,8 @@ static ssize_t snd_ctl_read(struct file
+ 			spin_unlock_irq(&ctl->read_lock);
+ 			schedule();
+ 			remove_wait_queue(&ctl->change_sleep, &wait);
++			if (ctl->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
+ 			spin_lock_irq(&ctl->read_lock);
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -130,6 +130,10 @@ static int snd_hwdep_open(struct inode *
+ 		mutex_unlock(&hw->open_mutex);
+ 		schedule();
+ 		mutex_lock(&hw->open_mutex);
++		if (hw->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -454,12 +458,15 @@ static int snd_hwdep_dev_disconnect(stru
+ 		mutex_unlock(&register_mutex);
+ 		return -EINVAL;
+ 	}
++	mutex_lock(&hwdep->open_mutex);
++	wake_up(&hwdep->open_wait);
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (hwdep->ossreg)
+ 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
+ #endif
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
+ 	list_del_init(&hwdep->list);
++	mutex_unlock(&hwdep->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -1046,12 +1046,16 @@ static int snd_pcm_dev_disconnect(struct
+ 		goto unlock;
  
- 			answ = tp->rcv_nxt - tp->copied_seq;
+ 	mutex_lock(&pcm->open_mutex);
++	wake_up(&pcm->open_wait);
+ 	list_del_init(&pcm->list);
+ 	for (cidx = 0; cidx < 2; cidx++)
+ 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
+ 			snd_pcm_stream_lock_irq(substream);
+-			if (substream->runtime)
++			if (substream->runtime) {
+ 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
++				wake_up(&substream->runtime->sleep);
++				wake_up(&substream->runtime->tsleep);
++			}
+ 			snd_pcm_stream_unlock_irq(substream);
+ 		}
+ 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1507,6 +1507,10 @@ static int snd_pcm_drain(struct snd_pcm_
+ 		down_read(&snd_pcm_link_rwsem);
+ 		snd_pcm_stream_lock_irq(substream);
+ 		remove_wait_queue(&to_check->sleep, &wait);
++		if (card->shutdown) {
++			result = -ENODEV;
++			break;
++		}
+ 		if (tout == 0) {
+ 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
+ 				result = -ESTRPIPE;
+@@ -2158,6 +2162,10 @@ static int snd_pcm_open(struct file *fil
+ 		mutex_unlock(&pcm->open_mutex);
+ 		schedule();
+ 		mutex_lock(&pcm->open_mutex);
++		if (pcm->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -439,6 +439,10 @@ static int snd_rawmidi_open(struct inode
+ 		mutex_unlock(&rmidi->open_mutex);
+ 		schedule();
+ 		mutex_lock(&rmidi->open_mutex);
++		if (rmidi->card->shutdown) {
++			err = -ENODEV;
++			break;
++		}
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			break;
+@@ -1010,6 +1014,8 @@ static ssize_t snd_rawmidi_read(struct f
+ 			spin_unlock_irq(&runtime->lock);
+ 			schedule();
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail)
+@@ -1253,6 +1259,8 @@ static ssize_t snd_rawmidi_write(struct
+ 			spin_unlock_irq(&runtime->lock);
+ 			timeout = schedule_timeout(30 * HZ);
+ 			remove_wait_queue(&runtime->sleep, &wait);
++			if (rfile->rmidi->card->shutdown)
++				return -ENODEV;
+ 			if (signal_pending(current))
+ 				return result > 0 ? result : -ERESTARTSYS;
+ 			if (!runtime->avail && !timeout)
+@@ -1628,9 +1636,20 @@ static int snd_rawmidi_dev_register(stru
+ static int snd_rawmidi_dev_disconnect(struct snd_device *device)
+ {
+ 	struct snd_rawmidi *rmidi = device->device_data;
++	int dir;
  
--			/* Subtract 1, if FIN is in queue. */
--			skb = skb_peek_tail(&sk->sk_receive_queue);
--			if (answ && skb)
--				answ -= tcp_hdr(skb)->fin;
-+			/* Subtract 1, if FIN was received */
-+			if (answ && sock_flag(sk, SOCK_DONE))
-+				answ--;
- 		} else
- 			answ = tp->urg_seq - tp->copied_seq;
- 		release_sock(sk);
+ 	mutex_lock(&register_mutex);
++	mutex_lock(&rmidi->open_mutex);
++	wake_up(&rmidi->open_wait);
+ 	list_del_init(&rmidi->list);
++	for (dir = 0; dir < 2; dir++) {
++		struct snd_rawmidi_substream *s;
++		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
++			if (s->runtime)
++				wake_up(&s->runtime->sleep);
++		}
++	}
++
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (rmidi->ossreg) {
+ 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
+@@ -1645,6 +1664,7 @@ static int snd_rawmidi_dev_disconnect(st
+ 	}
+ #endif /* CONFIG_SND_OSSEMUL */
+ 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
++	mutex_unlock(&rmidi->open_mutex);
+ 	mutex_unlock(&register_mutex);
+ 	return 0;
+ }
 
 
