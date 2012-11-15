@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993133Ab2KOEdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:33:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49275 "EHLO mail.kernel.org"
+	id S2992994Ab2KOELl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:11:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49239 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993000Ab2KOELn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:11:43 -0500
+	id S933367Ab2KOELj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:11:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Matthieu CASTET <matthieu.castet@parrot.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 42/66] ALSA: Avoid endless sleep after disconnect
-Date: Wed, 14 Nov 2012 20:10:47 -0800
-Message-Id: <20121115040942.165674081@linuxfoundation.org>
+Subject: [ 40/66] ALSA: usb-audio: Fix races at disconnection in mixer_quirks.c
+Date: Wed, 14 Nov 2012 20:10:45 -0800
+Message-Id: <20121115040941.885518446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
 References: <20121115040939.016421011@linuxfoundation.org>
@@ -25,182 +26,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
+commit 888ea7d5ac6815ba16b3b3a20f665a92c7af6724 upstream.
 
-When disconnect callback is called, each component should wake up
-sleepers and check card->shutdown flag for avoiding the endless sleep
-blocking the proper resource release.
+Similar like the previous commit, cover with chip->shutdown_rwsem
+and chip->shutdown checks.
 
+Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- sound/core/control.c     |    2 ++
- sound/core/hwdep.c       |    7 +++++++
- sound/core/oss/pcm_oss.c |    4 ++++
- sound/core/pcm.c         |    6 +++++-
- sound/core/pcm_native.c  |    8 ++++++++
- sound/core/rawmidi.c     |   20 ++++++++++++++++++++
- 6 files changed, 46 insertions(+), 1 deletion(-)
+ sound/usb/mixer_quirks.c |   58 +++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 51 insertions(+), 7 deletions(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1436,6 +1436,8 @@ static ssize_t snd_ctl_read(struct file
- 			spin_unlock_irq(&ctl->read_lock);
- 			schedule();
- 			remove_wait_queue(&ctl->change_sleep, &wait);
-+			if (ctl->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
- 			spin_lock_irq(&ctl->read_lock);
---- a/sound/core/hwdep.c
-+++ b/sound/core/hwdep.c
-@@ -131,6 +131,10 @@ static int snd_hwdep_open(struct inode *
- 		mutex_unlock(&hw->open_mutex);
- 		schedule();
- 		mutex_lock(&hw->open_mutex);
-+		if (hw->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
-@@ -462,12 +466,15 @@ static int snd_hwdep_dev_disconnect(stru
- 		mutex_unlock(&register_mutex);
+--- a/sound/usb/mixer_quirks.c
++++ b/sound/usb/mixer_quirks.c
+@@ -283,6 +283,11 @@ static int snd_audigy2nx_led_put(struct
+ 	if (value > 1)
  		return -EINVAL;
- 	}
-+	mutex_lock(&hwdep->open_mutex);
-+	wake_up(&hwdep->open_wait);
- #ifdef CONFIG_SND_OSSEMUL
- 	if (hwdep->ossreg)
- 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
- #endif
- 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
- 	list_del_init(&hwdep->list);
-+	mutex_unlock(&hwdep->open_mutex);
- 	mutex_unlock(&register_mutex);
- 	return 0;
- }
---- a/sound/core/oss/pcm_oss.c
-+++ b/sound/core/oss/pcm_oss.c
-@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode
- 		mutex_unlock(&pcm->open_mutex);
- 		schedule();
- 		mutex_lock(&pcm->open_mutex);
-+		if (pcm->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -1087,12 +1087,16 @@ static int snd_pcm_dev_disconnect(struct
- 		goto unlock;
- 
- 	mutex_lock(&pcm->open_mutex);
-+	wake_up(&pcm->open_wait);
- 	list_del_init(&pcm->list);
- 	for (cidx = 0; cidx < 2; cidx++)
- 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
- 			snd_pcm_stream_lock_irq(substream);
--			if (substream->runtime)
-+			if (substream->runtime) {
- 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
-+				wake_up(&substream->runtime->sleep);
-+				wake_up(&substream->runtime->tsleep);
-+			}
- 			snd_pcm_stream_unlock_irq(substream);
- 		}
- 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -1518,6 +1518,10 @@ static int snd_pcm_drain(struct snd_pcm_
- 		down_read(&snd_pcm_link_rwsem);
- 		snd_pcm_stream_lock_irq(substream);
- 		remove_wait_queue(&to_check->sleep, &wait);
-+		if (card->shutdown) {
-+			result = -ENODEV;
-+			break;
-+		}
- 		if (tout == 0) {
- 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
- 				result = -ESTRPIPE;
-@@ -2168,6 +2172,10 @@ static int snd_pcm_open(struct file *fil
- 		mutex_unlock(&pcm->open_mutex);
- 		schedule();
- 		mutex_lock(&pcm->open_mutex);
-+		if (pcm->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
---- a/sound/core/rawmidi.c
-+++ b/sound/core/rawmidi.c
-@@ -424,6 +424,10 @@ static int snd_rawmidi_open(struct inode
- 		mutex_unlock(&rmidi->open_mutex);
- 		schedule();
- 		mutex_lock(&rmidi->open_mutex);
-+		if (rmidi->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
-@@ -995,6 +999,8 @@ static ssize_t snd_rawmidi_read(struct f
- 			spin_unlock_irq(&runtime->lock);
- 			schedule();
- 			remove_wait_queue(&runtime->sleep, &wait);
-+			if (rfile->rmidi->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return result > 0 ? result : -ERESTARTSYS;
- 			if (!runtime->avail)
-@@ -1238,6 +1244,8 @@ static ssize_t snd_rawmidi_write(struct
- 			spin_unlock_irq(&runtime->lock);
- 			timeout = schedule_timeout(30 * HZ);
- 			remove_wait_queue(&runtime->sleep, &wait);
-+			if (rfile->rmidi->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return result > 0 ? result : -ERESTARTSYS;
- 			if (!runtime->avail && !timeout)
-@@ -1613,9 +1621,20 @@ static int snd_rawmidi_dev_register(stru
- static int snd_rawmidi_dev_disconnect(struct snd_device *device)
- {
- 	struct snd_rawmidi *rmidi = device->device_data;
-+	int dir;
- 
- 	mutex_lock(&register_mutex);
-+	mutex_lock(&rmidi->open_mutex);
-+	wake_up(&rmidi->open_wait);
- 	list_del_init(&rmidi->list);
-+	for (dir = 0; dir < 2; dir++) {
-+		struct snd_rawmidi_substream *s;
-+		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
-+			if (s->runtime)
-+				wake_up(&s->runtime->sleep);
-+		}
+ 	changed = value != mixer->audigy2nx_leds[index];
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown) {
++		err = -ENODEV;
++		goto out;
 +	}
-+
- #ifdef CONFIG_SND_OSSEMUL
- 	if (rmidi->ossreg) {
- 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
-@@ -1630,6 +1649,7 @@ static int snd_rawmidi_dev_disconnect(st
- 	}
- #endif /* CONFIG_SND_OSSEMUL */
- 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
-+	mutex_unlock(&rmidi->open_mutex);
- 	mutex_unlock(&register_mutex);
- 	return 0;
- }
+ 	if (mixer->chip->usb_id == USB_ID(0x041e, 0x3042))
+ 		err = snd_usb_ctl_msg(mixer->chip->dev,
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
+@@ -299,6 +304,8 @@ static int snd_audigy2nx_led_put(struct
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
+ 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+ 			      value, index + 2, NULL, 0);
++ out:
++	up_read(&mixer->chip->shutdown_rwsem);
+ 	if (err < 0)
+ 		return err;
+ 	mixer->audigy2nx_leds[index] = value;
+@@ -392,11 +399,16 @@ static void snd_audigy2nx_proc_read(stru
+ 
+ 	for (i = 0; jacks[i].name; ++i) {
+ 		snd_iprintf(buffer, "%s: ", jacks[i].name);
+-		err = snd_usb_ctl_msg(mixer->chip->dev,
++		down_read(&mixer->chip->shutdown_rwsem);
++		if (mixer->chip->shutdown)
++			err = 0;
++		else
++			err = snd_usb_ctl_msg(mixer->chip->dev,
+ 				      usb_rcvctrlpipe(mixer->chip->dev, 0),
+ 				      UAC_GET_MEM, USB_DIR_IN | USB_TYPE_CLASS |
+ 				      USB_RECIP_INTERFACE, 0,
+ 				      jacks[i].unitid << 8, buf, 3);
++		up_read(&mixer->chip->shutdown_rwsem);
+ 		if (err == 3 && (buf[0] == 3 || buf[0] == 6))
+ 			snd_iprintf(buffer, "%02x %02x\n", buf[1], buf[2]);
+ 		else
+@@ -426,10 +438,15 @@ static int snd_xonar_u1_switch_put(struc
+ 	else
+ 		new_status = old_status & ~0x02;
+ 	changed = new_status != old_status;
+-	err = snd_usb_ctl_msg(mixer->chip->dev,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		err = -ENODEV;
++	else
++		err = snd_usb_ctl_msg(mixer->chip->dev,
+ 			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x08,
+ 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+ 			      50, 0, &new_status, 1);
++	up_read(&mixer->chip->shutdown_rwsem);
+ 	if (err < 0)
+ 		return err;
+ 	mixer->xonar_u1_status = new_status;
+@@ -468,11 +485,17 @@ static int snd_nativeinstruments_control
+ 	u8 bRequest = (kcontrol->private_value >> 16) & 0xff;
+ 	u16 wIndex = kcontrol->private_value & 0xffff;
+ 	u8 tmp;
++	int ret;
+ 
+-	int ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		ret = -ENODEV;
++	else
++		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+ 				  0, cpu_to_le16(wIndex),
+ 				  &tmp, sizeof(tmp), 1000);
++	up_read(&mixer->chip->shutdown_rwsem);
+ 
+ 	if (ret < 0) {
+ 		snd_printk(KERN_ERR
+@@ -493,11 +516,17 @@ static int snd_nativeinstruments_control
+ 	u8 bRequest = (kcontrol->private_value >> 16) & 0xff;
+ 	u16 wIndex = kcontrol->private_value & 0xffff;
+ 	u16 wValue = ucontrol->value.integer.value[0];
++	int ret;
+ 
+-	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		ret = -ENODEV;
++	else
++		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+ 				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
+ 				  NULL, 0, 1000);
++	up_read(&mixer->chip->shutdown_rwsem);
+ 
+ 	if (ret < 0) {
+ 		snd_printk(KERN_ERR
+@@ -656,11 +685,16 @@ static int snd_ftu_eff_switch_get(struct
+ 		return -EINVAL;
+ 
+ 
+-	err = snd_usb_ctl_msg(chip->dev,
++	down_read(&mixer->chip->shutdown_rwsem);
++	if (mixer->chip->shutdown)
++		err = -ENODEV;
++	else
++		err = snd_usb_ctl_msg(chip->dev,
+ 			usb_rcvctrlpipe(chip->dev, 0), UAC_GET_CUR,
+ 			USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
+ 			validx << 8, snd_usb_ctrl_intf(chip) | (id << 8),
+ 			value, val_len);
++	up_read(&mixer->chip->shutdown_rwsem);
+ 	if (err < 0)
+ 		return err;
+ 
+@@ -703,11 +737,16 @@ static int snd_ftu_eff_switch_put(struct
+ 
+ 	if (!pval->is_cached) {
+ 		/* Read current value */
+-		err = snd_usb_ctl_msg(chip->dev,
++		down_read(&mixer->chip->shutdown_rwsem);
++		if (mixer->chip->shutdown)
++			err = -ENODEV;
++		else
++			err = snd_usb_ctl_msg(chip->dev,
+ 				usb_rcvctrlpipe(chip->dev, 0), UAC_GET_CUR,
+ 				USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
+ 				validx << 8, snd_usb_ctrl_intf(chip) | (id << 8),
+ 				value, val_len);
++		up_read(&mixer->chip->shutdown_rwsem);
+ 		if (err < 0)
+ 			return err;
+ 
+@@ -719,11 +758,16 @@ static int snd_ftu_eff_switch_put(struct
+ 	if (cur_val != new_val) {
+ 		value[0] = new_val;
+ 		value[1] = 0;
+-		err = snd_usb_ctl_msg(chip->dev,
++		down_read(&mixer->chip->shutdown_rwsem);
++		if (mixer->chip->shutdown)
++			err = -ENODEV;
++		else
++			err = snd_usb_ctl_msg(chip->dev,
+ 				usb_sndctrlpipe(chip->dev, 0), UAC_SET_CUR,
+ 				USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
+ 				validx << 8, snd_usb_ctrl_intf(chip) | (id << 8),
+ 				value, val_len);
++		up_read(&mixer->chip->shutdown_rwsem);
+ 		if (err < 0)
+ 			return err;
+ 
 
 
