@@ -1,38 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab2KOVk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:40:28 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37379 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab2KOVkU (ORCPT
+	id S1751699Ab2KOVkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:40:36 -0500
+Received: from aserp1050.oracle.com ([141.146.126.70]:49875 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab2KOVkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:40:20 -0500
-Message-ID: <50A5613D.5080601@wwwdotorg.org>
-Date: Thu, 15 Nov 2012 14:40:13 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Danny Huang <dahuang@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/3] ARM: tegra: add speedo identification for T20/T30
-References: <1352965354-650-1-git-send-email-dahuang@nvidia.com>
-In-Reply-To: <1352965354-650-1-git-send-email-dahuang@nvidia.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 16:40:31 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] scsi: prevent stack buffer overflow in host_reset
+Date: Thu, 15 Nov 2012 15:51:46 -0500
+Message-Id: <1353012706-28182-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2012 12:42 AM, Danny Huang wrote:
-> This patch series adds speedo identification functionality for tegra
-> T20 and T30. It reads speedo value from fuse and chooses CPU and core 
-> process ID by checking speedo corner tables.
+store_host_reset() has tried to re-invent the wheel to compare sysfs strings.
+Unfortunately it did so poorly and never bothered to check the input from
+userspace before overwriting stack with it, so something simple as:
 
-I think this all looks fine; I assume there will be some forthcoming
-usage of the new variables.
+echo "WoopsieWoopsie" >
+/sys/devices/pseudo_0/adapter0/host0/scsi_host/host0/host_reset
 
-I applied the series with some very minor changes to the printfs and
-commit description to that "Tegra20" was consistently used instead of
-"T20" or "Tegra2", and the same for Tegra30.
+would result in:
+
+[  316.310101] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff81f5bac7
+[  316.310101]
+[  316.320051] Pid: 6655, comm: sh Tainted: G        W    3.7.0-rc5-next-20121114-sasha-00016-g5c9d68d-dirty #129
+[  316.320051] Call Trace:
+[  316.340058] pps pps0: PPS event at 1352918752.620355751
+[  316.340062] pps pps0: capture assert seq #303
+[  316.320051]  [<ffffffff83b3856b>] panic+0xcd/0x1f4
+[  316.320051]  [<ffffffff81f5bac7>] ? store_host_reset+0xd7/0x100
+[  316.320051]  [<ffffffff8110b996>] __stack_chk_fail+0x16/0x20
+[  316.320051]  [<ffffffff81f5bac7>] store_host_reset+0xd7/0x100
+[  316.320051]  [<ffffffff81e55bb3>] dev_attr_store+0x13/0x30
+[  316.320051]  [<ffffffff812f7db1>] sysfs_write_file+0x101/0x170
+[  316.320051]  [<ffffffff8127acc8>] vfs_write+0xb8/0x180
+[  316.320051]  [<ffffffff8127ae80>] sys_write+0x50/0xa0
+[  316.320051]  [<ffffffff83c03418>] tracesys+0xe1/0xe6
+
+Fix this by uninventing whatever was going on there and just use sysfs_streq.
+
+Bug introduced by 29443691 ("[SCSI] scsi: Added support for adapter and
+firmware reset").
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ drivers/scsi/scsi_sysfs.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index ce5224c..77ba946 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -249,9 +249,9 @@ static DEVICE_ATTR(active_mode, S_IRUGO | S_IWUSR, show_shost_active_mode, NULL)
+ 
+ static int check_reset_type(char *str)
+ {
+-	if (strncmp(str, "adapter", 10) == 0)
++	if (sysfs_streq(str, "adapter"))
+ 		return SCSI_ADAPTER_RESET;
+-	else if (strncmp(str, "firmware", 10) == 0)
++	else if (sysfs_streq(str, "firmware"))
+ 		return SCSI_FIRMWARE_RESET;
+ 	else
+ 		return 0;
+@@ -264,12 +264,9 @@ store_host_reset(struct device *dev, struct device_attribute *attr,
+ 	struct Scsi_Host *shost = class_to_shost(dev);
+ 	struct scsi_host_template *sht = shost->hostt;
+ 	int ret = -EINVAL;
+-	char str[10];
+ 	int type;
+ 
+-	sscanf(buf, "%s", str);
+-	type = check_reset_type(str);
+-
++	type = check_reset_type(buf);
+ 	if (!type)
+ 		goto exit_store_host_reset;
+ 
+-- 
+1.8.0
+
