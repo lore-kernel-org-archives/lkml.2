@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933351Ab2KOLni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:43:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933097Ab2KOLng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:43:36 -0500
-Date: Thu, 15 Nov 2012 09:43:24 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, hpa@linux.intel.com
-Subject: Re: Wrong defaults in 3.7-rc3
-Message-ID: <20121115094324.2760bc8d@redhat.com>
-In-Reply-To: <20121115110620.GA3451@elf.ucw.cz>
-References: <20121115110620.GA3451@elf.ucw.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1767621Ab2KOLpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:45:13 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:50680 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993197Ab2KOLpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 06:45:10 -0500
+Message-ID: <50A4D5BB.6010301@ahsoftware.de>
+Date: Thu, 15 Nov 2012 12:44:59 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Till Harbaum <till@harbaum.org>
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: Add possibility for user-defined (i2c-)devices
+ for bus-drivers.
+References: <1352829968-4908-1-git-send-email-holler@ahsoftware.de> <1352920954.19432.2.camel@Nokia-N900> <50A42A91.2000202@ahsoftware.de> <1639554.ZUOmHr6Yka@lxtiha>
+In-Reply-To: <1639554.ZUOmHr6Yka@lxtiha>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 15 Nov 2012 12:06:20 +0100
-Pavel Machek <pavel@ucw.cz> escreveu:
+Hello,
 
+Am 15.11.2012 12:04, schrieb Till Harbaum:
 
->   DiBcom DiB0070 silicon base-band tuner (DVB_TUNER_DIB0070) [M/n/y/?]
->   (NEW) n
->   DiBcom DiB0090 silicon base-band tuner (DVB_TUNER_DIB0090) [M/n/y/?]
->   (NEW) n
-> 
-> M is never good config default.
+> There's actually one thing you can do: You device doesn't seem to expose
+> the i2c bus, anyway. What you have is an rtc connected via usb. So why not
+> move all the i2c intelligence into the device? Do pure usb-rtc's exist?
+> Could you perhaps even make your device compatible to one of these?
+> Then a driver for this would imho have good chances to find their way into
+> the kernel.
 
-Had you ever seen the Kconfig logic for tuners? They're not enabled by default.
+Sorry, but I'm satisfied with what I've done and I didn't do it just to 
+get "something" into the kernel. I don't need my patches to become part 
+of in the kernel, I can handle them by myself. And my free resources to 
+submit patches just became exhausted (again). Maybe in some weeks or 
+month ..., I don't know.
 
-config MEDIA_SUBDRV_AUTOSELECT
-        bool "Autoselect tuners and i2c modules to build"
-        depends on MEDIA_ANALOG_TV_SUPPORT || MEDIA_DIGITAL_TV_SUPPORT || MEDIA_CAMERA_SUPPORT
-        default y
-        help
-          By default, a media driver auto-selects all possible i2c
-          devices that are used by any of the supported devices.
-
-          This is generally the right thing to do, except when there
-          are strict constraints with regards to the kernel size,
-          like on embedded systems.
-
-          Use this option with care, as deselecting ancillary drivers which
-          are, in fact, necessary will result in the lack of the needed
-          functionality for your device (it may not tune or may not have
-          the need demodulers).
-
-          If unsure say Y.
-...
-
-menu "Customise DVB Frontends"
-        visible if !MEDIA_SUBDRV_AUTOSELECT
-
-comment "Multistandard (satellite) frontends"
-        depends on DVB_CORE
-
-...
-
-config DVB_TUNER_DIB0070
-        tristate "DiBcom DiB0070 silicon base-band tuner"
-        depends on I2C
-        default m if !MEDIA_SUBDRV_AUTOSELECT
-        help
-          A driver for the silicon baseband tuner DiB0070 from DiBcom.
-          This device is only used inside a SiP called together with a
-          demodulator for now.
-
-People should never disable MEDIA_SUBDRV_AUTOSELECT, except if they know
-exactly what they're doing and they have very strict diskspace constraints,
-as the DVB driver may stop working without support for the needed 
-ancillary chips present at the DVB card.
-
-The default "M" is there to prevent people to open NOT_A_BUG bugzillas
-when they do stupid things like disabling MEDIA_SUBDRV_AUTOSELECT without
-knowing that this can break the driver for their cards.
-
--- 
 Regards,
-Mauro
+
+Alexander
