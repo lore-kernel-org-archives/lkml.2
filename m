@@ -1,169 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767741Ab2KONLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 08:11:40 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44345 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1767709Ab2KONLi (ORCPT
+	id S1767749Ab2KONOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 08:14:18 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46197 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767729Ab2KONOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 08:11:38 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC PATCH 3.7.0-rc2] dt/platform: insert resources correctly into resource tree
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>, rob.herring@calxeda.com
-Cc: srinivas.kandagatla@st.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-In-Reply-To: <1351853179-27741-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1351853179-27741-1-git-send-email-srinivas.kandagatla@st.com>
-Date: Thu, 15 Nov 2012 13:11:33 +0000
-Message-Id: <20121115131134.03E5F3E0B12@localhost>
+	Thu, 15 Nov 2012 08:14:17 -0500
+Subject: Re: [PATCH v5 4/4] misc: sram: add support for configurable
+ allocation order
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        kernel@pengutronix.de, devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <20121114191551.5E8673E0B7C@localhost>
+References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de>
+	 <1350570453-24546-5-git-send-email-p.zabel@pengutronix.de>
+	 <20121114191551.5E8673E0B7C@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Nov 2012 14:11:35 +0100
+Message-ID: <1352985095.2399.184.camel@pizza.hi.pengutronix.de>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Nov 2012 10:46:19 +0000, Srinivas KANDAGATLA <srinivas.kandagatla@st.com> wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Am Mittwoch, den 14.11.2012, 19:15 +0000 schrieb Grant Likely:
+> On Thu, 18 Oct 2012 16:27:33 +0200, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > From: Matt Porter <mporter@ti.com>
+> > 
+> > Adds support for setting the genalloc pool's minimum allocation
+> > order via DT or platform data. The allocation order is optional
+> > for both the DT property and platform data case. If it is not
+> > present then the order defaults to PAGE_SHIFT to preserve the
+> > current behavior.
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> >  Documentation/devicetree/bindings/misc/sram.txt |   12 ++++++++++-
+> >  drivers/misc/sram.c                             |   14 ++++++++++++-
+> >  include/linux/platform_data/sram.h              |   25 +++++++++++++++++++++++
+> >  3 files changed, 49 insertions(+), 2 deletions(-)
+> >  create mode 100644 include/linux/platform_data/sram.h
+> > 
+> > diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
+> > index b64136c..b1705ec 100644
+> > --- a/Documentation/devicetree/bindings/misc/sram.txt
+> > +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> > @@ -8,10 +8,20 @@ Required properties:
+> >  
+> >  - reg : SRAM iomem address range
+> >  
+> > -Example:
+> > +Optional properties:
+> > +
+> > +- alloc-order : Minimum allocation order for the SRAM pool
 > 
-> This patch add new code to correctly add resources into platform device.
-> Issue with the existing code was the resources are added as flat entry
-> without creating any tree, this is very much different to what non-dt
-> platform code does.
+> Looks okay, but I think the property name is confusing. I for one had
+> no idea what 'order' would be and why it was important. I had to read
+> the code to figure it out.
 > 
-> With this patch the resources appear correctly as tree in /proc/iomem,
-> without this patch the resources in /proc/iomem appear as single entry.
-> 
-> i2c example in /proc/iomem:
-> 
-> With-patch:
-> 
-> fed41000-fed4110f : /soc/i2c-stm@fed41000
->   fed41000-fed4110f : i2c
-> 
-> Without patch:
-> fed41000-fed4110f : i2c
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> It does raise the question though of what is this binding actually
+> for? Does it reflect a limitation of the SRAM? or of the hardware using
+> the SRAM? Or is it an optimization? How do you expect to use it?
 
-Yes, that is a problem that should be fixed.
-Although it seems to me that some powerpc platforms will break due to
-nodes with overlapping ranges. That will need to be tested.
+If I am not mistaken, it is about the expected use case. A driver
+allocating many small buffers would quickly fill small SRAMs if the
+allocations were of PAGE_SIZE granularity.
 
-I also don't like the duplication of code from platform_device_add().
-Does something like this work for you instead? I might need to add an
-exception to fallback onto of_device_add if the resource regions
-overlay. Or modify platform_device_add() to complain about overlaps, but
-not fail when on PowerPC.
+I wonder if a common allocation size (say, 512 bytes instead of
+PAGE_SIZE) can be found that every prospective user could be reasonably
+happy with?
 
-g.
+> Assuming it is appropriate to put into the device tree, I'd suggest a
+> different name. Instead of 'order', how about 'sram-alloc-align' (in
+> address bits) or 'sram-alloc-min-size' (in bytes).
 
----
+A size in bytes would be the most obvious to me, although that allows to
+enter values that are not a power of two.
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 72c776f..2edf831 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -283,7 +283,7 @@ int platform_device_add(struct platform_device *pdev)
- 	if (!pdev)
- 		return -EINVAL;
- 
--	if (!pdev->dev.parent)
-+	if (!pdev->dev.parent && !pdev->dev.of_node)
- 		pdev->dev.parent = &platform_bus;
- 
- 	pdev->dev.bus = &platform_bus_type;
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b80891b..fb9cbad 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -214,16 +214,22 @@ struct platform_device *of_platform_device_create_pdata(
- #if defined(CONFIG_MICROBLAZE)
- 	dev->archdata.dma_mask = 0xffffffffUL;
- #endif
-+	dev->name = dev_name(&dev->dev);
- 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
--	dev->dev.bus = &platform_bus_type;
- 	dev->dev.platform_data = platform_data;
-+	dev->dev.id = PLATFORM_DEVID_NONE;
-+	/* device_add will assume that this device is on the same node as
-+	 * the parent. If there is no parent defined, set the node
-+	 * explicitly */
-+	if (!parent)
-+		set_dev_node(&dev->dev, of_node_to_nid(np));
- 
- 	/* We do not fill the DMA ops for platform devices by default.
- 	 * This is currently the responsibility of the platform code
- 	 * to do such, possibly using a device notifier
- 	 */
- 
--	if (of_device_add(dev) != 0) {
-+	if (platform_device_add(dev)) {
- 		platform_device_put(dev);
- 		return NULL;
- 	}
+regards
+Philipp
 
 
-> ---
-> Hi All, 
-> Recently I noticed that appearance of /proc/iomem ouput changed 
-> when I started using device trees and the reason for this was 
-> the of-plaform code was not adding resources in same way as 
-> non-dt platform code does.
-> 
-> Do you have any reason for not doing it the same way as non-dt platform code?
-> 
-> This patch is a fixup to that issue.
-> 
-> Comment?
-> thanks,
-> srini
-> 
->  drivers/of/platform.c |   23 +++++++++++++++++++++++
->  1 files changed, 23 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index b80891b..f43922c 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -203,6 +203,7 @@ struct platform_device *of_platform_device_create_pdata(
->  					struct device *parent)
->  {
->  	struct platform_device *dev;
-> +	int i;
->  
->  	if (!of_device_is_available(np))
->  		return NULL;
-> @@ -218,6 +219,28 @@ struct platform_device *of_platform_device_create_pdata(
->  	dev->dev.bus = &platform_bus_type;
->  	dev->dev.platform_data = platform_data;
->  
-> +	for (i = 0; i < dev->num_resources; i++) {
-> +		struct resource *p, *r = &dev->resource[i];
-> +
-> +		if (r->name == NULL)
-> +			r->name = dev_name(&dev->dev);
-> +
-> +		p = r->parent;
-> +		if (!p) {
-> +			if (resource_type(r) == IORESOURCE_MEM)
-> +				p = &iomem_resource;
-> +			else if (resource_type(r) == IORESOURCE_IO)
-> +				p = &ioport_resource;
-> +		}
-> +
-> +		if (p && insert_resource(p, r)) {
-> +			pr_err("%s: failed to claim resource %d\n",
-> +			       dev_name(&dev->dev), i);
-> +			platform_device_put(dev);
-> +			return NULL;
-> +		}
-> +	}
-> +
->  	/* We do not fill the DMA ops for platform devices by default.
->  	 * This is currently the responsibility of the platform code
->  	 * to do such, possibly using a device notifier
-> -- 
-> 1.7.0.4
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
