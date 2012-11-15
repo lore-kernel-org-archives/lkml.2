@@ -1,136 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993211Ab2KOJlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:41:51 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35000 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992587Ab2KOJlr (ORCPT
+	id S2993167Ab2KOJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:40:29 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:60749 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992490Ab2KOJkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:41:47 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50A4B8C8.6020202@jp.fujitsu.com>
-Date: Thu, 15 Nov 2012 18:41:28 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 15 Nov 2012 04:40:24 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/6] book3e/kexec/kdump: enable kexec for kernel
+Date: Thu, 15 Nov 2012 17:39:52 +0800
+Message-ID: <1352972396-13489-3-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
+References: <1352972396-13489-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking
- for dead memcgs
-References: <1352948093-2315-1-git-send-email-glommer@parallels.com> <1352948093-2315-6-git-send-email-glommer@parallels.com>
-In-Reply-To: <1352948093-2315-6-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/15 11:54), Glauber Costa wrote:
-> The idea is to synchronously do it, leaving it up to the shrinking
-> facilities in vmscan.c and/or others. Not actively retrying shrinking
-> may leave the caches alive for more time, but it will remove the ugly
-> wakeups. One would argue that if the caches have free objects but are
-> not being shrunk, it is because we don't need that memory yet.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
+We need to active KEXEC for book3e and bypass or convert non-book3e stuff
+in kexec coverage.
 
-I agree this patch but can we have a way to see the number of unaccounted
-zombie cache usage for debugging ?
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ arch/powerpc/Kconfig                   |    2 +-
+ arch/powerpc/kernel/machine_kexec_64.c |    6 ++++++
+ arch/powerpc/kernel/misc_64.S          |    6 ++++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-> ---
->   include/linux/slab.h |  2 +-
->   mm/memcontrol.c      | 17 +++++++----------
->   2 files changed, 8 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 18f8c98..456c327 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -214,7 +214,7 @@ struct memcg_cache_params {
->   			struct kmem_cache *root_cache;
->   			bool dead;
->   			atomic_t nr_pages;
-> -			struct delayed_work destroy;
-> +			struct work_struct destroy;
->   		};
->   	};
->   };
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f9c5981..e3d805f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3077,9 +3077,8 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
->   {
->   	struct kmem_cache *cachep;
->   	struct memcg_cache_params *p;
-> -	struct delayed_work *dw = to_delayed_work(w);
->   
-> -	p = container_of(dw, struct memcg_cache_params, destroy);
-> +	p = container_of(w, struct memcg_cache_params, destroy);
->   
->   	cachep = memcg_params_to_cache(p);
->   
-> @@ -3103,8 +3102,6 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
->   		kmem_cache_shrink(cachep);
->   		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
->   			return;
-> -		/* Once per minute should be good enough. */
-> -		schedule_delayed_work(&cachep->memcg_params->destroy, 60 * HZ);
->   	} else
->   		kmem_cache_destroy(cachep);
->   }
-> @@ -3127,18 +3124,18 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->   	 * kmem_cache_shrink is enough to shake all the remaining objects and
->   	 * get the page count to 0. In this case, we'll deadlock if we try to
->   	 * cancel the work (the worker runs with an internal lock held, which
-> -	 * is the same lock we would hold for cancel_delayed_work_sync().)
-> +	 * is the same lock we would hold for cancel_work_sync().)
->   	 *
->   	 * Since we can't possibly know who got us here, just refrain from
->   	 * running if there is already work pending
->   	 */
-> -	if (delayed_work_pending(&cachep->memcg_params->destroy))
-> +	if (work_pending(&cachep->memcg_params->destroy))
->   		return;
->   	/*
->   	 * We have to defer the actual destroying to a workqueue, because
->   	 * we might currently be in a context that cannot sleep.
->   	 */
-> -	schedule_delayed_work(&cachep->memcg_params->destroy, 0);
-> +	schedule_work(&cachep->memcg_params->destroy);
->   }
->   
->   static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
-> @@ -3261,7 +3258,7 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->   		 * set, so flip it down to guarantee we are in control.
->   		 */
->   		c->memcg_params->dead = false;
-> -		cancel_delayed_work_sync(&c->memcg_params->destroy);
-> +		cancel_work_sync(&c->memcg_params->destroy);
->   		kmem_cache_destroy(c);
->   	}
->   	mutex_unlock(&set_limit_mutex);
-> @@ -3285,9 +3282,9 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->   	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
->   		cachep = memcg_params_to_cache(params);
->   		cachep->memcg_params->dead = true;
-> -		INIT_DELAYED_WORK(&cachep->memcg_params->destroy,
-> +		INIT_WORK(&cachep->memcg_params->destroy,
->   				  kmem_cache_destroy_work_func);
-> -		schedule_delayed_work(&cachep->memcg_params->destroy, 0);
-> +		schedule_work(&cachep->memcg_params->destroy);
->   	}
->   	mutex_unlock(&memcg->slab_caches_mutex);
->   }
-> 
-
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index a902a5c..3000cab8 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -357,7 +357,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
+ 
+ config KEXEC
+ 	bool "kexec system call (EXPERIMENTAL)"
+-	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP)) && EXPERIMENTAL
++	depends on (PPC_BOOK3S || FSL_BOOKE || PPC_BOOK3E || (44x && !SMP)) && EXPERIMENTAL
+ 	help
+ 	  kexec is a system call that implements the ability to shutdown your
+ 	  current kernel, and to start another kernel.  It is like a reboot
+diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+index d7f6090..2c0cbf0 100644
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -32,6 +32,7 @@
+ int default_machine_kexec_prepare(struct kimage *image)
+ {
+ 	int i;
++#ifndef CONFIG_PPC_BOOK3E
+ 	unsigned long begin, end;	/* limits of segment */
+ 	unsigned long low, high;	/* limits of blocked memory range */
+ 	struct device_node *node;
+@@ -40,6 +41,7 @@ int default_machine_kexec_prepare(struct kimage *image)
+ 
+ 	if (!ppc_md.hpte_clear_all)
+ 		return -ENOENT;
++#endif
+ 
+ 	/*
+ 	 * Since we use the kernel fault handlers and paging code to
+@@ -50,6 +52,7 @@ int default_machine_kexec_prepare(struct kimage *image)
+ 		if (image->segment[i].mem < __pa(_end))
+ 			return -ETXTBSY;
+ 
++#ifndef CONFIG_PPC_BOOK3E
+ 	/*
+ 	 * For non-LPAR, we absolutely can not overwrite the mmu hash
+ 	 * table, since we are still using the bolted entries in it to
+@@ -91,6 +94,7 @@ int default_machine_kexec_prepare(struct kimage *image)
+ 				return -ETXTBSY;
+ 		}
+ 	}
++#endif
+ 
+ 	return 0;
+ }
+@@ -358,6 +362,7 @@ void default_machine_kexec(struct kimage *image)
+ 	/* NOTREACHED */
+ }
+ 
++#ifndef CONFIG_PPC_BOOK3E
+ /* Values we need to export to the second kernel via the device tree. */
+ static unsigned long htab_base;
+ 
+@@ -402,3 +407,4 @@ static int __init export_htab_values(void)
+ 	return 0;
+ }
+ late_initcall(export_htab_values);
++#endif
+diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
+index 5cfa800..c2acf8c 100644
+--- a/arch/powerpc/kernel/misc_64.S
++++ b/arch/powerpc/kernel/misc_64.S
+@@ -532,9 +532,13 @@ _GLOBAL(kexec_sequence)
+ 	lhz	r25,PACAHWCPUID(r13)	/* get our phys cpu from paca */
+ 
+ 	/* disable interrupts, we are overwriting kernel data next */
++#ifndef CONFIG_PPC_BOOK3E
+ 	mfmsr	r3
+ 	rlwinm	r3,r3,0,17,15
+ 	mtmsrd	r3,1
++#else
++	wrteei	0
++#endif
+ 
+ 	/* copy dest pages, flush whole dest image */
+ 	mr	r3,r29
+@@ -556,10 +560,12 @@ _GLOBAL(kexec_sequence)
+ 	li	r6,1
+ 	stw	r6,kexec_flag-1b(5)
+ 
++#ifndef CONFIG_PPC_BOOK3E
+ 	/* clear out hardware hash page table and tlb */
+ 	ld	r5,0(r27)		/* deref function descriptor */
+ 	mtctr	r5
+ 	bctrl				/* ppc_md.hpte_clear_all(void); */
++#endif
+ 
+ /*
+  *   kexec image calling is:
+-- 
+1.7.9.5
 
