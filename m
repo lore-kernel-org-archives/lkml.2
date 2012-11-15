@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992509Ab2KOBQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 20:16:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:58065 "EHLO
+	id S2992512Ab2KOBRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 20:17:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:62526 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992491Ab2KOBQ3 (ORCPT
+	with ESMTP id S2992458Ab2KOBRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 20:16:29 -0500
-Message-ID: <50A44267.6090103@vlnb.net>
-Date: Wed, 14 Nov 2012 20:16:23 -0500
+	Wed, 14 Nov 2012 20:17:38 -0500
+Message-ID: <50A442AF.9020407@vlnb.net>
+Date: Wed, 14 Nov 2012 20:17:35 -0500
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Howard Chu <hyc@symas.com>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, drh@hwaci.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+To: Nico Williams <nico@cryptonector.com>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Richard Hipp <drh@hwaci.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
 Subject: Re: [sqlite] light weight write barriers
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>	<m2fw5mtffg.fsf_-_@firstfloor.org>	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>	<5086F5A7.9090406@vlnb.net>	<20121025051445.GA9860@thunk.org>	<508B3EED.2080003@vlnb.net>	<20121027044456.GA2764@thunk.org>	<5090532D.4050902@vlnb.net>	<20121031095404.0ac18a4b@pyramind.ukuu.org.uk>	<5092D90F.7020105@vlnb.net>	<20121101212418.140e3a82@pyramind.ukuu.org.uk>	<50931601.4060102@symas.com>	<20121102123359.2479a7dc@pyramind.ukuu.org.uk>	<50A1C15E.2080605@vlnb.net> <20121113174000.6457a68b@pyramind.ukuu.org.uk>
-In-Reply-To: <20121113174000.6457a68b@pyramind.ukuu.org.uk>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>	<m2fw5mtffg.fsf_-_@firstfloor.org>	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>	<5086F5A7.9090406@vlnb.net>	<20121025051445.GA9860@thunk.org>	<508B3EED.2080003@vlnb.net>	<20121027044456.GA2764@thunk.org>	<5090532D.4050902@vlnb.net>	<20121031095404.0ac18a4b@pyramind.ukuu.org.uk>	<5092D90F.7020105@vlnb.net>	<20121101212418.140e3a82@pyramind.ukuu.org.uk>	<50931601.4060102@symas.com>	<20121102123359.2479a7dc@pyramind.ukuu.org.uk>	<50A1C15E.2080605@vlnb.net>	<20121113174000.6457a68b@pyramind.ukuu.org.uk> <CAK3OfOgK7a9+g-KU8v5-b2d+8-vLb75kuKKQnPK-zeFV1fLmxw@mail.gmail.com>
+In-Reply-To: <CAK3OfOgK7a9+g-KU8v5-b2d+8-vLb75kuKKQnPK-zeFV1fLmxw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:dRtV/TCqaitBFSJLawlEXFl+U8ACq5pXypcPiCZ/opY
- CRFXaC91RQqXTmsKfqNpMrN74wkiiva2cbSjYqH+35tKrCEXGj
- q2/RShoNGJGdqAhr8WOz8ItuEom3A9PmgtkG57D0wy8R3VnBOl
- epp5P7s/NiERQD0pa1VQFVUYcWv6GcWHI8UfaGcOolfJb4JQEv
- WC5K6pdbnldAiqpxSWOtbnFGH7W5H3lYAnDVlbggo7/HsDC5yr
- WGxHvlKqolhvd+PBuY2Zm9JYbSB2LUFHBh3paL/2rEKj0stvGt
- 9UP3E4p9cZs0koaHfvFtMghymZi+8Tx2sNmaQ6Ow/5PQQJBbMi
- A/5qlm3pHw2u/y3WUXIo=
+X-Provags-ID: V02:K0:BAYB8hqecJzUS01Bjm/pC2PV2XloY1zqf5jOyfQnP8o
+ UkBdjEQV+jiWyqunSV2Fh35Fd0iA/3t/4vGG6ZF7jA1w5/Wtgn
+ jVVs5MP4xtgyq4iYmuwVk8tc+jBiHWafBZmbASoYSbQcLRZBvk
+ W3xQEbhHydb8qwwMtu+BD+R0gSFMrZsbyw6MCOT23jFs5Gz5pi
+ j44qfswBFs9agdhT927knVWOBEH9JbRjFYDrWc6clIaTZeVCa8
+ 2edNdvW8e6oiijAhRcFqhXLbykdHafuM//nSb6X5HtdgYlvS95
+ uWwqVYS5Zz/c3TxBfkjFdqMTNiYVGIpaJANerIx8skee8LotXd
+ orteyzTzLi57JmyVcHb4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Alan Cox, on 11/13/2012 12:40 PM wrote:
->>> Barriers are pretty much universal as you need them for power off !
->>
->> I'm afraid, no storage (drives, if you like this term more) at the moment supports
->> barriers and, as far as I know the storage history, has never supported.
+Nico Williams, on 11/13/2012 02:13 PM wrote:
+> declaring groups of internally-unordered writes where the groups are
+> ordered with respect to each other... is practically the same as
+> barriers.
+
+Which barriers? Barriers meaning cache flush or barriers meaning commands order, 
+or barriers meaning both?
+
+There's no such thing as "barrier". It is fully artificial abstraction. After all, 
+at the bottom of your stack, you will have to translate it either to cache flush, 
+or commands order enforcement, or both.
+
+Are you going to invent 3 types of barriers?
+
+> There's a lot to be said for simplicity... as long as the system is
+> not so simple as to not work at all.
 >
-> The ATA cache flush is a write barrier, and given you have no NV cache
-> visible to the controller it's the same thing.
+> My p.o.v. is that a filesystem write barrier is effectively the same
+> as fsync() with the ability to return sooner (before writes hit stable
+> storage) when the filesystem and hardware support on-disk layouts and
+> primitives which can be used to order writes preceding and succeeding
+> the barrier.
 
-The cache flush is cache flush. You can call it barrier, if you want to continue 
-confusing yourself and others.
+Your mistake is that you are considering barriers as something real, which can do 
+something real for you, while it is just a artificial abstraction apparently 
+invented by people with limited knowledge how storage works, hence having very 
+foggy vision how barriers supposed to be processed by it. A simple wrong answer.
 
->> Instead, what storage does support in this area are:
->
-> Yes - the devil is in the detail once you go beyond simple capabilities.
+Generally, you can invent any abstraction convenient for you, but farther your 
+abstractions from reality of your hardware => less you will get from it with 
+bigger effort.
 
-None of those details brings anything not solvable. For instance, I already 
-described in this thread a simple way how requested order of commands can be 
-carried through the stack and implemented that algorithm in SCST.
+There are no barriers in Linux and not going to be. Accept it. And start instead 
+thinking about offload capabilities your storage can offer to you.
 
 Vlad
+
