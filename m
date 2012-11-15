@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2KOViF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 16:38:05 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34967 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2KOViD (ORCPT
+	id S1751365Ab2KOVkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 16:40:05 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18027 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2KOVkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 16:38:03 -0500
-Subject: Re: [PATCH-v2 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0
- emulation support
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-In-Reply-To: <1353010439-4600-4-git-send-email-nab@linux-iscsi.org>
-References: <1353010439-4600-1-git-send-email-nab@linux-iscsi.org>
-	 <1353010439-4600-4-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Nov 2012 12:39:17 -0800
-Message-ID: <1353011957.11597.5.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 16:40:03 -0500
+Date: Fri, 16 Nov 2012 00:38:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Markus Grabner <grabner@icg.tugraz.at>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, devel@driverdev.osuosl.org,
+        line6linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/8] staging: line6: wrap >80 char lines in capture.c
+Message-ID: <20121115213821.GK11566@mwanda>
+References: <1352636686-31170-1-git-send-email-stefanha@gmail.com>
+ <1352636686-31170-2-git-send-email-stefanha@gmail.com>
+ <20121114143305.GH11515@mwanda>
+ <1602710.lBylyCQOHr@medialab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1602710.lBylyCQOHr@medialab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 20:13 +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Thu, Nov 15, 2012 at 10:03:27PM +0100, Markus Grabner wrote:
+> Am Mittwoch, 14. November 2012, 17:33:05 schrieb Dan Carpenter:
+> > On Sun, Nov 11, 2012 at 01:24:39PM +0100, Stefan Hajnoczi wrote:
+> > > Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+> > > ---
+> > > 
+> > >  drivers/staging/line6/capture.c | 13 ++++++++-----
+> > >  1 file changed, 8 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/line6/capture.c
+> > > b/drivers/staging/line6/capture.c index c85c5b6..389c41f 100644
+> > > --- a/drivers/staging/line6/capture.c
+> > > +++ b/drivers/staging/line6/capture.c
+> > > @@ -256,8 +256,8 @@ static void audio_in_callback(struct urb *urb)
+> > > 
+> > >  #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
+> > >  
+> > >  		if (!(line6pcm->flags & LINE6_BITS_PCM_IMPULSE))
+> > >  
+> > >  #endif
+> > > 
+> > > -			if (test_bit(LINE6_INDEX_PCM_ALSA_CAPTURE_STREAM, &line6pcm-
+> >flags)
+> > > -			    && (fsize > 0))
+> > > +			if (test_bit(LINE6_INDEX_PCM_ALSA_CAPTURE_STREAM,
+> > 
+> > The reason this is hitting the 80 character limit is because
+> > "LINE6_INDEX_PCM_ALSA_CAPTURE_STREAM" is 35 characters long.  It
+> > isn't even clear from the name what it holds.  It's just a very crap
+> > name.
+> Please refer to the file pcm.h for a detailed documentation of this and 
+> similar names (in fact, the documentation explains the LINE6_BIT_PCM_* names 
+> instead, but I bevlieve the correspondence is obvious). It's hard to define a 
+> shorter name which is at the same time descriptive, consistent, and not to be 
+> confused with related names.
 > 
-> This patch adds support for emulation of WRITE_SAME w/ UNMAP=0 within
-> iblock_execute_write_same() backend code.
-> 
-> The emulation uses a bio_add_page() call for each sector, and by default
-> enforces a limit of max_write_same_len=0xFFFF (65536) sectors following
-> what scsi_debug reports per default for MAXIMUM WRITE SAME LENGTH.
-> 
-> It also sets max_write_same_len to the operational default at setup ->
-> iblock_configure_device() time.
-> 
-> (hch: Move unmap logic into iblock_execute_write_same_unmap + add
->       check for single sector SGLs in iblock_execute_write_same)
-> (mkp: Update comment for 0xFFFF magic constant)
-> 
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/target_core_iblock.c |   91 ++++++++++++++++++++++++++++++++---
->  1 files changed, 84 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> index 53f4501..5abbd55 100644
-> --- a/drivers/target/target_core_iblock.c
-> +++ b/drivers/target/target_core_iblock.c
+> Should such documentation be moved to a separate file (e.g., 
+> "Documentation/sound/alsa/line6usb.txt")?
 
-> +static sense_reason_t
-> +iblock_execute_write_same(struct se_cmd *cmd)
-> +{
-> +	struct iblock_req *ibr;
-> +	struct scatterlist *sg;
-> +	struct bio *bio;
-> +	struct bio_list list;
-> +	sector_t block_lba = cmd->t_task_lba;
-> +	unsigned int sectors = spc_get_write_same_sectors(cmd);
-> +
-> +	if (sectors > cmd->se_dev->dev_attrib.max_write_same_len) {
-> +		pr_warn("WRITE_SAME sectors: %u exceeds max_write_same_len: %u\n",
-> +			sectors, cmd->se_dev->dev_attrib.max_write_same_len);
-> +		return TCM_INVALID_CDB_FIELD;
-> +	}
+The documentation is pretty good actually and it belongs where it
+is.  But 35 characters is just tooooooooooooooooooooooooooooooooooo
+long.
 
-<SNIP>
+To me the word "INDEX_" is confusing because what are we indexing?
+In this context it means the the variable is a bit flag.  That was
+obvious because we were calling test_bit().
 
-Forgot to remove this now redundant check for max_write_same_len.
+I think we could drop the PCM_ as well, because why do we need that?
 
-Dropping now..
+We could change the LINE6 to L6.
+
+			if (test_bit(L6_ALSA_CAPTURE_STREAM, &line6pcm - flags)
+
+It fits!
+
+regards,
+dan carpenter
 
