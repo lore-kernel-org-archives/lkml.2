@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2KOIRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 03:17:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:62285 "EHLO mga09.intel.com"
+	id S1755611Ab2KOIVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 03:21:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980Ab2KOIRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 03:17:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="219984161"
-Date: Thu, 15 Nov 2012 16:18:01 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
-Message-ID: <20121115081801.GB6098@yliu-dev.sh.intel.com>
-References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20121029135935.bb8b0b2a.akpm@linux-foundation.org>
- <20121031055916.GC29509@yliu-dev.sh.intel.com>
- <1351665033.23165.6.camel@wall-e>
- <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
- <20121108122409.GN18293@yliu-dev.sh.intel.com>
- <1352378235.15351.9.camel@wall-e>
- <20121109023221.GO18293@yliu-dev.sh.intel.com>
- <1352876629.7469.3.camel@wall-e>
+	id S1751970Ab2KOIVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 03:21:06 -0500
+Date: Thu, 15 Nov 2012 09:20:50 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
+To: Jens Axboe <axboe@kernel.dk>
+cc: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmoyer@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
+In-Reply-To: <50A3B705.7050008@kernel.dk>
+Message-ID: <alpine.LFD.2.00.1211150913030.27894@dhcp-1-104.brq.redhat.com>
+References: <1352824065-6734-1-git-send-email-lczerner@redhat.com> <50A27892.1030800@kernel.dk> <alpine.LFD.2.00.1211140951380.3577@localhost> <50A3B705.7050008@kernel.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352876629.7469.3.camel@wall-e>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="571107329-897904832-1352967661=:27894"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 08:03:49AM +0100, Stefani Seibold wrote:
-> Am Freitag, den 09.11.2012, 10:32 +0800 schrieb Yuanhan Liu:
-> > On Thu, Nov 08, 2012 at 01:37:15PM +0100, Stefani Seibold wrote:
-> > > Am Donnerstag, den 08.11.2012, 20:24 +0800 schrieb Yuanhan Liu:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--571107329-897904832-1352967661=:27894
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 14 Nov 2012, Jens Axboe wrote:
+
+> Date: Wed, 14 Nov 2012 08:21:41 -0700
+> From: Jens Axboe <axboe@kernel.dk>
+> To: Lukáš Czerner <lczerner@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+>     jmoyer@redhat.com, akpm@linux-foundation.org
+> Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
 > 
-> > Yes, it is. I will try log API then.
+> On 2012-11-14 02:02, Lukáš Czerner wrote:
+> > On Tue, 13 Nov 2012, Jens Axboe wrote:
 > > 
-> > Stefani, I found an issue while rework to current API. Say the current
-> > code of __kfifo_init:
-> >     int __kfifo_init(struct __kfifo *fifo, void *buffer,
-> >                     unsigned int size, size_t esize)
-> >     {
-> >         size /= esize;
+> >> Date: Tue, 13 Nov 2012 09:42:58 -0700
+> >> From: Jens Axboe <axboe@kernel.dk>
+> >> To: Lukas Czerner <lczerner@redhat.com>
+> >> Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+> >>     jmoyer@redhat.com, akpm@linux-foundation.org
+> >> Subject: Re: [PATCH v3] loop: Limit the number of requests in the bio list
+> >>
+> >>> @@ -489,6 +491,12 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+> >>>  		goto out;
+> >>>  	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+> >>>  		goto out;
+> >>> +	if (lo->lo_bio_count >= q->nr_congestion_on) {
+> >>> +		spin_unlock_irq(&lo->lo_lock);
+> >>> +		wait_event(lo->lo_req_wait, lo->lo_bio_count <
+> >>> +			   q->nr_congestion_off);
+> >>> +		spin_lock_irq(&lo->lo_lock);
+> >>> +	}
+> >>
+> >> This makes me nervous. You are reading lo_bio_count outside the lock. If
+> >> you race with the prepare_to_wait() and condition check in
+> >> __wait_event(), then you will sleep forever.
 > > 
-> >         if (!is_power_of_2(size))
-> >                 size = rounddown_pow_of_two(size);
-> >         ....
-> >     }
+> > Hi Jens,
 > > 
-> > Even thought I changed the API to something like:
-> >     int __kfifo_init(struct __kfifo *fifo, void *buffer,
-> >                     int size_order, size_t esize)
-> >     {
-> > 	unsigned int size = 1 << size_order;
+> > I am sorry for being dense, but I do not see how this would be
+> > possible. The only place we increase the lo_bio_count is after that
+> > piece of code (possibly after the wait). Moreover every time we're
+> > decreasing the lo_bio_count and it is smaller than nr_congestion_off
+> > we will wake_up().
 > > 
-> > 	size /= esize;
-> > 	...
-> >     }
-> > 
-> > See? There is still a divide and we can't make it sure that it will be
-> > power of 2 after that.
-> > 
-> > So, I came up 2 proposal to fix this.
-> > 
-> > 1. refactor the meaning of 'size' argument first.
-> > 
-> >    'size' means the size of pre-allocated buffer. We can refactor it to
-> >    meaning of 'the number of fifo elements' just like __kfifo_alloc, so
-> >    that we don't need do the size /= esize stuff.
-> > 
-> > 2. remove kfifo_init
-> > 
-> >    As we can't make sure that kfifo will do exactly what users asked(in
-> >    the way of fifo size). It would be safe and good to maintain buffer
-> >    and buffer size inside kfifo. So, I propose to remove it and use
-> >    kfifo_alloc instead.
-> > 
-> >    git grep 'kfifo_init\>' shows that we currently have 2 users only.
-> > 
-> > 
-> > The first way is hacky, and it doesn't make much sense to me. Since
-> > buffer is pre-allocated by user but not kfifo. User has to calculate
-> > element size and the number of elements, which is not friendly.
-> > 
-> > The second way does make more sense to me.
+> > That's how wait_event/wake_up is supposed to be used, right ?
 > 
-> kfifo_init() was requested by some kernel developers, i never liked it.
-> If you have a better and cleaner solution than do it, otherwise kick it
-> away if you like.
+> It is, yes. But you are checking the condition without the lock, so you
+> could be operating on a stale value. The point is, you have to safely
+> check the condition _after prepare_to_wait() to be completely safe. And
+> you do not. Either lo_bio_count needs to be atomic, or you need to use a
+> variant of wait_event() that holds the appropriate lock before
+> prepare_to_wait() and condition check, then dropping it for the sleep.
+> 
+> See wait_even_lock_irq() in drivers/md/md.h.
 
-There are only 2 kfifo_init users: libiscsi.c and libsrp.c under
-drivers/scsi/, and they are with same logic.
+Ok I knew that much. So the only possibility to deadlock is when we
+would process all the bios in the loop_thread() before the waiting
+event would get to checking the condition after which we would read
+the stale data where lo_bio_count is still < nr_congestion_off so we
+get back to sleep, never to be woken up again. That sounds highly
+unlikely. But fair enough, it make sense to make it absolutely bullet
+proof.
 
-I propose to replace them with kfifo_alloc. I will make patch for
-this later to see if scsi guys OK with it or not.  If OK, we can
-remove kfifo_init.
+I'll take a look at the wait_event_lock_irq.
 
-	--yliu
+Thanks!
+-Lukas
+--571107329-897904832-1352967661=:27894--
