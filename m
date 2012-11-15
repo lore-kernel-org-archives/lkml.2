@@ -1,342 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993164Ab2KOEmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:42:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48695 "EHLO mail.kernel.org"
+	id S2993067Ab2KOEmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:42:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48700 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992818Ab2KOEKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S2992820Ab2KOEKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Nov 2012 23:10:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: =?UTF-8?q?=5B=2000/66=5D=203=2E6=2E7-stable=20review?=
-Date: Wed, 14 Nov 2012 20:10:05 -0800
-Message-Id: <20121115040939.016421011@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jingjie Jiang <jingjie.jiang@oracle.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 02/66] xen/mmu: Use Xen specific TLB flush instead of the generic one.
+Date: Wed, 14 Nov 2012 20:10:07 -0800
+Message-Id: <20121115040939.194791137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+In-Reply-To: <20121115040939.016421011@linuxfoundation.org>
+References: <20121115040939.016421011@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.6.7 release.
-There are 66 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by Sat Nov 17 04:09:27 UTC 2012.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.7-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.6.7-rc1
-
-Dave Chinner <david@fromorbit.com>
-    xfs: fix buffer shudown reference count mismatch
-
-Dave Chinner <dchinner@redhat.com>
-    xfs: fix reading of wrapped log data
-
-Benjamin Marzinski <bmarzins@redhat.com>
-    GFS2: Test bufdata with buffer locked and gfs2_log_lock held
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon/si: add some missing regs to the VM reg checker
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon/cayman: add some missing regs to the VM reg checker
-
-Thomas Hellstrom <thellstrom@vmware.com>
-    drm/vmwgfx: Fix a case where the code would BUG when trying to pin GMR memory
-
-Thomas Hellstrom <thellstrom@vmware.com>
-    drm/vmwgfx: Fix hibernation device reset
-
-Chris Ball <cjb@laptop.org>
-    mmc: sdhci: fix NULL dereference in sdhci_request() tuning
-
-Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-    mmc: sh_mmcif: fix use after free
-
-Thomas Gleixner <tglx@linutronix.de>
-    futex: Handle futex_pi OWNER_DIED take over correctly
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: send unsolicited neighbour advertisements to all-nodes
-
-Eric Leblond <eric@regit.org>
-    af-packet: fix oops when socket is not present
-
-Cyrill Gorcunov <gorcunov@openvz.org>
-    net: inet_diag -- Return error code if protocol handler is missed
-
-Pavel Emelyanov <xemul@parallels.com>
-    tcp-repair: Handle zero-length data put in rcv queue
-
-Tom Parkin <tparkin@katalix.com>
-    l2tp: fix oops in l2tp_eth_create() error path
-
-Peter Senna Tschudin <peter.senna@gmail.com>
-    drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister before mdiobus_free
-
-Jesper Dangaard Brouer <brouer@redhat.com>
-    net: fix divide by zero in tcp algorithm illinois
-
-Hemant Kumar <hemantk@codeaurora.org>
-    net: usb: Fix memory leak on Tx data path
-
-Li RongQing <roy.qing.li@gmail.com>
-    ipv6: Set default hoplimit as zero.
-
-Eric Dumazet <edumazet@google.com>
-    net: fix secpath kmemleak
-
-Eric Dumazet <edumazet@google.com>
-    tcp: fix FIONREAD/SIOCINQ
-
-Eric Dumazet <edumazet@google.com>
-    netlink: use kfree_rcu() in netlink_release()
-
-Steffen Klassert <steffen.klassert@secunet.com>
-    ipv4: Fix flushing of cached routing informations
-
-Zijie Pan <zijie.pan@6wind.com>
-    sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: Avoid endless sleep after disconnect
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: Add a reference counter to card instance
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: usb-audio: Fix races at disconnection in mixer_quirks.c
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: usb-audio: Use rwsem for disconnect protection
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: usb-audio: Fix races at disconnection
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: PCM: Fix some races at disconnection
-
-Jean Delvare <khali@linux-fr.org>
-    hwmon: (w83627ehf) Force initial bank selection
-
-Ilija Hadzic <ilijahadzic@gmail.com>
-    drm: set dev_mapping before calling drm_open_helper
-
-Ilija Hadzic <ilijahadzic@gmail.com>
-    drm: restore open_count if drm_setup fails
-
-Linus Lüssing <linus.luessing@web.de>
-    batman-adv: Fix broadcast packet CRC calculation
-
-NeilBrown <neilb@suse.de>
-    NFS: fix bug in legacy DNS resolver.
-
-Bryan Schumaker <bjschuma@netapp.com>
-    NFS: Wait for session recovery to finish before returning
-
-Trond Myklebust <Trond.Myklebust@netapp.com>
-    NFSv4.1: We must release the sequence id when we fail to get a session slot
-
-Trond Myklebust <Trond.Myklebust@netapp.com>
-    NFSv4: nfs4_locku_done must release the sequence id
-
-Ben Hutchings <ben@decadent.org.uk>
-    nfs: Show original device name verbatim in /proc/*/mount{s,info}
-
-Scott Mayhew <smayhew@redhat.com>
-    nfsv3: Make v3 mounts fail with ETIMEDOUTs instead EIO on mountd timeouts
-
-Antonio Quartulli <ordex@autistici.org>
-    mac80211: fix SSID copy on IBSS JOIN
-
-Johannes Berg <johannes.berg@intel.com>
-    mac80211: make sure data is accessible in EAPOL check
-
-Johannes Berg <johannes.berg@intel.com>
-    mac80211: verify that skb data is present
-
-Johannes Berg <johannes.berg@intel.com>
-    mac80211: check management frame header length
-
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Only kick out vesafb if we takeover the fbcon with KMS
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: fix overlay on i830M
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: clear the entire sdvo infoframe buffer
-
-Dave Airlie <airlied@redhat.com>
-    drm/udl: fix stride issues scanning out stride != width*bpp
-
-Egbert Eich <eich@suse.de>
-    DRM/Radeon: Fix Load Detection on legacy primary DAC.
-
-Javier Cardona <javier@cozybit.com>
-    mac80211: don't inspect Sequence Control field on control frames
-
-Javier Cardona <javier@cozybit.com>
-    mac80211: Only process mesh config header on frames that RA_MATCH
-
-Johannes Berg <johannes.berg@intel.com>
-    mac80211: use blacklist for duplicate IE check
-
-Johannes Berg <johannes.berg@intel.com>
-    wireless: drop invalid mesh address extension frames
-
-Felix Fietkau <nbd@openwrt.org>
-    cfg80211: fix antenna gain handling
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target: Re-add explict zeroing of INQUIRY bounce buffer memory
-
-Steve Hodgson <steve@purestorage.com>
-    target: Fix incorrect usage of nested IRQ spinlocks in ABORT_TASK path
-
-Roland Dreier <roland@purestorage.com>
-    iscsi-target: Fix missed wakeup race in TX thread
-
-Roland Dreier <roland@purestorage.com>
-    target: Avoid integer overflow in se_dev_align_max_sectors()
-
-Roland Dreier <roland@purestorage.com>
-    target: Don't return success from module_init() if setup fails
-
-Stanislaw Gruszka <sgruszka@redhat.com>
-    rt2800: validate step value for temperature compensation
-
-Sven Eckelmann <sven@narfation.org>
-    ath9k: Test for TID only in BlockAcks while checking tx status
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k: fix stale pointers potentially causing access to free'd skbs
-
-Rolf Eike Beer <eike-kernel@sf-tec.de>
-    Input: tsc40 - remove wrong announcement of pressure support
-
-Jacob Keller <jacob.e.keller@intel.com>
-    ixgbe: PTP get_ts_info missing software support
-
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    xen/mmu: Use Xen specific TLB flush instead of the generic one.
-
-David Vrabel <david.vrabel@citrix.com>
-    xen/gntdev: don't leak memory from IOCTL_GNTDEV_MAP_GRANT_REF
-
-
--------------
-
-Diffstat:
-
- Makefile                                         |  4 +-
- arch/x86/xen/mmu.c                               | 21 ++++++-
- drivers/gpu/drm/drm_fops.c                       | 44 ++++++++++-----
- drivers/gpu/drm/i915/i915_dma.c                  |  3 +-
- drivers/gpu/drm/i915/intel_overlay.c             | 14 ++++-
- drivers/gpu/drm/i915/intel_sdvo.c                | 62 +++++++++++++-------
- drivers/gpu/drm/i915/intel_sdvo_regs.h           |  2 +
- drivers/gpu/drm/radeon/evergreen_cs.c            |  3 +
- drivers/gpu/drm/radeon/evergreend.h              |  4 ++
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c  |  1 +
- drivers/gpu/drm/radeon/si.c                      |  1 +
- drivers/gpu/drm/radeon/sid.h                     |  1 +
- drivers/gpu/drm/udl/udl_drv.h                    |  2 +-
- drivers/gpu/drm/udl/udl_fb.c                     | 12 ++--
- drivers/gpu/drm/udl/udl_transfer.c               |  5 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_dmabuf.c           |  2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c              |  5 ++
- drivers/hwmon/w83627ehf.c                        |  1 +
- drivers/input/touchscreen/tsc40.c                |  1 -
- drivers/mmc/host/sdhci.c                         | 23 ++++----
- drivers/mmc/host/sh_mmcif.c                      |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |  3 +
- drivers/net/ethernet/nxp/lpc_eth.c               |  1 +
- drivers/net/usb/usbnet.c                         |  3 +
- drivers/net/wireless/ath/ath9k/xmit.c            | 10 +++-
- drivers/net/wireless/rt2x00/rt2800lib.c          |  2 +-
- drivers/target/iscsi/iscsi_target.c              |  4 +-
- drivers/target/iscsi/iscsi_target_core.h         |  1 +
- drivers/target/iscsi/iscsi_target_login.c        |  1 +
- drivers/target/iscsi/iscsi_target_util.c         | 22 +++++++-
- drivers/target/iscsi/iscsi_target_util.h         |  1 +
- drivers/target/target_core_configfs.c            |  3 +-
- drivers/target/target_core_device.c              | 18 +++---
- drivers/target/target_core_spc.c                 |  2 +
- drivers/target/target_core_tmr.c                 |  6 +-
- drivers/xen/gntdev.c                             | 36 ++++++------
- fs/gfs2/lops.c                                   | 14 +----
- fs/gfs2/trans.c                                  |  8 +++
- fs/nfs/dns_resolve.c                             |  5 +-
- fs/nfs/internal.h                                |  5 +-
- fs/nfs/mount_clnt.c                              |  2 +-
- fs/nfs/namespace.c                               | 19 +++++--
- fs/nfs/nfs4namespace.c                           |  3 +-
- fs/nfs/nfs4proc.c                                | 40 ++++++++-----
- fs/nfs/super.c                                   |  2 +-
- fs/xfs/xfs_buf_item.c                            | 18 ++++++
- fs/xfs/xfs_log_recover.c                         |  2 +-
- include/net/cfg80211.h                           |  9 +++
- include/sound/core.h                             |  3 +
- include/trace/events/xen.h                       |  8 +++
- kernel/futex.c                                   | 41 +++++++-------
- net/batman-adv/bridge_loop_avoidance.c           |  8 +--
- net/batman-adv/routing.c                         |  8 ++-
- net/core/dev.c                                   |  2 +-
- net/core/skbuff.c                                |  6 +-
- net/ipv4/inet_diag.c                             |  5 +-
- net/ipv4/route.c                                 |  9 ++-
- net/ipv4/tcp.c                                   |  8 +--
- net/ipv4/tcp_illinois.c                          |  8 ++-
- net/ipv4/tcp_input.c                             |  3 +
- net/ipv6/ndisc.c                                 |  3 +-
- net/ipv6/route.c                                 |  4 +-
- net/l2tp/l2tp_eth.c                              |  1 +
- net/mac80211/ibss.c                              |  2 +-
- net/mac80211/rx.c                                | 72 ++++++++++++++++++------
- net/mac80211/util.c                              | 42 +++++++++++---
- net/netlink/af_netlink.c                         | 19 +++++--
- net/sctp/sm_sideeffect.c                         |  3 +-
- net/wireless/core.c                              |  3 +-
- net/wireless/util.c                              | 14 +++--
- sound/core/compress_offload.c                    |  9 ++-
- sound/core/control.c                             |  5 ++
- sound/core/hwdep.c                               | 12 +++-
- sound/core/init.c                                | 50 +++++++++-------
- sound/core/oss/mixer_oss.c                       | 10 +++-
- sound/core/oss/pcm_oss.c                         |  6 ++
- sound/core/pcm.c                                 | 13 ++++-
- sound/core/pcm_native.c                          | 33 +++++++++--
- sound/core/rawmidi.c                             | 26 ++++++++-
- sound/core/sound.c                               | 11 +++-
- sound/core/sound_oss.c                           | 10 +++-
- sound/usb/card.c                                 | 12 ++--
- sound/usb/card.h                                 |  1 +
- sound/usb/mixer.c                                | 65 +++++++++++++--------
- sound/usb/mixer_quirks.c                         | 58 ++++++++++++++++---
- sound/usb/pcm.c                                  | 49 +++++++++++-----
- sound/usb/proc.c                                 |  4 +-
- sound/usb/stream.c                               |  1 +
- sound/usb/usbaudio.h                             |  2 +-
- 89 files changed, 794 insertions(+), 308 deletions(-)
+3.6-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+commit 95a7d76897c1e7243d4137037c66d15cbf2cce76 upstream.
+
+As Mukesh explained it, the MMUEXT_TLB_FLUSH_ALL allows the
+hypervisor to do a TLB flush on all active vCPUs. If instead
+we were using the generic one (which ends up being xen_flush_tlb)
+we end up making the MMUEXT_TLB_FLUSH_LOCAL hypercall. But
+before we make that hypercall the kernel will IPI all of the
+vCPUs (even those that were asleep from the hypervisor
+perspective). The end result is that we needlessly wake them
+up and do a TLB flush when we can just let the hypervisor
+do it correctly.
+
+This patch gives around 50% speed improvement when migrating
+idle guest's from one host to another.
+
+Oracle-bug: 14630170
+
+Tested-by:  Jingjie Jiang <jingjie.jiang@oracle.com>
+Suggested-by:  Mukesh Rathor <mukesh.rathor@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/xen/mmu.c         |   21 ++++++++++++++++++++-
+ include/trace/events/xen.h |    8 ++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
+
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1215,6 +1215,25 @@ unsigned long xen_read_cr2_direct(void)
+ 	return this_cpu_read(xen_vcpu_info.arch.cr2);
+ }
+ 
++void xen_flush_tlb_all(void)
++{
++	struct mmuext_op *op;
++	struct multicall_space mcs;
++
++	trace_xen_mmu_flush_tlb_all(0);
++
++	preempt_disable();
++
++	mcs = xen_mc_entry(sizeof(*op));
++
++	op = mcs.args;
++	op->cmd = MMUEXT_TLB_FLUSH_ALL;
++	MULTI_mmuext_op(mcs.mc, op, 1, NULL, DOMID_SELF);
++
++	xen_mc_issue(PARAVIRT_LAZY_MMU);
++
++	preempt_enable();
++}
+ static void xen_flush_tlb(void)
+ {
+ 	struct mmuext_op *op;
+@@ -2366,7 +2385,7 @@ int xen_remap_domain_mfn_range(struct vm
+ 	err = 0;
+ out:
+ 
+-	flush_tlb_all();
++	xen_flush_tlb_all();
+ 
+ 	return err;
+ }
+--- a/include/trace/events/xen.h
++++ b/include/trace/events/xen.h
+@@ -377,6 +377,14 @@ DECLARE_EVENT_CLASS(xen_mmu_pgd,
+ DEFINE_XEN_MMU_PGD_EVENT(xen_mmu_pgd_pin);
+ DEFINE_XEN_MMU_PGD_EVENT(xen_mmu_pgd_unpin);
+ 
++TRACE_EVENT(xen_mmu_flush_tlb_all,
++	    TP_PROTO(int x),
++	    TP_ARGS(x),
++	    TP_STRUCT__entry(__array(char, x, 0)),
++	    TP_fast_assign((void)x),
++	    TP_printk("%s", "")
++	);
++
+ TRACE_EVENT(xen_mmu_flush_tlb,
+ 	    TP_PROTO(int x),
+ 	    TP_ARGS(x),
 
 
