@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423713Ab2KOU0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 15:26:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:55887 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423686Ab2KOU0i convert rfc822-to-8bit (ORCPT
+	id S1768962Ab2KOUbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 15:31:19 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35484 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1768923Ab2KOUbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 15:26:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="247643021"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjMYQD//4mJQIAB4wgAgADGiTA=
-Date: Thu, 15 Nov 2012 20:26:36 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
-References: <509B5038.8090304@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
- <50A30656.6090508@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
- <50A43828.6000702@oracle.com>
-In-Reply-To: <50A43828.6000702@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 15 Nov 2012 15:31:17 -0500
+Subject: RE: [PATCH 3/3] target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation
+ support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: Christoph Hellwig <hch@lst.de>, Christoph Hellwig <hch@infradead.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B40294CCF8D45@G9W0745.americas.hpqcorp.net>
+References: <1352405238-23267-1-git-send-email-nab@linux-iscsi.org>
+	 <1352405238-23267-4-git-send-email-nab@linux-iscsi.org>
+	 <20121115110432.GD28956@infradead.org>
+	 <1353007786.4447.29.camel@haakon2.linux-iscsi.org>
+	 <20121115193235.GA5714@lst.de>
+	 <94D0CD8314A33A4D9D801C0FE68B40294CCF8D45@G9W0745.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Nov 2012 12:31:15 -0800
+Message-ID: <1353011475.4447.31.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Wednesday, November 14, 2012 4:33 PM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org; Mary Mcgrath
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
->On 11/14/12 11:45, Dave, Tushar N wrote:
->>> -----Original Message-----
->>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>> Sent: Tuesday, November 13, 2012 6:48 PM
->>> To: Dave, Tushar N
->>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>> kernel@vger.kernel.org; Mary Mcgrath
->>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>
->>> On 11/09/12 04:35, Dave, Tushar N wrote:
->>>> All devices in path from root complex to 82571, should have *same*
->>>> max
->>> payload size otherwise it can cause hang.
->>>> Can you double check this?
->>>
->>> Hi Tushar,
->>>
->>> Checked with hardware vendor and they said no way to modify the max
->>> payload size from BIOS, can I modify it from driver side?
->>
->> If you want to change value for 82571 device you can do it from eeprom
->but for other upstream devices I am not sure. I will check with my team.
->
->Hi Tushar,
->
->Would you please help to fine the offset of max payload size in eeprom?
->I'd like to have a try to modify it by ethtool.
+Hi Robert,
 
-It is defined using bit 8 of word 0x1A.
-Bit value 0 = 128B , bit value 1 = 256B
+On Thu, 2012-11-15 at 20:01 +0000, Elliott, Robert (Server Storage)
+wrote:
+> WRITE SAME always has a payload, regardless of the UNMAP bit value.
+> 
+> For WRITE SAME with UNMAP=0, it's extremely important; that's how what
+> to write is specified.
+> 
+> For WRITE SAME with UNMAP=1, the device server is required to check
+> that the payload matches the data that is returned for unmapped LBAs.
+> lf LBPRZ=1 (read zeros for unmapped LBAs), that means checking that
+> the payload has all zeros.  In sbc3r33, this rule is tucked away in
+> model section 4.7.3.4.3, not the command section 5.41.
+> 
+> I would like to change that rule (it's a nuisance and a performance
+> burden), but that's the current rule going into SBC-3 letter ballot.  
+> 
+> Changing WRITE SAME with UNMAP=1 to ignore the payload would provide
+> essentially the same functionality as changing the UNMAP command to be
+> mandatory, not just a hint; both approaches have been discussed.
+> 
 
--Tushar
+Thanks for the heads up here..  I'm making the slight change to the -v2
+patch series that just went out to always check the max_write_same_len
+value for both WRITE_SAME w/ UNMAP=[1,0] cases.
+
+Thank you,
+
+--nab
+
+
