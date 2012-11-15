@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993460Ab2KOOhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:37:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61019 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993437Ab2KOOhB (ORCPT
+	id S2993472Ab2KOOh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:37:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34293 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993437Ab2KOOh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:37:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: new architectures, time_t __kernel_long_t
-Date: Thu, 15 Nov 2012 14:36:22 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        Vineet.Gupta1@synopsys.com, linux-kernel@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>
-References: <201211141218.02105.arnd@arndb.de> <201211150914.22835.arnd@arndb.de> <CAMe9rOpziKa6QLfjX9iXtfj_X2QAyDAV2p8NEd8Wd7yFwTrpNg@mail.gmail.com>
-In-Reply-To: <CAMe9rOpziKa6QLfjX9iXtfj_X2QAyDAV2p8NEd8Wd7yFwTrpNg@mail.gmail.com>
+	Thu, 15 Nov 2012 09:37:26 -0500
+Date: Thu, 15 Nov 2012 14:37:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Andrew Murray <amurray@embedded-bits.co.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, linus.walleij@stericsson.com,
+        jonas.aberg@stericsson.com, will.deacon@arm.com, arnd@arndb.de,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Subject: Re: [PATCH 1/2] Boottime: A tool for automatic measurement of
+ kernel/bootloader boot time
+Message-ID: <20121115143718.GB14476@gmail.com>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org>
+ <1352973847-21605-2-git-send-email-lee.jones@linaro.org>
+ <CAPcvp5ER_rMnyzbKR8r8NJf_naNs6y8gBi0jg5TtOwq88Xgh9Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211151436.23088.arnd@arndb.de>
-X-Provags-ID: V02:K0:OXB0rr7TdV45BlOfADa/KBvhP0SWWWMbIn6MCypJK3P
- W8+0FLiXDTKa+Z0PFdv9hm4AimvcvRLDAnZX0VFBUTdPIupvev
- 9EBh7fr1aIrGuxcOdKEMZSyhvwJ/ZhXr7Lbf16If5oHd9i8T6a
- 7SuvKdmfh3Wv8P2u8XdRAt/2QBcvZK64DWXtob+4c1bmU90C7f
- 6jGZqkDYnOdOeXjVr/QerWo3TAvXsrpG9iZEqjmiemdPvdq2mZ
- pc5QjtDdFDlf00Y8/nnoBZykQUbtwe03lMvRtfvj+MkmvPlb7H
- eoslLimGzBECgzeGX+Auf0yguB/8TokNKA77EJKDnA5z0QnkLs
- BLF3oE35pUcRU+O8VO10=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPcvp5ER_rMnyzbKR8r8NJf_naNs6y8gBi0jg5TtOwq88Xgh9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 November 2012, H.J. Lu wrote:
-> On Thu, Nov 15, 2012 at 1:14 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Wednesday 14 November 2012, H. Peter Anvin wrote:
-> >> On 11/14/2012 04:18 AM, Arnd Bergmann wrote:
-> >> > Since we are in the review phase for two new architectures that we
-> >> > should be merging into the mainline kernel, I think we need to
-> >> > come up with a solution for making them use a proper 64-bit time_t.
-> >> >
-> >> > Right now, the only 32-bit user space interface we have to use 64-bit
-> >> > time_t is the x32 side of x86-64, and that works by overriding all
-> >> > "long" sized types to be 64 bit at the ABI level, which we don't
-> >> > want for pure 32 bit architectures.
-> >>
-> >> Sort of.  Either way, the kernel headers aren't really x32-clean yet, so
-> >> we have an opportunity to do things more cleanly as we are implementing
-> >> this.
+On Thu, 15 Nov 2012, Andrew Murray wrote:
+
+> On 15 November 2012 10:04, Lee Jones <lee.jones@linaro.org> wrote:
+> > The overhead is very low and the results will be found under
+> > sysfs/bootime, as well as detailed results in debugfs under
+> > boottime/. The bootgraph* files are compatible with
+> > scripts/bootgraph.pl. The reason for this patch is to provide
+> > data (sysfs/boottime) suitable for automatic test-cases as
+> > well as help for developers to reduce the boot time (debugfs).
 > >
-> > Ah, I didn't know that. How does one build an x32 libc then?
+> > Based heavily on the original driver by Jonas Aaberg.
+> >
 > 
-> Glibc has been providing its own types for years.
-> Kernel provided types used to be wrong for ia32
-> on x86-64.
+> > +
+> > +static LIST_HEAD(boottime_list);
+> > +static DEFINE_SPINLOCK(boottime_list_lock);
+> > +static struct boottime_timer boottime_timer;
+> > +static int num_const_boottime_list;
+> > +static struct boottime_list const_boottime_list[NUM_STATIC_BOOTTIME_ENTRIES];
+> > +static unsigned long time_kernel_done;
+> > +static unsigned long time_bootloader_done;
+> > +static bool system_up;
+> > +static bool boottime_done;
+> > +
+> > +int __attribute__((weak)) boottime_arch_startup(void)
+> > +{
+> > +       return 0;
+> > +}
+> > +
+> > +int __attribute__((weak)) boottime_bootloader_idle(void)
+> > +{
+> > +       return 0;
+> > +}
+> 
+> You may wish to use the __weak macro (include/linux/compiler*) instead
+> of directly using GCC attributes here.
 
-What about ioctls and other calls then that actually do rely on the
-kernel headers and use the __kernel_*_t types?
+Can do, thanks Andy.
 
-	Arnd
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
