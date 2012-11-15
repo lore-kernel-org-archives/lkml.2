@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767799Ab2KONWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 08:22:08 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59862 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1767745Ab2KONWF (ORCPT
+	id S1767802Ab2KONZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 08:25:59 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:43621 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767745Ab2KONZ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 08:22:05 -0500
+	Thu, 15 Nov 2012 08:25:58 -0500
+Date: Thu, 15 Nov 2012 13:25:50 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Geremy Condra <gcondra@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH v5 0/4] arch/arm: support seccomp
+Message-ID: <20121115132550.GA5570@mudshark.cambridge.arm.com>
+References: <1352587485-18348-1-git-send-email-keescook@chromium.org>
+ <CAGXu5jKYGCkL3GS4Tbep==WUAqP-c_0edAdgy0XQ84rJxZUU2Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121114173928.GK3290@n2100.arm.linux.org.uk>
-References: <1352912154-16210-1-git-send-email-js1304@gmail.com>
-	<20121114173928.GK3290@n2100.arm.linux.org.uk>
-Date: Thu, 15 Nov 2012 22:22:04 +0900
-Message-ID: <CAAmzW4Mz_+jeuFSe1f+Z3eY_W65oCXYXD3LL+PT8HtRiTAaFXg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] introduce static_vm for ARM-specific static
- mapped area
-From: JoonSoo Kim <js1304@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAGXu5jKYGCkL3GS4Tbep==WUAqP-c_0edAdgy0XQ84rJxZUU2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 15 Nov 2012 13:25:54.0180 (UTC) FILETIME=[BD181440:01CDC334]
+X-MC-Unique: 112111513255603201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Russell.
-Thanks for review.
+On Wed, Nov 14, 2012 at 07:07:13PM +0000, Kees Cook wrote:
+> Hi, any more thoughts on this series? I'd really like to get it into
+> -next. It's been running happily for a while now in the Chrome OS ARM
+> devices.
 
-2012/11/15 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Thu, Nov 15, 2012 at 01:55:51AM +0900, Joonsoo Kim wrote:
->> In current implementation, we used ARM-specific flag, that is,
->> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
->> The purpose of static mapped area is to re-use static mapped area when
->> entire physical address range of the ioremap request can be covered
->> by this area.
->>
->> This implementation causes needless overhead for some cases.
->
-> In what cases?
+I'm not familiar with seccomp in general, but the changes look ok now from
+an ARM point-of-view:
 
-For example, assume that there is only one static mapped area and
-vmlist has 300 areas.
-Every time we call ioremap, we check 300 areas for deciding whether it
-is matched or not.
-Moreover, even if there is no static mapped area and vmlist has 300 areas,
-every time we call ioremap, we check 300 areas in now.
+  Reviewed-by: Will Deacon <will.deacon@arm.com>
 
->> We unnecessarily iterate vmlist for finding matched area even if there
->> is no static mapped area. And if there are some static mapped areas,
->> iterating whole vmlist is not preferable.
->
-> Why not?  Please put some explanation into your message rather than
-> just statements making unexplained assertions.
+These should probably go via Russell (who will put them into -next), so
+please send them to the patch system.
 
-If we construct a extra list for static mapped area, we can eliminate
-above mentioned overhead.
-With a extra list, if there is one static mapped area,
-we just check only one area and proceed next operation quickly.
+Will
 
->> Another reason for doing this work is for removing architecture dependency
->> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
->> structure for vmalloc layer. Some codes for debugging and stat inevitably
->> use vmlist and vmlist_lock. But it is preferable that they are used outside
->> of vmalloc.c as least as possible.
->
-> The vmalloc layer is also made available for ioremap use, and it is
-> intended that architectures hook into this for ioremap support.
-
-Yes.
-But, I think that it is preferable to use well-defined vmalloc API rather than
-directly manipulating low-level data structure. IMHO, if there is no suitable
-vmalloc API, making new one is better than directly manipulating
-low-level data structure. It makes vmalloc code more maintainable.
-
-I'm not expert, so please let me know what I missed.
-
-Thanks.
