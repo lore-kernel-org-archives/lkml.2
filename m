@@ -1,121 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767998Ab2KOOVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 09:21:03 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9795 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1767850Ab2KOOVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 09:21:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,257,1352102400"; 
-   d="scan'208";a="168749708"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 2/2] dw_dmac: make usage of dw_dma_slave optional
-Date: Thu, 15 Nov 2012 16:20:48 +0200
-Message-Id: <1352989248-28913-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1352989248-28913-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1352989248-28913-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1767981Ab2KOOXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 09:23:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54774 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1767913Ab2KOOXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 09:23:19 -0500
+Message-ID: <50A4FAE7.1000104@gmail.com>
+Date: Thu, 15 Nov 2012 22:23:35 +0800
+From: Wen Congyang <wencongyang@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Bob Liu <lliubbo@gmail.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, Jiang Liu <liuj97@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Jianguo Wu <wujianguo@huawei.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset
+ 7f1290f2f2a4d
+References: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com> <20121106124315.79deb2bc.akpm@linux-foundation.org> <50A3B013.4030207@gmail.com> <50A4B45D.5000905@cn.fujitsu.com> <CAA_GA1d0BVcGskiwzsNtRZ0F7LMJoDMjB1LYwNNVBH0p=QCxfQ@mail.gmail.com>
+In-Reply-To: <CAA_GA1d0BVcGskiwzsNtRZ0F7LMJoDMjB1LYwNNVBH0p=QCxfQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently for the slave transfers the driver requires a custom slave
-configuration to be present. Nevertheless, in some cases we need only the
-request line as an additional information to the generic slave configuration.
-The request line is provided by slave_id parameter of the dma_slave_config
-structure. That's why the custom slave configuration could be optional for such
-cases.
+At 2012/11/15 19:28, Bob Liu Wrote:
+> On Thu, Nov 15, 2012 at 5:22 PM, Wen Congyang<wency@cn.fujitsu.com>  wrote:
+>> Hi, Liu Jiang
+>>
+>> At 11/14/2012 10:52 PM, Jiang Liu Wrote:
+>>> On 11/07/2012 04:43 AM, Andrew Morton wrote:
+>>>> On Tue, 6 Nov 2012 09:31:57 +0800
+>>>> Jiang Liu<jiang.liu@huawei.com>  wrote:
+>>>>
+>>>>> Changeset 7f1290f2f2 tries to fix a issue when calculating
+>>>>> zone->present_pages, but it causes a regression to 32bit systems with
+>>>>> HIGHMEM. With that changeset, function reset_zone_present_pages()
+>>>>> resets all zone->present_pages to zero, and fixup_zone_present_pages()
+>>>>> is called to recalculate zone->present_pages when boot allocator frees
+>>>>> core memory pages into buddy allocator. Because highmem pages are not
+>>>>> freed by bootmem allocator, all highmem zones' present_pages becomes
+>>>>> zero.
+>>>>>
+>>>>> Actually there's no need to recalculate present_pages for highmem zone
+>>>>> because bootmem allocator never allocates pages from them. So fix the
+>>>>> regression by skipping highmem in function reset_zone_present_pages()
+>>>>> and fixup_zone_present_pages().
+>>>>>
+>>>>> ...
+>>>>>
+>>>>> --- a/mm/page_alloc.c
+>>>>> +++ b/mm/page_alloc.c
+>>>>> @@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
+>>>>>      for_each_node_state(nid, N_HIGH_MEMORY) {
+>>>>>              for (i = 0; i<  MAX_NR_ZONES; i++) {
+>>>>>                      z = NODE_DATA(nid)->node_zones + i;
+>>>>> -                   z->present_pages = 0;
+>>>>> +                   if (!is_highmem(z))
+>>>>> +                           z->present_pages = 0;
+>>>>>              }
+>>>>>      }
+>>>>>   }
+>>>>> @@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
+>>>>>
+>>>>>      for (i = 0; i<  MAX_NR_ZONES; i++) {
+>>>>>              z = NODE_DATA(nid)->node_zones + i;
+>>>>> +           if (is_highmem(z))
+>>>>> +                   continue;
+>>>>> +
+>>>>>              zone_start_pfn = z->zone_start_pfn;
+>>>>>              zone_end_pfn = zone_start_pfn + z->spanned_pages;
+>>>>> -
+>>>>> -           /* if the two regions intersect */
+>>>>>              if (!(zone_start_pfn>= end_pfn || zone_end_pfn<= start_pfn))
+>>>>>                      z->present_pages += min(end_pfn, zone_end_pfn) -
+>>>>>                                          max(start_pfn, zone_start_pfn);
+>>>>
+>>>> This ...  isn't very nice.  It is embeds within
+>>>> reset_zone_present_pages() and fixup_zone_present_pages() knowledge
+>>>> about their caller's state.  Or, more specifically, it is emebedding
+>>>> knowledge about the overall state of the system when these functions
+>>>> are called.
+>>>>
+>>>> I mean, a function called "reset_zone_present_pages" should reset
+>>>> ->present_pages!
+>>>>
+>>>> The fact that fixup_zone_present_page() has multiple call sites makes
+>>>> this all even more risky.  And what are the interactions between this
+>>>> and memory hotplug?
+>>>>
+>>>> Can we find a cleaner fix?
+>>>>
+>>>> Please tell us more about what's happening here.  Is it the case that
+>>>> reset_zone_present_pages() is being called *after* highmem has been
+>>>> populated?  If so, then fixup_zone_present_pages() should work
+>>>> correctly for highmem?  Or is it the case that highmem hasn't yet been
+>>>> setup?  IOW, what is the sequence of operations here?
+>>>>
+>>>> Is the problem that we're *missing* a call to
+>>>> fixup_zone_present_pages(), perhaps?  If we call
+>>>> fixup_zone_present_pages() after highmem has been populated,
+>>>> fixup_zone_present_pages() should correctly fill in the highmem zone's
+>>>> ->present_pages?
+>>> Hi Andrew,
+>>>        Sorry for the late response:(
+>>>        I have done more investigations according to your suggestions. Currently
+>>> we have only called fixup_zone_present_pages() for memory freed by bootmem
+>>> allocator and missed HIGHMEM pages. We could also call fixup_zone_present_pages()
+>>> for HIGHMEM pages, but that will need to change arch specific code for x86, powerpc,
+>>> sparc, microblaze, arm, mips, um and tile etc. Seems a little overhead.
+>>>        And sadly enough, I found the quick fix is still incomplete. The original
+>>> patch still have another issue that, reset_zone_present_pages() is only called
+>>> for IA64, so it will cause trouble for other arches which make use of "bootmem.c".
+>>>        Then I feel a little guilty and tried to find a cleaner solution without
+>>> touching arch specific code. But things are more complex than my expectation and
+>>> I'm still working on that.
+>>>        So how about totally reverting the changeset 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+>>> and I will post another version once I found a cleaner way?
+>>
+>> I think fixup_zone_present_pages() are very useful for memory hotplug.
+>>
+>
+> I might miss something, but if memory hotplug is the only user depends on
+> fixup_zone_present_pages().
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+IIRC, water_mask depends on zone->present_pages. But I don't meet any 
+problem
+even if zone->present_pages is wrong.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 771aa15..baebf81 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -41,6 +41,11 @@ static inline bool is_slave_direction(enum dma_transfer_direction direction)
- 	return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
- }
- 
-+static inline bool dwc_is_slave(struct dma_slave_config *sconfig)
-+{
-+	return is_slave_direction(sconfig->direction);
-+}
-+
- static inline unsigned int dwc_get_dms(struct dw_dma_slave *slave)
- {
- 	return slave ? slave->dst_master : 0;
-@@ -55,11 +60,12 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
- 		struct dw_dma_slave *__slave = (_chan->private);	\
- 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
- 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
-+		bool _is_slave = dwc_is_slave(_sconfig);	\
- 		int _dms = dwc_get_dms(__slave);		\
- 		int _sms = dwc_get_sms(__slave);		\
--		u8 _smsize = __slave ? _sconfig->src_maxburst :	\
-+		u8 _smsize = _is_slave ? _sconfig->src_maxburst :	\
- 			DW_DMA_MSIZE_16;			\
--		u8 _dmsize = __slave ? _sconfig->dst_maxburst :	\
-+		u8 _dmsize = _is_slave ? _sconfig->dst_maxburst :	\
- 			DW_DMA_MSIZE_16;			\
- 								\
- 		(DWC_CTLL_DST_MSIZE(_dmsize)			\
-@@ -330,7 +336,7 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
- 	list_splice_init(&desc->tx_list, &dwc->free_list);
- 	list_move(&desc->desc_node, &dwc->free_list);
- 
--	if (!dwc->chan.private) {
-+	if (!dwc_is_slave(&dwc->dma_sconfig)) {
- 		struct device *parent = chan2parent(&dwc->chan);
- 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
- 			if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
-@@ -809,9 +815,11 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 
- 	dev_vdbg(chan2dev(chan), "%s\n", __func__);
- 
--	if (unlikely(!dws || !sg_len))
-+	if (unlikely(!is_slave_direction(direction) || !sg_len))
- 		return NULL;
- 
-+	sconfig->direction = direction;
-+
- 	prev = first = NULL;
- 
- 	switch (direction) {
-@@ -983,8 +991,8 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- {
- 	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
- 
--	/* Check if it is chan is configured for slave transfers */
--	if (!chan->private)
-+	/* Check if chan will be configured for slave transfers */
-+	if (!dwc_is_slave(sconfig))
- 		return -EINVAL;
- 
- 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
-@@ -1344,6 +1352,8 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
- 	if (unlikely(!is_slave_direction(direction)))
- 		goto out_err;
- 
-+	sconfig->direction = direction;
-+
- 	if (direction == DMA_MEM_TO_DEV)
- 		reg_width = __ffs(sconfig->dst_addr_width);
- 	else
-@@ -1718,6 +1728,7 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 
- 		dwc->dw = dw;
-+		dwc->dma_sconfig.direction = DMA_TRANS_NONE;
- 
- 		/* hardware configuration */
- 		if (autocfg) {
--- 
-1.7.10.4
+> Why not reverting the changeset 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+> And add checking to offline_pages() like:
+> if (zone->present_pages>= offlined_page)
+>          zone->present_pages -= offlined_pages;
+> else
+>          zone->present_pages = 0;
+>
+> It's more simple and can minimize the effect to other parts of kernel.
 
+Hmm, zone->present_pages may be 0 when there is memory in this zone which is
+onlined and in use. If zone->present_pages becomes to 0, we will free pcp
+list for this zone. It will cause some unexpected error.
+
+>
+>> We calculate zone->present_pages in free_area_init_core(), but its value is wrong.
+>> So it is why we fix it in fixup_zone_present_pages().
+>>
+>> What about this:
+>> 1. init zone->present_pages to the present pages in this zone(include bootmem)
+>> 2. don't reset zone->present_pages for HIGHMEM pages
+>>
+>> We don't allocate bootmem from HIGHMEM. So its present pages is inited in step1
+>> and there is no need to fix it in step2.
+>>
+>> Is it OK?
+>>
+>> If it is OK, I will resend the patch for step1(the patch is from laijs).
+>>
+>
