@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab2KNSzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 13:55:13 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43313 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2KNSzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 13:55:09 -0500
-Date: Wed, 14 Nov 2012 10:55:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, mhocko@suse.cz
-Subject: Re: [PATCH 05/17] cgroup: cgroup->dentry isn't a RCU pointer
-Message-ID: <20121114185504.GG21185@mtj.dyndns.org>
-References: <1352775704-9023-1-git-send-email-tj@kernel.org>
- <1352775704-9023-6-git-send-email-tj@kernel.org>
- <50A37B0A.7010608@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A37B0A.7010608@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1423342Ab2KNSyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 13:54:53 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43176 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423237Ab2KNSyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 13:54:45 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 1/7] memcg: simplify ida initialization
+Date: Thu, 15 Nov 2012 06:54:47 +0400
+Message-Id: <1352948093-2315-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352948093-2315-1-git-send-email-glommer@parallels.com>
+References: <1352948093-2315-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
+As suggested by akpm, change the manual initialization of our kmem
+index to DEFINE_IDA()
 
-On Wed, Nov 14, 2012 at 03:05:46PM +0400, Glauber Costa wrote:
-> Will memcontrol.c need similar amendments?
-> 
-> The code that lives in -mm and includes kmemcg includes the following
-> excerpt:
-> 
->         rcu_read_lock();
->         dentry = rcu_dereference(memcg->css.cgroup->dentry);
->         rcu_read_unlock();
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/memcontrol.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Ooh, yeah, hmmm... that should happen after this series gets merged.
-I'll mark it as pending.
-
-Thanks.
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6136fec..c0c6adf 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -569,7 +569,7 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
+  * memcg_limited_groups_array_size.  It will double each time we have to
+  * increase it.
+  */
+-static struct ida kmem_limited_groups;
++static DEFINE_IDA(kmem_limited_groups);
+ int memcg_limited_groups_array_size;
+ 
+ /*
+@@ -5686,9 +5686,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (mem_cgroup_is_root(memcg))
+-		ida_init(&kmem_limited_groups);
+-
+ 	return mem_cgroup_sockets_init(memcg, ss);
+ };
+ 
 -- 
-tejun
+1.7.11.7
+
