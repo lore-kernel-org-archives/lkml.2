@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993367Ab2KOLRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 06:17:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53254 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2993327Ab2KOLRi (ORCPT
+	id S1423641Ab2KOLSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 06:18:41 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:44342 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1423250Ab2KOLSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 06:17:38 -0500
+	Thu, 15 Nov 2012 06:18:40 -0500
+Date: Thu, 15 Nov 2012 16:48:23 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: "chuansheng.liu@intel.com" <chuansheng.liu@intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH 1/7] I2c-nomadik: Fix the usage of
+ wait_for_completion_timeout
+Message-ID: <20121115111822.GA3911@bnru10>
+References: <1352222317.15558.1584.camel@cliu38-desktop-build>
+ <CACRpkdYekQF5111NSNSPeaHdxgS_gpXkCjqT1n-n1_iAdDXbSg@mail.gmail.com>
+ <20121115084858.GA29668@bnru10>
+ <20121115092953.GA418@pengutronix.de>
+ <20121115095741.GA6280@bnru10>
+ <20121115101820.GC418@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1352823374.10676.1.camel@phoenix>
-References: <1352823374.10676.1.camel@phoenix>
-Date: Thu, 15 Nov 2012 12:17:36 +0100
-Message-ID: <CACRpkdZyN6k5CrS8ufnwLCWm30gf6U3b4T7D6-U5yXAdvLFxcQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: coh901: Return proper error if
- irq_domain_add_linear() fails
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121115101820.GC418@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 5:16 PM, Axel Lin <axel.lin@ingics.com> wrote:
+On Thu, Nov 15, 2012 at 11:18:20 +0100, Wolfram Sang wrote:
+> On Thu, Nov 15, 2012 at 03:27:42PM +0530, Srinidhi Kasagar wrote:
+> > On Thu, Nov 15, 2012 at 10:29:53 +0100, Wolfram Sang wrote:
+> > > 
+> > > > > -       if (timeout < 0) {
+> > > > > -               dev_err(&dev->adev->dev,
+> > > > > -                       "wait_for_completion_timeout "
+> > > > > -                       "returned %d waiting for event\n", timeout);
+> > > > > -               status = timeout;
+> > > > > -       }
+> > > > > -
+> > > > No, it is wrong. You need to update the status variable in the case of timeout.
+> > > 
+> > > Looking at the patch context, such code comes later.
+> > But it causes regressions; without looking at the "later" code, we can't afford merging
+> > this code now.
+> 
+> Later as in "a few lines later" not "some time later". Or am I missing
+> something else?
+I was too fast in reading emails after my short vacation...Sorry.
 
-> Return -ENOMEM instead of 0 if irq_domain_add_linear fails.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
 
-Applied, thanks!
-
-Yours,
-Linus Walleij
+regards/srinidhi
