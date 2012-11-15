@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992662Ab2KOEKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:10:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48363 "EHLO mail.kernel.org"
+	id S2992691Ab2KOEKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:10:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48398 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933377Ab2KOEKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:10:12 -0500
+	id S2992667Ab2KOEKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:10:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>,
+        Chuck Lever <chuck.lever@oracle.com>, NeilBrown <neilb@suse.de>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 11/38] nfs: Show original device name verbatim in /proc/*/mount{s,info}
-Date: Wed, 14 Nov 2012 20:10:08 -0800
-Message-Id: <20121115040933.604860097@linuxfoundation.org>
+Subject: [ 14/38] NFS: fix bug in legacy DNS resolver.
+Date: Wed, 14 Nov 2012 20:10:11 -0800
+Message-Id: <20121115040933.787959694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040932.918082372@linuxfoundation.org>
 References: <20121115040932.918082372@linuxfoundation.org>
@@ -27,128 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: NeilBrown <neilb@suse.de>
 
-commit 97a54868262da1629a3e65121e65b8e8c4419d9f upstream.
+commit 8d96b10639fb402357b75b055b1e82a65ff95050 upstream.
 
-Since commit c7f404b ('vfs: new superblock methods to override
-/proc/*/mount{s,info}'), nfs_path() is used to generate the mounted
-device name reported back to userland.
+The DNS resolver's use of the sunrpc cache involves a 'ttl' number
+(relative) rather that a timeout (absolute).  This confused me when
+I wrote
+  commit c5b29f885afe890f953f7f23424045cdad31d3e4
+     "sunrpc: use seconds since boot in expiry cache"
 
-nfs_path() always generates a trailing slash when the given dentry is
-the root of an NFS mount, but userland may expect the original device
-name to be returned verbatim (as it used to be).  Make this
-canonicalisation optional and change the callers accordingly.
+and I managed to break it.  The effect is that any TTL is interpreted
+as 0, and nothing useful gets into the cache.
 
-[jrnieder@gmail.com: use flag instead of bool argument]
-Reported-and-tested-by: Chris Hiestand <chiestand@salk.edu>
-Reference: http://bugs.debian.org/669314
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+This patch removes the use of get_expiry() - which really expects an
+expiry time - and uses get_uint() instead, treating the int correctly
+as a ttl.
+
+This fixes a regression that has been present since 2.6.37, causing
+certain NFS accesses in certain environments to incorrectly fail.
+
+Reported-by: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/internal.h      |    5 +++--
- fs/nfs/namespace.c     |   19 ++++++++++++++-----
- fs/nfs/nfs4namespace.c |    3 ++-
- fs/nfs/super.c         |    2 +-
- 4 files changed, 20 insertions(+), 9 deletions(-)
+ fs/nfs/dns_resolve.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -274,8 +274,9 @@ extern void nfs_sb_active(struct super_b
- extern void nfs_sb_deactive(struct super_block *sb);
- 
- /* namespace.c */
-+#define NFS_PATH_CANONICAL 1
- extern char *nfs_path(char **p, struct dentry *dentry,
--		      char *buffer, ssize_t buflen);
-+		      char *buffer, ssize_t buflen, unsigned flags);
- extern struct vfsmount *nfs_d_automount(struct path *path);
- 
- /* getroot.c */
-@@ -349,7 +350,7 @@ static inline char *nfs_devname(struct d
- 				char *buffer, ssize_t buflen)
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -213,7 +213,7 @@ static int nfs_dns_parse(struct cache_de
  {
- 	char *dummy;
--	return nfs_path(&dummy, dentry, buffer, buflen);
-+	return nfs_path(&dummy, dentry, buffer, buflen, NFS_PATH_CANONICAL);
- }
+ 	char buf1[NFS_DNS_HOSTNAME_MAXLEN+1];
+ 	struct nfs_dns_ent key, *item;
+-	unsigned long ttl;
++	unsigned int ttl;
+ 	ssize_t len;
+ 	int ret = -EINVAL;
  
- /*
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -37,6 +37,7 @@ static struct vfsmount *nfs_do_submount(
-  * @dentry - pointer to dentry
-  * @buffer - result buffer
-  * @buflen - length of buffer
-+ * @flags - options (see below)
-  *
-  * Helper function for constructing the server pathname
-  * by arbitrary hashed dentry.
-@@ -44,8 +45,14 @@ static struct vfsmount *nfs_do_submount(
-  * This is mainly for use in figuring out the path on the
-  * server side when automounting on top of an existing partition
-  * and in generating /proc/mounts and friends.
-+ *
-+ * Supported flags:
-+ * NFS_PATH_CANONICAL: ensure there is exactly one slash after
-+ *		       the original device (export) name
-+ *		       (if unset, the original name is returned verbatim)
-  */
--char *nfs_path(char **p, struct dentry *dentry, char *buffer, ssize_t buflen)
-+char *nfs_path(char **p, struct dentry *dentry, char *buffer, ssize_t buflen,
-+	       unsigned flags)
- {
- 	char *end;
- 	int namelen;
-@@ -78,7 +85,7 @@ rename_retry:
- 		rcu_read_unlock();
- 		goto rename_retry;
- 	}
--	if (*end != '/') {
-+	if ((flags & NFS_PATH_CANONICAL) && *end != '/') {
- 		if (--buflen < 0) {
- 			spin_unlock(&dentry->d_lock);
- 			rcu_read_unlock();
-@@ -95,9 +102,11 @@ rename_retry:
- 		return end;
- 	}
- 	namelen = strlen(base);
--	/* Strip off excess slashes in base string */
--	while (namelen > 0 && base[namelen - 1] == '/')
--		namelen--;
-+	if (flags & NFS_PATH_CANONICAL) {
-+		/* Strip off excess slashes in base string */
-+		while (namelen > 0 && base[namelen - 1] == '/')
-+			namelen--;
-+	}
- 	buflen -= namelen;
- 	if (buflen < 0) {
- 		spin_unlock(&dentry->d_lock);
---- a/fs/nfs/nfs4namespace.c
-+++ b/fs/nfs/nfs4namespace.c
-@@ -57,7 +57,8 @@ Elong:
- static char *nfs4_path(struct dentry *dentry, char *buffer, ssize_t buflen)
- {
- 	char *limit;
--	char *path = nfs_path(&limit, dentry, buffer, buflen);
-+	char *path = nfs_path(&limit, dentry, buffer, buflen,
-+			      NFS_PATH_CANONICAL);
- 	if (!IS_ERR(path)) {
- 		char *colon = strchr(path, ':');
- 		if (colon && colon < limit)
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -763,7 +763,7 @@ static int nfs_show_devname(struct seq_f
- 	int err = 0;
- 	if (!page)
- 		return -ENOMEM;
--	devname = nfs_path(&dummy, mnt->mnt_root, page, PAGE_SIZE);
-+	devname = nfs_path(&dummy, mnt->mnt_root, page, PAGE_SIZE, 0);
- 	if (IS_ERR(devname))
- 		err = PTR_ERR(devname);
- 	else
+@@ -236,7 +236,8 @@ static int nfs_dns_parse(struct cache_de
+ 	key.namelen = len;
+ 	memset(&key.h, 0, sizeof(key.h));
+ 
+-	ttl = get_expiry(&buf);
++	if (get_uint(&buf, &ttl) < 0)
++		goto out;
+ 	if (ttl == 0)
+ 		goto out;
+ 	key.h.expiry_time = ttl + seconds_since_boot();
 
 
