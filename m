@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993348Ab2KOENA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:13:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49941 "EHLO mail.kernel.org"
+	id S2993366Ab2KOENF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:13:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49983 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993263Ab2KOEM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:57 -0500
+	id S2993263Ab2KOENB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:13:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 36/57] ALSA: Avoid endless sleep after disconnect
-Date: Wed, 14 Nov 2012 20:11:44 -0800
-Message-Id: <20121115040935.445896659@linuxfoundation.org>
+        Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 40/57] ipv6: Set default hoplimit as zero.
+Date: Wed, 14 Nov 2012 20:11:48 -0800
+Message-Id: <20121115040935.677700020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -25,181 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
 
-commit 0914f7961babbf28aaa2f19b453951fb4841c03f upstream.
+From: Li RongQing <roy.qing.li@gmail.com>
 
-When disconnect callback is called, each component should wake up
-sleepers and check card->shutdown flag for avoiding the endless sleep
-blocking the proper resource release.
+[ Upstream commit 14edd87dc67311556f1254a8f29cf4dd6cb5b7d1 ]
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Commit a02e4b7dae4551(Demark default hoplimit as zero) only changes the
+hoplimit checking condition and default value in ip6_dst_hoplimit, not
+zeros all hoplimit default value.
+
+Keep the zeroing ip6_template_metrics[RTAX_HOPLIMIT - 1] to force it as
+const, cause as a37e6e344910(net: force dst_default_metrics to const
+section)
+
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- sound/core/control.c     |    2 ++
- sound/core/hwdep.c       |    7 +++++++
- sound/core/oss/pcm_oss.c |    4 ++++
- sound/core/pcm.c         |    6 +++++-
- sound/core/pcm_native.c  |    8 ++++++++
- sound/core/rawmidi.c     |   20 ++++++++++++++++++++
- 6 files changed, 46 insertions(+), 1 deletion(-)
+ net/ipv6/route.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1436,6 +1436,8 @@ static ssize_t snd_ctl_read(struct file
- 			spin_unlock_irq(&ctl->read_lock);
- 			schedule();
- 			remove_wait_queue(&ctl->change_sleep, &wait);
-+			if (ctl->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
- 			spin_lock_irq(&ctl->read_lock);
---- a/sound/core/hwdep.c
-+++ b/sound/core/hwdep.c
-@@ -131,6 +131,10 @@ static int snd_hwdep_open(struct inode *
- 		mutex_unlock(&hw->open_mutex);
- 		schedule();
- 		mutex_lock(&hw->open_mutex);
-+		if (hw->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
-@@ -462,12 +466,15 @@ static int snd_hwdep_dev_disconnect(stru
- 		mutex_unlock(&register_mutex);
- 		return -EINVAL;
- 	}
-+	mutex_lock(&hwdep->open_mutex);
-+	wake_up(&hwdep->open_wait);
- #ifdef CONFIG_SND_OSSEMUL
- 	if (hwdep->ossreg)
- 		snd_unregister_oss_device(hwdep->oss_type, hwdep->card, hwdep->device);
- #endif
- 	snd_unregister_device(SNDRV_DEVICE_TYPE_HWDEP, hwdep->card, hwdep->device);
- 	list_del_init(&hwdep->list);
-+	mutex_unlock(&hwdep->open_mutex);
- 	mutex_unlock(&register_mutex);
- 	return 0;
- }
---- a/sound/core/oss/pcm_oss.c
-+++ b/sound/core/oss/pcm_oss.c
-@@ -2441,6 +2441,10 @@ static int snd_pcm_oss_open(struct inode
- 		mutex_unlock(&pcm->open_mutex);
- 		schedule();
- 		mutex_lock(&pcm->open_mutex);
-+		if (pcm->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -1087,12 +1087,16 @@ static int snd_pcm_dev_disconnect(struct
- 		goto unlock;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -203,7 +203,7 @@ static struct dst_ops ip6_dst_blackhole_
+ };
  
- 	mutex_lock(&pcm->open_mutex);
-+	wake_up(&pcm->open_wait);
- 	list_del_init(&pcm->list);
- 	for (cidx = 0; cidx < 2; cidx++)
- 		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
- 			snd_pcm_stream_lock_irq(substream);
--			if (substream->runtime)
-+			if (substream->runtime) {
- 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
-+				wake_up(&substream->runtime->sleep);
-+				wake_up(&substream->runtime->tsleep);
-+			}
- 			snd_pcm_stream_unlock_irq(substream);
- 		}
- 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -1508,6 +1508,10 @@ static int snd_pcm_drain(struct snd_pcm_
- 		down_read(&snd_pcm_link_rwsem);
- 		snd_pcm_stream_lock_irq(substream);
- 		remove_wait_queue(&to_check->sleep, &wait);
-+		if (card->shutdown) {
-+			result = -ENODEV;
-+			break;
-+		}
- 		if (tout == 0) {
- 			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
- 				result = -ESTRPIPE;
-@@ -2158,6 +2162,10 @@ static int snd_pcm_open(struct file *fil
- 		mutex_unlock(&pcm->open_mutex);
- 		schedule();
- 		mutex_lock(&pcm->open_mutex);
-+		if (pcm->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
---- a/sound/core/rawmidi.c
-+++ b/sound/core/rawmidi.c
-@@ -424,6 +424,10 @@ static int snd_rawmidi_open(struct inode
- 		mutex_unlock(&rmidi->open_mutex);
- 		schedule();
- 		mutex_lock(&rmidi->open_mutex);
-+		if (rmidi->card->shutdown) {
-+			err = -ENODEV;
-+			break;
-+		}
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
-@@ -995,6 +999,8 @@ static ssize_t snd_rawmidi_read(struct f
- 			spin_unlock_irq(&runtime->lock);
- 			schedule();
- 			remove_wait_queue(&runtime->sleep, &wait);
-+			if (rfile->rmidi->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return result > 0 ? result : -ERESTARTSYS;
- 			if (!runtime->avail)
-@@ -1238,6 +1244,8 @@ static ssize_t snd_rawmidi_write(struct
- 			spin_unlock_irq(&runtime->lock);
- 			timeout = schedule_timeout(30 * HZ);
- 			remove_wait_queue(&runtime->sleep, &wait);
-+			if (rfile->rmidi->card->shutdown)
-+				return -ENODEV;
- 			if (signal_pending(current))
- 				return result > 0 ? result : -ERESTARTSYS;
- 			if (!runtime->avail && !timeout)
-@@ -1613,9 +1621,20 @@ static int snd_rawmidi_dev_register(stru
- static int snd_rawmidi_dev_disconnect(struct snd_device *device)
- {
- 	struct snd_rawmidi *rmidi = device->device_data;
-+	int dir;
+ static const u32 ip6_template_metrics[RTAX_MAX] = {
+-	[RTAX_HOPLIMIT - 1] = 255,
++	[RTAX_HOPLIMIT - 1] = 0,
+ };
  
- 	mutex_lock(&register_mutex);
-+	mutex_lock(&rmidi->open_mutex);
-+	wake_up(&rmidi->open_wait);
- 	list_del_init(&rmidi->list);
-+	for (dir = 0; dir < 2; dir++) {
-+		struct snd_rawmidi_substream *s;
-+		list_for_each_entry(s, &rmidi->streams[dir].substreams, list) {
-+			if (s->runtime)
-+				wake_up(&s->runtime->sleep);
-+		}
-+	}
-+
- #ifdef CONFIG_SND_OSSEMUL
- 	if (rmidi->ossreg) {
- 		if ((int)rmidi->device == midi_map[rmidi->card->number]) {
-@@ -1630,6 +1649,7 @@ static int snd_rawmidi_dev_disconnect(st
- 	}
- #endif /* CONFIG_SND_OSSEMUL */
- 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
-+	mutex_unlock(&rmidi->open_mutex);
- 	mutex_unlock(&register_mutex);
- 	return 0;
- }
+ static struct rt6_info ip6_null_entry_template = {
+@@ -1135,7 +1135,7 @@ struct dst_entry *icmp6_dst_alloc(struct
+ 	rt->rt6i_dst.addr = fl6->daddr;
+ 	rt->rt6i_dst.plen = 128;
+ 	rt->rt6i_idev     = idev;
+-	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 255);
++	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 0);
+ 
+ 	spin_lock_bh(&icmp6_dst_lock);
+ 	rt->dst.next = icmp6_dst_gc_list;
 
 
