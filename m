@@ -1,107 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab2KOJNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 04:13:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:45211 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918Ab2KOJNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 04:13:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,255,1352102400"; 
-   d="scan'208";a="247354951"
-Message-ID: <1352970823.2080.22.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V5 1/2] Thermal: Add ST-Ericsson DB8500 thermal driver.
-From: Zhang Rui <rui.zhang@intel.com>
-To: Hongbo Zhang <hongbo.zhang@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, amit.kachhap@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Date: Thu, 15 Nov 2012 17:13:43 +0800
-In-Reply-To: <CAJLyvQyu_oU7xx92JTOj6bvF+7-hOJfM=kTHj6JMogaYjC+Jww@mail.gmail.com>
-References: <1352460548-3494-1-git-send-email-hongbo.zhang@linaro.com>
-	 <1352460548-3494-2-git-send-email-hongbo.zhang@linaro.com>
-	 <1352967218.2080.15.camel@rzhang1-mobl4>
-	 <CAJLyvQyu_oU7xx92JTOj6bvF+7-hOJfM=kTHj6JMogaYjC+Jww@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1756775Ab2KOJOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 04:14:09 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40573 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756703Ab2KOJOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 04:14:02 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50A4B227.4050307@jp.fujitsu.com>
+Date: Thu, 15 Nov 2012 18:13:11 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-acpi@vger.kernel.org>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
+Subject: Re: [Patch v5 2/7] acpi,memory-hotplug: deal with eject request in
+ hotplug queue
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 16:32 +0800, Hongbo Zhang wrote:
-> On 15 November 2012 16:13, Zhang Rui <rui.zhang@intel.com> wrote:
-> > On Fri, 2012-11-09 at 19:29 +0800, hongbo.zhang wrote:
-> >> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
-> >>
-> >> This driver is based on the thermal management framework in thermal_sys.c. A
-> >> thermal zone device is created with the trip points to which cooling devices
-> >> can be bound, the current cooling device is cpufreq, e.g. CPU frequency is
-> >> clipped down to cool the CPU, and other cooling devices can be added and bound
-> >> to the trip points dynamically.  The platform specific PRCMU interrupts are
-> >> used to active thermal update when trip points are reached.
-> >>
-> >> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> >> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >> Reviewed-by: Francesco Lavra <francescolavra.fl@gmail.com>
-> >
-> >> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> >> index e1cb6bd..54c8fd0 100644
-> >> --- a/drivers/thermal/Kconfig
-> >> +++ b/drivers/thermal/Kconfig
-> >> @@ -31,6 +31,26 @@ config CPU_THERMAL
-> >>         and not the ACPI interface.
-> >>         If you want this support, you should say Y here.
-> >>
-> >> +config DB8500_THERMAL
-> >> +     bool "DB8500 thermal management"
-> >
-> > why is this bool?
+2012/11/15 15:59, Wen Congyang wrote:
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
 > 
-> platform specific PRCMU interfaces are used, and those interfaces are
-> not exported, so my driver cannot be compiled as a module.
+> We handle the 1st case in the module acpi_memhotplug, and handle
+> the 2nd case in ACPI eject notification. This 2 events may happen
+> at the same time, so we may touch acpi_memory_device.res_list at
+> the same time. This patch reimplements memory-hotremove support
+> through an ACPI eject notification. Now the memory device is
+> offlined and hotremoved only in the function acpi_memory_device_remove()
+> which is protected by device_lock().
 > 
-ok.
-But I still alway get this error message when set DB8500_THERMAL,
-include/linux/mfd/dbx500-prcmu.h:459:19: error: redefinition of
-‘prcmu_abb_read’
-include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of
-‘prcmu_abb_read’ was here
-include/linux/mfd/dbx500-prcmu.h:464:19: error: redefinition of
-‘prcmu_abb_write’
-include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of
-‘prcmu_abb_write’ was here
-include/linux/mfd/dbx500-prcmu.h:475:19: error: redefinition of
-‘prcmu_config_clkout’
-include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of
-‘prcmu_config_clkout’ was here
-include/linux/mfd/dbx500-prcmu.h:537:19: error: redefinition of
-‘prcmu_ac_wake_req’
-include/linux/mfd/db8500-prcmu.h:683:19: note: previous definition of
-‘prcmu_ac_wake_req’ was here
-include/linux/mfd/dbx500-prcmu.h:542:20: error: redefinition of
-‘prcmu_ac_sleep_req’
-include/linux/mfd/db8500-prcmu.h:688:20: note: previous definition of
-‘prcmu_ac_sleep_req’ was here
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
 
-$ grep prcmu_abb_read include/linux/mfd/*
-include/linux/mfd/db8500-prcmu.h:int prcmu_abb_read(u8 slave, u8 reg, u8
-*value, u8 size);
-include/linux/mfd/db8500-prcmu.h:static inline int prcmu_abb_read(u8
-slave, u8 reg, u8 *value, u8 size)
-include/linux/mfd/dbx500-prcmu.h:int prcmu_abb_read(u8 slave, u8 reg, u8
-*value, u8 size);
-include/linux/mfd/dbx500-prcmu.h:static inline int prcmu_abb_read(u8
-slave, u8 reg, u8 *value, u8 size)
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-this functions are defined in both db8500-prmcu.h and dbx500-prcmu.h,
-plus linux/mfd/dbx500-prcmu.h includes linux/mfd/db8500-prcmu.h.
+Thanks,
+Yasuaki Ishimatsu
 
-I do not know how it works before, but this is a bug to me.
+>   drivers/acpi/acpi_memhotplug.c | 87 +++++-------------------------------------
+>   1 file changed, 9 insertions(+), 78 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 2918be1..6e12042 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -272,40 +272,6 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   	return 0;
+>   }
+>   
+> -static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
+> -{
+> -	acpi_status status;
+> -	struct acpi_object_list arg_list;
+> -	union acpi_object arg;
+> -	unsigned long long current_status;
+> -
+> -
+> -	/* Issue the _EJ0 command */
+> -	arg_list.count = 1;
+> -	arg_list.pointer = &arg;
+> -	arg.type = ACPI_TYPE_INTEGER;
+> -	arg.integer.value = 1;
+> -	status = acpi_evaluate_object(mem_device->device->handle,
+> -				      "_EJ0", &arg_list, NULL);
+> -	/* Return on _EJ0 failure */
+> -	if (ACPI_FAILURE(status)) {
+> -		ACPI_EXCEPTION((AE_INFO, status, "_EJ0 failed"));
+> -		return -ENODEV;
+> -	}
+> -
+> -	/* Evalute _STA to check if the device is disabled */
+> -	status = acpi_evaluate_integer(mem_device->device->handle, "_STA",
+> -				       NULL, &current_status);
+> -	if (ACPI_FAILURE(status))
+> -		return -ENODEV;
+> -
+> -	/* Check for device status.  Device should be disabled */
+> -	if (current_status & ACPI_STA_DEVICE_ENABLED)
+> -		return -EINVAL;
+> -
+> -	return 0;
+> -}
+> -
+>   static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>   {
+>   	int result;
+> @@ -325,34 +291,11 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>   	return 0;
+>   }
+>   
+> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+> -{
+> -	int result;
+> -
+> -	/*
+> -	 * Ask the VM to offline this memory range.
+> -	 * Note: Assume that this function returns zero on success
+> -	 */
+> -	result = acpi_memory_remove_memory(mem_device);
+> -	if (result)
+> -		return result;
+> -
+> -	/* Power-off and eject the device */
+> -	result = acpi_memory_powerdown_device(mem_device);
+> -	if (result) {
+> -		/* Set the status of the device to invalid */
+> -		mem_device->state = MEMORY_INVALID_STATE;
+> -		return result;
+> -	}
+> -
+> -	mem_device->state = MEMORY_POWER_OFF_STATE;
+> -	return result;
+> -}
+> -
+>   static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+>   {
+>   	struct acpi_memory_device *mem_device;
+>   	struct acpi_device *device;
+> +	struct acpi_eject_event *ej_event = NULL;
+>   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>   
+>   	switch (event) {
+> @@ -394,31 +337,19 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+>   			break;
+>   		}
+>   
+> -		/*
+> -		 * Currently disabling memory device from kernel mode
+> -		 * TBD: Can also be disabled from user mode scripts
+> -		 * TBD: Can also be disabled by Callback registration
+> -		 *      with generic sysfs driver
+> -		 */
+> -		if (acpi_memory_disable_device(mem_device)) {
+> -			printk(KERN_ERR PREFIX "Disable memory device\n");
+> -			/*
+> -			 * If _EJ0 was called but failed, _OST is not
+> -			 * necessary.
+> -			 */
+> -			if (mem_device->state == MEMORY_INVALID_STATE)
+> -				return;
+> -
+> +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+> +		if (!ej_event) {
+> +			pr_err(PREFIX "No memory, dropping EJECT\n");
+>   			break;
+>   		}
+>   
+> -		/*
+> -		 * TBD: Invoke acpi_bus_remove to cleanup data structures
+> -		 */
+> +		ej_event->handle = handle;
+> +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> +					(void *)ej_event);
+>   
+> -		/* _EJ0 succeeded; _OST is not necessary */
+> +		/* eject is performed asynchronously */
+>   		return;
+> -
+>   	default:
+>   		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   				  "Unsupported event [0x%x]\n", event));
+> 
 
-thanks,
-rui
 
