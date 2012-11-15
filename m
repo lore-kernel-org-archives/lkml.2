@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993362Ab2KOEUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Nov 2012 23:20:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49882 "EHLO mail.kernel.org"
+	id S2993380Ab2KOEUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Nov 2012 23:20:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49871 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993297Ab2KOEMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Nov 2012 23:12:49 -0500
+	id S2993290Ab2KOEMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Nov 2012 23:12:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 31/57] ALSA: PCM: Fix some races at disconnection
-Date: Wed, 14 Nov 2012 20:11:39 -0800
-Message-Id: <20121115040935.122021780@linuxfoundation.org>
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [ 30/57] hwmon: (w83627ehf) Force initial bank selection
+Date: Wed, 14 Nov 2012 20:11:38 -0800
+Message-Id: <20121115040935.069544523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121115040933.223998671@linuxfoundation.org>
 References: <20121115040933.223998671@linuxfoundation.org>
@@ -26,102 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 9b0573c07f278e9888c352aa9724035c75784ea0 upstream.
+commit 3300fb4f88688029fff8dfb9ec0734f6e4cba3e7 upstream.
 
-Fix races at PCM disconnection:
-- while a PCM device is being opened or closed
-- while the PCM state is being changed without lock in prepare,
-  hw_params, hw_free ops
+Don't assume bank 0 is selected at device probe time. This may not be
+the case. Force bank selection at first register access to guarantee
+that we read the right registers upon driver loading.
 
-Reported-by: Matthieu CASTET <matthieu.castet@parrot.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- sound/core/pcm.c        |    7 ++++++-
- sound/core/pcm_native.c |   16 ++++++++++++----
- 2 files changed, 18 insertions(+), 5 deletions(-)
 
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -1086,11 +1086,15 @@ static int snd_pcm_dev_disconnect(struct
- 	if (list_empty(&pcm->list))
- 		goto unlock;
+---
+ drivers/hwmon/w83627ehf.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -2082,6 +2082,7 @@ static int __devinit w83627ehf_probe(str
+ 	mutex_init(&data->lock);
+ 	mutex_init(&data->update_lock);
+ 	data->name = w83627ehf_device_names[sio_data->kind];
++	data->bank = 0xff;		/* Force initial bank selection */
+ 	platform_set_drvdata(pdev, data);
  
-+	mutex_lock(&pcm->open_mutex);
- 	list_del_init(&pcm->list);
- 	for (cidx = 0; cidx < 2; cidx++)
--		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next)
-+		for (substream = pcm->streams[cidx].substream; substream; substream = substream->next) {
-+			snd_pcm_stream_lock_irq(substream);
- 			if (substream->runtime)
- 				substream->runtime->status->state = SNDRV_PCM_STATE_DISCONNECTED;
-+			snd_pcm_stream_unlock_irq(substream);
-+		}
- 	list_for_each_entry(notify, &snd_pcm_notify_list, list) {
- 		notify->n_disconnect(pcm);
- 	}
-@@ -1106,6 +1110,7 @@ static int snd_pcm_dev_disconnect(struct
- 		}
- 		snd_unregister_device(devtype, pcm->card, pcm->device);
- 	}
-+	mutex_unlock(&pcm->open_mutex);
-  unlock:
- 	mutex_unlock(&register_mutex);
- 	return 0;
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -369,6 +369,14 @@ static int period_to_usecs(struct snd_pc
- 	return usecs;
- }
- 
-+static void snd_pcm_set_state(struct snd_pcm_substream *substream, int state)
-+{
-+	snd_pcm_stream_lock_irq(substream);
-+	if (substream->runtime->status->state != SNDRV_PCM_STATE_DISCONNECTED)
-+		substream->runtime->status->state = state;
-+	snd_pcm_stream_unlock_irq(substream);
-+}
-+
- static int snd_pcm_hw_params(struct snd_pcm_substream *substream,
- 			     struct snd_pcm_hw_params *params)
- {
-@@ -452,7 +460,7 @@ static int snd_pcm_hw_params(struct snd_
- 		runtime->boundary *= 2;
- 
- 	snd_pcm_timer_resolution_change(substream);
--	runtime->status->state = SNDRV_PCM_STATE_SETUP;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_SETUP);
- 
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
-@@ -464,7 +472,7 @@ static int snd_pcm_hw_params(struct snd_
- 	/* hardware might be unusable from this time,
- 	   so we force application to retry to set
- 	   the correct hardware parameter settings */
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	if (substream->ops->hw_free != NULL)
- 		substream->ops->hw_free(substream);
- 	return err;
-@@ -512,7 +520,7 @@ static int snd_pcm_hw_free(struct snd_pc
- 		return -EBADFD;
- 	if (substream->ops->hw_free)
- 		result = substream->ops->hw_free(substream);
--	runtime->status->state = SNDRV_PCM_STATE_OPEN;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
- 	pm_qos_remove_request(&substream->latency_pm_qos_req);
- 	return result;
- }
-@@ -1320,7 +1328,7 @@ static void snd_pcm_post_prepare(struct
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	runtime->control->appl_ptr = runtime->status->hw_ptr;
--	runtime->status->state = SNDRV_PCM_STATE_PREPARED;
-+	snd_pcm_set_state(substream, SNDRV_PCM_STATE_PREPARED);
- }
- 
- static struct action_ops snd_pcm_action_prepare = {
+ 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
 
 
