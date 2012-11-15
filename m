@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768627Ab2KOSAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 13:00:40 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:22673 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1768575Ab2KOSAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 13:00:39 -0500
-Message-ID: <1353002435.2532.39.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] openrisc: dma-mapping: support
+	id S1768623Ab2KOSDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 13:03:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1768597Ab2KOSDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 13:03:05 -0500
+Message-ID: <1353002574.32296.1.camel@t520.localdomain>
+Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
  debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: jonas@southpole.se, Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux@openrisc.net, LKML <linux-kernel@vger.kernel.org>,
+From: Mark Salter <msalter@redhat.com>
+To: shuah.khan@hp.com
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
+        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
         shuahkhan@gmail.com
-Date: Thu, 15 Nov 2012 11:00:35 -0700
-In-Reply-To: <1351267555.4013.15.camel@lorien2>
-References: <1351208548.6851.19.camel@lorien2>
-	 <1351267555.4013.15.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 15 Nov 2012 13:02:54 -0500
+In-Reply-To: <1353001500.2532.29.camel@lorien2>
+References: <1351206082.6851.6.camel@lorien2>
+	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
+	 <1351883445.15973.24.camel@deneb.redhat.com>
+	 <1351885999.3161.11.camel@lorien2>
+	 <1351887326.15973.35.camel@deneb.redhat.com>
+	 <1351887967.3161.17.camel@lorien2>
+	 <1351889957.15973.43.camel@deneb.redhat.com>
+	 <1351890491.3161.23.camel@lorien2> <1353001500.2532.29.camel@lorien2>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 10:05 -0600, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
+On Thu, 2012-11-15 at 10:45 -0700, Shuah Khan wrote:
+> This is for c6x to go through Marek's tree with all the other arch
+> patches. Hope that is ok with you Mark.
 > 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> ---
->  arch/openrisc/include/asm/dma-mapping.h |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/openrisc/include/asm/dma-mapping.h b/arch/openrisc/include/asm/dma-mapping.h
-> index fab8628..f12de49 100644
-> --- a/arch/openrisc/include/asm/dma-mapping.h
-> +++ b/arch/openrisc/include/asm/dma-mapping.h
-> @@ -95,6 +95,7 @@ static inline int dma_supported(struct device *dev, u64 dma_mask)
->  
->  static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
->  {
-> +	debug_dma_mapping_error(dev, dma_addr);
->  	return 0;
->  }
->  
+> https://lkml.org/lkml/2012/11/3/219 fixes the
+> debug_dma_mapping_error()
+> dependency on get_dma_ops() that caused compile errors on c6x.
 
-Marek/Jonas,
+Yes.
 
-This one is for openrisc to go through Marek's tree with the other arch
-debug_dma_mapping_error() patches. Hoping it is ok with Jonas.
+Acked-by: Mark Salter <msalter@redhat.com>
 
-Thanks,
--- Shuah
 
