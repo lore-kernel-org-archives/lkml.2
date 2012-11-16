@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab2KPIJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:09:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57939 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2KPIJO (ORCPT
+	id S1751459Ab2KPIJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:09:48 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:41600 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPIJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:09:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tushar Behera <tushar.behera@linaro.org>
-Subject: Re: [PATCH 13/14] misc: tsl2550: Remove redundant check on unsigned variable
-Date: Fri, 16 Nov 2012 08:09:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org> <1353048646-10935-14-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1353048646-10935-14-git-send-email-tushar.behera@linaro.org>
+	Fri, 16 Nov 2012 03:09:46 -0500
+X-AuditID: b753bd60-97251ba000002f78-47-50a5f4c70587
+X-AuditID: b753bd60-97251ba000002f78-47-50a5f4c70587
+Message-ID: <50A5F4C4.2030909@hitachi.com>
+Date: Fri, 16 Nov 2012 17:09:40 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
+References: <20121114013611.5338.15086.stgit@yunodevel> <20121116031946.GA23939@amt.cnet>
+In-Reply-To: <20121116031946.GA23939@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211160809.11226.arnd@arndb.de>
-X-Provags-ID: V02:K0:oPo5+Nm0nJu9sVtwVkXoRGLA8pDrMRbC70Jg9HD5ERp
- 2xE21iws5+XeezrDZZWoHLKQKcGbWL2aIIQ8i3hDoRt6+O+8vf
- zvanC0DFN1jXUgiijP+Jr2uct4U9Of/FQul4jS9JYEBb4GjBZS
- ggFiEmyJhklvmFMokiLGc/TrNuhYLV+Sf48dY3NZWvLEY1u6lf
- zJnSr2X0szv1n7Aq1V+yN9aMJvF5SjU2s6uP7jx2KDpHe/11v6
- ra78np9Nk+lUCFnZYl3mBBU8/joN1Af4AVe9hQrjYHm2ZGFCIo
- 3CRWxIvQam6fkMstVmeLoPuBY738C+PgMcPcfbtLVTbvBGWVBA
- gu7e5VqBQ42xZArkt0oM=
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 November 2012, Tushar Behera wrote:
-> No need to check whether unsigned variable is less than 0.
-> 
-> CC: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+Hi Marcelo,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thank you for commenting on my patch set.
+
+(2012/11/16 12:19), Marcelo Tosatti wrote:
+> On Wed, Nov 14, 2012 at 10:36:21AM +0900, Yoshihiro YUNOMAE wrote:
+[...]
+>> In this summary, I suggest the patch which TSC offset for each guest can be
+>> output on the host.
+>
+> The guest TSC can change (for example if TSC scaling is used). Moreover
+> TSC offset can change, and you'd have to monitor that. What
+
+Yes, that's true. Changing TSC offset is the key point to use TSC for
+merging trace data of guests and the host.
+
+> about a module option so that tsc_offset is written as zero (to be
+> used as debugging tool). Then the following restrictions apply:
+>
+> - TSC must be synchronized across CPUs/VCPUS.
+> - TSC must be reliable.
+>
+> Would that suffice? (a module option to kvm.ko, say zero_tsc_offset).
+
+As you say, the guest TSC can change, so guest TSC needs to meet these
+two restrictions to merge the trace data in chronological order.
+
+However, the zero-TSC offset method is not enough, I think.
+I will use TSC values as the tracing timestamp not only for debugging
+but for failure analysis on actual operations. When we introduce
+the zero-TSC offset, normally it will be no problem. However, if
+the guest executes write_tsc or the guest works live migration, TSC
+offset will be changed. After all, we need to monitor the TSC offset
+value.
+
+Thank you,
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
