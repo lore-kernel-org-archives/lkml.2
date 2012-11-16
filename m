@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab2KPKd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:33:56 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:16856 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2KPKdx (ORCPT
+	id S1751345Ab2KPKc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 05:32:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50536 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2KPKcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:33:53 -0500
-Message-ID: <50A6168F.90105@atmel.com>
-Date: Fri, 16 Nov 2012 11:33:51 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Nicolas Royer <nicolas@eukrea.com>, <eric@eukrea.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-crypto@vger.kernel.org>,
-        <herbert@gondor.hengli.com.au>, <davem@davemloft.net>
-Subject: Re: [PATCH 1/5] ARM: AT91SAM9G45: fix crypto peripherals irq issue
- due to sparse irq support.
-References: <1352219463-30360-1-git-send-email-nicolas@eukrea.com> <20121107152729.GE4576@game.jcrosoft.org>
-In-Reply-To: <20121107152729.GE4576@game.jcrosoft.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Fri, 16 Nov 2012 05:32:55 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v6 4/4] ARM: dts: add sram for imx53 and imx6q
+Date: Fri, 16 Nov 2012 11:30:17 +0100
+Message-Id: <1353061817-3207-5-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353061817-3207-1-git-send-email-p.zabel@pengutronix.de>
+References: <1353061817-3207-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 04:27 PM, Jean-Christophe PLAGNIOL-VILLARD :
-> On 17:31 Tue 06 Nov     , Nicolas Royer wrote:
->> Spare irq support introduced by commit "8fe82a5 ARM: at91: sparse irq support"
->> involves to add the NR_IRQS_LEGACY offset to irq number.
->>
->> Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> Acked-by: Eric Bénard <eric@eukrea.com>
->> Tested-by: Eric Bénard <eric@eukrea.com>
->> Cc: stable@vger.kernel.org # 3.6
-> 
-> ok will see if we can have it for 3.7
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+---
+ arch/arm/boot/dts/imx53.dtsi |    5 +++++
+ arch/arm/boot/dts/imx6q.dtsi |    6 ++++++
+ 2 files changed, 11 insertions(+)
 
-Queued in our at91-fixes pull request for 3.7-final.
-
-Thanks a lot, best regards,
+diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
+index 76ebb1a..7677218 100644
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -541,5 +541,10 @@
+ 				status = "disabled";
+ 			};
+ 		};
++
++		ocram: ocram@f8000000 {
++			compatible = "fsl,imx-ocram", "sram";
++			reg = <0xf8000000 0x20000>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+index f3990b0..855ac25 100644
+--- a/arch/arm/boot/dts/imx6q.dtsi
++++ b/arch/arm/boot/dts/imx6q.dtsi
+@@ -116,6 +116,12 @@
+ 			status = "disabled";
+ 		};
+ 
++		ocram: ocram@00900000 {
++			compatible = "fsl,imx-ocram", "sram";
++			reg = <0x00900000 0x3f000>;
++			clocks = <&clks 142>;
++		};
++
+ 		timer@00a00600 {
+ 			compatible = "arm,cortex-a9-twd-timer";
+ 			reg = <0x00a00600 0x20>;
 -- 
-Nicolas Ferre
+1.7.10.4
+
