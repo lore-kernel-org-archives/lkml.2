@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab2KPJyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:54:24 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43835 "EHLO mga01.intel.com"
+	id S1751885Ab2KPJzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:55:00 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:51545 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab2KPJyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:54:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,263,1352102400"; 
-   d="scan'208";a="250179884"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] x86: convert update_mmu_cache() and update_mmu_cache_pmd() to functions
-Date: Fri, 16 Nov 2012 11:55:16 +0200
-Message-Id: <1353059717-9850-2-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353059717-9850-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1353059717-9850-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1751745Ab2KPJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:52:00 -0500
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v1 hot_track 07/16] vfs: add map info update function
+Date: Fri, 16 Nov 2012 17:51:09 +0800
+Message-Id: <1353059478-25474-8-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1353059478-25474-1-git-send-email-zwu.kernel@gmail.com>
+References: <1353059478-25474-1-git-send-email-zwu.kernel@gmail.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111609-8974-0000-0000-0000113A0B1D
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00191768; UDB=6.00043427; UTC=2012-11-16
+ 09:51:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Converting macros to functions unhide type problems before changes will
-be integrated and trigger problems on other architectures.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/pgtable.h    | 12 ++++++++++++
- arch/x86/include/asm/pgtable_32.h |  7 -------
- arch/x86/include/asm/pgtable_64.h |  3 ---
- 3 files changed, 12 insertions(+), 10 deletions(-)
+ fs/hot_tracking.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 67 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a984cf9..ec08b47 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -775,6 +775,18 @@ static inline void clone_pgd_range(pgd_t *dst, pgd_t *src, int count)
-        memcpy(dst, src, count * sizeof(pgd_t));
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index 3cb14e2..446fbd4 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -386,6 +386,73 @@ static u32 hot_temp_calc(struct hot_freq_data *freq_data)
  }
  
-+/*
-+ * The x86 doesn't have any external MMU info: the kernel page
-+ * tables contain all the necessary information.
-+ */
-+static inline void update_mmu_cache(struct vm_area_struct *vma,
-+		unsigned long addr, pte_t *ptep)
-+{
-+}
-+static inline void update_mmu_cache_pmd(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t *pmd)
-+{
-+}
- 
- #include <asm-generic/pgtable.h>
- #endif	/* __ASSEMBLY__ */
-diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-index 8faa215..9ee3221 100644
---- a/arch/x86/include/asm/pgtable_32.h
-+++ b/arch/x86/include/asm/pgtable_32.h
-@@ -66,13 +66,6 @@ do {						\
- 	__flush_tlb_one((vaddr));		\
- } while (0)
- 
--/*
-- * The i386 doesn't have any external MMU info: the kernel page
-- * tables contain all the necessary information.
-- */
--#define update_mmu_cache(vma, address, ptep) do { } while (0)
--#define update_mmu_cache_pmd(vma, address, pmd) do { } while (0)
--
- #endif /* !__ASSEMBLY__ */
- 
  /*
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 47356f9..615b0c7 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -142,9 +142,6 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
- #define pte_offset_map(dir, address) pte_offset_kernel((dir), (address))
- #define pte_unmap(pte) ((void)(pte))/* NOP */
- 
--#define update_mmu_cache(vma, address, ptep) do { } while (0)
--#define update_mmu_cache_pmd(vma, address, pmd) do { } while (0)
--
- /* Encode and de-code a swap entry */
- #if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE
- #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
++ * Calculate a new temperature and, if necessary,
++ * move the list_head corresponding to this inode or range
++ * to the proper list with the new temperature
++ */
++static void hot_map_update(struct hot_freq_data *freq_data,
++				struct hot_info *root)
++{
++	struct hot_map_head *buckets, *cur_bucket;
++	struct hot_comm_item *comm_item;
++	struct hot_inode_item *he;
++	struct hot_range_item *hr;
++	u32 temp = hot_temp_calc(freq_data);
++	u8 a_temp = (u8)hot_raw_shift((u64)temp, (32 - HEAT_MAP_BITS), false);
++	u8 b_temp = (u8)hot_raw_shift((u64)freq_data->last_temp,
++					(32 - HEAT_MAP_BITS), false);
++
++	comm_item = container_of(freq_data,
++			struct hot_comm_item, hot_freq_data);
++
++	if (freq_data->flags & FREQ_DATA_TYPE_INODE) {
++		he = container_of(comm_item,
++			struct hot_inode_item, hot_inode);
++		buckets = root->heat_inode_map;
++
++		if (he == NULL)
++			return;
++
++		spin_lock(&he->hot_inode.lock);
++		if (list_empty(&he->hot_inode.n_list) || (a_temp != b_temp)) {
++			if (!list_empty(&he->hot_inode.n_list)) {
++				list_del_init(&he->hot_inode.n_list);
++				root->hot_map_nr--;
++			}
++
++			cur_bucket = buckets + a_temp;
++			list_add_tail(&he->hot_inode.n_list,
++					&cur_bucket->node_list);
++			root->hot_map_nr++;
++			freq_data->last_temp = temp;
++		}
++		spin_unlock(&he->hot_inode.lock);
++	} else if (freq_data->flags & FREQ_DATA_TYPE_RANGE) {
++		hr = container_of(comm_item,
++			struct hot_range_item, hot_range);
++		buckets = root->heat_range_map;
++
++		if (hr == NULL)
++			return;
++
++		spin_lock(&hr->hot_range.lock);
++		if (list_empty(&hr->hot_range.n_list) || (a_temp != b_temp)) {
++			if (!list_empty(&hr->hot_range.n_list)) {
++				list_del_init(&hr->hot_range.n_list);
++				root->hot_map_nr--;
++			}
++
++			cur_bucket = buckets + a_temp;
++			list_add_tail(&hr->hot_range.n_list,
++					&cur_bucket->node_list);
++			root->hot_map_nr++;
++			freq_data->last_temp = temp;
++		}
++		spin_unlock(&hr->hot_range.lock);
++	}
++}
++
++/*
+  * Initialize inode and range map info.
+  */
+ static void hot_map_init(struct hot_info *root)
 -- 
-1.7.11.7
+1.7.6.5
 
