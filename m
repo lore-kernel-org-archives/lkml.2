@@ -1,148 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2KPXQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:16:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab2KPXQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:16:21 -0500
-Date: Fri, 16 Nov 2012 15:16:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        mgorman@suse.de, fschmaus@gmail.com, andor.daam@googlemail.com,
-        ilendir@googlemail.com
-Subject: Re: [PATCH 2/8] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-Message-Id: <20121116151619.aa60acff.akpm@linux-foundation.org>
-In-Reply-To: <1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
-References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
-	<1352919432-9699-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753797Ab2KPXUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:20:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18555 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753626Ab2KPXUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 18:20:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
+   d="scan'208";a="248474229"
+Message-ID: <50A6CA24.9020809@intel.com>
+Date: Fri, 16 Nov 2012 15:20:04 -0800
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, tglx@linutronix.de, mingo@redhat.com,
+        andi@firstfloor.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/8] x86/ftrace: Use __pa_symbol instead of __pa on
+ C visible symbols
+References: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>  <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>  <1353104456.7586.27.camel@gandalf.local.home>  <a162a888-9892-43ca-ad17-61c19936c6f4@email.android.com> <1353105926.7586.30.camel@gandalf.local.home> <50A6C6DB.2000205@zytor.com>
+In-Reply-To: <50A6C6DB.2000205@zytor.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 13:57:06 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-
-> From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-> built/loaded as modules rather than built-in and enabled by a boot parameter,
-> this patch provides "lazy initialization", allowing backends to register to
-> frontswap even after swapon was run. Before a backend registers all calls
-> to init are recorded and the creation of tmem_pools delayed until a backend
-> registers or until a frontswap put is attempted.
-> 
+On 11/16/2012 03:06 PM, H. Peter Anvin wrote:
+> On 11/16/2012 02:45 PM, Steven Rostedt wrote:
+>>
+>> #define __pa(x)        __phys_addr((unsigned long)(x))
+>> #define __pa_symbol(x)    __pa(__phys_reloc_hide((unsigned long)(x)))
+>>
+>> I'm confused. __pa_symbol() just calls __pa() with some macro magic to
+>> its parameter. How is this a performance improvement?
+>>
 >
-> ...
+> One of the earlier patches in this series changes __pa_symbol() to
+> avoid the conditional hidden inside __phys_addr(), since by definition
+> a symbol can only be on one side of that branch.
 >
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
->  static inline void inc_frontswap_failed_stores(void) { }
->  static inline void inc_frontswap_invalidates(void) { }
->  #endif
-> +
-> +/*
-> + * When no backend is registered all calls to init are registered and
-
-What is "init"?  Spell it out fully, please.
-
-> + * remembered but fail to create tmem_pools. When a backend registers with
-> + * frontswap the previous calls to init are executed to create tmem_pools
-> + * and set the respective poolids.
-
-Again, seems really hacky.  Why can't we just change callers so they
-call things in the correct order?
-
-> + * While no backend is registered all "puts", "gets" and "flushes" are
-> + * ignored or fail.
-> + */
-> +static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
-> +static bool backend_registered __read_mostly;
-> +
->  /*
->   * Register operations for frontswap, returning previous thus allowing
->   * detection of multiple backends and possible nesting.
-> @@ -87,9 +99,19 @@ static inline void inc_frontswap_invalidates(void) { }
->  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
->  {
->  	struct frontswap_ops old = frontswap_ops;
-> +	int i;
->  
->  	frontswap_ops = *ops;
->  	frontswap_enabled = true;
-> +
-> +	for (i = 0; i < MAX_SWAPFILES; i++) {
-> +		if (test_and_clear_bit(i, need_init))
-
-ooh, that wasn't racy ;)
-
-> +			(*frontswap_ops.init)(i);
-> +	}
-> +	/* We MUST have backend_registered called _after_ the frontswap_init's
-> + 	 * have been called. Otherwise __frontswap_store might fail. */
-
-Comment makes no sense - backend_registered is not a function.
-
-Also, let's lay the comments out conventionally please:
-
-	/*
-	 * We MUST have backend_registered called _after_ the frontswap_init's
-	 * have been called. Otherwise __frontswap_store might fail.
-	 */
-
-
-> +	barrier();
-> +	backend_registered = true;
->  	return old;
->  }
->  EXPORT_SYMBOL(frontswap_register_ops);
->
-> ...
->
-> @@ -226,12 +266,15 @@ void __frontswap_invalidate_area(unsigned type)
->  {
->  	struct swap_info_struct *sis = swap_info[type];
->  
-> -	BUG_ON(sis == NULL);
-> -	if (sis->frontswap_map == NULL)
-> -		return;
-> -	frontswap_ops.invalidate_area(type);
-> -	atomic_set(&sis->frontswap_pages, 0);
-> -	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> +	if (backend_registered) {
-> +		BUG_ON(sis == NULL);
-> +		if (sis->frontswap_map == NULL)
-> +			return;
-> +		(*frontswap_ops.invalidate_area)(type);
-> +		atomic_set(&sis->frontswap_pages, 0);
-> +		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> +	}
-> +	clear_bit(type, need_init);
->  }
->  EXPORT_SYMBOL(__frontswap_invalidate_area);
->  
-> @@ -364,6 +407,9 @@ static int __init init_frontswap(void)
->  	debugfs_create_u64("invalidates", S_IRUGO,
->  				root, &frontswap_invalidates);
->  #endif
-> +	bitmap_zero(need_init, MAX_SWAPFILES);
-
-unneeded?
-
-> +	frontswap_enabled = 1;
->  	return 0;
->  }
->
-> ...
+>     -hpa
 >
 
+In addition to being a bit faster the code is also a bit smaller since
+it can combine the the constants from __va() and __pa_symbol() as the
+new __pa_symbol is an inline in the non-debug case.
+
+Thanks,
+
+Alex
