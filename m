@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab2KPNUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:20:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37983 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab2KPNUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:20:39 -0500
-Date: Fri, 16 Nov 2012 13:20:36 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: MMTests 0.07
-Message-ID: <20121116132036.GY8218@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751801Ab2KPNWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:22:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9208 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2KPNWY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 08:22:24 -0500
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZVw62ScINJoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=-IsNnZDw7B4A:10 a=VwQbUJbxAAAA:8 a=yPCof4ZbAAAA:8 a=XiS71eQw0hOa5WyzGs0A:9 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1353072143.7586.7.camel@gandalf.local.home>
+Subject: [PATCH][GIT PULL] ftrace: Clear bits properly in reset_iter_read()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Fri, 16 Nov 2012 08:22:23 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MMTests 0.07 is a configurable test suite that runs a number of common
-workloads of interest to MM developers. In this release the major point
-of interest is specjbb automation which I was using for evaluating the
-different automatic NUMA migration implementations with the configuration
-file at configs/config-global-dhp__jvm-specjbb. Using this test will
-require setting up an internal mirror with the specjbb tarball. There are
-also some basic monitoring scripts for NUMA-related information.
 
-Changelog since V0.06
-o Add benchmark for specjbb
-o Run multiple instances of tiobench and report variances
-o Basic NUMA monitoring scripts
-o Describe the components of autonumbench and add a configuration file
+Ingo,
 
-Changelog since v0.05
-o Automatically install packages (need name mappings for other distros)
-o Add benchmark for autonumabench
-o Add support for benchmarking NAS with MPI
-o Add pgbench for autonumabench (may need a bit more work)
-o Upgrade postgres version to 9.2.1
-o Upgrade kernel verion used for kernbench to 3.0 for newer toolchains
-o Alter mailserver config to finish in a reasonable time
-o Add monitor for perf sched
-o Add moinitor that gathers ftrace information with trace-cmd
-o Add preliminary monitors for NUMA stats (very basic)
-o Specify ftrace events to monitor from config file
-o Remove the bulk of whats left of VMRegress
-o Convert shellpacks to a template format to auto-generate boilerplate code
-o Collect lock_stat information if enabled
-o Run multiple iterations of aim9
-o Add basic regression tests for Cross Memory Attach
-o Copy with preempt being enabled in highalloc stres tests
-o Have largedd cope with a missing large file to work with
-o Add a monitor-only mode to just capture logs
-o Report receive-side throughput in netperf for results
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-At LSF/MM at some point a request was made that a series of tests
-be identified that were of interest to MM developers and that could be
-used for testing the Linux memory management subsystem. There is renewed
-interest in some sort of general testing framework during discussions for
-Kernel Summit 2012 so here is what I use.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/urgent
 
-http://www.csn.ul.ie/~mel/projects/mmtests/
-http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.07-mmtests-0.01.tar.gz
+Head SHA1: 70f77b3f7ec010ff9624c1f2e39a81babc9e2429
 
-There is a git repository at
 
-https://github.com/gormanm/mmtests.git
+Dan Carpenter (1):
+      ftrace: Clear bits properly in reset_iter_read()
 
-There are a number of stock configurations stored in configs/.  For example
-config-global-dhp__pagealloc-performance runs a number of tests that
-may be able to identify performance regressions or gains in the page
-allocator. Similarly there network and scheduler configs. There are also
-more complex options. config-global-dhp__parallelio-memcachetest will run
-memcachetest in the foreground while doing IO of different sizes in the
-background to measure how much unrelated IO affects the throughput of an
-in-memory database.
+----
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit 70f77b3f7ec010ff9624c1f2e39a81babc9e2429
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Sat Jun 9 19:10:27 2012 +0300
 
-Out of the box it should now do something useful by running a page fault
-microbenchmark.
+    ftrace: Clear bits properly in reset_iter_read()
+    
+    There is a typo here where '&' is used instead of '|' and it turns the
+    statement into a noop.  The original code is equivalent to:
+    
+    	iter->flags &= ~((1 << 2) & (1 << 4));
+    
+    Link: http://lkml.kernel.org/r/20120609161027.GD6488@elgon.mountain
+    
+    Cc: stable@vger.kernel.org # all of them
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
--- 
-Mel Gorman
-SUSE Labs
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 9dcf15d..51b7159 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2437,7 +2437,7 @@ static void reset_iter_read(struct ftrace_iterator *iter)
+ {
+ 	iter->pos = 0;
+ 	iter->func_pos = 0;
+-	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
++	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
+ }
+ 
+ static void *t_start(struct seq_file *m, loff_t *pos)
+
+
