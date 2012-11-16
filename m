@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab2KPMiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:38:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13103 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab2KPMiO convert rfc822-to-8bit (ORCPT
+	id S1751530Ab2KPMpK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:45:10 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51050 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPMpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:38:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,264,1352102400"; 
-   d="scan'208";a="218691545"
-Message-ID: <1353069475.11158.356.camel@smile>
-Subject: Re: [PATCH 2/2] dw_dmac: make usage of dw_dma_slave optional
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        spear-devel <spear-devel@list.st.com>, linux-kernel@vger.kernel.org
-Date: Fri, 16 Nov 2012 14:37:55 +0200
-In-Reply-To: <CAKohpokuGtgz6ohBPR9m0rnu0vhsyi7ywBvfWkSGSps5=PnYEA@mail.gmail.com>
-References: <1352989248-28913-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1352989248-28913-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x=mpzinz4xr4poNtX0Mom65kfptGM047-hu+XDLTS7m2rw@mail.gmail.com>
-	 <1352992898.11158.338.camel@smile>
-	 <CAKohpo=F1SmD0qCn9ybOOQ9VXWFQ-BY=udPgrWYPa23M2PuU_g@mail.gmail.com>
-	 <1352993269.11158.340.camel@smile>
-	 <CAKohpokPEuHy_rmjamLWZRu32f56W29Wo06EbWr4C2iqNqzvXQ@mail.gmail.com>
-	 <CAHp75VdDD7GwUUqp50YhbMEgX1kixV=3jmN7-QxV6paHcfWq0Q@mail.gmail.com>
-	 <CAKohpokuGtgz6ohBPR9m0rnu0vhsyi7ywBvfWkSGSps5=PnYEA@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Fri, 16 Nov 2012 07:45:08 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] usb: dwc3: core: move dwc3_cache_hwparams before dwc3_alloc_event_buffers
+Date: Fri, 16 Nov 2012 18:15:01 +0530
+Message-ID: <1353069901-19217-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 09:59 +0530, Viresh Kumar wrote: 
-> On 15 November 2012 23:28, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
-> > On Thu, Nov 15, 2012 at 5:38 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> On 15 November 2012 20:57, Andy Shevchenko
-> >> <andriy.shevchenko@linux.intel.com> wrote:
-> >>> Well, the prep_* should assign the value due to changes of check in the
-> >>> dwc_descriptor_complete. Otherwise we will potentially skip some
-> >>> important piece of code.
-> >>
-> >> What i meant to say was, set_runtime_config() must have already done this part.
-> >
-> > On one hand it is true. On the other - *_prep* functions use
-> > explicitly passed parameter. I doubt there is a consistency between
-> > value in slave config passed via dwc_control and value passed as
-> > explicit function parameter.
-> 
-> I believe it should be consistent.
-> 
-> @Vinod: Why have we duplicated direction? Once in prep_* and then in
-> slave_config?
+commit 392142 (moved event buffer allocation out of dwc3_core_init()). But
+event buffer allocation uses the cached copy of hwparams to determine
+the number of event buffers and the caching is done in dwc3_core_init.
+So moved dwc3_cache_hwparams function before dwc3_alloc_event_buffers so
+that dwc3_alloc_event_buffers sees the correct number of event buffers.
 
-Documentation and TODO list say that slave_config.direction is kinda
-deprecated.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+Changes from v1:
+Added *parens* to the commit message as per Sergei's comments.
 
-> 
-> --
-> viresh
+ drivers/usb/dwc3/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index b923183..88e8d31 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -356,8 +356,6 @@ static int __devinit dwc3_core_init(struct dwc3 *dwc)
+ 
+ 	dwc3_core_soft_reset(dwc);
+ 
+-	dwc3_cache_hwparams(dwc);
+-
+ 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+ 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
+ 	reg &= ~DWC3_GCTL_DISSCRAMBLE;
+@@ -498,6 +496,8 @@ static int __devinit dwc3_probe(struct platform_device *pdev)
+ 	pm_runtime_get_sync(dev);
+ 	pm_runtime_forbid(dev);
+ 
++	dwc3_cache_hwparams(dwc);
++
+ 	ret = dwc3_alloc_event_buffers(dwc, DWC3_EVENT_BUFFERS_SIZE);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to allocate event buffers\n");
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.9.5
+
