@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab2KPWXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 17:23:10 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:37773 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab2KPWXH (ORCPT
+	id S1753679Ab2KPW3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 17:29:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:61565 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab2KPW3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 17:23:07 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-media@vger.kernel.org, gregkh@linuxfoundation.org,
-        mchehab@infradead.org, bcollins@bluecherry.net,
-        Cyril Roelandt <tipecaml@gmail.com>
-Subject: [PATCH] staging/media/solo6x10/v4l2-enc.c: fix error-handling.
-Date: Fri, 16 Nov 2012 23:17:01 +0100
-Message-Id: <1353104221-30176-1-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 16 Nov 2012 17:29:10 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] backlight: Add of_find_backlight_by_node() function
+Date: Fri, 16 Nov 2012 23:29:05 +0100
+Message-Id: <1353104945-24153-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.0
+X-Provags-ID: V02:K0:5mD0UAiDthx+fJ6CkKbsJ8SIaYzvMOHjAcJcxoJANsO
+ iX1j4lzebiaFIjHPFFGoINxbVOCvNpvN3HgvHhbhiJm/FAq7G9
+ 4K79MCQcQxpoJImXjBIJVt/ePTI55IZtMt+uTCxfWfd/6/oBvM
+ 8tfB+albvtw8D/zdBDMR/3w4M0LfeJ1ywqsFiPWVltUdtp9FMt
+ IKHA1EpVAq+fAzfHT0wYd19ZSbV7aIp4lKwEiXREztEz2XFet5
+ UmAgoU2H2gd4R6SrLfTgeYTdqJl5ybDMyTdMUcq1Z0YHKiOyom
+ WlEiHVALOLWPrx4zLxKTMJoUUQijfS84btLwjGz/9ldD7k+zZi
+ AqUyNIlR1O/kyNUhAaSpKeQuKcwW48Z7JRYDPSt+F251i7414G
+ qXNa7Vv3RUYt+UPkEYpmF0Hxg9yLHhc0rGVZ+tgbnemKAIu15E
+ lDYmp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return values of copy_to_user() and copy_from_user() cannot be negative.
+This function finds the struct backlight_device for a given device tree
+node. A dummy function is provided so that it safely compiles out if OF
+support is disabled.
 
-Found using the following semantich patch:
-
-<spml>
-@exists@
-identifier ret;
-statement S;
-expression E;
-@@
-(
-* ret = copy_to_user(...);
-|
-* ret = copy_from_user(...);
-)
-... when != ret = E
-    when != if (ret) { <+... ret = E; ...+> }
-* if (ret < 0)
-  S
-</spml>
-
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/staging/media/solo6x10/v4l2-enc.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Changes in v2:
+- use #ifdef CONFIG_OF instead of #if IS_ENABLED(CONFIG_OF)
+- add kerneldoc to of_find_backlight_by_node() function
 
-diff --git a/drivers/staging/media/solo6x10/v4l2-enc.c b/drivers/staging/media/solo6x10/v4l2-enc.c
-index f8f0da9..4977e86 100644
---- a/drivers/staging/media/solo6x10/v4l2-enc.c
-+++ b/drivers/staging/media/solo6x10/v4l2-enc.c
-@@ -1619,6 +1619,8 @@ static int solo_s_ext_ctrls(struct file *file, void *priv,
- 				solo_enc->osd_text[OSD_TEXT_MAX] = '\0';
- 				if (!err)
- 					err = solo_osd_print(solo_enc);
-+				else
-+					err = -EFAULT;
- 			}
- 			break;
- 		default:
-@@ -1654,6 +1656,8 @@ static int solo_g_ext_ctrls(struct file *file, void *priv,
- 				err = copy_to_user(ctrl->string,
- 						   solo_enc->osd_text,
- 						   OSD_TEXT_MAX);
-+				if (err)
-+					err = -EFAULT;
- 			}
- 			break;
- 		default:
+ drivers/video/backlight/backlight.c | 29 +++++++++++++++++++++++++++++
+ include/linux/backlight.h           | 10 ++++++++++
+ 2 files changed, 39 insertions(+)
+
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index 297db2f..345f666 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -370,6 +370,35 @@ void backlight_device_unregister(struct backlight_device *bd)
+ }
+ EXPORT_SYMBOL(backlight_device_unregister);
+ 
++#ifdef CONFIG_OF
++static int of_parent_match(struct device *dev, void *data)
++{
++	return dev->parent && dev->parent->of_node == data;
++}
++
++/**
++ * of_find_backlight_by_node() - find backlight device by device-tree node
++ * @node: device-tree node of the backlight device
++ *
++ * Returns a pointer to the backlight device corresponding to the given DT
++ * node or NULL if no such backlight device exists or if the device hasn't
++ * been probed yet.
++ *
++ * This function obtains a reference on the backlight device and it is the
++ * caller's responsibility to drop the reference by calling put_device() on
++ * the backlight device's .dev field.
++ */
++struct backlight_device *of_find_backlight_by_node(struct device_node *node)
++{
++	struct device *dev;
++
++	dev = class_find_device(backlight_class, NULL, node, of_parent_match);
++
++	return dev ? to_backlight_device(dev) : NULL;
++}
++EXPORT_SYMBOL(of_find_backlight_by_node);
++#endif
++
+ static void __exit backlight_class_exit(void)
+ {
+ 	class_destroy(backlight_class);
+diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+index 5ffc6dd..da9a082 100644
+--- a/include/linux/backlight.h
++++ b/include/linux/backlight.h
+@@ -134,4 +134,14 @@ struct generic_bl_info {
+ 	void (*kick_battery)(void);
+ };
+ 
++#ifdef CONFIG_OF
++struct backlight_device *of_find_backlight_by_node(struct device_node *node);
++#else
++static inline struct backlight_device *
++of_find_backlight_by_node(struct device_node *node)
++{
++	return NULL;
++}
++#endif
++
+ #endif
 -- 
-1.7.10.4
+1.8.0
 
