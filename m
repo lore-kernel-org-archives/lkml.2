@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab2KPRrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:47:11 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40175 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab2KPRrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:47:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121116171702.GB5854@phenom.ffwll.local>
-References: <20121116171702.GB5854@phenom.ffwll.local>
-Date: Fri, 16 Nov 2012 12:47:08 -0500
-Message-ID: <CADnq5_NBz=Fk_n=Gkq9r9P6b+uq8c8MMVApjKdqhRrj44bgm7Q@mail.gmail.com>
-Subject: Re: [pull] drm-intel-next
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Dave Airlie <airlied@gmail.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752605Ab2KPRsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:48:54 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:6515 "EHLO smtp4.mundo-r.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab2KPRsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 12:48:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjMIALl7plBbdWOb/2dsb2JhbABEhh6zcSKINYEIgh4BAQQBI0QSBQsLGCoCAlcGE4gHCqt4km2MM4N6gRMDpj+CcA
+Message-ID: <1353088114.4563.49.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH] ipack: move header files to include/linux
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, jens.taprogge@taprogge.org,
+        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
+Date: Fri, 16 Nov 2012 18:48:34 +0100
+In-Reply-To: <20121116174410.GA2143@kroah.com>
+References: <1353087276-4861-1-git-send-email-siglesias@igalia.com>
+	 <20121116174410.GA2143@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-HFKKsypIJGxOViCjwp4f"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 12:17 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> Hi Dave,
->
-> Highlights of this -next round:
-> - ivb fdi B/C fixes
-> - hsw sprite/plane offset fixes from Damien
-> - unified dp/hdmi encoder for hsw, finally external dp support on hsw
->   (Paulo)
-> - kill-agp and some other prep work in the gtt code from Ben
-> - some fb handling fixes from Ville
-> - massive pile of patches to align hsw VGA with the spec and make it
->   actually work (Paulo)
-> - pile of workarounds from Jesse, mostly for vlv, but also some other
->   related platforms
-> - start of a dev_priv reorg, that thing grew out of bounds and chaotic
-> - small bits&pieces all over the place, down to better error handling for
->   load-detect on gen2 (Chris, Jani, Mika, Zhenyu, ...)
->
-> On top of the previous pile (just copypasta):
-> - tons of hsw dp prep patches form Paulo
-> - round scheduled work items and timers to nearest second (Chris)
-> - some hw workarounds (Jesse&Damien)
-> - vlv dp support and related fixups (Vijay et al.)
-> - basic haswell dp support, not yet wired up for external ports (Paulo)
-> - edp support (Paulo)
-> - tons of refactorings to prepare for the above (Paulo)
-> - panel rework, unifiying code between lvds and edp panels (Jani)
-> - panel fitter scaling modes (Jani + Yuly Novikov)
-> - panel power improvements, should now work without the BIOS setting it up
-> - extracting some dp helpers from radeon/i915 and move them to
->   drm_dp_helper.c
-> - randome pile of workarounds (Damien, Ben, ...)
-> - some cleanups for the register restore code for suspend/resume
-> - secure batchbuffer support, should enable tear-free blits on gen6+
->   Chris)
-> - random smaller fixlets and cleanups.
->
-> Note that I've done a tiny bit of history rectifying on this -next pull
-> (just to make a debug dmesg output correct), and applied a bugfix for a
-> regression that Chris caught (introduced much earlier in this patch-pile).
->
-> Cheers, Daniel
 
-Hey, I don't see the drm HPD fixes.  Are you planning to put them in
-another pull request?  It would be nice to get them upstream for 3.8
+--=-HFKKsypIJGxOViCjwp4f
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Alex
+On Fri, 2012-11-16 at 09:44 -0800, Greg Kroah-Hartman wrote:
+> On Fri, Nov 16, 2012 at 06:34:36PM +0100, Samuel Iglesias Gonsalvez wrote=
+:
+> > Move ipack header files to include/linux/ directory where they belong t=
+o.
+> >=20
+> > Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> > ---
+> >  drivers/ipack/carriers/tpci200.h |    3 +-
+> >  drivers/ipack/devices/ipoctal.c  |    2 +-
+> >  drivers/ipack/ipack.c            |    2 +-
+> >  drivers/ipack/ipack.h            |  215 ------------------------------=
+--------
+> >  drivers/ipack/ipack_ids.h        |   32 ------
+> >  include/linux/ipack.h            |  214 ++++++++++++++++++++++++++++++=
++++++++
+> >  include/linux/ipack_ids.h        |   32 ++++++
+> >  7 files changed, 249 insertions(+), 251 deletions(-)
+> >  delete mode 100644 drivers/ipack/ipack.h
+> >  delete mode 100644 drivers/ipack/ipack_ids.h
+> >  create mode 100644 include/linux/ipack.h
+> >  create mode 100644 include/linux/ipack_ids.h
+>=20
+> Can you send me a patch in -M format, that just shows the files moving
+> next time?
+
+OK
+
+> Also, do we really need the ipack_ids.h file in include/linux?  It looks
+> like only the core ipack code cares about the values there, right?
+>=20
+
+Yes, you are right. I will rewrite the patch again and send it.
+
+Sorry for the inconveniences,
+
+Sam
+
+
+--=-HFKKsypIJGxOViCjwp4f
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAlCmfHIACgkQWrfbyfmd9eIfTgCgrQNFSHEzmzsWg0Aasyn1zNIC
+NCQAoKPq22F5lhBqXXLUSWndD8KbXRtk
+=igmt
+-----END PGP SIGNATURE-----
+
+--=-HFKKsypIJGxOViCjwp4f--
+
