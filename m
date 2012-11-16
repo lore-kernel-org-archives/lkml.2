@@ -1,39 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2KPTkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:40:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35493 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193Ab2KPTkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:40:07 -0500
-Message-ID: <50A69684.20103@zytor.com>
-Date: Fri, 16 Nov 2012 11:39:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1753399Ab2KPTkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:40:09 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41642 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab2KPTkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 14:40:06 -0500
+Message-ID: <50A69693.2050002@gmail.com>
+Date: Fri, 16 Nov 2012 14:40:03 -0500
+From: Xi Wang <xi.wang@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 8/9] x86: ramdisk info print with high bits.
-References: <1353055989-31939-1-git-send-email-yinghai@kernel.org> <1353055989-31939-9-git-send-email-yinghai@kernel.org> <50A6644D.80205@zytor.com> <CAE9FiQXJqyUf7qAspG_ZKUPV96QQjayp8cM0ihQ0RpyU5AxBMA@mail.gmail.com> <CAE9FiQUkWug18Bdyjp7ocJxCCJxpa7+tY0+eQ301pY1a-f+JUw@mail.gmail.com>
-In-Reply-To: <CAE9FiQUkWug18Bdyjp7ocJxCCJxpa7+tY0+eQ301pY1a-f+JUw@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
+To: Xiangliang Yu <yuxiangl@marvell.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH v2] [SCSI] mvsas: fix undefined bit shift
+References: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
+In-Reply-To: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 11:32 AM, Yinghai Lu wrote:
->>
->> or fix printk to add extra 2 for "0x" when # is found?
-> 
-> looks like we have lots of %#010llx or %#010Lx there in arch/x86.
-> 
-> We need to fix printk to make it acting like %pR ?
-> 
+The macro bit(n) is defined as ((u32)1 << n), and thus it doesn't work
+with n >= 32, such as in mvs_94xx_assign_reg_set():
 
-No, it was a thinko on my part.
+	if (i >= 32) {
+		mvi->sata_reg_set |= bit(i);
+		...
+	}
 
-	-hpa
+The shift ((u32)1 << n) with n >= 32 also leads to undefined behavior.
+The result varies depending on the architecture.
+
+This patch changes bit(n) to do a 64-bit shift.  It also simplifies
+mv_ffc64() using __ffs64(), since invoking ffz() with ~0 is undefined.
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Cc: stable@vger.kernel.org
+---
+As suggested by James, v2 is a single patch with a stable tag.
+---
+ drivers/scsi/mvsas/mv_94xx.h |   14 ++------------
+ drivers/scsi/mvsas/mv_sas.h  |    2 +-
+ 2 files changed, 3 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
+index 8f7eb4f..487aa6f 100644
+--- a/drivers/scsi/mvsas/mv_94xx.h
++++ b/drivers/scsi/mvsas/mv_94xx.h
+@@ -258,21 +258,11 @@ enum sas_sata_phy_regs {
+ #define SPI_ADDR_VLD_94XX         	(1U << 1)
+ #define SPI_CTRL_SpiStart_94XX     	(1U << 0)
+ 
+-#define mv_ffc(x)   ffz(x)
+-
+ static inline int
+ mv_ffc64(u64 v)
+ {
+-	int i;
+-	i = mv_ffc((u32)v);
+-	if (i >= 0)
+-		return i;
+-	i = mv_ffc((u32)(v>>32));
+-
+-	if (i != 0)
+-		return 32 + i;
+-
+-	return -1;
++	u64 x = ~v;
++	return x ? __ffs64(x) : -1;
+ }
+ 
+ #define r_reg_set_enable(i) \
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index c04a4f5..da24955 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -69,7 +69,7 @@ extern struct kmem_cache *mvs_task_list_cache;
+ #define DEV_IS_EXPANDER(type)	\
+ 	((type == EDGE_DEV) || (type == FANOUT_DEV))
+ 
+-#define bit(n) ((u32)1 << n)
++#define bit(n) ((u64)1 << n)
+ 
+ #define for_each_phy(__lseq_mask, __mc, __lseq)			\
+ 	for ((__mc) = (__lseq_mask), (__lseq) = 0;		\
+-- 
+1.7.10.4
 
