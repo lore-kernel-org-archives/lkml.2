@@ -1,142 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283Ab2KPBIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:08:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33923 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2KPBIh (ORCPT
+	id S1751377Ab2KPBJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 20:09:00 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49178 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2KPBI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:08:37 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50A591E5.9080906@jp.fujitsu.com>
-Date: Fri, 16 Nov 2012 10:07:49 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 15 Nov 2012 20:08:59 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Wen Congyang <wency@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-acpi@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [Patch v5 0/7] acpi,memory-hotplug: implement framework for hot
- removing memory
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <9217155.1eDFuhkN55@vostro.rjw.lan>
-In-Reply-To: <9217155.1eDFuhkN55@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C901469A26@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C90146794E@G9W0717.americas.hpqcorp.net>
+ <20121115005100.GA6613@google.com> <F9E001219150CB45BEDC82A650F360C901469A26@G9W0717.americas.hpqcorp.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 15 Nov 2012 18:08:36 -0700
+Message-ID: <CAErSpo7gvo8rA1k25kn4put7Cky8LZK0OeWRCapH5f3sPb7srQ@mail.gmail.com>
+Subject: Re: [ PATCH RESEND ] PCI-AER: Do not report successful error recovery
+ for devices with AER-unaware drivers
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-
-2012/11/16 9:28, Rafael J. Wysocki wrote:
-> On Thursday, November 15, 2012 02:59:30 PM Wen Congyang wrote:
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> In the 1st case, acpi_memory_disable_device() will be called.
->> In the 2nd case, acpi_memory_device_remove() will be called.
->> acpi_memory_device_remove() will also be called when we unbind the
->> memory device from the driver acpi_memhotplug or a driver initialization
->> fails.
->>
->> acpi_memory_disable_device() has already implemented a code which
->> offlines memory and releases acpi_memory_info struct . But
->> acpi_memory_device_remove() has not implemented it yet.
->>
->> So the patch prepares the framework for hot removing memory and
->> adds the framework into acpi_memory_device_remove().
->>
->> We may hotremove the memory device by this 2 ways at the same time.
->> So we remove the function acpi_memory_disable_device(), and use
->> acpi_bus_hot_remove_device() which is used by 2nd case to implement it.
->> We lock device in acpi_bus_hot_remove_device(), so there is no
->> need to add lock in acpi_memhotplug.
->>
->> The last version of this patchset is here:
->> https://lkml.org/lkml/2012/11/8/121
->>
->> Note:
->> 1. The following commit in pm tree can be dropped now(The other two patches
->>     are already dropped):
->>     54c4c7db6cb94d7d1217df6d7fca6847c61744ab
->> 2. This patchset requires the following patch(It is in pm tree now)
->>     https://lkml.org/lkml/2012/11/1/225
->>
->> Changes from v4 to v5:
->> 1. patch2: new patch. use acpi_bus_hot_remove_device() to implement memory
->>     device hotremove.
->>
->> Changes from v3 to v4:
->> 1. patch1: unlock list_lock when removing memory fails.
->> 2. patch2: just rebase them
->> 3. patch3-7: these patches are in -mm tree, and they conflict with this
->>     patchset, so Adrew Morton drop them from -mm tree. I rebase and merge
->>     them into this patchset.
->>
->> Wen Congyang (6):
->>    acpi,memory-hotplug: deal with eject request in hotplug queue
->>    acpi_memhotplug.c: fix memory leak when memory device is unbound from
->>      the module acpi_memhotplug
->>    acpi_memhotplug.c: free memory device if acpi_memory_enable_device()
->>      failed
->>    acpi_memhotplug.c: don't allow to eject the memory device if it is
->>      being used
->>    acpi_memhotplug.c: bind the memory device when the driver is being
->>      loaded
->>    acpi_memhotplug.c: auto bind the memory device which is hotplugged
->>      before the driver is loaded
->>
->> Yasuaki Ishimatsu (1):
->>    acpi,memory-hotplug : add memory offline code to
->>      acpi_memory_device_remove()
+On Thu, Nov 15, 2012 at 12:09 AM, Pandarathil, Vijaymohan R
+<vijaymohan.pandarathil@hp.com> wrote:
+> Thanks for the comments. See my response below.
 >
-> Well, I have tried _really_ hard to apply this patchset, but pretty much
-> none of the patches except for [1/7] applied for me.  I have no idea what
-> tree they are against, but I'm pretty sure it's not my tree.
+>> -----Original Message-----
+>> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+>> Sent: Wednesday, November 14, 2012 4:51 PM
+>> To: Pandarathil, Vijaymohan R
+>> Cc: linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org;
+>> linasvepstas@gmail.com; Myron Stowe; Ortiz, Lance E; Huang Ying; Hidetoshi
+>> Seto; Patterson, Andrew D (LeftHand Networks); Zhang Yanmin
+>> Subject: Re: [ PATCH RESEND ] PCI-AER: Do not report successful error
+>> recovery for devices with AER-unaware drivers
+>>
+>> [+cc Lance, Huang, Hidetoshi, Andrew, Zhang]
+>>
+>> On Sat, Nov 10, 2012 at 07:41:04AM +0000, Pandarathil, Vijaymohan R wrote:
+>> > When an error is detected on a PCIe device which does not have an
+>> > AER-aware driver, prevent AER infrastructure from reporting
+>> > successful error recovery.
+>> >
+>> > This is because the report_error_detected() function that gets
+>> > called in the first phase of recovery process allows forward
+>> > progress even when the driver for the device does not have AER
+>> > capabilities. It seems that all callbacks (in pci_error_handlers
+>> > structure) registered by drivers that gets called during error
+>> > recovery are not mandatory. So the intention of the infrastructure
+>> > design seems to be to allow forward progress even when a specific
+>> > callback has not been registered by a driver. However, if error
+>> > handler structure itself has not been registered, it doesn't make
+>> > sense to allow forward progress.
+>> >
+>> > As a result of the current design, in the case of a single device
+>> > having an AER-unaware driver or in the case of any function in a
+>> > multi-function card having an AER-unaware driver, a successful
+>> > recovery is reported.
+>> >
+>> > Typical scenario this happens is when a PCI device is detached
+>> > from a KVM host and the pci-stub driver on the host claims the
+>> > device. The pci-stub driver does not have error handling capabilities
+>> > but the AER infrastructure still reports that the device recovered
+>> > successfully.
+>> >
+>> > The changes proposed here leaves the device in an unrecovered state
+>> > if the driver for the device or for any function in a multi-function
+>> > card does not have error handler structure registered. This reflects
+>> > the true state of the device and prevents any partial recovery (or no
+>> > recovery at all) reported as successful.
+>> >
+>> > Please also see comments from Linas Vepstas at the following link
+>> > http://www.spinics.net/lists/linux-pci/msg18572.html
+>> >
+>> > Reviewed-by: Linas Vepstas <linasvepstas <at> gmail.com>
+>> > Reviewed-by: Myron Stowe <mstowe <at> redhat.com>
+>> > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil <at>
+>> hp.com>
+>> >
+>> > ---
+>> >
+>> > drivers/pci/pcie/aer/aerdrv_core.c | 6 ++++++
+>> >  1 file changed, 6 insertions(+)
+>> >
+>> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c
+>> b/drivers/pci/pcie/aer/aerdrv_core.c
+>> > index 06bad96..030b229 100644
+>> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
+>> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+>> > @@ -215,6 +215,12 @@ static int report_error_detected(struct pci_dev
+>> *dev, void *data)
+>> >
+>> >     dev->error_state = result_data->state;
+>> >
+>> > +   if ((!dev->driver || !dev->driver->err_handler) &&
+>> > +           !(dev->hdr_type & PCI_HEADER_TYPE_BRIDGE)) {
+>> > +           dev_info(&dev->dev, "AER: Error detected but no driver has
+>> claimed this device or the driver is AER-unaware\n");
+>> > +           result_data->result = PCI_ERS_RESULT_NONE;
+>> > +           return 1;
+>>
+>> This doesn't seem right because returning 1 here causes pci_walk_bus()
+>> to terminate, which means we won't set dev->error_state or notify
+>> drivers for any devices we haven't visited yet.
+>>
+>> > +   }
+>> >     if (!dev->driver ||
+>> >             !dev->driver->err_handler ||
+>> >             !dev->driver->err_handler->error_detected) {
+>>
+>> If none of the drivers in the affected hierarchy supports error handling,
+>> I think the call tree looks like this:
+>>
+>>     do_recovery                                 # uncorrectable only
+>>         broadcast_error_message(dev, ..., report_error_detected)
+>>             result_data.result = CAN_RECOVER
+>>             pci_walk_bus(..., report_error_detected)
+>>                 report_error_detected           # (each dev in subtree)
+>>                     return 0                    # no change to result
+>>             return result_data.result
+>>         broadcast_error_message(dev, ..., report_mmio_enabled)
+>>             result_data.result = PCI_ERS_RESULT_RECOVERED
+>>             pci_walk_bus(..., report_mmio_enabled)
+>>                 report_mmio_enabled             # (each dev in subtree)
+>>                     return 0                    # no change to result
+>>         dev_info("recovery successful")
+>>
+>> Specifically, there are no error_handler functions, so we never change
+>> result_data.result, and the default is that we treat the error as
+>> "recovered successfully."  That seems broken.  An uncorrectable error
+>> is by definition recoverable only by device-specific software, i.e.,
+>> the driver.  We didn't call any drivers, so we can't have recovered
+>> anything.
+>>
+>> What do you think of the following alternative?  I don't know why you
+>> checked for bridge devices in your patch, so I don't know whether
+>> that's important here or not.
+>>
+>> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c
+>> b/drivers/pci/pcie/aer/aerdrv_core.c
+>> index 06bad96..a109c68 100644
+>> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+>> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+>> @@ -231,11 +231,11 @@ static int report_error_detected(struct pci_dev *dev,
+>> void *data)
+>>                                  dev->driver ?
+>>                                  "no AER-aware driver" : "no driver");
+>>               }
+>> -             return 0;
+>> +             vote = PCI_ERS_RESULT_DISCONNECT;
+>> +     } else {
+>> +             err_handler = dev->driver->err_handler;
+>> +             vote = err_handler->error_detected(dev, result_data->state);
+>>       }
+>> -
+>> -     err_handler = dev->driver->err_handler;
+>> -     vote = err_handler->error_detected(dev, result_data->state);
+>>       result_data->result = merge_result(result_data->result, vote);
+>>       return 0;
+>>  }
 >
-> I _have_ applied patches [1-4/7] and pushed them to linux-pm.git/linux-next.
-
-I checked your tree and found a mistake.
-You merged a following patch into your tree.
-
-commitid:2ba281f1
-ACPI / memory-hotplug: introduce a mutex lock to protect the list
-in acpi_memory_device
-
-But it is wrong.
-
-[1/7] patch is "acpi,memory-hotplug : add memory offline code to
-acpi_memory_device_remove()". So we would like you to merge it
-instead of commitid:2ba281f1.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> I needed to fix up almost all of them so that they applied, so please check
-> if my fixups make sense (and let me know ASAP if that's not the case).
+> This would definitely set the error_state for all devices correctly. However, with the
+> current implementation of merge_result(), won't we still end up reporting successful
+> recovery ? The following case statement in merge_result() can set back the result
+> from PCI_ERS_RESULT_DISCONNECT to PCI_ERS_RESULT_NEED_RESET for a subsequent device
+> on the bus which returned PCI_ERS_RESULT_NEED_RESET from its error_detected callback .
 >
-> If they are OK, please rebase the rest of the series on top of
-> linux-pm.git/linux-next and repost.  I'm not going to take any more
-> patches that don't apply from you.
+> merge_result()
+> ...
+>         case PCI_ERS_RESULT_DISCONNECT:
+>                 if (new == PCI_ERS_RESULT_NEED_RESET)
+>                         orig = new;
+>                 break;
 >
-> Moreover, I'm not going to take any more ACPI memory hotplug patches
-> for v3.8 except for the [5-7/7] from this series (after they have been
-> rebased and _if_ they apply), so please don't submit any until the v3.8
-> merge window closes (of course, you're free to post RFCs, but I will
-> ignore them).
->
-> Thanks,
-> Rafael
->
->
+> This would mean do_recovery() proceeds along to the next broadcast_message and
+> ultimately report success. Right ? Let me know if I am missing something.
 
+Yes, I think you're right.  I only looked at the case where none of
+the devices in the subtree had drivers.
 
+> I looked at a few options and the following looked more promising. Thoughts ?
+>
+> Introduce a new pci_ers_result enum PCI_ERS_RESULT_NO_AER_DRIVER and make changes as follows.
+
+I don't really like this new enum because it's not really obvious how
+it's different from PCI_ERS_RESULT_NONE and, more importantly, it
+makes merge_result() even more of a kludge than it already is.
+
+It's hard to write a nice simple description of this algorithm
+(visiting all the devices in a subtree, collecting error handler
+results, and merging them).  It would be a lot easier to describe if
+merge_result() could be written simply as "max()", but I'm not sure
+the pci_ers_result codes could be ordered in a way that would make
+that possible.  And the desired semantics might make it impossible,
+too.
+
+I think the intent of your patch is that if there's any device in the
+subtree that lacks an .error_detected() method, we do not call
+.mmio_enabled() or .slot_reset() or .resume() for *any* device in the
+subtree.  Right?
+
+So maybe this is the best we can do, and it certainly seems better
+than what we have now.  Can you repost this as a fresh v2 patch?
+
+> diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
+> index 94a7598..149ba79 100644
+> --- a/drivers/pci/pcie/aer/aerdrv.h
+> +++ b/drivers/pci/pcie/aer/aerdrv.h
+> @@ -87,6 +87,9 @@ struct aer_broadcast_data {
+>  static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+>                 enum pci_ers_result new)
+>  {
+> +       if (new == PCI_ERS_RESULT_NO_AER_DRIVER)
+> +               return new;
+
+BTW, if you keep this, please just use "return
+PCI_ERS_RESULT_NO_AER_DRIVER" rather than "return new" since we *know*
+what we're returning.  I think there's another instance of this in
+merge_result() that you could fix, too.
+
+> +
+>         if (new == PCI_ERS_RESULT_NONE)
+>                 return orig;
+>
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index 06bad96..729580a 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -231,11 +231,12 @@ static int report_error_detected(struct pci_dev *dev, void *data)
+>                                    dev->driver ?
+>                                    "no AER-aware driver" : "no driver");
+>                 }
+> -               return 0;
+> +               vote = PCI_ERS_RESULT_NO_AER_DRIVER;
+> +       } else {
+> +               err_handler = dev->driver->err_handler;
+> +               vote = err_handler->error_detected(dev, result_data->state);
+>         }
+>
+> -       err_handler = dev->driver->err_handler;
+> -       vote = err_handler->error_detected(dev, result_data->state);
+>         result_data->result = merge_result(result_data->result, vote);
+>         return 0;
+>  }
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index ee21795..fb7e869 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -538,6 +538,9 @@ enum pci_ers_result {
+>
+>         /* Device driver is fully recovered and operational */
+>         PCI_ERS_RESULT_RECOVERED = (__force pci_ers_result_t) 5,
+> +
+> +       /* No AER capabilities registered for the driver */
+> +       PCI_ERS_RESULT_NO_AER_DRIVER = (__force pci_ers_result_t) 6,
+>  };
+>
+>  /* PCI bus error event callbacks */
+>
