@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab2KPIxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:53:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22785 "EHLO
+	id S1751745Ab2KPIyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:54:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22820 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab2KPIxe (ORCPT
+	with ESMTP id S1751102Ab2KPIxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:53:34 -0500
+	Fri, 16 Nov 2012 03:53:37 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 5/9] x86: Merge early_reserve_initrd for 32bit and 64bit
-Date: Fri, 16 Nov 2012 00:53:05 -0800
-Message-Id: <1353055989-31939-6-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 4/9] x86, 64bit: add support for loading kernel above 512G
+Date: Fri, 16 Nov 2012 00:53:04 -0800
+Message-Id: <1353055989-31939-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
 References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the same, could move them out from head32/64.c to setup.c.
+Current kernel is not allowed to be loaded above 512g, it thinks
+that address is too big.
 
-We are using memblock, and it could handle overlapping properly, so
-we don't need to reserve some at first, and just need to make sure
-we reserve them before we are using memblock to find free mem to use.
+We only need to add one extra one spare page for needed level3 to
+point another 512g range.
+
+Need to check _text range and set level4 pg to point to that spare
+level3 page, and set level3 to point to level2 page to cover
+[_text, _end] with extra mapping.
+
+We need this to put relocatable bzImage high above 512g.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- arch/x86/kernel/head32.c |   11 -----------
- arch/x86/kernel/head64.c |   11 -----------
- arch/x86/kernel/setup.c  |   22 ++++++++++++++++++----
- 3 files changed, 18 insertions(+), 26 deletions(-)
+ arch/x86/kernel/head_64.S |   34 +++++++++++++++++++++++++++-------
+ 1 files changed, 27 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index c18f59d..4c52efc 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -33,17 +33,6 @@ void __init i386_start_kernel(void)
- 	memblock_reserve(__pa_symbol(&_text),
- 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index efc0c08..32fa9d0 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -78,12 +78,6 @@ startup_64:
+ 	testl	%eax, %eax
+ 	jnz	bad_address
  
--#ifdef CONFIG_BLK_DEV_INITRD
--	/* Reserve INITRD */
--	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
--		/* Assume only end is not page aligned */
--		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
--		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
--		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
--	}
--#endif
+-	/* Is the address too large? */
+-	leaq	_text(%rip), %rdx
+-	movq	$PGDIR_SIZE, %rax
+-	cmpq	%rax, %rdx
+-	jae	bad_address
 -
- 	/* Call the subarch specific early setup function */
- 	switch (boot_params.hdr.hardware_subarch) {
- 	case X86_SUBARCH_MRST:
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 037df57..00e612a 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -100,17 +100,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
- 	memblock_reserve(__pa_symbol(&_text),
- 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+ 	/* Fixup the physical addresses in the page table
+ 	 */
+ 	addq	%rbp, init_level4_pgt + 0(%rip)
+@@ -102,12 +96,35 @@ startup_64:
+ 	andq	$PMD_PAGE_MASK, %rdi
  
--#ifdef CONFIG_BLK_DEV_INITRD
--	/* Reserve INITRD */
--	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
--		/* Assume only end is not page aligned */
--		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
--		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
--		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
--		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
--	}
--#endif
--
- 	reserve_ebda_region();
- 
- 	/*
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 6d29d1f..ee6d267 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -364,6 +364,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- 
- 	return mapped_pages << PAGE_SHIFT;
- }
-+static void __init early_reserve_initrd(void)
-+{
-+	/* Assume only end is not page aligned */
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	movq	%rdi, %rax
++	shrq	$PGDIR_SHIFT, %rax
++	andq	$(PTRS_PER_PGD - 1), %rax
++	jz	skip_level3_spare
 +
-+	if (!boot_params.hdr.type_of_loader ||
-+	    !ramdisk_image || !ramdisk_size)
-+		return;		/* No initrd provided by bootloader */
++	/* Set level3 at first */
++	leaq	(level3_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
++	leaq	init_level4_pgt(%rip), %rbx
++	movq	%rdx, 0(%rbx, %rax, 8)
++	addq	$L4_PAGE_OFFSET, %rax
++	movq	%rdx, 0(%rbx, %rax, 8)
 +
-+	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
-+}
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
-@@ -390,10 +403,6 @@ static void __init reserve_initrd(void)
- 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
- 				PFN_DOWN(ramdisk_end))) {
- 		/* All are mapped, easy case */
--		/*
--		 * don't need to reserve again, already reserved early
--		 * in i386_start_kernel
--		 */
- 		initrd_start = ramdisk_image + PAGE_OFFSET;
- 		initrd_end = initrd_start + ramdisk_size;
- 		return;
-@@ -404,6 +413,9 @@ static void __init reserve_initrd(void)
- 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
- }
- #else
-+static void __init early_reserve_initrd(void)
-+{
-+}
- static void __init reserve_initrd(void)
- {
- }
-@@ -665,6 +677,8 @@ early_param("reservelow", parse_reservelow);
++	/* always need to set level2 */
++	movq	%rdi, %rax
++	shrq	$PUD_SHIFT, %rax
++	andq	$(PTRS_PER_PUD - 1), %rax
++	leaq	level3_spare_pgt(%rip), %rbx
++	jmp	set_level2_spare
++
++skip_level3_spare:
++	movq	%rdi, %rax
+ 	shrq	$PUD_SHIFT, %rax
+ 	andq	$(PTRS_PER_PUD - 1), %rax
+ 	jz	ident_complete
  
- void __init setup_arch(char **cmdline_p)
- {
-+	early_reserve_initrd();
+-	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
++	/* only set level2 with out level3 spare */
+ 	leaq	level3_ident_pgt(%rip), %rbx
 +
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
++set_level2_spare:
++	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
+ 	movq	%rdx, 0(%rbx, %rax, 8)
+ 
+ 	movq	%rdi, %rax
+@@ -435,6 +452,9 @@ NEXT_PAGE(level2_kernel_pgt)
+ 	PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
+ 		KERNEL_IMAGE_SIZE/PMD_SIZE)
+ 
++NEXT_PAGE(level3_spare_pgt)
++	.fill   512, 8, 0
++
+ NEXT_PAGE(level2_spare_pgt)
+ 	.fill   512, 8, 0
+ 
 -- 
 1.7.7
 
