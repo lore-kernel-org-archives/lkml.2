@@ -1,272 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab2KPQdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:33:07 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:59355 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab2KPQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:33:05 -0500
-Message-ID: <50A66AAE.3070707@ti.com>
-Date: Fri, 16 Nov 2012 11:32:46 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1752822Ab2KPQdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:33:18 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:46796 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab2KPQdN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 11:33:13 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@tv-sign.ru>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 16 Nov 2012 08:32:43 -0800
+Message-ID: <8739097bkk.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-keystone@list.ti.com>
-Subject: Re: [linux-keystone] [PATCH] spi: davinci: add OF support for the
- spi controller
-References: <1352755702-21488-1-git-send-email-m-karicheri2@ti.com> <20121115162042.A24F13E194B@localhost>
-In-Reply-To: <20121115162042.A24F13E194B@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19szExPhq7D+3Cd5leoNocbo38NrZo+ViM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [REVIEW][PATCH 0/11] pid namespace cleanups and enhancements
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2012 11:20 AM, Grant Likely wrote:
-> On Mon, 12 Nov 2012 16:28:22 -0500, Murali Karicheri <m-karicheri2@ti.com> wrote:
->> This adds OF support to DaVinci SPI controller to configure platform
->> data through device bindings.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Hi Murali,
->
-> Comments below...
->
->> ---
->>   .../devicetree/bindings/spi/spi-davinci.txt        |   50 ++++++++++++
->>   drivers/spi/spi-davinci.c                          |   80 +++++++++++++++++++-
->>   2 files changed, 126 insertions(+), 4 deletions(-)
->>   create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
->>
->> diff --git a/Documentation/devicetree/bindings/spi/spi-davinci.txt b/Documentation/devicetree/bindings/spi/spi-davinci.txt
->> new file mode 100644
->> index 0000000..0369369
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/spi/spi-davinci.txt
->> @@ -0,0 +1,50 @@
->> +Davinci SPI controller device bindings
->> +
->> +Required properties:
->> +- #address-cells: number of cells required to define a chip select
->> +	address on the SPI bus.
-> Will this *ever* be something other than '1'?
-Will add "should be set to 1" as only once cell is used for this.
->> +- #size-cells: should be zero.
->> +- compatible:
->> +	- "ti,davinci-spi"
-> Please use the actual model of the chip here. Don't try to be generic
-> with the compatible string. A driver can bind against more than one
-> compatible value and new devices can claim compatiblity with old by
-> including the old compatible string in this list.
->
->> +- reg: Offset and length of SPI controller register space
->> +- ti,davinci-spi-version: SPI version :- "1.0" or "2.0"
-> Usually this is determined from the compatible value directly (which is
-> why compatible strings shouldn't be generic). Don't use a separate
-> property for it.
-Ok. Based on the ablve two comments, I think I will remove 
-davinci-spi-version property. So driver will add two compatibility 
-strings "ti,davinci-spi1" and "ti,davinci-spi2" amd match data for 
-ti,davinci-spi2 will have the version set to 2 so that driver can use it 
-to behave differently. This way DTS file for a board can set the 
-compatibility string to use different version of the IP for the driver. 
-Do you think I got you right?
->> +- ti,davinci-spi-num-cs: Number of chip selects
->> +- ti,davinci-spi-intr-line: interrupt line used to connect the SPI
->> +	IP to the ARM interrupt controller withn the SoC. Possible values
->> +	are 0 and 1.
-> ? Isn't that what the interrupts property is for? I don't understand why
-> this is needed from the description.
-Based on the IP manual, there are two interrupt lines coming from the IP 
-and only one of them is tied to the interrupt controller in a specific 
-SoC. There is a register to program which interrupt line is used based 
-on the SoC configuration. So this is different from interrupts.
->> +- interrupts: interrupt number offset at the irq parent
->> +- clocks: spi clk phandle
->> +
->> +Example of a NOR flash slave device (n25q032) connected to DaVinci
->> +SPI controller device over the SPI bus.
->> +
->> +spi:spi0@20BF0000 {
-> spi@20BF0000  (use 'spi' not 'spi0')
->
-Ok. Will change.
->> +	#address-cells			= <1>;
->> +	#size-cells			= <0>;
->> +	compatible			= "ti,davinci-spi";
->> +	reg				= <0x20BF0000 0x1000>;
->> +	ti,davinci-spi-version		= "1.0";
->> +	ti,davinci-spi-num-cs		= <4>;
->> +	ti,davinci-spi-intr-line	= <0>;
->> +	interrupts			= <338>;
->> +	clocks				= <&clkspi>;
->> +
->> +	flash: n25q032@0 {
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +		compatible = "st,m25p32";
->> +		spi-max-frequency = <25000000>;
->> +		reg = <0>;
->> +
->> +		partition@0 {
->> +			label = "u-boot-spl";
->> +			reg = <0x0 0x80000>;
->> +			read-only;
->> +		};
->> +
->> +		partition@1 {
->> +			label = "test";
->> +			reg = <0x80000 0x380000>;
->> +		};
->> +	};
->> +};
->> diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
->> index 71a6423..0f50319 100644
->> --- a/drivers/spi/spi-davinci.c
->> +++ b/drivers/spi/spi-davinci.c
->> @@ -26,6 +26,9 @@
->>   #include <linux/err.h>
->>   #include <linux/clk.h>
->>   #include <linux/dma-mapping.h>
->> +#include <linux/of.h>
->> +#include <linux/of_device.h>
->> +#include <linux/of_irq.h>
->>   #include <linux/spi/spi.h>
->>   #include <linux/spi/spi_bitbang.h>
->>   #include <linux/slab.h>
->> @@ -788,6 +791,69 @@ rx_dma_failed:
->>   	return r;
->>   }
->>   
->> +#if defined(CONFIG_OF)
->> +static const struct of_device_id davinci_spi_of_match[] = {
->> +	{
->> +		.compatible = "ti,davinci-spi",
->> +	},
->> +	{ },
->> +};
->> +MODULE_DEVICE_TABLE(of, davini_spi_of_match);
->> +
->> +/**
->> + * spi_davinci_get_pdata - Get platform_data from DTS binding
->> + * @pdev: ptr to platform data
->> + *
->> + * Parses and populate platform_data from device tree bindings.
->> + *
->> + * NOTE: Not all platform_data params are supported currently.
->> + */
->> +static struct davinci_spi_platform_data
->> +	*spi_davinci_get_pdata(struct platform_device *pdev)
->> +{
->> +	struct device_node *node = pdev->dev.of_node;
->> +	struct davinci_spi_platform_data *pdata;
->> +	unsigned int num_cs, intr_line = 0;
->> +	const char *version;
->> +
->> +	if (pdev->dev.platform_data)
->> +		return pdev->dev.platform_data;
->> +
->> +	if (!pdev->dev.of_node)
->> +		return NULL;
->> +
->> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
->> +	pdev->dev.platform_data = pdata;
->> +	if (!pdata)
->> +		return NULL;
-> Since pdata must always be present, roll it directly into struct
-> spi_davinci and get rid of the kzmalloc here. It is less expensive and
-> is simpler code.
->
->> +
->> +	/* default version is 1.0 */
->> +	pdata->version = SPI_VERSION_1;
->> +	of_property_read_string(node, "ti,davinci-spi-version", &version);
->> +	if (!strcmp(version, "2.0"))
->> +		pdata->version = SPI_VERSION_2;
->> +
->> +	/*
->> +	 * default num_cs is 1 and all chipsel are internal to the chip
->> +	 * indicated by chip_sel being NULL. GPIO based CS is not
->> +	 * supported yet in DT bindings.
->> +	 */
->> +	num_cs = 1;
->> +	of_property_read_u32(node, "ti,davinci-spi-num-cs", &num_cs);
->> +	pdata->num_chipselect = num_cs;
->> +	of_property_read_u32(node, "ti,davinci-spi-intr-line", &intr_line);
->> +	pdata->intr_line = intr_line;
->> +	return pdev->dev.platform_data;
->> +}
->> +#else
->> +#define davinci_spi_of_match NULL
->> +static struct davinci_spi_platform_data
->> +	*spi_davinci_get_pdata(struct platform_device *pdev)
->> +{
->> +	return pdev->dev.platform_data;
->> +}
->> +#endif
->> +
->>   /**
->>    * davinci_spi_probe - probe function for SPI Master Controller
->>    * @pdev: platform_device structure which contains plateform specific data
->> @@ -801,16 +867,16 @@ rx_dma_failed:
->>    */
->>   static int __devinit davinci_spi_probe(struct platform_device *pdev)
->>   {
->> +	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
->> +	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
->> +	struct davinci_spi_platform_data *pdata;
->>   	struct spi_master *master;
->>   	struct davinci_spi *dspi;
->> -	struct davinci_spi_platform_data *pdata;
->>   	struct resource *r, *mem;
->> -	resource_size_t dma_rx_chan = SPI_NO_RESOURCE;
->> -	resource_size_t	dma_tx_chan = SPI_NO_RESOURCE;
->>   	int i = 0, ret = 0;
->>   	u32 spipc0;
->>   
->> -	pdata = pdev->dev.platform_data;
->> +	pdata = spi_davinci_get_pdata(pdev);
->>   	if (pdata == NULL) {
->>   		ret = -ENODEV;
->>   		goto err;
->> @@ -851,7 +917,11 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
->>   		goto release_region;
->>   	}
->>   
->> +	/* first get irq through resource table, else try of irq method */
->>   	dspi->irq = platform_get_irq(pdev, 0);
->> +	if (dspi->irq <= 0)
->> +		dspi->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
->> +
-> This should never be needed. The irq should already be populated in the
-> platform_device.
->
->>   	if (dspi->irq <= 0) {
->>   		ret = -EINVAL;
->>   		goto unmap_io;
->> @@ -875,6 +945,7 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
->>   	}
->>   	clk_prepare_enable(dspi->clk);
->>   
->> +	master->dev.of_node = pdev->dev.of_node;
->>   	master->bus_num = pdev->id;
->>   	master->num_chipselect = pdata->num_chipselect;
->>   	master->setup = davinci_spi_setup;
->> @@ -1010,6 +1081,7 @@ static struct platform_driver davinci_spi_driver = {
->>   	.driver = {
->>   		.name = "spi_davinci",
->>   		.owner = THIS_MODULE,
->> +		.of_match_table = davinci_spi_of_match,
->>   	},
->>   	.probe = davinci_spi_probe,
->>   	.remove = __devexit_p(davinci_spi_remove),
->> -- 
->> 1.7.9.5
->>
 
+This patchset is my pile of pid namespace patches that I have been
+sitting on for entirely too long.  I have been running and testing these
+changes for a while but if anyone sees any problems please let me know.
+
+Feature wise this patchset adds unshare and setns support for the pid
+namespace.
+
+Cleanup wise this patchset adds an explicit count of how many pids are
+hashed in a pid namespace and uses that count to trigger the unmounting
+of the internal kernel mount of proc.  The current scheme is buggy and
+entirely too clever to continue living.
+
+Some proc bits that were added to support the pid namespace initially
+are removed, as they are no no longer necessary.
+
+These patches are also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git pidns-v73
+
+Since some of this work is closely allied with the user namespace bits I
+have pending I intend to merge these changes through my user namespace
+tree.
+
+Eric W. Biederman (11):
+      procfs: Use the proc generic infrastructure for proc/self.
+      procfs: Don't cache a pid in the root inode.
+      pidns: Capture the user namespace and filter ns_last_pid
+      pidns: Use task_active_pid_ns where appropriate
+      pidns: Make the pidns proc mount/umount logic obvious.
+      pidns: Don't allow new processes in a dead pid namespace.
+      pidns: Wait in zap_pid_ns_processes until pid_ns->nr_hashed == 1
+      pidns: Deny strange cases when creating pid namespaces.
+      pidns: Add setns support
+      pidns: Consolidate initialzation of special init task state
+      pidns: Support unsharing the pid namespace.
+
+ arch/powerpc/platforms/cell/spufs/sched.c |    2 +-
+ arch/um/drivers/mconsole_kern.c           |    2 +-
+ drivers/staging/android/binder.c          |    3 +-
+ fs/hppfs/hppfs.c                          |    2 +-
+ fs/proc/Makefile                          |    1 +
+ fs/proc/base.c                            |  169 +----------------------------
+ fs/proc/internal.h                        |    1 +
+ fs/proc/namespaces.c                      |    3 +
+ fs/proc/root.c                            |   16 +---
+ fs/proc/self.c                            |   59 ++++++++++
+ include/linux/pid_namespace.h             |   10 ++-
+ include/linux/proc_fs.h                   |    1 +
+ init/main.c                               |    1 -
+ kernel/cgroup.c                           |    2 +-
+ kernel/events/core.c                      |    2 +-
+ kernel/exit.c                             |   12 --
+ kernel/fork.c                             |   42 +++++---
+ kernel/nsproxy.c                          |    4 +-
+ kernel/pid.c                              |   46 +++++++--
+ kernel/pid_namespace.c                    |   99 +++++++++++++----
+ kernel/signal.c                           |    2 +-
+ kernel/sysctl_binary.c                    |    2 +-
+ 22 files changed, 231 insertions(+), 250 deletions(-)
