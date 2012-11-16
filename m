@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab2KPSAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:00:38 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab2KPSAg (ORCPT
+	id S1752828Ab2KPSAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:00:53 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45719 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab2KPSAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:00:36 -0500
+	Fri, 16 Nov 2012 13:00:51 -0500
+Date: Fri, 16 Nov 2012 10:00:47 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org, jens.taprogge@taprogge.org,
+        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
+Subject: Re: [PATCH] ipack: move header files to include/linux
+Message-ID: <20121116180047.GA5078@kroah.com>
+References: <1353087276-4861-1-git-send-email-siglesias@igalia.com>
+ <20121116174410.GA2143@kroah.com>
+ <1353088114.4563.49.camel@fourier.local.igalia.com>
+ <1353088388.4563.52.camel@fourier.local.igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net>
-	<20121025041620.GH2616@ZenIV.linux.org.uk>
-	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
-	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-	<20121025120952.GI2616@ZenIV.linux.org.uk>
-	<20121025123843.GJ2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-	<20121026183601.GR2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
-	<CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
-	<alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
-	<CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
-	<alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
-	<CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
-	<alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz>
-Date: Fri, 16 Nov 2012 10:00:35 -0800
-X-Google-Sender-Auth: tzLIYYkJIQMckPQs6tH2JRobrCk
-Message-ID: <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-From: Kees Cook <keescook@chromium.org>
-To: P J P <ppandit@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1353088388.4563.52.camel@fourier.local.igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 4:50 AM, P J P <ppandit@redhat.com> wrote:
->
->   Hello folks,
->
-> +-- On Mon, 12 Nov 2012, Kees Cook wrote --+
-> | >   Al, what's your take on the *rare* extra call to request_module?
-> |
-> | Without any other feedback, I'd like to use my minimal allocation
-> | patch, since it fixes the problem and doesn't change any of the
-> | semantics of how/when loading happens.
->
->   I did apply and test this patch with kernel-3.5.3 on my machine. Now it
-> seems to disclose dynamically allocated(kstrdup) bytes, instead of the call
-> stack bytes. Recursions still dodge and exceed the limit of
-> BINPRM_MAX_RECURSION(4).
->
-> Please pardon my asking, but - how is this a fix?
+On Fri, Nov 16, 2012 at 06:53:08PM +0100, Samuel Iglesias Gonsálvez wrote:
+> On Fri, 2012-11-16 at 18:48 +0100, Samuel Iglesias Gonsálvez wrote:
+> > On Fri, 2012-11-16 at 09:44 -0800, Greg Kroah-Hartman wrote:
+> > > On Fri, Nov 16, 2012 at 06:34:36PM +0100, Samuel Iglesias Gonsalvez wrote:
+> > > > Move ipack header files to include/linux/ directory where they belong to.
+> > > > 
+> > > > Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> > > > ---
+> > > >  drivers/ipack/carriers/tpci200.h |    3 +-
+> > > >  drivers/ipack/devices/ipoctal.c  |    2 +-
+> > > >  drivers/ipack/ipack.c            |    2 +-
+> > > >  drivers/ipack/ipack.h            |  215 --------------------------------------
+> > > >  drivers/ipack/ipack_ids.h        |   32 ------
+> > > >  include/linux/ipack.h            |  214 +++++++++++++++++++++++++++++++++++++
+> > > >  include/linux/ipack_ids.h        |   32 ++++++
+> > > >  7 files changed, 249 insertions(+), 251 deletions(-)
+> > > >  delete mode 100644 drivers/ipack/ipack.h
+> > > >  delete mode 100644 drivers/ipack/ipack_ids.h
+> > > >  create mode 100644 include/linux/ipack.h
+> > > >  create mode 100644 include/linux/ipack_ids.h
+> > > 
+> > > Can you send me a patch in -M format, that just shows the files moving
+> > > next time?
+> > 
+> > OK
+> > 
+> > > Also, do we really need the ipack_ids.h file in include/linux?  It looks
+> > > like only the core ipack code cares about the values there, right?
+> > > 
+> > 
+> > Yes, you are right. I will rewrite the patch again and send it.
+> 
+> Looking at the code, 'drivers/ipack/devices/ipoctal.c' needs
+> IPACK1_DEVICE_ID_SBS_OCTAL_* and IPACK_ID_VERSION_1 constants defined in
+> ipack_ids.h file.
+> 
+> Is it better to keep ipack_ids.h file in include/linux/ or change the
+> #include sentence?
 
-Hrm? It should be showing only the live heap-allocated interp -- are
-you seeing uninitialized contents?
+Hm, why are these two separate .h files anyway?  Why not just merge them
+together, to make it simpler for an ipack driver to be written.  That
+way they only have to worry about including one .h file :)
 
--Kees
+thanks,
 
--- 
-Kees Cook
-Chrome OS Security
+greg k-h
