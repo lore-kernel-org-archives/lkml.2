@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab2KPTPD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:15:03 -0500
-Received: from mail.lang.hm ([64.81.33.126]:58946 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193Ab2KPTPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:15:00 -0500
-Date: Fri, 16 Nov 2012 11:14:08 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Howard Chu <hyc@symas.com>
-cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Richard Hipp <drh@hwaci.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [sqlite] light weight write barriers
-In-Reply-To: <50A65681.8000204@symas.com>
-Message-ID: <alpine.DEB.2.02.1211161100260.25984@nftneq.ynat.uz>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org>
- <508B3EED.2080003@vlnb.net> <20121027044456.GA2764@thunk.org> <5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk> <5092D90F.7020105@vlnb.net> <20121101212418.140e3a82@pyramind.ukuu.org.uk> <50931601.4060102@symas.com>
- <20121102123359.2479a7dc@pyramind.ukuu.org.uk> <50A1C15E.2080605@vlnb.net> <20121113174000.6457a68b@pyramind.ukuu.org.uk> <CAK3OfOgK7a9+g-KU8v5-b2d+8-vLb75kuKKQnPK-zeFV1fLmxw@mail.gmail.com> <50A442AF.9020407@vlnb.net> <alpine.DEB.2.02.1211150353080.32408@nftneq.ynat.uz>
- <50A65681.8000204@symas.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753332Ab2KPTPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:15:19 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:42959 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab2KPTPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 14:15:17 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AueTAF2QplBV5h1yPGdsb2JhbABEili3BwOBAxkBAQEBHwIXDSeCHgEBBTocIxAIAw4GBC4UJQoaE4gRvwoUjB9Qg1xhA5V7hXuNOYFaIw
+X-IronPort-AV: E=Sophos;i="4.83,266,1352070000"; 
+   d="scan'208";a="450883350"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 16 Nov 2012 20:21:59 +0100
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Dave Airlie <airlied@gmail.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] nouveau: Severe screen corruption on (0xaf, nv50)
+Message-ID: <20121116192159.GA491@polaris.bitmath.org>
+References: <20121018095809.GA336@polaris.bitmath.org>
+ <20121021071024.GA731@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121021071024.GA731@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Howard Chu wrote:
+On Sun, Oct 21, 2012 at 09:10:24AM +0200, Henrik Rydberg wrote:
+> On Thu, Oct 18, 2012 at 11:58:09AM +0200, Henrik Rydberg wrote:
+> > Hi Ben,
+> > 
+> > 3.7-rc1 messed up the screen on my MacBookAir3,1 (nv50, 0xaf) pretty
+> > badly. Not surprisingly,
+> > 
+> > commit 3863c9bc887e9638a9d905d55f6038641ece78d6
+> > Author: Ben Skeggs <bskeggs@redhat.com>
+> > Date:   Sat Jul 14 19:09:17 2012 +1000
+> > 
+> >     drm/nouveau/instmem: completely new implementation, as a subdev module
+> > 
+> > is the first bad commit. Standing on that commit, booting and then
+> > starting X yields the output below. Hints are especially appreciated,
+> > considering the patch is almost 8000 lines.
+> 
+> Going through one suspend/resume cycle makes the corruption go away,
+> and there are no more errors in dmesg. Oddly enough, I have seen
+> something very similar when using i915 on the MBP10. Builtin modules
+> and systemd in both cases. Maybe this is a general drm issue. Any
+> thoughts?
 
-> David Lang wrote:
->> barriers keep getting mentioned because they are a easy concept to 
->> understand.
->> "do this set of stuff before doing any of this other set of stuff, but I 
->> don't
->> care when any of this gets done" and they fit well with the requirements of 
->> the
->> users.
->> 
->> Users readily accept that if the system crashes, they will loose the most 
->> recent
->> stuff that they did,
->
-> *some* users may accept that. *None* should.
+This is still a problem in Linus' tree. The screen corruption happens
+during boot, in text mode, presumably in conjunction with alloction of
+the nouveaufb device. It is 100% reproducible, and there is no
+advanced graphics involved, just simple text console. Booting from efi
+or bios does not matter. Modules are builtin.
 
-when users are given a choice of having all their work be very slow, or have it 
-be fast, but in the unlikely event of a crash they loose their mose recent 
-changes, they are willing to loose their most recent changes.
+Suspending and resuming once makes the problem go away every time.
 
-If you think about it, this is not much different from the fact that you loose 
-all changes since the last time you saved the thing you are working on. Many 
-programs save state periodically so that if the application crashes the user 
-hasn't lost everything, but any application that tried to save after every 
-single change would be so slow that nobody would use it.
+Since this is a simple usecase, and the failing commit has been
+bisected, it ought to be possible to find the problem. Unfortunately,
+I am not familiar enough with the nouveau code to find the problem in
+an 8000-line patch. Please help. :-)
 
-There is always going to be a window after a user hits 'save' where the data can 
-be lost, because it's not yet on disk.
-
-> There are a couple industry failures here:
->
-> 1) the drive manufacturers sell drives that lie, and consumers accept it 
-> because they don't know better. We programmers, who know better, have failed 
-> to raise a stink and demand that this be fixed.
->  A) Drives should not lose data on power failure. If a drive accepts a write 
-> request and says "OK, done" then that data should get written to stable 
-> storage, period. Whether it requires capacitors or some other onboard power 
-> supply, or whatever, they should just do it. Keep in mind that today, most of 
-> the difference between enterprise drives and consumer desktop drives is just 
-> a firmware change, that hardware is already identical. Nobody should accept a 
-> product that doesn't offer this guarantee. It's inexcusable.
-
-This is an option to you. However if you have enabled write caching and 
-reordering, you have explicitly told the system to be faster at the expense of 
-loosing data under some conditions. The fact that you then loose data under 
-those conditions should not surprise you.
-
-The idea that you must have enough power to write all the pending data to disk 
-is problematic as that then severely limits the amount of cache that you have.
-
->  B) it should go without saying - drives should reliably report back to the 
-> host, when something goes wrong. E.g., if a write request has been accepted, 
-> cached, and reported complete, but then during the actual write an ECC 
-> failure is detected in the cacheline, the drive needs to tell the host "oh by 
-> the way, block XXX didn't actually make it to disk like I told you it did 
-> 10ms ago."
-
-The issue isn't a drive having a write error, it's the system shutting down 
-(or crashing) before the data is written, no OS level tricks will help you here.
-
-
-The real problem here isn't the drive claiming the data has been written when it 
-hasn't, the real problem is that the application has said 'write this data' to 
-the OS, and the OS has not done so yet.
-
-The OS delays the writes for many legitimate reasons (the disk may be busy, it 
-can get things done more efficently by combining and reordering the writes, etc)
-
-Unless the system crashes, this is not a problem, the data will eventually be 
-written out, and on system shutdown everthing is good.
-
-But if the system crashes, some of this postphoned work doesn't get done, and 
-that can be a problem.
-
-Applications can do fsync if they want to be sure that their data is safe on 
-disk NOW, but they currently have no way of saying "I want to make sure that A 
-happens before B, but I don't care if A happens now or 10 seconds from now"
-
-That is the gap that it would be useful to provide a mechanism to deal with, and 
-it doesn't matter what your disk system does in terms of lieing ot not, there 
-still isn't a way to deal with this today.
-
-David Lang
+Thanks,
+Henrik
