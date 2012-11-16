@@ -1,247 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab2KPGCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 01:02:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15066 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853Ab2KPGCX convert rfc822-to-8bit (ORCPT
+	id S1751400Ab2KPGEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 01:04:43 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:13478 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab2KPGEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 01:02:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,261,1352102400"; 
-   d="scan'208";a="243111523"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH ] tbfadt.c: output warning only when 64bit 32bit address
- of FACS/DSDT all have value but not equal to each other
-Thread-Topic: [PATCH ] tbfadt.c: output warning only when 64bit 32bit
- address of FACS/DSDT all have value but not equal to each other
-Thread-Index: AQHNwU9vBp/XM+1UtU6pHwxKNmNA4pfn8ltggARVVAD//4iUMIAAiu6AgAACcYD//3qD0IAApt8A//99TfA=
-Date: Fri, 16 Nov 2012 06:02:21 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346BDBF27@ORSMSX101.amr.corp.intel.com>
-References: <CABawtvMsrMhGL7emsvYRXrGEB9f2Pzha2+XTVSHaYw1PVJGa-Q@mail.gmail.com>
-	<94F2FBAB4432B54E8AACC7DFDE6C92E346BC0674@ORSMSX101.amr.corp.intel.com>
-	<CABawtvPNmOzgvsg9+y12a5ToCmV4OgKQeBAVQeRyc0F+XWmb7Q@mail.gmail.com>
-	<94F2FBAB4432B54E8AACC7DFDE6C92E346BDBE51@ORSMSX101.amr.corp.intel.com>
-	<CABawtvNq-DjM-nNP23=qvROjFWg-kfGNROJNTtWmt3CwVvj_4w@mail.gmail.com>
-	<CABawtvNUXVPQ5YFAEPzyEgih26Wz4BVSWQf+CpO6O24ZAPS4og@mail.gmail.com>
-	<94F2FBAB4432B54E8AACC7DFDE6C92E346BDBEC4@ORSMSX101.amr.corp.intel.com>
- <CABawtvORUq-OdXH4_j8+H=hiKEyT3F2shfrEhGP_0P6ucgU=aQ@mail.gmail.com>
-In-Reply-To: <CABawtvORUq-OdXH4_j8+H=hiKEyT3F2shfrEhGP_0P6ucgU=aQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Nov 2012 01:04:41 -0500
+Message-ID: <50A5D76D.70805@huawei.com>
+Date: Fri, 16 Nov 2012 14:04:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
+        <glommer@parallels.com>
+Subject: Re: [PATCH 04/17] cgroup: create directory before linking while creating
+ a new cgroup
+References: <1352775704-9023-1-git-send-email-tj@kernel.org> <1352775704-9023-5-git-send-email-tj@kernel.org> <50A30E0F.7000408@huawei.com> <20121114190407.GI21185@mtj.dyndns.org>
+In-Reply-To: <20121114190407.GI21185@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I mentioned, we are going to be rewriting this part of the code, so I would rather wait to until then to make changes. However, this looks like a reasonable approach to the error check, at first glance.
+On 2012/11/15 3:04, Tejun Heo wrote:
+> Hello, Li.
+> 
+> On Wed, Nov 14, 2012 at 11:20:47AM +0800, Li Zefan wrote:
+>>> It also removes the need to check whether cgroup->dentry is %NULL in
+>>> cgroup_path.  If a cgroup is visible, its dentry is guaranteed to be
+>>> visible too.
+>>
+>> I'm afraid this isn't safe.
+>>
+>> The cgroup is visible to a controller soon after ss->create(), and then
+>> the controller might call cgroup_path() while cgrp->dentry is still NULL.
+> 
+> Hmmm... I can't find any case where ss->create() is calling
+> cgroup_path().  Do you remember which one that was?
+> 
 
-Thanks,
-Bob
+I meant cgroup_create() may race with cgroup_path(). We used to have
+this race:
 
+(cpu0)                          (cpu1)
+mkdir                           cat /proc/sched_debug
 
-> -----Original Message-----
-> From: Ethan Zhao [mailto:ethan.kernel@gmail.com]
-> Sent: Thursday, November 15, 2012 9:47 PM
-> To: Moore, Robert
-> Cc: LKML
-> Subject: Re: [PATCH ] tbfadt.c: output warning only when 64bit 32bit
-> address of FACS/DSDT all have value but not equal to each other
-> 
-> Bob,
->      How about moving some checking code as following patch ?
-> 
->      From f46d539d81c763aa4e3e98f9fc1e94e0af48bd15 Mon Sep 17 00:00:00
-> 2001
-> From: ethan.zhao <ethan.kernel@gmail.com>
-> Date: Sat, 17 Nov 2012 00:48:41 -0800
-> Subject: [PATCH]acpica/tbfadt.c  Move some checking and 32bit to 64bit
-> assignment code from acpi_tb_validate_fadt() to  acpi_tb_convert_fadt to
-> make the logic clearer and void multiple same kind of warning.
-> 
-> 
-> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/acpi/acpica/tbfadt.c |   51 ++++++++++++++-----------------------
-> ----
->  1 files changed, 18 insertions(+), 33 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
-> index f23f512..dd18aba 100644
-> --- a/drivers/acpi/acpica/tbfadt.c
-> +++ b/drivers/acpi/acpica/tbfadt.c
-> @@ -388,18 +388,30 @@ static void acpi_tb_convert_fadt(void)
->  	 */
->  	if (!acpi_gbl_FADT.Xfacs) {
->  		acpi_gbl_FADT.Xfacs = (u64) acpi_gbl_FADT.facs;
-> -	} else if (acpi_gbl_FADT.facs &&
-> +	} else if ((acpi_gbl_FADT.facs && acpi_gbl_FADT.Xfacs) &&
->  		   (acpi_gbl_FADT.Xfacs != (u64) acpi_gbl_FADT.facs)) {
-> -		ACPI_WARNING((AE_INFO,
-> -		    "32/64 FACS address mismatch in FADT - two FACS
-> tables!"));
-> +		ACPI_BIOS_WARNING((AE_INFO,
-> +                                   "32/64X FACS address mismatch in FADT
-> - "
-> +                                   "0x%8.8X/0x%8.8X%8.8X, using 32",
-> +                                   acpi_gbl_FADT.facs,
-> +
-> +ACPI_FORMAT_UINT64(acpi_gbl_FADT.Xfacs)));
-> +
-> +	        acpi_gbl_FADT.Xfacs = (u64)acpi_gbl_FADT.facs;
-> +
->  	}
-> 
->  	if (!acpi_gbl_FADT.Xdsdt) {
->  		acpi_gbl_FADT.Xdsdt = (u64) acpi_gbl_FADT.dsdt;
-> -	} else if (acpi_gbl_FADT.dsdt &&
-> +	} else if ((acpi_gbl_FADT.dsdt && acpi_gbl_FADT.Xdsdt) &&
->  		   (acpi_gbl_FADT.Xdsdt != (u64) acpi_gbl_FADT.dsdt)) {
-> -		ACPI_WARNING((AE_INFO,
-> -		    "32/64 DSDT address mismatch in FADT - two DSDT
-> tables!"));
-> +		  ACPI_BIOS_WARNING((AE_INFO,
-> +                                   "32/64X DSDT address mismatch in FADT
-> - "
-> +                                   "0x%8.8X/0x%8.8X%8.8X, using 32",
-> +                                   acpi_gbl_FADT.dsdt,
-> +
-> +ACPI_FORMAT_UINT64(acpi_gbl_FADT.Xdsdt)));
-> +
-> +                acpi_gbl_FADT.Xdsdt = (u64)acpi_gbl_FADT.dsdt;
-> +
->  	}
-> 
->  	/*
-> @@ -507,33 +519,6 @@ static void acpi_tb_validate_fadt(void)
->  	u8 length;
->  	u32 i;
-> 
-> -	/*
-> -	 * Check for FACS and DSDT address mismatches. An address mismatch
-> between
-> -	 * the 32-bit and 64-bit address fields
-> (FIRMWARE_CTRL/X_FIRMWARE_CTRL and
-> -	 * DSDT/X_DSDT) would indicate the presence of two FACS or two DSDT
-> tables.
-> -	 */
-> -	if (acpi_gbl_FADT.facs &&
-> -	    (acpi_gbl_FADT.Xfacs != (u64)acpi_gbl_FADT.facs)) {
-> -		ACPI_BIOS_WARNING((AE_INFO,
-> -				   "32/64X FACS address mismatch in FADT - "
-> -				   "0x%8.8X/0x%8.8X%8.8X, using 32",
-> -				   acpi_gbl_FADT.facs,
-> -				   ACPI_FORMAT_UINT64(acpi_gbl_FADT.Xfacs)));
-> -
-> -		acpi_gbl_FADT.Xfacs = (u64)acpi_gbl_FADT.facs;
-> -	}
-> -
-> -	if (acpi_gbl_FADT.dsdt &&
-> -	    (acpi_gbl_FADT.Xdsdt != (u64)acpi_gbl_FADT.dsdt)) {
-> -		ACPI_BIOS_WARNING((AE_INFO,
-> -				   "32/64X DSDT address mismatch in FADT - "
-> -				   "0x%8.8X/0x%8.8X%8.8X, using 32",
-> -				   acpi_gbl_FADT.dsdt,
-> -				   ACPI_FORMAT_UINT64(acpi_gbl_FADT.Xdsdt)));
-> -
-> -		acpi_gbl_FADT.Xdsdt = (u64)acpi_gbl_FADT.dsdt;
-> -	}
-> -
->  	/* If Hardware Reduced flag is set, we are all done */
-> 
->  	if (acpi_gbl_reduced_hardware) {
-> --
-> 1.7.1
-> 
-> 
-> Thanks,
-> Ethan
-> 
-> 
-> On Fri, Nov 16, 2012 at 11:49 AM, Moore, Robert <robert.moore@intel.com>
-> wrote:
-> > No decision(s) yet, we are still investigating
-> >
-> >
-> >> -----Original Message-----
-> >> From: Ethan Zhao [mailto:ethan.kernel@gmail.com]
-> >> Sent: Thursday, November 15, 2012 7:47 PM
-> >> To: Moore, Robert
-> >> Subject: Re: [PATCH ] tbfadt.c: output warning only when 64bit 32bit
-> >> address of FACS/DSDT all have value but not equal to each other
-> >>
-> >> Bob,
-> >>   I read the discussion you have done
-> >>
-> >>   https://www.acpica.org/bugzilla/show_bug.cgi?id=885
-> >>
-> >>  Why method do you prefer ?
-> >>
-> >> Thanks,
-> >> Ethan
-> >>
-> >> On Fri, Nov 16, 2012 at 11:38 AM, Ethan Zhao <ethan.kernel@gmail.com>
-> >> wrote:
-> >> > Bob,
-> >> >   In fact, you know if 32bit and 64bit address are all valid but not
-> >> > equal to each other, that does not follow ACPI 4&5 ,not follow 3 too.
-> >> >   Do you mean we need to guess why they declare two different
-> >> > FACS/DSDT, and so kernel should collect some clue to figure out why ?
-> >> > that is amazing thing to keep system to work though its buggy BIOS.
-> >> >
-> >> > Ethan
-> >> >
-> >> >
-> >> > On Fri, Nov 16, 2012 at 11:27 AM, Moore, Robert
-> <robert.moore@intel.com>
-> >> wrote:
-> >> >> Basically, the flow goes like this:
-> >> >>
-> >> >> 1) We convert the original FADT (multiple versions) to a common
-> >> internal FADT.
-> >> >> 2) Then we check the common internal FADT for
-> errors/inconsistencies.
-> >> >>
-> >> >> In this way, we don't need to have different error checking for
-> >> different versions of the FADT, and this is probably not going to
-> change.
-> >> >>
-> >> >> One thing we are going to add is to make a decision on whether to
-> favor
-> >> a 32-bit address or a 64-bit address (if they are different) based upon
-> >> the age of the machine/BIOS. This is for Windows compatibility.
-> >> >>
-> >> >> Bob
-> >> >>
-> >> >>
-> >> >>> -----Original Message-----
-> >> >>> From: Ethan Zhao [mailto:ethan.kernel@gmail.com]
-> >> >>> Sent: Thursday, November 15, 2012 6:29 PM
-> >> >>> To: Moore, Robert
-> >> >>> Cc: Brown, Len; Zheng, Lv; LKML
-> >> >>> Subject: Re: [PATCH ] tbfadt.c: output warning only when 64bit
-> 32bit
-> >> >>> address of FACS/DSDT all have value but not equal to each other
-> >> >>>
-> >> >>> Bob,
-> >> >>>        Thanks for your detailed reviewing about the whole possible
-> >> >>> conditions.
-> >> >>>        I.C.  So that is impossible zero value for Xfacs /Xdsdt if
-> >> >>> facs/dsdt >0, for they are assigned in acpi_tb_convert_fadt(),  I
-> >> >>> need to move my eyes one line code higher to see why it yelled
-> twice
-> >> >>> but not using the 32bit address at once in acpi_tb_convert_fadt().
-> >> >>>        Do you agree to move the checking code warning  and into
-> >> >>> acpi_tb_convert_fadt to make the code more simple and clear ? Or
-> >> >>> just keep it for more rework, more bug?
-> >> >>>
-> >> >>>
-> >> >>> Thanks,
-> >> >>> Ethan
+cgroup_create()
+  cpu_cgroup_create()
+    register_fair_sched_group()
+      list_add_rcu(...)
+				print_cfs_stats()
+				  for_each_leaf_cfs_rq()
+				    print_cfs_rq()
+				      cgroup_path()
+  css->cgroup = cgroup;
+  cgroup->dentry = dentry;
+
+In this case, cgroup_path() might access NULL cgroup or NULL dentry.
+
+But I've looked the current scheduler code, no race anymore, because now the
+cfs_rq won't be added to the gloal list until there's task in the cgroup.
+(in the old time it was added to the list when creating a cgroup)
+
