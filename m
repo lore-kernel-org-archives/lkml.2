@@ -1,134 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2KPJli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:41:38 -0500
-Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:54103 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751169Ab2KPJlg (ORCPT
+	id S1751345Ab2KPJms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:42:48 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61952 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPJmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:41:36 -0500
-Date: Fri, 16 Nov 2012 10:39:33 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH RESEND 3/4] pinctrl: at91: Prevent NULL dereference if
- of_match_device returns NULL
-Message-ID: <20121116093933.GE4398@game.jcrosoft.org>
-References: <1352955096.6793.1.camel@phoenix>
- <1352955266.6793.4.camel@phoenix>
- <1352955480.6793.8.camel@phoenix>
- <20121115100012.GA4398@game.jcrosoft.org>
- <50A5FB17.1050208@atmel.com>
+	Fri, 16 Nov 2012 04:42:46 -0500
+Date: Fri, 16 Nov 2012 01:39:36 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-pm@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v8 2/3] pwm_backlight: use power sequences
+Message-ID: <20121116093936.GA22239@lizard>
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
+ <1353047903-14363-3-git-send-email-acourbot@nvidia.com>
+ <20121116084958.GB20785@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50A5FB17.1050208@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 741968040004266860
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhhfrhgruggvrggurdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhhfrhgruggvrggurdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <20121116084958.GB20785@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:36 Fri 16 Nov     , Nicolas Ferre wrote:
-> On 11/15/2012 11:00 AM, Jean-Christophe PLAGNIOL-VILLARD :
-> > On 12:58 Thu 15 Nov     , Axel Lin wrote:
-> >> of_match_device() may return NULL.
-> > this is not possible on at91
+On Fri, Nov 16, 2012 at 09:49:58AM +0100, Thierry Reding wrote:
+> On Fri, Nov 16, 2012 at 03:38:22PM +0900, Alexandre Courbot wrote:
+> > Make use of the power sequences specified in the device tree or platform
+> > data to control how the backlight is powered on and off.
 > > 
-> > and I do a oups here as if we have a NULL pointer which means the driver is
-> > wrong
+> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> > Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
 > 
-> Well, okay, but it does not prevent from adding a supplementary check to
-> mimic every other pinctrl driver and use a common return path to the
-> of_match_device() function.
+> Anton,
 > 
-> So I am not completely against this patch (that I why I added my Acked-by).
-here it's a silent warning a oops it clear we have a bug
+> I would normally take pwm-backlight patches through the PWM tree, but
+> since this patch depends on the first in this series, I think it would
+> be easier if you took it through your tree along with the rest of the
+> series. If that's okay with you:
+> 
+> Acked-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Best Regards,
-J.
-> 
-> 
-> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> >> ---
-> >> This resend CC Jean-Christophe.
-> >>
-> >>  drivers/pinctrl/pinctrl-at91.c |   17 +++++++++++++----
-> >>  1 file changed, 13 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> >> index 8490a55..32006c8 100644
-> >> --- a/drivers/pinctrl/pinctrl-at91.c
-> >> +++ b/drivers/pinctrl/pinctrl-at91.c
-> >> @@ -829,13 +829,18 @@ static int __devinit at91_pinctrl_probe_dt(struct platform_device *pdev,
-> >>  	uint32_t *tmp;
-> >>  	struct device_node *np = pdev->dev.of_node;
-> >>  	struct device_node *child;
-> >> +	const struct of_device_id *match;
-> >>  
-> >>  	if (!np)
-> >>  		return -ENODEV;
-> >>  
-> >> +	match = of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-> >> +	if (!match)
-> >> +		return -ENODEV;
-> >> +
-> >>  	info->dev = &pdev->dev;
-> >> -	info->ops = (struct at91_pinctrl_mux_ops*)
-> >> -		of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-> >> +	info->ops = (struct at91_pinctrl_mux_ops *) match->data;
-> >> +
-> >>  	at91_pinctrl_child_count(info, np);
-> >>  
-> >>  	if (info->nbanks < 1) {
-> >> @@ -1359,6 +1364,7 @@ static struct of_device_id at91_gpio_of_match[] __devinitdata = {
-> >>  static int __devinit at91_gpio_probe(struct platform_device *pdev)
-> >>  {
-> >>  	struct device_node *np = pdev->dev.of_node;
-> >> +	const struct of_device_id *match;
-> >>  	struct resource *res;
-> >>  	struct at91_gpio_chip *at91_chip = NULL;
-> >>  	struct gpio_chip *chip;
-> >> @@ -1399,8 +1405,11 @@ static int __devinit at91_gpio_probe(struct platform_device *pdev)
-> >>  		goto err;
-> >>  	}
-> >>  
-> >> -	at91_chip->ops = (struct at91_pinctrl_mux_ops*)
-> >> -		of_match_device(at91_gpio_of_match, &pdev->dev)->data;
-> >> +	match = of_match_device(at91_gpio_of_match, &pdev->dev);
-> >> +	if (!match)
-> >> +		return -ENODEV;
-> >> +
-> >> +	at91_chip->ops = (struct at91_pinctrl_mux_ops *) match->data;
-> >>  	at91_chip->pioc_virq = irq;
-> >>  	at91_chip->pioc_idx = alias_idx;
-> >>  
-> >> -- 
-> >> 1.7.9.5
-> >>
-> >>
-> >>
-> > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > 
-> > 
-> 
-> 
-> -- 
-> Nicolas Ferre
+Sure, I'll take it. Thank you!
