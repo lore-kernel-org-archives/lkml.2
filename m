@@ -1,308 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2KPTZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:25:13 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56430 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2KPTZK (ORCPT
+	id S1753320Ab2KPT0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:26:25 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54676 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2KPT0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:25:10 -0500
-Subject: [PATCH] fb: Rework locking to fix lock ordering on takeover
-To: linux-kernel@vger.kernel.org, florianschandinat@gmx.de
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Fri, 16 Nov 2012 19:27:11 +0000
-Message-ID: <20121116192606.11799.35711.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	Fri, 16 Nov 2012 14:26:24 -0500
+Date: Fri, 16 Nov 2012 11:24:59 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: [PATCH tip/core/rcu] Add documentation for the new rcuexp debugfs
+ trace fil
+Message-ID: <20121116192458.GA32740@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111619-7606-0000-0000-000005750FCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+rcu: Add documentation for the new rcuexp debugfs trace file
 
-[The fb maintainer appears to be absent at the moment].
+This commit adds the documentation of the rcuexp debugfs trace file
+that records statistics for expedited grace periods.
 
-This is needed to fix a pile of lockdep splats that now show up because console_lock()
-is being properly audited. Hugh Dickins and Sasha Levin have tested it and both reports
-all looks good. This is probably not the whole story - the entire fb layer has locking
-confusion problems that were previously hidden but it seems to get the ones people hit
-in testing. This hopefully explains a few of the weird fb hangs that have been floating
-around forever.
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-From: Alan Cox <alan@linux.intel.com>
+ b/Documentation/RCU/trace.txt |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-Adjust the console layer to allow a take over call where the caller already
-holds the locks. Make the fb layer lock in order.
-
-This s partly a band aid, the fb layer is terminally confused about the
-locking rules it uses for its notifiers it seems.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/vt/vt.c           |   81 +++++++++++++++++++++++++++++++----------
- drivers/video/console/fbcon.c |   30 +++++++++++++++
- drivers/video/fbmem.c         |    5 +--
- drivers/video/fbsysfs.c       |    3 ++
- include/linux/console.h       |    1 +
- 5 files changed, 97 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index f87d7e8..77bf205 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -2984,7 +2984,7 @@ int __init vty_init(const struct file_operations *console_fops)
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index 79ce989..c776968 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -41,6 +41,8 @@ also rcu/rcu_preempt) the following files will be present:
  
- static struct class *vtconsole_class;
+ rcudata:
+ 	Displays fields in struct rcu_data.
++rcuexp:
++	Displays statistics for expedited grace periods.
+ rcugp:
+ 	Displays grace-period counters.
+ rcuhier:
+@@ -233,6 +235,45 @@ o	"ktl" is the low-order 16 bits (in hexadecimal) of the count of
+ 	This field is displayed only for CONFIG_RCU_BOOST kernels.
  
--static int bind_con_driver(const struct consw *csw, int first, int last,
-+static int do_bind_con_driver(const struct consw *csw, int first, int last,
- 			   int deflt)
- {
- 	struct module *owner = csw->owner;
-@@ -2995,7 +2995,7 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
- 	if (!try_module_get(owner))
- 		return -ENODEV;
  
--	console_lock();
-+	WARN_CONSOLE_UNLOCKED();
- 
- 	/* check if driver is registered */
- 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-@@ -3080,11 +3080,22 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
- 
- 	retval = 0;
- err:
--	console_unlock();
- 	module_put(owner);
- 	return retval;
- };
- 
++The output of "cat rcu/rcu_preempt/rcuexp" looks as follows:
 +
-+static int bind_con_driver(const struct consw *csw, int first, int last,
-+			   int deflt)
-+{
-+	int ret;
-+	
-+	console_lock();
-+	ret = do_bind_con_driver(csw, first, last, deflt);
-+	console_unlock();
-+	return ret;
-+}
-+	
- #ifdef CONFIG_VT_HW_CONSOLE_BINDING
- static int con_is_graphics(const struct consw *csw, int first, int last)
- {
-@@ -3196,9 +3207,9 @@ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
- 	if (!con_is_bound(csw))
- 		con_driver->flag &= ~CON_DRIVER_FLAG_INIT;
- 
--	console_unlock();
- 	/* ignore return value, binding should not fail */
--	bind_con_driver(defcsw, first, last, deflt);
-+	do_bind_con_driver(defcsw, first, last, deflt);
-+	console_unlock();
- err:
- 	module_put(owner);
- 	return retval;
-@@ -3489,28 +3500,18 @@ int con_debug_leave(void)
- }
- EXPORT_SYMBOL_GPL(con_debug_leave);
- 
--/**
-- * register_con_driver - register console driver to console layer
-- * @csw: console driver
-- * @first: the first console to take over, minimum value is 0
-- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
-- *
-- * DESCRIPTION: This function registers a console driver which can later
-- * bind to a range of consoles specified by @first and @last. It will
-- * also initialize the console driver by calling con_startup().
-- */
--int register_con_driver(const struct consw *csw, int first, int last)
-+static int do_register_con_driver(const struct consw *csw, int first, int last)
- {
- 	struct module *owner = csw->owner;
- 	struct con_driver *con_driver;
- 	const char *desc;
- 	int i, retval = 0;
- 
-+	WARN_CONSOLE_UNLOCKED();
++s=21872 d=21872 w=0 tf=0 wd1=0 wd2=0 n=0 sc=21872 dt=21872 dl=0 dx=21872
 +
- 	if (!try_module_get(owner))
- 		return -ENODEV;
- 
--	console_lock();
--
- 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
- 		con_driver = &registered_con_driver[i];
- 
-@@ -3563,10 +3564,29 @@ int register_con_driver(const struct consw *csw, int first, int last)
- 	}
- 
- err:
--	console_unlock();
- 	module_put(owner);
- 	return retval;
- }
++These fields are as follows:
 +
-+/**
-+ * register_con_driver - register console driver to console layer
-+ * @csw: console driver
-+ * @first: the first console to take over, minimum value is 0
-+ * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
-+ *
-+ * DESCRIPTION: This function registers a console driver which can later
-+ * bind to a range of consoles specified by @first and @last. It will
-+ * also initialize the console driver by calling con_startup().
-+ */
-+int register_con_driver(const struct consw *csw, int first, int last)
-+{
-+	int retval;
-+	
-+	console_lock();
-+	retval = do_register_con_driver(csw, first, last);
-+	console_unlock();
-+	return retval;
-+}
- EXPORT_SYMBOL(register_con_driver);
++o	"s" is the starting sequence number.
++
++o	"d" is the ending sequence number.  When the starting and ending
++	numbers differ, there is an expedited grace period in progress.
++
++o	"w" is the number of times that the sequence numbers have been
++	in danger of wrapping.
++
++o	"tf" is the number of times that contention has resulted in a
++	failure to begin an expedited grace period.
++
++o	"wd1" and "wd2" are the number of times that an attempt to
++	start an expedited grace period found that someone else had
++	completed an expedited grace period that satisfies the
++	attempted request.  "Our work is done."
++
++o	"n" is number of times that contention was so great that
++	the request was demoted from an expedited grace period to
++	a normal grace period.
++
++o	"sc" is the number of times that the attempt to start a
++	new expedited grace period succeeded.
++
++o	"dt" is the number of times that we attempted to update
++	the "d" counter.
++
++o	"dl" is the number of times that we failed to update the "d"
++	counter.
++
++o	"dx" is the number of times that we succeeded in updating
++	the "d" counter.
++
++
+ The output of "cat rcu/rcu_preempt/rcugp" looks as follows:
  
- /**
-@@ -3622,6 +3642,29 @@ EXPORT_SYMBOL(unregister_con_driver);
-  *
-  *      take_over_console is basically a register followed by unbind
-  */
-+int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
-+{
-+	int err;
-+
-+	err = do_register_con_driver(csw, first, last);
-+	/* if we get an busy error we still want to bind the console driver
-+	 * and return success, as we may have unbound the console driver
-+	 * but not unregistered it.
-+	*/
-+	if (err == -EBUSY)
-+		err = 0;
-+	if (!err)
-+		do_bind_con_driver(csw, first, last, deflt);
-+
-+	return err;
-+}
-+/*
-+ *	If we support more console drivers, this function is used
-+ *	when a driver wants to take over some existing consoles
-+ *	and become default driver for newly opened ones.
-+ *
-+ *      take_over_console is basically a register followed by unbind
-+ */
- int take_over_console(const struct consw *csw, int first, int last, int deflt)
- {
- 	int err;
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index fdefa8f..c75f8ce 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -529,6 +529,34 @@ static int search_for_mapped_con(void)
- 	return retval;
- }
- 
-+static int do_fbcon_takeover(int show_logo)
-+{
-+	int err, i;
-+
-+	if (!num_registered_fb)
-+		return -ENODEV;
-+
-+	if (!show_logo)
-+		logo_shown = FBCON_LOGO_DONTSHOW;
-+
-+	for (i = first_fb_vc; i <= last_fb_vc; i++)
-+		con2fb_map[i] = info_idx;
-+
-+	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
-+				fbcon_is_default);
-+
-+	if (err) {
-+		for (i = first_fb_vc; i <= last_fb_vc; i++) {
-+			con2fb_map[i] = -1;
-+		}
-+		info_idx = -1;
-+	} else {
-+		fbcon_has_console_bind = 1;
-+	}
-+
-+	return err;
-+}
-+
- static int fbcon_takeover(int show_logo)
- {
- 	int err, i;
-@@ -3115,7 +3143,7 @@ static int fbcon_fb_registered(struct fb_info *info)
- 		}
- 
- 		if (info_idx != -1)
--			ret = fbcon_takeover(1);
-+			ret = do_fbcon_takeover(1);
- 	} else {
- 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
- 			if (con2fb_map_boot[i] == idx)
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 3ff0105..564ebe9 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1650,7 +1650,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
- 	event.info = fb_info;
- 	if (!lock_fb_info(fb_info))
- 		return -ENODEV;
-+        console_lock();
- 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
-+        console_unlock();
- 	unlock_fb_info(fb_info);
- 	return 0;
- }
-@@ -1853,11 +1855,8 @@ int fb_new_modelist(struct fb_info *info)
- 	err = 1;
- 
- 	if (!list_empty(&info->modelist)) {
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		event.info = info;
- 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
--		unlock_fb_info(info);
- 	}
- 
- 	return err;
-diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
-index a55e366..ef476b0 100644
---- a/drivers/video/fbsysfs.c
-+++ b/drivers/video/fbsysfs.c
-@@ -177,6 +177,8 @@ static ssize_t store_modes(struct device *device,
- 	if (i * sizeof(struct fb_videomode) != count)
- 		return -EINVAL;
- 
-+	if (!lock_fb_info(fb_info))
-+		return -ENODEV;
- 	console_lock();
- 	list_splice(&fb_info->modelist, &old_list);
- 	fb_videomode_to_modelist((const struct fb_videomode *)buf, i,
-@@ -188,6 +190,7 @@ static ssize_t store_modes(struct device *device,
- 		fb_destroy_modelist(&old_list);
- 
- 	console_unlock();
-+	unlock_fb_info(fb_info);
- 
- 	return 0;
- }
-diff --git a/include/linux/console.h b/include/linux/console.h
-index dedb082..4ef4307 100644
---- a/include/linux/console.h
-+++ b/include/linux/console.h
-@@ -78,6 +78,7 @@ int con_is_bound(const struct consw *csw);
- int register_con_driver(const struct consw *csw, int first, int last);
- int unregister_con_driver(const struct consw *csw);
- int take_over_console(const struct consw *sw, int first, int last, int deflt);
-+int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
- void give_up_console(const struct consw *sw);
- #ifdef CONFIG_HW_CONSOLE
- int con_debug_enter(struct vc_data *vc);
+ completed=31249  gpnum=31250  age=1  max=18
 
