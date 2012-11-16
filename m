@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab2KPM2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:28:52 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33690 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2KPM2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:28:50 -0500
-Date: Fri, 16 Nov 2012 04:25:41 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121116122540.GA2198@lizard>
-References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
- <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
- <20121116072642.GA22291@lizard>
- <50A60AF6.9080509@nvidia.com>
+	id S1751474Ab2KPMhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:37:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45298 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab2KPMhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 07:37:17 -0500
+Date: Fri, 16 Nov 2012 04:38:06 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jun Chen <jun.d.chen@intel.com>
+Cc: serial <linux-serial@vger.kernel.org>, "russ.gorby" <russ.gorby@intel.com>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Bi Chao <chao.bi@intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] serial: ifx6x60: Add module parameters to manage the
+ modem status through sysfs
+Message-ID: <20121116123806.GA9303@kroah.com>
+References: <1353070789.24092.6.camel@chenjun-workstation>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50A60AF6.9080509@nvidia.com>
+In-Reply-To: <1353070789.24092.6.camel@chenjun-workstation>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 06:44:22PM +0900, Alex Courbot wrote:
-> On 11/16/2012 04:26 PM, Anton Vorontsov wrote:
-> >>+#include "power_seq_delay.c"
-> >>+#include "power_seq_regulator.c"
-> >>+#include "power_seq_pwm.c"
-> >>+#include "power_seq_gpio.c"
-> >
-> >This is odd, although I remember you already explained why you have to
-> >include the .c files, instead of linking them separately. But I forgot the
-> >reason. :) I think this deserves a comment in the code.
+On Fri, Nov 16, 2012 at 07:59:49AM -0500, Jun Chen wrote:
 > 
-> This is because of the table right after these includes:
+> The Medfield Platform implements a recovery procedure consisting in an escalation
+> from simple and light recovery procedures to stronger ones with increased visibility
+> and impact to end-user.After platform find some problem from Modem,such as no response,
+> platform will try do modem warm reset.If several tries failed, platform will try to
+> do modem cold boot procedure.For Modem Cold Boot, AP is responsible to generate
+> blob (binary object containing PIN code and other necessary information).
+> Blob is stored in AP volatile memory. AP decides to read PIN code from cache instead of
+> prompting end-user, and sends it to modem as if end-user had entered it.
 > 
-> static const struct power_seq_res_ops power_seq_ops[POWER_SEQ_NUM_TYPES] = {
-> 	[POWER_SEQ_DELAY] = POWER_SEQ_DELAY_TYPE,
-> 	[POWER_SEQ_REGULATOR] = POWER_SEQ_REGULATOR_TYPE,
-> 	[POWER_SEQ_PWM] = POWER_SEQ_PWM_TYPE,
-> 	[POWER_SEQ_GPIO] = POWER_SEQ_GPIO_TYPE,
-> };
+> This patch add module parameters to manage the modem status through sysfs.
+> Reset_modem can be read and write by user space.When read the reset_modem,user space will
+> get the mdm_reset_state which used to avoid to run twice at once.When set the reset_modem to
+> IFX_COLD_RESET_REQ,modem will do cold reset, other val value will trigger modem reset.
 > 
-> The POWER_SEQ_*_TYPE macros are defined in the C files. It's the
-> simplest way to initialize this table, and the code inside these C
-> files is short and simple enough that I thought I would be forgiven.
-> :)
+> Hangup_reasons used to give one interface to user space to know and clear the modem reset reasons.
+> Now there are four reasons:SPI timeout, modem initiative reset,modem coredump,spi tranfer error.
 
-I think in the header file you could just write
+Why are these module parameters?  Why not just "real" sysfs files
+instead?  That way, if you have multiple devices in a system, it will
+work properly for them.  Right now you are limited to 1 device, right?
 
-extern ..... power_seq_delay_type;
-#ifndef ...
-#define power_seq_delay_type NULL
-#endif
+And where have you documented these options?
 
-And then, in the .c file:
+thanks,
 
-static const struct power_seq_res_ops power_seq_ops[POWER_SEQ_NUM_TYPES] = {
-	[POWER_SEQ_DELAY] = power_seq_delay_type,
-	...
-};
-
-And then you can stop including the .c files directly, and link them
-instead.
-
-> At first everything was in power_seq.c and it was fine, then I
-> thought it would be better to move resource support code into their
-> own filesm and now everybody is asking. :P
-> 
-> But yeah, maybe it would be even better to not stop halfway and use
-> dynamic linking.
-> 
-> Comment added for the time being. ;)
-> 
-> >>+static int of_power_seq_parse_step(struct device *dev,
-> >>+				   struct device_node *node,
-> >>+				   struct power_seq *seq,
-> >>+				   unsigned int step_nbr,
-> >>+				   struct list_head *resources)
-> >>+{
-> >>+	struct power_seq_step *step = &seq->steps[step_nbr];
-> >>+	struct power_seq_resource res, *res2;
-> >>+	const char *type;
-> >>+	int i, err;
-> >
-> >nit: one variable declaration per line.
-> 
-> Fair enough - but is that a convention? checkpatch.pl was happy with these.
-
-It's not a rule, although there is a small passage about it in CodingStyle
-file when it describes commenting style. Though, some folks choose to
-ignore this suggestion quite frequently, especially if variables have no
-comments.
-
-Often, the multiple declarations per line are used to hide ugly functions
-w/ tons of variables, or just to confuse the reader for the fun of it.
-
-There are exceptions, of course. E.g.
-
-	int i, j, k; /* Our iterators. */
-
-Is perfectly fine.
-
-But
-	int i, err;
-
-At least to me seems weird, this stuff is logically disjunct.
-
-Only human can truly differentiate when the stuff "looks better" together
-or apart, so that's why checkpatch doesn't complain. Personally, I use
-this rule of thumb: when in doubt, use just one declaration per line, it
-is always OK. :)
-
-Thanks,
-Anton.
+greg k-h
