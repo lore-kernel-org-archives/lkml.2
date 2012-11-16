@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab2KPIyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:54:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22820 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2KPIxh (ORCPT
+	id S1751701Ab2KPIyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:54:52 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41425 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2KPIxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Nov 2012 03:53:37 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 4/9] x86, 64bit: add support for loading kernel above 512G
-Date: Fri, 16 Nov 2012 00:53:04 -0800
-Message-Id: <1353055989-31939-5-git-send-email-yinghai@kernel.org>
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 2/9] x86: Add macro for 64bit entry for bzImage
+Date: Fri, 16 Nov 2012 00:53:02 -0800
+Message-Id: <1353055989-31939-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
 References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current kernel is not allowed to be loaded above 512g, it thinks
-that address is too big.
-
-We only need to add one extra one spare page for needed level3 to
-point another 512g range.
-
-Need to check _text range and set level4 pg to point to that spare
-level3 page, and set level3 to point to level2 page to cover
-[_text, _end] with extra mapping.
-
-We need this to put relocatable bzImage high above 512g.
+will use it with bzImage header.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/head_64.S |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ arch/x86/boot/compressed/head_64.S |    2 +-
+ arch/x86/include/asm/boot.h        |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index efc0c08..32fa9d0 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -78,12 +78,6 @@ startup_64:
- 	testl	%eax, %eax
- 	jnz	bad_address
- 
--	/* Is the address too large? */
--	leaq	_text(%rip), %rdx
--	movq	$PGDIR_SIZE, %rax
--	cmpq	%rax, %rdx
--	jae	bad_address
--
- 	/* Fixup the physical addresses in the page table
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 4c8af67..0733638 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -197,7 +197,7 @@ no_longmode:
+ 	 * it may change in the future.
  	 */
- 	addq	%rbp, init_level4_pgt + 0(%rip)
-@@ -102,12 +96,35 @@ startup_64:
- 	andq	$PMD_PAGE_MASK, %rdi
+ 	.code64
+-	.org 0x208
++	.org BOOT_CODE64_START_OFFSET
+ ENTRY(startup_64)
+ 	/*
+ 	 * We come here either from startup_32 or directly from a
+diff --git a/arch/x86/include/asm/boot.h b/arch/x86/include/asm/boot.h
+index b13fe63..bcae405 100644
+--- a/arch/x86/include/asm/boot.h
++++ b/arch/x86/include/asm/boot.h
+@@ -38,8 +38,10 @@
  
- 	movq	%rdi, %rax
-+	shrq	$PGDIR_SHIFT, %rax
-+	andq	$(PTRS_PER_PGD - 1), %rax
-+	jz	skip_level3_spare
-+
-+	/* Set level3 at first */
-+	leaq	(level3_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
-+	leaq	init_level4_pgt(%rip), %rbx
-+	movq	%rdx, 0(%rbx, %rax, 8)
-+	addq	$L4_PAGE_OFFSET, %rax
-+	movq	%rdx, 0(%rbx, %rax, 8)
-+
-+	/* always need to set level2 */
-+	movq	%rdi, %rax
-+	shrq	$PUD_SHIFT, %rax
-+	andq	$(PTRS_PER_PUD - 1), %rax
-+	leaq	level3_spare_pgt(%rip), %rbx
-+	jmp	set_level2_spare
-+
-+skip_level3_spare:
-+	movq	%rdi, %rax
- 	shrq	$PUD_SHIFT, %rax
- 	andq	$(PTRS_PER_PUD - 1), %rax
- 	jz	ident_complete
+ #ifdef CONFIG_X86_64
+ #define BOOT_STACK_SIZE	0x4000
++#define BOOT_CODE64_START_OFFSET 0x208
+ #else
+ #define BOOT_STACK_SIZE	0x1000
++#define BOOT_CODE64_START_OFFSET 0
+ #endif
  
--	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
-+	/* only set level2 with out level3 spare */
- 	leaq	level3_ident_pgt(%rip), %rbx
-+
-+set_level2_spare:
-+	leaq	(level2_spare_pgt - __START_KERNEL_map + _KERNPG_TABLE)(%rbp), %rdx
- 	movq	%rdx, 0(%rbx, %rax, 8)
- 
- 	movq	%rdi, %rax
-@@ -435,6 +452,9 @@ NEXT_PAGE(level2_kernel_pgt)
- 	PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
- 		KERNEL_IMAGE_SIZE/PMD_SIZE)
- 
-+NEXT_PAGE(level3_spare_pgt)
-+	.fill   512, 8, 0
-+
- NEXT_PAGE(level2_spare_pgt)
- 	.fill   512, 8, 0
- 
+ #endif /* __KERNEL__ */
 -- 
 1.7.7
 
