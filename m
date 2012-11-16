@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab2KPRGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:06:03 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32541 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267Ab2KPRF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:05:58 -0500
-Subject: [PATCH 02/14] fuse: Getting file for writeback helper
-To: miklos@szeredi.hu
-From: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: dev@parallels.com, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        xemul@openvz.org
-Date: Fri, 16 Nov 2012 21:05:43 +0400
-Message-ID: <20121116170527.3196.13010.stgit@maximpc.sw.ru>
-In-Reply-To: <20121116170123.3196.93431.stgit@maximpc.sw.ru>
-References: <20121116170123.3196.93431.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	id S1752612Ab2KPRGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:06:23 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62646 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2KPRGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 12:06:20 -0500
+Date: Fri, 16 Nov 2012 09:06:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Johan Meiring <johanmeiring@gmail.com>
+Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
+        viro@zeniv.linux.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: mdd.h: fixes tons of coding
+ style issues
+Message-ID: <20121116170616.GB30626@kroah.com>
+References: <1353084911-8908-1-git-send-email-johanmeiring@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353084911-8908-1-git-send-email-johanmeiring@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There will be a .writepageS callback implementation which will need to
-get a fuse_file out of a fuse_inode, thus make a helper for this.
+On Fri, Nov 16, 2012 at 06:55:11PM +0200, Johan Meiring wrote:
+> This commit sorts out a ton of styling issues, including the use of
+> C99 // comments, spaces before and after tabs, etc. I also took the
+> time to align stuff a little more neatly using tabs. The file is
+> nowhere near ready, but it's a start.
+> 
+> Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/mdd.h | 1593 +++++++++++++++++++-------------------
+>  1 file changed, 797 insertions(+), 796 deletions(-)
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
----
- fs/fuse/file.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+A patch this big is almost impossible to review, sorry.  Please break it
+up into smaller pieces.
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 9e85ef0..cd41b56 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1276,6 +1276,20 @@ static void fuse_writepage_end(struct fuse_conn *fc, struct fuse_req *req)
- 	fuse_writepage_free(fc, req);
- }
- 
-+static struct fuse_file *fuse_write_file(struct fuse_conn *fc,
-+					 struct fuse_inode *fi)
-+{
-+	struct fuse_file *ff;
-+
-+	spin_lock(&fc->lock);
-+	BUG_ON(list_empty(&fi->write_files));
-+	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
-+	fuse_file_get(ff);
-+	spin_unlock(&fc->lock);
-+
-+	return ff;
-+}
-+
- static int fuse_writepage_locked(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
-@@ -1283,7 +1297,6 @@ static int fuse_writepage_locked(struct page *page)
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_req *req;
--	struct fuse_file *ff;
- 	struct page *tmp_page;
- 
- 	set_page_writeback(page);
-@@ -1296,13 +1309,8 @@ static int fuse_writepage_locked(struct page *page)
- 	if (!tmp_page)
- 		goto err_free;
- 
--	spin_lock(&fc->lock);
--	BUG_ON(list_empty(&fi->write_files));
--	ff = list_entry(fi->write_files.next, struct fuse_file, write_entry);
--	req->ff = fuse_file_get(ff);
--	spin_unlock(&fc->lock);
--
--	fuse_write_fill(req, ff, page_offset(page), 0);
-+	req->ff = fuse_write_file(fc, fi);
-+	fuse_write_fill(req, req->ff, page_offset(page), 0);
- 
- 	copy_highpage(tmp_page, page);
- 	req->misc.write.in.write_flags |= FUSE_WRITE_CACHE;
+thanks,
 
+greg k-h
