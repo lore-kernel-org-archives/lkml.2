@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab2KPJQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:16:39 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:62275 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2KPJQh (ORCPT
+	id S1751452Ab2KPJR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:17:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:65336 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2KPJR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:16:37 -0500
-X-IronPort-AV: E=Sophos;i="4.83,263,1352073600"; 
-   d="scan'208";a="15843610"
-Message-ID: <1353057394.3499.159.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH 08/14] xen: netback: Remove redundant check on unsigned
- variable
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Fri, 16 Nov 2012 09:16:34 +0000
-In-Reply-To: <1353048646-10935-9-git-send-email-tushar.behera@linaro.org>
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
-	 <1353048646-10935-9-git-send-email-tushar.behera@linaro.org>
-Organization: Citrix Systems, Inc.
+	Fri, 16 Nov 2012 04:17:56 -0500
+Message-ID: <1353057470.4277.5.camel@phoenix>
+Subject: [PATCH RESEND] misc: apds9802als: Fix the logic checking timeout in
+ als_wait_for_data_ready()
+From: Axel Lin <axel.lin@ingics.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Anantha Narayanan <anantha.narayanan@intel.com>,
+        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 16 Nov 2012 17:17:50 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 06:50 +0000, Tushar Behera wrote:
-> No need to check whether unsigned variable is less than 0.
-> 
-> CC: Ian Campbell <ian.campbell@citrix.com>
-> CC: xen-devel@lists.xensource.com
-> CC: netdev@vger.kernel.org
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+In the case of timeout waiting for data ready, the retry variable is -1.
+This also fixes a bug: current code returns -ETIMEDOUT if latest retry success
+( which means retry is 0 when exiting the while loop ).
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Resend to Greg's correct email address.
 
-Thanks.
+ drivers/misc/apds9802als.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> ---
->  drivers/net/xen-netback/netback.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index aab8677..515e10c 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -190,14 +190,14 @@ static int get_page_ext(struct page *pg,
->  
->  	group = ext.e.group - 1;
->  
-> -	if (group < 0 || group >= xen_netbk_group_nr)
-> +	if (group >= xen_netbk_group_nr)
->  		return 0;
->  
->  	netbk = &xen_netbk[group];
->  
->  	idx = ext.e.idx;
->  
-> -	if ((idx < 0) || (idx >= MAX_PENDING_REQS))
-> +	if (idx >= MAX_PENDING_REQS)
->  		return 0;
->  
->  	if (netbk->mmap_pages[idx] != pg)
+diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
+index 0314773..94923d2 100644
+--- a/drivers/misc/apds9802als.c
++++ b/drivers/misc/apds9802als.c
+@@ -68,7 +68,7 @@ static int als_wait_for_data_ready(struct device *dev)
+ 		ret = i2c_smbus_read_byte_data(client, 0x86);
+ 	} while (!(ret & 0x80) && retry--);
+ 
+-	if (!retry) {
++	if (retry < 0) {
+ 		dev_warn(dev, "timeout waiting for data ready\n");
+ 		return -ETIMEDOUT;
+ 	}
+-- 
+1.7.9.5
+
 
 
