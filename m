@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab2KPRNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:13:38 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:42553
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752114Ab2KPRNh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:13:37 -0500
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VPS5(zz98dI9371I103dK542M1432I4015Izz1de0h1202h1d1ah1d2ahzzz30ih95h668h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1307i1155h)
-From: Michal Simek <michal.simek@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "arm@kernel.org" <arm@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Josh Cartwright <josh.cartwright@ni.com>, John Linn <linnj@xilinx.com>
-Subject: RE: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
-Thread-Topic: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
-Thread-Index: AQHNxBsbeh6pPCgvtU2wWLXiGF9qT5fsr2XA
-Date: Fri, 16 Nov 2012 17:13:30 +0000
-References: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com>
- <CAHTX3dLijLK45ddZQVYHcrs6QQbmdRmQbPmTKada9nXx3ZAe3w@mail.gmail.com>
- <201211161654.23470.arnd@arndb.de>
-In-Reply-To: <201211161654.23470.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.24.221]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752714Ab2KPROn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:14:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34419 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab2KPROm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 12:14:42 -0500
+Message-ID: <50A6746D.8070506@zytor.com>
+Date: Fri, 16 Nov 2012 09:14:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <52241ede-3d28-43fc-967d-36ab64d52592@CH1EHSMHS038.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] x86, mm: setup page table from top-down
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org> <1349827115-16600-7-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1210101733220.2689@kaball.uk.xensource.com> <CAE9FiQVuU=KfMM0Q16Lddz8ZL_wzg5PLkWWK=6navQdC_j0KbA@mail.gmail.com> <alpine.DEB.2.02.1210101821540.2689@kaball.uk.xensource.com> <CAE9FiQVSMP2TpTPxEB62T-uELY-W67m6LX-qTJ7yYSEE-cOZbA@mail.gmail.com>
+In-Reply-To: <CAE9FiQVSMP2TpTPxEB62T-uELY-W67m6LX-qTJ7yYSEE-cOZbA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, November 16, 2012 5:54 PM
-> To: Michal Simek
-> Cc: arm@kernel.org; LKML; linux-arm; Olof Johansson; Nick Bowler; Josh
-> Cartwright; John Linn
-> Subject: Re: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
+On 10/10/2012 10:38 AM, Yinghai Lu wrote:
+> On Wed, Oct 10, 2012 at 10:26 AM, Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com> wrote:
+>> On Wed, 10 Oct 2012, Yinghai Lu wrote:
+>>
+>> It doesn't matter whether they come from BRK or other memory: Xen
+>> assumes that all the pagetable pages come from
+>> pgt_buf_start-pgt_buf_top, so if you are going to use another range you
+>> need to tell Xen about it.
+>>
+>> Alternatively, you can follow Peter's suggestion and replace the current
+>> hooks with a new one with a more precise and well defined semantic.
+>> Something along the lines of "this pagetable page is about to be hooked
+>> into the live pagetable". Xen would use the hook to mark it RO.
 >
-> On Friday 16 November 2012, Michal Simek wrote:
-> > I have 7 new follow up patches for zynq. They are based on previous
-> > patches (arm-soc zynq/cleanup branch).
-> > The branch is still based on rc3 but I have also tried to merged it
-> > with the v3.7-rc5 and there is no issue.
-> >
-> > It should be the last pull request for v3.8.
-> >
+> attached patch on top of this patch will fix the problem?
 >
-> Pulled into next/dt, thanks!
->
-> This was a small set of patches and you're new to the job, so there is no problem
-> with what you sent me, but I have a few comments for the
-> future:
 
-Yeah, need to learn more how arm-soc works.
+  	.mapping = {
+-		.pagetable_reserve		= native_pagetable_reserve,
++		.mark_page_ro			= mark_page_ro_noop;
+  	},
 
->
-> * Please provide a description of the series that I can put into the merge
-> changeset, either in the introductory mail or (better) into the signed tag that
-> you send (git tag -s). Have a look at how Tony Lindgren does this, he writes the
-> best descriptions.
+I have already objected to this naming in the past, because it describes 
+an implementation ("hypervisor make readonly") as opposed to a semantic 
+function "make this page permissible to use as a page table".  I would 
+call it pagetable_prepare or something like that.
 
-No. Do you have a link?
+	-hpa
 
-> * I've used the next/dt branch, since that is what most of the patches from this
-> series best fit in. However, some of the patches would have made more sense
-> in a different branch (clock, cleanup, ...).
-> When you have things that are logically separate, just send separate pull
-> requests. This takes some practice to get the dependencies right, so please ask
-> if you are not sure how to do it.
-
-yeah. I forget.
-
-> * It seems the zynq multiplatform changes didn't make it for 3.8. I hope you can
-> do this for 3.9, as this should not be too hard.
-
-We have done a lot of changes and I believe I will have more time to do it soon.
-
-Thanks,
-Michal
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
