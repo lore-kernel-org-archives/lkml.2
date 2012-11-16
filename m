@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab2KPGEn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 01:04:43 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:13478 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab2KPGEl (ORCPT
+	id S1751472Ab2KPGQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 01:16:17 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48739 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab2KPGQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 01:04:41 -0500
-Message-ID: <50A5D76D.70805@huawei.com>
-Date: Fri, 16 Nov 2012 14:04:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 16 Nov 2012 01:16:15 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mhocko@suse.cz>,
-        <glommer@parallels.com>
-Subject: Re: [PATCH 04/17] cgroup: create directory before linking while creating
- a new cgroup
-References: <1352775704-9023-1-git-send-email-tj@kernel.org> <1352775704-9023-5-git-send-email-tj@kernel.org> <50A30E0F.7000408@huawei.com> <20121114190407.GI21185@mtj.dyndns.org>
-In-Reply-To: <20121114190407.GI21185@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20121106222442.GS3102@twin.jikos.cz>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	<1351485061-12297-3-git-send-email-zwu.kernel@gmail.com>
+	<20121106222442.GS3102@twin.jikos.cz>
+Date: Fri, 16 Nov 2012 14:16:13 +0800
+Message-ID: <CAEH94Lj+Ju9KzJTo=g2Mb6sr6CLnpikur7_tWboWRDGRZgbxpQ@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 02/19] vfs: initialize and free data structures
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/15 3:04, Tejun Heo wrote:
-> Hello, Li.
-> 
-> On Wed, Nov 14, 2012 at 11:20:47AM +0800, Li Zefan wrote:
->>> It also removes the need to check whether cgroup->dentry is %NULL in
->>> cgroup_path.  If a cgroup is visible, its dentry is guaranteed to be
->>> visible too.
->>
->> I'm afraid this isn't safe.
->>
->> The cgroup is visible to a controller soon after ss->create(), and then
->> the controller might call cgroup_path() while cgrp->dentry is still NULL.
-> 
-> Hmmm... I can't find any case where ss->create() is calling
-> cgroup_path().  Do you remember which one that was?
-> 
+On Wed, Nov 7, 2012 at 6:24 AM, David Sterba <dave@jikos.cz> wrote:
+> On Mon, Oct 29, 2012 at 12:30:44PM +0800, zwu.kernel@gmail.com wrote:
+>> +/* Frees the entire hot_range_tree. */
+>> +static void hot_inode_item_free(struct kref *kref)
+>> +{
+>> +     struct hot_comm_item *comm_item = container_of(kref,
+>> +                     struct hot_comm_item, refs);
+>> +     struct hot_inode_item *he = container_of(comm_item,
+>> +                     struct hot_inode_item, hot_inode);
+>> +
+>> +     hot_range_tree_free(he);
+>> +     radix_tree_delete(he->hot_inode_tree, he->i_ino);
+>
+> void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+>
+> and he::i_ino is u64, this will not work when
+> sizeof(unsigned long) != sizeof(u64) (iirc this is a known limitation of
+> radix tree implementation). This will work on 64bit only, not sure if
+> this is intentional.
+Fixed, thanks.
+>
+>> +     kmem_cache_free(hot_inode_item_cachep, he);
+>> +}
+>> +
+>> +/* Frees the entire hot_inode_tree. */
+>> +static void hot_inode_tree_exit(struct hot_info *root)
+>> +{
+>> +     struct hot_inode_item *hi_nodes[8];
+>> +     u64 ino = 0;
+>> +     int i, n;
+>
+> nitpick, put the declarations on separate lines
+>
+>> +
+>> +     while (1) {
+>> +             spin_lock(&root->lock);
+>> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
+>> +                                        (void **)hi_nodes, ino,
+>> +                                        ARRAY_SIZE(hi_nodes));
+>> +             if (!n) {
+>> +                     spin_unlock(&root->lock);
+>> +                     break;
+>> +             }
+>> +
+>> +             ino = hi_nodes[n - 1]->i_ino + 1;
+>> +             for (i = 0; i < n; i++)
+>> +                     hot_inode_item_put(hi_nodes[i]);
+>> +             spin_unlock(&root->lock);
+>> +     }
+>> +}
+>> +
+>>  /*
+>>   * Initialize kmem cache for hot_inode_item and hot_range_item.
+>>   */
+>> @@ -106,3 +197,36 @@ err:
+>>       kmem_cache_destroy(hot_inode_item_cachep);
+>>  }
+>>  EXPORT_SYMBOL_GPL(hot_cache_init);
+>> +
+>> +/*
+>> + * Initialize the data structures for hot data tracking.
+>> + */
+>> +int hot_track_init(struct super_block *sb)
+>> +{
+>> +     struct hot_info *root;
+>> +     int ret = -ENOMEM;
+>> +
+>> +     root = kzalloc(sizeof(struct hot_info), GFP_NOFS);
+>> +     if (!root) {
+>> +             printk(KERN_ERR "%s: Failed to malloc memory for "
+>> +                             "hot_info\n", __func__);
+>> +             return ret;
+>
+> minor: you can drop the variable ret and just reurn ENOMEM here
+>
+>> +     }
+>> +
+>> +     sb->s_hot_root = root;
+>> +     hot_inode_tree_init(root);
+>> +
+>> +     printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+>> +
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(hot_track_init);
+>
+> david
 
-I meant cgroup_create() may race with cgroup_path(). We used to have
-this race:
 
-(cpu0)                          (cpu1)
-mkdir                           cat /proc/sched_debug
 
-cgroup_create()
-  cpu_cgroup_create()
-    register_fair_sched_group()
-      list_add_rcu(...)
-				print_cfs_stats()
-				  for_each_leaf_cfs_rq()
-				    print_cfs_rq()
-				      cgroup_path()
-  css->cgroup = cgroup;
-  cgroup->dentry = dentry;
+-- 
+Regards,
 
-In this case, cgroup_path() might access NULL cgroup or NULL dentry.
-
-But I've looked the current scheduler code, no race anymore, because now the
-cfs_rq won't be added to the gloal list until there's task in the cgroup.
-(in the old time it was added to the list when creating a cgroup)
-
+Zhi Yong Wu
