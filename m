@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab2KPMhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:37:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36212 "EHLO mx2.suse.de"
+	id S1751669Ab2KPMhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:37:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45308 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab2KPMhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:37:36 -0500
-Date: Fri, 16 Nov 2012 13:37:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: Re: 3.7-rc3: mouses stopped working
-In-Reply-To: <20121116122400.GA10994@elf.ucw.cz>
-Message-ID: <alpine.LNX.2.00.1211161335180.20577@pobox.suse.cz>
-References: <20121115132849.GA4062@elf.ucw.cz> <alpine.LNX.2.00.1211151429240.15877@pobox.suse.cz> <20121115140736.GA2651@elf.ucw.cz> <alpine.LNX.2.00.1211151508350.15877@pobox.suse.cz> <20121116013405.GA2002@elf.ucw.cz> <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
- <20121116122400.GA10994@elf.ucw.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751634Ab2KPMhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 07:37:45 -0500
+Date: Fri, 16 Nov 2012 04:38:34 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jun Chen <jun.d.chen@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>, Bi Chao <chao.bi@intel.com>,
+        serial <linux-serial@vger.kernel.org>,
+        "russ.gorby" <russ.gorby@intel.com>, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH] serial: ifx6x60: ifx_spi_write don't need to do
+ mrdy_assert when fifo is not empty.
+Message-ID: <20121116123834.GA9327@kroah.com>
+References: <1353064117.24092.4.camel@chenjun-workstation>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353064117.24092.4.camel@chenjun-workstation>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Pavel Machek wrote:
-
-> > > root@amd:/tmp# uname -a
-> > > Linux amd 3.7.0-rc5+ #236 SMP Thu Nov 15 20:07:26 CET 2012 i686 GNU/Linux
-> > > root@amd:/tmp# cat /dev/input/mice
-> > > cat: /dev/input/mice: No such device or address
-> > > root@amd:/tmp# ls -al /dev/input/mice
-> > > crw-rw---- 1 root root 13, 63 Apr 25  2010 /dev/input/mice
-> > > root@amd:/tmp# 
-> > 
-> > Let's see whether this is /dev/input/mice issue or something else first.
-> > 
-> > Is anything coming out of corresponding /dev/input/eventX node?
+On Fri, Nov 16, 2012 at 06:08:37AM -0500, Jun Chen wrote:
 > 
-> /dev/input/mouse0 and /dev/input/mouse1 generate events when I move
-> internal/USB mouse.
+> This patch check whether the fifo lenth is empty before writing new data to fifo.If condition
+> is true,ifx_spi_write need to trigger one mrdy_assert. If condition is false,the mrdy_assert
+> will be trigger by the next ifx_spi_io.
 > 
-> ls -al /dev/input/mouse0 
-> crw-rw---- 1 root root 13, 32 Apr 25  2010 /dev/input/mouse0
-> pavel@amd:/tmp$ ls -al /dev/input/mouse1
-> crw------T 1 root root 13, 33 Aug 30 16:41 /dev/input/mouse1
-> pavel@amd:/tmp$ 
-> 
-> > And /dev/hidrawX?
-> 
-> /dev/hidraw0 seems to correspond to USB mouse and generates
-> events. Could not find hidraw corresponding to PS/2 mouse.
+> Cc: Bi Chao <chao.bi@intel.com>
+> Signed-off-by: Chen Jun <jun.d.chen@intel.com>
+> ---
+>  drivers/tty/serial/ifx6x60.c |   14 +++++++++++---
+>  1 files changed, 11 insertions(+), 3 deletions(-)
 
-That is correct and expected behavior.
+What tree did you make this against?  It doesn't apply to my tty-next
+tree at all :(
 
-> So it seems to be "/dev/input/mice" issue. Does it work for you?
-
-Yes, it works for me properly (testing with rc4+, 1b42fc4 more precisely). 
-Even after disconnect/reconnect cycle of USB mouse, I am getting events 
-properly from /dev/input/mice (frankly I am surprised that you noticed ... 
-Xorg has been using evdev driver for ages already by default, right?)
-
-What was the last kernel version that worked for you in this respect?
-
-Adding Dmitry and linux-input.
-
--- 
-Jiri Kosina
-SUSE Labs
+greg k-h
