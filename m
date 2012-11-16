@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab2KPJZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:25:56 -0500
-Received: from spamtitan.rucls.net ([63.239.62.142]:60815 "EHLO
-	spamtitan.rucls.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab2KPJZz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:25:55 -0500
-X-Greylist: delayed 677 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Nov 2012 04:25:55 EST
-Message-ID: <20121116020850.3g35cqzogg008ow4@webmail.rucls.net>
-Date: Fri, 16 Nov 2012 02:08:50 -0600
-From: Webmail Helpdesk Support Centre <upgrade-virusdelete@rucls.net>
-To: undisclosed-recipients:;
-Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY, UPGRADE NOW
-	!!!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
-X-Originating-IP: 76.72.171.220
-X-Authenticated-User: ehuebner
+	id S1751477Ab2KPJ0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:26:40 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:21261 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab2KPJ0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:26:39 -0500
+X-IronPort-AV: E=Sophos;i="4.83,263,1352044800"; 
+   d="scan'208";a="6214063"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH]cputime: make bool type for steal ticks
+Date: Fri, 16 Nov 2012 17:24:50 +0800
+Message-Id: <1353057890-24234-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/16 17:26:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/16 17:26:30,
+	Serialize complete at 2012/11/16 17:26:30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Help protect unwanted spam and delete virus from your webmail  
-account by clicking the link below to upgrade and protect your account  
-from unwanted spam and spy, virus from your account
-  You have exceeded your email limit quota of 2GB. You need to upgrade
-your email limit quota to 10GB within the next 48 hours. Use the below  
-web link to upgrade your valid email account:
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+---
+ kernel/sched/cputime.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDcwdURxMkJCS25LSE5IREtLTXB3bkE6MQ
-
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 81b763b..d2c24c1 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -282,7 +282,7 @@ static __always_inline bool steal_account_process_tick(void)
+ 		this_rq()->prev_steal_time += st * TICK_NSEC;
+ 
+ 		account_steal_time(st);
+-		return st;
++		return !!st;
+ 	}
+ #endif
+ 	return false;
+-- 
+1.7.1
 
