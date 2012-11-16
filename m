@@ -1,138 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2KPXws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:52:48 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42903 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab2KPXwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:52:46 -0500
-Message-ID: <50A6D1C7.302@linux.vnet.ibm.com>
-Date: Fri, 16 Nov 2012 17:52:39 -0600
-From: Trey Ramsay <tramsay@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Rich Rattanni <rattanni@gmail.com>,
-        Radovan Lekanovic <lekanovic@gmail.com>
-Subject: Re: [PATCH 1/1] mmc: Bad device can cause mmc driver to hang
-References: <87k3tpkz53.fsf@octavius.laptop.org> <1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com> <876255bluf.fsf@octavius.laptop.org>
-In-Reply-To: <876255bluf.fsf@octavius.laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111623-5406-0000-0000-0000021FC899
+	id S1753807Ab2KPXxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:53:16 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:52514 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677Ab2KPXxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 18:53:15 -0500
+Date: Sat, 17 Nov 2012 00:53:08 +0100
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] regmap: introduce tables for readable/writeable/volatile/precious checks
+Message-ID: <20121116235308.GE27012@mail.gnudd.com>
+References: <1352983612-3474-1-git-send-email-ciminaghi@gnudd.com> <20121116011904.GH4387@opensource.wolfsonmicro.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121116011904.GH4387@opensource.wolfsonmicro.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 09:37 AM, Chris Ball wrote:
-> Hi Trey,
+On Fri, Nov 16, 2012 at 10:19:07AM +0900, Mark Brown wrote:
+> On Thu, Nov 15, 2012 at 01:46:52PM +0100, ciminaghi@gnudd.com wrote:
 > 
-> On Fri, Nov 16 2012, Trey Ramsay wrote:
->> There are infinite loops in the mmc code that can be caused by bad hardware.
->> The code will loop forever if the device never comes back from program mode,
->> R1_STATE_PRG, and it is not ready for data, R1_READY_FOR_DATA.
->>
->> A long timeout will be added to prevent the code from looping forever.
->> The timeout will occur if the device never comes back from program
->> state or the device never becomes ready for data.
->>
->> Signed-off-by: Trey Ramsay <tramsay@linux.vnet.ibm.com>
+> > I haven't seen any reply up to now, so I'm just resending the original patch
+> > (see https://lkml.org/lkml/2012/10/25/224).
+> > I just applied it to today's next and did a quick re-test.
 > 
-> Thanks, looks good!
+> The fact that you don't send a real name in your patch submission mails
+> might be an issue here - I suspect you've fallen foul of spam filtering,
+> either automatic or human, there's no sign of this in my pending queue.
+>
+mmm maybe I did something wrong with git send-email. Will check, thanks for
+pointing this out.
+ 
+> > +static inline bool _reg_in_ranges(unsigned int reg,
+> > +				  const struct regmap_range *ranges,
+> > +				  unsigned int nranges)
+> > +{
+> > +	const struct regmap_range *r;
+> > +	int i;
+> > +
+> > +	for (i = 0, r = ranges; i < nranges; i++, r++)
+> > +		if (_reg_in_range(reg, r))
+> > +			return true;
+> > +	return false;
+> > +}
 > 
-> Have you thought about what's going to happen after this path is hit?
-> Are we just going to start a new request that begins a new ten-minute
-> hang, or do we notice the bad card state somewhere and refuse to start
-> new I/O?
-> 
-> - Chris.
-> 
+> It would be better to make this an externally visible function (perhaps
+> just move it into the header with a regmap on the front of the name) so
+> that drivers can use this as part of the implementation of more complex
+> checks.  Otherwise this looks fine.
 
-You're welcome, and thanks for the help!
+ok, I'll fix the patch and resend it next week.
 
-Good question.  In regards to the original problem were it was hung in
-mmc_blk_err_check, the new code path will timeout after 10 minutes, log
-an error, issue a hardware reset and abort the request. Is the hardware
-reset enough or will that even work when the device isn't coming out of
-program state? Should we try to refuse all new I/O?
-
-
-Below are just some notes I took about the code path for
-mmc_blk_err_check and mmc_do_erase.
-=============================
-mmc_blk_err_check
-                        int err = get_card_status(card, &status, 5);
-                        if (err) {
-                                pr_err("%s: error %d requesting status\n",
-                                       req->rq_disk->disk_name, err);
-                                return MMC_BLK_CMD_ERR;
-                        }
-+
-+                       /* Timeout if the device never becomes ready for
-data
-+                        * and never leaves the program state.
-+                        */
-+                       if (time_after(jiffies, timeout)) {
-+                               pr_err("%s: Card stuck in programming
-state!"\
-+                                       " %s %s\n",
-mmc_hostname(card->host),
-+                                       req->rq_disk->disk_name, __func__);
-+
-+                               return MMC_BLK_CMD_ERR;
-+                       }
-
-Stack
------------------
-mmc_blk_err_check
-mmc_start_req
-mmc_blk_issue_rw_rq
-mmc_blk_issue_rq
-mmc_queue_thread
-
-We return MMC_BLK_CMD_ERR the same way as we return MMC_BLK_CMD_ERR if
-the get_card_status failed. The code which returns to mmc_start_req
-which sets the error status and returns to mmc_blk_issue_rw_rq with a
-status of MMC_BLK_CMD_ERR where it calls mmc_blk_reset which calls
-mmc_hw_reset. The code then return so mmc_queue_thread which does not
-check the return code.
-
-=============================
-mmc_do_erase
-+
-+               /* Timeout if the device never becomes ready for data and
-+                * never leaves the program state.
-+                */
-+               if (time_after(jiffies, timeout)) {
-+                       pr_err("%s: Card stuck in programming state! %s\n",
-+                               mmc_hostname(card->host), __func__);
-+                       err =  -EIO;
-+                       goto out;
-+               }
-+
-
-        err = mmc_erase(card, from, nr, arg);
-out:
-        if (err == -EIO && !mmc_blk_reset(md, card->host, type))
-                goto retry;
-
-
-The mmc_do_erase function is called by mmc_erase which is called from 3
-locations in the block.c code.
-
-    1) mmc_blk_issue_discard_rq--->mmc_erase--->mmc_do_erase    line 848
-    2) mmc_blk_issue_secdiscard_rq--->mmc_erase--->mmc_do_erase line 884
-    3) mmc_blk_issue_secdiscard_rq--->mmc_erase--->mmc_do_erase line 904
-
-    This applies to 1, 2 and 3 above.
-    Since we return -EIO, mmc_blk_issue_discard_rq or
-    mmc_blk_issue_secdiscard will do a mmc_blk_reset which will call
-    mmc_hw_reset. If hardware reset is successfull, it will retry the
-    command.  If the hardware reset is unsuccessfull, it will call
-    blk_end_request and will return 0 if there is
-    an err and will return to the mmc_queue_thread function which does
-    not check the return code.
+Thanks and regards
+Davide
 
