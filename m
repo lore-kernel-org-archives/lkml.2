@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337Ab2KPGlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 01:41:44 -0500
-Received: from [216.32.180.11] ([216.32.180.11]:17003 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750816Ab2KPGln (ORCPT
+	id S1751148Ab2KPGnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 01:43:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57404 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2KPGnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 01:41:43 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(z551biz98dI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 16 Nov 2012 15:05:45 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <mturquette@linaro.org>, Fabio Estevam <festevam@gmail.com>
-CC: <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] clk: mxs: Use a better name for the USB PHY clock
-Message-ID: <20121116070543.GD2941@S2100-06.ap.freescale.net>
-References: <1348332895-26966-1-git-send-email-festevam@gmail.com>
+	Fri, 16 Nov 2012 01:43:41 -0500
+Date: Fri, 16 Nov 2012 07:43:31 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mark Zhang <markz@nvidia.com>
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] drm: Add NVIDIA Tegra30 support
+Message-ID: <20121116064331.GA21671@avionic-0098.mockup.avionic-design.de>
+References: <1353041889-3114-1-git-send-email-markz@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
 Content-Disposition: inline
-In-Reply-To: <1348332895-26966-1-git-send-email-festevam@gmail.com>
+In-Reply-To: <1353041889-3114-1-git-send-email-markz@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+X-Provags-ID: V02:K0:VYgePnv1if2iFI+ugV9g0ze76kO+tWp8RLA0VE9bPb3
+ JOSMTC10ZGcVDq5kX61ZVcmEHQfcy9jctcdZp4et8CI2elFltM
+ OMMn+jUZwdEBlCp5hGgX8iZpLV4cEdL0YA86h8lxHxzOVaVvVR
+ QdFxfmOWuMQd2S/FheSjijQBoOxUhQkRZSDNGV3jvW9DYGzJp+
+ MevyqlzdQVx4TVWYidsbuDHZTjjSZdTlyF+8QsyA9yNz1qX2E/
+ ENKYbzmcnWVzR2CxHgXNrUrGmyl+cZ5eMkc5ibf+UL0OYG/I7u
+ Xa/6wJvr7V0ljon3Tu1EBQfrWj7Xi/dydAa8IB3Dv6eSGwZxoa
+ itVXbY8AG8S19qONE8qyG+6fXzhEzPGl2X7Oysx1FqLXS3qxVw
+ /2R4sYEzzhRenol/wDlGFW1LDB1E8ZPT4XWdlef4B1fjq+Xks8
+ qZecy
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 22, 2012 at 01:54:55PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> Use a better name for the USB PHY clock.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Mike,
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I was planning send a pull-request to you with all mxs clock patches
-collected for 3.8.  It turns out this is the only one I queued for
-this cycle.  I do not bother to send you a pull-request containing
-single patch, so can you please just apply it for 3.8?  Thanks.
+On Fri, Nov 16, 2012 at 12:58:09PM +0800, Mark Zhang wrote:
+> This patch is based on Thierry's drm patch for Tegra20:
+> - [PATCH v2 0/6] Device tree updates for host1x support
+> - [PATCH v3 0/2] NVIDIA Tegra DRM driver
+>=20
+> It adds the support for NVIDIA Tegra30.
+>=20
+> Signed-off-by: Mark Zhang <markz@nvidia.com>
 
-Shawn
+Hi Mark,
 
-> ---
->  .../devicetree/bindings/clock/imx23-clock.txt      |    2 +-
->  .../devicetree/bindings/clock/imx28-clock.txt      |    4 ++--
->  drivers/clk/mxs/clk-imx23.c                        |    6 +++---
->  drivers/clk/mxs/clk-imx28.c                        |   10 +++++-----
->  4 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/imx23-clock.txt b/Documentation/devicetree/bindings/clock/imx23-clock.txt
-> index a0b867e..baadbb1 100644
-> --- a/Documentation/devicetree/bindings/clock/imx23-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/imx23-clock.txt
-> @@ -52,7 +52,7 @@ clocks and IDs.
->  	lcdif		38
->  	etm		39
->  	usb		40
-> -	usb_pwr		41
-> +	usb_phy		41
->  
->  Examples:
->  
-> diff --git a/Documentation/devicetree/bindings/clock/imx28-clock.txt b/Documentation/devicetree/bindings/clock/imx28-clock.txt
-> index aa2af28..52a49a4 100644
-> --- a/Documentation/devicetree/bindings/clock/imx28-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/imx28-clock.txt
-> @@ -73,8 +73,8 @@ clocks and IDs.
->  	can1		59
->  	usb0		60
->  	usb1		61
-> -	usb0_pwr	62
-> -	usb1_pwr	63
-> +	usb0_phy	62
-> +	usb1_phy	63
->  	enet_out	64
->  
->  Examples:
-> diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
-> index f00dffb..8dd476e 100644
-> --- a/drivers/clk/mxs/clk-imx23.c
-> +++ b/drivers/clk/mxs/clk-imx23.c
-> @@ -85,7 +85,7 @@ enum imx23_clk {
->  	cpu_xtal, hbus, xbus, lcdif_div, ssp_div, gpmi_div, emi_pll,
->  	emi_xtal, etm_div, saif_div, clk32k_div, rtc, adc, spdif_div,
->  	clk32k, dri, pwm, filt, uart, ssp, gpmi, spdif, emi, saif,
-> -	lcdif, etm, usb, usb_pwr,
-> +	lcdif, etm, usb, usb_phy,
->  	clk_max
->  };
->  
-> @@ -143,8 +143,8 @@ int __init mx23_clocks_init(void)
->  	clks[saif] = mxs_clk_gate("saif", "saif_div", SAIF, 31);
->  	clks[lcdif] = mxs_clk_gate("lcdif", "lcdif_div", PIX, 31);
->  	clks[etm] = mxs_clk_gate("etm", "etm_div", ETM, 31);
-> -	clks[usb] = mxs_clk_gate("usb", "usb_pwr", DIGCTRL, 2);
-> -	clks[usb_pwr] = clk_register_gate(NULL, "usb_pwr", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
-> +	clks[usb] = mxs_clk_gate("usb", "usb_phy", DIGCTRL, 2);
-> +	clks[usb_phy] = clk_register_gate(NULL, "usb_phy", "pll", 0, PLLCTRL0, 18, 0, &mxs_lock);
->  
->  	for (i = 0; i < ARRAY_SIZE(clks); i++)
->  		if (IS_ERR(clks[i])) {
-> diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-> index 42978f1b..db3af08 100644
-> --- a/drivers/clk/mxs/clk-imx28.c
-> +++ b/drivers/clk/mxs/clk-imx28.c
-> @@ -140,7 +140,7 @@ enum imx28_clk {
->  	emi_xtal, lcdif_div, etm_div, ptp, saif0_div, saif1_div,
->  	clk32k_div, rtc, lradc, spdif_div, clk32k, pwm, uart, ssp0,
->  	ssp1, ssp2, ssp3, gpmi, spdif, emi, saif0, saif1, lcdif, etm,
-> -	fec, can0, can1, usb0, usb1, usb0_pwr, usb1_pwr, enet_out,
-> +	fec, can0, can1, usb0, usb1, usb0_phy, usb1_phy, enet_out,
->  	clk_max
->  };
->  
-> @@ -218,10 +218,10 @@ int __init mx28_clocks_init(void)
->  	clks[fec] = mxs_clk_gate("fec", "hbus", ENET, 30);
->  	clks[can0] = mxs_clk_gate("can0", "ref_xtal", FLEXCAN, 30);
->  	clks[can1] = mxs_clk_gate("can1", "ref_xtal", FLEXCAN, 28);
-> -	clks[usb0] = mxs_clk_gate("usb0", "usb0_pwr", DIGCTRL, 2);
-> -	clks[usb1] = mxs_clk_gate("usb1", "usb1_pwr", DIGCTRL, 16);
-> -	clks[usb0_pwr] = clk_register_gate(NULL, "usb0_pwr", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
-> -	clks[usb1_pwr] = clk_register_gate(NULL, "usb1_pwr", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
-> +	clks[usb0] = mxs_clk_gate("usb0", "usb0_phy", DIGCTRL, 2);
-> +	clks[usb1] = mxs_clk_gate("usb1", "usb1_phy", DIGCTRL, 16);
-> +	clks[usb0_phy] = clk_register_gate(NULL, "usb0_phy", "pll0", 0, PLL0CTRL0, 18, 0, &mxs_lock);
-> +	clks[usb1_phy] = clk_register_gate(NULL, "usb1_phy", "pll1", 0, PLL1CTRL0, 18, 0, &mxs_lock);
->  	clks[enet_out] = clk_register_gate(NULL, "enet_out", "pll2", 0, ENET, 18, 0, &mxs_lock);
->  
->  	for (i = 0; i < ARRAY_SIZE(clks); i++)
-> -- 
-> 1.7.9.5
-> 
+I already carry a similar patch in my tegra/next branch and was going to
+post that once I get word back that tegra-drm actually works on Tegra30.
 
+You do have the hardware available, right? Did you test this patch on
+top of the latest (v3) tegra-drm patches and arch/arm/mach-tegra (v2)
+patches I sent a few hours ago?
+
+Thierry
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQpeCTAAoJEN0jrNd/PrOhkBMP/ROXfhJ5jbPERlvV+XC0tdb0
+/Bi0TZ/fK5UlYHRv1+tZsKs/mEHOfMHLLx+hqCsmt3eRj5txWmWQE6nIoe/z/R+s
+A3ZNygwfM0gnF4uNyCwMd7M9+n/OpUSDIbC9YBNom5BesDq2VxSV28dG2zngUn8M
+zeNtA+4/KX/Hg3iZ4KxA75rDRgpL4TqGFOKV0keqynozeMNG7om+8ErmmVGN7jjP
+xQOuFr3iXNPliPUn6WY05XKXgmnITEAk6eTAJSctO1FVN3IDmzj9YBbx5bToo1Zo
+qJerjaFWvWLb09l3wtdzj72UlleuvVnwdNfQTYgnIDTObDAi9LkZ1Jl55I6i4TWz
+yC90+2jlxUHcU0XUHGHoHrXGrgQEB6cKRwCPk6t8FhxbU6O46nsbCs6Q3xH3TmPm
+5I+F64TetLEE8o3/g/2yTVezY8TloiYF9DhwDT1YIN0soxb6+lBysU8sJAYlQlGr
+UyivgQANFWq0YCAP3izke5/sRW+29EgcqL3+mjceT6VmvyiFO2Hvu9TTKShIwO9V
+aUrISWx9DbyAec7gb5IRgqoDABUw0jqjg1udUPT95fE6z99D1ISXFDkf1EyhPLqw
+E2N7AXsnJb2K+G80rcGg2Xa9vqkDvibnalFlNgCGv/w1AmM37h5/H32ety16SDh4
+/ZkaldN3X4npwo3uTJ6x
+=jI5L
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
