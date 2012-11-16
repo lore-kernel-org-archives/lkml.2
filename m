@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab2KPCVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:21:50 -0500
+	id S1751603Ab2KPCV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:21:59 -0500
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:61094 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2KPCVs (ORCPT
+	with ESMTP id S1750804Ab2KPCVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:21:48 -0500
+	Thu, 15 Nov 2012 21:21:55 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 4/9] nohz: Add API to check tick state
-Date: Fri, 16 Nov 2012 03:21:26 +0100
-Message-Id: <1353032491-16462-5-git-send-email-fweisbec@gmail.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 7/9] irq_work: Warn if there's still work on cpu_down
+Date: Fri, 16 Nov 2012 03:21:29 +0100
+Message-Id: <1353032491-16462-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
 References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
@@ -25,76 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need some quick way to check if the CPU has stopped
-its tick. This will be useful to implement the printk tick
-using the irq work subsystem.
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+If we are in nohz and there's still irq_work to be done when the idle
+task is about to go offline, give a nasty warning. Everything should
+have been flushed from the CPU_DYING notifier already. Further attempts
+to enqueue an irq_work are buggy because irqs are disabled by
+__cpu_disable(). The best we can do is to report the issue to the user.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/tick.h     |   17 ++++++++++++++++-
- kernel/time/tick-sched.c |    2 +-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ kernel/irq_work.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f37fceb..2307dd3 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -8,6 +8,8 @@
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index cf8b657..fcaadae 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -108,6 +108,9 @@ bool irq_work_needs_cpu(void)
+ 	if (llist_empty(this_list))
+ 		return false;
  
- #include <linux/clockchips.h>
- #include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/hrtimer.h>
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- 
-@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
- # ifdef CONFIG_NO_HZ
-+DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
++	/* All work should have been flushed before going offline */
++	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
 +
-+static inline int tick_nohz_tick_stopped(void)
-+{
-+	return __this_cpu_read(tick_cpu_sched.tick_stopped);
-+}
-+
- extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
--# else
-+
-+# else /* !CONFIG_NO_HZ */
-+static inline int tick_nohz_tick_stopped(void)
-+{
-+	return 0;
-+}
-+
- static inline void tick_nohz_idle_enter(void) { }
- static inline void tick_nohz_idle_exit(void) { }
+ 	return true;
+ }
  
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index a402608..9e945aa 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -28,7 +28,7 @@
- /*
-  * Per cpu nohz control structure
-  */
--static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
-+DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
- 
- /*
-  * The time, when the last jiffy update happened. Protected by xtime_lock.
 -- 
 1.7.5.4
 
