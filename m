@@ -1,160 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337Ab2KPITt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:19:49 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:28154 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2KPITr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:19:47 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
-        Myron Stowe <myron.stowe@gmail.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        Huang Ying <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
-        "Zhang Yanmin" <yanmin.zhang@intel.com>
-Subject: [PATCH v2] PCI-AER: Do not report successful error recovery for
- devices with AER-unaware drivers
-Thread-Topic: [PATCH v2] PCI-AER: Do not report successful error recovery
- for devices with AER-unaware drivers
-Thread-Index: AQHNw9MDYXe2avP0Wk602Uq/9KXENg==
-Date: Fri, 16 Nov 2012 08:18:53 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C901469EFE@G9W0717.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751382Ab2KPIXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:23:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32808 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840Ab2KPIXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 03:23:42 -0500
+Date: Fri, 16 Nov 2012 10:17:19 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: move dwc3_cache_hwparams before
+ dwc3_alloc_event_buffers
+Message-ID: <20121116081719.GA16568@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1353047874-4981-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <1353047874-4981-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an error is detected on a PCIe device which does not have an
-AER-aware driver, prevent AER infrastructure from reporting
-successful error recovery.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is because the report_error_detected() function that gets
-called in the first phase of recovery process allows forward
-progress even when the driver for the device does not have AER
-capabilities. It seems that all callbacks (in pci_error_handlers
-structure) registered by drivers that gets called during error
-recovery are not mandatory. So the intention of the infrastructure
-design seems to be to allow forward progress even when a specific
-callback has not been registered by a driver. However, if error
-handler structure itself has not been registered, it doesn't make
-sense to allow forward progress.
+Hi,
 
-As a result of the current design, in the case of a single device
-having an AER-unaware driver or in the case of any function in a
-multi-function card having an AER-unaware driver, a successful
-recovery is reported.
+On Fri, Nov 16, 2012 at 12:07:54PM +0530, Kishon Vijay Abraham I wrote:
+> commit 392142 moved event buffer allocation out of dwc3_core_init() but
+> event buffer allocation uses the cached copy of hwparams to determine
+> the number of event buffers and the caching is done in dwc3_core_init.
+> So moved dwc3_cache_hwparams function before dwc3_alloc_event_buffers so
+> that dwc3_alloc_event_buffers sees the correct number of event buffers.
+>=20
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-Typical scenario this happens is when a PCI device is detached
-from a KVM host and the pci-stub driver on the host claims the
-device. The pci-stub driver does not have error handling capabilities
-but the AER infrastructure still reports that the device recovered
-successfully.
+My bad, what a regression I caused :-)
 
-The changes proposed here leaves the device(s)in an unrecovered state
-if the driver for the device or for any device in the subtree
-does not have error handler structure registered. This reflects
-the true state of the device and prevents any partial recovery (or no
-recovery at all) reported as successful.
+Greg, can you take this one ?
 
-v2:
-  - Made changes so that all devices in the subtree have the error
-    state set correctly.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-Reviewed-by: Linas Vepstas <linasvepstas <at> gmail.com>
-Reviewed-by: Myron Stowe <mstowe <at> redhat.com>
-Reviewed-by: Bjorn Helgaas <bhelgaas <at> google.com>
-Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil <at> hp.com>
+> ---
+>  drivers/usb/dwc3/core.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index b923183..88e8d31 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -356,8 +356,6 @@ static int __devinit dwc3_core_init(struct dwc3 *dwc)
+> =20
+>  	dwc3_core_soft_reset(dwc);
+> =20
+> -	dwc3_cache_hwparams(dwc);
+> -
+>  	reg =3D dwc3_readl(dwc->regs, DWC3_GCTL);
+>  	reg &=3D ~DWC3_GCTL_SCALEDOWN_MASK;
+>  	reg &=3D ~DWC3_GCTL_DISSCRAMBLE;
+> @@ -498,6 +496,8 @@ static int __devinit dwc3_probe(struct platform_devic=
+e *pdev)
+>  	pm_runtime_get_sync(dev);
+>  	pm_runtime_forbid(dev);
+> =20
+> +	dwc3_cache_hwparams(dwc);
+> +
+>  	ret =3D dwc3_alloc_event_buffers(dwc, DWC3_EVENT_BUFFERS_SIZE);
+>  	if (ret) {
+>  		dev_err(dwc->dev, "failed to allocate event buffers\n");
+> --=20
+> 1.7.9.5
+>=20
 
----
- drivers/pci/pcie/aer/aerdrv.h      |  5 ++++-
- drivers/pci/pcie/aer/aerdrv_core.c | 21 ++++++++++++++++++---
- include/linux/pci.h                |  3 +++
- 3 files changed, 25 insertions(+), 4 deletions(-)
+--=20
+balbi
 
-diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
-index 94a7598..22f840f 100644
---- a/drivers/pci/pcie/aer/aerdrv.h
-+++ b/drivers/pci/pcie/aer/aerdrv.h
-@@ -87,6 +87,9 @@ struct aer_broadcast_data {
- static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
- 		enum pci_ers_result new)
- {
-+	if (new == PCI_ERS_RESULT_NO_AER_DRIVER)
-+		return PCI_ERS_RESULT_NO_AER_DRIVER;
-+
- 	if (new == PCI_ERS_RESULT_NONE)
- 		return orig;
- 
-@@ -97,7 +100,7 @@ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
- 		break;
- 	case PCI_ERS_RESULT_DISCONNECT:
- 		if (new == PCI_ERS_RESULT_NEED_RESET)
--			orig = new;
-+			orig = PCI_ERS_RESULT_NEED_RESET;
- 		break;
- 	default:
- 		break;
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 06bad96..c1b8fdd 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -231,11 +231,26 @@ static int report_error_detected(struct pci_dev *dev, void *data)
- 				   dev->driver ?
- 				   "no AER-aware driver" : "no driver");
- 		}
--		return 0;
-+
-+		/*
-+		 * If there's any device in the subtree that does not
-+		 * have an error_detected callback, returning
-+		 * PCI_ERS_RESULT_NO_AER_DRIVER prevents calling of
-+		 * the subsequent mmio_enabled/slot_reset/resume
-+		 * callbacks of "any" device in the subtree. All the
-+		 * devices in the subtree are left in the error state
-+		 * without recovery.
-+		 */
-+
-+		if !(dev->hdr_type & PCI_HEADER_TYPE_BRIDGE)
-+			vote = PCI_ERS_RESULT_NO_AER_DRIVER;
-+		else
-+			vote = PCI_ERS_RESULT_NONE;
-+	} else {
-+		err_handler = dev->driver->err_handler;
-+		vote = err_handler->error_detected(dev, result_data->state);
- 	}
- 
--	err_handler = dev->driver->err_handler;
--	vote = err_handler->error_detected(dev, result_data->state);
- 	result_data->result = merge_result(result_data->result, vote);
- 	return 0;
- }
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index ee21795..fb7e869 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -538,6 +538,9 @@ enum pci_ers_result {
- 
- 	/* Device driver is fully recovered and operational */
- 	PCI_ERS_RESULT_RECOVERED = (__force pci_ers_result_t) 5,
-+
-+	/* No AER capabilities registered for the driver */
-+	PCI_ERS_RESULT_NO_AER_DRIVER = (__force pci_ers_result_t) 6,
- };
- 
- /* PCI bus error event callbacks */
--- 
-1.7.11.3
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQpfaPAAoJEIaOsuA1yqRE3d0P/RlUg2jnaz1Fpgu7yEpphSV5
+KrS9f3XiCh9BSXjjCxX1qLPdyEM1j8827uURONlmFwJr3y+vNp8stDncY8BBWlkb
+SjXsLdSNA1XWVfOm5y2grZvD4GpJST83mLItfP79mOgi5VwkIYrTqFM/wdwCop1F
+d4IePRE83HB/olI+Eq3iDfC2naN2YZgCoTP1mApWoH4vq2wLPeJMaVSumjRvQyuW
+hRGEjfckSj0BQprVc55JgiH4Yg6Ipr1yoYfiCleoGeKfKd0LoMhXwzPtTzka9xmJ
+k7FkvBGQSt2fT5DlexV50jKDufx+tddlhwSOjuAH9Ull2j3bJ+btyqb7voHYfBwG
+y2IrtL40nq3yrXDPhMrtbX9sqJ5ttviAPjQDhXRWltKOXVVWYM5ybFIc1lVSKjH2
+n6Ez06+tzpHYAsYeXkUcCn1caR5saDGUW67N3Vq+wRQBkfXn2supMvaWcuv8mcd/
+R7TDGUy4Dd+orEDfJMhcXZHJtf6kxMIF6nLbg02WdsHP33oKZEYGDwvl7M3yWE3v
+YvCGHbqFFlN2tZXgmkXHtdYlH6KLbvIasMJcwWJ8xHlVeCXbE/VuYEEg5XQzVrIs
+VZunouqFQYzDNGflbAXRKaoKaZHcnkF5uJCAw7EJoiarq/dMrtlsiXbL/0UIMdq/
+4HabG60qOmCIaWixDyNn
+=UXX7
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
