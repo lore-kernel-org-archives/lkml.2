@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab2KPNtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:49:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50146 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab2KPNtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:49:12 -0500
-Date: Fri, 16 Nov 2012 15:42:48 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc3: core: move dwc3_cache_hwparams before
- dwc3_alloc_event_buffers
-Message-ID: <20121116134248.GC18527@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1353069901-19217-1-git-send-email-kishon@ti.com>
- <50A63A5E.50409@mvista.com>
+	id S1751953Ab2KPNvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:51:06 -0500
+Received: from 5.mo3.mail-out.ovh.net ([87.98.178.36]:34671 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751833Ab2KPNvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 08:51:04 -0500
+Date: Fri, 16 Nov 2012 14:49:01 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nicolas.ferre@atmel.com, JM.Lin@atmel.com
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 03/11] watchdog/at91sam9_wdt: change the wdt_read and
+ wdt_write macro to the inline function
+Message-ID: <20121116134901.GH4398@game.jcrosoft.org>
+References: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com>
+ <1352877369-19740-4-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8NvZYKFJsRX2Djef"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50A63A5E.50409@mvista.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352877369-19740-4-git-send-email-wenyou.yang@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 4955085490714946437
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8NvZYKFJsRX2Djef
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 15:16 Wed 14 Nov     , Wenyou Yang wrote:
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> ---
+>  drivers/watchdog/at91sam9_wdt.c |   28 ++++++++++++++++++----------
+>  1 file changed, 18 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+> index 31c914a..98e7d5a 100644
+> --- a/drivers/watchdog/at91sam9_wdt.c
+> +++ b/drivers/watchdog/at91sam9_wdt.c
+> @@ -34,11 +34,6 @@
+>  
+>  #define DRV_NAME "AT91SAM9 Watchdog"
+>  
+> -#define wdt_read(field) \
+> -	__raw_readl(at91wdt_private.base + field)
+> -#define wdt_write(field, val) \
+> -	__raw_writel((val), at91wdt_private.base + field)
+> -
+>  /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
+>   * use this to convert a watchdog
+>   * value from/to milliseconds.
+> @@ -75,13 +70,24 @@ struct at91wdt_drvdata {
+>  
+>  /* ......................................................................... */
+>  
+> +static inline unsigned int wdt_read(struct at91wdt_drvdata *driver_data,
+> +					unsigned int field)
+> +{
+> +	return __raw_readl(driver_data->base + field);
+> +}
+> +
+> +static inline void wdt_write(struct at91wdt_drvdata *driver_data,
+> +				unsigned int field, unsigned int val)
+> +{
+> +	__raw_writel((val), driver_data->base + field);
+> +}
+use relaxed version
 
-On Fri, Nov 16, 2012 at 05:06:38PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 16-11-2012 16:45, Kishon Vijay Abraham I wrote:
->=20
-> >commit 392142 (moved event buffer allocation out of dwc3_core_init()). B=
-ut
->=20
->    The actual summary is "usb: dwc3: core: move event buffer
-> allocation out of dwc3_core_init()".
-
-too late for that. Already on Greg's tree. Let's just hope this won'
-repeat on upcoming patches ;-)
-
---=20
-balbi
-
---8NvZYKFJsRX2Djef
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQpkLYAAoJEIaOsuA1yqREm2YP/2A58nvctBdtRrSXwS4isAjL
-hTjoYR9fa/ZTtND68UU9bAD6c4ud0InyUfcGVtLOGbcaYLo9FIjPfPhz8Tr3/PsF
-BV7jkYJhou6UP+OO5cEFzIpp2IkGRK91Enk4uSS7sG3y7oUK0m5xYf7UpbKZa8Xu
-qv+bLyWzfzgHHS71Twr1zZ4q6lu59O5A8P8PV9dbaL80RXPusQXYbEIUckAyeRsw
-oWw38UfxfhLF2oOJhna2H9XN3jB5dmV08yTMu17EzD1iWO9EZX51UTkpsmuWnFlQ
-Ngrs+AwQxvppqcdCWxuq4T91lsbdw2IL+QC4m+CLGVXu1hcS9oVOHSurjVFaFZOQ
-0GdZG8j4/B2AEuc0FrUCmhnFYlh4XcP/6xKBCbmAQrK5HcamjZbS1/s5Ur9Srt2K
-BHnJe/3i96i0WlrBWvgzhxO8LhnQV9VLih43MvFQSIZznjWPaYT6xfNLdLDq9ZXz
-rBOujRVLZZBFXvSvYWUQwrKuvQMr5MBq/vwePOyHkWHTao8eAqCkIijzT2brHlFR
-5Xu2+yiA5yM4GosIJiHaV/tZ1kCle5IrCO9V1VkFhyMAeJ3n1rlFR2LuAPsvtmbe
-Gc2yY9J0XR8o0G58bNRjmkNwFbyQH4G4Z59r24DO3Ro+BYCZo7vms0e6JcLf3M+9
-CxbEKge5vBiBkQTgMEUB
-=QNNZ
------END PGP SIGNATURE-----
-
---8NvZYKFJsRX2Djef--
+Best Regrds,
+J.
