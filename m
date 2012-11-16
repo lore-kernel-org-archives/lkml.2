@@ -1,201 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab2KPSnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:43:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49547 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab2KPSnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:43:53 -0500
-Date: Fri, 16 Nov 2012 19:43:44 +0100
-From: Robert Richter <rric@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] perf, amd: Enable northbridge performance counters
- on AMD family 15h
-Message-ID: <20121116184344.GR2504@rric.localhost>
-References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
- <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
+	id S1752976Ab2KPSpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:45:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53669 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752638Ab2KPSpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 13:45:05 -0500
+Date: Fri, 16 Nov 2012 18:44:59 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/43] mm: numa: Make pte_numa() and pmd_numa() a generic
+ implementation
+Message-ID: <20121116184459.GG8218@suse.de>
+References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
+ <1353064973-26082-7-git-send-email-mgorman@suse.de>
+ <50A648FF.2040707@redhat.com>
+ <20121116144109.GA8218@suse.de>
+ <CA+55aFzH_-6FuwTF1GVDzLK+7c0MGLsLdPFjzzwU78GVUEMbBw@mail.gmail.com>
+ <20121116160852.GA4302@gmail.com>
+ <20121116165606.GE8218@suse.de>
+ <20121116173755.GB4697@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
+In-Reply-To: <20121116173755.GB4697@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jacob,
-
-On 15.11.12 15:31:53, Jacob Shin wrote:
-> On AMD family 15h processors, there are 4 new performance counters
-> (in addition to 6 core performance counters) that can be used for
-> counting northbridge events (i.e. DRAM accesses). Their bit fields are
-> almost identical to the core performance counters. However, unlike the
-> core performance counters, these MSRs are shared between multiple
-> cores (that share the same northbridge). We will reuse the same code
-> path as existing family 10h northbridge event constraints handler
-> logic to enforce this sharing.
+On Fri, Nov 16, 2012 at 06:37:55PM +0100, Ingo Molnar wrote:
 > 
-> These new counters are indexed contiguously right above the existing
-> core performance counters, and their indexes correspond to RDPMC ECX
-> values.
+> * Mel Gorman <mgorman@suse.de> wrote:
 > 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > > AFAICS, this portion of numa/core:
+> > > 
+> > > c740b1cccdcb x86/mm: Completely drop the TLB flush from ptep_set_access_flags()
+> > 
+> > We share this.
+> > 
+> > > 02743c9c03f1 mm/mpol: Use special PROT_NONE to migrate pages
+> > 
+> > hard-codes prot_none
+> 
+> I prefer any arch support extensions to be done in the patch 
+> that adds that specific arch support.
+> 
+> That way we can consider the pros and cons of abstraction. Also 
+> see further below.
+> 
 
-your approach looks ok to me in general, but see my comments inline.
+Using _PAGE_NUMA mapped onto _PROT_NONE does not prevent the same
+abstraction.
 
-> @@ -156,31 +161,28 @@ static inline int amd_pmu_addr_offset(int index)
->  	if (offset)
->  		return offset;
->  
-> -	if (!cpu_has_perfctr_core)
-> +	if (!cpu_has_perfctr_core) {
->  		offset = index;
-> -	else
-> +		ncore = AMD64_NUM_COUNTERS;
-> +	} else {
->  		offset = index << 1;
-> +		ncore = AMD64_NUM_COUNTERS_CORE;
-> +	}
-> +
-> +	/* find offset of NB counters with respect to x86_pmu.eventsel */
-> +	if (cpu_has_perfctr_nb) {
-> +		if (index >= ncore && index < (ncore + AMD64_NUM_COUNTERS_NB))
-> +			offset = (MSR_F15H_NB_PERF_CTL - x86_pmu.eventsel) +
-> +				 ((index - ncore) << 1);
-> +	}
+> > > cd203e33c39d mm/mpol: Add MPOL_MF_NOOP
+> > 
+> > I have a patch that backs this out on the grounds that I don't 
+> > think we have adequately discussed if it was the correct 
+> > userspace interface. I know Peter put a lot of time into it so 
+> > it's probably correct but without man pages or spending time 
+> > writing an example program that used it, I played safe.
+> 
+> I'm fine with not exposing it to user-space.
+> 
 
-There is duplicate calculatoin of offset in some cases. Better we
-avoid this.
+Ok.
 
-> +static int __amd_nb_hw_config(struct perf_event *event)
-> +{
-> +	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-> +	    event->attr.exclude_host || event->attr.exclude_guest)
-> +		return -EINVAL;
->  
-> -	event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
-> +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_USR;
-> +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_OS;
-> +
-> +	if (event->hw.config & ~(AMD64_EVENTSEL_EVENT        |
-> +				 ARCH_PERFMON_EVENTSEL_UMASK |
-> +				 ARCH_PERFMON_EVENTSEL_INT   |
-> +				 AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE |
-> +				 AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK))
-> +		return -EINVAL;
->  
->  	return 0;
->  }
+> > > Mel, could you please work on this basis, or point out the 
+> > > bits you don't agree with so I can fix it?
+> > 
+> > My main hangup is the prot_none choice and I know it's 
+> > something we have butted heads on without progress. [...]
+> 
+> It's the basic KISS concept - I think you are over-designing 
+> this. An architecture opts in to the new, generic code via 
+> doing:
+> 
+>   select ARCH_SUPPORTS_NUMA_BALANCING
+> 
+> ... if it cannot enable that then it will extend the core code 
+> in *very* visible ways.
+> 
 
-Comments are missing and an AMD64_NB_EVENT_MASK macro should be
-defined for the above. See my previous version for reference:
+It won't kill them to decide if they really want to use _PAGE_NUMA or
+not. The fact that the generic helpers end up being a few instructions
+is nice although you probably could do the same with some juggling.
 
-/*
- * AMD NB counters (MSRs 0xc0010240 etc.) do not support the following
- * flags:
- *
- *  Host/Guest Only
- *  Counter Mask
- *  Invert Comparison
- *  Edge Detect
- *  Operating-System Mode
- *  User Mode
- *
- * Try to fix the config for default settings, otherwise fail.
- */
-static int amd_nb_event_config(struct perf_event *event)
-{
-       if (!amd_is_nb_perfctr_event(&event->hw))
-               return 0;
+> > [...] I feel it is a lot cleaner to have the _PAGE_NUMA bit 
+> > (even if it's PROT_NONE underneath) and the helpers avoid 
+> > function calls where possible. It also made the PMD handling 
+> > sortof straight-forward and allowed the batching taking of the 
+> > PTL and migration if the pages in the PMD were all on the same 
+> > node. I liked this.
+> > 
+> > Yours is closer to what the architecture does and can use 
+> > change_protect() with very few changes but on balance I did 
+> > not find this a compelling alternative.
+> 
+> IMO here you are on the wrong side of history as well.
+> 
+> For example reusing change_protection() *already* uncovered 
+> useful optimizations to the generic code:
+> 
+>    http://comments.gmane.org/gmane.linux.kernel.mm/89707
+> 
+> (regardless of how this particular change_protection() 
+>  optimization will look like.)
+> 
+> that optimization would not have happened with your open-coded 
+> change_protection() variant plain and simple.
+> 
 
-       if (event->attr.exclude_host || event->attr.exclude_guest
-           || event->attr.exclude_user || event->attr.exclude_kernel)
-               goto fail;
+As I said before, very little actually stops me using change_protection if
+_PAGE_NUMA == _PAGE_NONE. The only reason I didn't convert yet is because
+I wanted to see what the full set of requirements were. Right now they
+are simple;
 
-       event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR | ARCH_PERFMON_EVENTSEL_OS);
+1. Something to avoid unnecessary TLB flushes if there are no updates
+2. Return if all the pages underneath are on the same node or not so
+   that pmd_numa can be set if desired
+3. Collect stats on PTE updates
 
-       if (event->hw.config & ~(AMD64_NB_EVENT_MASK | ARCH_PERFMON_EVENTSEL_INT))
-               goto fail;
+1 should already be there. 2 would be trivial. 3 should also be fairly
+trivial with some jiggery pokery.
 
-       return 0;
-fail:
-       pr_debug("Invalid nb counter config value: %016Lx\n", event->hw.config);
-       return -EINVAL;
-}
+A conversion is not a fundamental problem. If an arch cannot use _PAGE_NONE
+they will need to implement their own version of change_prot_numa() but
+that in itself should be sufficient discouragment.
 
+If an arch cannot use _PAGE_NONE in your case, it's a retrofit to find
+all the places that use prot_none and see if they really mean prot_none
+or if they meant prot_numa.
 
-> @@ -323,6 +368,16 @@ __amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *ev
->  	if (new == -1)
->  		return &emptyconstraint;
->  
-> +	/* set up interrupts to be delivered only to this core */
-> +	if (cpu_has_perfctr_nb) {
-> +		struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
-> +
-> +		hwc->config |= AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE;
-> +		hwc->config &= ~AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK;
-> +		hwc->config |= (0ULL | (c->cpu_core_id)) <<
-> +			AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT;
-> +	}
+> So, to put it bluntly, you are not only doing a stupid thing, 
+> you are doing an actively harmful thing here...
+> 
 
-Looks like a hack to me. The constaints handler is only supposed to
-determine constraints and not to touch anything in the event's
-structure. This should be done later when setting up hwc->config in
-amd_nb_event_config() or so.
+Great, calling me stupid is going to help.
 
-I also do not think that smp_processor_id() is the right thing to do
-here. Since cpu_hw_events is per-cpu the cpu is already selected.
+Is your major problem the change_page_numa() part? If so, I can fix
+that and adjust change_protection in the way I need.
 
-> +
->  	return &nb->event_constraints[new];
->  }
->  
-> @@ -520,6 +575,7 @@ static struct event_constraint amd_f15_PMC3  = EVENT_CONSTRAINT(0, 0x08, 0);
->  static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT_OVERLAP(0, 0x09, 0);
->  static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
->  static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
-> +static struct event_constraint amd_f15_NBPMC30 = EVENT_CONSTRAINT(0, 0x3C0, 0);
+> If you fix that then most of the differences between your tree 
+> and numa/core disappears. You'll end up very close to:
+> 
 
-The counter index mask depends on the number of core counters which is
-either 4 or 6 (depending on cpu_has_perfctr_core).
+MIGRATE_FAULT is still there.
 
->  static int setup_event_constraints(void)
->  {
-> -	if (boot_cpu_data.x86 >= 0x15)
-> +	if (boot_cpu_data.x86 == 0x15)
->  		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
+The lack of batch handling of a PMD fault may also be a problem. Right
+now you only handle transparent hugepages and then depend on being able to
+natively migrate them to avoid a big hit. In my case it is possible to mark
+a PMD and deal with it as a single fault even if it's not a transparent
+hugepage. This batches the taking of the PTL and migration of pages. This
+will trap less although the guy that does trap takes a heavier hit. Maybe
+this will work out best, maybe not, but it's possible.
 
-Since this does not cover family 16h anymore, you also need to extend
-amd_get_event_ constraints() to setup nb counters with __amd_get_nb_
-event_constraints() if cpu_has_perfctr_nb is set.
+An optimisation of this would be that if all pages in a PMD are on the same
+node then only set the PMD. On the next fault if the fault is properly
+placed it's one PMD update and the fault is complete. If it's misplaced
+then one page needs to migrate and the pte_numa needs to be set on all the
+pages below. On a fully converged workload this will be faster as we'll take
+one PMD fault instead of 512 PTE faults reducing overall system CPU usage.
 
->  	return 0;
->  }
-> @@ -655,6 +714,18 @@ static int setup_perfctr_core(void)
->  	return 0;
->  }
->  
-> +static int setup_perfctr_nb(void)
-> +{
-> +	if (!cpu_has_perfctr_nb)
-> +		return -ENODEV;
-> +
-> +	x86_pmu.num_counters += AMD64_NUM_COUNTERS_NB;
+There are also the stats that track PTE updates, faults and migrations
+which allow a user to make an estimation for how expensive automatic
+balancing is from /proc/vmstat. This will help debugging user problems,
+possibly without profiling.
 
-You should add a nb counter mask here which is used for nb counters.
+>   - rebasing numa/core pretty much as-is
+>   + add your migrate_displaced() function
+>   - remove the user-facing lazy migration facilities.
+>   + inline pte_numa()/pmd_numa() if you think it's beneficial
+> 
 
-The mask can be either 0x3c0 or 0x0f0 depending on cpu_has_perfctr_
-core for later use, you will need it at various locations.
++ regular pmd batch handling
++ stats on PTE updates and faults to estimate costs from /proc/vmstat
 
-In general I also would try to write the code in a way that make
-further cpu_has_perfctr_nb lookups unnecessary. There are many tests
-of this your code.
+> If that works for you I'll test and backmerge all such deltas 
+> quickly and we can move on.
+> 
 
--Robert
+Or if you're willing to backmerge then why not rebase the policy bits on
+top of the basic migration policy picking some point between here
+depending on what you'd like to do?
+
+ mm: numa: Rate limit setting of pte_numa if node is saturated
+ sched: numa: Slowly increase the scanning period as NUMA faults are handled
+ mm: numa: Introduce last_nid to the page frame
+ mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
+ sched: numa: Introduce tsk_home_node()
+ sched: numa: Make find_busiest_queue() a method
+ sched: numa: Implement home-node awareness
+ sched: numa: Introduce per-mm and per-task structures
+
+So that way, not only can we see the logical progression of how your
+stuff works but also compare it to a basic policy that is not
+particularly smart to make sure we are actually going to the right
+direction.
+
+-- 
+Mel Gorman
+SUSE Labs
