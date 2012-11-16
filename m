@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2KPQCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:02:09 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:47085 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab2KPQCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:02:08 -0500
-Message-ID: <50A66307.3080706@windriver.com>
-Date: Fri, 16 Nov 2012 11:00:07 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752651Ab2KPQDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:03:09 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:57792
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752550Ab2KPQDI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 11:03:08 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VPS2(zz1432I4015Izz1de0h1202h1d1ah1d2ahzzz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h15d0l1155h)
+X-WSS-ID: 0MDL8KS-02-A5Q-02
+X-M-MSG: 
+From: "Huang, Shane" <Shane.Huang@amd.com>
+To: Aaron Lu <aaron.lu@intel.com>, Robert Hancock <hancockrwd@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>
+CC: Borislav Petkov <bp@amd64.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Huang, Shane" <Shane.Huang@amd.com>
+Subject: RE: ata4.00: failed to get Identify Device Data, Emask 0x1
+Thread-Topic: ata4.00: failed to get Identify Device Data, Emask 0x1
+Thread-Index: AQHNrAgv5Iu+aHdxPUSB2JeAsougyJe8Z80AgAAi4oCAAjrnkIAuBumg
+Date: Fri, 16 Nov 2012 16:02:45 +0000
+Message-ID: <43EB3AB3EEFE8D43B525F4D2EAF507E107EF3D53@SCYBEXDAG04.amd.com>
+References: <20121016144932.GA24044@aftab.osrc.amd.com>
+ <20121016155824.00d5b618@pyramind.ukuu.org.uk>
+ <20121016151830.GB24044@aftab.osrc.amd.com> <507E0C1A.1010705@intel.com>
+ <507E392E.2010305@gmail.com> <507E5671.6070504@intel.com>
+ <43EB3AB3EEFE8D43B525F4D2EAF507E107EA8AA9@SCYBEXDAG03.amd.com>
+In-Reply-To: <43EB3AB3EEFE8D43B525F4D2EAF507E107EA8AA9@SCYBEXDAG03.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.73]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        <kernel@pengutronix.de>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v6 3/4] media: coda: use genalloc API
-References: <1353061817-3207-1-git-send-email-p.zabel@pengutronix.de>  <1353061817-3207-4-git-send-email-p.zabel@pengutronix.de>  <50A656E2.707@windriver.com> <1353079273.2413.160.camel@pizza.hi.pengutronix.de>
-In-Reply-To: <1353079273.2413.160.camel@pizza.hi.pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-11-16 10:21 AM, Philipp Zabel wrote:
-> Am Freitag, den 16.11.2012, 10:08 -0500 schrieb Paul Gortmaker:
->> On 12-11-16 05:30 AM, Philipp Zabel wrote:
->>> This patch depends on "genalloc: add a global pool list,
->>> allow to find pools by phys address", which provides the
->>> of_get_named_gen_pool function.
->>>
->>> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
->>> ---
->>>  drivers/media/platform/Kconfig |    3 +--
->>>  drivers/media/platform/coda.c  |   47 ++++++++++++++++++++++++++++------------
->>>  2 files changed, 34 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
->>> index 181c768..09d45c6 100644
->>> --- a/drivers/media/platform/Kconfig
->>> +++ b/drivers/media/platform/Kconfig
->>> @@ -130,10 +130,9 @@ if V4L_MEM2MEM_DRIVERS
->>>  
->>>  config VIDEO_CODA
->>>  	tristate "Chips&Media Coda multi-standard codec IP"
->>> -	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
->>> +	depends on VIDEO_DEV && VIDEO_V4L2
->>
->> What was the logic for reducing the dependency scope here?
->> Your commit log doesn't mention that at all, and when I see
->> things like that, I predict allyesconfig build failures,
->> unless there is a similar dependency elsewhere that isn't
->> visible in just the context of this patch alone.
->>
->> P.
+> I tried word 78 bit 5(Hardware Feature Control) which does not work,
+> it is 0 on my HDD sample with log 30h page 08h and DevSlp supported.
 > 
-> iram_alloc and iram_free are i.MX specific wrappers around
-> gen_pool_alloc and gen_pool_free, located in <mach/iram.h>.
-> Those were responsible for the dependency in the first place.
+> Seems that word 78 bit 5 is only the sufficient condition, not the
+> essential condition. Do you guys have suggestion?
 
-So when I do an allyesconfig for sparc, or parisc or alpha,
-and VIDEO_CODA gets selected, it will build just fine then?
-My point was that when you remove the ARCH_MXC dep, this
-probably gets opened up as a viable option to a _lot_ more
-platforms than you might want it exposed to.
+Eventually I received the confirmation from the DevSlp HDD vendor,
+bit 5 should be and will be set in production drives with log 30h
+page 08h supported. So I will submit a patch to use it instead.
 
-Paul.
---
 
-> 
->> --
->>
->>>  	select VIDEOBUF2_DMA_CONTIG
->>>  	select V4L2_MEM2MEM_DEV
->>> -	select IRAM_ALLOC if SOC_IMX53
->>>  	---help---
->>>  	   Coda is a range of video codec IPs that supports
->>>  	   H.264, MPEG-4, and other video formats.
->>> diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
->>> index cd04ae2..f17b659 100644
->>> --- a/drivers/media/platform/coda.c
->>> +++ b/drivers/media/platform/coda.c
->>> @@ -14,6 +14,7 @@
->>>  #include <linux/clk.h>
->>>  #include <linux/delay.h>
->>>  #include <linux/firmware.h>
->>> +#include <linux/genalloc.h>
->>>  #include <linux/interrupt.h>
->>>  #include <linux/io.h>
->>>  #include <linux/irq.h>
->>> @@ -24,7 +25,6 @@
->>>  #include <linux/videodev2.h>
->>>  #include <linux/of.h>
->>>  
->>> -#include <mach/iram.h>
-> [...]
-> 
-> After dropping the #include <mach/iram.h>, there is no need
-> to depend on ARCH_MXC anymore.
-> 
-> regards
-> Philipp
-> 
+Hi Jeff,
+
+I don't know when I will receive some production drives to verify
+my patch, are you okay if I submit my patch first without testing
+so as to meet kernel 3.7 bug fix window?
+
+Thanks,
+Shane
+
