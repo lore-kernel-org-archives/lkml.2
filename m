@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2KPSMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:12:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21338 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700Ab2KPSMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:12:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
-   d="asc'?scan'208";a="220755115"
-Date: Fri, 16 Nov 2012 20:13:21 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 05/11] thp: change_huge_pmd(): keep huge zero page
- write-protected
-Message-ID: <20121116181321.GA18313@otc-wbsnb-06>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1352300463-12627-6-git-send-email-kirill.shutemov@linux.intel.com>
- <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com>
- <20121115084635.GC9676@otc-wbsnb-06>
- <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753183Ab2KPSNM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:13:12 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:27446 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab2KPSNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 13:13:11 -0500
+Date: Fri, 16 Nov 2012 19:12:47 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ben-linux@fluff.org,
+        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        bhelgaas@google.com, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 3/3 UPDATED] i2c / ACPI: add ACPI enumeration support
+Message-ID: <20121116191247.356c23a0@endymion.delvare>
+In-Reply-To: <20121116172828.GY17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+	<2439178.tCj2rUMYJS@vostro.rjw.lan>
+	<20121116140357.5e0a6d6b@endymion.delvare>
+	<1499062.QDd9DGofy9@vostro.rjw.lan>
+	<20121116144256.55b49cae@endymion.delvare>
+	<20121116141729.GS17774@intel.com>
+	<20121116152332.GV17774@intel.com>
+	<20121116174753.67d71043@endymion.delvare>
+	<20121116172828.GY17774@intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 Nov 2012 19:28:28 +0200, Mika Westerberg wrote:
+> On Fri, Nov 16, 2012 at 05:47:53PM +0100, Jean Delvare wrote:
+> > Hi Mika,
+> > 
+> > On Fri, 16 Nov 2012 17:23:32 +0200, Mika Westerberg wrote:
+> > > Here's the updated version where we handle 10-bit addresses properly
+> > > (hopefully).
+> > > (...)
+> > > +static int acpi_i2c_find_device(struct device *dev, acpi_handle *handle)
+> > > +{
+> > > (...)
+> > > +	memset(&i2c_find, 0, sizeof(i2c_find));
+> > > +	i2c_find.addr = client->addr;
+> > > +	if (client->flags & I2C_CLIENT_TEN)
+> > > +		i2c_find.access_mode = ACPI_I2C_10BIT_MODE;
+> > 
+> > This works because you are lucky and ACPI_I2C_7BIT_MODE has value 0,
+> > but for correctness I'd rather add:
+> > 
+> > 	else
+> > 		i2c_find.access_mode = ACPI_I2C_7BIT_MODE;
+> 
+> Right, sorry about that. The patch below should address this as well.
+> (...)
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, looks good.
 
-On Thu, Nov 15, 2012 at 01:47:33PM -0800, David Rientjes wrote:
-> On Thu, 15 Nov 2012, Kirill A. Shutemov wrote:
->=20
-> > > > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > > > index d767a7c..05490b3 100644
-> > > > --- a/mm/huge_memory.c
-> > > > +++ b/mm/huge_memory.c
-> > > > @@ -1259,6 +1259,8 @@ int change_huge_pmd(struct vm_area_struct *vm=
-a, pmd_t *pmd,
-> > > >  		pmd_t entry;
-> > > >  		entry =3D pmdp_get_and_clear(mm, addr, pmd);
-> > > >  		entry =3D pmd_modify(entry, newprot);
-> > > > +		if (is_huge_zero_pmd(entry))
-> > > > +			entry =3D pmd_wrprotect(entry);
-> > > >  		set_pmd_at(mm, addr, pmd, entry);
-> > > >  		spin_unlock(&vma->vm_mm->page_table_lock);
-> > > >  		ret =3D 1;
-> > >=20
-> > > Nack, this should be handled in pmd_modify().
-> >=20
-> > I disagree. It means we will have to enable hzp per arch. Bad idea.
-> >=20
->=20
-> pmd_modify() only exists for those architectures with thp support already=
-,=20
-> so you've already implicitly enabled for all the necessary architectures=
-=20
-> with your patchset.
-
-Now we have huge zero page fully implemented inside mm/huge_memory.c. Push
-this logic to pmd_modify() means we expose hzp implementation details to
-arch code. Looks ugly for me.
-
-> > What's wrong with the check?
-> >=20
->=20
-> Anybody using pmd_modify() to set new protections in the future perhaps=
-=20
-> without knowledge of huge zero page can incorrectly make the huge zero=20
-> page writable, which can never be allowed to happen.  It's better to make=
-=20
-> sure it can never happen with the usual interface to modify protections.
-
-I haven't found where we check if the page is a 4k zero page, but it's
-definitely not pte_modify().
-
---=20
- Kirill A. Shutemov
-
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQpoJBAAoJEAd+omnVudOMyzoP/1I0PtY02OTwWDoGPfpcCCo3
-pf3sH5BMvcYPvtggx5+HzpC4veZFBphzY9RAQrSO+LsF71y+aAMSWc0zyli6diic
-SVOjGlKceYCegrHO4zFxXymdPThbEPicKifeKBJ2FAlMcLwRXrQq+A8JrvZtAEsC
-Ch4DKXyHQklCWIpfjSK9inc/LiWPkquvruRAcbM+V0vjl5zBVf8Zc1aFNIrU9dJZ
-7h31/u7JEkU+unDb8nRSZqbe/OtBYKYrJkHuzmFZrNdA26zX7wPMD6LssVljfeT7
-zF3K/Zu9lBMvMmwzwzI7J2EngsmVBNMuFGLv/n6GnPf1sw04rlsysXUAHw2/NsKE
-6UjhoSZQ9cl5stOiM+xVVCGXoy0k518KpQwKZSio5AXRz6lDAIeKrL9UduFrCHT9
-1ZqveRcEzeoelImBAX70XL+5revTILQGl1E0af0htBR+oIwbq6iLzt+1Hm0iiFLr
-ad2GckG24EF3LOtj/Mqy1UA81h4A3rxeiCHYKFFOlJDSJNPp6fS2PtaZPx+KyIl7
-qf74obZk5xEKwJgMsMbxULDFzWUsNMuv0b11iexP4IMGb7LWsNvlnqTHoJc6KPj2
-oPeZJcAU2zuGjiENt1Zn46J6JmJO3S/j5fdcOPXcyJDS2WWCe0BzWMG6p8aTx6fN
-J98tgNfgGClz65qgf8l0
-=uEbY
------END PGP SIGNATURE-----
-
---UugvWAfsgieZRqgk--
+-- 
+Jean Delvare
