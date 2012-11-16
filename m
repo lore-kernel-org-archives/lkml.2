@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2KPOzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:55:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45422 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2KPOzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:55:11 -0500
-Date: Fri, 16 Nov 2012 15:55:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking
- for dead memcgs
-Message-ID: <20121116145508.GC2006@dhcp22.suse.cz>
-References: <1352948093-2315-1-git-send-email-glommer@parallels.com>
- <1352948093-2315-6-git-send-email-glommer@parallels.com>
- <50A4B8C8.6020202@jp.fujitsu.com>
- <50A4F289.1090807@parallels.com>
- <50A5CA16.7070603@jp.fujitsu.com>
- <50A5E73F.8030201@parallels.com>
- <50A5E997.6060002@jp.fujitsu.com>
+	id S1752171Ab2KPO4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:56:05 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42140 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2KPO4D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:56:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A5E997.6060002@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAN+gG=FeNBzdbBcH6uSWB_rUOS6PjyjpVSuY3b--g1mXo17fXA@mail.gmail.com>
+References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
+	<alpine.LNX.2.00.1211151450140.15877@pobox.suse.cz>
+	<CAN+gG=FeNBzdbBcH6uSWB_rUOS6PjyjpVSuY3b--g1mXo17fXA@mail.gmail.com>
+Date: Fri, 16 Nov 2012 15:56:01 +0100
+Message-ID: <CAN+gG=Gm2JXur1HsL=-EEpahGZjqG5BQqoR6hpO8Dvsah0XyVg@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification implementation
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>, ramalingamc@nvidia.com
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
+        JJ Ding <jj_ding@emc.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-11-12 16:21:59, KAMEZAWA Hiroyuki wrote:
-> (2012/11/16 16:11), Glauber Costa wrote:
-> > On 11/16/2012 09:07 AM, Kamezawa Hiroyuki wrote:
-> >> (2012/11/15 22:47), Glauber Costa wrote:
-> >>> On 11/15/2012 01:41 PM, Kamezawa Hiroyuki wrote:
-> >>>> (2012/11/15 11:54), Glauber Costa wrote:
-> >>>>> The idea is to synchronously do it, leaving it up to the shrinking
-> >>>>> facilities in vmscan.c and/or others. Not actively retrying shrinking
-> >>>>> may leave the caches alive for more time, but it will remove the ugly
-> >>>>> wakeups. One would argue that if the caches have free objects but are
-> >>>>> not being shrunk, it is because we don't need that memory yet.
-> >>>>>
-> >>>>> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> >>>>> CC: Michal Hocko <mhocko@suse.cz>
-> >>>>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >>>>> CC: Johannes Weiner <hannes@cmpxchg.org>
-> >>>>> CC: Andrew Morton <akpm@linux-foundation.org>
-> >>>>
-> >>>> I agree this patch but can we have a way to see the number of unaccounted
-> >>>> zombie cache usage for debugging ?
-> >>>>
-> >>>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >>>>
-> >>> Any particular interface in mind ?
-> >>>
-> >>
-> >> Hmm, it's debug interface and having cgroup file may be bad.....
-> >> If it can be seen in bytes or some, /proc/vmstat ?
-> >>
-> >> out_of_track_slabs  xxxxxxx. hm ?
-> >>
-> > 
-> > I particularly think that, being this a debug interface, it is also
-> > useful to have an indication of which caches are still in place. This is
-> > because the cache itself, is the best indication we have about the
-> > specific workload that may be keeping it in memory.
-> > 
-> > I first thought debugfs could help us probing useful information out of
-> > it, but given all the abuse people inflicted in debugfs... maybe we
-> > could have a file in the root memcg with that information for all
-> > removed memcgs? If we do that, we can go further and list the memcgs
-> > that are pending due to memsw as well. memory.dangling_memcgs ?
-> > 
-> 
-> Hm, I'm ok with it... others ?
+On Thu, Nov 15, 2012 at 3:04 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Thu, Nov 15, 2012 at 2:51 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Mon, 12 Nov 2012, Benjamin Tissoires wrote:
+>>
+>>> Microsoft published the protocol specification of HID over i2c:
+>>> http://msdn.microsoft.com/en-us/library/windows/hardware/hh852380.aspx
+>>>
+>>> This patch introduces an implementation of this protocol.
+>>>
+>>> This implementation does not includes the ACPI part of the specification.
+>>> This will come when ACPI 5.0 devices enumeration will be available.
+>>>
+>>> Once the ACPI part is done, OEM will not have to declare HID over I2C
+>>> devices in their platform specific driver.
+>>>
+>>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>>
+>> Out of curiosity -- has this been tested on a real device (is there any
+>> such device available anyway?), or is that just the implementation of the
+>> defined protocol?
+>
+> It has been tested on an ELAN microelectronics device (a prototype),
+> on an odroid-x board. That's how we figure out the bug in the
+> set_report command.
+> I think we manage to test all main features of the protocol
+> (get_report, irqs, hid descriptor, report descriptors, set_report).
+>
+> I'm currently waiting for a Synaptics touchpad to check if it's also
+> working with their devices.
+>
+> The thing is that HID over i2c for x86 platform will presumably
+> require the Haswell platform from Intel (we need ACPI 5 for
+> enumeration), but it would be very nice to get this in the kernel just
+> before hardware arrive on the market :)
+> However, I won't be surprise if android OEMs also start using this
+> specification because it won't force them to write kernel drivers...
 
-What about memory.kmem.dangling_caches?
--- 
-Michal Hocko
-SUSE Labs
+And as a complement, Ramalingam tested it for Nvidia on an early
+NVIDIA's Tegra reference board for PISMO which is registered at
+http://www.arm.linux.org.uk/developer/machines/list.php?id=4439 , with
+a HID over i2c keyboard.
+He is up to test also his Synaptics touchpad.
+
+Cheers,
+Benjamin
+
+>
+> Cheers,
+> Benjamin
+>
+>>
+>> Thanks,
+>>
+>> --
+>> Jiri Kosina
+>> SUSE Labs
