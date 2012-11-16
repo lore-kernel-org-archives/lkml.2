@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab2KPNvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:51:06 -0500
-Received: from 5.mo3.mail-out.ovh.net ([87.98.178.36]:34671 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751833Ab2KPNvE (ORCPT
+	id S1751987Ab2KPN4z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:56:55 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:43946 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab2KPN4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:51:04 -0500
-Date: Fri, 16 Nov 2012 14:49:01 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nicolas.ferre@atmel.com, JM.Lin@atmel.com
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 03/11] watchdog/at91sam9_wdt: change the wdt_read and
- wdt_write macro to the inline function
-Message-ID: <20121116134901.GH4398@game.jcrosoft.org>
-References: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com>
- <1352877369-19740-4-git-send-email-wenyou.yang@atmel.com>
+	Fri, 16 Nov 2012 08:56:54 -0500
+Message-ID: <50A64624.6010902@atmel.com>
+Date: Fri, 16 Nov 2012 14:56:52 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352877369-19740-4-git-send-email-wenyou.yang@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 4955085490714946437
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: Wenyou Yang <wenyou.yang@atmel.com>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-watchdog@vger.kernel.org>,
+        <JM.Lin@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
+        <wim@iguana.be>, <plagnioj@jcrosoft.com>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 09/11] watchdog/at91sam9_wdt: add support to device tree
+References: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com> <1352877369-19740-10-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1352877369-19740-10-git-send-email-wenyou.yang@atmel.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:16 Wed 14 Nov     , Wenyou Yang wrote:
+On 11/14/2012 08:16 AM, Wenyou Yang :
 > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+
+No. The work has already been done by Fabio Porcedda and he managed to
+sustain the discussion and reach a consensus at his v9 patch series: so
+please take into account his work and build yours on top of his patch
+series.
+
+Best regards,
+
+> Cc: grant.likely@secretlab.ca
+> Cc: rob.herring@calxeda.com
+> Cc: devicetree-discuss@lists.ozlabs.org
 > ---
->  drivers/watchdog/at91sam9_wdt.c |   28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
+>  drivers/watchdog/at91sam9_wdt.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
 > 
 > diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-> index 31c914a..98e7d5a 100644
+> index e7ce9ea..cba5c5d 100644
 > --- a/drivers/watchdog/at91sam9_wdt.c
 > +++ b/drivers/watchdog/at91sam9_wdt.c
-> @@ -34,11 +34,6 @@
+> @@ -32,6 +32,7 @@
+>  #include <linux/jiffies.h>
+>  #include <linux/timer.h>
+>  #include <linux/bitops.h>
+> +#include <linux/of.h>
 >  
->  #define DRV_NAME "AT91SAM9 Watchdog"
+>  #include "at91sam9_wdt.h"
 >  
-> -#define wdt_read(field) \
-> -	__raw_readl(at91wdt_private.base + field)
-> -#define wdt_write(field, val) \
-> -	__raw_writel((val), at91wdt_private.base + field)
-> -
->  /* AT91SAM9 watchdog runs a 12bit counter @ 256Hz,
->   * use this to convert a watchdog
->   * value from/to milliseconds.
-> @@ -75,13 +70,24 @@ struct at91wdt_drvdata {
+> @@ -251,12 +252,21 @@ static int __exit at91wdt_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
 >  
->  /* ......................................................................... */
->  
-> +static inline unsigned int wdt_read(struct at91wdt_drvdata *driver_data,
-> +					unsigned int field)
-> +{
-> +	return __raw_readl(driver_data->base + field);
-> +}
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id at91wdt_match[] = {
+> +	{ .compatible = "atmel,at91sam-wdt" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, at91wdt_match);
+> +#endif
 > +
-> +static inline void wdt_write(struct at91wdt_drvdata *driver_data,
-> +				unsigned int field, unsigned int val)
-> +{
-> +	__raw_writel((val), driver_data->base + field);
-> +}
-use relaxed version
+>  static struct platform_driver at91wdt_driver = {
+>  	.probe		= at91wdt_probe,
+>  	.remove		= __exit_p(at91wdt_remove),
+>  	.driver		= {
+>  		.name	= "at91_wdt",
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table	= of_match_ptr(at91wdt_match),
+>  	},
+>  };
+>  
+> 
 
-Best Regrds,
-J.
+
+-- 
+Nicolas Ferre
