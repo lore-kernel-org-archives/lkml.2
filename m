@@ -1,148 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab2KPSeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:34:13 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:10936 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab2KPSeL (ORCPT
+	id S1752562Ab2KPSkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:40:09 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63212 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab2KPSkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:34:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAAGGplBbdWOb/2dsb2JhbABEwmaBCIIfAQV5EFFXBhOIEb50kUADlXyJSIZ7gnA
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net, jens.taprogge@taprogge.org,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 2/2] ipack: remove ipack_ids.h file
-Date: Fri, 16 Nov 2012 19:33:46 +0100
-Message-Id: <1353090826-11068-2-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
-References: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
+	Fri, 16 Nov 2012 13:40:08 -0500
+Date: Fri, 16 Nov 2012 19:40:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/2] change_protection(): Count the number of pages
+ affected
+Message-ID: <20121116184002.GB4763@gmail.com>
+References: <1352883029-7885-1-git-send-email-mingo@kernel.org>
+ <CA+55aFz_JnoR73O46YWhZn2A4t_CSUkGzMMprCUpvR79TVMCEQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz_JnoR73O46YWhZn2A4t_CSUkGzMMprCUpvR79TVMCEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Its contents are merged into ipack.h. So this file is not needed.
 
-Doing that, it simplifies the ipack-related driver development.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
----
- drivers/ipack/devices/ipoctal.c |    1 -
- drivers/ipack/ipack.c           |    1 -
- drivers/ipack/ipack_ids.h       |   32 --------------------------------
- include/linux/ipack.h           |   33 +++++++++++++++++++++++++++++++++
- 4 files changed, 33 insertions(+), 34 deletions(-)
- delete mode 100644 drivers/ipack/ipack_ids.h
+> On Wed, Nov 14, 2012 at 12:50 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > What do you guys think about this mprotect() optimization?
+> 
+> Hmm..
+> 
+> If this is mainly about just avoiding the TLB flushing, I do 
+> wonder if it might not be more interesting to try to be much 
+> more aggressive.
+> 
+> As noted elsewhere, we should just notice when vm_page_prot 
+> doesn't change at all - even if 'flags' change, it is possible 
+> that the actual low-level page protection bits do not (due to 
+> the X=R issue).
+> 
+> But even *more* aggressively, how about looking at
+> 
+>  - not flushing the TLB at all if the bits become  more permissive
+> (taking the TLB micro-fault and letting the CPU just update it on its
+> own)
+> 
+>  - even *more* aggressive: if the bits become strictly more 
+> restrictive, how about not flushing the TLB at all, *and* not 
+> even changing the page tables, and just teaching the page 
+> fault code to do it lazily at fault time?
+> 
+> Now, the "change protections lazily" might actually be a huge 
+> performance problem with the page fault overhead dwarfing any 
+> TLB flush costs, but we don't really know, do we? It might be 
+> worth trying out.
 
-diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
-index 7f568e2..c06ab39 100644
---- a/drivers/ipack/devices/ipoctal.c
-+++ b/drivers/ipack/devices/ipoctal.c
-@@ -23,7 +23,6 @@
- #include <linux/atomic.h>
- #include <linux/io.h>
- #include <linux/ipack.h>
--#include "../ipack_ids.h"
- #include "ipoctal.h"
- #include "scc2698.h"
- 
-diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
-index cc54983..7ec6b20 100644
---- a/drivers/ipack/ipack.c
-+++ b/drivers/ipack/ipack.c
-@@ -14,7 +14,6 @@
- #include <linux/idr.h>
- #include <linux/io.h>
- #include <linux/ipack.h>
--#include "ipack_ids.h"
- 
- #define to_ipack_dev(device) container_of(device, struct ipack_device, dev)
- #define to_ipack_driver(drv) container_of(drv, struct ipack_driver, driver)
-diff --git a/drivers/ipack/ipack_ids.h b/drivers/ipack/ipack_ids.h
-deleted file mode 100644
-index 8153fee..0000000
---- a/drivers/ipack/ipack_ids.h
-+++ /dev/null
-@@ -1,32 +0,0 @@
--/*
-- * IndustryPack Fromat, Vendor and Device IDs.
-- */
--
--/* ID section format versions */
--#define IPACK_ID_VERSION_INVALID	0x00
--#define IPACK_ID_VERSION_1		0x01
--#define IPACK_ID_VERSION_2		0x02
--
--/* Vendors and devices. Sort key: vendor first, device next. */
--#define IPACK1_VENDOR_ID_RESERVED1	0x00
--#define IPACK1_VENDOR_ID_RESERVED2	0xFF
--#define IPACK1_VENDOR_ID_UNREGISTRED01	0x01
--#define IPACK1_VENDOR_ID_UNREGISTRED02	0x02
--#define IPACK1_VENDOR_ID_UNREGISTRED03	0x03
--#define IPACK1_VENDOR_ID_UNREGISTRED04	0x04
--#define IPACK1_VENDOR_ID_UNREGISTRED05	0x05
--#define IPACK1_VENDOR_ID_UNREGISTRED06	0x06
--#define IPACK1_VENDOR_ID_UNREGISTRED07	0x07
--#define IPACK1_VENDOR_ID_UNREGISTRED08	0x08
--#define IPACK1_VENDOR_ID_UNREGISTRED09	0x09
--#define IPACK1_VENDOR_ID_UNREGISTRED10	0x0A
--#define IPACK1_VENDOR_ID_UNREGISTRED11	0x0B
--#define IPACK1_VENDOR_ID_UNREGISTRED12	0x0C
--#define IPACK1_VENDOR_ID_UNREGISTRED13	0x0D
--#define IPACK1_VENDOR_ID_UNREGISTRED14	0x0E
--#define IPACK1_VENDOR_ID_UNREGISTRED15	0x0F
--
--#define IPACK1_VENDOR_ID_SBS            0xF0
--#define IPACK1_DEVICE_ID_SBS_OCTAL_232  0x22
--#define IPACK1_DEVICE_ID_SBS_OCTAL_422  0x2A
--#define IPACK1_DEVICE_ID_SBS_OCTAL_485  0x48
-diff --git a/include/linux/ipack.h b/include/linux/ipack.h
-index 7a0a308..a360c73 100644
---- a/include/linux/ipack.h
-+++ b/include/linux/ipack.h
-@@ -26,6 +26,39 @@
- #define IPACK_IDPROM_OFFSET_NUM_BYTES		0x15
- #define IPACK_IDPROM_OFFSET_CRC			0x17
- 
-+/*
-+ * IndustryPack Fromat, Vendor and Device IDs.
-+ */
-+
-+/* ID section format versions */
-+#define IPACK_ID_VERSION_INVALID	0x00
-+#define IPACK_ID_VERSION_1		0x01
-+#define IPACK_ID_VERSION_2		0x02
-+
-+/* Vendors and devices. Sort key: vendor first, device next. */
-+#define IPACK1_VENDOR_ID_RESERVED1	0x00
-+#define IPACK1_VENDOR_ID_RESERVED2	0xFF
-+#define IPACK1_VENDOR_ID_UNREGISTRED01	0x01
-+#define IPACK1_VENDOR_ID_UNREGISTRED02	0x02
-+#define IPACK1_VENDOR_ID_UNREGISTRED03	0x03
-+#define IPACK1_VENDOR_ID_UNREGISTRED04	0x04
-+#define IPACK1_VENDOR_ID_UNREGISTRED05	0x05
-+#define IPACK1_VENDOR_ID_UNREGISTRED06	0x06
-+#define IPACK1_VENDOR_ID_UNREGISTRED07	0x07
-+#define IPACK1_VENDOR_ID_UNREGISTRED08	0x08
-+#define IPACK1_VENDOR_ID_UNREGISTRED09	0x09
-+#define IPACK1_VENDOR_ID_UNREGISTRED10	0x0A
-+#define IPACK1_VENDOR_ID_UNREGISTRED11	0x0B
-+#define IPACK1_VENDOR_ID_UNREGISTRED12	0x0C
-+#define IPACK1_VENDOR_ID_UNREGISTRED13	0x0D
-+#define IPACK1_VENDOR_ID_UNREGISTRED14	0x0E
-+#define IPACK1_VENDOR_ID_UNREGISTRED15	0x0F
-+
-+#define IPACK1_VENDOR_ID_SBS            0xF0
-+#define IPACK1_DEVICE_ID_SBS_OCTAL_232  0x22
-+#define IPACK1_DEVICE_ID_SBS_OCTAL_422  0x2A
-+#define IPACK1_DEVICE_ID_SBS_OCTAL_485  0x48
-+
- struct ipack_bus_ops;
- struct ipack_driver;
- 
--- 
-1.7.10.4
+It might be a good idea when ptes get weaker protections - and 
+maybe some CPU models see the pte modification in memory and are 
+able to hash that to the TLB entry already and flush it? Even if 
+they don't guarantee it architecturally they might have it as an 
+optimization that works most of the time.
 
+But I'd prefer to keep any such patch separate from these 
+patches and maybe even keep them per arch and per CPU model?
+
+I have instrumented and made sure that *these* patches do help 
+visibly - but to determine whether not flushing TLBs when they 
+are made more permissive is a lot harder to do ... there could 
+be per arch differences, even per CPU model differences, 
+depending on TLB size, CPU features, etc.
+
+For unthreaded process environments mprotect() is pretty neat 
+already.
+
+For small/midsize mprotect()s in threaded environments there's 
+two big costs:
+
+  - the down_write(mm->sem)/up_write(mm->sem) serializes between 
+    threads.
+
+    Technically this could be improved, as the most expensive 
+    parts of mprotect() are really safe via down_read() - the 
+    only exception appears to be:
+
+        vma->vm_flags = newflags;
+        vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+                                          vm_get_page_prot(newflags));
+
+    and that could be serialized using a spinlock, say the 
+    pagetable lock. But it's a lot of footwork factoring out 
+    vma->vm_page_prot users and we'd consider each such place 
+    whether slowing them down is less of a problem than the 
+    benefit of speeding up mprotect().
+
+    So I wouldn't personally go there, dragons and all that.
+
+  - the TLB flush, if done on some highly threaded workload like
+    a JVM with threads live on many other CPUs is a global TLB 
+    flush, with IPIs sent everywhere and the result has to be 
+    waited for.
+
+    This could be improved even if we don't do your
+    very aggressive optimization, unless I'm missing something: 
+    we could still flush locally and send the IPIs, but we don't
+    have to *wait* for them when we weaken protections, right? 
+
+Thanks,
+
+	Ingo
