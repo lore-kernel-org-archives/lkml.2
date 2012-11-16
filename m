@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2KPSNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:13:12 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:27446 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab2KPSNL (ORCPT
+	id S1752976Ab2KPSOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:14:11 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:61664 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab2KPSOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:13:11 -0500
-Date: Fri, 16 Nov 2012 19:12:47 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        bhelgaas@google.com, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 3/3 UPDATED] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121116191247.356c23a0@endymion.delvare>
-In-Reply-To: <20121116172828.GY17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
-	<2439178.tCj2rUMYJS@vostro.rjw.lan>
-	<20121116140357.5e0a6d6b@endymion.delvare>
-	<1499062.QDd9DGofy9@vostro.rjw.lan>
-	<20121116144256.55b49cae@endymion.delvare>
-	<20121116141729.GS17774@intel.com>
-	<20121116152332.GV17774@intel.com>
-	<20121116174753.67d71043@endymion.delvare>
-	<20121116172828.GY17774@intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Fri, 16 Nov 2012 13:14:09 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjMIACWCplBbdWOb/2dsb2JhbABEhh6zcSKINYEIgh4BAQQBI1YFCwsYKgICVwaIGgqsB5JskC2BEwOmP4Jw
+Message-ID: <1353089655.4563.56.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH] ipack: move header files to include/linux
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net, jens.taprogge@taprogge.org
+Date: Fri, 16 Nov 2012 19:14:15 +0100
+In-Reply-To: <1353089331.2512.2.camel@joe-AO722>
+References: <1353087276-4861-1-git-send-email-siglesias@igalia.com>
+	 <1353089331.2512.2.camel@joe-AO722>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-c/oC4eRSxciG8iBYOgkQ"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012 19:28:28 +0200, Mika Westerberg wrote:
-> On Fri, Nov 16, 2012 at 05:47:53PM +0100, Jean Delvare wrote:
-> > Hi Mika,
-> > 
-> > On Fri, 16 Nov 2012 17:23:32 +0200, Mika Westerberg wrote:
-> > > Here's the updated version where we handle 10-bit addresses properly
-> > > (hopefully).
-> > > (...)
-> > > +static int acpi_i2c_find_device(struct device *dev, acpi_handle *handle)
-> > > +{
-> > > (...)
-> > > +	memset(&i2c_find, 0, sizeof(i2c_find));
-> > > +	i2c_find.addr = client->addr;
-> > > +	if (client->flags & I2C_CLIENT_TEN)
-> > > +		i2c_find.access_mode = ACPI_I2C_10BIT_MODE;
-> > 
-> > This works because you are lucky and ACPI_I2C_7BIT_MODE has value 0,
-> > but for correctness I'd rather add:
-> > 
-> > 	else
-> > 		i2c_find.access_mode = ACPI_I2C_7BIT_MODE;
-> 
-> Right, sorry about that. The patch below should address this as well.
-> (...)
 
-Yes, looks good.
+--=-c/oC4eRSxciG8iBYOgkQ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Jean Delvare
+On Fri, 2012-11-16 at 10:08 -0800, Joe Perches wrote:
+> On Fri, 2012-11-16 at 18:34 +0100, Samuel Iglesias Gonsalvez wrote:
+> > Move ipack header files to include/linux/ directory where they belong t=
+o.
+>=20
+> Why do these belong in include/linux?
+
+They are used for other drivers that could be in other directories.
+
+> What's wrong with path relative includes?
+
+There is nothing wrong with relative includes. It's just to do the
+things as other subsystems do: keeping the bus' header file in
+include/linux directory.
+
+Is this approach wrong for this case?
+
+Sam
+
+
+--=-c/oC4eRSxciG8iBYOgkQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAlCmgncACgkQWrfbyfmd9eJYxACfWuTGBPTsn6xCLUB7V3CAlUOg
+na8An1ElOVacnOEQGD9fgMyEjS74QZ+w
+=T+Nk
+-----END PGP SIGNATURE-----
+
+--=-c/oC4eRSxciG8iBYOgkQ--
+
