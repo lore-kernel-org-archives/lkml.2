@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762Ab2KPLcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:32:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32896 "EHLO mx2.suse.de"
+	id S1751345Ab2KPLXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32837 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab2KPLXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:06 -0500
+	id S1751148Ab2KPLW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:22:59 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/43] mm: numa: Support NUMA hinting page faults from gup/gup_fast
-Date: Fri, 16 Nov 2012 11:22:17 +0000
-Message-Id: <1353064973-26082-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 01/43] mm: compaction: Move migration fail/success stats to migrate.c
+Date: Fri, 16 Nov 2012 11:22:11 +0000
+Message-Id: <1353064973-26082-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,90 +25,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+The compact_pages_moved and compact_pagemigrate_failed events are
+convenient for determining if compaction is active and to what
+degree migration is succeeding but it's at the wrong level. Other
+users of migration may also want to know if migration is working
+properly and this will be particularly true for any automated
+NUMA migration. This patch moves the counters down to migration
+with the new events called pgmigrate_success and pgmigrate_fail.
+The compact_blocks_moved counter is removed because while it was
+useful for debugging initially, it's worthless now as no meaningful
+conclusions can be drawn from its value.
 
-Introduce FOLL_NUMA to tell follow_page to check
-pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe to do
-so because it always invokes handle_mm_fault and retries the
-follow_page later.
-
-KVM secondary MMU page faults will trigger the NUMA hinting page
-faults through gup_fast -> get_user_pages -> follow_page ->
-handle_mm_fault.
-
-Other follow_page callers like KSM should not use FOLL_NUMA, or they
-would fail to get the pages if they use follow_page instead of
-get_user_pages.
-
-[ This patch was picked up from the AutoNUMA tree. ]
-
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ ported to this tree. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/mm.h |    1 +
- mm/memory.c        |   17 +++++++++++++++++
- 2 files changed, 18 insertions(+)
+ include/linux/vm_event_item.h |    4 +++-
+ mm/compaction.c               |    4 ----
+ mm/migrate.c                  |    6 ++++++
+ mm/vmstat.c                   |    7 ++++---
+ 4 files changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fa06804..e64af99 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1569,6 +1569,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_MLOCK	0x40	/* mark page as mlocked */
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
- #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
-+#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 3d31145..8aa7cb9 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++#ifdef CONFIG_MIGRATION
++		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
++#endif
+ #ifdef CONFIG_COMPACTION
+-		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..00ad883 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index fb135ba..de8aa11 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1517,6 +1517,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
- 		goto out;
+-		count_vm_event(COMPACTBLOCKS);
+-		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
+-		if (nr_remaining)
+-			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
+ 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+ 						nr_remaining);
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 77ed2d7..04687f6 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
++	int nr_succeeded = 0;
+ 	int pass = 0;
+ 	struct page *page;
+ 	struct page *page2;
+@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
+ 				retry++;
+ 				break;
+ 			case 0:
++				nr_succeeded++;
+ 				break;
+ 			default:
+ 				/* Permanent failure */
+@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
  	}
-+	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-+		goto no_page_table;
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
- 			split_huge_page_pmd(mm, pmd);
-@@ -1546,6 +1548,8 @@ split_fallthrough:
- 	pte = *ptep;
- 	if (!pte_present(pte))
- 		goto no_page;
-+	if ((flags & FOLL_NUMA) && pte_numa(pte))
-+		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
+ 	rc = 0;
+ out:
++	if (nr_succeeded)
++		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
++	if (nr_failed)
++		count_vm_events(PGMIGRATE_FAIL, nr_failed);
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
  
-@@ -1697,6 +1701,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
- 	vm_flags &= (gup_flags & FOLL_FORCE) ?
- 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
-+
-+	/*
-+	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
-+	 * would be called on PROT_NONE ranges. We must never invoke
-+	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
-+	 * page faults would unprotect the PROT_NONE ranges if
-+	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
-+	 * bitflag. So to avoid that, don't set FOLL_NUMA if
-+	 * FOLL_FORCE is set.
-+	 */
-+	if (!(gup_flags & FOLL_FORCE))
-+		gup_flags |= FOLL_NUMA;
-+
- 	i = 0;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c737057..89a7fd6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
  
- 	do {
+ 	"pgrotated",
+ 
++#ifdef CONFIG_MIGRATION
++	"pgmigrate_success",
++	"pgmigrate_fail",
++#endif
+ #ifdef CONFIG_COMPACTION
+-	"compact_blocks_moved",
+-	"compact_pages_moved",
+-	"compact_pagemigrate_failed",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
 -- 
 1.7.9.2
 
