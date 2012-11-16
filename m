@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab2KPG5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 01:57:14 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62670 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab2KPG5K (ORCPT
+	id S1751603Ab2KPG50 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 01:57:26 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59325 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab2KPG5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 01:57:10 -0500
+	Fri, 16 Nov 2012 01:57:23 -0500
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: patches@linaro.org, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 04/14] [media] tlg2300: Remove redundant check on unsigned variable
-Date: Fri, 16 Nov 2012 12:20:36 +0530
-Message-Id: <1353048646-10935-5-git-send-email-tushar.behera@linaro.org>
+Cc: patches@linaro.org, Ian Campbell <ian.campbell@citrix.com>,
+        xen-devel@lists.xensource.com, netdev@vger.kernel.org
+Subject: [PATCH 08/14] xen: netback: Remove redundant check on unsigned variable
+Date: Fri, 16 Nov 2012 12:20:40 +0530
+Message-Id: <1353048646-10935-9-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
 References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
@@ -23,26 +23,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 No need to check whether unsigned variable is less than 0.
 
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: linux-media@vger.kernel.org
+CC: Ian Campbell <ian.campbell@citrix.com>
+CC: xen-devel@lists.xensource.com
+CC: netdev@vger.kernel.org
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 ---
- drivers/media/usb/tlg2300/pd-video.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/xen-netback/netback.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/usb/tlg2300/pd-video.c b/drivers/media/usb/tlg2300/pd-video.c
-index 1f448ac..dd157e7 100644
---- a/drivers/media/usb/tlg2300/pd-video.c
-+++ b/drivers/media/usb/tlg2300/pd-video.c
-@@ -923,7 +923,7 @@ static int vidioc_s_input(struct file *file, void *fh, unsigned int i)
- 	struct poseidon *pd = front->pd;
- 	s32 ret, cmd_status;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index aab8677..515e10c 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -190,14 +190,14 @@ static int get_page_ext(struct page *pg,
  
--	if (i < 0 || i >= POSEIDON_INPUTS)
-+	if (i >= POSEIDON_INPUTS)
- 		return -EINVAL;
- 	ret = send_set_req(pd, SGNL_SRC_SEL,
- 			pd_inputs[i].tlg_src, &cmd_status);
+ 	group = ext.e.group - 1;
+ 
+-	if (group < 0 || group >= xen_netbk_group_nr)
++	if (group >= xen_netbk_group_nr)
+ 		return 0;
+ 
+ 	netbk = &xen_netbk[group];
+ 
+ 	idx = ext.e.idx;
+ 
+-	if ((idx < 0) || (idx >= MAX_PENDING_REQS))
++	if (idx >= MAX_PENDING_REQS)
+ 		return 0;
+ 
+ 	if (netbk->mmap_pages[idx] != pg)
 -- 
 1.7.4.1
 
