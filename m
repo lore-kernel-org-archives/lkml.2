@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2KPP1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:27:37 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36208 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2KPP1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:27:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=nA01_K5sD-7k7VENW222GRvvY-MytTb2Bur04mh5T6g@mail.gmail.com>
-References: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1353074360-1903-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAKohpo=nA01_K5sD-7k7VENW222GRvvY-MytTb2Bur04mh5T6g@mail.gmail.com>
-Date: Fri, 16 Nov 2012 17:27:33 +0200
-Message-ID: <CAHp75Vea9pPTjgzbiD8c_ghUrUfZCSSbP-khxf5eGLDeG-UPHg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] dmaengine: introduce is_slave_xfer function
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
+	id S1752399Ab2KPP3Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:29:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13137 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab2KPP3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:29:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,265,1352102400"; 
+   d="scan'208";a="220684132"
+Date: Fri, 16 Nov 2012 17:32:32 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         Vinod Koul <vinod.koul@intel.com>,
         spear-devel <spear-devel@list.st.com>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 1/6] dmaengine: introduce is_slave_xfer function
+Message-ID: <20121116153232.GW17774@intel.com>
+References: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1353074360-1903-2-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20121116142104.GT17774@intel.com>
+ <CAHp75Vevs1NYkE_Js7m9gAxqO=j9UuJZk-KgOsvEp6Svd3FwmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vevs1NYkE_Js7m9gAxqO=j9UuJZk-KgOsvEp6Svd3FwmQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 4:03 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 16 November 2012 19:29, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> This function helps to distinguish the slave type of transfer by checking the
->> direction parameter.
->>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
->> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> ---
->>  include/linux/dmaengine.h |    5 +++++
->>  1 file changed, 5 insertions(+)
->>
->> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->> index 6402b18..3e1a9026 100644
->> --- a/include/linux/dmaengine.h
->> +++ b/include/linux/dmaengine.h
->> @@ -618,6 +618,11 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
->>                         (unsigned long)config);
->>  }
->>
->> +static inline bool is_slave_xfer(enum dma_transfer_direction direction)
->> +{
->> +       return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
->> +}
->
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Though i still have vote to include DMA_DEV_TO_DEV in thist list :)
+On Fri, Nov 16, 2012 at 05:26:07PM +0200, Andy Shevchenko wrote:
+> > I wonder if the above function need some prefix like
+> > dmaengine_is_slave_xfer()?
+> 
+> is_dma_slave_xfer seems more consistent with other helper functions.
+> 
+> But is_slave_xfer is vacant anyway. I like shorter names.
 
-I propose to do this later when we have a real user of it. Otherwise
-it requires to do additional (sometimes useless) checks.
+Fair enough.
 
-
--- 
-With Best Regards,
-Andy Shevchenko
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
