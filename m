@@ -1,113 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab2KPIg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:36:26 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:11843 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab2KPIgX (ORCPT
+	id S1751365Ab2KPIgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:36:50 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:47595 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab2KPIgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:36:23 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-1a-50a5fb060bc0
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: lcd: return ENXIO when ops functions cannot be
- called
-Date: Fri, 16 Nov 2012 17:36:21 +0900
-Message-id: <002b01cdc3d5$74ccc680$5e665380$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3D1XSws5T8Ky+WQBq9zN05ZAMNRg==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t8zI12230sDDB6t5rC4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZU/q72Qoe8VbMvKzWwDiXu4uRk0NCwERi46Y+FghbTOLCvfVs
-	ILaQwDJGiYZONZiaIxd+ANVwAcUXMUpMPLqGFcKZzSQxc0I7WAebgJrEly+H2UFsEYEIieYZ
-	s5i7GDk4mAV8JDbP0gQJCwsES7TO/MkMYrMIqEpsujkFbDGvgK3ElZVzWSFsQYkfk++BxZkF
-	tCTW7zzOBGHLS2xe8xZspISAusSjv7oQm/QkHj7ezQZRIiKx78U7RojxAhLfJh9igSiXldh0
-	gBnkYgmBdnaJKTv6of6VlDi44gbLBEaxWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCk911Cv
-	ODG3uDQvXS85P3cTIyRKpHYwrmywOMQowMGoxMMreHtpgBBrYllxZe4hRgkOZiUR3ukvgEK8
-	KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4zgvJJ4Q2NjEzMTUxNzS1NzUxzCSuK8zR4pAUIC
-	6YklqdmpqQWpRTDjmDg4pRoY4wO2RX0wSrvTVSRgIbNyw3KXuHXLjjaplpTc3HZPYdXl+5Z3
-	q0R2aq+8+OmgQ8z87u8ndm1Pz69TEHlzUfzdlnkNrxaJMvt7ln3JEBF/PL1waenMJSxX+50i
-	ppyemGr5J9Jf8Hu3u6mP3jQv7dCj4pYrMiRcv3jsW2nkJXuoxFztY/yrU5UGSizFGYmGWsxF
-	xYkAFNnMl78CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV2230sDDA4+ZbG4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGVP6u9kKHvFWzLys1sA4
-	l7uLkZNDQsBE4siFHywQtpjEhXvr2boYuTiEBBYxSkw8uoYVwpnNJDFzQjsbSBWbgJrEly+H
-	2UFsEYEIieYZs5i7GDk4mAV8JDbP0gQJCwsES7TO/MkMYrMIqEpsujkFbAGvgK3ElZVzWSFs
-	QYkfk++BxZkFtCTW7zzOBGHLS2xe8xZspISAusSjv7oQm/QkHj7ezQZRIiKx78U7xgmMArOQ
-	TJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Cp9J7WBc2WBxiFGA
-	g1GJh1fw9tIAIdbEsuLK3EOMEhzMSiK8018AhXhTEiurUovy44tKc1KLDzH6AD06kVlKNDkf
-	mCDySuINjU3MjCyNzCyMTMzNcQgrifM2e6QECAmkJ5akZqemFqQWwYxj4uCUamBMM/z9bov9
-	kfDzX2u0HvCo/FMJOvvwkVX0A8MXvA4KzioRCzz3Vylb2XmcdC0PUJlfwVY8qfSGjfunjI3z
-	npepr1t36hi3uv0de40Xwo+29EVvOKXvJjF/RtyFi+Wu7JM70sr/f1//KuPMXd5iz+bLqdt2
-	J324ta1l6t1jb7tlXz6S+eqw9eUyJZbijERDLeai4kQAEQ+6K+8CAAA=
-X-CFilter-Loop: Reflected
+	Fri, 16 Nov 2012 03:36:49 -0500
+Message-ID: <50A5FB17.1050208@atmel.com>
+Date: Fri, 16 Nov 2012 09:36:39 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Axel Lin <axel.lin@ingics.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RESEND 3/4] pinctrl: at91: Prevent NULL dereference if
+ of_match_device returns NULL
+References: <1352955096.6793.1.camel@phoenix> <1352955266.6793.4.camel@phoenix> <1352955480.6793.8.camel@phoenix> <20121115100012.GA4398@game.jcrosoft.org>
+In-Reply-To: <20121115100012.GA4398@game.jcrosoft.org>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, when ops functions cannot be called,
-lcd_show_contrast() and lcd_store_contrast() returned 0,
-instead of ENXIO.
+On 11/15/2012 11:00 AM, Jean-Christophe PLAGNIOL-VILLARD :
+> On 12:58 Thu 15 Nov     , Axel Lin wrote:
+>> of_match_device() may return NULL.
+> this is not possible on at91
+> 
+> and I do a oups here as if we have a NULL pointer which means the driver is
+> wrong
 
-Thus, in this case, a local variable 'rc' for return value
-should be initialized as ENXIO, after kstrtoul() is called.
+Well, okay, but it does not prevent from adding a supplementary check to
+mimic every other pinctrl driver and use a common return path to the
+of_match_device() function.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/video/backlight/lcd.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+So I am not completely against this patch (that I why I added my Acked-by).
 
-diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
-index a5d0d02..34fb6bd 100644
---- a/drivers/video/backlight/lcd.c
-+++ b/drivers/video/backlight/lcd.c
-@@ -108,7 +108,7 @@ static ssize_t lcd_show_power(struct device *dev, struct device_attribute *attr,
- static ssize_t lcd_store_power(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
--	int rc = -ENXIO;
-+	int rc;
- 	struct lcd_device *ld = to_lcd_device(dev);
- 	unsigned long power;
- 
-@@ -116,6 +116,8 @@ static ssize_t lcd_store_power(struct device *dev,
- 	if (rc)
- 		return rc;
- 
-+	rc = -ENXIO;
-+
- 	mutex_lock(&ld->ops_lock);
- 	if (ld->ops && ld->ops->set_power) {
- 		pr_debug("set power to %lu\n", power);
-@@ -144,7 +146,7 @@ static ssize_t lcd_show_contrast(struct device *dev,
- static ssize_t lcd_store_contrast(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
--	int rc = -ENXIO;
-+	int rc;
- 	struct lcd_device *ld = to_lcd_device(dev);
- 	unsigned long contrast;
- 
-@@ -152,6 +154,8 @@ static ssize_t lcd_store_contrast(struct device *dev,
- 	if (rc)
- 		return rc;
- 
-+	rc = -ENXIO;
-+
- 	mutex_lock(&ld->ops_lock);
- 	if (ld->ops && ld->ops->set_contrast) {
- 		pr_debug("set contrast to %lu\n", contrast);
+
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> ---
+>> This resend CC Jean-Christophe.
+>>
+>>  drivers/pinctrl/pinctrl-at91.c |   17 +++++++++++++----
+>>  1 file changed, 13 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+>> index 8490a55..32006c8 100644
+>> --- a/drivers/pinctrl/pinctrl-at91.c
+>> +++ b/drivers/pinctrl/pinctrl-at91.c
+>> @@ -829,13 +829,18 @@ static int __devinit at91_pinctrl_probe_dt(struct platform_device *pdev,
+>>  	uint32_t *tmp;
+>>  	struct device_node *np = pdev->dev.of_node;
+>>  	struct device_node *child;
+>> +	const struct of_device_id *match;
+>>  
+>>  	if (!np)
+>>  		return -ENODEV;
+>>  
+>> +	match = of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
+>> +	if (!match)
+>> +		return -ENODEV;
+>> +
+>>  	info->dev = &pdev->dev;
+>> -	info->ops = (struct at91_pinctrl_mux_ops*)
+>> -		of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
+>> +	info->ops = (struct at91_pinctrl_mux_ops *) match->data;
+>> +
+>>  	at91_pinctrl_child_count(info, np);
+>>  
+>>  	if (info->nbanks < 1) {
+>> @@ -1359,6 +1364,7 @@ static struct of_device_id at91_gpio_of_match[] __devinitdata = {
+>>  static int __devinit at91_gpio_probe(struct platform_device *pdev)
+>>  {
+>>  	struct device_node *np = pdev->dev.of_node;
+>> +	const struct of_device_id *match;
+>>  	struct resource *res;
+>>  	struct at91_gpio_chip *at91_chip = NULL;
+>>  	struct gpio_chip *chip;
+>> @@ -1399,8 +1405,11 @@ static int __devinit at91_gpio_probe(struct platform_device *pdev)
+>>  		goto err;
+>>  	}
+>>  
+>> -	at91_chip->ops = (struct at91_pinctrl_mux_ops*)
+>> -		of_match_device(at91_gpio_of_match, &pdev->dev)->data;
+>> +	match = of_match_device(at91_gpio_of_match, &pdev->dev);
+>> +	if (!match)
+>> +		return -ENODEV;
+>> +
+>> +	at91_chip->ops = (struct at91_pinctrl_mux_ops *) match->data;
+>>  	at91_chip->pioc_virq = irq;
+>>  	at91_chip->pioc_idx = alias_idx;
+>>  
+>> -- 
+>> 1.7.9.5
+>>
+>>
+>>
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> 
+
+
 -- 
-1.7.2.5
-
-
+Nicolas Ferre
