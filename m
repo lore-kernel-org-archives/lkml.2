@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab2KPL01 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:26:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33184 "EHLO mx2.suse.de"
+	id S1752099Ab2KPL0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:26:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33160 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab2KPLXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:44 -0500
+	id S1751954Ab2KPLXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:42 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 33/43] x86: mm: only do a local tlb flush in ptep_set_access_flags()
-Date: Fri, 16 Nov 2012 11:22:43 +0000
-Message-Id: <1353064973-26082-34-git-send-email-mgorman@suse.de>
+Subject: [PATCH 31/43] mm: numa: Introduce last_nid to the page frame
+Date: Fri, 16 Nov 2012 11:22:41 +0000
+Message-Id: <1353064973-26082-32-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,56 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+This patch introduces a last_nid field to the page struct. This is used
+to build a two-stage filter in the next patch that is aimed at
+mitigating a problem whereby pages migrate to the wrong node when
+referenced by a process that was running off its home node.
 
-The function ptep_set_access_flags() is only ever invoked to set access
-flags or add write permission on a PTE.  The write bit is only ever set
-together with the dirty bit.
-
-Because we only ever upgrade a PTE, it is safe to skip flushing entries on
-remote TLBs. The worst that can happen is a spurious page fault on other
-CPUs, which would flush that TLB entry.
-
-Lazily letting another CPU incur a spurious page fault occasionally is
-(much!) cheaper than aggressively flushing everybody else's TLB.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/x86/mm/pgtable.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ include/linux/mm.h       |   30 ++++++++++++++++++++++++++++++
+ include/linux/mm_types.h |    4 ++++
+ mm/page_alloc.c          |    2 ++
+ 3 files changed, 36 insertions(+)
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 8573b83..be3bb46 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -301,6 +301,13 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
- 	free_page((unsigned long)pgd);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 34f8ce9..f290cc9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -693,6 +693,36 @@ static inline int page_to_nid(const struct page *page)
  }
+ #endif
  
-+/*
-+ * Used to set accessed or dirty bits in the page table entries
-+ * on other architectures. On x86, the accessed and dirty bits
-+ * are tracked by hardware. However, do_wp_page calls this function
-+ * to also make the pte writeable at the same time the dirty bit is
-+ * set. In that case we do actually need to write the PTE.
-+ */
- int ptep_set_access_flags(struct vm_area_struct *vma,
- 			  unsigned long address, pte_t *ptep,
- 			  pte_t entry, int dirty)
-@@ -310,7 +317,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	if (changed && dirty) {
- 		*ptep = entry;
- 		pte_update_defer(vma->vm_mm, address, ptep);
--		flush_tlb_page(vma, address);
-+		__flush_tlb_one(address);
++#ifdef CONFIG_BALANCE_NUMA
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return xchg(&page->_last_nid, nid);
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page->_last_nid;
++}
++static inline void reset_page_last_nid(struct page *page)
++{
++	page->_last_nid = -1;
++}
++#else
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return page_to_nid(page);
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page_to_nid(page);
++}
++
++static inline void reset_page_last_nid(struct page *page)
++{
++}
++#endif
++
+ static inline struct zone *page_zone(const struct page *page)
+ {
+ 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index b40f4ef..6b478ff 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -175,6 +175,10 @@ struct page {
+ 	 */
+ 	void *shadow;
+ #endif
++
++#ifdef CONFIG_BALANCE_NUMA
++	int _last_nid;
++#endif
+ }
+ /*
+  * The struct page can be forced to be double word aligned so that atomic ops
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8827523..cc1ca7e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -608,6 +608,7 @@ static inline int free_pages_check(struct page *page)
+ 		bad_page(page);
+ 		return 1;
  	}
- 
- 	return changed;
++	reset_page_last_nid(page);
+ 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+ 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+ 	return 0;
+@@ -3826,6 +3827,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
+ 		mminit_verify_page_links(page, zone, nid, pfn);
+ 		init_page_count(page);
+ 		reset_page_mapcount(page);
++		reset_page_last_nid(page);
+ 		SetPageReserved(page);
+ 		/*
+ 		 * Mark the block movable so that blocks are reserved for
 -- 
 1.7.9.2
 
