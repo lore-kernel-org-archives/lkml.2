@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2KPSOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:14:40 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53908 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab2KPSOi (ORCPT
+	id S1753154Ab2KPSPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:15:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47119 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab2KPSPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:14:38 -0500
-Date: Fri, 16 Nov 2012 19:14:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/8] sched, numa, mm: Add adaptive NUMA affinity support
-Message-ID: <20121116181433.GA4763@gmail.com>
-References: <20121112160451.189715188@chello.nl>
- <20121112161215.782018877@chello.nl>
- <50A68096.1050208@redhat.com>
+	Fri, 16 Nov 2012 13:15:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A68096.1050208@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50A661F5.6040301@zytor.com>
+References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
+	<1353055989-31939-2-git-send-email-yinghai@kernel.org>
+	<50A661F5.6040301@zytor.com>
+Date: Fri, 16 Nov 2012 10:15:22 -0800
+X-Google-Sender-Auth: GN5iohcHnNjNHf-wi5jxzbV6k3s
+Message-ID: <CAE9FiQWdhJHAB0Fjk3_+k-hxF0dYwybMD8RuF=bPL26BosruwA@mail.gmail.com>
+Subject: Re: [PATCH 1/9] x86, boot: Move lldt/ltr out of 64bit only path
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Zachary Amsden <zach@vmware.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: multipart/mixed; boundary=0015174c33d646713504cea0c04d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0015174c33d646713504cea0c04d
+Content-Type: text/plain; charset=ISO-8859-1
 
-* Rik van Riel <riel@redhat.com> wrote:
+On Fri, Nov 16, 2012 at 7:55 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/16/2012 12:53 AM, Yinghai Lu wrote:
+>>
+>> Also it push down startup_64 to 0x208.
+>>
+>
+> NAK.  0x200 is an ABI, you can't change it.
+>
 
-> On 11/12/2012 11:04 AM, Peter Zijlstra wrote:
-> 
-> >We change the load-balancer to prefer moving tasks in order of:
-> >
-> >   1) !numa tasks and numa tasks in the direction of more faults
-> >   2) allow !ideal tasks getting worse in the direction of faults
-> >   3) allow private tasks to get worse
-> >   4) allow shared tasks to get worse
-> >
-> >This order ensures we prefer increasing memory locality but when
-> >we do have to make hard decisions we prefer spreading private
-> >over shared, because spreading shared tasks significantly
-> >increases the interconnect bandwidth since not all memory can
-> >follow.
-> 
-> Combined with the fact that we only turn a certain amount of 
-> memory into NUMA ptes each second, could this result in a 
-> program being classified as a private task one second, and a 
-> shared task a few seconds later?
+ok, will add attached patche before this one and keep 0x200.
 
-It's a statistical method, like most of scheduling.
+Thanks
 
-It's as prone to oscillation as tasks are already prone to being 
-moved spuriously by the load balancer today, due to the per CPU 
-load average being statistical and them being slightly above or 
-below a critical load average value.
- 
-Higher freq oscillation should not happen normally though, we 
-dampen these metrics and have per CPU hysteresis.
+Yinghai
 
-( We can also add explicit hysteresis if anyone demonstrates 
-  real oscillation with a real workload - wanted to keep it 
-  simple first and change it only as-needed. )
+--0015174c33d646713504cea0c04d
+Content-Type: application/octet-stream; name="move_verify_cpu.patch"
+Content-Disposition: attachment; filename="move_verify_cpu.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h9lmnmxs0
 
-Thanks,
-
-	Ingo
+U3ViamVjdDogW1BBVENIXSB4ODYsIGJvb3Q6IG1vdmUgdmVyaWZ5X2NwdS5TIGFmdGVyIDB4MjAw
+CgpXZSBhcmUgc2hvcnQgb2Ygc3BhY2UgYmVmb3JlIDB4MjAwIGZvciBzdGFydHVwXzY0LgoKYmVm
+b3JlIHRoYXQgYXJlIDMyIGJpdCBjb2RlLiBXZSBjb3VsZCBtb3ZlIGZ1bmN0aW9uIHZlcmlmeV9j
+cHUgZG93bgoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoK
+LS0tCiBhcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvaGVhZF82NC5TIHwgICAgNSArKystLQogMSBm
+aWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51
+eC0yLjYvYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL2hlYWRfNjQuUwo9PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBs
+aW51eC0yLjYub3JpZy9hcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvaGVhZF82NC5TCisrKyBsaW51
+eC0yLjYvYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL2hlYWRfNjQuUwpAQCAtMTgyLDggKzE4Miw2
+IEBAIG5vX2xvbmdtb2RlOgogCWhsdAogCWptcCAgICAgMWIKIAotI2luY2x1ZGUgIi4uLy4uL2tl
+cm5lbC92ZXJpZnlfY3B1LlMiCi0KIAkvKgogCSAqIEJlIGNhcmVmdWwgaGVyZSBzdGFydHVwXzY0
+IG5lZWRzIHRvIGJlIGF0IGEgcHJlZGljdGFibGUKIAkgKiBhZGRyZXNzIHNvIEkgY2FuIGV4cG9y
+dCBpdCBpbiBhbiBFTEYgaGVhZGVyLiAgQm9vdGxvYWRlcnMKQEAgLTM0OSw2ICszNDcsOSBAQCBy
+ZWxvY2F0ZWQ6CiAgKi8KIAlqbXAJKiVyYnAKIAorCS5jb2RlMzIKKyNpbmNsdWRlICIuLi8uLi9r
+ZXJuZWwvdmVyaWZ5X2NwdS5TIgorCiAJLmRhdGEKIGdkdDoKIAkud29yZAlnZHRfZW5kIC0gZ2R0
+Cg==
+--0015174c33d646713504cea0c04d--
