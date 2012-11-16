@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2KPL1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:27:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33106 "EHLO mx2.suse.de"
+	id S1752080Ab2KPL2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:28:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33082 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab2KPLXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:34 -0500
+	id S1751820Ab2KPLXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:31 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 26/43] mm: numa: Only mark a PMD pmd_numa if the pages are all on the same node
-Date: Fri, 16 Nov 2012 11:22:36 +0000
-Message-Id: <1353064973-26082-27-git-send-email-mgorman@suse.de>
+Subject: [PATCH 24/43] mm: numa: Migrate on reference policy
+Date: Fri, 16 Nov 2012 11:22:34 +0000
+Message-Id: <1353064973-26082-25-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,70 +25,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a pmd_numa fault is handled, all PTEs are treated as if the current
-CPU had referenced them and handles it as one fault. This effectively
-batches the ptl but loses precision. This patch will only set the PMD
-pmd_numa if the examined pages are all on the same node. If the workload
-is converged on a PMD boundary then the batch handling is equivalent.
+This is the simplest possible policy that still does something of note.
+When a pte_numa is faulted, it is moved immediately. Any replacement
+policy must at least do better than this and in all likelihood this
+policy regresses normal workloads.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- mm/mempolicy.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   38 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 16fb4e6..0d11c3d 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -67,6 +67,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
+ #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
++#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
+ 
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index bcaa4fe..ca201e9 100644
+index 045714d..bcaa4fe 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -604,6 +604,8 @@ change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
- 	spinlock_t *ptl;
- 	int ret = 0;
- 	int nr_pte_updates = 0;
-+	bool all_same_node = true;
-+	int last_nid = -1;
+@@ -118,6 +118,26 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
  
- 	VM_BUG_ON(address & ~PAGE_MASK);
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
++
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
++	int node;
++
++	if (!pol) {
++		node = numa_node_id();
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++
++		/* preferred_node_policy is not initialised early in boot */
++		if (!pol->mode)
++			pol = NULL;
++	}
++
++	return pol;
++}
++
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1706,7 +1726,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
  
-@@ -662,6 +664,7 @@ change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
- 	for (_address = address, _pte = pte; _address < end;
- 	     _pte++, _address += PAGE_SIZE) {
- 		pte_t pteval = *_pte;
-+		int this_nid;
- 		if (!pte_present(pteval))
- 			continue;
- 		if (pte_numa(pteval))
-@@ -669,6 +672,18 @@ change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page = vm_normal_page(vma, _address, pteval);
- 		if (unlikely(!page))
- 			continue;
-+
-+		/*
-+		 * Check if all pages within the PMD are on the same node. This
-+		 * is an approximation as existing pte_numa pages are not
-+		 * examined.
-+		 */
-+		this_nid = page_to_nid(page);
-+		if (last_nid == -1)
-+			last_nid = this_nid;
-+		if (last_nid != this_nid)
-+			all_same_node = false;
-+
- 		/* only check non-shared pages */
- 		if (page_mapcount(page) != 1)
- 			continue;
-@@ -681,7 +696,11 @@ change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -2129,7 +2149,7 @@ retry_cpuset:
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
+ 
+@@ -2403,6 +2423,11 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 	default:
+ 		BUG();
  	}
- 	pte_unmap_unlock(pte, ptl);
++
++	/* Migrate the page towards the node whose CPU is referencing it */
++	if (pol->flags & MPOL_F_MORON)
++		polnid = numa_node_id();
++
+ 	if (curnid != polnid)
+ 		ret = polnid;
+ out:
+@@ -2591,6 +2616,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
  
--	if (ret && !pmd_numa(*pmd)) {
-+	/*
-+	 * If all the pages within the PMD are on the same node then mark
-+	 * the PMD so it is handled in one fault when next referenced.
-+	 */
-+	if (all_same_node && !pmd_numa(*pmd)) {
- 		spin_lock(&mm->page_table_lock);
- 		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
- 		spin_unlock(&mm->page_table_lock);
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF | MPOL_F_MORON,
++			.v = { .preferred_node = nid, },
++		};
++	}
++
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
 -- 
 1.7.9.2
 
