@@ -1,91 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab2KPXnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:43:20 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:8622 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab2KPXnS (ORCPT
+	id S1753708Ab2KPXws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:52:48 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42903 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab2KPXwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:43:18 -0500
-Message-ID: <1353108906.10624.5.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Fri, 16 Nov 2012 16:35:06 -0700
-In-Reply-To: <20121116233355.GA21144@kroah.com>
-References: <1352974970-6643-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1446291.TgLDtXqY7q@vostro.rjw.lan>
-	 <1353105943.12509.60.camel@misato.fc.hp.com>
-	 <20121116230143.GA15338@kroah.com>
-	 <1353107684.12509.65.camel@misato.fc.hp.com>
-	 <20121116233355.GA21144@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 16 Nov 2012 18:52:46 -0500
+Message-ID: <50A6D1C7.302@linux.vnet.ibm.com>
+Date: Fri, 16 Nov 2012 17:52:39 -0600
+From: Trey Ramsay <tramsay@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Chris Ball <cjb@laptop.org>
+CC: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Rich Rattanni <rattanni@gmail.com>,
+        Radovan Lekanovic <lekanovic@gmail.com>
+Subject: Re: [PATCH 1/1] mmc: Bad device can cause mmc driver to hang
+References: <87k3tpkz53.fsf@octavius.laptop.org> <1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com> <876255bluf.fsf@octavius.laptop.org>
+In-Reply-To: <876255bluf.fsf@octavius.laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12111623-5406-0000-0000-0000021FC899
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 15:33 -0800, Greg Kroah-Hartman wrote:
-> On Fri, Nov 16, 2012 at 04:14:44PM -0700, Toshi Kani wrote:
-> > On Fri, 2012-11-16 at 15:01 -0800, Greg Kroah-Hartman wrote:
-> > > On Fri, Nov 16, 2012 at 03:45:43PM -0700, Toshi Kani wrote:
-> > > > On Fri, 2012-11-16 at 22:43 +0100, Rafael J. Wysocki wrote:
-> > > > > On Thursday, November 15, 2012 11:22:47 AM Vasilis Liaskovitis wrote:
-> > > > > > As discussed in https://patchwork.kernel.org/patch/1581581/
-> > > > > > the driver core remove function needs to always succeed. This means we need
-> > > > > > to know that the device can be successfully removed before acpi_bus_trim / 
-> > > > > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > > > > > eject or driver unbind of memory devices fails e.g with:
-> > > > > > 
-> > > > > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > > > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> > > > > > 
-> > > > > > since the ACPI core goes ahead and ejects the device regardless of whether the
-> > > > > > the memory is still in use or not.
-> > > > > 
-> > > > > So the question is, does the ACPI core have to do that and if so, then why?
-> > > > 
-> > > > The problem is that acpi_memory_devcie_remove() can fail.  However,
-> > > > device_release_driver() is a void function, so it cannot report its
-> > > > error.  Here are function flows for SCI, sysfs eject and unbind.
-> > > 
-> > > Then don't ever let acpi_memory_device_remove() fail.  If the user wants
-> > > it gone, it needs to go away.  Just like any other device in the system
-> > > that can go away at any point in time, you can't "fail" that.
-> > 
-> > That would be ideal, but we cannot delete a memory device that contains
-> > kernel memory.  I am curious, how do you deal with a USB device that is
-> > being mounted in this case?
+On 11/16/2012 09:37 AM, Chris Ball wrote:
+> Hi Trey,
 > 
-> As the device is physically gone now, we deal with it and clean up
-> properly.
+> On Fri, Nov 16 2012, Trey Ramsay wrote:
+>> There are infinite loops in the mmc code that can be caused by bad hardware.
+>> The code will loop forever if the device never comes back from program mode,
+>> R1_STATE_PRG, and it is not ready for data, R1_READY_FOR_DATA.
+>>
+>> A long timeout will be added to prevent the code from looping forever.
+>> The timeout will occur if the device never comes back from program
+>> state or the device never becomes ready for data.
+>>
+>> Signed-off-by: Trey Ramsay <tramsay@linux.vnet.ibm.com>
 > 
-> And that's the point here, what happens if the memory really is gone?
-> You will still have to handle it now being removed, you can't "fail" a
-> physical removal of a device.
+> Thanks, looks good!
 > 
-> If you remove a memory device that has kernel memory on it, well, you
-> better be able to somehow remap it before the kernel needs it :)
+> Have you thought about what's going to happen after this path is hit?
+> Are we just going to start a new request that begins a new ten-minute
+> hang, or do we notice the bad card state somewhere and refuse to start
+> new I/O?
+> 
+> - Chris.
+> 
 
-:)
+You're welcome, and thanks for the help!
 
-Well, we are not trying to support surprise removal here.  All three
-use-cases (SCI, eject, and unbind) are for graceful removal.  Therefore
-they should fail if the removal operation cannot complete in graceful
-way.
-
-Thanks,
--Toshi
+Good question.  In regards to the original problem were it was hung in
+mmc_blk_err_check, the new code path will timeout after 10 minutes, log
+an error, issue a hardware reset and abort the request. Is the hardware
+reset enough or will that even work when the device isn't coming out of
+program state? Should we try to refuse all new I/O?
 
 
+Below are just some notes I took about the code path for
+mmc_blk_err_check and mmc_do_erase.
+=============================
+mmc_blk_err_check
+                        int err = get_card_status(card, &status, 5);
+                        if (err) {
+                                pr_err("%s: error %d requesting status\n",
+                                       req->rq_disk->disk_name, err);
+                                return MMC_BLK_CMD_ERR;
+                        }
++
++                       /* Timeout if the device never becomes ready for
+data
++                        * and never leaves the program state.
++                        */
++                       if (time_after(jiffies, timeout)) {
++                               pr_err("%s: Card stuck in programming
+state!"\
++                                       " %s %s\n",
+mmc_hostname(card->host),
++                                       req->rq_disk->disk_name, __func__);
++
++                               return MMC_BLK_CMD_ERR;
++                       }
+
+Stack
+-----------------
+mmc_blk_err_check
+mmc_start_req
+mmc_blk_issue_rw_rq
+mmc_blk_issue_rq
+mmc_queue_thread
+
+We return MMC_BLK_CMD_ERR the same way as we return MMC_BLK_CMD_ERR if
+the get_card_status failed. The code which returns to mmc_start_req
+which sets the error status and returns to mmc_blk_issue_rw_rq with a
+status of MMC_BLK_CMD_ERR where it calls mmc_blk_reset which calls
+mmc_hw_reset. The code then return so mmc_queue_thread which does not
+check the return code.
+
+=============================
+mmc_do_erase
++
++               /* Timeout if the device never becomes ready for data and
++                * never leaves the program state.
++                */
++               if (time_after(jiffies, timeout)) {
++                       pr_err("%s: Card stuck in programming state! %s\n",
++                               mmc_hostname(card->host), __func__);
++                       err =  -EIO;
++                       goto out;
++               }
++
+
+        err = mmc_erase(card, from, nr, arg);
+out:
+        if (err == -EIO && !mmc_blk_reset(md, card->host, type))
+                goto retry;
 
 
+The mmc_do_erase function is called by mmc_erase which is called from 3
+locations in the block.c code.
+
+    1) mmc_blk_issue_discard_rq--->mmc_erase--->mmc_do_erase    line 848
+    2) mmc_blk_issue_secdiscard_rq--->mmc_erase--->mmc_do_erase line 884
+    3) mmc_blk_issue_secdiscard_rq--->mmc_erase--->mmc_do_erase line 904
+
+    This applies to 1, 2 and 3 above.
+    Since we return -EIO, mmc_blk_issue_discard_rq or
+    mmc_blk_issue_secdiscard will do a mmc_blk_reset which will call
+    mmc_hw_reset. If hardware reset is successfull, it will retry the
+    command.  If the hardware reset is unsuccessfull, it will call
+    blk_end_request and will return 0 if there is
+    an err and will return to the mmc_queue_thread function which does
+    not check the return code.
 
