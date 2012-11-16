@@ -1,96 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab2KPSzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:55:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab2KPSzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:55:24 -0500
-Date: Fri, 16 Nov 2012 18:55:17 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/43] mm: numa: Make pte_numa() and pmd_numa() a generic
- implementation
-Message-ID: <20121116185517.GH8218@suse.de>
-References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
- <1353064973-26082-7-git-send-email-mgorman@suse.de>
- <50A648FF.2040707@redhat.com>
- <20121116144109.GA8218@suse.de>
- <CA+55aFzH_-6FuwTF1GVDzLK+7c0MGLsLdPFjzzwU78GVUEMbBw@mail.gmail.com>
- <20121116160852.GA4302@gmail.com>
- <20121116165606.GE8218@suse.de>
- <20121116171243.GA4697@gmail.com>
- <20121116174853.GF8218@suse.de>
- <20121116180404.GA4728@gmail.com>
+	id S1753212Ab2KPTAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:00:42 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:1388
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752902Ab2KPTAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 14:00:40 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
+X-WSS-ID: 0MDLGSV-02-NBG-02
+X-M-MSG: 
+Date: Fri, 16 Nov 2012 13:00:30 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Robert Richter <rric@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf, amd: Enable northbridge performance counters
+ on AMD family 15h
+Message-ID: <20121116190030.GA21468@jshin-Toonie>
+References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
+ <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
+ <20121116184344.GR2504@rric.localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20121116180404.GA4728@gmail.com>
+In-Reply-To: <20121116184344.GR2504@rric.localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 07:04:04PM +0100, Ingo Molnar wrote:
+On Fri, Nov 16, 2012 at 07:43:44PM +0100, Robert Richter wrote:
+> Jacob,
 > 
-> * Mel Gorman <mgorman@suse.de> wrote:
+> On 15.11.12 15:31:53, Jacob Shin wrote:
+> > On AMD family 15h processors, there are 4 new performance counters
+> > (in addition to 6 core performance counters) that can be used for
+> > counting northbridge events (i.e. DRAM accesses). Their bit fields are
+> > almost identical to the core performance counters. However, unlike the
+> > core performance counters, these MSRs are shared between multiple
+> > cores (that share the same northbridge). We will reuse the same code
+> > path as existing family 10h northbridge event constraints handler
+> > logic to enforce this sharing.
+> > 
+> > These new counters are indexed contiguously right above the existing
+> > core performance counters, and their indexes correspond to RDPMC ECX
+> > values.
+> > 
+> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 > 
-> > That said, your approach just ends up being heavier. [...]
+> your approach looks ok to me in general, but see my comments inline.
 > 
-> Well, it's more fundamental than just whether to inline or not 
-> (which I think should be a separate optimization and I won't 
-> object to two-instruction variants the slightest) - but you 
-> ended up open-coding change_protection() 
-> via:
+> > @@ -156,31 +161,28 @@ static inline int amd_pmu_addr_offset(int index)
+> >  	if (offset)
+> >  		return offset;
+> >  
+> > -	if (!cpu_has_perfctr_core)
+> > +	if (!cpu_has_perfctr_core) {
+> >  		offset = index;
+> > -	else
+> > +		ncore = AMD64_NUM_COUNTERS;
+> > +	} else {
+> >  		offset = index << 1;
+> > +		ncore = AMD64_NUM_COUNTERS_CORE;
+> > +	}
+> > +
+> > +	/* find offset of NB counters with respect to x86_pmu.eventsel */
+> > +	if (cpu_has_perfctr_nb) {
+> > +		if (index >= ncore && index < (ncore + AMD64_NUM_COUNTERS_NB))
+> > +			offset = (MSR_F15H_NB_PERF_CTL - x86_pmu.eventsel) +
+> > +				 ((index - ncore) << 1);
+> > +	}
 > 
->    change_prot_numa_range() et al
+> There is duplicate calculatoin of offset in some cases. Better we
+> avoid this.
+
+Which cases? The code calculates the offset for a given index the very
+first time it is called, stores it, and uses that stored offset from
+then on. My [PATCH 3/4] sets that up.
+
 > 
-> which is a far bigger problem...
+> > +static int __amd_nb_hw_config(struct perf_event *event)
+> > +{
+> > +	if (event->attr.exclude_user || event->attr.exclude_kernel ||
+> > +	    event->attr.exclude_host || event->attr.exclude_guest)
+> > +		return -EINVAL;
+> >  
+> > -	event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
+> > +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_USR;
+> > +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_OS;
+> > +
+> > +	if (event->hw.config & ~(AMD64_EVENTSEL_EVENT        |
+> > +				 ARCH_PERFMON_EVENTSEL_UMASK |
+> > +				 ARCH_PERFMON_EVENTSEL_INT   |
+> > +				 AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE |
+> > +				 AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK))
+> > +		return -EINVAL;
+> >  
+> >  	return 0;
+> >  }
 > 
-> Do you have valid technical arguments in favor of that 
-> duplication?
+> Comments are missing and an AMD64_NB_EVENT_MASK macro should be
+> defined for the above. See my previous version for reference:
+> 
+> /*
+>  * AMD NB counters (MSRs 0xc0010240 etc.) do not support the following
+>  * flags:
+>  *
+>  *  Host/Guest Only
+>  *  Counter Mask
+>  *  Invert Comparison
+>  *  Edge Detect
+>  *  Operating-System Mode
+>  *  User Mode
+>  *
+>  * Try to fix the config for default settings, otherwise fail.
+>  */
+> static int amd_nb_event_config(struct perf_event *event)
+> {
+>        if (!amd_is_nb_perfctr_event(&event->hw))
+>                return 0;
+> 
+>        if (event->attr.exclude_host || event->attr.exclude_guest
+>            || event->attr.exclude_user || event->attr.exclude_kernel)
+>                goto fail;
+> 
+>        event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR | ARCH_PERFMON_EVENTSEL_OS);
+> 
+>        if (event->hw.config & ~(AMD64_NB_EVENT_MASK | ARCH_PERFMON_EVENTSEL_INT))
+>                goto fail;
+> 
+>        return 0;
+> fail:
+>        pr_debug("Invalid nb counter config value: %016Lx\n", event->hw.config);
+>        return -EINVAL;
+> }
+> 
+> 
+> > @@ -323,6 +368,16 @@ __amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *ev
+> >  	if (new == -1)
+> >  		return &emptyconstraint;
+> >  
+> > +	/* set up interrupts to be delivered only to this core */
+> > +	if (cpu_has_perfctr_nb) {
+> > +		struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
+> > +
+> > +		hwc->config |= AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE;
+> > +		hwc->config &= ~AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK;
+> > +		hwc->config |= (0ULL | (c->cpu_core_id)) <<
+> > +			AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT;
+> > +	}
+> 
+> Looks like a hack to me. The constaints handler is only supposed to
+> determine constraints and not to touch anything in the event's
+> structure. This should be done later when setting up hwc->config in
+> amd_nb_event_config() or so.
+
+Hm.. is the hwc->config called after constraints have been set up
+already? If so, I'll change it ..
+
+> 
+> I also do not think that smp_processor_id() is the right thing to do
+> here. Since cpu_hw_events is per-cpu the cpu is already selected.
+
+Yeah, I could not figure out how to get the cpu number from cpuc. Is
+there a container_of kind of thing that I can do to get the cpu number
+?
+
+> 
+> > +
+> >  	return &nb->event_constraints[new];
+> >  }
+> >  
+> > @@ -520,6 +575,7 @@ static struct event_constraint amd_f15_PMC3  = EVENT_CONSTRAINT(0, 0x08, 0);
+> >  static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT_OVERLAP(0, 0x09, 0);
+> >  static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
+> >  static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
+> > +static struct event_constraint amd_f15_NBPMC30 = EVENT_CONSTRAINT(0, 0x3C0, 0);
+> 
+> The counter index mask depends on the number of core counters which is
+> either 4 or 6 (depending on cpu_has_perfctr_core).
+> 
+> >  static int setup_event_constraints(void)
+> >  {
+> > -	if (boot_cpu_data.x86 >= 0x15)
+> > +	if (boot_cpu_data.x86 == 0x15)
+> >  		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
+> 
+> Since this does not cover family 16h anymore, you also need to extend
+> amd_get_event_ constraints() to setup nb counters with __amd_get_nb_
+> event_constraints() if cpu_has_perfctr_nb is set.
+
+Yes family 16h will be covered by a separate patch at a later date.
+
+> 
+> >  	return 0;
+> >  }
+> > @@ -655,6 +714,18 @@ static int setup_perfctr_core(void)
+> >  	return 0;
+> >  }
+> >  
+> > +static int setup_perfctr_nb(void)
+> > +{
+> > +	if (!cpu_has_perfctr_nb)
+> > +		return -ENODEV;
+> > +
+> > +	x86_pmu.num_counters += AMD64_NUM_COUNTERS_NB;
+> 
+> You should add a nb counter mask here which is used for nb counters.
+> 
+> The mask can be either 0x3c0 or 0x0f0 depending on cpu_has_perfctr_
+> core for later use, you will need it at various locations.
+> 
+> In general I also would try to write the code in a way that make
+> further cpu_has_perfctr_nb lookups unnecessary. There are many tests
+> of this your code.
+
+Okay will spin V3 soon.
+
+> 
+> -Robert
 > 
 
-No, I don't and I have not claimed that it *has* to exist. In fact I've
-said multiple times than I can convert to change_protection as long as
-_PAGE_NUMA == _PAGE_NONE. This initial step was to build the list
-of requirements without worrying about breaking existing users of
-change_protection. Now that I know what the requirements are, I can convert.
-
-> If you just embrace the PROT_NONE reuse approach of numa/core 
-> then 90% of the differences in your tree will disappear and 
-> you'll have a code base very close to where numa/core was 3 
-> weeks ago already, modulo a handful of renames.
-> 
-
-Pointed out the missing parts in another mail already -- MIGRATE_FAULT,
-pmd handling in batch, stats and a logical progression from a simple to
-a complex policy.
-
-> It's not like PROT_NONE will go away anytime soon.
-> 
-> PROT_NONE is available on every architecture, and we use the 
-> exact semantics of it in the scheduler, we just happen to drive 
-> it from a special worklet instead of a syscall, and happen to 
-> have a callback to the faults when they happen...
-> 
-> Please stay open to that approach.
-> 
-
-I will.
-
-If anything, me switching to prot_none would be a hell of a lot easier
-than you trying to pick up the bits you're missing. I'll take a look
-Monday and see what falls out.
-
--- 
-Mel Gorman
-SUSE Labs
