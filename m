@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab2KPEBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 23:01:13 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3629 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2KPEBL (ORCPT
+	id S1751212Ab2KPEIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 23:08:50 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58241 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab2KPEIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 23:01:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 15 Nov 2012 20:00:52 -0800
-Message-ID: <50A5BA6E.2010109@nvidia.com>
-Date: Fri, 16 Nov 2012 12:00:46 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 15 Nov 2012 23:08:49 -0500
+Date: Fri, 16 Nov 2012 04:08:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, arnd@arndb.de
+Subject: Re: [RFC PATCH v1 30/31] ARC: switch to generic kernel_execve() and
+ sys_execve()
+Message-ID: <20121116040847.GA22671@ZenIV.linux.org.uk>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+ <1352281674-2186-31-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] NVIDIA Tegra DRM driver
-References: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352281674-2186-31-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry,
+On Wed, Nov 07, 2012 at 10:47:53AM +0100, Vineet Gupta wrote:
+> +; When we land here, pt_regs have already been updated in-place correctly
+> +; A pointer to them is also passed by kernel_execve, we just need to make sure
+> +; that SP is set to point to them.
+> +ARC_ENTRY ret_from_kernel_execve
+> +	; Force SP to "normal" pt_regs just populated.
+> +	b.d   ret_from_system_call
+> +	mov   sp, r0
 
-By the way, when do you plan to send drm patches for Tegra 3?
-I'm wondering if you don't have a Tegra 3 board for testing, I can do
-that for you.
+won't that splatter crap into regs->r0?  IOW, why not branch to
+ret_from_exception here?
 
-Mark
-On 11/16/2012 05:28 AM, Thierry Reding wrote:
-> This third version of the patch series cleans up some minor issues that
-> were found in the previous versions, such as deferred probe not working
-> properly and the display remaining enabled after the driver is removed.
-> 
-> I've also put the two patches in this series into the tegra/drm/for-3.8
-> branch of my repository on gitorious[0].
-> 
-> Thierry
-> 
-> [0]: git://gitorious.org/thierryreding/linux.git
-> 
-> Thierry Reding (2):
->   drm: Add NVIDIA Tegra20 support
->   drm: tegra: Add HDMI support
-> 
->  .../bindings/gpu/nvidia,tegra20-host1x.txt         |  191 +++
->  drivers/gpu/drm/Kconfig                            |    2 +
->  drivers/gpu/drm/Makefile                           |    1 +
->  drivers/gpu/drm/tegra/Kconfig                      |   23 +
->  drivers/gpu/drm/tegra/Makefile                     |    7 +
->  drivers/gpu/drm/tegra/dc.c                         |  833 ++++++++++++
->  drivers/gpu/drm/tegra/dc.h                         |  388 ++++++
->  drivers/gpu/drm/tegra/drm.c                        |  115 ++
->  drivers/gpu/drm/tegra/drm.h                        |  234 ++++
->  drivers/gpu/drm/tegra/fb.c                         |   56 +
->  drivers/gpu/drm/tegra/hdmi.c                       | 1334 ++++++++++++++++++++
->  drivers/gpu/drm/tegra/hdmi.h                       |  575 +++++++++
->  drivers/gpu/drm/tegra/host1x.c                     |  322 +++++
->  drivers/gpu/drm/tegra/output.c                     |  272 ++++
->  drivers/gpu/drm/tegra/rgb.c                        |  228 ++++
->  15 files changed, 4581 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpu/nvidia,tegra20-host1x.txt
->  create mode 100644 drivers/gpu/drm/tegra/Kconfig
->  create mode 100644 drivers/gpu/drm/tegra/Makefile
->  create mode 100644 drivers/gpu/drm/tegra/dc.c
->  create mode 100644 drivers/gpu/drm/tegra/dc.h
->  create mode 100644 drivers/gpu/drm/tegra/drm.c
->  create mode 100644 drivers/gpu/drm/tegra/drm.h
->  create mode 100644 drivers/gpu/drm/tegra/fb.c
->  create mode 100644 drivers/gpu/drm/tegra/hdmi.c
->  create mode 100644 drivers/gpu/drm/tegra/hdmi.h
->  create mode 100644 drivers/gpu/drm/tegra/host1x.c
->  create mode 100644 drivers/gpu/drm/tegra/output.c
->  create mode 100644 drivers/gpu/drm/tegra/rgb.c
-> 
+> +ARC_EXIT ret_from_kernel_execve
+
+Another thing: why not fold that branch to ret_from_exception into the end of
+ret_from_kernel_thread() (instead of calling sys_exit()), select
+GENERIC_KERNEL_EXECVE and lose __ARCH_WANT_KERNEL_EXECVE.
+
+Actually, now that I look at your ret_from_kernel_thread...  How the hell
+will it cope with kernel_thread() payload trying to return?  AFAICS, this
+j.d [r1] will lose the return address, won't it?  And while we are at it,
+I would suggest passing callback and its argument via callee-saved registers -
+makes for simpler life in ret_from_kernel_thread(), since switch_to() itself
+will take care of loading those...
