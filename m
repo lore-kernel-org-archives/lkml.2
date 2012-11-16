@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab2KPD5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 22:57:32 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3448 "EHLO
+	id S1751364Ab2KPEBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 23:01:13 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3629 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2KPD5b (ORCPT
+	with ESMTP id S1750960Ab2KPEBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 22:57:31 -0500
+	Thu, 15 Nov 2012 23:01:11 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 15 Nov 2012 19:57:08 -0800
-Message-ID: <50A5B98E.8070002@nvidia.com>
-Date: Fri, 16 Nov 2012 11:57:02 +0800
+	by hqnvupgp06.nvidia.com on Thu, 15 Nov 2012 20:00:52 -0800
+Message-ID: <50A5BA6E.2010109@nvidia.com>
+Date: Fri, 16 Nov 2012 12:00:46 +0800
 From: Mark Zhang <markz@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
@@ -30,20 +30,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Thierry,
 
-Thank you for your hard work.
-
-The series,
-
-Acked-by: Mark Zhang <markz@nvidia.com>
-Reviewed-by: Mark Zhang <markz@nvidia.com>
-Tested-by: Mark Zhang <markz@nvidia.com>
-
-On Ventana, LVDS and HDMI worked.
-PS: Alex's power sequence patch is needed to enable panel and backlight.
-    Also we need to define dc and hdmi nodes in tegra20-ventana.dts.
-    We may publish the patches for different boards next.
+By the way, when do you plan to send drm patches for Tegra 3?
+I'm wondering if you don't have a Tegra 3 board for testing, I can do
+that for you.
 
 Mark
 On 11/16/2012 05:28 AM, Thierry Reding wrote:
