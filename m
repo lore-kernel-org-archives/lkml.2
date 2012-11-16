@@ -1,167 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab2KPCEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:04:08 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:47595 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2KPCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:04:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        toshi.kani@hp.com, liuj97@gmail.com
-Subject: Re: [PATCH v6] create sun sysfs file
-Date: Fri, 16 Nov 2012 03:08:27 +0100
-Message-ID: <2113879.lcUtkATo6G@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50A59A46.2030308@jp.fujitsu.com>
-References: <50A1F711.7020408@jp.fujitsu.com> <50A59A46.2030308@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751148Ab2KPCJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:09:09 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45058 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750804Ab2KPCJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 21:09:07 -0500
+Message-ID: <1353031727.4867.79.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 01/82] Bluetooth: Always compile SCO and L2CAP in Bluetooth
+ Core
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Gustavo Padovan <gustavo@padovan.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, ulisses@profusion.mobi, marcel@holtmann.org,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Date: Fri, 16 Nov 2012 02:08:47 +0000
+In-Reply-To: <20121115210748.GB3358@joana>
+References: <20121114053933.726869752@decadent.org.uk>
+	 <20121114053933.935584768@decadent.org.uk> <20121114212426.GA1866@joana>
+	 <20121114.163044.2287972932330697472.davem@davemloft.net>
+	 <20121114213819.GT13292@decadent.org.uk>
+	 <1353009872.4867.68.camel@deadeye.wl.decadent.org.uk>
+	 <20121115210748.GB3358@joana>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-2Au1A6BQPbnmy97eNGxo"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 16, 2012 10:43:34 AM Yasuaki Ishimatsu wrote:
-> Hi Rafael,
-> 
-> Please merge this patch into your tree.
-> It has been acked by Len.
 
-Applied.
+--=-2Au1A6BQPbnmy97eNGxo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Rafael
+On Thu, 2012-11-15 at 19:07 -0200, Gustavo Padovan wrote:
+> Hi Ben,
+>=20
+> * Ben Hutchings <ben@decadent.org.uk> [2012-11-15 20:04:32 +0000]:
+>=20
+> > On Wed, 2012-11-14 at 21:38 +0000, Ben Hutchings wrote:
+> > > On Wed, Nov 14, 2012 at 04:30:44PM -0500, David Miller wrote:
+> > > > From: Gustavo Padovan <gustavo@padovan.org>
+> > > > Date: Wed, 14 Nov 2012 19:24:26 -0200
+> > > >=20
+> > > > > Hi Ben,
+> > > > >=20
+> > > > > * Ben Hutchings <ben@decadent.org.uk> [2012-11-14 05:39:34 +0000]=
+:
+> > > > >=20
+> > > > >> 3.2-stable review patch.  If anyone has any objections, please l=
+et me know.
+> > > > >>=20
+> > > > >> ------------------
+> > > > >>=20
+> > > > >> From: Ulisses Furquim <ulisses@profusion.mobi>
+> > > > >>=20
+> > > > >> commit f1e91e1640d808d332498a6b09b2bcd01462eff9 upstream.
+> > > > >>=20
+> > > > >> The handling of SCO audio links and the L2CAP protocol are essen=
+tial to
+> > > > >> any system with Bluetooth thus are always compiled in from now o=
+n.
+> > > > >=20
+> > > > > I wonder if this could not break any kind of script or code peopl=
+e have that
+> > > > > refer directly to the sco and l2cap modules. Also I don't see thi=
+s change as
+> > > > > really necessary for 3.2.
+> > > >=20
+> > > > Agreed, I wish this had not been merged into -stable, I would have =
+never
+> > > > submitted a patch like this myself.
+> > >=20
+> > > This is required by:
+> > >=20
+> > > commit ff03261adc8b4bdd8291f1783c079b53a892b429
+> > > Author: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+> > > Date:   Thu Aug 23 21:32:44 2012 -0300
+> > >=20
+> > >     Bluetooth: Fix sending a HCI Authorization Request over LE links
+> > >    =20
+> > >     commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+> > >=20
+> > > which was already applied.
+> >=20
+> > So, do you think it's better to revert that in 3.2, or to go ahead with
+> > this?
+>=20
+> I suggest you to revert it. There is a much simpler solution if revert, f=
+ix
+> the patch and apply it again. No need to push this module merge patch her=
+e.
+>=20
+> The problem seems to be only a missing EXPORT_SYMBOL of the smp.c method.=
+ That
+> should fix it. If you want me to fix that just ask me.
 
+smp_conn_security() is either in the same module or not defined at all.
+I'll add an #ifdef CONFIG_BT_L2CAP instead of this patch.
 
-> 2012/11/13 16:30, Yasuaki Ishimatsu wrote:
-> > Hi Rafael,
-> > 
-> > The patch was rebased on linux-next. Ant it has been acked by Len:
-> > 
-> > https://lkml.org/lkml/2012/10/10/65
-> > 
-> > So please merge it into your tree.
-> > 
-> > ---
-> > _SUN method provides the slot unique-ID in the ACPI namespace. And The value
-> > is written in Advanced Configuration and Power Interface Specification as
-> > follows:
-> > 
-> > "The _SUN value is required to be unique among the slots ofthe same type.
-> > It is also recommended that this number match the slot number printed on
-> > the physical slot whenever possible."
-> > 
-> > So if we can know the value, we can identify the physical position of the
-> > slot in the system.
-> > 
-> > The patch creates "sun" file in sysfs for identifying physical position
-> > of the slot.
-> > 
-> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> > Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > 
-> > ---
-> >   Documentation/ABI/testing/sysfs-devices-sun |   14 ++++++++++++++
-> >   drivers/acpi/scan.c                         |   24 ++++++++++++++++++++++++
-> >   include/acpi/acpi_bus.h                     |    1 +
-> >   3 files changed, 39 insertions(+)
-> > 
-> > Index: linux-next/include/acpi/acpi_bus.h
-> > ===================================================================
-> > --- linux-next.orig/include/acpi/acpi_bus.h	2012-11-12 17:58:08.000000000 +0900
-> > +++ linux-next/include/acpi/acpi_bus.h	2012-11-12 19:07:33.577427071 +0900
-> > @@ -179,6 +179,7 @@ struct acpi_device_pnp {
-> >   	acpi_device_name device_name;	/* Driver-determined */
-> >   	acpi_device_class device_class;	/*        "          */
-> >   	union acpi_object *str_obj;	/* unicode string for _STR method */
-> > +	unsigned long sun;		/* _SUN */
-> >   };
-> >   
-> >   #define acpi_device_bid(d)	((d)->pnp.bus_id)
-> > Index: linux-next/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-next.orig/drivers/acpi/scan.c	2012-11-12 17:57:44.000000000 +0900
-> > +++ linux-next/drivers/acpi/scan.c	2012-11-12 19:08:53.387428254 +0900
-> > @@ -292,11 +292,21 @@ static ssize_t description_show(struct d
-> >   }
-> >   static DEVICE_ATTR(description, 0444, description_show, NULL);
-> >   
-> > +static ssize_t
-> > +acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
-> > +		     char *buf) {
-> > +	struct acpi_device *acpi_dev = to_acpi_device(dev);
-> > +
-> > +	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-> > +}
-> > +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-> > +
-> >   static int acpi_device_setup_files(struct acpi_device *dev)
-> >   {
-> >   	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
-> >   	acpi_status status;
-> >   	acpi_handle temp;
-> > +	unsigned long long sun;
-> >   	int result = 0;
-> >   
-> >   	/*
-> > @@ -338,6 +348,16 @@ static int acpi_device_setup_files(struc
-> >   	if (dev->pnp.unique_id)
-> >   		result = device_create_file(&dev->dev, &dev_attr_uid);
-> >   
-> > +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
-> > +	if (ACPI_SUCCESS(status)) {
-> > +		dev->pnp.sun = (unsigned long)sun;
-> > +		result = device_create_file(&dev->dev, &dev_attr_sun);
-> > +		if (result)
-> > +			goto end;
-> > +	} else {
-> > +		dev->pnp.sun = (unsigned long)-1;
-> > +	}
-> > +
-> >           /*
-> >            * If device has _EJ0, 'eject' file is created that is used to trigger
-> >            * hot-removal function from userland.
-> > @@ -369,6 +389,10 @@ static void acpi_device_remove_files(str
-> >   	if (ACPI_SUCCESS(status))
-> >   		device_remove_file(&dev->dev, &dev_attr_eject);
-> >   
-> > +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
-> > +	if (ACPI_SUCCESS(status))
-> > +		device_remove_file(&dev->dev, &dev_attr_sun);
-> > +
-> >   	if (dev->pnp.unique_id)
-> >   		device_remove_file(&dev->dev, &dev_attr_uid);
-> >   	if (dev->flags.bus_address)
-> > Index: linux-next/Documentation/ABI/testing/sysfs-devices-sun
-> > ===================================================================
-> > --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> > +++ linux-next/Documentation/ABI/testing/sysfs-devices-sun	2012-11-12 19:09:26.854428750 +0900
-> > @@ -0,0 +1,14 @@
-> > +Whatt:		/sys/devices/.../sun
-> > +Date:		October 2012
-> > +Contact:	Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > +Description:
-> > +		The file contains a Slot-unique ID which provided by the _SUN
-> > +		method in the ACPI namespace. The value is written in Advanced
-> > +		Configuration and Power Interface Specification as follows:
-> > +
-> > +		"The _SUN value is required to be unique among the slots of
-> > +		the same type. It is also recommended that this number match
-> > +		the slot number printed on the physical slot whenever possible."
-> > +
-> > +		So reading the sysfs file, we can identify a physical position
-> > +		of the slot in the system.
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Ben.
+
+--=20
+Ben Hutchings
+Theory and practice are closer in theory than in practice.
+                                - John Levine, moderator of comp.compilers
+
+--=-2Au1A6BQPbnmy97eNGxo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUKWgL+e/yOyVhhEJAQoH+Q/6Awn+U0uR76B2F06I3u/RhFc3aiHdBsPK
+Qa3YCaqRdEXIxlKYo6foZ3DFaUx7+0BKGYjgV3kYcI4QL+ETJn+ITU7RYJftYS8U
+gastdxUZrKVQ0Qm90xzO9x++FJKlRGZXC5ZQWHRUsDuLL5kRWLCotJAG0YtcOcaT
+mzcAKkbbBapb+nTEOBxpUfBMGEQQuGJkkhzPNTco3HOeygvgPKJCXdjFoUdGl6IK
+St7N2p8+VJztgvojdApq2XjwdQv/a364QFAwtoT7zSJLPFa3gnI7IXNN8pjgGSXL
+E6JuJ/pc9gaQYO/tSBdyUxO/CtTn8SxSmGfBroMMs+G1prhzpwW2aFEo4kVT5Vw7
+NyRt14m7ftUUnCxUNhsfM2a1AZFpJ8Mj59VljnbYLSLYJOwpKOrfWP6vebG3Umus
+r5uw6MGar20YuwvNZu9n6SK1N4XCizRFN/LSkQ7pJ+GdfKuTIxDEw0SDmXhm0n6J
+uGn6kn+hsWn7GMoD4oSnEk7pKTb8nrB12oUSbQYg6/tIakxFaw0dWuINezYoVyPv
+a52zEey04qEp320aCCBgIElpivotcrcEA1BcgVJpRiknNfRh3VmtZWsH+PM6rUOP
+6YDvZZu8IZfdz26JLIMKQ0rFCT3cLFJpcVvIeiHtw80z0sS9+B79/WeX32qBBoEX
+JnrtwBRO1aw=
+=8ASc
+-----END PGP SIGNATURE-----
+
+--=-2Au1A6BQPbnmy97eNGxo--
