@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab2KPP36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:29:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14579 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab2KPP35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:29:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,265,1352102400"; 
-   d="scan'208";a="169223808"
-Date: Fri, 16 Nov 2012 17:33:09 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 4/6] dma: ep93xx_dma: reuse is_slave_xfer helper
-Message-ID: <20121116153309.GX17774@intel.com>
-References: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1353074360-1903-5-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1752473Ab2KPPa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:30:26 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60710 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2KPPaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:30:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353074360-1903-5-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121116135625.GA18920@arwen.pp.htv.fi>
+References: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1353074360-1903-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20121116135625.GA18920@arwen.pp.htv.fi>
+Date: Fri, 16 Nov 2012 17:30:21 +0200
+Message-ID: <CAHp75VcfF9pHCa9wv_2Qr_U1y+ubJEkRvpyiXOZL_7nbPHo8uw@mail.gmail.com>
+Subject: Re: [PATCH 3/6] dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: balbi@ti.com
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        spear-devel <spear-devel@list.st.com>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 03:59:17PM +0200, Andy Shevchenko wrote:
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Fri, Nov 16, 2012 at 3:56 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Nov 16, 2012 at 03:59:16PM +0200, Andy Shevchenko wrote:
+>> dma_transfer_direction is a normal enum. It means we can't usually use the
+>> values as bit fields. Let's adjust this check and move it above the usage of
+>> the direction parameter.
+>
+> why above the direction parameter ? You need to explain why ? Is it just
+> because 'it looks nicer' or have you found another bug triggered by
+> that ?
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Many of current users do something like this:
 
-> ---
->  drivers/dma/ep93xx_dma.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-> index bcfde40..7c26354 100644
-> --- a/drivers/dma/ep93xx_dma.c
-> +++ b/drivers/dma/ep93xx_dma.c
-> @@ -903,8 +903,7 @@ static int ep93xx_dma_alloc_chan_resources(struct dma_chan *chan)
->  			switch (data->port) {
->  			case EP93XX_DMA_SSP:
->  			case EP93XX_DMA_IDE:
-> -				if (data->direction != DMA_MEM_TO_DEV &&
-> -				    data->direction != DMA_DEV_TO_MEM)
-> +				if (!is_slave_xfter(data->direction))
->  					return -EINVAL;
->  				break;
->  			default:
-> -- 
-> 1.7.10.4
+if (dir == MEM_TO_DEV)
+ { ... }
+*else*
+ { ... }
+
+that potentially could trigger the bug.
+
+-- 
+With Best Regards,
+Andy Shevchenko
