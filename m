@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab2KPI7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:59:45 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54898 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab2KPI7o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:59:44 -0500
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org, paulus@samba.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        michael.neuling@au1.ibm.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH] powerpc, perf: Change PMU flag values representation from decimal to hex
-Date: Fri, 16 Nov 2012 14:29:04 +0530
-Message-Id: <1353056344-1392-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-x-cbid: 12111608-4790-0000-0000-00000597248D
+	id S1751382Ab2KPJAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:00:23 -0500
+Received: from mga03.intel.com ([143.182.124.21]:23029 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750939Ab2KPJAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:00:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,263,1352102400"; 
+   d="asc'?scan'208";a="218628949"
+Message-ID: <1353056458.20111.8.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] jffs2: Make handling of erase_completion_lock
+ consistent in jffs2_do_reserve_space()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Date: Fri, 16 Nov 2012 11:00:58 +0200
+In-Reply-To: <1352140814-25208-1-git-send-email-khoroshilov@ispras.ru>
+References: <1352140814-25208-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-gdVzduy1btVmWwKOx2qE"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/perf_event_server.h | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 9710be3..e3f10bb 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -11,6 +11,7 @@
- 
- #include <linux/types.h>
- #include <asm/hw_irq.h>
-+#include <asm/asm-compat.h>
- 
- #define MAX_HWEVENTS		8
- #define MAX_EVENT_ALTERNATIVES	8
-@@ -45,11 +46,21 @@ struct power_pmu {
- /*
-  * Values for power_pmu.flags
-  */
--#define PPMU_LIMITED_PMC5_6	1	/* PMC5/6 have limited function */
--#define PPMU_ALT_SIPR		2	/* uses alternate posn for SIPR/HV */
--#define PPMU_NO_SIPR		4	/* no SIPR/HV in MMCRA at all */
--#define PPMU_NO_CONT_SAMPLING	8	/* no continuous sampling */
--#define PPMU_SIAR_VALID		16	/* Processor has SIAR Valid bit */
-+
-+#define PPMU_LIMITED_PMC5_6	\
-+	LONG_ASM_CONST(0x0000000000000001) /* PMC5/6 have limited function */
-+
-+#define PPMU_ALT_SIPR		\
-+	LONG_ASM_CONST(0x0000000000000002) /* uses alternate posn for SIPR/HV */
-+
-+#define PPMU_NO_SIPR		\
-+	LONG_ASM_CONST(0x0000000000000004) /* no SIPR/HV in MMCRA at all */
-+
-+#define PPMU_NO_CONT_SAMPLING	\
-+	LONG_ASM_CONST(0x0000000000000008) /* no continuous sampling */
-+
-+#define PPMU_SIAR_VALID		\
-+	LONG_ASM_CONST(0x0000000000000010) /* Processor has SIAR Valid bit */
- 
- /*
-  * Values for flags to get_alternatives()
--- 
-1.7.11.7
+--=-gdVzduy1btVmWwKOx2qE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 2012-11-05 at 22:40 +0400, Alexey Khoroshilov wrote:
+> Users of jffs2_do_reserve_space() expect they still held
+> erase_completion_lock after call to it. But there is a path
+> where jffs2_do_reserve_space() leaves erase_completion_lock unlocked.
+> The patch fixes it.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+
+Pushed to l2-mtd.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-gdVzduy1btVmWwKOx2qE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQpgDKAAoJECmIfjd9wqK0guQP+waXozU33WI+ACTmbSCJar05
+BbPYnr4hK90tXTbY8rB8nQh8tNcdqk3cRXTBDF7BbGCCXfDS90eXPI4Nt1+Li1ny
+lX/m0wTreI7t0GCql+K7i0mia206XNAHp3uCQlDQiXibeI7ljo+D5EWhhwR5AIZk
+YDINVT2zsNkkCUaKixgAKPoFo4uaicejrnRahY+QYQe2nTtHpP8a+WEKxH34N/F1
+A+XDV+UwbcJgE5Kg+teKKVJCmxl1N3mLjrUlQhlt47WJloQajzh9EIIxJDAW9+o0
+uvrQQaG+lJ40CKuDLSFp4hpRLX+/Mi38sUTETwBtxOyxA2f63TEVcoIpHzhKNUb1
+Td0ANXxayur7m2VABCXiLsyhhlDs/2kLKsFkncsmJnlY3FZCOsjojE2QyJJPxoj8
+1aiVEuL/V5YRxHuEju67owKjMfNAGycNZ75CQH1Vs6gi0xY5H/apl62cI6UZYhyq
+4lJbVzDnTJwWB4sbtSMygb5NUVnMnT7m48TZrHfLETeEaoMYUdTFWUJpwMygX9Lg
+fl9fZp072vtc/4YC2jHdBFPNzD/6x7nh6daHyazFgwgdTphSCfQpeJjeQMrUzT+y
+dq3/gR1qMFIsE1M+T1XgH3NEbdkXFl1oBgJ83oPQGrQ8X9SlbhyCOSp7+P0v4s0v
+xXAN+HFnMAPQhG9CZTTT
+=/abk
+-----END PGP SIGNATURE-----
+
+--=-gdVzduy1btVmWwKOx2qE--
 
