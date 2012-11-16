@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab2KPPfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:35:31 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:53059 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2KPPfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:35:30 -0500
-Message-ID: <50A65D35.7090307@atmel.com>
-Date: Fri, 16 Nov 2012 16:35:17 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1752474Ab2KPPhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:37:23 -0500
+Received: from void.printf.net ([89.145.121.20]:58392 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab2KPPhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:37:21 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Trey Ramsay <tramsay@linux.vnet.ibm.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        Rich Rattanni <rattanni@gmail.com>,
+        Radovan Lekanovic <lekanovic@gmail.com>
+Subject: Re: [PATCH 1/1] mmc: Bad device can cause mmc driver to hang
+References: <87k3tpkz53.fsf@octavius.laptop.org>
+	<1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com>
+Date: Fri, 16 Nov 2012 10:37:12 -0500
+In-Reply-To: <1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com>
+	(Trey Ramsay's message of "Fri, 16 Nov 2012 09:31:41 -0600")
+Message-ID: <876255bluf.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <jhovold@gmail.com>, Nicolas Royer <nicolas@eukrea.com>,
-        =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] at91: fixes for 3.7-rc6
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resent with mailing-lists)
+Hi Trey,
 
-Arnd, Olof,
+On Fri, Nov 16 2012, Trey Ramsay wrote:
+> There are infinite loops in the mmc code that can be caused by bad hardware.
+> The code will loop forever if the device never comes back from program mode,
+> R1_STATE_PRG, and it is not ready for data, R1_READY_FOR_DATA.
+>
+> A long timeout will be added to prevent the code from looping forever.
+> The timeout will occur if the device never comes back from program
+> state or the device never becomes ready for data.
+>
+> Signed-off-by: Trey Ramsay <tramsay@linux.vnet.ibm.com>
 
-Here is the second at91-fixes pull request for 3.7. I have built it on
-top of my previous fixes pull request for this kernel revision.
+Thanks, looks good!
 
-The following changes since commit 08d04a135a1c2e24c4d4bc7bbafee5e0e58f80c6:
+Have you thought about what's going to happen after this path is hit?
+Are we just going to start a new request that begins a new ten-minute
+hang, or do we notice the bad card state somewhere and refuse to start
+new I/O?
 
-  ARM: at91: drop duplicated config SOC_AT91SAM9 entry (2012-10-24
-18:08:48 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 641f3ce64b050961d454a0716bb6dbf528315aac:
-
-  ARM: at91/usbh: fix overcurrent gpio setup (2012-11-16 10:46:29 +0100)
-
-----------------------------------------------------------------
-Two little fixes, one related to the move to sparse irq and
-another one fixing the check of a GPIO for USB host overcurrent.
-
-----------------------------------------------------------------
-Johan Hovold (1):
-      ARM: at91/usbh: fix overcurrent gpio setup
-
-Nicolas Royer (1):
-      ARM: at91/AT91SAM9G45: fix crypto peripherals irq issue due to
-sparse irq support
-
- arch/arm/mach-at91/at91rm9200_devices.c  |  2 +-
- arch/arm/mach-at91/at91sam9260_devices.c |  2 +-
- arch/arm/mach-at91/at91sam9261_devices.c |  2 +-
- arch/arm/mach-at91/at91sam9263_devices.c |  2 +-
- arch/arm/mach-at91/at91sam9g45_devices.c | 12 ++++++------
- 5 files changed, 10 insertions(+), 10 deletions(-)
-
-Thanks, best regards,
+- Chris.
 -- 
-Nicolas Ferre
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
