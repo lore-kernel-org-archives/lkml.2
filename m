@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab2KPKzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:55:35 -0500
-Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:49143 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751001Ab2KPKze (ORCPT
+	id S1751353Ab2KPK7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 05:59:50 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39752 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2KPK7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:55:34 -0500
-Date: Fri, 16 Nov 2012 10:57:15 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
-        celinux-dev@lists.celinuxforum.org, gregkh@linuxfoundation.org,
-        Tim Bird <tim.bird@am.sony.com>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Selim TEMUR <selimtemur@gmail.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] LDT - Linux Driver Template
-Message-ID: <20121116095715.GE31527@game.jcrosoft.org>
-References: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
- <20121114111312.13c8ea82@pyramind.ukuu.org.uk>
+	Fri, 16 Nov 2012 05:59:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121114111312.13c8ea82@pyramind.ukuu.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1040894464067283813
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com>
+References: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com>
+Date: Fri, 16 Nov 2012 11:59:47 +0100
+X-Google-Sender-Auth: 699cpdB4Z4-Xoz4W3X_PT_kaJUM
+Message-ID: <CAHTX3dLijLK45ddZQVYHcrs6QQbmdRmQbPmTKada9nXx3ZAe3w@mail.gmail.com>
+Subject: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
+From: Michal Simek <michal.simek@xilinx.com>
+To: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>,
+        Nick Bowler <nbowler@elliptictech.com>
+Cc: Josh Cartwright <josh.cartwright@ni.com>, John Linn <John.Linn@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:13 Wed 14 Nov     , Alan Cox wrote:
-> Doing this is the past has always led to obsolete stale broken examples
-> because they are not actively in use and maintained. Far better to work
-> from actual live in use driver code.
+Hi Arnd and Olof,
 
-exactly what I tell him on ce-linux
+I have 7 new follow up patches for zynq. They are based on previous patches
+(arm-soc zynq/cleanup branch).
+The branch is still based on rc3 but I have also tried to merged it
+with the v3.7-rc5 and there is no issue.
 
-Best Regards,
-J.
+It should be the last pull request for v3.8.
+
+Thanks for pulling.
+Michal
+
+
+
+The following changes since commit f58007762f537ba13674a3138b3f4c20fff1cba9:
+  Josh Cartwright (1):
+        zynq: move static peripheral mappings
+
+are available in the git repository at:
+
+  git://git.xilinx.com/linux-xlnx.git arm-next
+
+Josh Cartwright (6):
+      ARM: zynq: move arm-specific sys_timer out of ttc
+      ARM: zynq: dts: add description of the second uart
+      ARM: zynq: dts: split up device tree
+      clk: Add support for fundamental zynq clks
+      ARM: zynq: use zynq clk bindings
+      ARM: zynq: add clk binding support to the ttc
+
+Nick Bowler (1):
+      ARM: zynq: Allow UART1 to be used as DEBUG_LL console.
+
+ .../devicetree/bindings/clock/zynq-7000.txt        |   55 +++
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/Kconfig.debug                             |   17 +
+ arch/arm/boot/dts/Makefile                         |    1 +
+ arch/arm/boot/dts/zynq-7000.dtsi                   |  166 +++++++++
+ arch/arm/boot/dts/zynq-ep107.dts                   |   63 ----
+ arch/arm/boot/dts/zynq-zc702.dts                   |   44 +++
+ arch/arm/mach-zynq/common.c                        |   33 ++-
+ arch/arm/mach-zynq/common.h                        |    4 +-
+ arch/arm/mach-zynq/include/mach/zynq_soc.h         |   16 +-
+ arch/arm/mach-zynq/timer.c                         |  297 +++++++++-------
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/clk-zynq.c                             |  383 ++++++++++++++++++++
+ include/linux/clk/zynq.h                           |   24 ++
+ 14 files changed, 899 insertions(+), 206 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/zynq-7000.txt
+ create mode 100644 arch/arm/boot/dts/zynq-7000.dtsi
+ delete mode 100644 arch/arm/boot/dts/zynq-ep107.dts
+ create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
+ create mode 100644 drivers/clk/clk-zynq.c
+ create mode 100644 include/linux/clk/zynq.h
