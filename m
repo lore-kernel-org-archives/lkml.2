@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2KPTW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:22:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56204 "EHLO
+	id S1753343Ab2KPTYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:24:30 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45809 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab2KPTUf (ORCPT
+	with ESMTP id S1753259Ab2KPTY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:20:35 -0500
-From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
-        john.r.fastabend@intel.com, nhorman@tuxdriver.com
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/8] netprio: simplify write_priomap()
-Date: Fri, 16 Nov 2012 11:20:18 -0800
-Message-Id: <1353093624-22608-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353093624-22608-1-git-send-email-tj@kernel.org>
-References: <1353093624-22608-1-git-send-email-tj@kernel.org>
+	Fri, 16 Nov 2012 14:24:28 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: Re: [RFC] staging: ste_rmi4: merge into the main kernel tree
+Date: Fri, 16 Nov 2012 11:24:21 -0800
+Message-ID: <4047245.snaaN8zA9U@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc4+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <CC51EC7B5B7F984AA566DC102237848896F62D19@hkdcw-mail1.synaptics-inc.local>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com> <20121115064359.GA17551@core.coreip.homeip.net> <CC51EC7B5B7F984AA566DC102237848896F62D19@hkdcw-mail1.synaptics-inc.local>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sscanf() doesn't bite.
+On Friday, November 16, 2012 09:02:30 AM Alexandra Chin wrote:
+> Hi Dmitry,
+> 
+> > > > Please have Greg commit the patch that Henrik reviewed to staging and
+> > > > then work with Christopher Heiny group on getting the full featured
+> > > > driver into mainline.
+> 
+> Thanks for your reminding, final patch has been re-sent to staging
+> maintainer.
+> 
+> > In this case you need to enumerate the benefits of this driver over
+> > unified driver and show why the unified driver can't be fixed.
+> > 
+> > Currently the driver is in mainline (even though the directory is
+> > staging) and nobody will remove it until another driver is fully
+> > functional and ready for prime time. But once this happens I do not see
+> > the benefits of maintaining 2 drivers for the same hardware.
+> 
+> I see. Given that the driver will remain in mainline before generic driver
+> is ready, currently I will continue to maintain the driver in staging.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- net/core/netprio_cgroup.c | 56 ++++++++++-------------------------------------
- 1 file changed, 11 insertions(+), 45 deletions(-)
+Sounds like a plan.
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index f0b6b0d..66d98da 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -176,66 +176,32 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
- static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 			 const char *buffer)
- {
--	char *devname = kstrdup(buffer, GFP_KERNEL);
--	int ret = -EINVAL;
- 	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
--	unsigned long priority;
--	char *priostr;
-+	char devname[IFNAMSIZ + 1];
- 	struct net_device *dev;
- 	struct netprio_map *map;
-+	u32 prio;
-+	int ret;
- 
--	if (!devname)
--		return -ENOMEM;
--
--	/*
--	 * Minimally sized valid priomap string
--	 */
--	if (strlen(devname) < 3)
--		goto out_free_devname;
--
--	priostr = strstr(devname, " ");
--	if (!priostr)
--		goto out_free_devname;
--
--	/*
--	 *Separate the devname from the associated priority
--	 *and advance the priostr pointer to the priority value
--	 */
--	*priostr = '\0';
--	priostr++;
--
--	/*
--	 * If the priostr points to NULL, we're at the end of the passed
--	 * in string, and its not a valid write
--	 */
--	if (*priostr == '\0')
--		goto out_free_devname;
--
--	ret = kstrtoul(priostr, 10, &priority);
--	if (ret < 0)
--		goto out_free_devname;
--
--	ret = -ENODEV;
-+	if (sscanf(buffer, "%"__stringify(IFNAMSIZ)"s %u", devname, &prio) != 2)
-+		return -EINVAL;
- 
- 	dev = dev_get_by_name(&init_net, devname);
- 	if (!dev)
--		goto out_free_devname;
-+		return -ENODEV;
- 
- 	rtnl_lock();
-+
- 	ret = write_update_netdev_table(dev);
--	if (ret < 0)
--		goto out_put_dev;
-+	if (ret)
-+		goto out_unlock;
- 
- 	map = rtnl_dereference(dev->priomap);
- 	if (map)
--		map->priomap[prioidx] = priority;
--
--out_put_dev:
-+		map->priomap[prioidx] = prio;
-+out_unlock:
- 	rtnl_unlock();
- 	dev_put(dev);
--
--out_free_devname:
--	kfree(devname);
- 	return ret;
- }
- 
+Thanks!
+
 -- 
-1.7.11.7
-
+Dmitry
