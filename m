@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab2KPA3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 19:29:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2KPA3W (ORCPT
+	id S1751537Ab2KPAaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 19:30:05 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57779 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2KPAaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 19:29:22 -0500
-Date: Thu, 15 Nov 2012 16:29:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Lin feng <linfeng@cn.fujitsu.com>
-Subject: Re: [PART3 Patch v2 13/14] page_alloc: use N_MEMORY instead
- N_HIGH_MEMORY change the node_states initialization
-Message-Id: <20121115162920.af46d08a.akpm@linux-foundation.org>
-In-Reply-To: <1352969857-26623-14-git-send-email-wency@cn.fujitsu.com>
-References: <1352969857-26623-1-git-send-email-wency@cn.fujitsu.com>
-	<1352969857-26623-14-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Nov 2012 19:30:02 -0500
+Date: Thu, 15 Nov 2012 16:29:59 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH v5 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20121116002959.GB20876@kroah.com>
+References: <1352160669-4330-1-git-send-email-jon.mason@intel.com>
+ <1352160669-4330-2-git-send-email-jon.mason@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352160669-4330-2-git-send-email-jon.mason@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Nov 2012 16:57:36 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+On Mon, Nov 05, 2012 at 05:11:08PM -0700, Jon Mason wrote:
+> +static int __init ntb_init_module(void)
+> +{
+> +	pr_info("%s: %s, version %s\n", KBUILD_MODNAME, NTB_NAME, NTB_VER);
 
-> N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-> N_MEMORY stands for the nodes that has any memory.
-> 
-> The code here need to handle with the nodes which have memory, we should
-> use N_MEMORY instead.
-> 
-> Since we introduced N_MEMORY, we update the initialization of node_states.
+No need to be noisy.
 
-reset_zone_present_pages() has been removed by the recently-queued
-revert-mm-fix-up-zone-present-pages.patch, so I dropped that hunk.
+> +
+> +	return pci_register_driver(&ntb_pci_driver);
+> +}
+> +module_init(ntb_init_module);
+> +
+> +static void __exit ntb_exit_module(void)
+> +{
+> +	pci_unregister_driver(&ntb_pci_driver);
+> +
+> +	pr_info("%s: Driver removed\n", KBUILD_MODNAME);
 
-We still have
+Same here, don't print out needless things.
 
-akpm:/usr/src/25> grep N_HIGH_MEMORY mm/page_alloc.c
-        [N_HIGH_MEMORY] = { { [0] = 1UL } },
-                        node_set_state(nid, N_HIGH_MEMORY);
-                        if (N_NORMAL_MEMORY != N_HIGH_MEMORY &&
+> +}
+> +module_exit(ntb_exit_module);
 
-which I hope is correct.  Can you please check it?
+This all can be wrapped up using the pci_module() macro instead.
+
+thanks,
+
+greg k-h
