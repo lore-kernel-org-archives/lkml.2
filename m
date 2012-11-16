@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2KPBZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:25:33 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:47490 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab2KPBZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:25:32 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-Date: Fri, 16 Nov 2012 02:29:54 +0100
-Message-ID: <1965322.pSDJypqR3K@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1353027296.7176.312.camel@yhuang-dev>
-References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org> <5403446.Qq6ASJZlmy@vostro.rjw.lan> <1353027296.7176.312.camel@yhuang-dev>
+	id S1751585Ab2KPB0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 20:26:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49289 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2KPB0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 20:26:31 -0500
+Date: Thu, 15 Nov 2012 17:26:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH v5 2/2] net: Add support for NTB virtual ethernet device
+Message-ID: <20121116012628.GA21162@kroah.com>
+References: <1352160669-4330-1-git-send-email-jon.mason@intel.com>
+ <1352160669-4330-3-git-send-email-jon.mason@intel.com>
+ <20121116003043.GC20876@kroah.com>
+ <20121116011353.GK24723@jonmason-lab>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121116011353.GK24723@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 16, 2012 08:54:56 AM Huang Ying wrote:
-> On Fri, 2012-11-16 at 01:55 +0100, Rafael J. Wysocki wrote:
-> > On Friday, November 16, 2012 01:44:00 AM Rafael J. Wysocki wrote:
-> > > On Friday, November 16, 2012 08:36:14 AM Huang Ying wrote:
-> > > > On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
-> > 
-> > [...]
-> > 
-> > > > 
-> > > > For this situation, if user "echo auto > .../power/control" for the
-> > > > device, the runtime PM callbacks of device will be called.  I think that
-> > > > is not intended.  So I think it is better to use some kind of flag or
-> > > > state for that.
+On Thu, Nov 15, 2012 at 06:13:53PM -0700, Jon Mason wrote:
+> On Thu, Nov 15, 2012 at 04:30:43PM -0800, Greg KH wrote:
+> > On Mon, Nov 05, 2012 at 05:11:09PM -0700, Jon Mason wrote:
+> > > A virtual ethernet device that uses the NTB transport API to
+> > > send/receive data.
 > > > 
-> > > I'm not sure what situation exactly you have in mind.  Care to give an
-> > > exact scenario?
+> > > Signed-off-by: Jon Mason <jon.mason@intel.com>
+> > > Reviewed-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > > ---
+> > >  MAINTAINERS              |    1 +
+> > >  drivers/net/Kconfig      |    4 +
+> > >  drivers/net/Makefile     |    1 +
+> > >  drivers/net/ntb_netdev.c |  415 ++++++++++++++++++++++++++++++++++++++++++++++
 > > 
-> > Ah, I see.  When we've just called drv->remove(), there is a window in
-> > which user space may cause the driver's runtime PM callbacks to be
-> > executed by changing its attribute to "auto".
-> > 
-> > So perhaps we should check pci_dev->driver rather than pci_dev->dev.driver
-> > in the runtime PM callbacks?  With a few more changes that should allow us
-> > to close that race.
+> > As I haven't taken the core yet, I can't take this.  But even then, I
+> > would need an ack from the network maintainers before I could.
 > 
-> Yes.  And I think, with pci_dev->driver (after some changes suggested by
-> Alan), we need not to use pm_runtime_get/put_skip_callbacks().
+> I have been Cc'ing netdev on these patches and gotten many good
+> comments, but I can cc Dave Miller explicitly on my next version (as
+> there will obviously need to be one based on your comments on the
+> previous patch).
 
-Good.  Can you please prepare a patch, then? :-)
+Don't cc: David, that's not the way to do it :)
 
-Rafael
+> > And are you sure this is in the correct location in the tree?
+> 
+> I assumed that the virtual network client that uses NTB as a transport
+> would best fit in the network drivers.  Is this a bad assumption?
 
+No, but if you look, drivers/net/ has been cleaned up a bunch, so
+perhaps a subdirectory under there is best.  I'll leave that up to the
+netdev developers to discuss.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+thanks,
+
+greg k-h
