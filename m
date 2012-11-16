@@ -1,96 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2KPAgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 19:36:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23381 "EHLO mga09.intel.com"
+	id S1751490Ab2KPAgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 19:36:38 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:47355 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab2KPAga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 19:36:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="242959497"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: RE: [PATCH] x86/irq,io_apic: Fix wrong unmask_ioapic calling when
- the irq is masked
-Thread-Topic: [PATCH] x86/irq,io_apic: Fix wrong unmask_ioapic calling when
- the irq is masked
-Thread-Index: AQHNwjzqz8BIim47t0G9dlOVrY/BYZfrn+ew
-Date: Fri, 16 Nov 2012 00:36:12 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1CE9A9@SHSMSX101.ccr.corp.intel.com>
-References: <1352911962.15558.1676.camel@cliu38-desktop-build>
-In-Reply-To: <1352911962.15558.1676.camel@cliu38-desktop-build>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1751050Ab2KPAgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 19:36:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org,
+        Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Patch v5 0/7] acpi,memory-hotplug: implement framework for hot removing memory
+Date: Fri, 16 Nov 2012 01:40:56 +0100
+Message-ID: <1816934.8XPDQmK5xC@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <9217155.1eDFuhkN55@vostro.rjw.lan>
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <9217155.1eDFuhkN55@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAG0aajt001269
 
-Hi Thomas and Ingo,
+On Friday, November 16, 2012 01:28:43 AM Rafael J. Wysocki wrote:
+> On Thursday, November 15, 2012 02:59:30 PM Wen Congyang wrote:
+> > The memory device can be removed by 2 ways:
+> > 1. send eject request by SCI
+> > 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > 
+> > In the 1st case, acpi_memory_disable_device() will be called.
+> > In the 2nd case, acpi_memory_device_remove() will be called.
+> > acpi_memory_device_remove() will also be called when we unbind the
+> > memory device from the driver acpi_memhotplug or a driver initialization
+> > fails.
+> > 
+> > acpi_memory_disable_device() has already implemented a code which
+> > offlines memory and releases acpi_memory_info struct . But
+> > acpi_memory_device_remove() has not implemented it yet.
+> > 
+> > So the patch prepares the framework for hot removing memory and
+> > adds the framework into acpi_memory_device_remove().
+> > 
+> > We may hotremove the memory device by this 2 ways at the same time.
+> > So we remove the function acpi_memory_disable_device(), and use
+> > acpi_bus_hot_remove_device() which is used by 2nd case to implement it.
+> > We lock device in acpi_bus_hot_remove_device(), so there is no
+> > need to add lock in acpi_memhotplug.
+> > 
+> > The last version of this patchset is here:
+> > https://lkml.org/lkml/2012/11/8/121
+> > 
+> > Note:
+> > 1. The following commit in pm tree can be dropped now(The other two patches
+> >    are already dropped):
+> >    54c4c7db6cb94d7d1217df6d7fca6847c61744ab
+> > 2. This patchset requires the following patch(It is in pm tree now)
+> >    https://lkml.org/lkml/2012/11/1/225
+> > 
+> > Changes from v4 to v5:
+> > 1. patch2: new patch. use acpi_bus_hot_remove_device() to implement memory
+> >    device hotremove.
+> > 
+> > Changes from v3 to v4:
+> > 1. patch1: unlock list_lock when removing memory fails.
+> > 2. patch2: just rebase them
+> > 3. patch3-7: these patches are in -mm tree, and they conflict with this
+> >    patchset, so Adrew Morton drop them from -mm tree. I rebase and merge
+> >    them into this patchset.
+> > 
+> > Wen Congyang (6):
+> >   acpi,memory-hotplug: deal with eject request in hotplug queue
+> >   acpi_memhotplug.c: fix memory leak when memory device is unbound from
+> >     the module acpi_memhotplug
+> >   acpi_memhotplug.c: free memory device if acpi_memory_enable_device()
+> >     failed
+> >   acpi_memhotplug.c: don't allow to eject the memory device if it is
+> >     being used
+> >   acpi_memhotplug.c: bind the memory device when the driver is being
+> >     loaded
+> >   acpi_memhotplug.c: auto bind the memory device which is hotplugged
+> >     before the driver is loaded
+> > 
+> > Yasuaki Ishimatsu (1):
+> >   acpi,memory-hotplug : add memory offline code to
+> >     acpi_memory_device_remove()
+> 
+> Well, I have tried _really_ hard to apply this patchset, but pretty much
+> none of the patches except for [1/7] applied for me.  I have no idea what
+> tree they are against, but I'm pretty sure it's not my tree.
+> 
+> I _have_ applied patches [1-4/7] and pushed them to linux-pm.git/linux-next.
+> I needed to fix up almost all of them so that they applied, so please check
+> if my fixups make sense (and let me know ASAP if that's not the case).
+> 
+> If they are OK, please rebase the rest of the series on top of
+> linux-pm.git/linux-next and repost.  I'm not going to take any more
+> patches that don't apply from you.
+> 
+> Moreover, I'm not going to take any more ACPI memory hotplug patches
+> for v3.8 except for the [5-7/7] from this series (after they have been
+> rebased and _if_ they apply), so please don't submit any until the v3.8
+> merge window closes (of course, you're free to post RFCs, but I will
+> ignore them).
 
-Could you have a look for this patch? It fix the wrong unmask action.
-Thanks.
+And by the way, if someone gives a "Reviewed-by" to a patch that _obviously_
+doesn't apply, I will ignore any "Reviewed-by" from that person going forward,
+because that quite obviously means you haven't even compared the patch with the
+existing code and thus your "review" is worthless.
 
-> -----Original Message-----
-> From: Liu, Chuansheng
-> Sent: Thursday, November 15, 2012 12:53 AM
-> To: mingo@redhat.com; tglx@linutronix.de
-> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Liu, Chuansheng
-> Subject: [PATCH] x86/irq,io_apic: Fix wrong unmask_ioapic calling when the irq
-> is masked
-> 
-> 
-> There is one typical case will cause this issue, that is:
-> One io-apic interrupt with ONE_SHOT and threaded, when interrupt is coming:
-> handle_fasteoi_irq()
-> --> mask_irq(desc)
->     ...
->     desc->irq_data.chip->irq_eoi(&desc->irq_data)[ack_apic_level]
->     --> ioapic_irqd_mask()
->         ...
->         ioapic_irqd_unmask()
-> 
-> After that, the irq will be in unmasked state.
-> 
-> It will break the ONE_SHOT and threaded irq, and brings some unwanted
-> issues.
-> Here adding the irqd_irq_masked() condition to know if unmasking action is
-> needed.
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  arch/x86/kernel/apic/io_apic.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 1817fa9..d963e76 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2479,7 +2479,8 @@ static inline void ioapic_irqd_unmask(struct irq_data
-> *data,
->  		 */
->  		if (!io_apic_level_ack_pending(cfg))
->  			irq_move_masked_irq(data);
-> -		unmask_ioapic(cfg);
-> +		if (!irqd_irq_masked(data))
-> +			unmask_ioapic(cfg);
->  	}
->  }
->  #else
-> --
-> 1.7.0.4
-> 
-> 
+If you just want to say you agree with the patch, use "Acked-by".
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
