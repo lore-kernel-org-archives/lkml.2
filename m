@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab2KPLXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:23:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33001 "EHLO mx2.suse.de"
+	id S1751944Ab2KPL2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:28:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab2KPLXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:20 -0500
+	id S1751781Ab2KPLXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:25 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/43] sched, mm, x86: Add the ARCH_SUPPORTS_NUMA_BALANCING flag
-Date: Fri, 16 Nov 2012 11:22:27 +0000
-Message-Id: <1353064973-26082-18-git-send-email-mgorman@suse.de>
+Subject: [PATCH 21/43] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+Date: Fri, 16 Nov 2012 11:22:31 +0000
+Message-Id: <1353064973-26082-22-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,11 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+By accounting against the present PTEs, scanning speed reflects the
+actual present (mapped) memory.
 
-Allow architectures to opt-in to the adaptive affinity NUMA balancing code.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -37,28 +37,127 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- init/Kconfig |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/mm.h  |    2 +-
+ kernel/sched/fair.c |   36 +++++++++++++++++++++---------------
+ mm/mempolicy.c      |    6 ++++--
+ 3 files changed, 26 insertions(+), 18 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 6fdd6e3..17434ca 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -696,6 +696,13 @@ config LOG_BUF_SHIFT
- config HAVE_UNSTABLE_SCHED_CLOCK
- 	bool
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index a451a9f..34f8ce9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1548,7 +1548,7 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ }
+ #endif
  
-+#
-+# For architectures that want to enable the PROT_NUMA driven,
-+# NUMA-affine scheduler balancing logic:
-+#
-+config ARCH_SUPPORTS_NUMA_BALANCING
-+	bool
+-void change_prot_numa(struct vm_area_struct *vma,
++int change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ 
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5f4382f..c673567 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -827,8 +827,8 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long offset, end;
+-	long length;
++	unsigned long start, end;
++	long pages;
+ 
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
+ 
+@@ -858,18 +858,20 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
+-	offset = mm->numa_scan_offset;
+-	length = sysctl_balance_numa_scan_size;
+-	length <<= 20;
++	start = mm->numa_scan_offset;
++	pages = sysctl_balance_numa_scan_size;
++	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!pages)
++		return;
+ 
+ 	down_read(&mm->mmap_sem);
+-	vma = find_vma(mm, offset);
++	vma = find_vma(mm, start);
+ 	if (!vma) {
+ 		reset_ptenuma_scan(p);
+-		offset = 0;
++		start = 0;
+ 		vma = mm->mmap;
+ 	}
+-	for (; vma && length > 0; vma = vma->vm_next) {
++	for (; vma; vma = vma->vm_next) {
+ 		if (!vma_migratable(vma))
+ 			continue;
+ 
+@@ -877,15 +879,19 @@ void task_numa_work(struct callback_head *work)
+ 		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
+ 			continue;
+ 
+-		offset = max(offset, vma->vm_start);
+-		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-		length -= end - offset;
+-
+-		change_prot_numa(vma, offset, end);
++		do {
++			start = max(start, vma->vm_start);
++			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
++			end = min(end, vma->vm_end);
++			pages -= change_prot_numa(vma, start, end);
+ 
+-		offset = end;
++			start = end;
++			if (pages <= 0)
++				goto out;
++		} while (end != vma->vm_end);
+ 	}
+ 
++out:
+ 	/*
+ 	 * It is possible to reach the end of the VMA list but the last few VMAs are
+ 	 * not guaranteed to the vma_migratable. If they are not, we would find the
+@@ -893,7 +899,7 @@ void task_numa_work(struct callback_head *work)
+ 	 * so check it now.
+ 	 */
+ 	if (vma)
+-		mm->numa_scan_offset = offset;
++		mm->numa_scan_offset = start;
+ 	else
+ 		reset_ptenuma_scan(p);
+ 	up_read(&mm->mmap_sem);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 09d477a..e1534e3 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -669,8 +669,8 @@ out:
+ 	return ret;
+ }
+ 
+-/* Assumes mmap_sem is held */
+-void
++/* Assumes mmap_sem is held. Returns range of base ptes updated */
++int
+ change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long address, unsigned long end)
+ {
+@@ -695,6 +695,8 @@ change_prot_numa(struct vm_area_struct *vma,
+ 		flush_tlb_range(vma, address, end);
+ 		mmu_notifier_invalidate_range_end(vma->vm_mm, address, end);
+ 	}
 +
- menuconfig CGROUPS
- 	boolean "Control Group support"
- 	depends on EVENTFD
++	return progress;
+ }
+ 
+ /*
 -- 
 1.7.9.2
 
