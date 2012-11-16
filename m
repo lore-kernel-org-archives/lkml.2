@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab2KPS0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:26:50 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:40970 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab2KPS0t (ORCPT
+	id S1753246Ab2KPS1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:27:37 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:60081 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab2KPS1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:26:49 -0500
-Date: Fri, 16 Nov 2012 13:26:43 -0500
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, fschmaus@gmail.com,
-        andor.daam@googlemail.com, ilendir@googlemail.com
-Subject: Re: [PATCH v2] enable all tmem backends to be built and loaded as
- modules.
-Message-ID: <20121116182641.GA26424@phenom.dumpdata.com>
-References: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
+	Fri, 16 Nov 2012 13:27:36 -0500
+X-IronPort-AV: E=Sophos;i="4.83,266,1352073600"; 
+   d="scan'208";a="15857992"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <konrad.wilk@oracle.com>
+CC: Roger Pau Monne <roger.pau@citrix.com>
+Subject: [PATCH 2/2] xen-blkback: move free persistent grants code
+Date: Fri, 16 Nov 2012 19:26:48 +0100
+Message-ID: <1353090408-66400-2-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+In-Reply-To: <1353090408-66400-1-git-send-email-roger.pau@citrix.com>
+References: <1353090408-66400-1-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352920339-10183-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Um, that is what I get from doing this while traveling.
+Move the code that frees persistent grants from the red-black tree
+to a function. This will make it easier for other consumers to move
+this to a common place.
 
-This is the writeup:
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+---
+ drivers/block/xen-blkback/blkback.c |   68 +++++++++++++++++++----------------
+ 1 files changed, 37 insertions(+), 31 deletions(-)
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] zcache2 cleanups (s/int/bool/ + debugfs move).
-In-Reply-To: 
-Changelog since rfc: https://lkml.org/lkml/2012/11/5/549
- - Added Reviewed-by from Dan.
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index a059616..74374fb 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -212,6 +212,39 @@ static struct persistent_gnt *get_persistent_gnt(struct rb_root *root,
+ 	return NULL;
+ }
+ 
++static void free_persistent_gnts(struct rb_root *root, unsigned int num)
++{
++	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST];
++	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
++	struct persistent_gnt *persistent_gnt;
++	int ret = 0;
++	int segs_to_unmap = 0;
++
++	foreach_grant(persistent_gnt, root, node) {
++		BUG_ON(persistent_gnt->handle ==
++			BLKBACK_INVALID_HANDLE);
++		gnttab_set_unmap_op(&unmap[segs_to_unmap],
++			(unsigned long) pfn_to_kaddr(page_to_pfn(
++				persistent_gnt->page)),
++			GNTMAP_host_map,
++			persistent_gnt->handle);
++
++		pages[segs_to_unmap] = persistent_gnt->page;
++		rb_erase(&persistent_gnt->node, root);
++		kfree(persistent_gnt);
++		num--;
++
++		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
++			!rb_next(&persistent_gnt->node)) {
++			ret = gnttab_unmap_refs(unmap, NULL, pages,
++				segs_to_unmap);
++			BUG_ON(ret);
++			segs_to_unmap = 0;
++		}
++	}
++	BUG_ON(num != 0);
++}
++
+ /*
+  * Retrieve from the 'pending_reqs' a free pending_req structure to be used.
+  */
+@@ -358,11 +391,6 @@ int xen_blkif_schedule(void *arg)
+ {
+ 	struct xen_blkif *blkif = arg;
+ 	struct xen_vbd *vbd = &blkif->vbd;
+-	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+-	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+-	struct persistent_gnt *persistent_gnt;
+-	int ret = 0;
+-	int segs_to_unmap = 0;
+ 
+ 	xen_blkif_get(blkif);
+ 
+@@ -391,34 +419,12 @@ int xen_blkif_schedule(void *arg)
+ 	}
+ 
+ 	/* Free all persistent grant pages */
+-	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts)) {
+-		foreach_grant(persistent_gnt, &blkif->persistent_gnts, node) {
+-			BUG_ON(persistent_gnt->handle ==
+-				BLKBACK_INVALID_HANDLE);
+-			gnttab_set_unmap_op(&unmap[segs_to_unmap],
+-			    (unsigned long) pfn_to_kaddr(page_to_pfn(
+-				persistent_gnt->page)),
+-			    GNTMAP_host_map,
+-			    persistent_gnt->handle);
+-
+-			pages[segs_to_unmap] = persistent_gnt->page;
+-			rb_erase(&persistent_gnt->node,
+-				&blkif->persistent_gnts);
+-			kfree(persistent_gnt);
+-			blkif->persistent_gnt_c--;
+-
+-			if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+-				!rb_next(&persistent_gnt->node)) {
+-				ret = gnttab_unmap_refs(unmap, NULL, pages,
+-							segs_to_unmap);
+-				BUG_ON(ret);
+-				segs_to_unmap = 0;
+-			}
+-		}
+-	}
++	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
++		free_persistent_gnts(&blkif->persistent_gnts,
++			blkif->persistent_gnt_c);
+ 
+-	BUG_ON(blkif->persistent_gnt_c != 0);
+ 	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
++	blkif->persistent_gnt_c = 0;
+ 
+ 	if (log_stats)
+ 		print_stats(blkif);
+-- 
+1.7.7.5 (Apple Git-26)
 
-This patchset depends on the recently posted V2 of making the
-frontswap/cleancache backends be module capable:
- http://mid.gmane.org/1352919432-9699-1-git-send-email-konrad.wilk@oracle.com
-
-I think that once the V2 is OK I will combine this patchset along
-with the V2 and send the whole thing to GregKH? Or perhaps just
-if Greg is Ok I will do via my tree.
-
-This is a copy of what I wrote in the RFC posting:
-
-Looking at the zcache2 code there were a couple of things that I thought
-would make sense to move out of the code. For one thing it makes it easier
-to read, and for anoter - it can be cleanly compiled out. It also allows
-to have a clean seperation of counters that we _need_ vs the optional ones.
-Which means that in the future we could get rid of the optional ones.
-
-It fixes some outstanding compile warnings, cleans
-up some of the code, and rips out the debug counters out of zcache-main.c
-and sticks them in a debug.c file.
-
-I was hoping it would end up with less code, but sadly it ended up with
-a bit more due to the empty non-debug functions - but the code is easier
-to read.
-
-
- drivers/staging/ramster/Kconfig       |    8 +
- drivers/staging/ramster/Makefile      |    1 +
- drivers/staging/ramster/debug.c       |   66 +++++++
- drivers/staging/ramster/debug.h       |  229 ++++++++++++++++++++++
- drivers/staging/ramster/zcache-main.c |  336 +++++++--------------------------
- 5 files changed, 370 insertions(+), 270 deletions(-)
-
-
-Konrad Rzeszutek Wilk (11):
-      zcache: Provide accessory functions for counter increase
-      zcache: Provide accessory functions for counter decrease.
-      zcache: The last of the atomic reads has now an accessory function.
-      zcache: Fix compile warnings due to usage of debugfs_create_size_t
-      zcache: Make the debug code use pr_debug
-      zcache: Move debugfs code out of zcache-main.c file.
-      zcache: Use an array to initialize/use debugfs attributes.
-      zcache: Move the last of the debugfs counters out
-      zcache: Allow to compile if ZCACHE_DEBUG and !DEBUG_FS
-      zcache: Module license is defined twice.
-      zcache: Coalesce all debug under CONFIG_ZCACHE2_DEBUG
