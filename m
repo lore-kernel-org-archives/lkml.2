@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2KPV46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 16:56:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:26477 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451Ab2KPV45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 16:56:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
-   d="scan'208";a="218893221"
-Subject: [PATCH v4 3/8] x86: Make it so that __pa_symbol can only process
- kernel symbols on x86_64
-To: tglx@linutronix.de, mingo@redhat.com, andi@firstfloor.org, hpa@zytor.com
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 16 Nov 2012 13:55:46 -0800
-Message-ID: <20121116215356.8521.92472.stgit@ahduyck-cp1.jf.intel.com>
-In-Reply-To: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>
-References: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>
-User-Agent: StGit/0.16
+	id S1753537Ab2KPV5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 16:57:15 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51987 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2KPV5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 16:57:12 -0500
+Date: Fri, 16 Nov 2012 13:57:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+In-Reply-To: <50A6AC48.6080102@parallels.com>
+Message-ID: <alpine.DEB.2.00.1211161349420.17853@chino.kir.corp.google.com>
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <CAOJsxLHY+3ZzGuGX=4o1pLfhRqjkKaEMyhX0ejB5nVrDvOWXNA@mail.gmail.com> <20121107114321.GA32265@shutemov.name> <alpine.DEB.2.00.1211141910050.14414@chino.kir.corp.google.com>
+ <20121115033932.GA15546@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211141946370.14414@chino.kir.corp.google.com> <20121115073420.GA19036@lizard.sbx05977.paloaca.wayport.net> <alpine.DEB.2.00.1211142351420.4410@chino.kir.corp.google.com>
+ <20121115085224.GA4635@lizard> <alpine.DEB.2.00.1211151303510.27188@chino.kir.corp.google.com> <50A60873.3000607@parallels.com> <alpine.DEB.2.00.1211161157390.2788@chino.kir.corp.google.com> <50A6AC48.6080102@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I submitted an earlier patch that make __phys_addr an inline.  This obviously
-results in an increase in the code size.  One step I can take to reduce that
-is to make it so that the __pa_symbol call does a direct translation for
-kernel addresses instead of covering all of virtual memory.
+On Sat, 17 Nov 2012, Glauber Costa wrote:
 
-On my system this reduced the size for __pa_symbol from 5 instructions
-totalling 30 bytes to 3 instructions totalling 16 bytes.
+> > I'm wondering if we should have more than three different levels.
+> > 
+> 
+> In the case I outlined below, for backwards compatibility. What I
+> actually mean is that memcg *currently* allows arbitrary notifications.
+> One way to merge those, while moving to a saner 3-point notification, is
+> to still allow the old writes and fit them in the closest bucket.
+> 
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
-v4:  Dropped y>x check in debug version of __phys_addr_symbol since we already
-     checked for y >= KERNEL_IMAGE_SIZE.
+Yeah, but I'm wondering why three is the right answer.
 
- arch/x86/include/asm/page.h    |    3 ++-
- arch/x86/include/asm/page_32.h |    1 +
- arch/x86/include/asm/page_64.h |    3 +++
- arch/x86/mm/physaddr.c         |   11 +++++++++++
- 4 files changed, 17 insertions(+), 1 deletions(-)
+> > Umm, why do users of cpusets not want to be able to trigger memory 
+> > pressure notifications?
+> > 
+> Because cpusets only deal with memory placement, not memory usage.
 
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 8ca8283..3698a6a 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -44,7 +44,8 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
-  * case properly. Once all supported versions of gcc understand it, we can
-  * remove this Voodoo magic stuff. (i.e. once gcc3.x is deprecated)
-  */
--#define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
-+#define __pa_symbol(x) \
-+	__phys_addr_symbol(__phys_reloc_hide((unsigned long)(x)))
- 
- #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
- 
-diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
-index da4e762..4d550d0 100644
---- a/arch/x86/include/asm/page_32.h
-+++ b/arch/x86/include/asm/page_32.h
-@@ -15,6 +15,7 @@ extern unsigned long __phys_addr(unsigned long);
- #else
- #define __phys_addr(x)		__phys_addr_nodebug(x)
- #endif
-+#define __phys_addr_symbol(x)	__phys_addr(x)
- #define __phys_reloc_hide(x)	RELOC_HIDE((x), 0)
- 
- #ifdef CONFIG_FLATMEM
-diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
-index 5138174..0f1ddee 100644
---- a/arch/x86/include/asm/page_64.h
-+++ b/arch/x86/include/asm/page_64.h
-@@ -21,8 +21,11 @@ static inline unsigned long __phys_addr_nodebug(unsigned long x)
- 
- #ifdef CONFIG_DEBUG_VIRTUAL
- extern unsigned long __phys_addr(unsigned long);
-+extern unsigned long __phys_addr_symbol(unsigned long);
- #else
- #define __phys_addr(x)		__phys_addr_nodebug(x)
-+#define __phys_addr_symbol(x) \
-+	((unsigned long)(x) - __START_KERNEL_map + phys_base)
- #endif
- 
- #define __phys_reloc_hide(x)	(x)
-diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
-index fd40d75..c73fedd 100644
---- a/arch/x86/mm/physaddr.c
-+++ b/arch/x86/mm/physaddr.c
-@@ -28,6 +28,17 @@ unsigned long __phys_addr(unsigned long x)
- 	return x;
- }
- EXPORT_SYMBOL(__phys_addr);
-+
-+unsigned long __phys_addr_symbol(unsigned long x)
-+{
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* only check upper bounds since lower bounds will trigger carry */
-+	VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
-+
-+	return y + phys_base;
-+}
-+EXPORT_SYMBOL(__phys_addr_symbol);
- #endif
- 
- bool __virt_addr_valid(unsigned long x)
+The set of nodes that a thread is allowed to allocate from may face memory 
+pressure up to and including oom while the rest of the system may have a 
+ton of free memory.  Your solution is to compile and mount memcg if you 
+want notifications of memory pressure on those nodes.  Others in this 
+thread have already said they don't want to rely on memcg for any of this 
+and, as Anton showed, this can be tied directly into the VM without any 
+help from memcg as it sits today.  So why implement a simple and clean 
+mempressure cgroup that can be used alone or co-existing with either memcg 
+or cpusets?
 
+> And it is not that moving a task to cpuset disallows you to do any of
+> this: you could, as long as the same set of tasks are mounted in a
+> corresponding memcg.
+> 
+
+Same thing with a separate mempressure cgroup.  The point is that there 
+will be users of this cgroup that do not want the overhead imposed by 
+memcg (which is why it's disabled in defconfig) and there's no direct 
+dependency that causes it to be a part of memcg.
