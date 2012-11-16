@@ -1,57 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab2KPScI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:32:08 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49782 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab2KPScG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:32:06 -0500
-Message-ID: <50A686A1.6000304@gmail.com>
-Date: Fri, 16 Nov 2012 19:32:01 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFT 1/2] pinctrl: dove: Fix dove_audio1_ctrl_set when
- BIT(0|1|2|3) of config is clear
-References: <1352641495.3113.1.camel@phoenix> <50A0C3C8.2020501@gmail.com> <CAFRkauABcnqJSqewueY4rzVbm7uAqkZKitkR9ZmYjF0LhR26-Q@mail.gmail.com>
-In-Reply-To: <CAFRkauABcnqJSqewueY4rzVbm7uAqkZKitkR9ZmYjF0LhR26-Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753203Ab2KPSck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:32:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32172 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab2KPSci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 13:32:38 -0500
+From: Adam Jackson <ajax@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arthur Taylor <art@ified.ca>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] vt: Drop K_OFF for VC_MUTE
+Date: Fri, 16 Nov 2012 13:32:34 -0500
+Message-Id: <1353090754-30233-1-git-send-email-ajax@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 10:12 AM, Axel Lin wrote:
-> 2012/11/12 Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>:
->> On 11/11/2012 02:44 PM, Axel Lin wrote:
->>>
->>> Current implementation in dove_audio1_ctrl_set() does not clear
->>> corresponding
->>> register bit if BIT(0|1|2|3) of config is clear. Fix it.
->>>
->>> Signed-off-by: Axel Lin<axel.lin@ingics.com>
->>
->>
->> Axel,
->>
->> thanks for the hint on not clearing the audio1 bits before setting them.
->> I will test this tonight and guess you should prepare a real patch for
->> this one.
->
-> Hi Sebastian,
-> Does this patch work for you?
-> May I have your Acked-and-Tested-by if you think this patch is ok.
+The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
+the keyboard map state; we should be able to switch among cooked/raw/
+unicode without changing whether events are delivered.  Otherwise - if
+changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
+Gnome will switch VT instead of summoning the "run command" dialog.
 
-Axel,
+Drop the K_OFF handling and replace it with a new "mute" ioctl pair.
+Anybody using K_OFF would already need to be prepared to handle it
+throwing -EINVAL for old kernel compatibility, so userspace will degrade
+gracefully.
 
-pinctrl for Dove will not be enabled before DT clock support for Dove,
-which will hopefully make it into 3.8. If you agree, I will test and push it
-with the related patches for enabling pinctrl.
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
+Cc: Arthur Taylor <art@ified.ca>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ drivers/tty/vt/keyboard.c | 40 +++++++++++++++++++++++++++++++++-------
+ drivers/tty/vt/vt_ioctl.c | 13 +++++++++++++
+ include/linux/kbd_kern.h  |  6 +++---
+ include/linux/vt_kern.h   |  2 ++
+ include/uapi/linux/kd.h   |  5 +++++
+ 5 files changed, 56 insertions(+), 10 deletions(-)
 
-Sebastian
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index 681765b..08d1d57 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -657,7 +657,7 @@ static void k_spec(struct vc_data *vc, unsigned char value, char up_flag)
+ 		return;
+ 	if ((kbd->kbdmode == VC_RAW ||
+ 	     kbd->kbdmode == VC_MEDIUMRAW ||
+-	     kbd->kbdmode == VC_OFF) &&
++	     vc_kbd_mode(kbd, VC_MUTE)) &&
+ 	     value != KVAL(K_SAK))
+ 		return;		/* SAK is allowed even in raw mode */
+ 	fn_handler[value](vc);
+@@ -1381,7 +1381,7 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
+ 	if (rc == NOTIFY_STOP)
+ 		return;
+ 
+-	if ((raw_mode || kbd->kbdmode == VC_OFF) && type != KT_SPEC && type != KT_SHIFT)
++	if ((raw_mode || vc_kbd_mode(kbd, VC_MUTE)) && type != KT_SPEC && type != KT_SHIFT)
+ 		return;
+ 
+ 	(*k_handler[type])(vc, keysym & 0xff, !down);
+@@ -1731,9 +1731,6 @@ int vt_do_kdskbmode(int console, unsigned int arg)
+ 		kbd->kbdmode = VC_UNICODE;
+ 		do_compute_shiftstate();
+ 		break;
+-	case K_OFF:
+-		kbd->kbdmode = VC_OFF;
+-		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+@@ -1742,6 +1739,30 @@ int vt_do_kdskbmode(int console, unsigned int arg)
+ }
+ 
+ /**
++ *	vt_do_kdskbmute		-	set keyboard event mute
++ *	@console: the console to use
++ *	@arg: the requested mode
++ *
++ *	Update the keyboard mute state while holding the correct locks.
++ *	Return 0 for success or an error code.
++ */
++int vt_do_kdskbmute(int console, unsigned int arg)
++{
++	struct kbd_struct * kbd = kbd_table + console;
++	int ret = 0;
++	unsigned long flags;
++
++	spin_lock_irqsave(&kbd_event_lock, flags);
++	if (arg)
++		set_vc_kbd_mode(kbd, VC_MUTE);
++	else
++		clr_vc_kbd_mode(kbd, VC_MUTE);
++	spin_unlock_irqrestore(&kbd_event_lock, flags);
++	return ret;
++}
++
++
++/**
+  *	vt_do_kdskbmeta		-	set keyboard meta state
+  *	@console: the console to use
+  *	@arg: the requested meta state
+@@ -2068,13 +2089,18 @@ int vt_do_kdgkbmode(int console)
+ 		return K_MEDIUMRAW;
+ 	case VC_UNICODE:
+ 		return K_UNICODE;
+-	case VC_OFF:
+-		return K_OFF;
+ 	default:
+ 		return K_XLATE;
+ 	}
+ }
+ 
++int vt_do_kgdbmute(int console)
++{
++	struct kbd_struct * kbd = kbd_table + console;
++	/* This is a spot read so needs no locking */
++	return vc_kbd_mode(kbd, VC_MUTE);
++}
++
+ /**
+  *	vt_do_kdgkbmeta		-	report meta status
+  *	@console: console to report
+diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+index b841f56..f0951e2 100644
+--- a/drivers/tty/vt/vt_ioctl.c
++++ b/drivers/tty/vt/vt_ioctl.c
+@@ -477,6 +477,19 @@ int vt_ioctl(struct tty_struct *tty,
+ 		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
++	case KDSKBMUTE:
++		if (!perm)
++			return -EPERM;
++		ret = vt_do_kdskbmute(console, arg);
++		if (ret == 0)
++			tty_ldisc_flush(tty);
++		break;
++
++	case KDGKBMUTE:
++		uival = vt_do_kdgkbmute(console);
++		ret = put_user(uival, (int __user *)arg);
++		break;
++
+ 	/* this could be folded into KDSKBMODE, but for compatibility
+ 	   reasons it is not so easy to fold KDGKBMETA into KDGKBMODE */
+ 	case KDSKBMETA:
+diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
+index b7c8cdc..9386143 100644
+--- a/include/linux/kbd_kern.h
++++ b/include/linux/kbd_kern.h
+@@ -48,19 +48,19 @@ struct kbd_struct {
+ #define VC_CAPSLOCK	2	/* capslock mode */
+ #define VC_KANALOCK	3	/* kanalock mode */
+ 
+-	unsigned char kbdmode:3;	/* one 3-bit value */
++	unsigned char kbdmode:2;	/* one 2-bit value */
+ #define VC_XLATE	0	/* translate keycodes using keymap */
+ #define VC_MEDIUMRAW	1	/* medium raw (keycode) mode */
+ #define VC_RAW		2	/* raw (scancode) mode */
+ #define VC_UNICODE	3	/* Unicode mode */
+-#define VC_OFF		4	/* disabled mode */
+ 
+-	unsigned char modeflags:5;
++	unsigned char modeflags:6;
+ #define VC_APPLIC	0	/* application key mode */
+ #define VC_CKMODE	1	/* cursor key mode */
+ #define VC_REPEAT	2	/* keyboard repeat */
+ #define VC_CRLF		3	/* 0 - enter sends CR, 1 - enter sends CRLF */
+ #define VC_META		4	/* 0 - meta, 1 - meta=prefix with ESC */
++#define VC_MUTE		5	/* don't generate events */
+ };
+ 
+ extern int kbd_init(void);
+diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
+index 50ae7d0..a886915 100644
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -168,6 +168,7 @@ extern void hide_boot_cursor(bool hide);
+ 
+ /* keyboard  provided interfaces */
+ extern int vt_do_diacrit(unsigned int cmd, void __user *up, int eperm);
++extern int vt_do_kdskbmute(int console, unsigned int arg);
+ extern int vt_do_kdskbmode(int console, unsigned int arg);
+ extern int vt_do_kdskbmeta(int console, unsigned int arg);
+ extern int vt_do_kbkeycode_ioctl(int cmd, struct kbkeycode __user *user_kbkc,
+@@ -177,6 +178,7 @@ extern int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe,
+ extern int vt_do_kdgkb_ioctl(int cmd, struct kbsentry __user *user_kdgkb,
+                                         int perm);
+ extern int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm);
++extern int vt_do_kdgkbmute(int console);
+ extern int vt_do_kdgkbmode(int console);
+ extern int vt_do_kdgkbmeta(int console);
+ extern void vt_reset_unicode(int console);
+diff --git a/include/uapi/linux/kd.h b/include/uapi/linux/kd.h
+index 87b7cc4..c3de63c 100644
+--- a/include/uapi/linux/kd.h
++++ b/include/uapi/linux/kd.h
+@@ -81,6 +81,7 @@ struct unimapinit {
+ #define		K_XLATE		0x01
+ #define		K_MEDIUMRAW	0x02
+ #define		K_UNICODE	0x03
++/* K_OFF is no longer implemented, but preserved for source compatibility */
+ #define		K_OFF		0x04
+ #define KDGKBMODE	0x4B44	/* gets current keyboard mode */
+ #define KDSKBMODE	0x4B45	/* sets current keyboard mode */
+@@ -150,6 +151,10 @@ struct kbd_repeat {
+ 			/* earlier this field was misnamed "rate" */
+ };
+ 
++/* get/set event mute */
++#define KDGKBMUTE	0x4B50
++#define KDSKBMUTE	0x4B51
++
+ #define KDKBDREP        0x4B52  /* set keyboard delay/repeat rate;
+ 				 * actually used values are returned */
+ 
+-- 
+1.7.11.7
 
