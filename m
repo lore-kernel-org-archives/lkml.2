@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab2KPK7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:59:50 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39752 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2KPK7t (ORCPT
+	id S1751413Ab2KPLRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:17:16 -0500
+Received: from sabertooth02.qualcomm.com ([65.197.215.38]:52824 "EHLO
+	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPLRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:59:49 -0500
+	Fri, 16 Nov 2012 06:17:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6897"; a="7285678"
+X-IronPort-AV: E=McAfee;i="5400,1158,6897"; a="1784717"
+Message-ID: <50A620B0.6020007@qca.qualcomm.com>
+Date: Fri, 16 Nov 2012 13:17:04 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com>
-References: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com>
-Date: Fri, 16 Nov 2012 11:59:47 +0100
-X-Google-Sender-Auth: 699cpdB4Z4-Xoz4W3X_PT_kaJUM
-Message-ID: <CAHTX3dLijLK45ddZQVYHcrs6QQbmdRmQbPmTKada9nXx3ZAe3w@mail.gmail.com>
-Subject: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
-From: Michal Simek <michal.simek@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>,
-        Nick Bowler <nbowler@elliptictech.com>
-Cc: Josh Cartwright <josh.cartwright@ni.com>, John Linn <John.Linn@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: <kernel-janitors@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] ath6kl/wmi.c: eliminate possible double free
+References: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr> <1350816727-1381-5-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1350816727-1381-5-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Olof,
+Hi Julia,
 
-I have 7 new follow up patches for zynq. They are based on previous patches
-(arm-soc zynq/cleanup branch).
-The branch is still based on rc3 but I have also tried to merged it
-with the v3.7-rc5 and there is no issue.
+On 10/21/2012 01:52 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> This makes two changes.  In ath6kl_wmi_cmd_send, a call to dev_kfree_skb on
+> the skb argument is added to the initial sanity check to more completely
+> establish the invariant that ath6kl_wmi_cmd_send owns its skb argument.
+> Then, in ath6kl_wmi_sync_point, on failure of the call to
+> ath6kl_wmi_cmd_send, the clearing of the local skb variable is moved up, so
+> that the error-handling code at the end of the function does not free it
+> again.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> identifier f,free,a;
+> parameter list[n] ps;
+> type T;
+> expression e;
+> @@
+> 
+> f(ps,T a,...) {
+>   ... when any
+>       when != a = e
+>   if(...) { ... free(a); ... return ...; }
+>   ... when any
+> }
+> 
+> @@
+> identifier r.f,r.free;
+> expression x,a;
+> expression list[r.n] xs;
+> @@
+> 
+> * x = f(xs,a,...);
+>   if (...) { ... free(a); ... return ...; }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-It should be the last pull request for v3.8.
+I think this patch which is commited to ath6kl.git has fixed this.
 
-Thanks for pulling.
-Michal
+commit 0616dc1f2bef563d7916c0dcedbb1bff7d9bd80b
+Author: Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>
+Date:   Tue Aug 14 10:10:33 2012 +0530
 
+    ath6kl: Fix potential skb double free in ath6kl_wmi_sync_point()
 
+    skb given to ath6kl_control_tx() is owned by ath6kl_control_tx().
+    Calling function should not free the skb for error cases.
+    This is found during code review.
 
-The following changes since commit f58007762f537ba13674a3138b3f4c20fff1cba9:
-  Josh Cartwright (1):
-        zynq: move static peripheral mappings
+    kvalo: fix a checkpatch warning in ath6kl_wmi_cmd_send()
 
-are available in the git repository at:
+    Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>
+    Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
 
-  git://git.xilinx.com/linux-xlnx.git arm-next
+https://github.com/kvalo/ath6kl/commit/0616dc1f2bef563d7916c0dcedbb1bff7d9bd80b
 
-Josh Cartwright (6):
-      ARM: zynq: move arm-specific sys_timer out of ttc
-      ARM: zynq: dts: add description of the second uart
-      ARM: zynq: dts: split up device tree
-      clk: Add support for fundamental zynq clks
-      ARM: zynq: use zynq clk bindings
-      ARM: zynq: add clk binding support to the ttc
+If you have the time, I would appreciate if you could take a look and
+confirm.
 
-Nick Bowler (1):
-      ARM: zynq: Allow UART1 to be used as DEBUG_LL console.
-
- .../devicetree/bindings/clock/zynq-7000.txt        |   55 +++
- arch/arm/Kconfig                                   |    1 +
- arch/arm/Kconfig.debug                             |   17 +
- arch/arm/boot/dts/Makefile                         |    1 +
- arch/arm/boot/dts/zynq-7000.dtsi                   |  166 +++++++++
- arch/arm/boot/dts/zynq-ep107.dts                   |   63 ----
- arch/arm/boot/dts/zynq-zc702.dts                   |   44 +++
- arch/arm/mach-zynq/common.c                        |   33 ++-
- arch/arm/mach-zynq/common.h                        |    4 +-
- arch/arm/mach-zynq/include/mach/zynq_soc.h         |   16 +-
- arch/arm/mach-zynq/timer.c                         |  297 +++++++++-------
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk-zynq.c                             |  383 ++++++++++++++++++++
- include/linux/clk/zynq.h                           |   24 ++
- 14 files changed, 899 insertions(+), 206 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/zynq-7000.txt
- create mode 100644 arch/arm/boot/dts/zynq-7000.dtsi
- delete mode 100644 arch/arm/boot/dts/zynq-ep107.dts
- create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
- create mode 100644 drivers/clk/clk-zynq.c
- create mode 100644 include/linux/clk/zynq.h
+Kalle
