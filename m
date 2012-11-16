@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab2KPMJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:09:32 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64118 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab2KPMJa (ORCPT
+	id S1751480Ab2KPMQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:16:29 -0500
+Received: from szxga04-in.huawei.com ([119.145.14.67]:35344 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2KPMQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:09:30 -0500
-Message-ID: <50A62CAB.90405@mvista.com>
-Date: Fri, 16 Nov 2012 16:08:11 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: dwc3: core: move dwc3_cache_hwparams before dwc3_alloc_event_buffers
-References: <1353047874-4981-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1353047874-4981-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Nov 2012 07:16:28 -0500
+Date: Fri, 16 Nov 2012 13:16:18 +0100
+From: Claudio Fontana <Claudio.Fontana@huawei.com>
+Subject: [PATCH 0/1 RESEND] ARM: plat-versatile: move secondary CPU startup out
+ of .init.
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-id: <50A62E92.2080703@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026
+ Thunderbird/16.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 16-11-2012 10:37, Kishon Vijay Abraham I wrote:
+Hello,
 
-> commit 392142
+I am implementing a new feature in QEMU, including virtual CPU hotplug
+for the the ARM Cortex A-15 VExpress motherboard.
+This new QEMU feature includes a new monitor command "smp_cpus_set",
+which allows changing the number of visible CPUs in the guest.
 
-    Please specify thta commit summary in parens.
+I stumbled upon a limitation in the kernel support for plat-versatile,
+which contains the secondary CPU startup code for the VExpress.
 
-> moved event buffer allocation out of dwc3_core_init() but
-> event buffer allocation uses the cached copy of hwparams to determine
-> the number of event buffers and the caching is done in dwc3_core_init.
-> So moved dwc3_cache_hwparams function before dwc3_alloc_event_buffers so
-> that dwc3_alloc_event_buffers sees the correct number of event buffers.
+Basically, the secondary CPU startup code is preceded by the macro __INIT,
+which causes the code to be freed in free_initmem() during kernel_init().
 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+This means that any attempt at hot-booting CPUs in the guest results in
+VCPUs jumping to a memory address that was freed, after which the VCPU
+behaves erratically, as can be expected.
 
-WBR, Sergei
+With this patch applied, we use __CPUINIT instead of __INIT, so that
+the right thing happens:
+under CONFIG_HOTPLUG_CPU, the secondary CPU startup code is not freed,
+the secondary VCPUs start successfully, and it's all gardens and blue skies.
+
+Tested successfully using the ARM fast models for the Cortex-A15.
+
+--
+Claudio Fontana (1):
+  ARM: plat-versatile: move secondary CPU startup code out of .init.
+
+ arch/arm/plat-versatile/headsmp.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+-- 
+1.7.12.1
+
 
