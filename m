@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2KPTVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:21:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63589 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab2KPTVv (ORCPT
+	id S1753420Ab2KPTW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:22:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56204 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab2KPTUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:21:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <50A6644D.80205@zytor.com>
-References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
-	<1353055989-31939-9-git-send-email-yinghai@kernel.org>
-	<50A6644D.80205@zytor.com>
-Date: Fri, 16 Nov 2012 11:21:49 -0800
-X-Google-Sender-Auth: xwycjXUSM1nTblDoXQ5DsDXbf2M
-Message-ID: <CAE9FiQXJqyUf7qAspG_ZKUPV96QQjayp8cM0ihQ0RpyU5AxBMA@mail.gmail.com>
-Subject: Re: [PATCH 8/9] x86: ramdisk info print with high bits.
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Nov 2012 14:20:35 -0500
+From: Tejun Heo <tj@kernel.org>
+To: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
+        john.r.fastabend@intel.com, nhorman@tuxdriver.com
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/8] netprio: simplify write_priomap()
+Date: Fri, 16 Nov 2012 11:20:18 -0800
+Message-Id: <1353093624-22608-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1353093624-22608-1-git-send-email-tj@kernel.org>
+References: <1353093624-22608-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 8:05 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/16/2012 12:53 AM, Yinghai Lu wrote:
->> ramdisk could be loaded high now for 64bit.
->>
->> So need to print more digits for them.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Matt Fleming <matt.fleming@intel.com>
->> ---
->>  arch/x86/kernel/setup.c |    8 ++++----
->>  1 files changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index c2eb535..0e13c6e 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -341,7 +341,7 @@ static void __init relocate_initrd(void)
->>       memblock_reserve(ramdisk_here, area_size);
->>       initrd_start = ramdisk_here + PAGE_OFFSET;
->>       initrd_end   = initrd_start + ramdisk_size;
->> -     printk(KERN_INFO "Allocated new RAMDISK: [mem %#010llx-%#010llx]\n",
->> +     printk(KERN_INFO "Allocated new RAMDISK: [mem %#018llx-%#018llx]\n",
->>                        ramdisk_here, ramdisk_here + ramdisk_size - 1);
->
-> NAK, this is expected to match the resource print format (%pR), which
-> prints 10 digits by default and then expands.  Furthermore, printing
-> *18* digits is downright silly since we still don't have 72-bit addressing.
+sscanf() doesn't bite.
 
-that is the same as in e820_print_map::
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ net/core/netprio_cgroup.c | 56 ++++++++++-------------------------------------
+ 1 file changed, 11 insertions(+), 45 deletions(-)
 
-                printk(KERN_INFO "%s: [mem %#018Lx-%#018Lx] ", who,
-                       (unsigned long long) e820.map[i].addr,
-                       (unsigned long long)
-                       (e820.map[i].addr + e820.map[i].size - 1));
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index f0b6b0d..66d98da 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -176,66 +176,32 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 			 const char *buffer)
+ {
+-	char *devname = kstrdup(buffer, GFP_KERNEL);
+-	int ret = -EINVAL;
+ 	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
+-	unsigned long priority;
+-	char *priostr;
++	char devname[IFNAMSIZ + 1];
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
++	u32 prio;
++	int ret;
+ 
+-	if (!devname)
+-		return -ENOMEM;
+-
+-	/*
+-	 * Minimally sized valid priomap string
+-	 */
+-	if (strlen(devname) < 3)
+-		goto out_free_devname;
+-
+-	priostr = strstr(devname, " ");
+-	if (!priostr)
+-		goto out_free_devname;
+-
+-	/*
+-	 *Separate the devname from the associated priority
+-	 *and advance the priostr pointer to the priority value
+-	 */
+-	*priostr = '\0';
+-	priostr++;
+-
+-	/*
+-	 * If the priostr points to NULL, we're at the end of the passed
+-	 * in string, and its not a valid write
+-	 */
+-	if (*priostr == '\0')
+-		goto out_free_devname;
+-
+-	ret = kstrtoul(priostr, 10, &priority);
+-	if (ret < 0)
+-		goto out_free_devname;
+-
+-	ret = -ENODEV;
++	if (sscanf(buffer, "%"__stringify(IFNAMSIZ)"s %u", devname, &prio) != 2)
++		return -EINVAL;
+ 
+ 	dev = dev_get_by_name(&init_net, devname);
+ 	if (!dev)
+-		goto out_free_devname;
++		return -ENODEV;
+ 
+ 	rtnl_lock();
++
+ 	ret = write_update_netdev_table(dev);
+-	if (ret < 0)
+-		goto out_put_dev;
++	if (ret)
++		goto out_unlock;
+ 
+ 	map = rtnl_dereference(dev->priomap);
+ 	if (map)
+-		map->priomap[prioidx] = priority;
+-
+-out_put_dev:
++		map->priomap[prioidx] = prio;
++out_unlock:
+ 	rtnl_unlock();
+ 	dev_put(dev);
+-
+-out_free_devname:
+-	kfree(devname);
+ 	return ret;
+ }
+ 
+-- 
+1.7.11.7
 
-
-that is for 64bit address.
-
-that extra 2 is for "0x"
-
-or you prefer to cast them to pointer and use %pR for them all?
-
-or fix printk to add extra 2 for "0x" when # is found?
