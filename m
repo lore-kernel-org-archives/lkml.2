@@ -1,184 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab2KPJ6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:58:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52872 "EHLO mx1.redhat.com"
+	id S1751443Ab2KPJ7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:59:34 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:48248 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab2KPJ6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:58:01 -0500
-Date: Fri, 16 Nov 2012 07:57:52 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
-Message-ID: <20121116095752.GA21401@amt.cnet>
-References: <50978DFE.1000005@linux.vnet.ibm.com>
- <20121112231032.GB5798@amt.cnet>
- <50A20428.1030004@linux.vnet.ibm.com>
- <20121114143747.GA7054@amt.cnet>
- <50A4267B.1030902@linux.vnet.ibm.com>
- <20121116030222.GA21822@amt.cnet>
- <50A5B560.2070604@linux.vnet.ibm.com>
- <20121116035655.GA27414@amt.cnet>
- <50A5C518.7030002@linux.vnet.ibm.com>
+	id S1750817Ab2KPJ7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:59:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, bhelgaas@google.com,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] gpio / ACPI: add ACPI support
+Date: Fri, 16 Nov 2012 11:03:52 +0100
+Message-ID: <1397943.c820Wq3TNt@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A5C518.7030002@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 12:46:16PM +0800, Xiao Guangrong wrote:
-> On 11/16/2012 11:56 AM, Marcelo Tosatti wrote:
-> > On Fri, Nov 16, 2012 at 11:39:12AM +0800, Xiao Guangrong wrote:
-> >> On 11/16/2012 11:02 AM, Marcelo Tosatti wrote:
-> >>> On Thu, Nov 15, 2012 at 07:17:15AM +0800, Xiao Guangrong wrote:
-> >>>> On 11/14/2012 10:37 PM, Marcelo Tosatti wrote:
-> >>>>> On Tue, Nov 13, 2012 at 04:26:16PM +0800, Xiao Guangrong wrote:
-> >>>>>> Hi Marcelo,
-> >>>>>>
-> >>>>>> On 11/13/2012 07:10 AM, Marcelo Tosatti wrote:
-> >>>>>>> On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
-> >>>>>>>> Do not drop large spte until it can be insteaded by small pages so that
-> >>>>>>>> the guest can happliy read memory through it
-> >>>>>>>>
-> >>>>>>>> The idea is from Avi:
-> >>>>>>>> | As I mentioned before, write-protecting a large spte is a good idea,
-> >>>>>>>> | since it moves some work from protect-time to fault-time, so it reduces
-> >>>>>>>> | jitter.  This removes the need for the return value.
-> >>>>>>>>
-> >>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >>>>>>>> ---
-> >>>>>>>>  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
-> >>>>>>>>  1 files changed, 9 insertions(+), 25 deletions(-)
-> >>>>>>>
-> >>>>>>> Its likely that other 4k pages are mapped read-write in the 2mb range 
-> >>>>>>> covered by a read-only 2mb map. Therefore its not entirely useful to
-> >>>>>>> map read-only. 
-> >>>>>>>
-> >>>>>>
-> >>>>>> It needs a page fault to install a pte even if it is the read access.
-> >>>>>> After the change, the page fault can be avoided.
-> >>>>>>
-> >>>>>>> Can you measure an improvement with this change?
-> >>>>>>
-> >>>>>> I have a test case to measure the read time which has been attached.
-> >>>>>> It maps 4k pages at first (dirt-loggged), then switch to large sptes
-> >>>>>> (stop dirt-logging), at the last, measure the read access time after write
-> >>>>>> protect sptes.
-> >>>>>>
-> >>>>>> Before: 23314111 ns	After: 11404197 ns
-> >>>>>
-> >>>>> Ok, i'm concerned about cases similar to e49146dce8c3dc6f44 (with shadow),
-> >>>>> that is:
-> >>>>>
-> >>>>> - large page must be destroyed when write protecting due to 
-> >>>>> shadowed page.
-> >>>>> - with shadow, it does not make sense to write protect 
-> >>>>> large sptes as mentioned earlier.
-> >>>>>
-> >>>>
-> >>>> This case is removed now, the code when e49146dce8c3dc6f44 was applied is:
-> >>>> |
-> >>>> |                pt = sp->spt;
-> >>>> |                for (i = 0; i < PT64_ENT_PER_PAGE; ++i)
-> >>>> |                        /* avoid RMW */
-> >>>> |                        if (is_writable_pte(pt[i]))
-> >>>> |                                update_spte(&pt[i], pt[i] & ~PT_WRITABLE_MASK);
-> >>>> |        }
-> >>>>
-> >>>> The real problem in this code is it would write-protect the spte even if
-> >>>> it is not a last spte that caused the middle-level shadow page table was
-> >>>> write-protected. So e49146dce8c3dc6f44 added this code:
-> >>>> |                if (sp->role.level != PT_PAGE_TABLE_LEVEL)
-> >>>> |                        continue;
-> >>>> |
-> >>>> was good to fix this problem.
-> >>>>
-> >>>> Now, the current code is:
-> >>>> |		for (i = 0; i < PT64_ENT_PER_PAGE; ++i) {
-> >>>> |			if (!is_shadow_present_pte(pt[i]) ||
-> >>>> |			      !is_last_spte(pt[i], sp->role.level))
-> >>>> |				continue;
-> >>>> |
-> >>>> |			spte_write_protect(kvm, &pt[i], &flush, false);
-> >>>> |		}
-> >>>> It only write-protect the last spte. So, it allows large spte existent.
-> >>>> (the large spte can be broken by drop_large_spte() on the page-fault path.)
-> >>>>
-> >>>>> So i wonder why is this part from your patch
-> >>>>>
-> >>>>> -               if (level > PT_PAGE_TABLE_LEVEL &&
-> >>>>> -                   has_wrprotected_page(vcpu->kvm, gfn, level)) {
-> >>>>> -                       ret = 1;
-> >>>>> -                       drop_spte(vcpu->kvm, sptep);
-> >>>>> -                       goto done;
-> >>>>> -               }
-> >>>>>
-> >>>>> necessary (assuming EPT is in use).
-> >>>>
-> >>>> This is safe, we change these code to:
-> >>>>
-> >>>> -		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
-> >>>> +		if ((level > PT_PAGE_TABLE_LEVEL &&
-> >>>> +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
-> >>>> +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
-> >>>>  			pgprintk("%s: found shadow page for %llx, marking ro\n",
-> >>>>  				 __func__, gfn);
-> >>>>  			ret = 1;
-> >>>>
-> >>>> The spte become read-only which can ensure the shadow gfn can not be changed.
-> >>>>
-> >>>> Btw, the origin code allows to create readonly spte under this case if !(pte_access & WRITEABBLE)
-> >>>
-> >>> Regarding shadow: it should be fine as long as fault path always deletes
-> >>> large mappings, when shadowed pages are present in the region.
-> >>
-> >> For hard mmu is also safe, in this patch i added these code:
-> >>
-> >> @@ -2635,6 +2617,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
-> >>  			break;
-> >>  		}
-> >>
-> >> +		drop_large_spte(vcpu, iterator.sptep);
-> >> +
-> >>
-> >> It can delete large mappings like soft mmu does.
-> >>
-> >> Anything i missed?
-> >>
-> >>>
-> >>> Ah, unshadowing from reexecute_instruction does not handle
-> >>> large pages. I suppose that is what "simplification" refers 
-> >>> to.
-> >>
-> >> reexecute_instruction did not directly handle last spte, it just
-> >> removes all shadow pages, then let cpu retry the instruction, the
-> >> page can become writable when encounter #PF again, large spte is fine
-> >> under this case.
-> > 
-> > While searching for a given "gpa", you don't find large gfn which is
-> > mapping it, right? (that is, searching for gfn 4 fails to find large
-> > read-only "gfn 0"). Unshadowing gfn 4 will keep large read-only mapping
-> > present.
-> > 
-> > 1. large read-write spte to gfn 0
-> > 2. shadow gfn 4
-> > 3. write-protect large spte pointing to gfn 0
-> > 4. write to gfn 4
-> > 5. instruction emulation fails
-> > 5. unshadow gfn 4
-> > 6. refault, do not drop large spte because no pages shadowed
-    7. refault, then goto 2 (as part of write to gfn 4)
+On Thursday, November 15, 2012 01:03:15 PM Mika Westerberg wrote:
+> From: Mathias Nyman <mathias.nyman@linux.intel.com>
 > 
-> Hmm, it is not true. :)
+> Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
+> Needs a gpio controller driver with the acpi handler hook set.
 > 
-> The large spte can become writable since 'no pages adhadoes' (that means
-> has_wrprotected_page() can return 0 for this case). No?
+> Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
+> resources to Linux GPIO's.
+> 
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-What if gfn 4 is a pagetable part of the pagedirectory chain used to 
-map gfn 4?  See corrected step 7 above.
+I wonder if anyone has objections or comments?
 
+Linus, Grant, are you OK with this patch?
+
+Rafael
+
+
+> ---
+>  drivers/gpio/Kconfig        |    4 ++++
+>  drivers/gpio/Makefile       |    1 +
+>  drivers/gpio/gpiolib-acpi.c |   56 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/acpi_gpio.h   |   19 +++++++++++++++
+>  4 files changed, 80 insertions(+)
+>  create mode 100644 drivers/gpio/gpiolib-acpi.c
+>  create mode 100644 include/linux/acpi_gpio.h
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index f11d8e3..5c9b384 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -49,6 +49,10 @@ config OF_GPIO
+>  	def_bool y
+>  	depends on OF
+>  
+> +config GPIO_ACPI
+> +	def_bool y
+> +	depends on ACPI
+> +
+>  config DEBUG_GPIO
+>  	bool "Debug GPIO calls"
+>  	depends on DEBUG_KERNEL
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 9aeed67..420dbac 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+>  
+>  obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+>  obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
+> +obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
+>  
+>  # Device drivers. Generally keep list sorted alphabetically
+>  obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+> new file mode 100644
+> index 0000000..8ef9831
+> --- /dev/null
+> +++ b/drivers/gpio/gpiolib-acpi.c
+> @@ -0,0 +1,56 @@
+> +/*
+> + * ACPI helpers for GPIO API
+> + *
+> + * Copyright (C) 2012, Intel Corporation
+> + * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
+> + *          Mika Westerberg <mika.westerberg@linux.intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/errno.h>
+> +#include <linux/gpio.h>
+> +#include <linux/export.h>
+> +#include <linux/acpi_gpio.h>
+> +#include <linux/acpi.h>
+> +
+> +static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
+> +{
+> +	acpi_handle handle = data;
+> +
+> +	if (!gc->dev)
+> +		return false;
+> +
+> +	return gc->dev->acpi_handle == handle;
+> +}
+> +
+> +/**
+> + * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
+> + * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
+> + * @pin:	ACPI GPIO pin number (0-based, controller-relative)
+> + *
+> + * Returns GPIO number to use with Linux generic GPIO API, or errno error value
+> + */
+> +
+> +int acpi_get_gpio(char *path, int pin)
+> +{
+> +	struct gpio_chip *chip;
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +
+> +	status = acpi_get_handle(NULL, path, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENODEV;
+> +
+> +	chip = gpiochip_find(handle, acpi_gpiochip_find);
+> +	if (!chip)
+> +		return -ENODEV;
+> +
+> +	if (!gpio_is_valid(chip->base + pin))
+> +		return -EINVAL;
+> +
+> +	return chip->base + pin;
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_get_gpio);
+> diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
+> new file mode 100644
+> index 0000000..91615a3
+> --- /dev/null
+> +++ b/include/linux/acpi_gpio.h
+> @@ -0,0 +1,19 @@
+> +#ifndef _LINUX_ACPI_GPIO_H_
+> +#define _LINUX_ACPI_GPIO_H_
+> +
+> +#include <linux/errno.h>
+> +
+> +#ifdef CONFIG_GPIO_ACPI
+> +
+> +int acpi_get_gpio(char *path, int pin);
+> +
+> +#else /* CONFIG_GPIO_ACPI */
+> +
+> +static inline int acpi_get_gpio(char *path, int pin)
+> +{
+> +	return -ENODEV;
+> +}
+> +
+> +#endif /* CONFIG_GPIO_ACPI */
+> +
+> +#endif /* _LINUX_ACPI_GPIO_H_ */
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
