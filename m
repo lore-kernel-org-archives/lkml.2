@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab2KPN63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:58:29 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:22819 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751967Ab2KPN62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:58:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19oqSzy8/0cNePbawzMfjiIieNLzpfMjw0=
-Date: Fri, 16 Nov 2012 08:58:07 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v2] ARM: Dove: update defconfig
-Message-ID: <20121116135807.GL22106@titan.lakedaemon.net>
-References: <1351539916-29561-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1351559505-944-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <50A3E0BA.5090701@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A3E0BA.5090701@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751990Ab2KPN7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:59:32 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20674 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab2KPN7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 08:59:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,264,1352102400"; 
+   d="scan'208";a="169191698"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 0/6] dmaengine: introduce is_slave_xfer helper
+Date: Fri, 16 Nov 2012 15:59:13 +0200
+Message-Id: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2012 at 07:19:38PM +0100, Sebastian Hesselbarth wrote:
-> On 10/30/2012 02:11 AM, Sebastian Hesselbarth wrote:
-> >It has been a while since dove_defconfig was updated to recent development.
-> >This patch adds all currently available Dove boards, including a DT-enabled
-> >machine.
-> 
-> there seems to be no discussion at all on this one. Maybe it got lost
-> during the ELCE, but if there are no objections I prefer to have this
-> accepted for any of the next releases.
+There is a common practice to distinguish slave type transfers by checking
+direction of the channel. This series introduces the check helper and its usage
+across the drivers.
 
-I have it in my queue.
+Andy Shevchenko (6):
+  dmaengine: introduce is_slave_xfer function
+  dma: at_hdmac: check direction properly for cyclic transfers
+  dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
+  dma: ep93xx_dma: reuse is_slave_xfer helper
+  dma: ipu_idmac: reuse is_slave_xfer helper
+  dma: ste_dma40: reuse is_slave_xfer helper
 
-thx,
+ drivers/dma/at_hdmac.c      |   10 +++++-----
+ drivers/dma/dw_dmac.c       |    5 +++--
+ drivers/dma/ep93xx_dma.c    |    3 +--
+ drivers/dma/ipu/ipu_idmac.c |    2 +-
+ drivers/dma/ste_dma40.c     |    2 +-
+ include/linux/dmaengine.h   |    5 +++++
+ 6 files changed, 16 insertions(+), 11 deletions(-)
 
-Jason.
+-- 
+1.7.10.4
+
