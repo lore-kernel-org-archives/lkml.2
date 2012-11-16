@@ -1,155 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2KPTVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:21:48 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56204 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab2KPTUj (ORCPT
+	id S1753493Ab2KPTVy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:21:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63589 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2KPTVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:20:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
-        john.r.fastabend@intel.com, nhorman@tuxdriver.com
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/8] netprio_cgroup: reimplement priomap expansion
-Date: Fri, 16 Nov 2012 11:20:20 -0800
-Message-Id: <1353093624-22608-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1353093624-22608-1-git-send-email-tj@kernel.org>
-References: <1353093624-22608-1-git-send-email-tj@kernel.org>
+	Fri, 16 Nov 2012 14:21:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <50A6644D.80205@zytor.com>
+References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
+	<1353055989-31939-9-git-send-email-yinghai@kernel.org>
+	<50A6644D.80205@zytor.com>
+Date: Fri, 16 Nov 2012 11:21:49 -0800
+X-Google-Sender-Auth: xwycjXUSM1nTblDoXQ5DsDXbf2M
+Message-ID: <CAE9FiQXJqyUf7qAspG_ZKUPV96QQjayp8cM0ihQ0RpyU5AxBMA@mail.gmail.com>
+Subject: Re: [PATCH 8/9] x86: ramdisk info print with high bits.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netprio kept track of the highest prioidx allocated and resized
-priomaps accordingly when necessary.  This makes it necessary to keep
-track of prioidx allocation and may end up resizing on every new
-prioidx.
+On Fri, Nov 16, 2012 at 8:05 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/16/2012 12:53 AM, Yinghai Lu wrote:
+>> ramdisk could be loaded high now for 64bit.
+>>
+>> So need to print more digits for them.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Matt Fleming <matt.fleming@intel.com>
+>> ---
+>>  arch/x86/kernel/setup.c |    8 ++++----
+>>  1 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index c2eb535..0e13c6e 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -341,7 +341,7 @@ static void __init relocate_initrd(void)
+>>       memblock_reserve(ramdisk_here, area_size);
+>>       initrd_start = ramdisk_here + PAGE_OFFSET;
+>>       initrd_end   = initrd_start + ramdisk_size;
+>> -     printk(KERN_INFO "Allocated new RAMDISK: [mem %#010llx-%#010llx]\n",
+>> +     printk(KERN_INFO "Allocated new RAMDISK: [mem %#018llx-%#018llx]\n",
+>>                        ramdisk_here, ramdisk_here + ramdisk_size - 1);
+>
+> NAK, this is expected to match the resource print format (%pR), which
+> prints 10 digits by default and then expands.  Furthermore, printing
+> *18* digits is downright silly since we still don't have 72-bit addressing.
 
-Update extend_netdev_table() such that it takes @target_idx which the
-priomap should be able to accomodate.  If the priomap is large enough,
-nothing happens; otherwise, the size is doubled until @target_idx can
-be accomodated.
+that is the same as in e820_print_map::
 
-This makes max_prioidx and write_update_netdev_table() unnecessary.
-write_priomap() now calls extend_netdev_table() directly.
+                printk(KERN_INFO "%s: [mem %#018Lx-%#018Lx] ", who,
+                       (unsigned long long) e820.map[i].addr,
+                       (unsigned long long)
+                       (e820.map[i].addr + e820.map[i].size - 1));
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- net/core/netprio_cgroup.c | 56 ++++++++++++++++++++++++++++-------------------
- 1 file changed, 33 insertions(+), 23 deletions(-)
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 92cc54c..569d83d 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -27,11 +27,11 @@
- 
- #include <linux/fdtable.h>
- 
-+#define PRIOMAP_MIN_SZ		128
- #define PRIOIDX_SZ 128
- 
- static unsigned long prioidx_map[PRIOIDX_SZ];
- static DEFINE_SPINLOCK(prioidx_map_lock);
--static atomic_t max_prioidx = ATOMIC_INIT(0);
- 
- static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
- {
-@@ -51,8 +51,6 @@ static int get_prioidx(u32 *prio)
- 		return -ENOSPC;
- 	}
- 	set_bit(prioidx, prioidx_map);
--	if (atomic_read(&max_prioidx) < prioidx)
--		atomic_set(&max_prioidx, prioidx);
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- 	*prio = prioidx;
- 	return 0;
-@@ -67,15 +65,40 @@ static void put_prioidx(u32 idx)
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- }
- 
--static int extend_netdev_table(struct net_device *dev, u32 new_len)
-+/*
-+ * Extend @dev->priomap so that it's large enough to accomodate
-+ * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
-+ * return.  Must be called under rtnl lock.
-+ */
-+static int extend_netdev_table(struct net_device *dev, u32 target_idx)
- {
--	size_t new_size = sizeof(struct netprio_map) +
--			   ((sizeof(u32) * new_len));
--	struct netprio_map *new = kzalloc(new_size, GFP_KERNEL);
--	struct netprio_map *old;
-+	struct netprio_map *old, *new;
-+	size_t new_sz, new_len;
- 
-+	/* is the existing priomap large enough? */
- 	old = rtnl_dereference(dev->priomap);
-+	if (old && old->priomap_len > target_idx)
-+		return 0;
-+
-+	/*
-+	 * Determine the new size.  Let's keep it power-of-two.  We start
-+	 * from PRIOMAP_MIN_SZ and double it until it's large enough to
-+	 * accommodate @target_idx.
-+	 */
-+	new_sz = PRIOMAP_MIN_SZ;
-+	while (true) {
-+		new_len = (new_sz - offsetof(struct netprio_map, priomap)) /
-+			sizeof(new->priomap[0]);
-+		if (new_len > target_idx)
-+			break;
-+		new_sz *= 2;
-+		/* overflowed? */
-+		if (WARN_ON(new_sz < PRIOMAP_MIN_SZ))
-+			return -ENOSPC;
-+	}
- 
-+	/* allocate & copy */
-+	new = kzalloc(new_sz, GFP_KERNEL);
- 	if (!new) {
- 		pr_warn("Unable to alloc new priomap!\n");
- 		return -ENOMEM;
-@@ -87,26 +110,13 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
- 
- 	new->priomap_len = new_len;
- 
-+	/* install the new priomap */
- 	rcu_assign_pointer(dev->priomap, new);
- 	if (old)
- 		kfree_rcu(old, rcu);
- 	return 0;
- }
- 
--static int write_update_netdev_table(struct net_device *dev)
--{
--	int ret = 0;
--	u32 max_len;
--	struct netprio_map *map;
--
--	max_len = atomic_read(&max_prioidx) + 1;
--	map = rtnl_dereference(dev->priomap);
--	if (!map || map->priomap_len < max_len)
--		ret = extend_netdev_table(dev, max_len);
--
--	return ret;
--}
--
- static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs;
-@@ -191,7 +201,7 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 
- 	rtnl_lock();
- 
--	ret = write_update_netdev_table(dev);
-+	ret = extend_netdev_table(dev, prioidx);
- 	if (ret)
- 		goto out_unlock;
- 
--- 
-1.7.11.7
+that is for 64bit address.
 
+that extra 2 is for "0x"
+
+or you prefer to cast them to pointer and use %pR for them all?
+
+or fix printk to add extra 2 for "0x" when # is found?
