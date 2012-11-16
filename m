@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab2KPNcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:32:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46678 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2KPNcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:32:07 -0500
-Date: Fri, 16 Nov 2012 05:32:55 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, hjchoi <hjchoi@sysbas.com>
-Subject: Re: [PATCH] staging: Add SystemBase Multi-2/PCI driver
-Message-ID: <20121116133255.GA30683@kroah.com>
-References: <1353040771.7586.2.camel@gandalf.local.home>
- <20121116050807.GA13122@kroah.com>
- <1353071875.7586.5.camel@gandalf.local.home>
+	id S1751821Ab2KPNe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:34:59 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:46739 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab2KPNe6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 08:34:58 -0500
+From: <Vineet.Gupta1@synopsys.com>
+To: <viro@zeniv.linux.org.uk>
+CC: <rusty@rustcorp.com.au>, <mingo@kernel.org>, <jim.cromie@gmail.com>,
+        <hpa@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH] Ensure that kernel_init_freebale() is not inlined into non __init code
+Date: Fri, 16 Nov 2012 19:04:34 +0530
+Message-ID: <1353072874-18710-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353071875.7586.5.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 08:17:55AM -0500, Steven Rostedt wrote:
-> On Thu, 2012-11-15 at 21:08 -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Nov 15, 2012 at 11:39:31PM -0500, Steven Rostedt wrote:
-> > > I ported the driver supplied by SystemBase to mainline.
-> > > 
-> > > As the driver had MODULE_LICENSE("GPL") it is declared as a GPL module
-> > > and thus I have the right to distribute it upstream. Note, I did the
-> > > bare minimum to get it working. It still needs a lot of loving.
-> > 
-> > Being in staging only requires 2 things, proper license, and it has to
-> > build.
-> > 
-> > This fails on the second one:
-> > 
-> > In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-> > drivers/staging/sb105x/sb_pci_mp.h:279:40: error: array type has incomplete element type
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_startup’:
-> > drivers/staging/sb105x/sb_pci_mp.c:546:26: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_shutdown’:
-> > drivers/staging/sb105x/sb_pci_mp.c:573:40: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_change_speed’:
-> > drivers/staging/sb105x/sb_pci_mp.c:596:14: error: wrong type argument to unary exclamation mark
-> > drivers/staging/sb105x/sb_pci_mp.c:599:10: error: incompatible types when assigning to type ‘struct ktermios *’ from type ‘struct ktermios’
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_throttle’:
-> > drivers/staging/sb105x/sb_pci_mp.c:734:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_unthrottle’:
-> > drivers/staging/sb105x/sb_pci_mp.c:750:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_set_termios’:
-> > drivers/staging/sb105x/sb_pci_mp.c:1277:35: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c:1282:4: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_update_termios’:
-> > drivers/staging/sb105x/sb_pci_mp.c:1450:19: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_block_til_ready’:
-> > drivers/staging/sb105x/sb_pci_mp.c:1476:24: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c:1481:25: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-> > drivers/staging/sb105x/sb_pci_mp.c:2763:14: error: bit-field ‘<anonymous>’ width not an integer constant
-> > In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-> > drivers/staging/sb105x/sb_pci_mp.c: At top level:
-> > drivers/staging/sb105x/sb_pci_mp.h:279:40: warning: ‘uart_config’ defined but not used [-Wunused-variable]
-> > drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-> > drivers/staging/sb105x/sb_pci_mp.c:2766:1: warning: control reaches end of non-void function [-Wreturn-type]
-> > make[3]: *** [drivers/staging/sb105x/sb_pci_mp.o] Error 1
-> > make[2]: *** [drivers/staging/sb105x] Error 2
-> > make[1]: *** [drivers/staging] Error 2
-> 
-> Ah interesting, probably a missing dependency. Do you have a config I
-> can test against. It worked for me against 3.6.6 (the kernel that runs
-> the box with the card).
+From: Vineet Gupta <vgupta@synopsys.com>
 
-That's the issue, the tty layer has changed a bunch since 3.6, this was
-against 3.7-rc5.  That is what has caused the build breakage here.
+Commit d6b2123802d "make sure that we always have a return path from
+kernel_execve()" reshuffled kernel_init()/init_post() to ensure that
+kernel_execve() has a caller to return to.
+Just for documentation, here's what that commit did.
 
-Redo this aginast 3.7-rc5 and we should be better off.  If you really
-want to do this right, do this against the tty-next git tree, to catch
-all of the recent tty changes that will be going into 3.8.
+Orig
+----
 
-thanks,
+THREAD __init kernel_init()
+	smp_init()
+	...
+	open("/dev/console")
 
-greg k-h
+	init_post() --> forced to be noinline
+	return 0;
+
+init_post()
+	free_initmem() --> reaps caller kernel_init()
+	run_init_process("/init")
+		kernel_execve
+
+New
+---
+
+THREAD kernel_init()
+	kernel_init_freeable()	--> __init tagged
+		smp_init()
+		...
+		open("/dev/console")
+	free_initmem() --> reaps kernel_init_freeable()
+	run_init_process "init"
+		kernel_execve
+
+However kernel_init_freebale() was NOT marked as noinline making ARC gcc
+4.4 inline it in non __init freeable kernel_init(), wasting a bit of
+memory.
+
+bloat-o-meter vmlinux_orig vmlinux
+add/remove: 1/0 grow/shrink: 0/1 up/down: 374/-330 (44)
+function                                     old     new   delta
+kernel_init_freeable                           -     374    +374
+kernel_init                                  636     306    -330
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+---
+ init/main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index e33e09d..cd147a9 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -800,7 +800,7 @@ static int run_init_process(const char *init_filename)
+ 	return kernel_execve(init_filename, argv_init, envp_init);
+ }
+ 
+-static void __init kernel_init_freeable(void);
++static noinline void __init kernel_init_freeable(void);
+ 
+ static int __ref kernel_init(void *unused)
+ {
+@@ -844,7 +844,7 @@ static int __ref kernel_init(void *unused)
+ 	      "See Linux Documentation/init.txt for guidance.");
+ }
+ 
+-static void __init kernel_init_freeable(void)
++static noinline void __init kernel_init_freeable(void)
+ {
+ 	/*
+ 	 * Wait until kthreadd is all set-up.
+-- 
+1.7.4.1
+
