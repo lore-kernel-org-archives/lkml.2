@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab2KPRiC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:38:02 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34641 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab2KPRiA (ORCPT
+	id S1752272Ab2KPRjM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:39:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35231 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698Ab2KPRjL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:38:00 -0500
-Date: Fri, 16 Nov 2012 18:37:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/43] mm: numa: Make pte_numa() and pmd_numa() a generic
- implementation
-Message-ID: <20121116173755.GB4697@gmail.com>
-References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
- <1353064973-26082-7-git-send-email-mgorman@suse.de>
- <50A648FF.2040707@redhat.com>
- <20121116144109.GA8218@suse.de>
- <CA+55aFzH_-6FuwTF1GVDzLK+7c0MGLsLdPFjzzwU78GVUEMbBw@mail.gmail.com>
- <20121116160852.GA4302@gmail.com>
- <20121116165606.GE8218@suse.de>
+	Fri, 16 Nov 2012 12:39:11 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121116165606.GE8218@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: <i.mazanov@gmail.com>, Igor Mazanov <i.mazanov@gmail.com>,
+        Paul Walmsley <paul@pwsan.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <50A674D2.9080403@gmail.com>
+CC: <linux-omap@vger.kernel.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+References: <50A52134.2010502@gmail.com>
+ <alpine.DEB.2.00.1211151845050.18192@utopia.booyaka.com>
+ <50A674D2.9080403@gmail.com>
+Message-ID: <20121116173900.20639.18889@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH] Remove inline from clock framework function definitions to build
+ the kernel with GCC 4.7
+Date: Fri, 16 Nov 2012 09:39:00 -0800
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mel Gorman <mgorman@suse.de> wrote:
-
-> > AFAICS, this portion of numa/core:
+Quoting Igor Mazanov (2012-11-16 09:16:02)
+> Paul Walmsley wrote:
+> > + Mike
 > > 
-> > c740b1cccdcb x86/mm: Completely drop the TLB flush from ptep_set_access_flags()
+> > On Thu, 15 Nov 2012, Igor Mazanov wrote:
+> > 
+> >>  Remove inline from clock framework function definitions to
+> >>  build the kernel with GCC 4.7
+> > 
+> > sparse warns about this also.
+> > 
+> >> Signed-off-by: Igor Mazanov <i.mazanov@gmail.com>
+> > 
+> > This one is for Mike to deal with as CCF maintainer; it's out of the hands 
+> > of the OMAP folks.
 > 
-> We share this.
+> Thanks for comments, I'll bear in mind it for the future.
 > 
-> > 02743c9c03f1 mm/mpol: Use special PROT_NONE to migrate pages
-> 
-> hard-codes prot_none
 
-I prefer any arch support extensions to be done in the patch 
-that adds that specific arch support.
+I forgot to reply to this thread yesterday.  A fixes request has been
+sent out, hopefully will be picked up for 3.7-rc6.
 
-That way we can consider the pros and cons of abstraction. Also 
-see further below.
+Thanks all,
+Mike
 
-> > cd203e33c39d mm/mpol: Add MPOL_MF_NOOP
-> 
-> I have a patch that backs this out on the grounds that I don't 
-> think we have adequately discussed if it was the correct 
-> userspace interface. I know Peter put a lot of time into it so 
-> it's probably correct but without man pages or spending time 
-> writing an example program that used it, I played safe.
-
-I'm fine with not exposing it to user-space.
-
-> > Mel, could you please work on this basis, or point out the 
-> > bits you don't agree with so I can fix it?
-> 
-> My main hangup is the prot_none choice and I know it's 
-> something we have butted heads on without progress. [...]
-
-It's the basic KISS concept - I think you are over-designing 
-this. An architecture opts in to the new, generic code via 
-doing:
-
-  select ARCH_SUPPORTS_NUMA_BALANCING
-
-... if it cannot enable that then it will extend the core code 
-in *very* visible ways.
-
-> [...] I feel it is a lot cleaner to have the _PAGE_NUMA bit 
-> (even if it's PROT_NONE underneath) and the helpers avoid 
-> function calls where possible. It also made the PMD handling 
-> sortof straight-forward and allowed the batching taking of the 
-> PTL and migration if the pages in the PMD were all on the same 
-> node. I liked this.
-> 
-> Yours is closer to what the architecture does and can use 
-> change_protect() with very few changes but on balance I did 
-> not find this a compelling alternative.
-
-IMO here you are on the wrong side of history as well.
-
-For example reusing change_protection() *already* uncovered 
-useful optimizations to the generic code:
-
-   http://comments.gmane.org/gmane.linux.kernel.mm/89707
-
-(regardless of how this particular change_protection() 
- optimization will look like.)
-
-that optimization would not have happened with your open-coded 
-change_protection() variant plain and simple.
-
-So, to put it bluntly, you are not only doing a stupid thing, 
-you are doing an actively harmful thing here...
-
-If you fix that then most of the differences between your tree 
-and numa/core disappears. You'll end up very close to:
-
-  - rebasing numa/core pretty much as-is
-  + add your migrate_displaced() function
-  - remove the user-facing lazy migration facilities.
-  + inline pte_numa()/pmd_numa() if you think it's beneficial
-
-If that works for you I'll test and backmerge all such deltas 
-quickly and we can move on.
-
-Then you could hack whatever policy and instrumentation bits you 
-want, on top of that agreed upon base.
-
-Would that approach work for you?
-
-Thanks,
-
-	Ingo
+> > 
+> > Acked-by: Paul Walmsley <paul@pwsan.com>
+> > 
+> > 
+> >> ---
+> >>  include/linux/clk-provider.h |    4 ++--
+> >>  1 files changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> >> index c127315..f9f5e9e 100644
+> >> --- a/include/linux/clk-provider.h
+> >> +++ b/include/linux/clk-provider.h
+> >> @@ -335,8 +335,8 @@ const char *__clk_get_name(struct clk *clk);
+> >>  struct clk_hw *__clk_get_hw(struct clk *clk);
+> >>  u8 __clk_get_num_parents(struct clk *clk);
+> >>  struct clk *__clk_get_parent(struct clk *clk);
+> >> -inline int __clk_get_enable_count(struct clk *clk);
+> >> -inline int __clk_get_prepare_count(struct clk *clk);
+> >> +int __clk_get_enable_count(struct clk *clk);
+> >> +int __clk_get_prepare_count(struct clk *clk);
+> >>  unsigned long __clk_get_rate(struct clk *clk);
+> >>  unsigned long __clk_get_flags(struct clk *clk);
+> >>  int __clk_is_enabled(struct clk *clk);
+> >> --
+> >> 1.7.4.4
+> >>
+> > 
+> > 
+> > - Paul
