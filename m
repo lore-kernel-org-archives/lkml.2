@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab2KPRjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:39:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:35231 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751698Ab2KPRjL convert rfc822-to-8bit (ORCPT
+	id S1752439Ab2KPRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:40:26 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56415 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab2KPRkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:39:11 -0500
-Content-Type: text/plain; charset="utf-8"
+	Fri, 16 Nov 2012 12:40:24 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: <i.mazanov@gmail.com>, Igor Mazanov <i.mazanov@gmail.com>,
-        Paul Walmsley <paul@pwsan.com>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <50A674D2.9080403@gmail.com>
-CC: <linux-omap@vger.kernel.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-References: <50A52134.2010502@gmail.com>
- <alpine.DEB.2.00.1211151845050.18192@utopia.booyaka.com>
- <50A674D2.9080403@gmail.com>
-Message-ID: <20121116173900.20639.18889@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH] Remove inline from clock framework function definitions to build
- the kernel with GCC 4.7
-Date: Fri, 16 Nov 2012 09:39:00 -0800
-X-Originating-IP: [10.188.36.112]
+In-Reply-To: <1353082183.7586.19.camel@gandalf.local.home>
+References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
+	<1353032491-16462-9-git-send-email-fweisbec@gmail.com>
+	<1353082183.7586.19.camel@gandalf.local.home>
+Date: Fri, 16 Nov 2012 18:33:02 +0100
+Message-ID: <CAFTL4hzQ7twJsE_6ou22W1FPZWj+W3hJ95th=2AgXG8SkWB5Dw@mail.gmail.com>
+Subject: Re: [PATCH 8/9] irq_work: Make self-IPIs optable
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Igor Mazanov (2012-11-16 09:16:02)
-> Paul Walmsley wrote:
-> > + Mike
-> > 
-> > On Thu, 15 Nov 2012, Igor Mazanov wrote:
-> > 
-> >>  Remove inline from clock framework function definitions to
-> >>  build the kernel with GCC 4.7
-> > 
-> > sparse warns about this also.
-> > 
-> >> Signed-off-by: Igor Mazanov <i.mazanov@gmail.com>
-> > 
-> > This one is for Mike to deal with as CCF maintainer; it's out of the hands 
-> > of the OMAP folks.
-> 
-> Thanks for comments, I'll bear in mind it for the future.
-> 
+2012/11/16 Steven Rostedt <rostedt@goodmis.org>:
+> On Fri, 2012-11-16 at 03:21 +0100, Frederic Weisbecker wrote:
+>>
+>>  /*
+>>   * Claim the entry so that no one else will poke at it.
+>> @@ -68,14 +59,18 @@ void __weak arch_irq_work_raise(void)
+>>   */
+>>  static void __irq_work_queue(struct irq_work *work)
+>>  {
+>> -     bool empty;
+>> -
+>>       preempt_disable();
+>>
+>> -     empty = llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+>> -     /* The list was empty, raise self-interrupt to start processing. */
+>> -     if (empty)
+>> -             arch_irq_work_raise();
+>> +     llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+>> +
+>> +     /*
+>> +      * If the work is flagged as "lazy", just wait for the next tick
+>> +      * to run it. Otherwise, or if the tick is stopped, raise the irq work.
+>
+> Speaking more Greek? ;-)
+>
+> How about:
+>
+>         If the work is not "lazy" or the tick is stopped, raise the irq
+>         work interrupt (if supported by the arch), otherwise, just wait
+>         for the next tick.
 
-I forgot to reply to this thread yesterday.  A fixes request has been
-sent out, hopefully will be picked up for 3.7-rc6.
+Much better :)
 
-Thanks all,
-Mike
+>
+> Other than that, Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-> > 
-> > Acked-by: Paul Walmsley <paul@pwsan.com>
-> > 
-> > 
-> >> ---
-> >>  include/linux/clk-provider.h |    4 ++--
-> >>  1 files changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> >> index c127315..f9f5e9e 100644
-> >> --- a/include/linux/clk-provider.h
-> >> +++ b/include/linux/clk-provider.h
-> >> @@ -335,8 +335,8 @@ const char *__clk_get_name(struct clk *clk);
-> >>  struct clk_hw *__clk_get_hw(struct clk *clk);
-> >>  u8 __clk_get_num_parents(struct clk *clk);
-> >>  struct clk *__clk_get_parent(struct clk *clk);
-> >> -inline int __clk_get_enable_count(struct clk *clk);
-> >> -inline int __clk_get_prepare_count(struct clk *clk);
-> >> +int __clk_get_enable_count(struct clk *clk);
-> >> +int __clk_get_prepare_count(struct clk *clk);
-> >>  unsigned long __clk_get_rate(struct clk *clk);
-> >>  unsigned long __clk_get_flags(struct clk *clk);
-> >>  int __clk_is_enabled(struct clk *clk);
-> >> --
-> >> 1.7.4.4
-> >>
-> > 
-> > 
-> > - Paul
+Thanks!
