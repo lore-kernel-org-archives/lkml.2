@@ -1,122 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab2KPGQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 01:16:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48739 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2KPGQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 01:16:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121106222442.GS3102@twin.jikos.cz>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-3-git-send-email-zwu.kernel@gmail.com>
-	<20121106222442.GS3102@twin.jikos.cz>
-Date: Fri, 16 Nov 2012 14:16:13 +0800
-Message-ID: <CAEH94Lj+Ju9KzJTo=g2Mb6sr6CLnpikur7_tWboWRDGRZgbxpQ@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 02/19] vfs: initialize and free data structures
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751479Ab2KPGVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 01:21:15 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:60290 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751332Ab2KPGVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 01:21:14 -0500
+Message-ID: <1353046873.24310.30.camel@joe-AO722>
+Subject: [PATCH] checkpatch: extend line continuation test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Cc: Andy Whitcroft <apw@canonical.com>, peter@hurleysoftware.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Nov 2012 22:21:13 -0800
+In-Reply-To: <20121030211530.09F1320004E@hpza10.eem.corp.google.com>
+References: <20121030211530.09F1320004E@hpza10.eem.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 6:24 AM, David Sterba <dave@jikos.cz> wrote:
-> On Mon, Oct 29, 2012 at 12:30:44PM +0800, zwu.kernel@gmail.com wrote:
->> +/* Frees the entire hot_range_tree. */
->> +static void hot_inode_item_free(struct kref *kref)
->> +{
->> +     struct hot_comm_item *comm_item = container_of(kref,
->> +                     struct hot_comm_item, refs);
->> +     struct hot_inode_item *he = container_of(comm_item,
->> +                     struct hot_inode_item, hot_inode);
->> +
->> +     hot_range_tree_free(he);
->> +     radix_tree_delete(he->hot_inode_tree, he->i_ino);
->
-> void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
->
-> and he::i_ino is u64, this will not work when
-> sizeof(unsigned long) != sizeof(u64) (iirc this is a known limitation of
-> radix tree implementation). This will work on 64bit only, not sure if
-> this is intentional.
-Fixed, thanks.
->
->> +     kmem_cache_free(hot_inode_item_cachep, he);
->> +}
->> +
->> +/* Frees the entire hot_inode_tree. */
->> +static void hot_inode_tree_exit(struct hot_info *root)
->> +{
->> +     struct hot_inode_item *hi_nodes[8];
->> +     u64 ino = 0;
->> +     int i, n;
->
-> nitpick, put the declarations on separate lines
->
->> +
->> +     while (1) {
->> +             spin_lock(&root->lock);
->> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
->> +                                        (void **)hi_nodes, ino,
->> +                                        ARRAY_SIZE(hi_nodes));
->> +             if (!n) {
->> +                     spin_unlock(&root->lock);
->> +                     break;
->> +             }
->> +
->> +             ino = hi_nodes[n - 1]->i_ino + 1;
->> +             for (i = 0; i < n; i++)
->> +                     hot_inode_item_put(hi_nodes[i]);
->> +             spin_unlock(&root->lock);
->> +     }
->> +}
->> +
->>  /*
->>   * Initialize kmem cache for hot_inode_item and hot_range_item.
->>   */
->> @@ -106,3 +197,36 @@ err:
->>       kmem_cache_destroy(hot_inode_item_cachep);
->>  }
->>  EXPORT_SYMBOL_GPL(hot_cache_init);
->> +
->> +/*
->> + * Initialize the data structures for hot data tracking.
->> + */
->> +int hot_track_init(struct super_block *sb)
->> +{
->> +     struct hot_info *root;
->> +     int ret = -ENOMEM;
->> +
->> +     root = kzalloc(sizeof(struct hot_info), GFP_NOFS);
->> +     if (!root) {
->> +             printk(KERN_ERR "%s: Failed to malloc memory for "
->> +                             "hot_info\n", __func__);
->> +             return ret;
->
-> minor: you can drop the variable ret and just reurn ENOMEM here
->
->> +     }
->> +
->> +     sb->s_hot_root = root;
->> +     hot_inode_tree_init(root);
->> +
->> +     printk(KERN_INFO "VFS: Turning on hot data tracking\n");
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_track_init);
->
-> david
+Preprocessor directives and asm statements should be
+allowed to have a line continuation.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d2d5ba1..019f9be 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3006,10 +3006,12 @@ sub process {
+ 				}
+ 			}
+ 
+-# check for line continuations outside of #defines
++# check for line continuations outside of #defines, preprocessor #, and asm
+ 
+ 		} else {
+ 			if ($prevline !~ /^..*\\$/ &&
++			    $line !~ /^\+\s*\#*.*\\$/ &&	# preprocessor
++			    $line !~ /^\+.*\b(__asm__|asm)\b.*\\$/ &&	# asm
+ 			    $line =~ /^\+.*\\$/) {
+ 				WARN("LINE_CONTINUATIONS",
+ 				     "Avoid unnecessary line continuations\n" . $herecurr);
 
 
-
--- 
-Regards,
-
-Zhi Yong Wu
