@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2KPSKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:10:20 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40220 "EHLO e8.ny.us.ibm.com"
+	id S1753178Ab2KPSMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:12:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21338 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462Ab2KPSKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:10:19 -0500
-Date: Fri, 16 Nov 2012 10:09:56 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shan Wei <shanwei88@gmail.com>, dipankar@in.ibm.com,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH v3 6/9] rcu: use __this_cpu_read helper instead of
- per_cpu_ptr(p, raw_smp_processor_id())
-Message-ID: <20121116180956.GE3270@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <50A1A7E8.4010802@gmail.com>
- <50A5FA32.4000903@gmail.com>
- <20121116164337.GD3270@linux.vnet.ibm.com>
- <0000013b0a505095-87cdf6aa-4e22-4439-9fe2-5c93044077ff-000000@email.amazonses.com>
+	id S1752700Ab2KPSMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 13:12:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
+   d="asc'?scan'208";a="220755115"
+Date: Fri, 16 Nov 2012 20:13:21 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 05/11] thp: change_huge_pmd(): keep huge zero page
+ write-protected
+Message-ID: <20121116181321.GA18313@otc-wbsnb-06>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1352300463-12627-6-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com>
+ <20121115084635.GC9676@otc-wbsnb-06>
+ <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-In-Reply-To: <0000013b0a505095-87cdf6aa-4e22-4439-9fe2-5c93044077ff-000000@email.amazonses.com>
+In-Reply-To: <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111618-9360-0000-0000-00000CE282FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 05:42:14PM +0000, Christoph Lameter wrote:
-> 
-> On Fri, 16 Nov 2012, Paul E. McKenney wrote:
-> 
-> > If you either show me some significant performance benefits or get me
-> > an independent Tested-by, in both cases on a range of hardware (e.g.,
-> > x86 on the one hand and ARM or Power on the other), then I will queue it.
-> 
-> Just putting the code generated for x86 before and after side
-> by side would be enough to convince you I think.
 
-If accompanied by similar before/after code for ARM or Power, sure.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+On Thu, Nov 15, 2012 at 01:47:33PM -0800, David Rientjes wrote:
+> On Thu, 15 Nov 2012, Kirill A. Shutemov wrote:
+>=20
+> > > > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > > > index d767a7c..05490b3 100644
+> > > > --- a/mm/huge_memory.c
+> > > > +++ b/mm/huge_memory.c
+> > > > @@ -1259,6 +1259,8 @@ int change_huge_pmd(struct vm_area_struct *vm=
+a, pmd_t *pmd,
+> > > >  		pmd_t entry;
+> > > >  		entry =3D pmdp_get_and_clear(mm, addr, pmd);
+> > > >  		entry =3D pmd_modify(entry, newprot);
+> > > > +		if (is_huge_zero_pmd(entry))
+> > > > +			entry =3D pmd_wrprotect(entry);
+> > > >  		set_pmd_at(mm, addr, pmd, entry);
+> > > >  		spin_unlock(&vma->vm_mm->page_table_lock);
+> > > >  		ret =3D 1;
+> > >=20
+> > > Nack, this should be handled in pmd_modify().
+> >=20
+> > I disagree. It means we will have to enable hzp per arch. Bad idea.
+> >=20
+>=20
+> pmd_modify() only exists for those architectures with thp support already=
+,=20
+> so you've already implicitly enabled for all the necessary architectures=
+=20
+> with your patchset.
 
-> > I wasn't prioritizing this one very high because it does not appear
-> > to be on any sort of fastpath.  If I am wrong about that, then you
-> > have a good performance-benefit case, right?  ;-)
-> 
-> I do not think this needs to be a priority item. Just stick it in the tree
-> somewhere to merge for the next merge period.
-> 
+Now we have huge zero page fully implemented inside mm/huge_memory.c. Push
+this logic to pmd_modify() means we expose hzp implementation details to
+arch code. Looks ugly for me.
 
+> > What's wrong with the check?
+> >=20
+>=20
+> Anybody using pmd_modify() to set new protections in the future perhaps=
+=20
+> without knowledge of huge zero page can incorrectly make the huge zero=20
+> page writable, which can never be allowed to happen.  It's better to make=
+=20
+> sure it can never happen with the usual interface to modify protections.
+
+I haven't found where we check if the page is a 4k zero page, but it's
+definitely not pte_modify().
+
+--=20
+ Kirill A. Shutemov
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQpoJBAAoJEAd+omnVudOMyzoP/1I0PtY02OTwWDoGPfpcCCo3
+pf3sH5BMvcYPvtggx5+HzpC4veZFBphzY9RAQrSO+LsF71y+aAMSWc0zyli6diic
+SVOjGlKceYCegrHO4zFxXymdPThbEPicKifeKBJ2FAlMcLwRXrQq+A8JrvZtAEsC
+Ch4DKXyHQklCWIpfjSK9inc/LiWPkquvruRAcbM+V0vjl5zBVf8Zc1aFNIrU9dJZ
+7h31/u7JEkU+unDb8nRSZqbe/OtBYKYrJkHuzmFZrNdA26zX7wPMD6LssVljfeT7
+zF3K/Zu9lBMvMmwzwzI7J2EngsmVBNMuFGLv/n6GnPf1sw04rlsysXUAHw2/NsKE
+6UjhoSZQ9cl5stOiM+xVVCGXoy0k518KpQwKZSio5AXRz6lDAIeKrL9UduFrCHT9
+1ZqveRcEzeoelImBAX70XL+5revTILQGl1E0af0htBR+oIwbq6iLzt+1Hm0iiFLr
+ad2GckG24EF3LOtj/Mqy1UA81h4A3rxeiCHYKFFOlJDSJNPp6fS2PtaZPx+KyIl7
+qf74obZk5xEKwJgMsMbxULDFzWUsNMuv0b11iexP4IMGb7LWsNvlnqTHoJc6KPj2
+oPeZJcAU2zuGjiENt1Zn46J6JmJO3S/j5fdcOPXcyJDS2WWCe0BzWMG6p8aTx6fN
+J98tgNfgGClz65qgf8l0
+=uEbY
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
