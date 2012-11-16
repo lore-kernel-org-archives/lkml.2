@@ -1,417 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab2KPPU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:20:26 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50972 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab2KPPUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:20:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,265,1352102400"; 
-   d="scan'208";a="248275541"
-Date: Fri, 16 Nov 2012 17:23:32 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        bhelgaas@google.com, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121116152332.GV17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
- <2439178.tCj2rUMYJS@vostro.rjw.lan>
- <20121116140357.5e0a6d6b@endymion.delvare>
- <1499062.QDd9DGofy9@vostro.rjw.lan>
- <20121116144256.55b49cae@endymion.delvare>
- <20121116141729.GS17774@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121116141729.GS17774@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752358Ab2KPPUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:20:38 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:37263 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab2KPPUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:20:35 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvwEAJZZplBbdWOb/2dsb2JhbABEwmaBCIMMEoE+E4gRvi+MM4UNA5V8kEOCcA
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH 1/2] Staging: ipack: adapt copyright to CERN guidelines
+Date: Fri, 16 Nov 2012 16:19:58 +0100
+Message-Id: <1353079199-11282-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 04:17:29PM +0200, Mika Westerberg wrote:
-> > > > > +static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
-> > > > > +{
-> > > > > +	struct acpi_resource_i2c_serialbus *sb;
-> > > > > +	struct acpi_i2c_find *i2c_find = data;
-> > > > > +
-> > > > > +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-> > > > > +		return 1;
-> > > > > +
-> > > > > +	sb = &ares->data.i2c_serial_bus;
-> > > > > +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-> > > > > +		return 1;
-> > > > > +
-> > > > > +	if (sb->slave_address == i2c_find->addr)
-> > > > 
-> > > > The 7-bit and 10-bit address maps overlap, so the above isn't enough.
-> > > > You must compare the addresses _and_ sb->access_mode with
-> > > > i2c_find->access_mode (which needs to be added and filled properly.)
-> 
-> Ok. I wasn't sure about that and given that 10-bit addresses are not that
-> common I tought that we can just compare the addr to zero. I'll add the
-> check.
+Adapt the copyright clause to CERN guidelines, as it has the copyright over
+them.
 
-Here's the updated version where we handle 10-bit addresses properly
-(hopefully).
-
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Mon, 10 Sep 2012 12:12:32 +0300
-Subject: [PATCH] i2c / ACPI: add ACPI enumeration support
-
-ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-and configure the I2C slave devices behind the I2C controller. This patch
-adds helper functions to support I2C slave enumeration.
-
-An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-in order to get its slave devices enumerated, created and bound to the
-corresponding ACPI handle.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/acpi/Kconfig     |    6 ++
- drivers/acpi/Makefile    |    1 +
- drivers/acpi/acpi_i2c.c  |  216 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/i2c/i2c-core.c   |   10 +++
- include/linux/acpi_i2c.h |   27 ++++++
- 5 files changed, 260 insertions(+)
- create mode 100644 drivers/acpi/acpi_i2c.c
- create mode 100644 include/linux/acpi_i2c.h
+ drivers/staging/ipack/carriers/tpci200.c |    7 ++++---
+ drivers/staging/ipack/carriers/tpci200.h |    7 ++++---
+ drivers/staging/ipack/devices/ipoctal.c  |    7 ++++---
+ drivers/staging/ipack/devices/ipoctal.h  |    7 ++++---
+ drivers/staging/ipack/devices/scc2698.h  |    7 ++++---
+ drivers/staging/ipack/ipack.c            |    4 ++--
+ drivers/staging/ipack/ipack.h            |    4 ++--
+ 7 files changed, 24 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 119d58d..0300bf6 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -181,6 +181,12 @@ config ACPI_DOCK
- 	  This driver supports ACPI-controlled docking stations and removable
- 	  drive bays such as the IBM Ultrabay and the Dell Module Bay.
- 
-+config ACPI_I2C
-+	def_tristate I2C
-+	depends on I2C
-+	help
-+	  ACPI I2C enumeration support.
-+
- config ACPI_PROCESSOR
- 	tristate "Processor"
- 	select THERMAL
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 7289828..2a4502b 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -70,6 +70,7 @@ obj-$(CONFIG_ACPI_HED)		+= hed.o
- obj-$(CONFIG_ACPI_EC_DEBUGFS)	+= ec_sys.o
- obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
- obj-$(CONFIG_ACPI_BGRT)		+= bgrt.o
-+obj-$(CONFIG_ACPI_I2C)		+= acpi_i2c.o
- 
- # processor has its own "processor." module_param namespace
- processor-y			:= processor_driver.o processor_throttling.o
-diff --git a/drivers/acpi/acpi_i2c.c b/drivers/acpi/acpi_i2c.c
-new file mode 100644
-index 0000000..8c8d7e8
---- /dev/null
-+++ b/drivers/acpi/acpi_i2c.c
-@@ -0,0 +1,216 @@
-+/*
-+ * ACPI I2C enumeration support
+diff --git a/drivers/staging/ipack/carriers/tpci200.c b/drivers/staging/ipack/carriers/tpci200.c
+index 31cafff..c1a19b2 100644
+--- a/drivers/staging/ipack/carriers/tpci200.c
++++ b/drivers/staging/ipack/carriers/tpci200.c
+@@ -2,9 +2,10 @@
+  * tpci200.c
+  *
+  * driver for the TEWS TPCI-200 device
+- * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
+- * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
 + *
-+ * Copyright (C) 2012, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
++ * Copyright (C) 2009-2012 CERN (www.cern.ch)
++ * Author: Nicolas Serafini, EIC2 SA
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/carriers/tpci200.h b/drivers/staging/ipack/carriers/tpci200.h
+index 982f319..8d9be27 100644
+--- a/drivers/staging/ipack/carriers/tpci200.h
++++ b/drivers/staging/ipack/carriers/tpci200.h
+@@ -2,9 +2,10 @@
+  * tpci200.h
+  *
+  * driver for the carrier TEWS TPCI-200
+- * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
+- * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/export.h>
-+#include <linux/i2c.h>
-+#include <linux/ioport.h>
-+
-+ACPI_MODULE_NAME("i2c");
-+
-+static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
-+{
-+	struct acpi_resource_i2c_serialbus *sb;
-+	struct i2c_board_info *info = data;
-+
-+	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return 0;
-+
-+	sb = &ares->data.i2c_serial_bus;
-+	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-+		return 0;
-+
-+	info->addr = sb->slave_address;
-+	if (sb->access_mode == ACPI_I2C_10BIT_MODE)
-+		info->flags |= I2C_CLIENT_TEN;
-+
-+	return 1;
-+}
-+
-+static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
-+{
-+	struct i2c_adapter *adapter = data;
-+	struct resource_list_entry *rentry;
-+	struct list_head resource_list;
-+	struct i2c_board_info info;
-+	struct acpi_device *adev;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	memset(&info, 0, sizeof(info));
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_i2c_add_resource, &info);
-+	if (ret < 0)
-+		return AE_OK;
-+
-+	list_for_each_entry(rentry, &resource_list, node) {
-+		struct resource *r = &rentry->res;
-+
-+		if (resource_type(r) == IORESOURCE_IRQ) {
-+			info.irq = r->start;
-+			break;
-+		}
-+	}
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (!info.addr)
-+		return AE_OK;
-+
-+	strlcpy(info.type, dev_name(&adev->dev), sizeof(info.type));
-+	if (!i2c_new_device(adapter, &info)) {
-+		dev_err(&adapter->dev,
-+			"failed to add I2C device %s from ACPI\n",
-+			dev_name(&adev->dev));
-+	}
-+
-+	return AE_OK;
-+}
-+
-+/**
-+ * acpi_i2c_register_devices - enumerate I2C slave devices behind adapter
-+ * @adapter: pointer to adapter
++ * Copyright (C) 2009-2012 CERN (www.cern.ch)
++ * Author: Nicolas Serafini, EIC2 SA
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index b6a72e6..783f120 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -2,9 +2,10 @@
+  * ipoctal.c
+  *
+  * driver for the GE IP-OCTAL boards
+- * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
+- * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
 + *
-+ * Enumerate all I2C slave devices behind this adapter by walking the ACPI
-+ * namespace. When a device is found it will be added to the Linux device
-+ * model and bound to the corresponding ACPI handle.
-+ */
-+void acpi_i2c_register_devices(struct i2c_adapter *adapter)
-+{
-+	acpi_handle handle;
-+	acpi_status status;
++ * Copyright (C) 2009-2012 CERN (www.cern.ch)
++ * Author: Nicolas Serafini, EIC2 SA
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/devices/ipoctal.h b/drivers/staging/ipack/devices/ipoctal.h
+index c5b4ed4..28f1c42 100644
+--- a/drivers/staging/ipack/devices/ipoctal.h
++++ b/drivers/staging/ipack/devices/ipoctal.h
+@@ -2,9 +2,10 @@
+  * ipoctal.h
+  *
+  * driver for the IPOCTAL boards
+- * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
+- * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
 +
-+	handle = adapter->dev.acpi_handle;
-+	if (!handle)
-+		return;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-+				     acpi_i2c_add_device, NULL,
-+				     adapter, NULL);
-+	if (ACPI_FAILURE(status))
-+		dev_warn(&adapter->dev, "failed to enumerate I2C slaves\n");
-+}
-+EXPORT_SYMBOL_GPL(acpi_i2c_register_devices);
-+
-+struct acpi_i2c_find {
-+	acpi_handle handle;
-+	u16 addr;
-+	u8 access_mode;
-+	bool found;
-+};
-+
-+static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
-+{
-+	struct acpi_resource_i2c_serialbus *sb;
-+	struct acpi_i2c_find *i2c_find = data;
-+
-+	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return 1;
-+
-+	sb = &ares->data.i2c_serial_bus;
-+	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-+		return 1;
-+
-+	if (sb->slave_address == i2c_find->addr &&
-+	    sb->access_mode == i2c_find->access_mode)
-+		i2c_find->found = true;
-+
-+	return 1;
-+}
-+
-+static acpi_status acpi_i2c_find_child(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
-+{
-+	struct acpi_i2c_find *i2c_find = data;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_i2c_find_child_address, i2c_find);
-+	if (ret < 0)
-+		return AE_OK;
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (i2c_find->found) {
-+		i2c_find->handle = handle;
-+		return AE_CTRL_TERMINATE;
-+	}
-+	return AE_OK;
-+}
-+
-+static int acpi_i2c_find_device(struct device *dev, acpi_handle *handle)
-+{
-+	struct acpi_i2c_find i2c_find;
-+	struct i2c_adapter *adapter;
-+	struct i2c_client *client;
-+	acpi_handle parent;
-+	acpi_status status;
-+
-+	client = i2c_verify_client(dev);
-+	if (!client)
-+		return -ENODEV;
-+
-+	adapter = client->adapter;
-+	if (!adapter)
-+		return -ENODEV;
-+
-+	parent = adapter->dev.acpi_handle;
-+	if (!parent)
-+		return -ENODEV;
-+
-+	memset(&i2c_find, 0, sizeof(i2c_find));
-+	i2c_find.addr = client->addr;
-+	if (client->flags & I2C_CLIENT_TEN)
-+		i2c_find.access_mode = ACPI_I2C_10BIT_MODE;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1,
-+				     acpi_i2c_find_child, NULL,
-+				     &i2c_find, NULL);
-+	if (ACPI_FAILURE(status) || !i2c_find.handle)
-+		return -ENODEV;
-+
-+	*handle = i2c_find.handle;
-+	return 0;
-+}
-+
-+static struct acpi_bus_type acpi_i2c_bus = {
-+	.bus = &i2c_bus_type,
-+	.find_device = acpi_i2c_find_device,
-+};
-+
-+void acpi_i2c_bus_register(void)
-+{
-+	register_acpi_bus_type(&acpi_i2c_bus);
-+}
-+EXPORT_SYMBOL_GPL(acpi_i2c_bus_register);
-+
-+void acpi_i2c_bus_unregister(void)
-+{
-+	unregister_acpi_bus_type(&acpi_i2c_bus);
-+}
-+EXPORT_SYMBOL_GPL(acpi_i2c_bus_unregister);
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index a7edf98..7385de2f 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -39,6 +39,8 @@
- #include <linux/irqflags.h>
- #include <linux/rwsem.h>
- #include <linux/pm_runtime.h>
-+#include <linux/acpi.h>
-+#include <linux/acpi_i2c.h>
- #include <asm/uaccess.h>
- 
- #include "i2c-core.h"
-@@ -78,6 +80,10 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
- 	if (of_driver_match_device(dev, drv))
- 		return 1;
- 
-+	/* Then ACPI style match */
-+	if (acpi_driver_match_device(dev, drv))
-+		return 1;
-+
- 	driver = to_i2c_driver(drv);
- 	/* match on an id table if there is one */
- 	if (driver->id_table)
-@@ -1298,6 +1304,8 @@ static int __init i2c_init(void)
- 	retval = i2c_add_driver(&dummy_driver);
- 	if (retval)
- 		goto class_err;
-+
-+	acpi_i2c_bus_register();
- 	return 0;
- 
- class_err:
-@@ -1311,6 +1319,8 @@ bus_err:
- 
- static void __exit i2c_exit(void)
- {
-+	acpi_i2c_bus_unregister();
-+
- 	i2c_del_driver(&dummy_driver);
- #ifdef CONFIG_I2C_COMPAT
- 	class_compat_unregister(i2c_adapter_compat_class);
-diff --git a/include/linux/acpi_i2c.h b/include/linux/acpi_i2c.h
-new file mode 100644
-index 0000000..cf2233f
---- /dev/null
-+++ b/include/linux/acpi_i2c.h
-@@ -0,0 +1,27 @@
-+/*
-+ * ACPI I2C enumeration support
++ * Copyright (C) 2009-2012 CERN (www.cern.ch)
++ * Author: Nicolas Serafini, EIC2 SA
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
+index 96e8d8c..2ad6acd 100644
+--- a/drivers/staging/ipack/devices/scc2698.h
++++ b/drivers/staging/ipack/devices/scc2698.h
+@@ -2,9 +2,10 @@
+  * scc2698.h
+  *
+  * driver for the IPOCTAL boards
+- * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
+- * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
 + *
-+ * Copyright (C) 2012, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef LINUX_ACPI_I2C_H
-+#define LINUX_ACPI_I2C_H
-+
-+struct i2c_adapter;
-+
-+#if IS_ENABLED(CONFIG_ACPI_I2C)
-+extern void acpi_i2c_register_devices(struct i2c_adapter *adap);
-+extern void acpi_i2c_bus_register(void);
-+extern void acpi_i2c_bus_unregister(void);
-+#else
-+static inline void acpi_i2c_register_devices(struct i2c_adapter *adap) {}
-+static inline void acpi_i2c_bus_register(void) {}
-+static inline void acpi_i2c_bus_unregister(void) {}
-+#endif /* IS_ENABLED(CONFIG_ACPI_I2C) */
-+
-+#endif /* LINUX_ACPI_I2C_H */
++ * Copyright (C) 2009-2012 CERN (www.cern.ch)
++ * Author: Nicolas Serafini, EIC2 SA
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
+index 429696b..6d5079d 100644
+--- a/drivers/staging/ipack/ipack.c
++++ b/drivers/staging/ipack/ipack.c
+@@ -1,8 +1,8 @@
+ /*
+  * Industry-pack bus support functions.
+  *
+- * (C) 2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * (C) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
++ * Copyright (C) 2011-2012 CERN (www.cern.ch)
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/staging/ipack/ipack.h b/drivers/staging/ipack/ipack.h
+index 7ca8789..6760bfa 100644
+--- a/drivers/staging/ipack/ipack.h
++++ b/drivers/staging/ipack/ipack.h
+@@ -1,8 +1,8 @@
+ /*
+  * Industry-pack bus.
+  *
+- * (C) 2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
+- * (C) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
++ * Copyright (C) 2011-2012 CERN (www.cern.ch)
++ * Author: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
 -- 
 1.7.10.4
-
 
