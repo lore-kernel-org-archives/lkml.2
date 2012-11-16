@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab2KPCWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:22:45 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61094 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2KPCVx (ORCPT
+	id S1751472Ab2KPCVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:21:48 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49227 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2KPCVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:21:53 -0500
+	Thu, 15 Nov 2012 21:21:44 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 6/9] irq_work: Flush work on CPU_DYING
-Date: Fri, 16 Nov 2012 03:21:28 +0100
-Message-Id: <1353032491-16462-7-git-send-email-fweisbec@gmail.com>
+        Anish Kumar <anish198519851985@gmail.com>
+Subject: [PATCH 2/9] irq_work: Fix racy check on work pending flag
+Date: Fri, 16 Nov 2012 03:21:24 +0100
+Message-Id: <1353032491-16462-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
 References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
@@ -25,112 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+Work claiming wants to be SMP-safe.
 
-In order not to offline a CPU with pending irq works, flush the
-queue from CPU_DYING. The notifier is called by stop_machine on
-the CPU that is going down. The code will not be called from irq context
-(so things like get_irq_regs() wont work) but I'm not sure what the
-requirements are for irq_work in that regard (Peter?). But irqs are
-disabled and the CPU is about to go offline. Might as well flush the work.
+And by the time we try to claim a work, if it is already executing
+concurrently on another CPU, we want to succeed the claiming and queue
+the work again because the other CPU may have missed the data we wanted
+to handle in our work if it's about to complete there.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This scenario is summarized below:
+
+        CPU 1                                   CPU 2
+        -----                                   -----
+        (flags = 0)
+        cmpxchg(flags, 0, IRQ_WORK_FLAGS)
+        (flags = 3)
+        [...]
+        xchg(flags, IRQ_WORK_BUSY)
+        (flags = 2)
+        func()
+                                                if (flags & IRQ_WORK_PENDING)
+                                                        (not true)
+                                                cmpxchg(flags, flags, IRQ_WORK_FLAGS)
+                                                (flags = 3)
+                                                [...]
+        cmpxchg(flags, IRQ_WORK_BUSY, 0);
+        (fail, pending on CPU 2)
+
+This state machine is synchronized using [cmp]xchg() on the flags.
+As such, the early IRQ_WORK_PENDING check in CPU 2 above is racy.
+By the time we check it, we may be dealing with a stale value because
+we aren't using an atomic accessor. As a result, CPU 2 may "see"
+that the work is still pending on another CPU while it may be
+actually completing the work function exection already, leaving
+our data unprocessed.
+
+To fix this, we start by speculating about the value we wish to be
+in the work->flags but we only make any conclusion after the value
+returned by the cmpxchg() call that either claims the work or let
+the current owner handle the pending work for us.
+
+Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Anish Kumar <anish198519851985@gmail.com>
 ---
- kernel/irq_work.c |   50 ++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 44 insertions(+), 6 deletions(-)
+ kernel/irq_work.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index b3c113a..cf8b657 100644
+index 57be1a6..64eddd5 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
-@@ -12,6 +12,7 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/irqflags.h>
-+#include <linux/cpu.h>
- #include <asm/processor.h>
- 
- /*
-@@ -110,11 +111,7 @@ bool irq_work_needs_cpu(void)
- 	return true;
- }
- 
--/*
-- * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-- * context with local IRQs disabled.
-- */
--void irq_work_run(void)
-+static void __irq_work_run(void)
+@@ -34,15 +34,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+  */
+ static bool irq_work_claim(struct irq_work *work)
  {
- 	struct irq_work *work;
- 	struct llist_head *this_list;
-@@ -124,7 +121,6 @@ void irq_work_run(void)
- 	if (llist_empty(this_list))
- 		return;
+-	unsigned long flags, nflags;
++	unsigned long flags, oflags, nflags;
  
--	BUG_ON(!in_irq());
- 	BUG_ON(!irqs_disabled());
- 
- 	llnode = llist_del_all(this_list);
-@@ -149,6 +145,16 @@ void irq_work_run(void)
- 		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
- 	}
- }
-+
-+/*
-+ * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-+ * context with local IRQs disabled.
-+ */
-+void irq_work_run(void)
-+{
-+	BUG_ON(!in_irq());
-+	__irq_work_run();
-+}
- EXPORT_SYMBOL_GPL(irq_work_run);
- 
- /*
-@@ -163,3 +169,35 @@ void irq_work_sync(struct irq_work *work)
++	/*
++	 * Start with our best wish as a premise but only trust any
++	 * flag value after cmpxchg() result.
++	 */
++	flags = work->flags & ~IRQ_WORK_PENDING;
+ 	for (;;) {
+-		flags = work->flags;
+-		if (flags & IRQ_WORK_PENDING)
+-			return false;
+ 		nflags = flags | IRQ_WORK_FLAGS;
+-		if (cmpxchg(&work->flags, flags, nflags) == flags)
++		oflags = cmpxchg(&work->flags, flags, nflags);
++		if (oflags == flags)
+ 			break;
++		if (oflags & IRQ_WORK_PENDING)
++			return false;
++		flags = oflags;
  		cpu_relax();
- }
- EXPORT_SYMBOL_GPL(irq_work_sync);
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int irq_work_cpu_notify(struct notifier_block *self,
-+			       unsigned long action, void *hcpu)
-+{
-+	long cpu = (long)hcpu;
-+
-+	switch (action) {
-+	case CPU_DYING:
-+		/* Called from stop_machine */
-+		if (WARN_ON_ONCE(cpu != smp_processor_id()))
-+			break;
-+		__irq_work_run();
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block cpu_notify;
-+
-+static __init int irq_work_init_cpu_notifier(void)
-+{
-+	cpu_notify.notifier_call = irq_work_cpu_notify;
-+	cpu_notify.priority = 0;
-+	register_cpu_notifier(&cpu_notify);
-+	return 0;
-+}
-+device_initcall(irq_work_init_cpu_notifier);
-+
-+#endif /* CONFIG_HOTPLUG_CPU */
+ 	}
+ 
 -- 
 1.7.5.4
 
