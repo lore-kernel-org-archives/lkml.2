@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab2KPAzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 19:55:00 -0500
-Received: from mga14.intel.com ([143.182.124.37]:16989 "EHLO mga14.intel.com"
+	id S1751419Ab2KPA63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 19:58:29 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:47426 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab2KPAy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 19:54:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,259,1352102400"; 
-   d="scan'208";a="218451450"
-Message-ID: <1353027296.7176.312.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 16 Nov 2012 08:54:56 +0800
-In-Reply-To: <5403446.Qq6ASJZlmy@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
-	 <1353026174.7176.301.camel@yhuang-dev>
-	 <193302419.NkjaAjIrYa@vostro.rjw.lan> <5403446.Qq6ASJZlmy@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750911Ab2KPA60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 19:58:26 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Patch v5 0/7] acpi,memory-hotplug: implement framework for hot removing memory
+Date: Fri, 16 Nov 2012 02:02:50 +0100
+Message-ID: <1404902.mCy2TVRL7G@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1353026459.12509.36.camel@misato.fc.hp.com>
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1816934.8XPDQmK5xC@vostro.rjw.lan> <1353026459.12509.36.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 01:55 +0100, Rafael J. Wysocki wrote:
-> On Friday, November 16, 2012 01:44:00 AM Rafael J. Wysocki wrote:
-> > On Friday, November 16, 2012 08:36:14 AM Huang Ying wrote:
-> > > On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
-> 
-> [...]
-> 
+On Thursday, November 15, 2012 05:40:59 PM Toshi Kani wrote:
+> > > Well, I have tried _really_ hard to apply this patchset, but pretty much
+> > > none of the patches except for [1/7] applied for me.  I have no idea what
+> > > tree they are against, but I'm pretty sure it's not my tree.
 > > > 
-> > > For this situation, if user "echo auto > .../power/control" for the
-> > > device, the runtime PM callbacks of device will be called.  I think that
-> > > is not intended.  So I think it is better to use some kind of flag or
-> > > state for that.
+> > > I _have_ applied patches [1-4/7] and pushed them to linux-pm.git/linux-next.
+> > > I needed to fix up almost all of them so that they applied, so please check
+> > > if my fixups make sense (and let me know ASAP if that's not the case).
+> > > 
+> > > If they are OK, please rebase the rest of the series on top of
+> > > linux-pm.git/linux-next and repost.  I'm not going to take any more
+> > > patches that don't apply from you.
+> > > 
+> > > Moreover, I'm not going to take any more ACPI memory hotplug patches
+> > > for v3.8 except for the [5-7/7] from this series (after they have been
+> > > rebased and _if_ they apply), so please don't submit any until the v3.8
+> > > merge window closes (of course, you're free to post RFCs, but I will
+> > > ignore them).
 > > 
-> > I'm not sure what situation exactly you have in mind.  Care to give an
-> > exact scenario?
+> > And by the way, if someone gives a "Reviewed-by" to a patch that _obviously_
+> > doesn't apply, I will ignore any "Reviewed-by" from that person going forward,
+> > because that quite obviously means you haven't even compared the patch with the
+> > existing code and thus your "review" is worthless.
 > 
-> Ah, I see.  When we've just called drv->remove(), there is a window in
-> which user space may cause the driver's runtime PM callbacks to be
-> executed by changing its attribute to "auto".
-> 
-> So perhaps we should check pci_dev->driver rather than pci_dev->dev.driver
-> in the runtime PM callbacks?  With a few more changes that should allow us
-> to close that race.
+> I was able to apply all his patches on top of the Linus's tree...
 
-Yes.  And I think, with pci_dev->driver (after some changes suggested by
-Alan), we need not to use pm_runtime_get/put_skip_callbacks().
+Ah, that may be because of my mistake.  Sorry about that.
 
-Best Regards,
-Huang Ying
+I'll try again and see if that works (sigh).
+
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
