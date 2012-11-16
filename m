@@ -1,552 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2KPTZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:25:06 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51340 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2KPTZE (ORCPT
+	id S1753404Ab2KPTZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:25:13 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56430 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab2KPTZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:25:04 -0500
-Date: Fri, 16 Nov 2012 11:23:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: [PATCH tip/core/rcu] Update documentation for TREE_RCU debugfs
- tracing
-Message-ID: <20121116192345.GA32511@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Fri, 16 Nov 2012 14:25:10 -0500
+Subject: [PATCH] fb: Rework locking to fix lock ordering on takeover
+To: linux-kernel@vger.kernel.org, florianschandinat@gmx.de
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Fri, 16 Nov 2012 19:27:11 +0000
+Message-ID: <20121116192606.11799.35711.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111619-2398-0000-0000-00000DC90907
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00191883; UDB=6.00043456; UTC=2012-11-16
- 19:24:30
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu: Update documentation for TREE_RCU debugfs tracing
 
-This commit updates the tracing documentation to reflect the new
-format that has per-RCU-flavor directories.
+[The fb maintainer appears to be absent at the moment].
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This is needed to fix a pile of lockdep splats that now show up because console_lock()
+is being properly audited. Hugh Dickins and Sasha Levin have tested it and both reports
+all looks good. This is probably not the whole story - the entire fb layer has locking
+confusion problems that were previously hidden but it seems to get the ones people hit
+in testing. This hopefully explains a few of the weird fb hangs that have been floating
+around forever.
 
- b/Documentation/RCU/trace.txt |  365 ++++++++++++++++++++----------------------
- 1 file changed, 182 insertions(+), 183 deletions(-)
+From: Alan Cox <alan@linux.intel.com>
 
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index 672d190..79ce989 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -10,51 +10,61 @@ for rcutree and next for rcutiny.
+Adjust the console layer to allow a take over call where the caller already
+holds the locks. Make the fb layer lock in order.
+
+This s partly a band aid, the fb layer is terminally confused about the
+locking rules it uses for its notifiers it seems.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/tty/vt/vt.c           |   81 +++++++++++++++++++++++++++++++----------
+ drivers/video/console/fbcon.c |   30 +++++++++++++++
+ drivers/video/fbmem.c         |    5 +--
+ drivers/video/fbsysfs.c       |    3 ++
+ include/linux/console.h       |    1 +
+ 5 files changed, 97 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index f87d7e8..77bf205 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -2984,7 +2984,7 @@ int __init vty_init(const struct file_operations *console_fops)
  
- CONFIG_TREE_RCU and CONFIG_TREE_PREEMPT_RCU debugfs Files and Formats
+ static struct class *vtconsole_class;
  
--These implementations of RCU provides several debugfs files under the
-+These implementations of RCU provide several debugfs directories under the
- top-level directory "rcu":
+-static int bind_con_driver(const struct consw *csw, int first, int last,
++static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 			   int deflt)
+ {
+ 	struct module *owner = csw->owner;
+@@ -2995,7 +2995,7 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
  
--rcu/rcudata:
-+rcu/rcu_bh
-+rcu/rcu_preempt
-+rcu/rcu_sched
-+
-+Each directory contains files for the corresponding flavor of RCU.
-+Note that rcu/rcu_preempt is only present for CONFIG_TREE_PREEMPT_RCU.
-+For CONFIG_TREE_RCU, the RCU flavor maps onto the RCU-sched flavor,
-+so that activity for both appears in rcu/rcu_sched.
-+
-+In addition, the following file appears in the top-level directory:
-+rcu/rcutorture.  This file displays rcutorture test progress.  The output
-+of "cat rcu/rcutorture" looks as follows:
-+
-+rcutorture test sequence: 0 (test in progress)
-+rcutorture update version number: 615
-+
-+The first line shows the number of rcutorture tests that have completed
-+since boot.  If a test is currently running, the "(test in progress)"
-+string will appear as shown above.  The second line shows the number of
-+update cycles that the current test has started, or zero if there is
-+no test in progress.
-+
-+
-+Within each flavor directory (rcu/rcu_bh, rcu/rcu_sched, and possibly
-+also rcu/rcu_preempt) the following files will be present:
-+
-+rcudata:
- 	Displays fields in struct rcu_data.
--rcu/rcudata.csv:
--	Comma-separated values spreadsheet version of rcudata.
--rcu/rcugp:
-+rcugp:
- 	Displays grace-period counters.
--rcu/rcuhier:
-+rcuhier:
- 	Displays the struct rcu_node hierarchy.
--rcu/rcu_pending:
-+rcu_pending:
- 	Displays counts of the reasons rcu_pending() decided that RCU had
- 	work to do.
--rcu/rcutorture:
--	Displays rcutorture test progress.
--rcu/rcuboost:
-+rcuboost:
- 	Displays RCU boosting statistics.  Only present if
- 	CONFIG_RCU_BOOST=y.
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
  
--The output of "cat rcu/rcudata" looks as follows:
+ 	/* check if driver is registered */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3080,11 +3080,22 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
+ 
+ 	retval = 0;
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ };
+ 
++
++static int bind_con_driver(const struct consw *csw, int first, int last,
++			   int deflt)
++{
++	int ret;
++	
++	console_lock();
++	ret = do_bind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return ret;
++}
++	
+ #ifdef CONFIG_VT_HW_CONSOLE_BINDING
+ static int con_is_graphics(const struct consw *csw, int first, int last)
+ {
+@@ -3196,9 +3207,9 @@ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
+ 	if (!con_is_bound(csw))
+ 		con_driver->flag &= ~CON_DRIVER_FLAG_INIT;
+ 
+-	console_unlock();
+ 	/* ignore return value, binding should not fail */
+-	bind_con_driver(defcsw, first, last, deflt);
++	do_bind_con_driver(defcsw, first, last, deflt);
++	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+@@ -3489,28 +3500,18 @@ int con_debug_leave(void)
+ }
+ EXPORT_SYMBOL_GPL(con_debug_leave);
+ 
+-/**
+- * register_con_driver - register console driver to console layer
+- * @csw: console driver
+- * @first: the first console to take over, minimum value is 0
+- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
+- *
+- * DESCRIPTION: This function registers a console driver which can later
+- * bind to a range of consoles specified by @first and @last. It will
+- * also initialize the console driver by calling con_startup().
+- */
+-int register_con_driver(const struct consw *csw, int first, int last)
++static int do_register_con_driver(const struct consw *csw, int first, int last)
+ {
+ 	struct module *owner = csw->owner;
+ 	struct con_driver *con_driver;
+ 	const char *desc;
+ 	int i, retval = 0;
+ 
++	WARN_CONSOLE_UNLOCKED();
++
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
 -
--rcu_sched:
--  0 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=545/1/0 df=50 of=0 ql=163 qs=NRW. kt=0/W/0 ktl=ebc3 b=10 ci=153737 co=0 ca=0
--  1 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=967/1/0 df=58 of=0 ql=634 qs=NRW. kt=0/W/1 ktl=58c b=10 ci=191037 co=0 ca=0
--  2 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=1081/1/0 df=175 of=0 ql=74 qs=N.W. kt=0/W/2 ktl=da94 b=10 ci=75991 co=0 ca=0
--  3 c=20942 g=20943 pq=1 pgp=20942 qp=1 dt=1846/0/0 df=404 of=0 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=72261 co=0 ca=0
--  4 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=369/1/0 df=83 of=0 ql=48 qs=N.W. kt=0/W/4 ktl=e0e7 b=10 ci=128365 co=0 ca=0
--  5 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=381/1/0 df=64 of=0 ql=169 qs=NRW. kt=0/W/5 ktl=fb2f b=10 ci=164360 co=0 ca=0
--  6 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=1037/1/0 df=183 of=0 ql=62 qs=N.W. kt=0/W/6 ktl=d2ad b=10 ci=65663 co=0 ca=0
--  7 c=20897 g=20897 pq=1 pgp=20896 qp=0 dt=1572/0/0 df=382 of=0 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=75006 co=0 ca=0
--rcu_bh:
--  0 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=545/1/0 df=6 of=0 ql=0 qs=.... kt=0/W/0 ktl=ebc3 b=10 ci=0 co=0 ca=0
--  1 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=967/1/0 df=3 of=0 ql=0 qs=.... kt=0/W/1 ktl=58c b=10 ci=151 co=0 ca=0
--  2 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1081/1/0 df=6 of=0 ql=0 qs=.... kt=0/W/2 ktl=da94 b=10 ci=0 co=0 ca=0
--  3 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1846/0/0 df=8 of=0 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=0 co=0 ca=0
--  4 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=369/1/0 df=6 of=0 ql=0 qs=.... kt=0/W/4 ktl=e0e7 b=10 ci=0 co=0 ca=0
--  5 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=381/1/0 df=4 of=0 ql=0 qs=.... kt=0/W/5 ktl=fb2f b=10 ci=0 co=0 ca=0
--  6 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1037/1/0 df=6 of=0 ql=0 qs=.... kt=0/W/6 ktl=d2ad b=10 ci=0 co=0 ca=0
--  7 c=1474 g=1474 pq=1 pgp=1473 qp=0 dt=1572/0/0 df=8 of=0 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=0 co=0 ca=0
--
--The first section lists the rcu_data structures for rcu_sched, the second
--for rcu_bh.  Note that CONFIG_TREE_PREEMPT_RCU kernels will have an
--additional section for rcu_preempt.  Each section has one line per CPU,
--or eight for this 8-CPU system.  The fields are as follows:
-+The output of "cat rcu/rcu_preempt/rcudata" looks as follows:
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+ 		con_driver = &registered_con_driver[i];
+ 
+@@ -3563,10 +3564,29 @@ int register_con_driver(const struct consw *csw, int first, int last)
+ 	}
+ 
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ }
 +
-+  0!c=30455 g=30456 pq=1 qp=1 dt=126535/140000000000000/0 df=2002 of=4 ql=0/0 qs=N... b=10 ci=74572 nci=0 co=1131 ca=716
-+  1!c=30719 g=30720 pq=1 qp=0 dt=132007/140000000000000/0 df=1874 of=10 ql=0/0 qs=N... b=10 ci=123209 nci=0 co=685 ca=982
-+  2!c=30150 g=30151 pq=1 qp=1 dt=138537/140000000000000/0 df=1707 of=8 ql=0/0 qs=N... b=10 ci=80132 nci=0 co=1328 ca=1458
-+  3 c=31249 g=31250 pq=1 qp=0 dt=107255/140000000000000/0 df=1749 of=6 ql=0/450 qs=NRW. b=10 ci=151700 nci=0 co=509 ca=622
-+  4!c=29502 g=29503 pq=1 qp=1 dt=83647/140000000000000/0 df=965 of=5 ql=0/0 qs=N... b=10 ci=65643 nci=0 co=1373 ca=1521
-+  5 c=31201 g=31202 pq=1 qp=1 dt=70422/0/0 df=535 of=7 ql=0/0 qs=.... b=10 ci=58500 nci=0 co=764 ca=698
-+  6!c=30253 g=30254 pq=1 qp=1 dt=95363/140000000000000/0 df=780 of=5 ql=0/0 qs=N... b=10 ci=100607 nci=0 co=1414 ca=1353
-+  7 c=31178 g=31178 pq=1 qp=0 dt=91536/0/0 df=547 of=4 ql=0/0 qs=.... b=10 ci=109819 nci=0 co=1115 ca=969
++/**
++ * register_con_driver - register console driver to console layer
++ * @csw: console driver
++ * @first: the first console to take over, minimum value is 0
++ * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
++ *
++ * DESCRIPTION: This function registers a console driver which can later
++ * bind to a range of consoles specified by @first and @last. It will
++ * also initialize the console driver by calling con_startup().
++ */
++int register_con_driver(const struct consw *csw, int first, int last)
++{
++	int retval;
++	
++	console_lock();
++	retval = do_register_con_driver(csw, first, last);
++	console_unlock();
++	return retval;
++}
+ EXPORT_SYMBOL(register_con_driver);
+ 
+ /**
+@@ -3622,6 +3642,29 @@ EXPORT_SYMBOL(unregister_con_driver);
+  *
+  *      take_over_console is basically a register followed by unbind
+  */
++int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
++{
++	int err;
 +
-+This file has one line per CPU, or eight for this 8-CPU system.
-+The fields are as follows:
- 
- o	The number at the beginning of each line is the CPU number.
- 	CPUs numbers followed by an exclamation mark are offline,
-@@ -64,11 +74,13 @@ o	The number at the beginning of each line is the CPU number.
- 	substantially larger than the number of actual CPUs.
- 
- o	"c" is the count of grace periods that this CPU believes have
--	completed.  Offlined CPUs and CPUs in dynticks idle mode may
--	lag quite a ways behind, for example, CPU 6 under "rcu_sched"
--	above, which has been offline through not quite 40,000 RCU grace
--	periods.  It is not unusual to see CPUs lagging by thousands of
--	grace periods.
-+	completed.  Offlined CPUs and CPUs in dynticks idle mode may lag
-+	quite a ways behind, for example, CPU 4 under "rcu_sched" above,
-+	which has been offline through 16 RCU grace periods.  It is not
-+	unusual to see offline CPUs lagging by thousands of grace periods.
-+	Note that although the grace-period number is an unsigned long,
-+	it is printed out as a signed long to allow more human-friendly
-+	representation near boot time.
- 
- o	"g" is the count of grace periods that this CPU believes have
- 	started.  Again, offlined CPUs and CPUs in dynticks idle mode
-@@ -84,30 +96,25 @@ o	"pq" indicates that this CPU has passed through a quiescent state
- 	CPU has not yet reported that fact, (2) some other CPU has not
- 	yet reported for this grace period, or (3) both.
- 
--o	"pgp" indicates which grace period the last-observed quiescent
--	state for this CPU corresponds to.  This is important for handling
--	the race between CPU 0 reporting an extended dynticks-idle
--	quiescent state for CPU 1 and CPU 1 suddenly waking up and
--	reporting its own quiescent state.  If CPU 1 was the last CPU
--	for the current grace period, then the CPU that loses this race
--	will attempt to incorrectly mark CPU 1 as having checked in for
--	the next grace period!
--
- o	"qp" indicates that RCU still expects a quiescent state from
- 	this CPU.  Offlined CPUs and CPUs in dyntick idle mode might
- 	well have qp=1, which is OK: RCU is still ignoring them.
- 
- o	"dt" is the current value of the dyntick counter that is incremented
--	when entering or leaving dynticks idle state, either by the
--	scheduler or by irq.  This number is even if the CPU is in
--	dyntick idle mode and odd otherwise.  The number after the first
--	"/" is the interrupt nesting depth when in dyntick-idle state,
--	or one greater than the interrupt-nesting depth otherwise.
--	The number after the second "/" is the NMI nesting depth.
-+	when entering or leaving idle, either due to a context switch or
-+	due to an interrupt.  This number is even if the CPU is in idle
-+	from RCU's viewpoint and odd otherwise.  The number after the
-+	first "/" is the interrupt nesting depth when in idle state,
-+	or a large number added to the interrupt-nesting depth when
-+	running a non-idle task.  Some architectures do not accurately
-+	count interrupt nesting when running in non-idle kernel context,
-+	which can result in interesting anomalies such as negative
-+	interrupt-nesting levels.  The number after the second "/"
-+	is the NMI nesting depth.
- 
- o	"df" is the number of times that some other CPU has forced a
- 	quiescent state on behalf of this CPU due to this CPU being in
--	dynticks-idle state.
-+	idle state.
- 
- o	"of" is the number of times that some other CPU has forced a
- 	quiescent state on behalf of this CPU due to this CPU being
-@@ -120,9 +127,13 @@ o	"of" is the number of times that some other CPU has forced a
- 	error, so it makes sense to err conservatively.
- 
- o	"ql" is the number of RCU callbacks currently residing on
--	this CPU.  This is the total number of callbacks, regardless
--	of what state they are in (new, waiting for grace period to
--	start, waiting for grace period to end, ready to invoke).
-+	this CPU.  The first number is the number of "lazy" callbacks
-+	that are known to RCU to only be freeing memory, and the number
-+	after the "/" is the total number of callbacks, lazy or not.
-+	These counters count callbacks regardless of what phase of
-+	grace-period processing that they are in (new, waiting for
-+	grace period to start, waiting for grace period to end, ready
-+	to invoke).
- 
- o	"qs" gives an indication of the state of the callback queue
- 	with four characters:
-@@ -150,6 +161,43 @@ o	"qs" gives an indication of the state of the callback queue
- 	If there are no callbacks in a given one of the above states,
- 	the corresponding character is replaced by ".".
- 
-+o	"b" is the batch limit for this CPU.  If more than this number
-+	of RCU callbacks is ready to invoke, then the remainder will
-+	be deferred.
++	err = do_register_con_driver(csw, first, last);
++	/* if we get an busy error we still want to bind the console driver
++	 * and return success, as we may have unbound the console driver
++	 * but not unregistered it.
++	*/
++	if (err == -EBUSY)
++		err = 0;
++	if (!err)
++		do_bind_con_driver(csw, first, last, deflt);
 +
-+o	"ci" is the number of RCU callbacks that have been invoked for
-+	this CPU.  Note that ci+nci+ql is the number of callbacks that have
-+	been registered in absence of CPU-hotplug activity.
++	return err;
++}
++/*
++ *	If we support more console drivers, this function is used
++ *	when a driver wants to take over some existing consoles
++ *	and become default driver for newly opened ones.
++ *
++ *      take_over_console is basically a register followed by unbind
++ */
+ int take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+ 	int err;
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index fdefa8f..c75f8ce 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -529,6 +529,34 @@ static int search_for_mapped_con(void)
+ 	return retval;
+ }
+ 
++static int do_fbcon_takeover(int show_logo)
++{
++	int err, i;
 +
-+o	"nci" is the number of RCU callbacks that have been offloaded from
-+	this CPU.  This will always be zero unless the kernel was built
-+	with CONFIG_RCU_NOCB_CPU=y and the "rcu_nocbs=" kernel boot
-+	parameter was specified.
++	if (!num_registered_fb)
++		return -ENODEV;
 +
-+o	"co" is the number of RCU callbacks that have been orphaned due to
-+	this CPU going offline.  These orphaned callbacks have been moved
-+	to an arbitrarily chosen online CPU.
++	if (!show_logo)
++		logo_shown = FBCON_LOGO_DONTSHOW;
 +
-+o	"ca" is the number of RCU callbacks that have been adopted by this
-+	CPU due to other CPUs going offline.  Note that ci+co-ca+ql is
-+	the number of RCU callbacks registered on this CPU.
++	for (i = first_fb_vc; i <= last_fb_vc; i++)
++		con2fb_map[i] = info_idx;
 +
++	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
++				fbcon_is_default);
 +
-+Kernels compiled with CONFIG_RCU_BOOST=y display the following from
-+/debug/rcu/rcu_preempt/rcudata:
++	if (err) {
++		for (i = first_fb_vc; i <= last_fb_vc; i++) {
++			con2fb_map[i] = -1;
++		}
++		info_idx = -1;
++	} else {
++		fbcon_has_console_bind = 1;
++	}
 +
-+  0!c=12865 g=12866 pq=1 qp=1 dt=83113/140000000000000/0 df=288 of=11 ql=0/0 qs=N... kt=0/O ktl=944 b=10 ci=60709 nci=0 co=748 ca=871
-+  1 c=14407 g=14408 pq=1 qp=0 dt=100679/140000000000000/0 df=378 of=7 ql=0/119 qs=NRW. kt=0/W ktl=9b6 b=10 ci=109740 nci=0 co=589 ca=485
-+  2 c=14407 g=14408 pq=1 qp=0 dt=105486/0/0 df=90 of=9 ql=0/89 qs=NRW. kt=0/W ktl=c0c b=10 ci=83113 nci=0 co=533 ca=490
-+  3 c=14407 g=14408 pq=1 qp=0 dt=107138/0/0 df=142 of=8 ql=0/188 qs=NRW. kt=0/W ktl=b96 b=10 ci=121114 nci=0 co=426 ca=290
-+  4 c=14405 g=14406 pq=1 qp=1 dt=50238/0/0 df=706 of=7 ql=0/0 qs=.... kt=0/W ktl=812 b=10 ci=34929 nci=0 co=643 ca=114
-+  5!c=14168 g=14169 pq=1 qp=0 dt=45465/140000000000000/0 df=161 of=11 ql=0/0 qs=N... kt=0/O ktl=b4d b=10 ci=47712 nci=0 co=677 ca=722
-+  6 c=14404 g=14405 pq=1 qp=0 dt=59454/0/0 df=94 of=6 ql=0/0 qs=.... kt=0/W ktl=e57 b=10 ci=55597 nci=0 co=701 ca=811
-+  7 c=14407 g=14408 pq=1 qp=1 dt=68850/0/0 df=31 of=8 ql=0/0 qs=.... kt=0/W ktl=14bd b=10 ci=77475 nci=0 co=508 ca=1042
++	return err;
++}
 +
-+This is similar to the output discussed above, but contains the following
-+additional fields:
-+
- o	"kt" is the per-CPU kernel-thread state.  The digit preceding
- 	the first slash is zero if there is no work pending and 1
- 	otherwise.  The character between the first pair of slashes is
-@@ -184,35 +232,12 @@ o	"ktl" is the low-order 16 bits (in hexadecimal) of the count of
+ static int fbcon_takeover(int show_logo)
+ {
+ 	int err, i;
+@@ -3115,7 +3143,7 @@ static int fbcon_fb_registered(struct fb_info *info)
+ 		}
  
- 	This field is displayed only for CONFIG_RCU_BOOST kernels.
+ 		if (info_idx != -1)
+-			ret = fbcon_takeover(1);
++			ret = do_fbcon_takeover(1);
+ 	} else {
+ 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
+ 			if (con2fb_map_boot[i] == idx)
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 3ff0105..564ebe9 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1650,7 +1650,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	event.info = fb_info;
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++        console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
++        console_unlock();
+ 	unlock_fb_info(fb_info);
+ 	return 0;
+ }
+@@ -1853,11 +1855,8 @@ int fb_new_modelist(struct fb_info *info)
+ 	err = 1;
  
--o	"b" is the batch limit for this CPU.  If more than this number
--	of RCU callbacks is ready to invoke, then the remainder will
--	be deferred.
--
--o	"ci" is the number of RCU callbacks that have been invoked for
--	this CPU.  Note that ci+ql is the number of callbacks that have
--	been registered in absence of CPU-hotplug activity.
--
--o	"co" is the number of RCU callbacks that have been orphaned due to
--	this CPU going offline.  These orphaned callbacks have been moved
--	to an arbitrarily chosen online CPU.
--
--o	"ca" is the number of RCU callbacks that have been adopted due to
--	other CPUs going offline.  Note that ci+co-ca+ql is the number of
--	RCU callbacks registered on this CPU.
+ 	if (!list_empty(&info->modelist)) {
+-		if (!lock_fb_info(info))
+-			return -ENODEV;
+ 		event.info = info;
+ 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+-		unlock_fb_info(info);
+ 	}
  
--There is also an rcu/rcudata.csv file with the same information in
--comma-separated-variable spreadsheet format.
-+The output of "cat rcu/rcu_preempt/rcugp" looks as follows:
+ 	return err;
+diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+index a55e366..ef476b0 100644
+--- a/drivers/video/fbsysfs.c
++++ b/drivers/video/fbsysfs.c
+@@ -177,6 +177,8 @@ static ssize_t store_modes(struct device *device,
+ 	if (i * sizeof(struct fb_videomode) != count)
+ 		return -EINVAL;
  
-+completed=31249  gpnum=31250  age=1  max=18
++	if (!lock_fb_info(fb_info))
++		return -ENODEV;
+ 	console_lock();
+ 	list_splice(&fb_info->modelist, &old_list);
+ 	fb_videomode_to_modelist((const struct fb_videomode *)buf, i,
+@@ -188,6 +190,7 @@ static ssize_t store_modes(struct device *device,
+ 		fb_destroy_modelist(&old_list);
  
--The output of "cat rcu/rcugp" looks as follows:
--
--rcu_sched: completed=33062  gpnum=33063
--rcu_bh: completed=464  gpnum=464
--
--Again, this output is for both "rcu_sched" and "rcu_bh".  Note that
--kernels built with CONFIG_TREE_PREEMPT_RCU will have an additional
--"rcu_preempt" line.  The fields are taken from the rcu_state structure,
--and are as follows:
-+These fields are taken from the rcu_state structure, and are as follows:
+ 	console_unlock();
++	unlock_fb_info(fb_info);
  
- o	"completed" is the number of grace periods that have completed.
- 	It is comparable to the "c" field from rcu/rcudata in that a
-@@ -220,44 +245,42 @@ o	"completed" is the number of grace periods that have completed.
- 	that the corresponding RCU grace period has completed.
- 
- o	"gpnum" is the number of grace periods that have started.  It is
--	comparable to the "g" field from rcu/rcudata in that a CPU
--	whose "g" field matches the value of "gpnum" is aware that the
--	corresponding RCU grace period has started.
-+	similarly comparable to the "g" field from rcu/rcudata in that
-+	a CPU whose "g" field matches the value of "gpnum" is aware that
-+	the corresponding RCU grace period has started.
- 
--	If these two fields are equal (as they are for "rcu_bh" above),
--	then there is no grace period in progress, in other words, RCU
--	is idle.  On the other hand, if the two fields differ (as they
--	do for "rcu_sched" above), then an RCU grace period is in progress.
-+	If these two fields are equal, then there is no grace period
-+	in progress, in other words, RCU is idle.  On the other hand,
-+	if the two fields differ (as they are above), then an RCU grace
-+	period is in progress.
- 
-+o	"age" is the number of jiffies that the current grace period
-+	has extended for, or zero if there is no grace period currently
-+	in effect.
- 
--The output of "cat rcu/rcuhier" looks as follows, with very long lines:
-+o	"max" is the age in jiffies of the longest-duration grace period
-+	thus far.
- 
--c=6902 g=6903 s=2 jfq=3 j=72c7 nfqs=13142/nfqsng=0(13142) fqlh=6
--1/1 ..>. 0:127 ^0
--3/3 ..>. 0:35 ^0    0/0 ..>. 36:71 ^1    0/0 ..>. 72:107 ^2    0/0 ..>. 108:127 ^3
--3/3f ..>. 0:5 ^0    2/3 ..>. 6:11 ^1    0/0 ..>. 12:17 ^2    0/0 ..>. 18:23 ^3    0/0 ..>. 24:29 ^4    0/0 ..>. 30:35 ^5    0/0 ..>. 36:41 ^0    0/0 ..>. 42:47 ^1    0/0 ..>. 48:53 ^2    0/0 ..>. 54:59 ^3    0/0 ..>. 60:65 ^4    0/0 ..>. 66:71 ^5    0/0 ..>. 72:77 ^0    0/0 ..>. 78:83 ^1    0/0 ..>. 84:89 ^2    0/0 ..>. 90:95 ^3    0/0 ..>. 96:101 ^4    0/0 ..>. 102:107 ^5    0/0 ..>. 108:113 ^0    0/0 ..>. 114:119 ^1    0/0 ..>. 120:125 ^2    0/0 ..>. 126:127 ^3
--rcu_bh:
--c=-226 g=-226 s=1 jfq=-5701 j=72c7 nfqs=88/nfqsng=0(88) fqlh=0
--0/1 ..>. 0:127 ^0
--0/3 ..>. 0:35 ^0    0/0 ..>. 36:71 ^1    0/0 ..>. 72:107 ^2    0/0 ..>. 108:127 ^3
--0/3f ..>. 0:5 ^0    0/3 ..>. 6:11 ^1    0/0 ..>. 12:17 ^2    0/0 ..>. 18:23 ^3    0/0 ..>. 24:29 ^4    0/0 ..>. 30:35 ^5    0/0 ..>. 36:41 ^0    0/0 ..>. 42:47 ^1    0/0 ..>. 48:53 ^2    0/0 ..>. 54:59 ^3    0/0 ..>. 60:65 ^4    0/0 ..>. 66:71 ^5    0/0 ..>. 72:77 ^0    0/0 ..>. 78:83 ^1    0/0 ..>. 84:89 ^2    0/0 ..>. 90:95 ^3    0/0 ..>. 96:101 ^4    0/0 ..>. 102:107 ^5    0/0 ..>. 108:113 ^0    0/0 ..>. 114:119 ^1    0/0 ..>. 120:125 ^2    0/0 ..>. 126:127 ^3
-+The output of "cat rcu/rcu_preempt/rcuhier" looks as follows:
- 
--This is once again split into "rcu_sched" and "rcu_bh" portions,
--and CONFIG_TREE_PREEMPT_RCU kernels will again have an additional
--"rcu_preempt" section.  The fields are as follows:
-+c=14407 g=14408 s=0 jfq=2 j=c863 nfqs=12040/nfqsng=0(12040) fqlh=1051 oqlen=0/0
-+3/3 ..>. 0:7 ^0
-+e/e ..>. 0:3 ^0    d/d ..>. 4:7 ^1
- 
--o	"c" is exactly the same as "completed" under rcu/rcugp.
-+The fields are as follows:
- 
--o	"g" is exactly the same as "gpnum" under rcu/rcugp.
-+o	"c" is exactly the same as "completed" under rcu/rcu_preempt/rcugp.
- 
--o	"s" is the "signaled" state that drives force_quiescent_state()'s
-+o	"g" is exactly the same as "gpnum" under rcu/rcu_preempt/rcugp.
-+
-+o	"s" is the current state of the force_quiescent_state()
- 	state machine.
- 
- o	"jfq" is the number of jiffies remaining for this grace period
- 	before force_quiescent_state() is invoked to help push things
--	along.  Note that CPUs in dyntick-idle mode throughout the grace
--	period will not report on their own, but rather must be check by
--	some other CPU via force_quiescent_state().
-+	along.	Note that CPUs in idle mode throughout the grace period
-+	will not report on their own, but rather must be check by some
-+	other CPU via force_quiescent_state().
- 
- o	"j" is the low-order four hex digits of the jiffies counter.
- 	Yes, Paul did run into a number of problems that turned out to
-@@ -268,7 +291,8 @@ o	"nfqs" is the number of calls to force_quiescent_state() since
- 
- o	"nfqsng" is the number of useless calls to force_quiescent_state(),
- 	where there wasn't actually a grace period active.  This can
--	happen due to races.  The number in parentheses is the difference
-+	no longer happen due to grace-period processing being pushed
-+	into a kthread.  The number in parentheses is the difference
- 	between "nfqs" and "nfqsng", or the number of times that
- 	force_quiescent_state() actually did some real work.
- 
-@@ -276,28 +300,27 @@ o	"fqlh" is the number of calls to force_quiescent_state() that
- 	exited immediately (without even being counted in nfqs above)
- 	due to contention on ->fqslock.
- 
--o	Each element of the form "1/1 0:127 ^0" represents one struct
--	rcu_node.  Each line represents one level of the hierarchy, from
--	root to leaves.  It is best to think of the rcu_data structures
--	as forming yet another level after the leaves.  Note that there
--	might be either one, two, or three levels of rcu_node structures,
--	depending on the relationship between CONFIG_RCU_FANOUT and
--	CONFIG_NR_CPUS.
-+o	Each element of the form "3/3 ..>. 0:7 ^0" represents one rcu_node
-+	structure.  Each line represents one level of the hierarchy,
-+	from root to leaves.  It is best to think of the rcu_data
-+	structures as forming yet another level after the leaves.
-+	Note that there might be either one, two, three, or even four
-+	levels of rcu_node structures, depending on the relationship
-+	between CONFIG_RCU_FANOUT, CONFIG_RCU_FANOUT_LEAF (possibly
-+	adjusted using the rcu_fanout_leaf kernel boot parameter), and
-+	CONFIG_NR_CPUS (possibly adjusted using the nr_cpu_ids count of
-+	possible CPUs for the booting hardware).
- 
- 	o	The numbers separated by the "/" are the qsmask followed
- 		by the qsmaskinit.  The qsmask will have one bit
--		set for each entity in the next lower level that
--		has not yet checked in for the current grace period.
-+		set for each entity in the next lower level that has
-+		not yet checked in for the current grace period ("e"
-+		indicating CPUs 5, 6, and 7 in the example above).
- 		The qsmaskinit will have one bit for each entity that is
- 		currently expected to check in during each grace period.
- 		The value of qsmaskinit is assigned to that of qsmask
- 		at the beginning of each grace period.
- 
--		For example, for "rcu_sched", the qsmask of the first
--		entry of the lowest level is 0x14, meaning that we
--		are still waiting for CPUs 2 and 4 to check in for the
--		current grace period.
--
- 	o	The characters separated by the ">" indicate the state
- 		of the blocked-tasks lists.  A "G" preceding the ">"
- 		indicates that at least one task blocked in an RCU
-@@ -312,48 +335,39 @@ o	Each element of the form "1/1 0:127 ^0" represents one struct
- 		A "." character appears if the corresponding condition
- 		does not hold, so that "..>." indicates that no tasks
- 		are blocked.  In contrast, "GE>T" indicates maximal
--		inconvenience from blocked tasks.
-+		inconvenience from blocked tasks.  CONFIG_TREE_RCU
-+		builds of the kernel will always show "..>.".
- 
- 	o	The numbers separated by the ":" are the range of CPUs
- 		served by this struct rcu_node.  This can be helpful
- 		in working out how the hierarchy is wired together.
- 
--		For example, the first entry at the lowest level shows
--		"0:5", indicating that it covers CPUs 0 through 5.
-+		For example, the example rcu_node structure shown above
-+		has "0:7", indicating that it covers CPUs 0 through 7.
- 
- 	o	The number after the "^" indicates the bit in the
--		next higher level rcu_node structure that this
--		rcu_node structure corresponds to.
--
--		For example, the first entry at the lowest level shows
--		"^0", indicating that it corresponds to bit zero in
--		the first entry at the middle level.
--
--
--The output of "cat rcu/rcu_pending" looks as follows:
--
--rcu_sched:
--  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nn=146741
--  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nn=155792
--  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nn=136629
--  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nn=137723
--  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nn=123110
--  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nn=137456
--  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nn=120834
--  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nn=144888
--rcu_bh:
--  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nn=145314
--  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nn=143180
--  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nn=117936
--  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nn=134863
--  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nn=110671
--  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nn=133235
--  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nn=110921
--  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nn=118542
--
--As always, this is once again split into "rcu_sched" and "rcu_bh"
--portions, with CONFIG_TREE_PREEMPT_RCU kernels having an additional
--"rcu_preempt" section.  The fields are as follows:
-+		next higher level rcu_node structure that this rcu_node
-+		structure corresponds to.  For example, the "d/d ..>. 4:7
-+		^1" has a "1" in this position, indicating that it
-+		corresponds to the "1" bit in the "3" shown in the
-+		"3/3 ..>. 0:7 ^0" entry on the next level up.
-+
-+
-+The output of "cat rcu/rcu_sched/rcu_pending" looks as follows:
-+
-+  0!np=26111 qsp=29 rpq=5386 cbr=1 cng=570 gpc=3674 gps=577 nn=15903
-+  1!np=28913 qsp=35 rpq=6097 cbr=1 cng=448 gpc=3700 gps=554 nn=18113
-+  2!np=32740 qsp=37 rpq=6202 cbr=0 cng=476 gpc=4627 gps=546 nn=20889
-+  3 np=23679 qsp=22 rpq=5044 cbr=1 cng=415 gpc=3403 gps=347 nn=14469
-+  4!np=30714 qsp=4 rpq=5574 cbr=0 cng=528 gpc=3931 gps=639 nn=20042
-+  5 np=28910 qsp=2 rpq=5246 cbr=0 cng=428 gpc=4105 gps=709 nn=18422
-+  6!np=38648 qsp=5 rpq=7076 cbr=0 cng=840 gpc=4072 gps=961 nn=25699
-+  7 np=37275 qsp=2 rpq=6873 cbr=0 cng=868 gpc=3416 gps=971 nn=25147
-+
-+The fields are as follows:
-+
-+o	The leading number is the CPU number, with "!" indicating
-+	an offline CPU.
- 
- o	"np" is the number of times that __rcu_pending() has been invoked
- 	for the corresponding flavor of RCU.
-@@ -377,38 +391,23 @@ o	"gpc" is the number of times that an old grace period had
- o	"gps" is the number of times that a new grace period had started,
- 	but this CPU was not yet aware of it.
- 
--o	"nn" is the number of times that this CPU needed nothing.  Alert
--	readers will note that the rcu "nn" number for a given CPU very
--	closely matches the rcu_bh "np" number for that same CPU.  This
--	is due to short-circuit evaluation in rcu_pending().
--
--
--The output of "cat rcu/rcutorture" looks as follows:
--
--rcutorture test sequence: 0 (test in progress)
--rcutorture update version number: 615
--
--The first line shows the number of rcutorture tests that have completed
--since boot.  If a test is currently running, the "(test in progress)"
--string will appear as shown above.  The second line shows the number of
--update cycles that the current test has started, or zero if there is
--no test in progress.
-+o	"nn" is the number of times that this CPU needed nothing.
- 
- 
- The output of "cat rcu/rcuboost" looks as follows:
- 
--0:5 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=2f95 bt=300f
--     balk: nt=0 egt=989 bt=0 nb=0 ny=0 nos=16
--6:7 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=2f95 bt=300f
--     balk: nt=0 egt=225 bt=0 nb=0 ny=0 nos=6
-+0:3 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=c864 bt=c894
-+    balk: nt=0 egt=4695 bt=0 nb=0 ny=56 nos=0
-+4:7 tasks=.... kt=W ntb=0 neb=0 nnb=0 j=c864 bt=c894
-+    balk: nt=0 egt=6541 bt=0 nb=0 ny=126 nos=0
- 
- This information is output only for rcu_preempt.  Each two-line entry
- corresponds to a leaf rcu_node strcuture.  The fields are as follows:
- 
- o	"n:m" is the CPU-number range for the corresponding two-line
- 	entry.  In the sample output above, the first entry covers
--	CPUs zero through five and the second entry covers CPUs 6
--	and 7.
-+	CPUs zero through three and the second entry covers CPUs four
-+	through seven.
- 
- o	"tasks=TNEB" gives the state of the various segments of the
- 	rnp->blocked_tasks list:
+ 	return 0;
+ }
+diff --git a/include/linux/console.h b/include/linux/console.h
+index dedb082..4ef4307 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -78,6 +78,7 @@ int con_is_bound(const struct consw *csw);
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
++int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+ #ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
 
