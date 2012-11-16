@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2KPPwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:52:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35425 "EHLO mga02.intel.com"
+	id S1752683Ab2KPPwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:52:51 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59998 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab2KPPwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:52:21 -0500
+	id S1752598Ab2KPPwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:52:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,265,1352102400"; 
-   d="scan'208";a="220692877"
+   d="scan'208";a="250305898"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 3/6] dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
-Date: Fri, 16 Nov 2012 17:52:02 +0200
-Message-Id: <1353081126-17995-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: [PATCHv2 5/6] dma: ipu_idmac: reuse is_slave_xfer helper
+Date: Fri, 16 Nov 2012 17:52:04 +0200
+Message-Id: <1353081126-17995-6-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353081126-17995-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1353081126-17995-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -23,39 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_transfer_direction is a normal enum. It means we can't usually use the
-values as bit fields. Let's adjust this check and move it above the usage of
-the direction parameter, due to the nature of the following usage of it.
+The is_slave_xfer helps to check if the transfer type is slave.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
- drivers/dma/dw_dmac.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/dma/ipu/ipu_idmac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index a4a5c80..5e2c4dc 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1336,6 +1336,9 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index 6585537..c8d0254 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -1347,7 +1347,7 @@ static struct dma_async_tx_descriptor *idmac_prep_slave_sg(struct dma_chan *chan
+ 	    chan->chan_id != IDMAC_IC_7)
+ 		return NULL;
  
- 	retval = ERR_PTR(-EINVAL);
- 
-+	if (unlikely(!is_slave_xfer(direction)))
-+		goto out_err;
-+
- 	if (direction == DMA_MEM_TO_DEV)
- 		reg_width = __ffs(sconfig->dst_addr_width);
- 	else
-@@ -1350,8 +1353,6 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
- 		goto out_err;
- 	if (unlikely(buf_addr & ((1 << reg_width) - 1)))
- 		goto out_err;
--	if (unlikely(!(direction & (DMA_MEM_TO_DEV | DMA_DEV_TO_MEM))))
--		goto out_err;
- 
- 	retval = ERR_PTR(-ENOMEM);
- 
+-	if (direction != DMA_DEV_TO_MEM && direction != DMA_MEM_TO_DEV) {
++	if (!is_slave_xfer(direction)) {
+ 		dev_err(chan->device->dev, "Invalid DMA direction %d!\n", direction);
+ 		return NULL;
+ 	}
 -- 
 1.7.10.4
 
