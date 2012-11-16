@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391Ab2KPJod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:44:33 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15112 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab2KPJob (ORCPT
+	id S1751209Ab2KPJpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:45:25 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:39800 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab2KPJpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:44:31 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 16 Nov 2012 01:44:29 -0800
-Message-ID: <50A60AF6.9080509@nvidia.com>
-Date: Fri, 16 Nov 2012 18:44:22 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
-References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com> <1353047903-14363-2-git-send-email-acourbot@nvidia.com> <20121116072642.GA22291@lizard>
-In-Reply-To: <20121116072642.GA22291@lizard>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Nov 2012 04:45:24 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2 0/3] Add hardware I/O coherency support for Armada 370/XP
+Date: Fri, 16 Nov 2012 10:44:57 +0100
+Message-Id: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 04:26 PM, Anton Vorontsov wrote:
->> +#include "power_seq_delay.c"
->> +#include "power_seq_regulator.c"
->> +#include "power_seq_pwm.c"
->> +#include "power_seq_gpio.c"
->
-> This is odd, although I remember you already explained why you have to
-> include the .c files, instead of linking them separately. But I forgot the
-> reason. :) I think this deserves a comment in the code.
+The purpose of this patch set is to add hardware I/O Coherency support
+for Armada 370 and Armada XP. Theses SoCs come with an unit called
+coherency fabric. A beginning of the support for this unit have been
+introduced with the SMP patch set. This series extend this support:
+the coherency fabric unit allows to use the Armada XP and the Armada
+370 as nearly coherent architectures.
 
-This is because of the table right after these includes:
+The third patches enables this new feature and register our own set
+of DMA ops, to benefit this hardware enhancement.
 
-static const struct power_seq_res_ops power_seq_ops[POWER_SEQ_NUM_TYPES] = {
-	[POWER_SEQ_DELAY] = POWER_SEQ_DELAY_TYPE,
-	[POWER_SEQ_REGULATOR] = POWER_SEQ_REGULATOR_TYPE,
-	[POWER_SEQ_PWM] = POWER_SEQ_PWM_TYPE,
-	[POWER_SEQ_GPIO] = POWER_SEQ_GPIO_TYPE,
-};
+The first patches exports dma operation functions needed by to
+register our own set of dma ops.
 
-The POWER_SEQ_*_TYPE macros are defined in the C files. It's the 
-simplest way to initialize this table, and the code inside these C files 
-is short and simple enough that I thought I would be forgiven. :)
+The second patch introduces a new flag for the address decoding
+configuration in order to be able to set the memory windows as
+shared memory.
 
-At first everything was in power_seq.c and it was fine, then I thought 
-it would be better to move resource support code into their own filesm 
-and now everybody is asking. :P
+This series depend on the SMP patch set (V3 was posted on Monday)
 
-But yeah, maybe it would be even better to not stop halfway and use 
-dynamic linking.
+The git branch called HWIOCC-for-3.8-V2 is also available at
+https://github.com/MISL-EBU-System-SW/mainline-public.git.
 
-Comment added for the time being. ;)
+Changelog:
+V1 -> V2:
+- Rebased on to v3.7-rc5
+- Added a new patch to exports the dma ops functions
+- Renamed the function for a more generic name mvebu_hwcc
+- removed the non SMP case during init
+- spelling and wording issues
+- updating the binding documentation for coherency fabric
 
->> +static int of_power_seq_parse_step(struct device *dev,
->> +				   struct device_node *node,
->> +				   struct power_seq *seq,
->> +				   unsigned int step_nbr,
->> +				   struct list_head *resources)
->> +{
->> +	struct power_seq_step *step = &seq->steps[step_nbr];
->> +	struct power_seq_resource res, *res2;
->> +	const char *type;
->> +	int i, err;
->
-> nit: one variable declaration per line.
+Gregory CLEMENT (3):
+  arm: dma mapping: Export dma ops functions
+  arm: plat-orion: Add coherency attribute when setup mbus target
+  arm: mvebu: Add hardware I/O Coherency support
 
-Fair enough - but is that a convention? checkpatch.pl was happy with these.
+ .../devicetree/bindings/arm/coherency-fabric.txt   |    9 ++-
+ arch/arm/boot/dts/armada-370-xp.dtsi               |    3 +-
+ arch/arm/include/asm/dma-mapping.h                 |   62 +++++++++++++++++
+ arch/arm/mach-mvebu/addr-map.c                     |    3 +
+ arch/arm/mach-mvebu/coherency.c                    |   73 ++++++++++++++++++++
+ arch/arm/mm/dma-mapping.c                          |   36 +++-------
+ arch/arm/plat-orion/addr-map.c                     |    4 ++
+ arch/arm/plat-orion/include/plat/addr-map.h        |    1 +
+ 8 files changed, 160 insertions(+), 31 deletions(-)
 
-Thanks,
-Alex.
-
+-- 
+1.7.9.5
 
