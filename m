@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2KPTUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:20:35 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33865 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab2KPTUd (ORCPT
+	id S1753408Ab2KPTUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:20:44 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56204 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab2KPTUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:20:33 -0500
+	Fri, 16 Nov 2012 14:20:41 -0500
 From: Tejun Heo <tj@kernel.org>
 To: daniel.wagner@bmw-carit.de, srivatsa.bhat@linux.vnet.ibm.com,
         john.r.fastabend@intel.com, nhorman@tuxdriver.com
 Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/8] cgroup: add cgroup->id
-Date: Fri, 16 Nov 2012 11:20:17 -0800
-Message-Id: <1353093624-22608-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/8] netprio_cgroup: use cgroup->id instead of cgroup_netprio_state->prioidx
+Date: Fri, 16 Nov 2012 11:20:21 -0800
+Message-Id: <1353093624-22608-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353093624-22608-1-git-send-email-tj@kernel.org>
 References: <1353093624-22608-1-git-send-email-tj@kernel.org>
@@ -23,106 +23,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of generic cgroup hierarchy iterators, css_id is
-being phased out.  It was unnecessarily complex, id'ing the wrong
-thing (cgroups need IDs, not CSSes) and has other oddities like not
-being available at ->css_alloc().
+With priomap expansion no longer depending on knowing max id
+allocated, netprio_cgroup can use cgroup->id insted of cs->prioidx.
+Drop prioidx alloc/free logic and convert all uses to cgroup->id.
 
-This patch adds cgroup->id, which is a simple per-hierarchy
-ida-allocated ID which is assigned before ->css_alloc() and released
-after ->css_free().
+* In cgrp_css_alloc(), parent->id test is moved above @cs allocation
+  to simplify error path.
+
+* In cgrp_css_free(), @cs assignment is made initialization.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |  2 ++
- kernel/cgroup.c        | 15 ++++++++++++++-
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ include/net/netprio_cgroup.h | 11 +++-----
+ net/core/netprio_cgroup.c    | 65 ++++++++------------------------------------
+ 2 files changed, 15 insertions(+), 61 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index d5fc8a7..b512469 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -159,6 +159,8 @@ struct cgroup {
- 	 */
- 	atomic_t count;
+diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
+index 2760f4f..1d04b6f 100644
+--- a/include/net/netprio_cgroup.h
++++ b/include/net/netprio_cgroup.h
+@@ -27,7 +27,6 @@ struct netprio_map {
  
-+	int id;				/* ida allocated in-hierarchy ID */
-+
- 	/*
- 	 * We link our 'sibling' struct into our parent's 'children'.
- 	 * Our children link their 'sibling' into our 'children'.
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 99d5e69..0b25dcb 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -138,6 +138,9 @@ struct cgroupfs_root {
- 	/* Hierarchy-specific flags */
- 	unsigned long flags;
+ struct cgroup_netprio_state {
+ 	struct cgroup_subsys_state css;
+-	u32 prioidx;
+ };
  
-+	/* IDs for cgroups in this hierarchy */
-+	struct ida cgroup_ida;
-+
- 	/* The path to use for release notifications. */
- 	char release_agent_path[PATH_MAX];
+ extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
+@@ -36,13 +35,12 @@ extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
  
-@@ -890,6 +893,7 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ static inline u32 task_netprioidx(struct task_struct *p)
+ {
+-	struct cgroup_netprio_state *state;
++	struct cgroup_subsys_state *css;
+ 	u32 idx;
  
- 		simple_xattrs_free(&cgrp->xattrs);
+ 	rcu_read_lock();
+-	state = container_of(task_subsys_state(p, net_prio_subsys_id),
+-			     struct cgroup_netprio_state, css);
+-	idx = state->prioidx;
++	css = task_subsys_state(p, net_prio_subsys_id);
++	idx = css->cgroup->id;
+ 	rcu_read_unlock();
+ 	return idx;
+ }
+@@ -57,8 +55,7 @@ static inline u32 task_netprioidx(struct task_struct *p)
+ 	rcu_read_lock();
+ 	css = task_subsys_state(p, net_prio_subsys_id);
+ 	if (css)
+-		idx = container_of(css,
+-				   struct cgroup_netprio_state, css)->prioidx;
++		idx = css->cgroup->id;
+ 	rcu_read_unlock();
+ 	return idx;
+ }
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 569d83d..9409cdf 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -28,10 +28,6 @@
+ #include <linux/fdtable.h>
  
-+		ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
- 		kfree(cgrp);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
-@@ -1465,6 +1469,7 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
+ #define PRIOMAP_MIN_SZ		128
+-#define PRIOIDX_SZ 128
+-
+-static unsigned long prioidx_map[PRIOIDX_SZ];
+-static DEFINE_SPINLOCK(prioidx_map_lock);
  
- 	root->subsys_mask = opts->subsys_mask;
- 	root->flags = opts->flags;
-+	ida_init(&root->cgroup_ida);
- 	if (opts->release_agent)
- 		strcpy(root->release_agent_path, opts->release_agent);
- 	if (opts->name)
-@@ -1483,6 +1488,7 @@ static void cgroup_drop_root(struct cgroupfs_root *root)
- 	spin_lock(&hierarchy_id_lock);
- 	ida_remove(&hierarchy_ida, root->hierarchy_id);
- 	spin_unlock(&hierarchy_id_lock);
-+	ida_destroy(&root->cgroup_ida);
- 	kfree(root);
+ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgrp)
+ {
+@@ -39,32 +35,6 @@ static inline struct cgroup_netprio_state *cgrp_netprio_state(struct cgroup *cgr
+ 			    struct cgroup_netprio_state, css);
  }
  
-@@ -4093,10 +4099,15 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	struct cgroup_subsys *ss;
- 	struct super_block *sb = root->sb;
- 
-+	/* allocate the cgroup and its ID, 0 is reserved for the root */
- 	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
- 	if (!cgrp)
- 		return -ENOMEM;
- 
-+	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
-+	if (cgrp->id < 0)
-+		goto err_free_cgrp;
+-static int get_prioidx(u32 *prio)
+-{
+-	unsigned long flags;
+-	u32 prioidx;
+-
+-	spin_lock_irqsave(&prioidx_map_lock, flags);
+-	prioidx = find_first_zero_bit(prioidx_map, sizeof(unsigned long) * PRIOIDX_SZ);
+-	if (prioidx == sizeof(unsigned long) * PRIOIDX_SZ) {
+-		spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-		return -ENOSPC;
+-	}
+-	set_bit(prioidx, prioidx_map);
+-	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-	*prio = prioidx;
+-	return 0;
+-}
+-
+-static void put_prioidx(u32 idx)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&prioidx_map_lock, flags);
+-	clear_bit(idx, prioidx_map);
+-	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-}
+-
+ /*
+  * Extend @dev->priomap so that it's large enough to accomodate
+  * @target_idx.  @dev->priomap.priomap_len > @target_idx after successful
+@@ -120,62 +90,50 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+ static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+-	int ret = -EINVAL;
 +
- 	/*
- 	 * Only live parents can have children.  Note that the liveliness
- 	 * check isn't strictly necessary because cgroup_mkdir() and
-@@ -4106,7 +4117,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	 */
- 	if (!cgroup_lock_live_group(parent)) {
- 		err = -ENODEV;
--		goto err_free_cgrp;
-+		goto err_free_id;
- 	}
++	if (cgrp->parent && cgrp->parent->id)
++		return ERR_PTR(-EINVAL);
  
- 	/* Grab a reference on the superblock so the hierarchy doesn't
-@@ -4198,6 +4209,8 @@ err_free_all:
- 	mutex_unlock(&cgroup_mutex);
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
-+err_free_id:
-+	ida_simple_remove(&root->cgroup_ida, cgrp->id);
- err_free_cgrp:
- 	kfree(cgrp);
- 	return err;
+ 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+ 	if (!cs)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+-		goto out;
+-
+-	ret = get_prioidx(&cs->prioidx);
+-	if (ret < 0) {
+-		pr_warn("No space in priority index array\n");
+-		goto out;
+-	}
+-
+ 	return &cs->css;
+-out:
+-	kfree(cs);
+-	return ERR_PTR(ret);
+ }
+ 
+ static void cgrp_css_free(struct cgroup *cgrp)
+ {
+-	struct cgroup_netprio_state *cs;
++	struct cgroup_netprio_state *cs = cgrp_netprio_state(cgrp);
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
+ 
+-	cs = cgrp_netprio_state(cgrp);
+ 	rtnl_lock();
+ 	for_each_netdev(&init_net, dev) {
+ 		map = rtnl_dereference(dev->priomap);
+-		if (map && cs->prioidx < map->priomap_len)
+-			map->priomap[cs->prioidx] = 0;
++		if (map && cgrp->id < map->priomap_len)
++			map->priomap[cgrp->id] = 0;
+ 	}
+ 	rtnl_unlock();
+-	put_prioidx(cs->prioidx);
+ 	kfree(cs);
+ }
+ 
+ static u64 read_prioidx(struct cgroup *cgrp, struct cftype *cft)
+ {
+-	return (u64)cgrp_netprio_state(cgrp)->prioidx;
++	return cgrp->id;
+ }
+ 
+ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ 			struct cgroup_map_cb *cb)
+ {
+ 	struct net_device *dev;
+-	u32 prioidx = cgrp_netprio_state(cont)->prioidx;
++	u32 id = cont->id;
+ 	u32 priority;
+ 	struct netprio_map *map;
+ 
+ 	rcu_read_lock();
+ 	for_each_netdev_rcu(&init_net, dev) {
+ 		map = rcu_dereference(dev->priomap);
+-		priority = (map && prioidx < map->priomap_len) ? map->priomap[prioidx] : 0;
++		priority = (map && id < map->priomap_len) ? map->priomap[id] : 0;
+ 		cb->fill(cb, dev->name, priority);
+ 	}
+ 	rcu_read_unlock();
+@@ -185,7 +143,6 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 			 const char *buffer)
+ {
+-	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
+ 	char devname[IFNAMSIZ + 1];
+ 	struct net_device *dev;
+ 	struct netprio_map *map;
+@@ -201,13 +158,13 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 
+ 	rtnl_lock();
+ 
+-	ret = extend_netdev_table(dev, prioidx);
++	ret = extend_netdev_table(dev, cgrp->id);
+ 	if (ret)
+ 		goto out_unlock;
+ 
+ 	map = rtnl_dereference(dev->priomap);
+ 	if (map)
+-		map->priomap[prioidx] = prio;
++		map->priomap[cgrp->id] = prio;
+ out_unlock:
+ 	rtnl_unlock();
+ 	dev_put(dev);
 -- 
 1.7.11.7
 
