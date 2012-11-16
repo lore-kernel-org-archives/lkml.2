@@ -1,170 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab2KPBaC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:30:02 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:47506 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab2KPBaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:30:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, bhelgaas@google.com,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] gpio / ACPI: add ACPI support
-Date: Fri, 16 Nov 2012 02:34:22 +0100
-Message-ID: <3699628.UkRaSOtjaA@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <1352977397-2280-2-git-send-email-mika.westerberg@linux.intel.com>
+	id S1751440Ab2KPBcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 20:32:00 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39428 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab2KPBb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 20:31:58 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50A5976C.6080102@jp.fujitsu.com>
+Date: Fri, 16 Nov 2012 10:31:24 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Wen Congyang <wency@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-acpi@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [Patch v5 0/7] acpi,memory-hotplug: implement framework for hot
+ removing memory
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <9217155.1eDFuhkN55@vostro.rjw.lan> <50A591E5.9080906@jp.fujitsu.com> <1819346.BWGqmHiiPA@vostro.rjw.lan>
+In-Reply-To: <1819346.BWGqmHiiPA@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 15, 2012 01:03:15 PM Mika Westerberg wrote:
-> From: Mathias Nyman <mathias.nyman@linux.intel.com>
-> 
-> Add support for translating ACPI GPIO pin numbers to Linux GPIO API pins.
-> Needs a gpio controller driver with the acpi handler hook set.
-> 
-> Drivers can use acpi_get_gpio() to translate ACPI5 GpioIO and GpioInt
-> resources to Linux GPIO's.
-> 
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/gpio/Kconfig        |    4 ++++
->  drivers/gpio/Makefile       |    1 +
->  drivers/gpio/gpiolib-acpi.c |   56 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/acpi_gpio.h   |   19 +++++++++++++++
->  4 files changed, 80 insertions(+)
->  create mode 100644 drivers/gpio/gpiolib-acpi.c
->  create mode 100644 include/linux/acpi_gpio.h
-> 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index f11d8e3..5c9b384 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -49,6 +49,10 @@ config OF_GPIO
->  	def_bool y
->  	depends on OF
->  
-> +config GPIO_ACPI
-> +	def_bool y
-> +	depends on ACPI
-> +
->  config DEBUG_GPIO
->  	bool "Debug GPIO calls"
->  	depends on DEBUG_KERNEL
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 9aeed67..420dbac 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
->  
->  obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
->  obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-> +obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
->  
->  # Device drivers. Generally keep list sorted alphabetically
->  obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
-> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-> new file mode 100644
-> index 0000000..8ef9831
-> --- /dev/null
-> +++ b/drivers/gpio/gpiolib-acpi.c
-> @@ -0,0 +1,56 @@
-> +/*
-> + * ACPI helpers for GPIO API
-> + *
-> + * Copyright (C) 2012, Intel Corporation
-> + * Authors: Mathias Nyman <mathias.nyman@linux.intel.com>
-> + *          Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/errno.h>
-> +#include <linux/gpio.h>
-> +#include <linux/export.h>
-> +#include <linux/acpi_gpio.h>
-> +#include <linux/acpi.h>
-> +
-> +static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
-> +{
-> +	acpi_handle handle = data;
-> +
-> +	if (!gc->dev)
-> +		return false;
-> +
-> +	return gc->dev->acpi_handle == handle;
+Hi Rafael,
 
-I'd prefer DEVICE_ACPI_HANDLE() to be used in such places, we may want to
-replace it with something else in the future or make it work differently.
+2012/11/16 10:28, Rafael J. Wysocki wrote:
+> On Friday, November 16, 2012 10:07:49 AM Yasuaki Ishimatsu wrote:
+>> Hi Rafael,
+>>
+>> 2012/11/16 9:28, Rafael J. Wysocki wrote:
+>>> On Thursday, November 15, 2012 02:59:30 PM Wen Congyang wrote:
+>>>> The memory device can be removed by 2 ways:
+>>>> 1. send eject request by SCI
+>>>> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>>>>
+>>>> In the 1st case, acpi_memory_disable_device() will be called.
+>>>> In the 2nd case, acpi_memory_device_remove() will be called.
+>>>> acpi_memory_device_remove() will also be called when we unbind the
+>>>> memory device from the driver acpi_memhotplug or a driver initialization
+>>>> fails.
+>>>>
+>>>> acpi_memory_disable_device() has already implemented a code which
+>>>> offlines memory and releases acpi_memory_info struct . But
+>>>> acpi_memory_device_remove() has not implemented it yet.
+>>>>
+>>>> So the patch prepares the framework for hot removing memory and
+>>>> adds the framework into acpi_memory_device_remove().
+>>>>
+>>>> We may hotremove the memory device by this 2 ways at the same time.
+>>>> So we remove the function acpi_memory_disable_device(), and use
+>>>> acpi_bus_hot_remove_device() which is used by 2nd case to implement it.
+>>>> We lock device in acpi_bus_hot_remove_device(), so there is no
+>>>> need to add lock in acpi_memhotplug.
+>>>>
+>>>> The last version of this patchset is here:
+>>>> https://lkml.org/lkml/2012/11/8/121
+>>>>
+>>>> Note:
+>>>> 1. The following commit in pm tree can be dropped now(The other two patches
+>>>>      are already dropped):
+>>>>      54c4c7db6cb94d7d1217df6d7fca6847c61744ab
+>>>> 2. This patchset requires the following patch(It is in pm tree now)
+>>>>      https://lkml.org/lkml/2012/11/1/225
+>>>>
+>>>> Changes from v4 to v5:
+>>>> 1. patch2: new patch. use acpi_bus_hot_remove_device() to implement memory
+>>>>      device hotremove.
+>>>>
+>>>> Changes from v3 to v4:
+>>>> 1. patch1: unlock list_lock when removing memory fails.
+>>>> 2. patch2: just rebase them
+>>>> 3. patch3-7: these patches are in -mm tree, and they conflict with this
+>>>>      patchset, so Adrew Morton drop them from -mm tree. I rebase and merge
+>>>>      them into this patchset.
+>>>>
+>>>> Wen Congyang (6):
+>>>>     acpi,memory-hotplug: deal with eject request in hotplug queue
+>>>>     acpi_memhotplug.c: fix memory leak when memory device is unbound from
+>>>>       the module acpi_memhotplug
+>>>>     acpi_memhotplug.c: free memory device if acpi_memory_enable_device()
+>>>>       failed
+>>>>     acpi_memhotplug.c: don't allow to eject the memory device if it is
+>>>>       being used
+>>>>     acpi_memhotplug.c: bind the memory device when the driver is being
+>>>>       loaded
+>>>>     acpi_memhotplug.c: auto bind the memory device which is hotplugged
+>>>>       before the driver is loaded
+>>>>
+>>>> Yasuaki Ishimatsu (1):
+>>>>     acpi,memory-hotplug : add memory offline code to
+>>>>       acpi_memory_device_remove()
+>>>
+>>> Well, I have tried _really_ hard to apply this patchset, but pretty much
+>>> none of the patches except for [1/7] applied for me.  I have no idea what
+>>> tree they are against, but I'm pretty sure it's not my tree.
+>>>
+>>> I _have_ applied patches [1-4/7] and pushed them to linux-pm.git/linux-next.
+>>
+>> I checked your tree and found a mistake.
+>> You merged a following patch into your tree.
+>>
+>> commitid:2ba281f1
+>> ACPI / memory-hotplug: introduce a mutex lock to protect the list
+>> in acpi_memory_device
+>>
+>> But it is wrong.
+>>
+>> [1/7] patch is "acpi,memory-hotplug : add memory offline code to
+>> acpi_memory_device_remove()". So we would like you to merge it
+>> instead of commitid:2ba281f1.
+>
+> Yes, I've found it too.
+>
+> Now applied patches [1-6/7], because I agree with Toshi Kani that patch [7/7]
+> goes too far, so I'm not going to apply it.
 
-> +}
-> +
-> +/**
-> + * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
-> + * @path:	ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
-> + * @pin:	ACPI GPIO pin number (0-based, controller-relative)
-> + *
-> + * Returns GPIO number to use with Linux generic GPIO API, or errno error value
-> + */
-> +
-> +int acpi_get_gpio(char *path, int pin)
-> +{
-> +	struct gpio_chip *chip;
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +
-> +	status = acpi_get_handle(NULL, path, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENODEV;
-> +
-> +	chip = gpiochip_find(handle, acpi_gpiochip_find);
-> +	if (!chip)
-> +		return -ENODEV;
-> +
-> +	if (!gpio_is_valid(chip->base + pin))
-> +		return -EINVAL;
-> +
-> +	return chip->base + pin;
-> +}
-> +EXPORT_SYMBOL_GPL(acpi_get_gpio);
-> diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-> new file mode 100644
-> index 0000000..91615a3
-> --- /dev/null
-> +++ b/include/linux/acpi_gpio.h
-> @@ -0,0 +1,19 @@
-> +#ifndef _LINUX_ACPI_GPIO_H_
-> +#define _LINUX_ACPI_GPIO_H_
-> +
-> +#include <linux/errno.h>
-> +
-> +#ifdef CONFIG_GPIO_ACPI
-> +
-> +int acpi_get_gpio(char *path, int pin);
-> +
-> +#else /* CONFIG_GPIO_ACPI */
-> +
-> +static inline int acpi_get_gpio(char *path, int pin)
-> +{
-> +	return -ENODEV;
-> +}
-> +
-> +#endif /* CONFIG_GPIO_ACPI */
-> +
-> +#endif /* _LINUX_ACPI_GPIO_H_ */
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I confirmed that patches were merged into your tree correctly.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks,
+> Rafael
+>
+>
+
+
