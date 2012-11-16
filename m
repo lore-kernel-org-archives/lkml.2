@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2KPNE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:04:29 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:3368 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab2KPNE0 (ORCPT
+	id S1751804Ab2KPNFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:05:15 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53586 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab2KPNFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:04:26 -0500
-Date: Fri, 16 Nov 2012 14:03:57 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        bhelgaas@google.com, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121116140357.5e0a6d6b@endymion.delvare>
-In-Reply-To: <2439178.tCj2rUMYJS@vostro.rjw.lan>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1352977397-2280-4-git-send-email-mika.westerberg@linux.intel.com>
-	<2439178.tCj2rUMYJS@vostro.rjw.lan>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 16 Nov 2012 08:05:12 -0500
+Message-ID: <50A63A01.3080404@redhat.com>
+Date: Fri, 16 Nov 2012 14:05:05 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Christoph Hellwig <hch@infradead.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH 2/3] target: Add max_write_same_len device attribute
+References: <1352405238-23267-1-git-send-email-nab@linux-iscsi.org>  <1352405238-23267-3-git-send-email-nab@linux-iscsi.org>  <20121115105312.GC28956@infradead.org> <1353007392.4447.22.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1353007392.4447.22.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Il 15/11/2012 20:23, Nicholas A. Bellinger ha scritto:
+>>> > > 
+>>> > > This patch adds a new max_write_same_len device attribute for use with
+>>> > > WRITE_SAME w/ UNMAP=0 backend emulation.
+>>> > > 
+>>> > > Also, update block limits VPD emulation code in spc_emulate_evpd_b0() to
+>>> > > set the default MAXIMUM WRITE SAME LENGTH value of zero.
+>> > 
+>> > why do we need an exposed attribute for this?
+>> > 
+> This is useful for userspace to reduce the allowed maximum from the
+> default 0xFFFF set by IBLOCK.  Allowing huge WRITE_SAMEs can very much
+> effect performance (esp. with spinning media), so being able to reduce
+> the max we accept via a userspace tunable is helpful.
 
-On Fri, 16 Nov 2012 11:09:03 +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 15, 2012 01:03:17 PM Mika Westerberg wrote:
-> > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-> > and configure the I2C slave devices behind the I2C controller. This patch
-> > adds helper functions to support I2C slave enumeration.
-> > 
-> > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-> > in order to get its slave devices enumerated, created and bound to the
-> > corresponding ACPI handle.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Are there any objections against this patch or comments?
-> 
-> Worfram? Jean? Ben?
+Unfortunately this doesn't really help.  Linux will submit the smaller
+WRITE SAMEs in parallel, and this could easily bring the target to its
+knees.
 
-I am no longer maintaining the i2c subsystem and will not have the time
-to look deeply into this. All I can say is that I very happy to see
-this finally happen. Maybe with ACPI 5.0 we will finally be done with
-resource conflicts plaguing many systems for several years now.
+(This was reported to me with a Linux virtual machine sending WRITE SAME
+commands to a Nexenta iSCSI target running OpenSolaris.  QEMU can be
+easily replaced with LIO, with the same effect).
 
-I took a quick look, and the only thing which seems suspicious is this
-function:
-
-> +static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
-> +{
-> +	struct acpi_resource_i2c_serialbus *sb;
-> +	struct acpi_i2c_find *i2c_find = data;
-> +
-> +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-> +		return 1;
-> +
-> +	sb = &ares->data.i2c_serial_bus;
-> +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-> +		return 1;
-> +
-> +	if (sb->slave_address == i2c_find->addr)
-
-The 7-bit and 10-bit address maps overlap, so the above isn't enough.
-You must compare the addresses _and_ sb->access_mode with
-i2c_find->access_mode (which needs to be added and filled properly.)
-
-> +		i2c_find->found = true;
-> +
-> +	return 1;
-> +}
-
-Plus, it seems odd that this function always returns 1.
-
--- 
-Jean Delvare
+Paolo
