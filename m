@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2KPT2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:28:41 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39631 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab2KPT2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:28:39 -0500
-Date: Fri, 16 Nov 2012 11:28:37 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] thp: fix update_mmu_cache_pmd() calls
-In-Reply-To: <1353059717-9850-1-git-send-email-kirill.shutemov@linux.intel.com>
-Message-ID: <alpine.DEB.2.00.1211161126450.2788@chino.kir.corp.google.com>
-References: <1353059717-9850-1-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753027Ab2KPTbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:31:13 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:53312 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752106Ab2KPTbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 14:31:12 -0500
+Message-ID: <1353094271.2512.15.camel@joe-AO722>
+Subject: [PATCH V2] checkpatch: extend line continuation test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, Andy Whitcroft <apw@canonical.com>,
+        peter@hurleysoftware.com, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 16 Nov 2012 11:31:11 -0800
+In-Reply-To: <1353046873.24310.30.camel@joe-AO722>
+References: <20121030211530.09F1320004E@hpza10.eem.corp.google.com>
+	 <1353046873.24310.30.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Kirill A. Shutemov wrote:
+Preprocessor directives and asm statements should be
+allowed to have a line continuation.
 
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> update_mmu_cache_pmd() takes pointer to pmd_t as third, not pmd_t.
-> 
-> mm/huge_memory.c: In function 'do_huge_pmd_numa_page':
-> mm/huge_memory.c:825:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
-> In file included from include/linux/mm.h:44:0,
->                  from mm/huge_memory.c:8:
-> arch/mips/include/asm/pgtable.h:385:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
-> mm/huge_memory.c:895:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
-> In file included from include/linux/mm.h:44:0,
->                  from mm/huge_memory.c:8:
-> arch/mips/include/asm/pgtable.h:385:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+V2:
+Make the check for preprocessor directives work properly
+# is not optional.
 
-[routing to Ingo for numa/core, which this is based on]
+ scripts/checkpatch.pl |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Acked-by: David Rientjes <rientjes@google.com>
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d2d5ba1..bfb06ee 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3006,10 +3006,12 @@ sub process {
+ 				}
+ 			}
+ 
+-# check for line continuations outside of #defines
++# check for line continuations outside of #defines, preprocessor #, and asm
+ 
+ 		} else {
+ 			if ($prevline !~ /^..*\\$/ &&
++			    $line !~ /^\+\s*\#.*\\$/ &&		# preprocessor
++			    $line !~ /^\+.*\b(__asm__|asm)\b.*\\$/ &&	# asm
+ 			    $line =~ /^\+.*\\$/) {
+ 				WARN("LINE_CONTINUATIONS",
+ 				     "Avoid unnecessary line continuations\n" . $herecurr);
+
+
