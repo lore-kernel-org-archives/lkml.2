@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab2KPSeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:34:01 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42822 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2KPSd7 (ORCPT
+	id S1753289Ab2KPSeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:34:15 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:10936 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab2KPSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:33:59 -0500
-Message-ID: <50A686C5.7080103@linux.vnet.ibm.com>
-Date: Sat, 17 Nov 2012 00:02:37 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Mel Gorman <mgorman@suse.de>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, arjan@linux.intel.com,
-        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
-        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        SrinivasPandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
- support Memory Power Management
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com> <509D2B9B.4090305@linux.vnet.ibm.com> <509D3088.2060507@linux.vnet.ibm.com> <509D32C2.2090104@linux.vnet.ibm.com> <509D34DA.5090303@linux.vnet.ibm.com>
-In-Reply-To: <509D34DA.5090303@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-x-cbid: 12111618-8878-0000-0000-000004CF41FA
+	Fri, 16 Nov 2012 13:34:10 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvwEAAGGplBbdWOb/2dsb2JhbABEwmaBCIMMEoE+E4gRvnSRQAOVfJBDgnA
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net, jens.taprogge@taprogge.org,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH 1/2] ipack: move header files to include/linux
+Date: Fri, 16 Nov 2012 19:33:45 +0100
+Message-Id: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 10:22 PM, Srivatsa S. Bhat wrote:
-> On 11/09/2012 10:13 PM, Srivatsa S. Bhat wrote:
->> On 11/09/2012 10:04 PM, Srivatsa S. Bhat wrote:
->>> On 11/09/2012 09:43 PM, Dave Hansen wrote:
->>>> On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
->>>>> FWIW, kernbench is actually (and surprisingly) showing a slight performance
->>>>> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
->>>>> my other email to Dave.
->>>>>
->>>>> https://lkml.org/lkml/2012/11/7/428
->>>>>
->>>>> I don't think I can dismiss it as an experimental error, because I am seeing
->>>>> those results consistently.. I'm trying to find out what's behind that.
->>>>
->>>> The only numbers in that link are in the date. :)  Let's see the
->>>> numbers, please.
->>>>
->>>
->>> Sure :) The reason I didn't post the numbers very eagerly was that I didn't
->>> want it to look ridiculous if it later turned out to be really an error in the
->>> experiment ;) But since I have seen it happening consistently I think I can
->>> post the numbers here with some non-zero confidence.
->>>
->>>> If you really have performance improvement to the memory allocator (or
->>>> something else) here, then surely it can be pared out of your patches
->>>> and merged quickly by itself.  Those kinds of optimizations are hard to
->>>> come by!
->>>>
->>>
->>> :-)
->>>
->>> Anyway, here it goes:
->>>
->>> Test setup:
->>> ----------
->>> x86 2-socket quad-core machine. (CONFIG_NUMA=n because I figured that my
->>> patchset might not handle NUMA properly). Mem region size = 512 MB.
->>>
->>
->> For CONFIG_NUMA=y on the same machine, the difference between the 2 kernels
->> was much lesser, but nevertheless, this patchset performed better. I wouldn't
->> vouch that my patchset handles NUMA correctly, but here are the numbers from
->> that run anyway (at least to show that I really found the results to be
->> repeatable):
->>
+Move ipack header files to include/linux/ directory where they belong.
 
-I fixed up the NUMA case (I'll post the updated patch for that soon) and
-ran a fresh set of kernbench runs. The difference between mainline and this
-patchset is quite tiny; so we can't really say that this patchset shows a
-performance improvement over mainline. However, I can safely conclude that
-this patchset doesn't show any performance _degradation_ w.r.t mainline
-in kernbench.
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/ipack/carriers/tpci200.h         |    3 +--
+ drivers/ipack/devices/ipoctal.c          |    3 ++-
+ drivers/ipack/ipack.c                    |    3 ++-
+ {drivers/ipack => include/linux}/ipack.h |    2 --
+ 4 files changed, 5 insertions(+), 6 deletions(-)
+ rename {drivers/ipack => include/linux}/ipack.h (99%)
 
-Results from one of the recent kernbench runs:
----------------------------------------------
-
-Kernbench log for Vanilla 3.7-rc3
-=================================
-Kernel: 3.7.0-rc3
-Average Optimal load -j 32 Run (std deviation):
-Elapsed Time 330.39 (0.746257)
-User Time 4283.63 (3.39617)
-System Time 604.783 (2.72629)
-Percent CPU 1479 (3.60555)
-Context Switches 845634 (6031.22)
-Sleeps 833655 (6652.17)
-
-
-Kernbench log for Sorted-buddy
-==============================
-Kernel: 3.7.0-rc3-sorted-buddy
-Average Optimal load -j 32 Run (std deviation):
-Elapsed Time 329.967 (2.76789)
-User Time 4230.02 (2.15324)
-System Time 599.793 (1.09988)
-Percent CPU 1463.33 (11.3725)
-Context Switches 840530 (1646.75)
-Sleeps 833732 (2227.68)
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/ipack/carriers/tpci200.h b/drivers/ipack/carriers/tpci200.h
+index 8d9be27..a7a151d 100644
+--- a/drivers/ipack/carriers/tpci200.h
++++ b/drivers/ipack/carriers/tpci200.h
+@@ -20,8 +20,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/swab.h>
+ #include <linux/io.h>
+-
+-#include "../ipack.h"
++#include <linux/ipack.h>
+ 
+ #define TPCI200_NB_SLOT               0x4
+ #define TPCI200_NB_BAR                0x6
+diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
+index 783f120..7f568e2 100644
+--- a/drivers/ipack/devices/ipoctal.c
++++ b/drivers/ipack/devices/ipoctal.c
+@@ -22,7 +22,8 @@
+ #include <linux/slab.h>
+ #include <linux/atomic.h>
+ #include <linux/io.h>
+-#include "../ipack.h"
++#include <linux/ipack.h>
++#include "../ipack_ids.h"
+ #include "ipoctal.h"
+ #include "scc2698.h"
+ 
+diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
+index 6d5079d..cc54983 100644
+--- a/drivers/ipack/ipack.c
++++ b/drivers/ipack/ipack.c
+@@ -13,7 +13,8 @@
+ #include <linux/slab.h>
+ #include <linux/idr.h>
+ #include <linux/io.h>
+-#include "ipack.h"
++#include <linux/ipack.h>
++#include "ipack_ids.h"
+ 
+ #define to_ipack_dev(device) container_of(device, struct ipack_device, dev)
+ #define to_ipack_driver(drv) container_of(drv, struct ipack_driver, driver)
+diff --git a/drivers/ipack/ipack.h b/include/linux/ipack.h
+similarity index 99%
+rename from drivers/ipack/ipack.h
+rename to include/linux/ipack.h
+index 6760bfa..7a0a308 100644
+--- a/drivers/ipack/ipack.h
++++ b/include/linux/ipack.h
+@@ -13,8 +13,6 @@
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+ 
+-#include "ipack_ids.h"
+-
+ #define IPACK_IDPROM_OFFSET_I			0x01
+ #define IPACK_IDPROM_OFFSET_P			0x03
+ #define IPACK_IDPROM_OFFSET_A			0x05
+-- 
+1.7.10.4
 
