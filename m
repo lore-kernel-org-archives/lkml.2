@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab2KPJCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:02:39 -0500
-Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:24965 "EHLO
-	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2KPJCg convert rfc822-to-8bit (ORCPT
+	id S1751413Ab2KPJFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:05:45 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:54167 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750939Ab2KPJFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:02:36 -0500
-From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: RE: [RFC] staging: ste_rmi4: merge into the main kernel tree
-Thread-Topic: [RFC] staging: ste_rmi4: merge into the main kernel tree
-Thread-Index: AQHNwo8ZLxFuveX6UkK/mNwkyTKwrJfpGaGAgAEcNlD//7gdgIACP7jQ
-Date: Fri, 16 Nov 2012 09:02:30 +0000
-Message-ID: <CC51EC7B5B7F984AA566DC102237848896F62D19@hkdcw-mail1.synaptics-inc.local>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121113201212.8550fb074e1f7cce78f29d97@tw.synaptics.com>
- <20121113175309.GA3601@polaris.bitmath.org>
- <CC51EC7B5B7F984AA566DC102237848896F62894@hkdcw-mail1.synaptics-inc.local>
- <20121114180401.GC29131@core.coreip.homeip.net>
- <CC51EC7B5B7F984AA566DC102237848896F6299E@hkdcw-mail1.synaptics-inc.local>
- <20121115064359.GA17551@core.coreip.homeip.net>
-In-Reply-To: <20121115064359.GA17551@core.coreip.homeip.net>
-Accept-Language: en-US, zh-TW
-Content-Language: zh-HK
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.51.94]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Nov 2012 04:05:42 -0500
+Message-ID: <50A6018B.6030105@st.com>
+Date: Fri, 16 Nov 2012 09:04:11 +0000
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com> <1353047903-14363-2-git-send-email-acourbot@nvidia.com> <50A5F225.6000200@st.com> <4423025.WvVzNKlS3r@percival>
+In-Reply-To: <4423025.WvVzNKlS3r@percival>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On 16/11/12 08:31, Alex Courbot wrote:
+> Hi Srinivas,
+>
+> On Friday 16 November 2012 15:58:29 Srinivas KANDAGATLA wrote:
+>> Hi Alex,
+>> I am looking forward for this feature to be mainlined,
+> *cough* Ack *cough* :)
+:-)
+>> but I have
+>> comment on the way the types are tied up to power seq infrastructure.
+>> I know your use case are limited to using type "delay", "pwm" and "gpio"
+>> and "regulator", However there are instances where the devices can be
+>> powered up or reset by writing to special registers or sysconfs or
+>> something else.
+>> So My suggestion would be to make these type register them selfs
+>> dynamically with the power_seq infrastructure so that in future this can
+>> be extended to other types as-well.
+>> This trivial change can make a lot of difference for the future chips
+>> which do thing bit differently.
+>> ST Microelectronics chips fit it in these category and I guess other
+>> Vendors have this similar chips.
+> The current implementation is (purposedly) minimal and will certainly be 
+> extended. There are other aspects of regulators for instance that should also 
+> be controllable (voltage comes to mind). And I am totally open to supporting 
+> new kinds of resources as usage broadens. For this first version I just wanted 
+> to introduce the feature and minimize the impact should anything (DT 
+> bindings?) need to change.
+Ok I agree. I was thinking more of to fit few things specific to our
+chip via power-seqs.
+>
+> I am a little bit skeptical about the purpose of directly accessing registers 
+> (or any part of the address space) from power sequences. It should at least be 
+> possible to involve some kind of abstraction. Not necessarily one of the 
+> currently supported types - but at least something.
+Yes, There is a level of abstraction (aka sysconf) in our case.. again
+it is not mainlined yet.
+>
+> The reason is that I'd like to try and avoid direct references to resources 
+> within sequences as much as possible to make them reusable. If your system has 
+> two identical devices, you should not need to duplicate their sequences just 
+> to change a register range from the few steps that make use of it. If you can 
+> do the same job with, say, a regulator, you can just give it a name, get it at 
+> runtime using regulator_get() and define it outside of the sequence, in our 
+> device node.
+>
+> Of course there might be scenarios where you really need to access a register 
+> and there is no way to do otherwise, in this case I am open to discussion. But 
+> before resorting to this I'd like to make that the existing abstraction cannot 
+> cover the case already.
+yep.
 
-> > > Please have Greg commit the patch that Henrik reviewed to staging and
-> > > then work with Christopher Heiny group on getting the full featured
-> > > driver into mainline.
+thanks,
+srini
+>
+> Alex.
+>
+>
 
-Thanks for your reminding, final patch has been re-sent to staging
-maintainer.
-
-> In this case you need to enumerate the benefits of this driver over
-> unified driver and show why the unified driver can't be fixed.
-> 
-> Currently the driver is in mainline (even though the directory is
-> staging) and nobody will remove it until another driver is fully
-> functional and ready for prime time. But once this happens I do not see
-> the benefits of maintaining 2 drivers for the same hardware.
-
-I see. Given that the driver will remain in mainline before generic driver
-is ready, currently I will continue to maintain the driver in staging.
-
-Appreciate your response.
-
-Alexandra
