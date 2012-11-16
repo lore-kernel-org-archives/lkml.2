@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2KPLXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:23:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33205 "EHLO mx2.suse.de"
+	id S1752168Ab2KPLYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:24:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33260 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab2KPLXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:48 -0500
+	id S1752139Ab2KPLX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:59 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 35/43] mm,generic: only flush the local TLB in ptep_set_access_flags
-Date: Fri, 16 Nov 2012 11:22:45 +0000
-Message-Id: <1353064973-26082-36-git-send-email-mgorman@suse.de>
+Subject: [PATCH 40/43] sched: numa: CPU follows memory
+Date: Fri, 16 Nov 2012 11:22:50 +0000
+Message-Id: <1353064973-26082-41-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,64 +25,296 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+NOTE: This is heavily based on "autonuma: CPU follows memory algorithm"
+	and "autonuma: mm_autonuma and task_autonuma data structures"
+	with bits taken but worked within the scheduler hooks and home
+	node mechanism as defined by schednuma.
 
-The function ptep_set_access_flags is only ever used to upgrade
-access permissions to a page. That means the only negative side
-effect of not flushing remote TLBs is that other CPUs may incur
-spurious page faults, if they happen to access the same address,
-and still have a PTE with the old permissions cached in their
-TLB.
+This patch adds per-mm and per-task data structures to track the number
+of faults in total and on a per-nid basis. On each NUMA fault it
+checks if the system would benefit if the current task was migrated
+to another node. If the task should be migrated, its home node is
+updated and the task is requeued.
 
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
-
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
-
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault to actually flush the TLB entry.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/pgtable-generic.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/sched.h |    1 -
+ kernel/sched/fair.c   |  228 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 226 insertions(+), 3 deletions(-)
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index 6b6507f..501be39 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -12,8 +12,8 @@
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7b6625a..269ff7d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2040,7 +2040,6 @@ extern unsigned int sysctl_balance_numa_scan_delay;
+ extern unsigned int sysctl_balance_numa_scan_period_min;
+ extern unsigned int sysctl_balance_numa_scan_period_max;
+ extern unsigned int sysctl_balance_numa_scan_size;
+-extern unsigned int sysctl_balance_numa_settle_count;
  
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-- * Only sets the access flags (dirty, accessed, and
-- * writable). Furthermore, we know it always gets set to a "more
-+ * Only sets the access flags (dirty, accessed), as well as write 
-+ * permission. Furthermore, we know it always gets set to a "more
-  * permissive" setting, which allows most architectures to optimize
-  * this. We return whether the PTE actually changed, which in turn
-  * instructs the caller to do things like update__mmu_cache.  This
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
- 	}
- 	return changed;
+ #ifdef CONFIG_SCHED_DEBUG
+ extern unsigned int sysctl_sched_migration_cost;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 98c621c..0f63743 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -836,15 +836,229 @@ unsigned int sysctl_balance_numa_scan_size = 256;
+ /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
+ unsigned int sysctl_balance_numa_scan_delay = 1000;
+ 
++#define BALANCENUMA_SCALE 1000
++static inline unsigned long balancenuma_weight(unsigned long nid_faults,
++					       unsigned long total_faults)
++{
++	if (nid_faults > total_faults)
++		nid_faults = total_faults;
++
++	return nid_faults * BALANCENUMA_SCALE / total_faults;
++}
++
++static inline unsigned long balancenuma_task_weight(struct task_struct *p,
++							int nid)
++{
++	struct task_balancenuma *task_balancenuma = p->task_balancenuma;
++	unsigned long nid_faults, total_faults;
++
++	nid_faults = task_balancenuma->task_numa_fault[nid];
++	total_faults = task_balancenuma->task_numa_fault_tot;
++	return balancenuma_weight(nid_faults, total_faults);
++}
++
++static inline unsigned long balancenuma_mm_weight(struct task_struct *p,
++							int nid)
++{
++	struct mm_balancenuma *mm_balancenuma = p->mm->mm_balancenuma;
++	unsigned long nid_faults, total_faults;
++
++	nid_faults = mm_balancenuma->mm_numa_fault[nid];
++	total_faults = mm_balancenuma->mm_numa_fault_tot;
++
++	/* It's possible for total_faults to decay to 0 in parallel so check */
++	return total_faults ? balancenuma_weight(nid_faults, total_faults) : 0;
++}
++
++/*
++ * Examines all other nodes examining remote tasks to see if there would
++ * be fewer remote numa faults if tasks swapped home nodes
++ */
++static void task_numa_find_placement(struct task_struct *p)
++{
++	struct cpumask *allowed = tsk_cpus_allowed(p);
++	int this_cpu = smp_processor_id();
++	int this_nid = numa_node_id();
++	long p_task_weight, p_mm_weight;
++	long weight_diff_max = 0;
++	struct task_struct *selected_task = NULL;
++	int selected_nid = -1;
++	int nid;
++
++	p_task_weight = balancenuma_task_weight(p, this_nid);
++	p_mm_weight = balancenuma_mm_weight(p, this_nid);
++
++	/* Examine a task on every other node */
++	for_each_online_node(nid) {
++		int cpu;
++		for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
++			struct rq *rq;
++			struct mm_struct *other_mm;
++			struct task_struct *other_task;
++			long this_weight, other_weight, p_weight;
++			long other_diff, this_diff;
++
++			if (!cpu_online(cpu) || idle_cpu(cpu))
++				continue;
++
++			/* Racy check if a task is running on the other rq */
++			rq = cpu_rq(cpu);
++			other_mm = rq->curr->mm;
++			if (!other_mm || !other_mm->mm_balancenuma)
++				continue;
++
++			/* Effectively pin the other task to get fault stats */
++			raw_spin_lock_irq(&rq->lock);
++			other_task = rq->curr;
++			other_mm = other_task->mm;
++
++			/* Ensure the other task has usable stats */
++			if (!other_task->task_balancenuma ||
++			    !other_task->task_balancenuma->task_numa_fault_tot ||
++			    !other_mm ||
++			    !other_mm->mm_balancenuma ||
++			    !other_mm->mm_balancenuma->mm_numa_fault_tot) {
++				raw_spin_unlock_irq(&rq->lock);
++				continue;
++			}
++
++			/* Ensure the other task can be swapped */
++			if (!cpumask_test_cpu(this_cpu,
++					      tsk_cpus_allowed(other_task))) {
++				raw_spin_unlock_irq(&rq->lock);
++				continue;
++			}
++
++			/*
++			 * Read the fault statistics. If the remote task is a
++			 * thread in the process then use the task statistics.
++			 * Otherwise use the per-mm statistics.
++			 */
++			if (other_mm == p->mm) {
++				this_weight = balancenuma_task_weight(p, nid);
++				other_weight = balancenuma_task_weight(other_task, nid);
++				p_weight = p_task_weight;
++			} else {
++				this_weight = balancenuma_mm_weight(p, nid);
++				other_weight = balancenuma_mm_weight(other_task, nid);
++				p_weight = p_mm_weight;
++			}
++
++			raw_spin_unlock_irq(&rq->lock);
++
++			/*
++			 * other_diff: How much does the current task perfer to
++			 * run on the remote node thn the task that is
++			 * currently running there?
++			 */
++			other_diff = this_weight - other_weight;
++
++			/*
++			 * this_diff: How much does the currrent task prefer to
++			 * run on the remote NUMA node compared to the current
++			 * node?
++			 */
++			this_diff = this_weight - p_weight;
++
++			/*
++			 * Would swapping the tasks reduce the overall
++			 * cross-node NUMA faults?
++			 */
++			if (other_diff > 0 && this_diff > 0) {
++				long weight_diff = other_diff + this_diff;
++
++				/* Remember the best candidate. */
++				if (weight_diff > weight_diff_max) {
++					weight_diff_max = weight_diff;
++					selected_nid = nid;
++					selected_task = other_task;
++				}
++			}
++		}
++	}
++
++	/* Swap the task on the selected target node */
++	if (selected_nid != -1) {
++		sched_setnode(p, selected_nid);
++		sched_setnode(selected_task, this_nid);
++	}
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
++	unsigned long task_total, mm_total;
++	struct mm_balancenuma *mm_balancenuma;
++	struct task_balancenuma *task_balancenuma;
++	unsigned long mm_max_weight, task_max_weight;
++	int this_nid, nid, mm_selected_nid, task_selected_nid;
++
+ 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 
+ 	if (p->numa_scan_seq == seq)
+ 		return;
+ 	p->numa_scan_seq = seq;
+ 
+-	/* FIXME: Scheduling placement policy hints go here */
++	this_nid = numa_node_id();
++	mm_balancenuma = p->mm->mm_balancenuma;
++	task_balancenuma = p->task_balancenuma;
++
++	/* If the task has no NUMA hinting page faults, use current nid */
++	mm_total = ACCESS_ONCE(mm_balancenuma->mm_numa_fault_tot);
++	if (!mm_total)
++		return;
++	task_total = task_balancenuma->task_numa_fault_tot;
++	if (!task_total)
++		return;
++
++	/*
++	 * Identify the NUMA node where this thread (task_struct), and
++	 * the process (mm_struct) as a whole, has the largest number
++	 * of NUMA faults
++	 */
++	mm_selected_nid = task_selected_nid = -1;
++	mm_max_weight = task_max_weight = 0;
++	for_each_online_node(nid) {
++		unsigned long mm_nid_fault, task_nid_fault;
++		unsigned long mm_numa_weight, task_numa_weight;
++
++		/* Read the number of task and mm faults on node */
++		mm_nid_fault = ACCESS_ONCE(mm_balancenuma->mm_numa_fault[nid]);
++		task_nid_fault = task_balancenuma->task_numa_fault[nid];
++
++		/*
++		 * The weights are the relative number of pte_numa faults that
++		 * were handled on this node in comparison to all pte_numa faults
++		 * overall
++		 */
++		mm_numa_weight = balancenuma_weight(mm_nid_fault, mm_total);
++		task_numa_weight = balancenuma_weight(task_nid_fault, task_total);
++		if (mm_numa_weight > mm_max_weight) {
++			mm_max_weight = mm_numa_weight;
++			mm_selected_nid = nid;
++		}
++		if (task_numa_weight > task_max_weight) {
++			task_max_weight = task_numa_weight;
++			task_selected_nid = nid;
++		}
++
++		/* Decay the stats by a factor of 2 */
++		p->mm->mm_balancenuma->mm_numa_fault[nid] >>= 1;
++	}
++
++	/*
++	 * If this NUMA node is the selected one based on process
++	 * memory and task NUMA faults then set the home node.
++	 * There should be no need to requeue the task.
++	 */
++	if (task_selected_nid == this_nid && mm_selected_nid == this_nid) {
++		p->numa_scan_period = min(sysctl_balance_numa_scan_period_max,
++					  p->numa_scan_period * 2);
++		p->home_node = this_nid;
++		return;
++	}
++
++	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
++	task_numa_find_placement(p);
  }
+ 
+ /*
+@@ -895,6 +1109,16 @@ static void reset_ptenuma_scan(struct task_struct *p)
+ {
+ 	ACCESS_ONCE(p->mm->numa_scan_seq)++;
+ 	p->mm->numa_scan_offset = 0;
++	
++	if (p->mm && p->mm->mm_balancenuma)
++		p->mm->mm_balancenuma->mm_numa_fault_tot >>= 1;
++	if (p->task_balancenuma) {
++		int nid;
++		p->task_balancenuma->task_numa_fault_tot >>= 1;
++		for_each_online_node(nid) {
++			p->task_balancenuma->task_numa_fault[nid] >>= 1;
++		}
++	}
+ }
+ 
+ /*
+@@ -976,7 +1200,7 @@ out:
+ 	 * It is possible to reach the end of the VMA list but the last few VMAs are
+ 	 * not guaranteed to the vma_migratable. If they are not, we would find the
+ 	 * !migratable VMA on the next scan but not reset the scanner to the start
+-	 * so check it now.
++	 * so we must check it now.
+ 	 */
+ 	if (vma)
+ 		mm->numa_scan_offset = start;
 -- 
 1.7.9.2
 
