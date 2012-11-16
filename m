@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab2KPTuP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:50:15 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54928 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2KPTuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:50:13 -0500
-Date: Fri, 16 Nov 2012 11:50:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Alexandra Chin <Alexandra.Chin@tw.synaptics.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: Re: [PATCH v6] staging: ste_rmi4: Convert to Type-B support
-Message-ID: <20121116195008.GA9153@kroah.com>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121116163146.f4b53f6965ee08ca1a1fc96c@tw.synaptics.com>
- <20121116195433.GA573@polaris.bitmath.org>
+	id S1751459Ab2KPTu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:50:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751166Ab2KPTu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 14:50:57 -0500
+Date: Fri, 16 Nov 2012 20:50:18 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Benchmark results: "Enhanced NUMA scheduling with adaptive
+ affinity"
+Message-ID: <20121116195018.GA8908@redhat.com>
+References: <20121112160451.189715188@chello.nl>
+ <20121112184833.GA17503@gmail.com>
+ <20121115100805.GS8218@suse.de>
+ <CA+55aFyEJwRvQezg3oKg71Nk9+1QU7qwvo0BH4ykReKxNhFJRg@mail.gmail.com>
+ <50A566FA.2090306@redhat.com>
+ <20121116141428.GZ8218@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121116195433.GA573@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121116141428.GZ8218@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 08:54:33PM +0100, Henrik Rydberg wrote:
-> Hi Alexandra,
-> 
-> > Convert to MT-B because Synaptics touch devices are capable
-> > of tracking identifiable fingers.
-> > 
-> > Signed-off-by: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-> 
-> For next time: Once you have received an acked-by or reviewed-by, you
-> may add that line under your own signed-off-by in subsequent
-> mails. That way, the status of the patch can be tracked properly,
-> making life easier for everyone.
-> 
-> Greg, I think we are ready now. :-)
+Hi,
 
-All applied.
+On Fri, Nov 16, 2012 at 02:14:28PM +0000, Mel Gorman wrote:
+> With some shuffling the question on what to consider for merging
+> becomes
+> 
+>
+> 1. TLB optimisation patches 1-3?	 	Patches  1-3
+
+I assume you mean simply reshuffling 33-35 as 1-3.
+
+> 2. Stats for migration?				Patches  4-6
+> 3. Common NUMA infrastructure?			Patches  7-21
+> 4. Basic fault-driven policy, stats, ratelimits	Patches 22-35
+> 
+> Patches 36-43 are complete cabbage and should not be considered at this
+> stage. It should be possible to build the placement policies and the
+> scheduling decisions from schednuma, autonuma, some combination of the
+> above or something completely different on top of patches 1-35.
+> 
+> Peter, Ingo, Andrea?
+
+The patches 1-35 looks a great foundation so I think they'd be an
+ideal candidate for a first upstream inclusion.
+
+Thanks,
+Andrea
