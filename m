@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212Ab2KPEIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 23:08:50 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58241 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2KPEIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 23:08:49 -0500
-Date: Fri, 16 Nov 2012 04:08:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, arnd@arndb.de
-Subject: Re: [RFC PATCH v1 30/31] ARC: switch to generic kernel_execve() and
- sys_execve()
-Message-ID: <20121116040847.GA22671@ZenIV.linux.org.uk>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
- <1352281674-2186-31-git-send-email-vgupta@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352281674-2186-31-git-send-email-vgupta@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751295Ab2KPEN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 23:13:28 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:55481 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab2KPEN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 23:13:27 -0500
+From: Simon Marchi <simon.marchi@polymtl.ca>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, cmetcalf@tilera.com,
+        Simon Marchi <simon.marchi@polymtl.ca>
+Subject: [PATCH] tilegx: request_irq with a non-null device name
+Date: Thu, 15 Nov 2012 23:13:19 -0500
+Message-Id: <1353039199-12520-1-git-send-email-simon.marchi@polymtl.ca>
+X-Mailer: git-send-email 1.7.1
+X-Poly-FromMTA: ([132.207.72.18]) at Fri, 16 Nov 2012 04:13:20 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 10:47:53AM +0100, Vineet Gupta wrote:
-> +; When we land here, pt_regs have already been updated in-place correctly
-> +; A pointer to them is also passed by kernel_execve, we just need to make sure
-> +; that SP is set to point to them.
-> +ARC_ENTRY ret_from_kernel_execve
-> +	; Force SP to "normal" pt_regs just populated.
-> +	b.d   ret_from_system_call
-> +	mov   sp, r0
+This patch simply makes the tilegx net driver call request_irq with a
+non-null name. It makes the output in /proc/interrupts more obvious, but
+also helps tools that don't expect to find null there.
 
-won't that splatter crap into regs->r0?  IOW, why not branch to
-ret_from_exception here?
+Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+I am not sure if this patch will get picked up directly by David Miller
+of it should go through Chris Metcalf's tree first. Hopefully it is
+simple enough that it can get merged directly.
 
-> +ARC_EXIT ret_from_kernel_execve
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Another thing: why not fold that branch to ret_from_exception into the end of
-ret_from_kernel_thread() (instead of calling sys_exit()), select
-GENERIC_KERNEL_EXECVE and lose __ARCH_WANT_KERNEL_EXECVE.
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 4e98100..66e025a 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -917,7 +917,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+ 	ingress_irq = rc;
+ 	tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
+ 	rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
+-			 0, NULL, NULL);
++			 0, "tile_net", NULL);
+ 	if (rc != 0) {
+ 		netdev_err(dev, "request_irq failed: %d\n", rc);
+ 		destroy_irq(ingress_irq);
+-- 
+1.7.1
 
-Actually, now that I look at your ret_from_kernel_thread...  How the hell
-will it cope with kernel_thread() payload trying to return?  AFAICS, this
-j.d [r1] will lose the return address, won't it?  And while we are at it,
-I would suggest passing callback and its argument via callee-saved registers -
-makes for simpler life in ret_from_kernel_thread(), since switch_to() itself
-will take care of loading those...
