@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab2KPLwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:52:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:17018 "EHLO song.cn.fujitsu.com"
+	id S1751620Ab2KPLwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:52:01 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55865 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab2KPLv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751333Ab2KPLv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Nov 2012 06:51:59 -0500
 X-IronPort-AV: E=Sophos;i="4.83,264,1352044800"; 
-   d="scan'208";a="6214983"
+   d="scan'208";a="6214984"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
@@ -18,9 +18,9 @@ Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PART4 Patch v2 1/2] numa: add CONFIG_MOVABLE_NODE for movable-dedicated node
-Date: Fri, 16 Nov 2012 19:58:09 +0800
-Message-Id: <1353067090-19468-2-git-send-email-wency@cn.fujitsu.com>
+Subject: [PART4 Patch v2 2/2] memory_hotplug: allow online/offline memory to result movable node
+Date: Fri, 16 Nov 2012 19:58:10 +0800
+Message-Id: <1353067090-19468-3-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>
 References: <1353067090-19468-1-git-send-email-wency@cn.fujitsu.com>
@@ -35,92 +35,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-All are prepared, we can actually introduce N_MEMORY.
-add CONFIG_MOVABLE_NODE make we can use it for movable-dedicated node
+Now, memory management can handle movable node or nodes which don't have
+any normal memory, so we can dynamic configure and add movable node by:
+	online a ZONE_MOVABLE memory from a previous offline node
+	offline the last normal memory which result a non-normal-memory-node
+
+movable-node is very important for power-saving,
+hardware partitioning and high-available-system(hardware fault management).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/base/node.c      | 6 ++++++
- include/linux/nodemask.h | 4 ++++
- mm/Kconfig               | 8 ++++++++
- mm/page_alloc.c          | 3 +++
- 4 files changed, 21 insertions(+)
+ mm/memory_hotplug.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 4c3aa7c..9cdd66f 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -620,6 +620,9 @@ static struct node_attr node_state_attr[] = {
- #ifdef CONFIG_HIGHMEM
- 	[N_HIGH_MEMORY] = _NODE_ATTR(has_high_memory, N_HIGH_MEMORY),
- #endif
-+#ifdef CONFIG_MOVABLE_NODE
-+	[N_MEMORY] = _NODE_ATTR(has_memory, N_MEMORY),
-+#endif
- 	[N_CPU] = _NODE_ATTR(has_cpu, N_CPU),
- };
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index d07c66f..4aceb03 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -589,11 +589,19 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
+ 	return 0;
+ }
  
-@@ -630,6 +633,9 @@ static struct attribute *node_state_attrs[] = {
- #ifdef CONFIG_HIGHMEM
- 	&node_state_attr[N_HIGH_MEMORY].attr.attr,
- #endif
 +#ifdef CONFIG_MOVABLE_NODE
-+	&node_state_attr[N_MEMORY].attr.attr,
-+#endif
- 	&node_state_attr[N_CPU].attr.attr,
- 	NULL
- };
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index c6ebdc9..4e2cbfa 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -380,7 +380,11 @@ enum node_states {
- #else
- 	N_HIGH_MEMORY = N_NORMAL_MEMORY,
- #endif
-+#ifdef CONFIG_MOVABLE_NODE
-+	N_MEMORY,		/* The node has memory(regular, high, movable) */
-+#else
- 	N_MEMORY = N_HIGH_MEMORY,
-+#endif
- 	N_CPU,		/* The node has one or more cpus */
- 	NR_NODE_STATES
- };
-diff --git a/mm/Kconfig b/mm/Kconfig
-index a3f8ddd..957ebd5 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -143,6 +143,14 @@ config NO_BOOTMEM
- config MEMORY_ISOLATION
- 	boolean
++/* when CONFIG_MOVABLE_NODE, we allow online node don't have normal memory */
++static bool can_online_high_movable(struct zone *zone)
++{
++	return true;
++}
++#else /* #ifdef CONFIG_MOVABLE_NODE */
+ /* ensure every online node has NORMAL memory */
+ static bool can_online_high_movable(struct zone *zone)
+ {
+ 	return node_state(zone_to_nid(zone), N_NORMAL_MEMORY);
+ }
++#endif /* #ifdef CONFIG_MOVABLE_NODE */
  
-+config MOVABLE_NODE
-+	boolean "Enable to assign a node has only movable memory"
-+	depends on HAVE_MEMBLOCK
-+	depends on NO_BOOTMEM
-+	depends on X86_64
-+	depends on NUMA
-+	default y
-+
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
- 	bool "Allow for memory hot-add"
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4054aaf..1b6725a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -90,6 +90,9 @@ nodemask_t node_states[NR_NODE_STATES] __read_mostly = {
- #ifdef CONFIG_HIGHMEM
- 	[N_HIGH_MEMORY] = { { [0] = 1UL } },
- #endif
+ /* check which state of node_states will be changed when online memory */
+ static void node_states_check_changes_online(unsigned long nr_pages,
+@@ -1097,6 +1105,13 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
+ 	return offlined;
+ }
+ 
 +#ifdef CONFIG_MOVABLE_NODE
-+	[N_MEMORY] = { { [0] = 1UL } },
-+#endif
- 	[N_CPU] = { { [0] = 1UL } },
- #endif	/* NUMA */
- };
++/* when CONFIG_MOVABLE_NODE, we allow online node don't have normal memory */
++static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
++{
++	return true;
++}
++#else /* #ifdef CONFIG_MOVABLE_NODE */
+ /* ensure the node has NORMAL memory if it is still online */
+ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+ {
+@@ -1120,6 +1135,7 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+ 	 */
+ 	return present_pages == 0;
+ }
++#endif /* #ifdef CONFIG_MOVABLE_NODE */
+ 
+ /* check which state of node_states will be changed when offline memory */
+ static void node_states_check_changes_offline(unsigned long nr_pages,
 -- 
 1.8.0
 
