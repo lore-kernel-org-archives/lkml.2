@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab2KPQZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:25:42 -0500
+	id S1752882Ab2KPQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:26:01 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:58067 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2KPQZk (ORCPT
+	with ESMTP id S1752772Ab2KPQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:25:40 -0500
+	Fri, 16 Nov 2012 11:25:59 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
@@ -17,9 +17,9 @@ Cc: Paul Turner <pjt@google.com>, Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 03/19] sched, numa, mm: Make find_busiest_queue() a method
-Date: Fri, 16 Nov 2012 17:25:05 +0100
-Message-Id: <1353083121-4560-4-git-send-email-mingo@kernel.org>
+Subject: [PATCH 11/19] mm/mpol: Make MPOL_LOCAL a real policy
+Date: Fri, 16 Nov 2012 17:25:13 +0100
+Message-Id: <1353083121-4560-12-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1353083121-4560-1-git-send-email-mingo@kernel.org>
 References: <1353083121-4560-1-git-send-email-mingo@kernel.org>
@@ -29,68 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Its a bit awkward but it was the least painful means of modifying the
-queue selection. Used in a later patch to conditionally use a random
-queue.
+Make MPOL_LOCAL a real and exposed policy such that applications that
+relied on the previous default behaviour can explicitly request it.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
+Requested-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-lfpez319yryvdhwqfqrh99f2@git.kernel.org
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ include/uapi/linux/mempolicy.h | 1 +
+ mm/mempolicy.c                 | 9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a1..6ab627e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3063,6 +3063,9 @@ struct lb_env {
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
-+
-+	struct rq *		(*find_busiest_queue)(struct lb_env *,
-+						      struct sched_group *);
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 23e62e0..3e835c9 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
++	MPOL_LOCAL,
+ 	MPOL_MAX,	/* always last member of enum */
  };
  
- /*
-@@ -4236,13 +4239,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d04a8a5..72f50ba 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 			     (flags & MPOL_F_RELATIVE_NODES)))
+ 				return ERR_PTR(-EINVAL);
+ 		}
++	} else if (mode == MPOL_LOCAL) {
++		if (!nodes_empty(*nodes))
++			return ERR_PTR(-EINVAL);
++		mode = MPOL_PREFERRED;
+ 	} else if (nodes_empty(*nodes))
+ 		return ERR_PTR(-EINVAL);
+ 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
+@@ -2397,7 +2401,6 @@ void numa_default_policy(void)
+  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+  * Used only for mpol_parse_str() and mpol_to_str()
+  */
+-#define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
+ {
+ 	[MPOL_DEFAULT]    = "default",
+@@ -2450,12 +2453,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (flags)
+ 		*flags++ = '\0';	/* terminate mode string */
  
- 	struct lb_env env = {
--		.sd		= sd,
--		.dst_cpu	= this_cpu,
--		.dst_rq		= this_rq,
--		.dst_grpmask    = sched_group_cpus(sd->groups),
--		.idle		= idle,
--		.loop_break	= sched_nr_migrate_break,
--		.cpus		= cpus,
-+		.sd		    = sd,
-+		.dst_cpu	    = this_cpu,
-+		.dst_rq		    = this_rq,
-+		.dst_grpmask        = sched_group_cpus(sd->groups),
-+		.idle		    = idle,
-+		.loop_break	    = sched_nr_migrate_break,
-+		.cpus		    = cpus,
-+		.find_busiest_queue = find_busiest_queue,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4261,7 +4265,7 @@ redo:
- 		goto out_balanced;
+-	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
++	for (mode = 0; mode < MPOL_MAX; mode++) {
+ 		if (!strcmp(str, policy_modes[mode])) {
+ 			break;
+ 		}
  	}
+-	if (mode > MPOL_LOCAL)
++	if (mode >= MPOL_MAX)
+ 		goto out;
  
--	busiest = find_busiest_queue(&env, group);
-+	busiest = env.find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+ 	switch (mode) {
 -- 
 1.7.11.7
 
