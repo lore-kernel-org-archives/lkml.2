@@ -1,75 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab2KPMXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:23:47 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42743 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2KPMXq (ORCPT
+	id S1751498Ab2KPM2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:28:52 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33690 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPM2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:23:46 -0500
-Date: Fri, 16 Nov 2012 13:24:00 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 3.7-rc3: mouses stopped working
-Message-ID: <20121116122400.GA10994@elf.ucw.cz>
-References: <20121115132849.GA4062@elf.ucw.cz>
- <alpine.LNX.2.00.1211151429240.15877@pobox.suse.cz>
- <20121115140736.GA2651@elf.ucw.cz>
- <alpine.LNX.2.00.1211151508350.15877@pobox.suse.cz>
- <20121116013405.GA2002@elf.ucw.cz>
- <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
+	Fri, 16 Nov 2012 07:28:50 -0500
+Date: Fri, 16 Nov 2012 04:25:41 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20121116122540.GA2198@lizard>
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
+ <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
+ <20121116072642.GA22291@lizard>
+ <50A60AF6.9080509@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
-X-Warning: Reading this can be dangerous to your mental health.
+In-Reply-To: <50A60AF6.9080509@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2012-11-16 11:54:26, Jiri Kosina wrote:
-> On Fri, 16 Nov 2012, Pavel Machek wrote:
+On Fri, Nov 16, 2012 at 06:44:22PM +0900, Alex Courbot wrote:
+> On 11/16/2012 04:26 PM, Anton Vorontsov wrote:
+> >>+#include "power_seq_delay.c"
+> >>+#include "power_seq_regulator.c"
+> >>+#include "power_seq_pwm.c"
+> >>+#include "power_seq_gpio.c"
+> >
+> >This is odd, although I remember you already explained why you have to
+> >include the .c files, instead of linking them separately. But I forgot the
+> >reason. :) I think this deserves a comment in the code.
 > 
-> > > If you have mouse that is buggy and periodically 
-> > > disconnecting/reconnecting itself, you need commit df0cfd6990347c, which 
-> > > went into 3.7-rc5 (it's a regression fix from -rc1).
-> > 
-> > I have -rc5 now, and still no mice for me.
-> > 
-> > root@amd:/tmp# uname -a
-> > Linux amd 3.7.0-rc5+ #236 SMP Thu Nov 15 20:07:26 CET 2012 i686 GNU/Linux
-> > root@amd:/tmp# cat /dev/input/mice
-> > cat: /dev/input/mice: No such device or address
-> > root@amd:/tmp# ls -al /dev/input/mice
-> > crw-rw---- 1 root root 13, 63 Apr 25  2010 /dev/input/mice
-> > root@amd:/tmp# 
+> This is because of the table right after these includes:
 > 
-> Let's see whether this is /dev/input/mice issue or something else first.
+> static const struct power_seq_res_ops power_seq_ops[POWER_SEQ_NUM_TYPES] = {
+> 	[POWER_SEQ_DELAY] = POWER_SEQ_DELAY_TYPE,
+> 	[POWER_SEQ_REGULATOR] = POWER_SEQ_REGULATOR_TYPE,
+> 	[POWER_SEQ_PWM] = POWER_SEQ_PWM_TYPE,
+> 	[POWER_SEQ_GPIO] = POWER_SEQ_GPIO_TYPE,
+> };
 > 
-> Is anything coming out of corresponding /dev/input/eventX node?
+> The POWER_SEQ_*_TYPE macros are defined in the C files. It's the
+> simplest way to initialize this table, and the code inside these C
+> files is short and simple enough that I thought I would be forgiven.
+> :)
 
-/dev/input/mouse0 and /dev/input/mouse1 generate events when I move
-internal/USB mouse.
+I think in the header file you could just write
 
-ls -al /dev/input/mouse0 
-crw-rw---- 1 root root 13, 32 Apr 25  2010 /dev/input/mouse0
-pavel@amd:/tmp$ ls -al /dev/input/mouse1
-crw------T 1 root root 13, 33 Aug 30 16:41 /dev/input/mouse1
-pavel@amd:/tmp$ 
+extern ..... power_seq_delay_type;
+#ifndef ...
+#define power_seq_delay_type NULL
+#endif
 
-> And /dev/hidrawX?
+And then, in the .c file:
 
-/dev/hidraw0 seems to correspond to USB mouse and generates
-events. Could not find hidraw corresponding to PS/2 mouse.
+static const struct power_seq_res_ops power_seq_ops[POWER_SEQ_NUM_TYPES] = {
+	[POWER_SEQ_DELAY] = power_seq_delay_type,
+	...
+};
 
-So it seems to be "/dev/input/mice" issue. Does it work for you?
+And then you can stop including the .c files directly, and link them
+instead.
+
+> At first everything was in power_seq.c and it was fine, then I
+> thought it would be better to move resource support code into their
+> own filesm and now everybody is asking. :P
+> 
+> But yeah, maybe it would be even better to not stop halfway and use
+> dynamic linking.
+> 
+> Comment added for the time being. ;)
+> 
+> >>+static int of_power_seq_parse_step(struct device *dev,
+> >>+				   struct device_node *node,
+> >>+				   struct power_seq *seq,
+> >>+				   unsigned int step_nbr,
+> >>+				   struct list_head *resources)
+> >>+{
+> >>+	struct power_seq_step *step = &seq->steps[step_nbr];
+> >>+	struct power_seq_resource res, *res2;
+> >>+	const char *type;
+> >>+	int i, err;
+> >
+> >nit: one variable declaration per line.
+> 
+> Fair enough - but is that a convention? checkpatch.pl was happy with these.
+
+It's not a rule, although there is a small passage about it in CodingStyle
+file when it describes commenting style. Though, some folks choose to
+ignore this suggestion quite frequently, especially if variables have no
+comments.
+
+Often, the multiple declarations per line are used to hide ugly functions
+w/ tons of variables, or just to confuse the reader for the fun of it.
+
+There are exceptions, of course. E.g.
+
+	int i, j, k; /* Our iterators. */
+
+Is perfectly fine.
+
+But
+	int i, err;
+
+At least to me seems weird, this stuff is logically disjunct.
+
+Only human can truly differentiate when the stuff "looks better" together
+or apart, so that's why checkpatch doesn't complain. Personally, I use
+this rule of thumb: when in doubt, use just one declaration per line, it
+is always OK. :)
 
 Thanks,
-      	       	  		    	   	   Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Anton.
