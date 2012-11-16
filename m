@@ -1,96 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab2KPSeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:34:15 -0500
+	id S1753262Ab2KPSeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:34:13 -0500
 Received: from smtp4.mundo-r.com ([212.51.32.151]:10936 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab2KPSeK (ORCPT
+	with ESMTP id S1753189Ab2KPSeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:34:10 -0500
+	Fri, 16 Nov 2012 13:34:11 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwEAAGGplBbdWOb/2dsb2JhbABEwmaBCIMMEoE+E4gRvnSRQAOVfJBDgnA
+X-IronPort-Anti-Spam-Result: Av0EAAGGplBbdWOb/2dsb2JhbABEwmaBCIIfAQV5EFFXBhOIEb50kUADlXyJSIZ7gnA
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net, jens.taprogge@taprogge.org,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 1/2] ipack: move header files to include/linux
-Date: Fri, 16 Nov 2012 19:33:45 +0100
-Message-Id: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 2/2] ipack: remove ipack_ids.h file
+Date: Fri, 16 Nov 2012 19:33:46 +0100
+Message-Id: <1353090826-11068-2-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
+References: <1353090826-11068-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move ipack header files to include/linux/ directory where they belong.
+Its contents are merged into ipack.h. So this file is not needed.
+
+Doing that, it simplifies the ipack-related driver development.
 
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/ipack/carriers/tpci200.h         |    3 +--
- drivers/ipack/devices/ipoctal.c          |    3 ++-
- drivers/ipack/ipack.c                    |    3 ++-
- {drivers/ipack => include/linux}/ipack.h |    2 --
- 4 files changed, 5 insertions(+), 6 deletions(-)
- rename {drivers/ipack => include/linux}/ipack.h (99%)
+ drivers/ipack/devices/ipoctal.c |    1 -
+ drivers/ipack/ipack.c           |    1 -
+ drivers/ipack/ipack_ids.h       |   32 --------------------------------
+ include/linux/ipack.h           |   33 +++++++++++++++++++++++++++++++++
+ 4 files changed, 33 insertions(+), 34 deletions(-)
+ delete mode 100644 drivers/ipack/ipack_ids.h
 
-diff --git a/drivers/ipack/carriers/tpci200.h b/drivers/ipack/carriers/tpci200.h
-index 8d9be27..a7a151d 100644
---- a/drivers/ipack/carriers/tpci200.h
-+++ b/drivers/ipack/carriers/tpci200.h
-@@ -20,8 +20,7 @@
- #include <linux/spinlock.h>
- #include <linux/swab.h>
- #include <linux/io.h>
--
--#include "../ipack.h"
-+#include <linux/ipack.h>
- 
- #define TPCI200_NB_SLOT               0x4
- #define TPCI200_NB_BAR                0x6
 diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
-index 783f120..7f568e2 100644
+index 7f568e2..c06ab39 100644
 --- a/drivers/ipack/devices/ipoctal.c
 +++ b/drivers/ipack/devices/ipoctal.c
-@@ -22,7 +22,8 @@
- #include <linux/slab.h>
+@@ -23,7 +23,6 @@
  #include <linux/atomic.h>
  #include <linux/io.h>
--#include "../ipack.h"
-+#include <linux/ipack.h>
-+#include "../ipack_ids.h"
+ #include <linux/ipack.h>
+-#include "../ipack_ids.h"
  #include "ipoctal.h"
  #include "scc2698.h"
  
 diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
-index 6d5079d..cc54983 100644
+index cc54983..7ec6b20 100644
 --- a/drivers/ipack/ipack.c
 +++ b/drivers/ipack/ipack.c
-@@ -13,7 +13,8 @@
- #include <linux/slab.h>
+@@ -14,7 +14,6 @@
  #include <linux/idr.h>
  #include <linux/io.h>
--#include "ipack.h"
-+#include <linux/ipack.h>
-+#include "ipack_ids.h"
+ #include <linux/ipack.h>
+-#include "ipack_ids.h"
  
  #define to_ipack_dev(device) container_of(device, struct ipack_device, dev)
  #define to_ipack_driver(drv) container_of(drv, struct ipack_driver, driver)
-diff --git a/drivers/ipack/ipack.h b/include/linux/ipack.h
-similarity index 99%
-rename from drivers/ipack/ipack.h
-rename to include/linux/ipack.h
-index 6760bfa..7a0a308 100644
---- a/drivers/ipack/ipack.h
-+++ b/include/linux/ipack.h
-@@ -13,8 +13,6 @@
- #include <linux/device.h>
- #include <linux/interrupt.h>
- 
--#include "ipack_ids.h"
+diff --git a/drivers/ipack/ipack_ids.h b/drivers/ipack/ipack_ids.h
+deleted file mode 100644
+index 8153fee..0000000
+--- a/drivers/ipack/ipack_ids.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * IndustryPack Fromat, Vendor and Device IDs.
+- */
 -
- #define IPACK_IDPROM_OFFSET_I			0x01
- #define IPACK_IDPROM_OFFSET_P			0x03
- #define IPACK_IDPROM_OFFSET_A			0x05
+-/* ID section format versions */
+-#define IPACK_ID_VERSION_INVALID	0x00
+-#define IPACK_ID_VERSION_1		0x01
+-#define IPACK_ID_VERSION_2		0x02
+-
+-/* Vendors and devices. Sort key: vendor first, device next. */
+-#define IPACK1_VENDOR_ID_RESERVED1	0x00
+-#define IPACK1_VENDOR_ID_RESERVED2	0xFF
+-#define IPACK1_VENDOR_ID_UNREGISTRED01	0x01
+-#define IPACK1_VENDOR_ID_UNREGISTRED02	0x02
+-#define IPACK1_VENDOR_ID_UNREGISTRED03	0x03
+-#define IPACK1_VENDOR_ID_UNREGISTRED04	0x04
+-#define IPACK1_VENDOR_ID_UNREGISTRED05	0x05
+-#define IPACK1_VENDOR_ID_UNREGISTRED06	0x06
+-#define IPACK1_VENDOR_ID_UNREGISTRED07	0x07
+-#define IPACK1_VENDOR_ID_UNREGISTRED08	0x08
+-#define IPACK1_VENDOR_ID_UNREGISTRED09	0x09
+-#define IPACK1_VENDOR_ID_UNREGISTRED10	0x0A
+-#define IPACK1_VENDOR_ID_UNREGISTRED11	0x0B
+-#define IPACK1_VENDOR_ID_UNREGISTRED12	0x0C
+-#define IPACK1_VENDOR_ID_UNREGISTRED13	0x0D
+-#define IPACK1_VENDOR_ID_UNREGISTRED14	0x0E
+-#define IPACK1_VENDOR_ID_UNREGISTRED15	0x0F
+-
+-#define IPACK1_VENDOR_ID_SBS            0xF0
+-#define IPACK1_DEVICE_ID_SBS_OCTAL_232  0x22
+-#define IPACK1_DEVICE_ID_SBS_OCTAL_422  0x2A
+-#define IPACK1_DEVICE_ID_SBS_OCTAL_485  0x48
+diff --git a/include/linux/ipack.h b/include/linux/ipack.h
+index 7a0a308..a360c73 100644
+--- a/include/linux/ipack.h
++++ b/include/linux/ipack.h
+@@ -26,6 +26,39 @@
+ #define IPACK_IDPROM_OFFSET_NUM_BYTES		0x15
+ #define IPACK_IDPROM_OFFSET_CRC			0x17
+ 
++/*
++ * IndustryPack Fromat, Vendor and Device IDs.
++ */
++
++/* ID section format versions */
++#define IPACK_ID_VERSION_INVALID	0x00
++#define IPACK_ID_VERSION_1		0x01
++#define IPACK_ID_VERSION_2		0x02
++
++/* Vendors and devices. Sort key: vendor first, device next. */
++#define IPACK1_VENDOR_ID_RESERVED1	0x00
++#define IPACK1_VENDOR_ID_RESERVED2	0xFF
++#define IPACK1_VENDOR_ID_UNREGISTRED01	0x01
++#define IPACK1_VENDOR_ID_UNREGISTRED02	0x02
++#define IPACK1_VENDOR_ID_UNREGISTRED03	0x03
++#define IPACK1_VENDOR_ID_UNREGISTRED04	0x04
++#define IPACK1_VENDOR_ID_UNREGISTRED05	0x05
++#define IPACK1_VENDOR_ID_UNREGISTRED06	0x06
++#define IPACK1_VENDOR_ID_UNREGISTRED07	0x07
++#define IPACK1_VENDOR_ID_UNREGISTRED08	0x08
++#define IPACK1_VENDOR_ID_UNREGISTRED09	0x09
++#define IPACK1_VENDOR_ID_UNREGISTRED10	0x0A
++#define IPACK1_VENDOR_ID_UNREGISTRED11	0x0B
++#define IPACK1_VENDOR_ID_UNREGISTRED12	0x0C
++#define IPACK1_VENDOR_ID_UNREGISTRED13	0x0D
++#define IPACK1_VENDOR_ID_UNREGISTRED14	0x0E
++#define IPACK1_VENDOR_ID_UNREGISTRED15	0x0F
++
++#define IPACK1_VENDOR_ID_SBS            0xF0
++#define IPACK1_DEVICE_ID_SBS_OCTAL_232  0x22
++#define IPACK1_DEVICE_ID_SBS_OCTAL_422  0x2A
++#define IPACK1_DEVICE_ID_SBS_OCTAL_485  0x48
++
+ struct ipack_bus_ops;
+ struct ipack_driver;
+ 
 -- 
 1.7.10.4
 
