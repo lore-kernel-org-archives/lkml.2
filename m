@@ -1,164 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2KPSk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:40:29 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53336 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2KPSk1 (ORCPT
+	id S1752872Ab2KPSnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:43:55 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49547 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418Ab2KPSnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:40:27 -0500
-Message-ID: <50A68849.2030401@linux.vnet.ibm.com>
-Date: Sat, 17 Nov 2012 00:09:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 16 Nov 2012 13:43:53 -0500
+Date: Fri, 16 Nov 2012 19:43:44 +0100
+From: Robert Richter <rric@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] perf, amd: Enable northbridge performance counters
+ on AMD family 15h
+Message-ID: <20121116184344.GR2504@rric.localhost>
+References: <1353015113-13262-1-git-send-email-jacob.shin@amd.com>
+ <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, dave@linux.vnet.ibm.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        arjan@linux.intel.com, kmpark@infradead.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        gargankita@gmail.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        SrinivasPandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [RFC PATCH UPDATED 4/8] mm: Add helpers to retrieve node region and
- zone region for a given page
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121106195310.6941.91123.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121106195310.6941.91123.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12111618-3568-0000-0000-000002C7443C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353015113-13262-5-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of the patch includes a bug-fix for page_node_region_id()
-which used to break the NUMA case.
+Jacob,
 
---------------------------------------------------------------------->
+On 15.11.12 15:31:53, Jacob Shin wrote:
+> On AMD family 15h processors, there are 4 new performance counters
+> (in addition to 6 core performance counters) that can be used for
+> counting northbridge events (i.e. DRAM accesses). Their bit fields are
+> almost identical to the core performance counters. However, unlike the
+> core performance counters, these MSRs are shared between multiple
+> cores (that share the same northbridge). We will reuse the same code
+> path as existing family 10h northbridge event constraints handler
+> logic to enforce this sharing.
+> 
+> These new counters are indexed contiguously right above the existing
+> core performance counters, and their indexes correspond to RDPMC ECX
+> values.
+> 
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: mm: Add helpers to retrieve node region and zone region for a given page
+your approach looks ok to me in general, but see my comments inline.
 
-Given a page, we would like to have an efficient mechanism to find out
-the node memory region and the zone memory region to which it belongs.
+> @@ -156,31 +161,28 @@ static inline int amd_pmu_addr_offset(int index)
+>  	if (offset)
+>  		return offset;
+>  
+> -	if (!cpu_has_perfctr_core)
+> +	if (!cpu_has_perfctr_core) {
+>  		offset = index;
+> -	else
+> +		ncore = AMD64_NUM_COUNTERS;
+> +	} else {
+>  		offset = index << 1;
+> +		ncore = AMD64_NUM_COUNTERS_CORE;
+> +	}
+> +
+> +	/* find offset of NB counters with respect to x86_pmu.eventsel */
+> +	if (cpu_has_perfctr_nb) {
+> +		if (index >= ncore && index < (ncore + AMD64_NUM_COUNTERS_NB))
+> +			offset = (MSR_F15H_NB_PERF_CTL - x86_pmu.eventsel) +
+> +				 ((index - ncore) << 1);
+> +	}
 
-Since the node is assumed to be divided into equal-sized node memory
-regions, the node memory region index can be obtained by simply right-shifting
-the page's pfn by 'mem_region_shift'.
+There is duplicate calculatoin of offset in some cases. Better we
+avoid this.
 
-But finding the corresponding zone memory region's index in the zone is
-not that straight-forward. To have a O(1) algorithm to find it out, define a
-zone_region_idx[] array to store the zone memory region indices for every
-node memory region.
+> +static int __amd_nb_hw_config(struct perf_event *event)
+> +{
+> +	if (event->attr.exclude_user || event->attr.exclude_kernel ||
+> +	    event->attr.exclude_host || event->attr.exclude_guest)
+> +		return -EINVAL;
+>  
+> -	event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
+> +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_USR;
+> +	event->hw.config &= ~ARCH_PERFMON_EVENTSEL_OS;
+> +
+> +	if (event->hw.config & ~(AMD64_EVENTSEL_EVENT        |
+> +				 ARCH_PERFMON_EVENTSEL_UMASK |
+> +				 ARCH_PERFMON_EVENTSEL_INT   |
+> +				 AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE |
+> +				 AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK))
+> +		return -EINVAL;
+>  
+>  	return 0;
+>  }
 
-To illustrate, consider the following example:
+Comments are missing and an AMD64_NB_EVENT_MASK macro should be
+defined for the above. See my previous version for reference:
 
-	|<---------------------Node---------------------->|
-	 _________________________________________________
-	|      Node mem reg 0 	|      Node mem reg 1     |
-	|_______________________|_________________________|
+/*
+ * AMD NB counters (MSRs 0xc0010240 etc.) do not support the following
+ * flags:
+ *
+ *  Host/Guest Only
+ *  Counter Mask
+ *  Invert Comparison
+ *  Edge Detect
+ *  Operating-System Mode
+ *  User Mode
+ *
+ * Try to fix the config for default settings, otherwise fail.
+ */
+static int amd_nb_event_config(struct perf_event *event)
+{
+       if (!amd_is_nb_perfctr_event(&event->hw))
+               return 0;
 
-	 _________________________________________________
-	|   ZONE_DMA    |	ZONE_NORMAL		  |
-	|_______________|_________________________________|
+       if (event->attr.exclude_host || event->attr.exclude_guest
+           || event->attr.exclude_user || event->attr.exclude_kernel)
+               goto fail;
+
+       event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR | ARCH_PERFMON_EVENTSEL_OS);
+
+       if (event->hw.config & ~(AMD64_NB_EVENT_MASK | ARCH_PERFMON_EVENTSEL_INT))
+               goto fail;
+
+       return 0;
+fail:
+       pr_debug("Invalid nb counter config value: %016Lx\n", event->hw.config);
+       return -EINVAL;
+}
 
 
-In the above figure,
+> @@ -323,6 +368,16 @@ __amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *ev
+>  	if (new == -1)
+>  		return &emptyconstraint;
+>  
+> +	/* set up interrupts to be delivered only to this core */
+> +	if (cpu_has_perfctr_nb) {
+> +		struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
+> +
+> +		hwc->config |= AMD_PERFMON_EVENTSEL_INT_CORE_ENABLE;
+> +		hwc->config &= ~AMD_PERFMON_EVENTSEL_INT_CORE_SEL_MASK;
+> +		hwc->config |= (0ULL | (c->cpu_core_id)) <<
+> +			AMD_PERFMON_EVENTSEL_INT_CORE_SEL_SHIFT;
+> +	}
 
-Node mem region 0:
-------------------
-This region corresponds to the first zone mem region in ZONE_DMA and also
-the first zone mem region in ZONE_NORMAL. Hence its index array would look
-like this:
-    node_regions[0].zone_region_idx[ZONE_DMA]     == 0
-    node_regions[0].zone_region_idx[ZONE_NORMAL]  == 0
+Looks like a hack to me. The constaints handler is only supposed to
+determine constraints and not to touch anything in the event's
+structure. This should be done later when setting up hwc->config in
+amd_nb_event_config() or so.
 
+I also do not think that smp_processor_id() is the right thing to do
+here. Since cpu_hw_events is per-cpu the cpu is already selected.
 
-Node mem region 1:
-------------------
-This region corresponds to the second zone mem region in ZONE_NORMAL. Hence
-its index array would look like this:
-    node_regions[1].zone_region_idx[ZONE_NORMAL]  == 1
+> +
+>  	return &nb->event_constraints[new];
+>  }
+>  
+> @@ -520,6 +575,7 @@ static struct event_constraint amd_f15_PMC3  = EVENT_CONSTRAINT(0, 0x08, 0);
+>  static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT_OVERLAP(0, 0x09, 0);
+>  static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
+>  static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
+> +static struct event_constraint amd_f15_NBPMC30 = EVENT_CONSTRAINT(0, 0x3C0, 0);
 
+The counter index mask depends on the number of core counters which is
+either 4 or 6 (depending on cpu_has_perfctr_core).
 
-Using this index array, we can quickly obtain the zone memory region to
-which a given page belongs.
+>  static int setup_event_constraints(void)
+>  {
+> -	if (boot_cpu_data.x86 >= 0x15)
+> +	if (boot_cpu_data.x86 == 0x15)
+>  		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Since this does not cover family 16h anymore, you also need to extend
+amd_get_event_ constraints() to setup nb counters with __amd_get_nb_
+event_constraints() if cpu_has_perfctr_nb is set.
 
- include/linux/mm.h     |   24 ++++++++++++++++++++++++
- include/linux/mmzone.h |    7 +++++++
- mm/page_alloc.c        |    2 ++
- 3 files changed, 33 insertions(+)
+>  	return 0;
+>  }
+> @@ -655,6 +714,18 @@ static int setup_perfctr_core(void)
+>  	return 0;
+>  }
+>  
+> +static int setup_perfctr_nb(void)
+> +{
+> +	if (!cpu_has_perfctr_nb)
+> +		return -ENODEV;
+> +
+> +	x86_pmu.num_counters += AMD64_NUM_COUNTERS_NB;
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 19c4fb0..32457c7 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -702,6 +702,30 @@ static inline struct zone *page_zone(const struct page *page)
- 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
- }
- 
-+static inline int page_node_region_id(const struct page *page,
-+				      const pg_data_t *pgdat)
-+{
-+	return (page_to_pfn(page) - pgdat->node_start_pfn) >> MEM_REGION_SHIFT;
-+}
-+
-+/**
-+ * Return the index of the region to which the page belongs, within its zone.
-+ *
-+ * Given a page, find the absolute (node) region as well as the zone to which
-+ * it belongs. Then find the region within the zone that corresponds to that
-+ * absolute (node) region, and return its index.
-+ */
-+static inline int page_zone_region_id(const struct page *page)
-+{
-+	pg_data_t *pgdat = NODE_DATA(page_to_nid(page));
-+	enum zone_type z_num = page_zonenum(page);
-+	unsigned long node_region_idx;
-+
-+	node_region_idx = page_node_region_id(page, pgdat);
-+
-+	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
-+}
-+
- #if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
- static inline void set_page_section(struct page *page, unsigned long section)
- {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9f923aa..3982354 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -336,6 +336,13 @@ struct node_mem_region {
- 	unsigned long spanned_pages;
- 	int idx;
- 	int node;
-+
-+	/*
-+	 * A physical (node) region could be split across multiple zones.
-+	 * Store the indices of the corresponding regions of each such
-+	 * zone for this physical (node) region.
-+	 */
-+	int zone_region_idx[MAX_NR_ZONES];
- 	struct pglist_data *pgdat;
- };
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c00f72d..7fd89cd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4621,6 +4621,8 @@ void init_zone_memory_regions(struct pglist_data *pgdat)
- 						         end_pfn);
- 			z->zone_mem_region[idx].present_pages =
- 						end_pfn - start_pfn - absent;
-+
-+			region->zone_region_idx[zone_idx(z)] = idx;
- 			idx++;
- 		}
- 
+You should add a nb counter mask here which is used for nb counters.
 
+The mask can be either 0x3c0 or 0x0f0 depending on cpu_has_perfctr_
+core for later use, you will need it at various locations.
+
+In general I also would try to write the code in a way that make
+further cpu_has_perfctr_nb lookups unnecessary. There are many tests
+of this your code.
+
+-Robert
