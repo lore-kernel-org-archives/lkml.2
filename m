@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab2KPQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:03:09 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:57792
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752550Ab2KPQDI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:03:08 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(zz1432I4015Izz1de0h1202h1d1ah1d2ahzzz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h15d0l1155h)
-X-WSS-ID: 0MDL8KS-02-A5Q-02
-X-M-MSG: 
-From: "Huang, Shane" <Shane.Huang@amd.com>
-To: Aaron Lu <aaron.lu@intel.com>, Robert Hancock <hancockrwd@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-CC: Borislav Petkov <bp@amd64.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Huang, Shane" <Shane.Huang@amd.com>
-Subject: RE: ata4.00: failed to get Identify Device Data, Emask 0x1
-Thread-Topic: ata4.00: failed to get Identify Device Data, Emask 0x1
-Thread-Index: AQHNrAgv5Iu+aHdxPUSB2JeAsougyJe8Z80AgAAi4oCAAjrnkIAuBumg
-Date: Fri, 16 Nov 2012 16:02:45 +0000
-Message-ID: <43EB3AB3EEFE8D43B525F4D2EAF507E107EF3D53@SCYBEXDAG04.amd.com>
-References: <20121016144932.GA24044@aftab.osrc.amd.com>
- <20121016155824.00d5b618@pyramind.ukuu.org.uk>
- <20121016151830.GB24044@aftab.osrc.amd.com> <507E0C1A.1010705@intel.com>
- <507E392E.2010305@gmail.com> <507E5671.6070504@intel.com>
- <43EB3AB3EEFE8D43B525F4D2EAF507E107EA8AA9@SCYBEXDAG03.amd.com>
-In-Reply-To: <43EB3AB3EEFE8D43B525F4D2EAF507E107EA8AA9@SCYBEXDAG03.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.73]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752073Ab2KPQFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:05:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33810 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab2KPQFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 11:05:51 -0500
+Message-ID: <50A6644D.80205@zytor.com>
+Date: Fri, 16 Nov 2012 08:05:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 8/9] x86: ramdisk info print with high bits.
+References: <1353055989-31939-1-git-send-email-yinghai@kernel.org> <1353055989-31939-9-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1353055989-31939-9-git-send-email-yinghai@kernel.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tried word 78 bit 5(Hardware Feature Control) which does not work,
-> it is 0 on my HDD sample with log 30h page 08h and DevSlp supported.
+On 11/16/2012 12:53 AM, Yinghai Lu wrote:
+> ramdisk could be loaded high now for 64bit.
 > 
-> Seems that word 78 bit 5 is only the sufficient condition, not the
-> essential condition. Do you guys have suggestion?
+> So need to print more digits for them.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/x86/kernel/setup.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index c2eb535..0e13c6e 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -341,7 +341,7 @@ static void __init relocate_initrd(void)
+>  	memblock_reserve(ramdisk_here, area_size);
+>  	initrd_start = ramdisk_here + PAGE_OFFSET;
+>  	initrd_end   = initrd_start + ramdisk_size;
+> -	printk(KERN_INFO "Allocated new RAMDISK: [mem %#010llx-%#010llx]\n",
+> +	printk(KERN_INFO "Allocated new RAMDISK: [mem %#018llx-%#018llx]\n",
+>  			 ramdisk_here, ramdisk_here + ramdisk_size - 1);
 
-Eventually I received the confirmation from the DevSlp HDD vendor,
-bit 5 should be and will be set in production drives with log 30h
-page 08h supported. So I will submit a patch to use it instead.
+NAK, this is expected to match the resource print format (%pR), which
+prints 10 digits by default and then expands.  Furthermore, printing
+*18* digits is downright silly since we still don't have 72-bit addressing.
 
-
-Hi Jeff,
-
-I don't know when I will receive some production drives to verify
-my patch, are you okay if I submit my patch first without testing
-so as to meet kernel 3.7 bug fix window?
-
-Thanks,
-Shane
+	-hpa
 
