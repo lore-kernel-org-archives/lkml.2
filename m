@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab2KPLbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:31:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32940 "EHLO mx2.suse.de"
+	id S1751919Ab2KPLbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:31:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32915 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab2KPLXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:12 -0500
+	id S1751538Ab2KPLXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:08 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/43] mm: mempolicy: Add MPOL_MF_NOOP
-Date: Fri, 16 Nov 2012 11:22:21 +0000
-Message-Id: <1353064973-26082-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/43] mm: numa: Create basic numa page hinting infrastructure
+Date: Fri, 16 Nov 2012 11:22:19 +0000
+Message-Id: <1353064973-26082-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,98 +25,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Note: This patch started as "mm/mpol: Create special PROT_NONE
+	infrastructure" and preserves the basic idea but steals *very*
+	heavily from "autonuma: numa hinting page faults entry points" for
+	the actual fault handlers without the migration parts.	The end
+	result is barely recognisable as either patch so all Signed-off
+	and Reviewed-bys are dropped. If Peter, Ingo and Andrea are ok with
+	this version, I will re-add the signed-offs-by to reflect the history.
 
-NOTE: I have not yet addressed by own review feedback of this patch. At
-	this point I'm trying to construct a baseline tree and will apply
-	my own review feedback later and then fold it in.
+In order to facilitate a lazy -- fault driven -- migration of pages, create
+a special transient PAGE_NUMA variant, we can then use the 'spurious'
+protection faults to drive our migrations from.
 
-This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
-to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
-flags, mbind() will map the pages PROT_NONE so that they will be
-migrated on the next touch.
+The meaning of PAGE_NUMA depends on the architecture but on x86 it is
+effectively PROT_NONE. Actual PROT_NONE mappings will not generate these
+NUMA faults for the reason that the page fault code checks the permission on
+the VMA (and will throw a segmentation fault on actual PROT_NONE mappings),
+before it ever calls handle_mm_fault.
 
-This allows an application to prepare for a new phase of operation
-where different regions of shared storage will be assigned to
-worker threads, w/o changing policy.  Note that we could just use
-"default" policy in this case.  However, this also allows an
-application to request that pages be migrated, only if necessary,
-to follow any arbitrary policy that might currently apply to a
-range of pages, without knowing the policy, or without specifying
-multiple mbind()s for ranges with different policies.
-
-[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
-
-Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   11 ++++++-----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ include/linux/huge_mm.h |   10 +++++
+ mm/huge_memory.c        |   21 ++++++++++
+ mm/memory.c             |   98 +++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 126 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 3e835c9..d23dca8 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -21,6 +21,7 @@ enum {
- 	MPOL_BIND,
- 	MPOL_INTERLEAVE,
- 	MPOL_LOCAL,
-+	MPOL_NOOP,		/* retain existing policy for range */
- 	MPOL_MAX,	/* always last member of enum */
- };
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 54bd3e5..c21e914 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
- 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
- 
--	if (mode == MPOL_DEFAULT) {
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
- 		if (nodes && !nodes_empty(*nodes))
- 			return ERR_PTR(-EINVAL);
--		return NULL;	/* simply delete any existing policy */
-+		return NULL;
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index b31cb7d..a13ebb1 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -159,6 +159,10 @@ static inline struct page *compound_trans_head(struct page *page)
  	}
- 	VM_BUG_ON(!nodes);
+ 	return page;
+ }
++
++extern int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
++				  pmd_t pmd, pmd_t *pmdp);
++
+ #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+@@ -195,6 +199,12 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
+ {
+ 	return 0;
+ }
++
++static inline int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
++					pmd_t pmd, pmd_t *pmdp);
++{
++}
++
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
  
-@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (start & ~PAGE_MASK)
- 		return -EINVAL;
+ #endif /* _LINUX_HUGE_MM_H */
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 3aaf242..92a64d2 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1017,6 +1017,27 @@ out:
+ 	return page;
+ }
  
--	if (mode == MPOL_DEFAULT)
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
- 		flags &= ~MPOL_MF_STRICT;
++/* NUMA hinting page fault entry point for trans huge pmds */
++int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
++				pmd_t pmd, pmd_t *pmdp)
++{
++	struct page *page;
++
++	spin_lock(&mm->page_table_lock);
++	if (unlikely(!pmd_same(pmd, *pmdp)))
++		goto out_unlock;
++
++	page = pmd_page(pmd);
++	pmd = pmd_mknonnuma(pmd);
++	set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmdp, pmd);
++	VM_BUG_ON(pmd_numa(*pmdp));
++	update_mmu_cache_pmd(vma, addr, ptep);
++
++out_unlock:
++	spin_unlock(&mm->page_table_lock);
++	return 0;
++}
++
+ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		 pmd_t *pmd, unsigned long addr)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index de8aa11..4291fa3 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3450,6 +3450,89 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
+ }
  
- 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
-@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
- 	[MPOL_PREFERRED]  = "prefer",
- 	[MPOL_BIND]       = "bind",
- 	[MPOL_INTERLEAVE] = "interleave",
--	[MPOL_LOCAL]      = "local"
-+	[MPOL_LOCAL]      = "local",
-+	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
- };
++int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
++{
++	struct page *page;
++	spinlock_t *ptl;
++
++	/*
++	* The "pte" at this point cannot be used safely without
++	* validation through pte_unmap_same(). It's of NUMA type but
++	* the pfn may be screwed if the read is non atomic.
++	*
++	* ptep_modify_prot_start is not called as this is clearing
++	* the _PAGE_NUMA bit and it is not really expected that there
++	* would be concurrent hardware modifications to the PTE.
++	*/
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
++	if (unlikely(!pte_same(*ptep, pte)))
++		goto out_unlock;
++	pte = pte_mknonnuma(pte);
++	set_pte_at(mm, addr, ptep, pte);
++	page = vm_normal_page(vma, addr, pte);
++	BUG_ON(!page);
++	update_mmu_cache(vma, addr, ptep);
++
++out_unlock:
++	pte_unmap_unlock(ptep, ptl);
++	return 0;
++}
++
++/* NUMA hinting page fault entry point for regular pmds */
++int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++		     unsigned long addr, pmd_t *pmdp)
++{
++	pmd_t pmd;
++	pte_t *pte, *orig_pte;
++	unsigned long _addr = addr & PMD_MASK;
++	unsigned long offset;
++	spinlock_t *ptl;
++	bool numa = false;
++
++	spin_lock(&mm->page_table_lock);
++	pmd = *pmdp;
++	if (pmd_numa(pmd)) {
++		set_pmd_at(mm, _addr, pmdp, pmd_mknonnuma(pmd));
++		numa = true;
++	}
++	spin_unlock(&mm->page_table_lock);
++
++	if (!numa)
++		return 0;
++
++	/* we're in a page fault so some vma must be in the range */
++	BUG_ON(!vma);
++	BUG_ON(vma->vm_start >= _addr + PMD_SIZE);
++	offset = max(_addr, vma->vm_start) & ~PMD_MASK;
++	VM_BUG_ON(offset >= PMD_SIZE);
++	orig_pte = pte = pte_offset_map_lock(mm, pmdp, _addr, &ptl);
++	pte += offset >> PAGE_SHIFT;
++	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
++		pte_t pteval = *pte;
++		struct page *page;
++		if (!pte_present(pteval))
++			continue;
++		if (addr >= vma->vm_end) {
++			vma = find_vma(mm, addr);
++			/* there's a pte present so there must be a vma */
++			BUG_ON(!vma);
++			BUG_ON(addr < vma->vm_start);
++		}
++		if (pte_numa(pteval)) {
++			pteval = pte_mknonnuma(pteval);
++			set_pte_at(mm, addr, pte, pteval);
++		}
++		page = vm_normal_page(vma, addr, pteval);
++		if (unlikely(!page))
++			continue;
++	}
++	pte_unmap_unlock(orig_pte, ptl);
++
++	return 0;
++}
++
+ /*
+  * These routines also need to handle stuff like marking pages dirty
+  * and/or accessed for architectures that don't do it in hardware (most
+@@ -3488,6 +3571,9 @@ int handle_pte_fault(struct mm_struct *mm,
+ 					pte, pmd, flags, entry);
+ 	}
  
++	if (pte_numa(entry))
++		return do_numa_page(mm, vma, address, entry, pte, pmd);
++
+ 	ptl = pte_lockptr(mm, pmd);
+ 	spin_lock(ptl);
+ 	if (unlikely(!pte_same(*pte, entry)))
+@@ -3556,9 +3642,11 @@ retry:
  
-@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 			break;
+ 		barrier();
+ 		if (pmd_trans_huge(orig_pmd)) {
+-			if (flags & FAULT_FLAG_WRITE &&
+-			    !pmd_write(orig_pmd) &&
+-			    !pmd_trans_splitting(orig_pmd)) {
++			if (pmd_numa(*pmd))
++				return do_huge_pmd_numa_page(mm, address,
++							     orig_pmd, pmd);
++
++			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
+ 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
+ 							  orig_pmd);
+ 				/*
+@@ -3570,10 +3658,14 @@ retry:
+ 					goto retry;
+ 				return ret;
+ 			}
++
+ 			return 0;
  		}
  	}
--	if (mode >= MPOL_MAX)
-+	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
- 		goto out;
  
- 	switch (mode) {
++	if (pmd_numa(*pmd))
++		return do_pmd_numa_page(mm, vma, address, pmd);
++
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ 	 * run pte_offset_map on the pmd, if an huge pmd could
 -- 
 1.7.9.2
 
