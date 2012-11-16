@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2KPWyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 17:54:07 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49971 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab2KPWyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 17:54:02 -0500
-Subject: [RFC] Expand available hwcap bits with AT_HWCAP2 in auxv
-From: Ryan Arnold <rsa@us.ibm.com>
-Reply-To: rsa@us.ibm.com
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 16 Nov 2012 16:53:54 -0600
-Message-ID: <1353106434.10806.14067.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111622-8974-0000-0000-00001144DAE9
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00191924; UDB=6.00043465; UTC=2012-11-16
- 22:54:00
+	id S1753679Ab2KPXBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:01:49 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37846 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab2KPXBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 18:01:47 -0500
+Date: Fri, 16 Nov 2012 15:01:43 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH v2 0/3] acpi: Introduce prepare_remove device
+ operation
+Message-ID: <20121116230143.GA15338@kroah.com>
+References: <1352974970-6643-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <1446291.TgLDtXqY7q@vostro.rjw.lan>
+ <1353105943.12509.60.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353105943.12509.60.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Nov 16, 2012 at 03:45:43PM -0700, Toshi Kani wrote:
+> On Fri, 2012-11-16 at 22:43 +0100, Rafael J. Wysocki wrote:
+> > On Thursday, November 15, 2012 11:22:47 AM Vasilis Liaskovitis wrote:
+> > > As discussed in https://patchwork.kernel.org/patch/1581581/
+> > > the driver core remove function needs to always succeed. This means we need
+> > > to know that the device can be successfully removed before acpi_bus_trim / 
+> > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > > eject or driver unbind of memory devices fails e.g with:
+> > > 
+> > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > > 
+> > > since the ACPI core goes ahead and ejects the device regardless of whether the
+> > > the memory is still in use or not.
+> > 
+> > So the question is, does the ACPI core have to do that and if so, then why?
+> 
+> The problem is that acpi_memory_devcie_remove() can fail.  However,
+> device_release_driver() is a void function, so it cannot report its
+> error.  Here are function flows for SCI, sysfs eject and unbind.
 
-We're out of bits in the AT_HWCAP entry for PowerPC. Per the following
-discussion on libc-alpha, I'd like to propose the expansion of the auxv
-to make additional space available for further system feature flags.  
+Then don't ever let acpi_memory_device_remove() fail.  If the user wants
+it gone, it needs to go away.  Just like any other device in the system
+that can go away at any point in time, you can't "fail" that.
 
-http://www.sourceware.org/ml/libc-alpha/2012-10/msg00438.html
-
-There are a few ways to do this (as pointed out by Ben Herrenschmidt).
-glibc would prefer to parse an AT_HWCAP2 entry from the auxv and compose
-those bits into the high 32-bits of the existing glibc uint64_t hwcap
-field.
-
-Currently, the high 32-bits of this field are only available in 64-bit
-userspace, and only for platforms where the kernel designates the auxv
-hwcap as unsigned long int (example: s390). Platforms like PowerPC, arm,
-and x86 maintain parity between 64-bit and 32-bit userspace and thus
-only allow 32-bits for capabilities.
-
-I propose that the kernel shift capabilities designated in the high
-32-bits into an AT_HWCAP2 auxv entry. In userspace, glibc will compose
-that into the available high 32-bits of glibc's hwcap field making the
-rest of it available to all platforms.
-
-The beauty of this approach is that if either the Kernel or glibc lack
-the AT_HWCAP2 improvement the high 32-bits of glibc's hwcap field will
-remain empty, i.e., feature not available.
-
-With this in mind, I need to reserve an identifier in
-include/linux/auxvec.h for AT_HWCAP2.  I was thinking:
-
-#define AT_HWCAP  26
-
-GLIBC will have parity with this identifier in elf/elf.h.
-
-I think Ben H. had planned to work on the kernel side of this and I have
-a GLIBC patch in process.
-
-Comments?
-
-Ryan S. Arnold
-IBM Linux Technology Center
-glibc PowerPC maintainer
-
+greg k-h
