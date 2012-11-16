@@ -1,224 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab2KPSck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 13:32:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32172 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810Ab2KPSci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 13:32:38 -0500
-From: Adam Jackson <ajax@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arthur Taylor <art@ified.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] vt: Drop K_OFF for VC_MUTE
-Date: Fri, 16 Nov 2012 13:32:34 -0500
-Message-Id: <1353090754-30233-1-git-send-email-ajax@redhat.com>
+	id S1753133Ab2KPSeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 13:34:01 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42822 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2KPSd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 13:33:59 -0500
+Message-ID: <50A686C5.7080103@linux.vnet.ibm.com>
+Date: Sat, 17 Nov 2012 00:02:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        SrinivasPandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
+ support Memory Power Management
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121108180257.GC8218@suse.de> <20121109051247.GA499@dirshya.in.ibm.com> <20121109090052.GF8218@suse.de> <509D185D.8070307@linux.vnet.ibm.com> <509D200F.2000908@linux.vnet.ibm.com> <509D2B9B.4090305@linux.vnet.ibm.com> <509D3088.2060507@linux.vnet.ibm.com> <509D32C2.2090104@linux.vnet.ibm.com> <509D34DA.5090303@linux.vnet.ibm.com>
+In-Reply-To: <509D34DA.5090303@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+x-cbid: 12111618-8878-0000-0000-000004CF41FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
-the keyboard map state; we should be able to switch among cooked/raw/
-unicode without changing whether events are delivered.  Otherwise - if
-changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
-Gnome will switch VT instead of summoning the "run command" dialog.
+On 11/09/2012 10:22 PM, Srivatsa S. Bhat wrote:
+> On 11/09/2012 10:13 PM, Srivatsa S. Bhat wrote:
+>> On 11/09/2012 10:04 PM, Srivatsa S. Bhat wrote:
+>>> On 11/09/2012 09:43 PM, Dave Hansen wrote:
+>>>> On 11/09/2012 07:23 AM, Srivatsa S. Bhat wrote:
+>>>>> FWIW, kernbench is actually (and surprisingly) showing a slight performance
+>>>>> *improvement* with this patchset, over vanilla 3.7-rc3, as I mentioned in
+>>>>> my other email to Dave.
+>>>>>
+>>>>> https://lkml.org/lkml/2012/11/7/428
+>>>>>
+>>>>> I don't think I can dismiss it as an experimental error, because I am seeing
+>>>>> those results consistently.. I'm trying to find out what's behind that.
+>>>>
+>>>> The only numbers in that link are in the date. :)  Let's see the
+>>>> numbers, please.
+>>>>
+>>>
+>>> Sure :) The reason I didn't post the numbers very eagerly was that I didn't
+>>> want it to look ridiculous if it later turned out to be really an error in the
+>>> experiment ;) But since I have seen it happening consistently I think I can
+>>> post the numbers here with some non-zero confidence.
+>>>
+>>>> If you really have performance improvement to the memory allocator (or
+>>>> something else) here, then surely it can be pared out of your patches
+>>>> and merged quickly by itself.  Those kinds of optimizations are hard to
+>>>> come by!
+>>>>
+>>>
+>>> :-)
+>>>
+>>> Anyway, here it goes:
+>>>
+>>> Test setup:
+>>> ----------
+>>> x86 2-socket quad-core machine. (CONFIG_NUMA=n because I figured that my
+>>> patchset might not handle NUMA properly). Mem region size = 512 MB.
+>>>
+>>
+>> For CONFIG_NUMA=y on the same machine, the difference between the 2 kernels
+>> was much lesser, but nevertheless, this patchset performed better. I wouldn't
+>> vouch that my patchset handles NUMA correctly, but here are the numbers from
+>> that run anyway (at least to show that I really found the results to be
+>> repeatable):
+>>
 
-Drop the K_OFF handling and replace it with a new "mute" ioctl pair.
-Anybody using K_OFF would already need to be prepared to handle it
-throwing -EINVAL for old kernel compatibility, so userspace will degrade
-gracefully.
+I fixed up the NUMA case (I'll post the updated patch for that soon) and
+ran a fresh set of kernbench runs. The difference between mainline and this
+patchset is quite tiny; so we can't really say that this patchset shows a
+performance improvement over mainline. However, I can safely conclude that
+this patchset doesn't show any performance _degradation_ w.r.t mainline
+in kernbench.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
-Cc: Arthur Taylor <art@ified.ca>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Adam Jackson <ajax@redhat.com>
----
- drivers/tty/vt/keyboard.c | 40 +++++++++++++++++++++++++++++++++-------
- drivers/tty/vt/vt_ioctl.c | 13 +++++++++++++
- include/linux/kbd_kern.h  |  6 +++---
- include/linux/vt_kern.h   |  2 ++
- include/uapi/linux/kd.h   |  5 +++++
- 5 files changed, 56 insertions(+), 10 deletions(-)
+Results from one of the recent kernbench runs:
+---------------------------------------------
 
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index 681765b..08d1d57 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -657,7 +657,7 @@ static void k_spec(struct vc_data *vc, unsigned char value, char up_flag)
- 		return;
- 	if ((kbd->kbdmode == VC_RAW ||
- 	     kbd->kbdmode == VC_MEDIUMRAW ||
--	     kbd->kbdmode == VC_OFF) &&
-+	     vc_kbd_mode(kbd, VC_MUTE)) &&
- 	     value != KVAL(K_SAK))
- 		return;		/* SAK is allowed even in raw mode */
- 	fn_handler[value](vc);
-@@ -1381,7 +1381,7 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
- 	if (rc == NOTIFY_STOP)
- 		return;
- 
--	if ((raw_mode || kbd->kbdmode == VC_OFF) && type != KT_SPEC && type != KT_SHIFT)
-+	if ((raw_mode || vc_kbd_mode(kbd, VC_MUTE)) && type != KT_SPEC && type != KT_SHIFT)
- 		return;
- 
- 	(*k_handler[type])(vc, keysym & 0xff, !down);
-@@ -1731,9 +1731,6 @@ int vt_do_kdskbmode(int console, unsigned int arg)
- 		kbd->kbdmode = VC_UNICODE;
- 		do_compute_shiftstate();
- 		break;
--	case K_OFF:
--		kbd->kbdmode = VC_OFF;
--		break;
- 	default:
- 		ret = -EINVAL;
- 	}
-@@ -1742,6 +1739,30 @@ int vt_do_kdskbmode(int console, unsigned int arg)
- }
- 
- /**
-+ *	vt_do_kdskbmute		-	set keyboard event mute
-+ *	@console: the console to use
-+ *	@arg: the requested mode
-+ *
-+ *	Update the keyboard mute state while holding the correct locks.
-+ *	Return 0 for success or an error code.
-+ */
-+int vt_do_kdskbmute(int console, unsigned int arg)
-+{
-+	struct kbd_struct * kbd = kbd_table + console;
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&kbd_event_lock, flags);
-+	if (arg)
-+		set_vc_kbd_mode(kbd, VC_MUTE);
-+	else
-+		clr_vc_kbd_mode(kbd, VC_MUTE);
-+	spin_unlock_irqrestore(&kbd_event_lock, flags);
-+	return ret;
-+}
-+
-+
-+/**
-  *	vt_do_kdskbmeta		-	set keyboard meta state
-  *	@console: the console to use
-  *	@arg: the requested meta state
-@@ -2068,13 +2089,18 @@ int vt_do_kdgkbmode(int console)
- 		return K_MEDIUMRAW;
- 	case VC_UNICODE:
- 		return K_UNICODE;
--	case VC_OFF:
--		return K_OFF;
- 	default:
- 		return K_XLATE;
- 	}
- }
- 
-+int vt_do_kgdbmute(int console)
-+{
-+	struct kbd_struct * kbd = kbd_table + console;
-+	/* This is a spot read so needs no locking */
-+	return vc_kbd_mode(kbd, VC_MUTE);
-+}
-+
- /**
-  *	vt_do_kdgkbmeta		-	report meta status
-  *	@console: console to report
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index b841f56..f0951e2 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -477,6 +477,19 @@ int vt_ioctl(struct tty_struct *tty,
- 		ret = put_user(uival, (int __user *)arg);
- 		break;
- 
-+	case KDSKBMUTE:
-+		if (!perm)
-+			return -EPERM;
-+		ret = vt_do_kdskbmute(console, arg);
-+		if (ret == 0)
-+			tty_ldisc_flush(tty);
-+		break;
-+
-+	case KDGKBMUTE:
-+		uival = vt_do_kdgkbmute(console);
-+		ret = put_user(uival, (int __user *)arg);
-+		break;
-+
- 	/* this could be folded into KDSKBMODE, but for compatibility
- 	   reasons it is not so easy to fold KDGKBMETA into KDGKBMODE */
- 	case KDSKBMETA:
-diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
-index b7c8cdc..9386143 100644
---- a/include/linux/kbd_kern.h
-+++ b/include/linux/kbd_kern.h
-@@ -48,19 +48,19 @@ struct kbd_struct {
- #define VC_CAPSLOCK	2	/* capslock mode */
- #define VC_KANALOCK	3	/* kanalock mode */
- 
--	unsigned char kbdmode:3;	/* one 3-bit value */
-+	unsigned char kbdmode:2;	/* one 2-bit value */
- #define VC_XLATE	0	/* translate keycodes using keymap */
- #define VC_MEDIUMRAW	1	/* medium raw (keycode) mode */
- #define VC_RAW		2	/* raw (scancode) mode */
- #define VC_UNICODE	3	/* Unicode mode */
--#define VC_OFF		4	/* disabled mode */
- 
--	unsigned char modeflags:5;
-+	unsigned char modeflags:6;
- #define VC_APPLIC	0	/* application key mode */
- #define VC_CKMODE	1	/* cursor key mode */
- #define VC_REPEAT	2	/* keyboard repeat */
- #define VC_CRLF		3	/* 0 - enter sends CR, 1 - enter sends CRLF */
- #define VC_META		4	/* 0 - meta, 1 - meta=prefix with ESC */
-+#define VC_MUTE		5	/* don't generate events */
- };
- 
- extern int kbd_init(void);
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 50ae7d0..a886915 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -168,6 +168,7 @@ extern void hide_boot_cursor(bool hide);
- 
- /* keyboard  provided interfaces */
- extern int vt_do_diacrit(unsigned int cmd, void __user *up, int eperm);
-+extern int vt_do_kdskbmute(int console, unsigned int arg);
- extern int vt_do_kdskbmode(int console, unsigned int arg);
- extern int vt_do_kdskbmeta(int console, unsigned int arg);
- extern int vt_do_kbkeycode_ioctl(int cmd, struct kbkeycode __user *user_kbkc,
-@@ -177,6 +178,7 @@ extern int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe,
- extern int vt_do_kdgkb_ioctl(int cmd, struct kbsentry __user *user_kdgkb,
-                                         int perm);
- extern int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm);
-+extern int vt_do_kdgkbmute(int console);
- extern int vt_do_kdgkbmode(int console);
- extern int vt_do_kdgkbmeta(int console);
- extern void vt_reset_unicode(int console);
-diff --git a/include/uapi/linux/kd.h b/include/uapi/linux/kd.h
-index 87b7cc4..c3de63c 100644
---- a/include/uapi/linux/kd.h
-+++ b/include/uapi/linux/kd.h
-@@ -81,6 +81,7 @@ struct unimapinit {
- #define		K_XLATE		0x01
- #define		K_MEDIUMRAW	0x02
- #define		K_UNICODE	0x03
-+/* K_OFF is no longer implemented, but preserved for source compatibility */
- #define		K_OFF		0x04
- #define KDGKBMODE	0x4B44	/* gets current keyboard mode */
- #define KDSKBMODE	0x4B45	/* sets current keyboard mode */
-@@ -150,6 +151,10 @@ struct kbd_repeat {
- 			/* earlier this field was misnamed "rate" */
- };
- 
-+/* get/set event mute */
-+#define KDGKBMUTE	0x4B50
-+#define KDSKBMUTE	0x4B51
-+
- #define KDKBDREP        0x4B52  /* set keyboard delay/repeat rate;
- 				 * actually used values are returned */
- 
--- 
-1.7.11.7
+Kernbench log for Vanilla 3.7-rc3
+=================================
+Kernel: 3.7.0-rc3
+Average Optimal load -j 32 Run (std deviation):
+Elapsed Time 330.39 (0.746257)
+User Time 4283.63 (3.39617)
+System Time 604.783 (2.72629)
+Percent CPU 1479 (3.60555)
+Context Switches 845634 (6031.22)
+Sleeps 833655 (6652.17)
+
+
+Kernbench log for Sorted-buddy
+==============================
+Kernel: 3.7.0-rc3-sorted-buddy
+Average Optimal load -j 32 Run (std deviation):
+Elapsed Time 329.967 (2.76789)
+User Time 4230.02 (2.15324)
+System Time 599.793 (1.09988)
+Percent CPU 1463.33 (11.3725)
+Context Switches 840530 (1646.75)
+Sleeps 833732 (2227.68)
+
+Regards,
+Srivatsa S. Bhat
 
