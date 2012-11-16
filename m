@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab2KPJp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:45:29 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:39823 "EHLO
+	id S1751508Ab2KPJpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:45:35 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:39836 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2KPJp0 (ORCPT
+	with ESMTP id S1751166Ab2KPJpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:45:26 -0500
+	Fri, 16 Nov 2012 04:45:32 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
@@ -28,9 +28,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V2 1/3] arm: dma mapping: Export dma ops functions
-Date: Fri, 16 Nov 2012 10:44:58 +0100
-Message-Id: <1353059100-24022-2-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH V2 3/3] arm: mvebu: Add hardware I/O Coherency support
+Date: Fri, 16 Nov 2012 10:45:00 +0100
+Message-Id: <1353059100-24022-4-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
@@ -38,228 +38,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the DMA operations functions. Until now only the dma_ops
-structs in a whole or some dma operation were exposed. This patch
-exposes all the dma coherents and non-coherents operations. They can
-be reused when an architecture or driver need to create its own set of
-dma_operation.
+Armada 370 and XP come with an unit called coherency fabric. This unit
+allows to use the Armada 370/XP as a nearly coherent architecture. The
+coherency mechanism uses snoop filters to ensure the coherency between
+caches, DRAM and devices. This mechanism needs a synchronization
+barrier which guarantees that all the memory writes initiated by the
+devices have reached their target and do not reside in intermediate
+write buffers. That's why the architecture is not totally coherent and
+we need to provide our own functions for some DMA operations.
+
+Beside the use of the coherency fabric, the device units will have to
+set the attribute flag of the decoding address window to select the
+accurate coherency process for the memory transaction. This is done
+each device driver programs the DRAM address windows. The value of the
+attribute set by the driver is retrieved through the
+orion_addr_map_cfg struct filled during the early initialization of
+the platform.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
 ---
- arch/arm/include/asm/dma-mapping.h |   62 ++++++++++++++++++++++++++++++++++++
- arch/arm/mm/dma-mapping.c          |   36 +++++----------------
- 2 files changed, 70 insertions(+), 28 deletions(-)
+ .../devicetree/bindings/arm/coherency-fabric.txt   |    9 ++-
+ arch/arm/boot/dts/armada-370-xp.dtsi               |    3 +-
+ arch/arm/mach-mvebu/addr-map.c                     |    3 +
+ arch/arm/mach-mvebu/coherency.c                    |   73 ++++++++++++++++++++
+ 4 files changed, 85 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 2300484..f940a10 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -112,6 +112,60 @@ static inline void dma_free_noncoherent(struct device *dev, size_t size,
- extern int dma_supported(struct device *dev, u64 mask);
+diff --git a/Documentation/devicetree/bindings/arm/coherency-fabric.txt b/Documentation/devicetree/bindings/arm/coherency-fabric.txt
+index 2bfbf67..17d8cd1 100644
+--- a/Documentation/devicetree/bindings/arm/coherency-fabric.txt
++++ b/Documentation/devicetree/bindings/arm/coherency-fabric.txt
+@@ -5,12 +5,17 @@ Available on Marvell SOCs: Armada 370 and Armada XP
+ Required properties:
  
- /**
-+ * arm_dma_map_page - map a portion of a page for streaming DMA
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @page: page that buffer resides in
-+ * @offset: offset into page for start of buffer
-+ * @size: size of buffer to map
-+ * @dir: DMA transfer direction
-+ *
-+ * Ensure that any data held in the cache is appropriately discarded
-+ * or written back.
-+ *
-+ * The device owns this memory once this call has completed.  The CPU
-+ * can regain ownership by calling dma_unmap_page().
-+ */
-+extern dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
-+				    unsigned long offset, size_t size,
-+				    enum dma_data_direction dir,
-+				    struct dma_attrs *attrs);
+ - compatible: "marvell,coherency-fabric"
+-- reg: Should contain,coherency fabric registers location and length.
 +
-+extern dma_addr_t arm_coherent_dma_map_page(struct device *dev,
-+					    struct page *page,
-+					    unsigned long offset, size_t size,
-+					    enum dma_data_direction dir,
-+					    struct dma_attrs *attrs);
++- reg: Should contain coherency fabric registers location and
++  length. First pair for the coherency fabric registers, second pair
++  for the per-CPU fabric registers registers.
+ 
+ Example:
+ 
+ coherency-fabric@d0020200 {
+ 	compatible = "marvell,coherency-fabric";
+-	reg = <0xd0020200 0xb0>;
++	reg = <0xd0020200 0xb0>,
++		<0xd0021810 0x1c>;
 +
-+/**
-+ * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
-+ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-+ * @handle: DMA address of buffer
-+ * @size: size of buffer (same as passed to dma_map_page)
-+ * @dir: DMA transfer direction (same as passed to dma_map_page)
-+ *
-+ * Unmap a page streaming mode DMA translation.  The handle and size
-+ * must match what was provided in the previous dma_map_page() call.
-+ * All other usages are undefined.
-+ *
-+ * After this call, reads by the CPU to the buffer are guaranteed to see
-+ * whatever the device wrote there.
-+ */
-+extern void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
-+				size_t size, enum dma_data_direction dir,
-+				struct dma_attrs *attrs);
-+
-+extern void arm_dma_sync_single_for_cpu(struct device *dev,
-+					dma_addr_t handle, size_t size,
-+					enum dma_data_direction dir);
-+
-+extern void arm_dma_sync_single_for_device(struct device *dev,
-+					dma_addr_t handle, size_t size,
-+					enum dma_data_direction dir);
-+
-+extern int arm_dma_set_mask(struct device *dev, u64 dma_mask);
-+
-+
-+/**
-  * arm_dma_alloc - allocate consistent memory for DMA
-  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-  * @size: required memory size
-@@ -125,6 +179,10 @@ extern int dma_supported(struct device *dev, u64 mask);
- extern void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
- 			   gfp_t gfp, struct dma_attrs *attrs);
- 
-+extern void *arm_coherent_dma_alloc(struct device *dev, size_t size,
-+				    dma_addr_t *handle, gfp_t gfp,
-+				    struct dma_attrs *attrs);
-+
- #define dma_alloc_coherent(d, s, h, f) dma_alloc_attrs(d, s, h, f, NULL)
- 
- static inline void *dma_alloc_attrs(struct device *dev, size_t size,
-@@ -157,6 +215,10 @@ static inline void *dma_alloc_attrs(struct device *dev, size_t size,
- extern void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
- 			 dma_addr_t handle, struct dma_attrs *attrs);
- 
-+extern void arm_coherent_dma_free(struct device *dev, size_t size,
-+				    void *cpu_addr, dma_addr_t handle,
-+				    struct dma_attrs *attrs);
-+
- #define dma_free_coherent(d, s, c, h) dma_free_attrs(d, s, c, h, NULL)
- 
- static inline void dma_free_attrs(struct device *dev, size_t size,
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 58bc3e4..5b60ee6 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -56,20 +56,13 @@ static void __dma_page_dev_to_cpu(struct page *, unsigned long,
- 		size_t, enum dma_data_direction);
- 
- /**
-- * arm_dma_map_page - map a portion of a page for streaming DMA
-- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-- * @page: page that buffer resides in
-- * @offset: offset into page for start of buffer
-- * @size: size of buffer to map
-- * @dir: DMA transfer direction
-- *
-  * Ensure that any data held in the cache is appropriately discarded
-  * or written back.
-  *
-  * The device owns this memory once this call has completed.  The CPU
-  * can regain ownership by calling dma_unmap_page().
-  */
--static dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
-+dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
- 	     unsigned long offset, size_t size, enum dma_data_direction dir,
- 	     struct dma_attrs *attrs)
- {
-@@ -78,7 +71,7 @@ static dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
- 	return pfn_to_dma(dev, page_to_pfn(page)) + offset;
- }
- 
--static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *page,
-+dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *page,
- 	     unsigned long offset, size_t size, enum dma_data_direction dir,
- 	     struct dma_attrs *attrs)
- {
-@@ -86,12 +79,6 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
- }
- 
- /**
-- * arm_dma_unmap_page - unmap a buffer previously mapped through dma_map_page()
-- * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
-- * @handle: DMA address of buffer
-- * @size: size of buffer (same as passed to dma_map_page)
-- * @dir: DMA transfer direction (same as passed to dma_map_page)
-- *
-  * Unmap a page streaming mode DMA translation.  The handle and size
-  * must match what was provided in the previous dma_map_page() call.
-  * All other usages are undefined.
-@@ -99,7 +86,7 @@ static dma_addr_t arm_coherent_dma_map_page(struct device *dev, struct page *pag
-  * After this call, reads by the CPU to the buffer are guaranteed to see
-  * whatever the device wrote there.
-  */
--static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
-+void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
- 		size_t size, enum dma_data_direction dir,
- 		struct dma_attrs *attrs)
- {
-@@ -108,7 +95,7 @@ static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
- 				      handle & ~PAGE_MASK, size, dir);
- }
- 
--static void arm_dma_sync_single_for_cpu(struct device *dev,
-+void arm_dma_sync_single_for_cpu(struct device *dev,
- 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
- {
- 	unsigned int offset = handle & (PAGE_SIZE - 1);
-@@ -116,7 +103,7 @@ static void arm_dma_sync_single_for_cpu(struct device *dev,
- 	__dma_page_dev_to_cpu(page, offset, size, dir);
- }
- 
--static void arm_dma_sync_single_for_device(struct device *dev,
-+void arm_dma_sync_single_for_device(struct device *dev,
- 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
- {
- 	unsigned int offset = handle & (PAGE_SIZE - 1);
-@@ -124,8 +111,6 @@ static void arm_dma_sync_single_for_device(struct device *dev,
- 	__dma_page_cpu_to_dev(page, offset, size, dir);
- }
- 
--static int arm_dma_set_mask(struct device *dev, u64 dma_mask);
--
- struct dma_map_ops arm_dma_ops = {
- 	.alloc			= arm_dma_alloc,
- 	.free			= arm_dma_free,
-@@ -143,11 +128,6 @@ struct dma_map_ops arm_dma_ops = {
  };
- EXPORT_SYMBOL(arm_dma_ops);
  
--static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
--	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
--static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
--				  dma_addr_t handle, struct dma_attrs *attrs);
--
- struct dma_map_ops arm_coherent_dma_ops = {
- 	.alloc			= arm_coherent_dma_alloc,
- 	.free			= arm_coherent_dma_free,
-@@ -672,7 +652,7 @@ void *arm_dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
- 			   __builtin_return_address(0));
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index b0d075b..98a6b26 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -38,7 +38,8 @@
+ 
+ 	coherency-fabric@d0020200 {
+ 		compatible = "marvell,coherency-fabric";
+-		reg = <0xd0020200 0xb0>;
++		reg = <0xd0020200 0xb0>,
++		      <0xd0021810 0x1c>;
+ 	};
+ 
+ 	soc {
+diff --git a/arch/arm/mach-mvebu/addr-map.c b/arch/arm/mach-mvebu/addr-map.c
+index fe454a4..595f6b7 100644
+--- a/arch/arm/mach-mvebu/addr-map.c
++++ b/arch/arm/mach-mvebu/addr-map.c
+@@ -108,6 +108,9 @@ static int __init armada_setup_cpu_mbus(void)
+ 
+ 	addr_map_cfg.bridge_virt_base = mbus_unit_addr_decoding_base;
+ 
++	if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric"))
++		addr_map_cfg.hw_io_coherency = 1;
++
+ 	/*
+ 	 * Disable, clear and configure windows.
+ 	 */
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index 20a0ccc..153fcfa 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -22,6 +22,8 @@
+ #include <linux/of_address.h>
+ #include <linux/io.h>
+ #include <linux/smp.h>
++#include <linux/dma-mapping.h>
++#include <linux/platform_device.h>
+ #include <asm/smp_plat.h>
+ #include "armada-370-xp.h"
+ 
+@@ -32,11 +34,14 @@
+  * value matching its virtual mapping
+  */
+ static void __iomem *coherency_base = ARMADA_370_XP_REGS_VIRT_BASE + 0x20200;
++static void __iomem *coherency_cpu_base;
+ 
+ /* Coherency fabric registers */
+ #define COHERENCY_FABRIC_CTL_OFFSET		   0x0
+ #define COHERENCY_FABRIC_CFG_OFFSET		   0x4
+ 
++#define IO_SYNC_BARRIER_CTL_OFFSET		   0x0
++
+ static struct of_device_id of_coherency_table[] = {
+ 	{.compatible = "marvell,coherency-fabric"},
+ 	{ /* end of list */ },
+@@ -75,6 +80,70 @@ int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
+ 	return 0;
  }
  
--static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
-+void *arm_coherent_dma_alloc(struct device *dev, size_t size,
- 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
++static inline void mvebu_hwcc_sync_io_barrier(void)
++{
++	writel(0x1, coherency_cpu_base + IO_SYNC_BARRIER_CTL_OFFSET);
++	while (readl(coherency_cpu_base + IO_SYNC_BARRIER_CTL_OFFSET) & 0x1);
++}
++
++static dma_addr_t mvebu_hwcc_dma_map_page(struct device *dev, struct page *page,
++				  unsigned long offset, size_t size,
++				  enum dma_data_direction dir,
++				  struct dma_attrs *attrs)
++{
++	if (dir != DMA_TO_DEVICE)
++		mvebu_hwcc_sync_io_barrier();
++	return pfn_to_dma(dev, page_to_pfn(page)) + offset;
++}
++
++
++static void mvebu_hwcc_dma_unmap_page(struct device *dev, dma_addr_t dma_handle,
++			      size_t size, enum dma_data_direction dir,
++			      struct dma_attrs *attrs)
++{
++	if (dir != DMA_TO_DEVICE)
++		mvebu_hwcc_sync_io_barrier();
++}
++
++static void mvebu_hwcc_dma_sync(struct device *dev, dma_addr_t dma_handle,
++			size_t size, enum dma_data_direction dir)
++{
++	if (dir != DMA_TO_DEVICE)
++		mvebu_hwcc_sync_io_barrier();
++}
++
++static struct dma_map_ops mvebu_hwcc_dma_ops = {
++	.alloc			= arm_coherent_dma_alloc,
++	.free			= arm_coherent_dma_free,
++	.mmap			= arm_dma_mmap,
++	.unmap_page		= mvebu_hwcc_dma_unmap_page,
++	.get_sgtable		= arm_dma_get_sgtable,
++	.map_page		= mvebu_hwcc_dma_map_page,
++	.map_sg			= arm_dma_map_sg,
++	.unmap_sg		= arm_dma_unmap_sg,
++	.sync_single_for_cpu	= mvebu_hwcc_dma_sync,
++	.sync_single_for_device	= mvebu_hwcc_dma_sync,
++	.sync_sg_for_cpu	= arm_dma_sync_sg_for_cpu,
++	.sync_sg_for_device	= arm_dma_sync_sg_for_device,
++	.set_dma_mask		= arm_dma_set_mask,
++};
++
++static int mvebu_hwcc_platform_notifier(struct notifier_block *nb,
++				       unsigned long event, void *__dev)
++{
++	struct device *dev = __dev;
++
++	if (event != BUS_NOTIFY_ADD_DEVICE)
++		return NOTIFY_DONE;
++	set_dma_ops(dev, &mvebu_hwcc_dma_ops);
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block mvebu_hwcc_platform_nb = {
++	.notifier_call = mvebu_hwcc_platform_notifier,
++};
++
+ int __init coherency_init(void)
  {
- 	pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
-@@ -751,7 +731,7 @@ void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
- 	__arm_dma_free(dev, size, cpu_addr, handle, attrs, false);
- }
+ 	struct device_node *np;
+@@ -83,6 +152,10 @@ int __init coherency_init(void)
+ 	if (np) {
+ 		pr_info("Initializing Coherency fabric\n");
+ 		coherency_base = of_iomap(np, 0);
++		coherency_cpu_base = of_iomap(np, 1);
++		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
++		bus_register_notifier(&platform_bus_type,
++					&mvebu_hwcc_platform_nb);
+ 	}
  
--static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
-+void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
- 				  dma_addr_t handle, struct dma_attrs *attrs)
- {
- 	__arm_dma_free(dev, size, cpu_addr, handle, attrs, true);
-@@ -971,7 +951,7 @@ int dma_supported(struct device *dev, u64 mask)
- }
- EXPORT_SYMBOL(dma_supported);
- 
--static int arm_dma_set_mask(struct device *dev, u64 dma_mask)
-+int arm_dma_set_mask(struct device *dev, u64 dma_mask)
- {
- 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
- 		return -EIO;
+ 	return 0;
 -- 
 1.7.9.5
 
