@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2KPLXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:23:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33192 "EHLO mx2.suse.de"
+	id S1752103Ab2KPLXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33226 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab2KPLXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:46 -0500
+	id S1752047Ab2KPLXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:52 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 34/43] x86: mm: drop TLB flush from ptep_set_access_flags
-Date: Fri, 16 Nov 2012 11:22:44 +0000
-Message-Id: <1353064973-26082-35-git-send-email-mgorman@suse.de>
+Subject: [PATCH 37/43] sched: numa: Make find_busiest_queue() a method
+Date: Fri, 16 Nov 2012 11:22:47 +0000
+Message-Id: <1353064973-26082-38-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,40 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Intel has an architectural guarantee that the TLB entry causing
-a page fault gets invalidated automatically. This means
-we should be able to drop the local TLB invalidation.
+Its a bit awkward but it was the least painful means of modifying the
+queue selection. Used in the next patch to conditionally use a queue.
 
-Because of the way other areas of the page fault code work,
-chances are good that all x86 CPUs do this.  However, if
-someone somewhere has an x86 CPU that does not invalidate
-the TLB entry causing a page fault, this one-liner should
-be easy to revert.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- arch/x86/mm/pgtable.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/sched/fair.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index be3bb46..7353de3 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -317,7 +317,6 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	if (changed && dirty) {
- 		*ptep = entry;
- 		pte_update_defer(vma->vm_mm, address, ptep);
--		__flush_tlb_one(address);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 14bd61a8..af71f94 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3244,6 +3244,9 @@ struct lb_env {
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
++
++	struct rq *		(*find_busiest_queue)(struct lb_env *,
++						      struct sched_group *);
+ };
+ 
+ /*
+@@ -4417,13 +4420,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+ 
+ 	struct lb_env env = {
+-		.sd		= sd,
+-		.dst_cpu	= this_cpu,
+-		.dst_rq		= this_rq,
+-		.dst_grpmask    = sched_group_cpus(sd->groups),
+-		.idle		= idle,
+-		.loop_break	= sched_nr_migrate_break,
+-		.cpus		= cpus,
++		.sd		    = sd,
++		.dst_cpu	    = this_cpu,
++		.dst_rq		    = this_rq,
++		.dst_grpmask        = sched_group_cpus(sd->groups),
++		.idle		    = idle,
++		.loop_break	    = sched_nr_migrate_break,
++		.cpus		    = cpus,
++		.find_busiest_queue = find_busiest_queue,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+@@ -4442,7 +4446,7 @@ redo:
+ 		goto out_balanced;
  	}
  
- 	return changed;
+-	busiest = find_busiest_queue(&env, group);
++	busiest = env.find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
 -- 
 1.7.9.2
 
