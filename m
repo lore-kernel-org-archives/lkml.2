@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2KPJxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:53:51 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:39429 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab2KPJwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:52:19 -0500
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH v1 hot_track 11/16] vfs: register one shrinker
-Date: Fri, 16 Nov 2012 17:51:13 +0800
-Message-Id: <1353059478-25474-12-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1353059478-25474-1-git-send-email-zwu.kernel@gmail.com>
-References: <1353059478-25474-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111609-5406-0000-0000-000002189AEB
+	id S1751969Ab2KPJyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:54:14 -0500
+Received: from mga14.intel.com ([143.182.124.37]:16838 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751629Ab2KPJyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:54:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,263,1352102400"; 
+   d="scan'208";a="169124344"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] thp: fix update_mmu_cache_pmd() calls
+Date: Fri, 16 Nov 2012 11:55:15 +0200
+Message-Id: <1353059717-9850-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-  Register a shrinker to control the amount of
-memory that is used in tracking hot regions - if we are throwing
-inodes out of memory due to memory pressure, we most definitely are
-going to need to reduce the amount of memory the tracking code is
-using, even if it means losing useful information (i.e. the shrinker
-accelerates the aging process).
+update_mmu_cache_pmd() takes pointer to pmd_t as third, not pmd_t.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+mm/huge_memory.c: In function 'do_huge_pmd_numa_page':
+mm/huge_memory.c:825:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
+In file included from include/linux/mm.h:44:0,
+                 from mm/huge_memory.c:8:
+arch/mips/include/asm/pgtable.h:385:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
+mm/huge_memory.c:895:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
+In file included from include/linux/mm.h:44:0,
+                 from mm/huge_memory.c:8:
+arch/mips/include/asm/pgtable.h:385:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/hot_tracking.c            |   61 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/hot_tracking.h |    1 +
- 2 files changed, 62 insertions(+), 0 deletions(-)
+ mm/huge_memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 81fb084..8144200 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -630,6 +630,61 @@ err:
- }
- EXPORT_SYMBOL_GPL(hot_cache_init);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 4489e16..2401a16 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -886,7 +886,7 @@ fixup:
+ 	/* change back to regular protection */
+ 	entry = pmd_modify(entry, vma->vm_page_prot);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+-	update_mmu_cache_pmd(vma, address, entry);
++	update_mmu_cache_pmd(vma, address, &entry);
  
-+static int hot_track_prune_map(struct hot_map_head *map_head,
-+				bool type, int nr)
-+{
-+	struct hot_comm_item *node;
-+	int i;
-+
-+	for (i = 0; i < HEAT_MAP_SIZE; i++) {
-+		while (!list_empty(&(map_head + i)->node_list)) {
-+			if (nr-- <= 0)
-+				break;
-+
-+			node = list_first_entry(&(map_head + i)->node_list,
-+					struct hot_comm_item, n_list);
-+			if (type) {
-+				struct hot_inode_item *hot_inode =
-+					container_of(node,
-+					struct hot_inode_item, hot_inode);
-+				hot_inode_item_put(hot_inode);
-+			} else {
-+				struct hot_range_item *hot_range =
-+					container_of(node,
-+					struct hot_range_item, hot_range);
-+				hot_range_item_put(hot_range);
-+			}
-+		}
-+	}
-+
-+	return nr;
-+}
-+
-+/* The shrinker callback function */
-+static int hot_track_prune(struct shrinker *shrink,
-+			struct shrink_control *sc)
-+{
-+	struct hot_info *root =
-+		container_of(shrink, struct hot_info, hot_shrink);
-+	int ret;
-+
-+	if (sc->nr_to_scan == 0)
-+		return root->hot_map_nr;
-+
-+	if (!(sc->gfp_mask & __GFP_FS))
-+		return -1;
-+
-+	ret = hot_track_prune_map(root->heat_range_map,
-+				false, sc->nr_to_scan);
-+	if (ret > 0)
-+		ret = hot_track_prune_map(root->heat_inode_map,
-+					true, ret);
-+	if (ret > 0)
-+		root->hot_map_nr -= (sc->nr_to_scan - ret);
-+
-+	return root->hot_map_nr;
-+}
-+
- /*
-  * Main function to update access frequency from read/writepage(s) hooks
-  */
-@@ -726,6 +781,11 @@ int hot_track_init(struct super_block *sb)
- 	queue_delayed_work(root->update_wq, &root->update_work,
- 		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
+ unlock:
+ 	spin_unlock(&mm->page_table_lock);
+@@ -956,7 +956,7 @@ migrate:
+ 	page_add_new_anon_rmap(new_page, vma, haddr);
  
-+	/* Register a shrinker callback */
-+	root->hot_shrink.shrink = hot_track_prune;
-+	root->hot_shrink.seeks = DEFAULT_SEEKS;
-+	register_shrinker(&root->hot_shrink);
-+
- 	sb->s_hot_root = root;
+ 	set_pmd_at(mm, haddr, pmd, entry);
+-	update_mmu_cache_pmd(vma, address, entry);
++	update_mmu_cache_pmd(vma, address, &entry);
+ 	page_remove_rmap(page);
+ 	spin_unlock(&mm->page_table_lock);
  
- 	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
-@@ -744,6 +804,7 @@ void hot_track_exit(struct super_block *sb)
- {
- 	struct hot_info *root = sb->s_hot_root;
- 
-+	unregister_shrinker(&root->hot_shrink);
- 	cancel_delayed_work_sync(&root->update_work);
- 	destroy_workqueue(root->update_wq);
- 	hot_map_exit(root);
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index f73111e..24e91ff 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -110,6 +110,7 @@ struct hot_info {
- 	struct workqueue_struct *update_wq;
- 	struct delayed_work update_work;
- 	struct hot_type *hot_type;
-+	struct shrinker hot_shrink;
- };
- 
- extern void __init hot_cache_init(void);
 -- 
-1.7.6.5
+1.7.11.7
 
