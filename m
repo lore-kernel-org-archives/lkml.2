@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab2KPJeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:34:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63823 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab2KPJe3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:34:29 -0500
-Message-ID: <50A6089B.7010708@gmail.com>
-Date: Fri, 16 Nov 2012 17:34:19 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+	id S1751570Ab2KPJfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:35:39 -0500
+Received: from mail.sf-mail.de ([62.27.20.61]:54102 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab2KPJfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 04:35:37 -0500
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com> <alpine.LNX.2.00.1211131935410.30540@eggly.anvils> <50A49C46.9040406@gmail.com> <alpine.LNX.2.00.1211151126440.9273@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1211151126440.9273@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] scsi: prevent stack buffer overflow in host_reset
+Date: Fri, 16 Nov 2012 10:35:32 +0100
+Message-ID: <2743667.hK8qPvyv2t@eto>
+User-Agent: KMail/4.8.5 (Linux/3.6.4-9-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1353012706-28182-1-git-send-email-sasha.levin@oracle.com>
+References: <1353012706-28182-1-git-send-email-sasha.levin@oracle.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart1374175.NP0D7WObFN"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 03:56 AM, Hugh Dickins wrote:
-> Offtopic...
->
-> On Thu, 15 Nov 2012, Jaegeuk Hanse wrote:
->> Another question. Why the function shmem_fallocate which you add to kernel
->> need call shmem_getpage?
-> Because shmem_getpage(_gfp) is where shmem's
-> page lookup and allocation complexities are handled.
->
-> I assume the question behind your question is: why does shmem actually
-> allocate pages for its fallocate, instead of just reserving the space?
->
-> I did play with just reserving the space, with more special entries in
-> the radix_tree to note the reservations made.  It should be doable for
-> the vm_enough_memory and sbinfo->used_blocks reservations.
->
-> What absolutely deterred me from taking that path was the mem_cgroup
-> case: shmem and swap and memcg are not easy to get working right together,
-> and nobody would thank me for complicating memcg just for shmem_fallocate.
->
-> By allocating pages, the pre-existing memcg code just works; if we used
-> reservations instead, we would have to track their memcg charges in some
-> additional new way.  I see no justification for that complication.
 
-Hi Hugh
+--nextPart1374175.NP0D7WObFN
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Some questions about your shmem/tmpfs: misc and fallocate patchset.
+Am Donnerstag 15 November 2012, 15:51:46 schrieb Sasha Levin:
+> store_host_reset() has tried to re-invent the wheel to compare sysfs
+> strings. Unfortunately it did so poorly and never bothered to check the
+> input from userspace before overwriting stack with it, so something simple
+> as:
+> 
+> echo "WoopsieWoopsie" >
+> /sys/devices/pseudo_0/adapter0/host0/scsi_host/host0/host_reset
+> 
+> would result in:
+> 
+> [  316.310101] Kernel panic - not syncing: stack-protector: Kernel stack is
+> corrupted in: ffffffff81f5bac7 [  316.310101]
+> [  316.320051] Pid: 6655, comm: sh Tainted: G        W   
+> 3.7.0-rc5-next-20121114-sasha-00016-g5c9d68d-dirty #129 [  316.320051] Call
+> Trace:
+> [  316.340058] pps pps0: PPS event at 1352918752.620355751
+> [  316.340062] pps pps0: capture assert seq #303
+> [  316.320051]  [<ffffffff83b3856b>] panic+0xcd/0x1f4
+> [  316.320051]  [<ffffffff81f5bac7>] ? store_host_reset+0xd7/0x100
+> [  316.320051]  [<ffffffff8110b996>] __stack_chk_fail+0x16/0x20
+> [  316.320051]  [<ffffffff81f5bac7>] store_host_reset+0xd7/0x100
+> [  316.320051]  [<ffffffff81e55bb3>] dev_attr_store+0x13/0x30
+> [  316.320051]  [<ffffffff812f7db1>] sysfs_write_file+0x101/0x170
+> [  316.320051]  [<ffffffff8127acc8>] vfs_write+0xb8/0x180
+> [  316.320051]  [<ffffffff8127ae80>] sys_write+0x50/0xa0
+> [  316.320051]  [<ffffffff83c03418>] tracesys+0xe1/0xe6
+> 
+> Fix this by uninventing whatever was going on there and just use
+> sysfs_streq.
+> 
+> Bug introduced by 29443691 ("[SCSI] scsi: Added support for adapter and
+> firmware reset").
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-- Since shmem_setattr can truncate tmpfs files, why need add another 
-similar codes in function shmem_fallocate? What's the trick?
-- in tmpfs: support fallocate preallocation patch changelog:
-   "Christoph Hellwig: What for exactly?  Please explain why 
-preallocating on tmpfs would make any sense.
-   Kay Sievers: To be able to safely use mmap(), regarding SIGBUS, on 
-files on the /dev/shm filesystem.  The glibc fallback loop for -ENOSYS 
-[or -EOPNOTSUPP] on fallocate is just ugly."
-   Could shmem/tmpfs fallocate prevent one process truncate the file 
-which the second process mmap() and get SIGBUS when the second process 
-access mmap but out of current size of file?
+That revision is in 3.2 and all following, so I think this needs to go into 
+stable, too.
 
-Regards,
-Jaegeuk
+Eike
+--nextPart1374175.NP0D7WObFN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-> Hugh
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEABECAAYFAlCmCOQACgkQXKSJPmm5/E7lZQCeOmTD0qnSH3eVJawsiZ3sbRbS
+GBYAn0Dxd5rJGYClsVtSgSeQ9ldnoT3G
+=tKkJ
+-----END PGP SIGNATURE-----
+
+--nextPart1374175.NP0D7WObFN--
 
