@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab2KPTvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:51:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44624 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2KPTvb (ORCPT
+	id S1753282Ab2KPTzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:55:08 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57618 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab2KPTzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:51:31 -0500
-Date: Fri, 16 Nov 2012 11:51:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Revert "mm: remove __GFP_NO_KSWAPD"
-Message-Id: <20121116115124.c2981abc.akpm@linux-foundation.org>
-In-Reply-To: <CA+5PVA75XDJjo45YQ7+8chJp9OEhZxgPMBUpHmnq1ihYFfpOaw@mail.gmail.com>
-References: <20121012135726.GY29125@suse.de>
-	<507BDD45.1070705@suse.cz>
-	<20121015110937.GE29125@suse.de>
-	<5093A3F4.8090108@redhat.com>
-	<5093A631.5020209@suse.cz>
-	<509422C3.1000803@suse.cz>
-	<509C84ED.8090605@linux.vnet.ibm.com>
-	<509CB9D1.6060704@redhat.com>
-	<20121109090635.GG8218@suse.de>
-	<509F6C2A.9060502@redhat.com>
-	<20121112113731.GS8218@suse.de>
-	<CA+5PVA75XDJjo45YQ7+8chJp9OEhZxgPMBUpHmnq1ihYFfpOaw@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Nov 2012 14:55:06 -0500
+Date: Fri, 16 Nov 2012 11:55:04 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Eilon Greenstein <eilong@broadcom.com>
+cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: add double empty line check
+In-Reply-To: <1353094919.14327.4.camel@lb-tlvb-eilong.il.broadcom.com>
+Message-ID: <alpine.DEB.2.00.1211161154280.2788@chino.kir.corp.google.com>
+References: <1353094919.14327.4.camel@lb-tlvb-eilong.il.broadcom.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012 14:14:47 -0500
-Josh Boyer <jwboyer@gmail.com> wrote:
+On Fri, 16 Nov 2012, Eilon Greenstein wrote:
 
-> > The temptation is to supply a patch that checks if kswapd was woken for
-> > THP and if so ignore pgdat->kswapd_max_order but it'll be a hack and not
-> > backed up by proper testing. As 3.7 is very close to release and this is
-> > not a bug we should release with, a safer path is to revert "mm: remove
-> > __GFP_NO_KSWAPD" for now and revisit it with the view to ironing out the
-> > balance_pgdat() logic in general.
-> >
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> Does anyone know if this is queued to go into 3.7 somewhere?  I looked
-> a bit and can't find it in a tree.  We have a few reports of Fedora
-> rawhide users hitting this.
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 21a9f5d..7a9c153 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3579,6 +3579,13 @@ sub process {
+>  			WARN("EXPORTED_WORLD_WRITABLE",
+>  			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+>  		}
+> +
+> +# check for double empty lines
+> +		if ($line =~ /^\+\s*$/ &&
+> +		    ($prevline =~ /^\+?\s*$/ || $rawlines[$linenr] =~ /^\s*$/)) {
+> +			WARN("DOUBLE_EMPTY_LINE",
+> +			     "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
+> +		}
+>  	}
+>  
+>  	# If we have no input at all, then there is nothing to report on
 
-Still thinking about it.  We're reverting quite a lot of material
-lately. 
-mm-revert-mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-based-on-failures.patch
-and revert-mm-fix-up-zone-present-pages.patch are queued for 3.7.
-
-I'll toss this one in there as well, but I can't say I'm feeling
-terribly confident.  How is Valdis's machine nowadays?
+This is fairly common in all the acpi code where variables declared in a 
+function are separated from the code in a function.
