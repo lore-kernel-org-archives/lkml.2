@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab2KPOFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:05:39 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34823 "EHLO
+	id S1752186Ab2KPOGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:06:23 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61806 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab2KPOFg (ORCPT
+	with ESMTP id S1751590Ab2KPOGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:05:36 -0500
+	Fri, 16 Nov 2012 09:06:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353074360-1903-3-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1353074360-1903-4-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1353074360-1903-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1353074360-1903-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 16 Nov 2012 19:35:34 +0530
-Message-ID: <CAKohpokzvb7=u6g2fcc=1RyyUJzWrvsnve1705Mrfbqz2U_1JQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] dma: at_hdmac: check direction properly for cyclic transfers
+	<1353074360-1903-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Fri, 16 Nov 2012 19:36:21 +0530
+Message-ID: <CAKohpon4G2h6DA=WjmBTc+E9Lo1piqqxi8Qf+DLx3P9qVC4=Qw@mail.gmail.com>
+Subject: Re: [PATCH 3/6] dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,6 +30,5 @@ On 16 November 2012 19:29, Andy Shevchenko
 > the direction parameter.
 >
 > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
