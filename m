@@ -1,179 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab2KPPb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:31:58 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49722 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab2KPPb4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:31:56 -0500
-From: Trey Ramsay <tramsay@linux.vnet.ibm.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        Rich Rattanni <rattanni@gmail.com>,
-        Radovan Lekanovic <lekanovic@gmail.com>,
-        Trey Ramsay <tramsay@linux.vnet.ibm.com>
-Subject: [PATCH 1/1] mmc: Bad device can cause mmc driver to hang
-Date: Fri, 16 Nov 2012 09:31:41 -0600
-Message-Id: <1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <87k3tpkz53.fsf@octavius.laptop.org> (Chris Ball's message of "Tue, 13 Nov 2012 15:48:24 -0500")>
-References: <87k3tpkz53.fsf@octavius.laptop.org> (Chris Ball's message of "Tue, 13 Nov 2012 15:48:24 -0500")>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12111615-2876-0000-0000-000002155367
+	id S1752490Ab2KPPcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:32:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39788 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537Ab2KPPcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:32:09 -0500
+Message-ID: <50A65C68.6080001@redhat.com>
+Date: Fri, 16 Nov 2012 10:31:52 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Howard Chu <hyc@symas.com>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        David Lang <david@lang.hm>, Vladislav Bolkhovitin <vst@vlnb.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, Richard Hipp <drh@hwaci.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org> <508B3EED.2080003@vlnb.net> <20121027044456.GA2764@thunk.org> <5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk> <5092D90F.7020105@vlnb.net> <20121101212418.140e3a82@pyramind.ukuu.org.uk> <50931601.4060102@symas.com> <20121102123359.2479a7dc@pyramind.ukuu.org.uk> <50A1C15E.2080605@vlnb.net> <20121113174000.6457a68b@pyramind.ukuu.org.uk> <CAK3OfOgK7a9+g-KU8v5-b2d+8-vLb75kuKKQnPK-zeFV1fLmxw@mail.gmail.com> <50A442AF.9020407@vlnb.net> <alpine.DEB.2.02.1211150353080.32408@nftneq.ynat.uz> <50A65681.8000204@symas.com>
+In-Reply-To: <50A65681.8000204@symas.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are infinite loops in the mmc code that can be caused by bad hardware.
-The code will loop forever if the device never comes back from program mode,
-R1_STATE_PRG, and it is not ready for data, R1_READY_FOR_DATA.
+On 11/16/2012 10:06 AM, Howard Chu wrote:
+> David Lang wrote:
+>> barriers keep getting mentioned because they are a easy concept to understand.
+>> "do this set of stuff before doing any of this other set of stuff, but I don't
+>> care when any of this gets done" and they fit well with the requirements of the
+>> users.
+>>
+>> Users readily accept that if the system crashes, they will loose the most recent
+>> stuff that they did,
+>
+> *some* users may accept that. *None* should.
+>
+>> but they get annoyed when things get corrupted to the point
+>> that they loose the entire file.
+>>
+>> this includes things like modifying one option and a crash resulting in the
+>> config file being blank. Yes, you can do the 'write to temp file, sync file,
+>> sync directory, rename file" dance, but the fact that to do so the user must sit
+>> and wait for the syncs to take place can be a problem. It would be far better to
+>> be able to say "write to temp file, and after it's on disk, rename the file" and
+>> not have the user wait. The user doesn't really care if the changes hit disk
+>> immediately, or several seconds (or even 10s of seconds) later, as long as there
+>> is not any possibility of the rename hitting disk before the file contents.
+>>
+>> The fact that this could be implemented in multiple ways in the existing
+>> hardware does not mean that there need to be multiple ways exposed to userspace,
+>> it just means that the cost of doing the operation will vary depending on the
+>> hardware that you have. This also means that if new hardware introduces a new
+>> way of implementing this, that improvement can be passed on to the users without
+>> needing application changes.
+>
+> There are a couple industry failures here:
+>
+> 1) the drive manufacturers sell drives that lie, and consumers accept it 
+> because they don't know better. We programmers, who know better, have failed 
+> to raise a stink and demand that this be fixed.
+>   A) Drives should not lose data on power failure. If a drive accepts a write 
+> request and says "OK, done" then that data should get written to stable 
+> storage, period. Whether it requires capacitors or some other onboard power 
+> supply, or whatever, they should just do it. Keep in mind that today, most of 
+> the difference between enterprise drives and consumer desktop drives is just a 
+> firmware change, that hardware is already identical. Nobody should accept a 
+> product that doesn't offer this guarantee. It's inexcusable.
+>   B) it should go without saying - drives should reliably report back to the 
+> host, when something goes wrong. E.g., if a write request has been accepted, 
+> cached, and reported complete, but then during the actual write an ECC failure 
+> is detected in the cacheline, the drive needs to tell the host "oh by the way, 
+> block XXX didn't actually make it to disk like I told you it did 10ms ago."
+>
+> If the entire software industry were to simply state "your shit stinks and 
+> we're not going to take it any more" the hard drive industry would have no 
+> choice but to fix it. And in most cases it would be a zero-cost fix for them.
+>
+> Once you have drives that are actually trustworthy, actually reliable (which 
+> doesn't mean they never fail, it only means they tell the truth about 
+> successes or failures), most of these other issues disappear. Most of the need 
+> for barriers disappear.
+>
 
-A long timeout will be added to prevent the code from looping forever.
-The timeout will occur if the device never comes back from program
-state or the device never becomes ready for data.
+I think that you are arguing a fairly silly point.
 
-Signed-off-by: Trey Ramsay <tramsay@linux.vnet.ibm.com>
----
- drivers/mmc/card/block.c   |   15 +++++++++++++++
- drivers/mmc/core/core.c    |   18 +++++++++++++++++-
- drivers/mmc/core/mmc_ops.c |   11 +++++++++++
- 3 files changed, 43 insertions(+), 1 deletions(-)
+If you want that behaviour, you have had it for more than a decade - simply 
+disable the write cache on your drive and you are done.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 172a768..8e60508 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -57,6 +57,7 @@ MODULE_ALIAS("mmc:block");
- #define INAND_CMD38_ARG_SECERASE 0x80
- #define INAND_CMD38_ARG_SECTRIM1 0x81
- #define INAND_CMD38_ARG_SECTRIM2 0x88
-+#define MMC_BLK_TIMEOUT_MS  (10 * 60 * 1000)        /* 10 minute timeout */
- 
- static DEFINE_MUTEX(block_mutex);
- 
-@@ -1034,6 +1035,9 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 	 */
- 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
- 		u32 status;
-+		unsigned long timeout;
-+
-+		timeout = jiffies + msecs_to_jiffies(MMC_BLK_TIMEOUT_MS);
- 		do {
- 			int err = get_card_status(card, &status, 5);
- 			if (err) {
-@@ -1041,6 +1045,17 @@ static int mmc_blk_err_check(struct mmc_card *card,
- 				       req->rq_disk->disk_name, err);
- 				return MMC_BLK_CMD_ERR;
- 			}
-+
-+			/* Timeout if the device never becomes ready for data
-+			 * and never leaves the program state.
-+			 */
-+			if (time_after(jiffies, timeout)) {
-+				pr_err("%s: Card stuck in programming state!"\
-+					" %s %s\n", mmc_hostname(card->host),
-+					req->rq_disk->disk_name, __func__);
-+
-+				return MMC_BLK_CMD_ERR;
-+			}
- 			/*
- 			 * Some cards mishandle the status bits,
- 			 * so make sure to check both the busy
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 06c42cf..bccfd18 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -42,6 +42,9 @@
- #include "sd_ops.h"
- #include "sdio_ops.h"
- 
-+/* If the device is not responding */
-+#define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
-+
- /*
-  * Background operations can take a long time, depending on the housekeeping
-  * operations the card has to perform.
-@@ -1631,6 +1634,7 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
- {
- 	struct mmc_command cmd = {0};
- 	unsigned int qty = 0;
-+	unsigned long timeout;
- 	int err;
- 
- 	/*
-@@ -1708,6 +1712,7 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
- 	if (mmc_host_is_spi(card->host))
- 		goto out;
- 
-+	timeout = jiffies + msecs_to_jiffies(MMC_CORE_TIMEOUT_MS);
- 	do {
- 		memset(&cmd, 0, sizeof(struct mmc_command));
- 		cmd.opcode = MMC_SEND_STATUS;
-@@ -1721,8 +1726,19 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
- 			err = -EIO;
- 			goto out;
- 		}
-+
-+		/* Timeout if the device never becomes ready for data and
-+		 * never leaves the program state.
-+		 */
-+		if (time_after(jiffies, timeout)) {
-+			pr_err("%s: Card stuck in programming state! %s\n",
-+				mmc_hostname(card->host), __func__);
-+			err =  -EIO;
-+			goto out;
-+		}
-+
- 	} while (!(cmd.resp[0] & R1_READY_FOR_DATA) ||
--		 R1_CURRENT_STATE(cmd.resp[0]) == R1_STATE_PRG);
-+		 (R1_CURRENT_STATE(cmd.resp[0]) == R1_STATE_PRG));
- out:
- 	return err;
- }
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index a0e1720..6d8f701 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -21,6 +21,8 @@
- #include "core.h"
- #include "mmc_ops.h"
- 
-+#define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
-+
- static int _mmc_select_card(struct mmc_host *host, struct mmc_card *card)
- {
- 	int err;
-@@ -409,6 +411,7 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
- {
- 	int err;
- 	struct mmc_command cmd = {0};
-+	unsigned long timeout;
- 	u32 status;
- 
- 	BUG_ON(!card);
-@@ -437,6 +440,7 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
- 		return 0;
- 
- 	/* Must check status to be sure of no errors */
-+	timeout = jiffies + msecs_to_jiffies(MMC_OPS_TIMEOUT_MS);
- 	do {
- 		err = mmc_send_status(card, &status);
- 		if (err)
-@@ -445,6 +449,13 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
- 			break;
- 		if (mmc_host_is_spi(card->host))
- 			break;
-+
-+		/* Timeout if the device never leaves the program state. */
-+		if (time_after(jiffies, timeout)) {
-+			pr_err("%s: Card stuck in programming state! %s\n",
-+				mmc_hostname(card->host), __func__);
-+			return -ETIMEDOUT;
-+		}
- 	} while (R1_CURRENT_STATE(status) == R1_STATE_PRG);
- 
- 	if (mmc_host_is_spi(card->host)) {
--- 
-1.7.1
+If you - as a user - want to run faster and use applications that are coded to 
+handle data integrity properly (fsync, fdatasync, etc), leave the write cache 
+enabled and use file system barriers.
+
+Everyone has to trade off cost versus something else and this is a very, very 
+long standing trade off that drive manufacturers have made.
+
+The more money you pay for your storage, the less likely this is to be an issue 
+(high end SSD's, enterprise class arrays, etc don't have volatile write caches 
+and most SAS drives perform reasonably well with the write cache disabled).
+
+Regards,
+
+Ric
+
 
