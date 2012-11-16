@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2KPJps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:45:48 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:39857 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab2KPJpe (ORCPT
+	id S1751252Ab2KPJr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:47:27 -0500
+Received: from canardo.mork.no ([148.122.252.1]:49046 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab2KPJr0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:45:34 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
+	Fri, 16 Nov 2012 04:47:26 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
+        celinux-dev@lists.celinuxforum.org, Ryan Mallon <rmallon@gmail.com>,
+        Tim Bird <tim.bird@am.sony.com>, Baruch Siach <baruch@tkos.co.il>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2 2/3] arm: plat-orion: Add coherency attribute when setup mbus target
-Date: Fri, 16 Nov 2012 10:44:59 +0100
-Message-Id: <1353059100-24022-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Selim TEMUR <selimtemur@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v2] LDT - Linux Driver Template
+Organization: m
+References: <1353007337-12791-1-git-send-email-const@MakeLinux.com>
+	<20121115224030.GA16377@kroah.com>
+Date: Fri, 16 Nov 2012 10:46:18 +0100
+In-Reply-To: <20121115224030.GA16377@kroah.com> (Greg KH's message of "Thu, 15
+	Nov 2012 14:40:30 -0800")
+Message-ID: <87zk2hubh1.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent SoC such as Armada 370/XP came with the possibility to deal
-with the I/O coherency by hardware. In this case the transaction
-attribute of the window must be flagged as "Shared transaction". Once
-this flag is set, then the transactions will be forced to be sent
-through the coherency block, in other case transaction is driven
-directly to DRAM.
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
----
- arch/arm/plat-orion/addr-map.c              |    4 ++++
- arch/arm/plat-orion/include/plat/addr-map.h |    1 +
- 2 files changed, 5 insertions(+)
+>  Normally you just start with a
+> driver for a device like the one you need to write and modify it from
+> there.
 
-diff --git a/arch/arm/plat-orion/addr-map.c b/arch/arm/plat-orion/addr-map.c
-index a7b8060..febe386 100644
---- a/arch/arm/plat-orion/addr-map.c
-+++ b/arch/arm/plat-orion/addr-map.c
-@@ -42,6 +42,8 @@ EXPORT_SYMBOL_GPL(mv_mbus_dram_info);
- #define WIN_REMAP_LO_OFF	0x0008
- #define WIN_REMAP_HI_OFF	0x000c
- 
-+#define ATTR_HW_COHERENCY	(0x1 << 4)
-+
- /*
-  * Default implementation
-  */
-@@ -163,6 +165,8 @@ void __init orion_setup_cpu_mbus_target(const struct orion_addr_map_cfg *cfg,
- 			w = &orion_mbus_dram_info.cs[cs++];
- 			w->cs_index = i;
- 			w->mbus_attr = 0xf & ~(1 << i);
-+			if (cfg->hw_io_coherency)
-+				w->mbus_attr |= ATTR_HW_COHERENCY;
- 			w->base = base & 0xffff0000;
- 			w->size = (size | 0x0000ffff) + 1;
- 		}
-diff --git a/arch/arm/plat-orion/include/plat/addr-map.h b/arch/arm/plat-orion/include/plat/addr-map.h
-index ec63e4a..b76c065 100644
---- a/arch/arm/plat-orion/include/plat/addr-map.h
-+++ b/arch/arm/plat-orion/include/plat/addr-map.h
-@@ -17,6 +17,7 @@ struct orion_addr_map_cfg {
- 	const int num_wins;	/* Total number of windows */
- 	const int remappable_wins;
- 	void __iomem *bridge_virt_base;
-+	int hw_io_coherency;
- 
- 	/* If NULL, the default cpu_win_can_remap will be used, using
- 	   the value in remappable_wins */
--- 
-1.7.9.5
+Yes.
 
+Even if the template driver is fixed up to be the most beautiful driver
+ever made, it will still always be made for non-existing hardware.  This
+causes two major problems:
+ - the driver will not be tested, so it will have bugs
+ - the driver will not be used by anyone, so it will not be maintained
+   (remember that it is initially perfect, so there is no reason to
+   change it)
+
+May I suggest another approach?  How about selecting a set of existing
+drivers which are suitable as templates, and put all this effort into
+making those drivers *the* perfect examples instead? Start submitting
+cleanup patches for the selected drivers until everyone is satisfied and
+then document them as starting points for anyone wanting to write a
+similar driver.
+
+I believe many subsystem maintainers already have such sample drivers
+which they point new submitters to when asked.  That does not mean that
+these drivers necessarily are perfect, so there is still work to do here
+for anyone interested.  And collecting this information and documenting
+it would be useful in itself.
+
+It would also be nice if hardware availability was considered when
+selecting the sample drivers.  Buying an already supported device to
+experiment with its driver can be useful even if you have another device
+you want to write a driver for.  Or just for the learning experience.
+
+Just my € .02
+
+
+Bjørn
