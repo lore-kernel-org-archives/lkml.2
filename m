@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2KPOrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:47:10 -0500
+	id S1752168Ab2KPOrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:47:21 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52008 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab2KPOrD (ORCPT
+	with ESMTP id S1751627Ab2KPOrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:47:03 -0500
+	Fri, 16 Nov 2012 09:47:14 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Manjunath Hadli <manjunath.hadli@ti.com>,
         Prabhakar Lad <prabhakar.lad@ti.com>,
         Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH v2 04/12] davinci: vpfe: dm365: add ISIF driver based on media framework
-Date: Fri, 16 Nov 2012 20:15:06 +0530
-Message-Id: <1353077114-19296-5-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH v2 06/12] davinci: vpfe: dm365: add IPIPE hardware layer support
+Date: Fri, 16 Nov 2012 20:15:08 +0530
+Message-Id: <1353077114-19296-7-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
 References: <1353077114-19296-1-git-send-email-prabhakar.lad@ti.com>
@@ -26,29 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-add support for ISIF as a subdevice for dm365 vpfe capture driver.
-ISIF is responsible for capturing video data both in raw bayer format
-on sync seperate signals and YUV through BT656/1120 interfaces.
-ISIF is exposed as a subdev for the vpfe driver and allows users to
-use the driver through standard media controller interface.
+IPIPE is the hardware IP which implements the functionality
+required for resizer, ipipe(colorspace converter) and
+the associated hardware support. This patch implements hardware
+setup including coefficient programming for various hardware
+filters, gamma, cfa and clock enabling.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/media/platform/davinci/dm365_isif.c      | 2095 ++++++++++++++++++++++
- drivers/media/platform/davinci/dm365_isif.h      |  203 +++
- drivers/media/platform/davinci/dm365_isif_regs.h |  294 +++
- 3 files changed, 2592 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/platform/davinci/dm365_isif.c
- create mode 100644 drivers/media/platform/davinci/dm365_isif.h
- create mode 100644 drivers/media/platform/davinci/dm365_isif_regs.h
+ drivers/media/platform/davinci/dm365_ipipe_hw.c | 1048 +++++++++++++++++++++++
+ drivers/media/platform/davinci/dm365_ipipe_hw.h |  559 ++++++++++++
+ 2 files changed, 1607 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/platform/davinci/dm365_ipipe_hw.c
+ create mode 100644 drivers/media/platform/davinci/dm365_ipipe_hw.h
 
-diff --git a/drivers/media/platform/davinci/dm365_isif.c b/drivers/media/platform/davinci/dm365_isif.c
+diff --git a/drivers/media/platform/davinci/dm365_ipipe_hw.c b/drivers/media/platform/davinci/dm365_ipipe_hw.c
 new file mode 100644
-index 0000000..74bba29
+index 0000000..e027b92
 --- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_isif.c
-@@ -0,0 +1,2095 @@
++++ b/drivers/media/platform/davinci/dm365_ipipe_hw.c
+@@ -0,0 +1,1048 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -70,2589 +68,1598 @@ index 0000000..74bba29
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#include "dm365_isif.h"
++#include "dm365_ipipe_hw.h"
++
++#define IPIPE_MODE_CONTINUOUS		0
++#define IPIPE_MODE_SINGLE_SHOT		1
++
++static void ipipe_clock_enable(void *__iomem base_addr)
++{
++	/* enable IPIPE MMR for register write access */
++	regw_ip(base_addr, IPIPE_GCK_MMR_DEFAULT, IPIPE_GCK_MMR);
++
++	/* enable the clock wb,cfa,dfc,d2f,pre modules */
++	regw_ip(base_addr, IPIPE_GCK_PIX_DEFAULT, IPIPE_GCK_PIX);
++}
++
++static void
++rsz_set_common_params(void *__iomem rsz_base, struct resizer_params *params)
++{
++	struct rsz_common_params *rsz_common = &params->rsz_common;
++	u32 val;
++
++	/* Set mode */
++	regw_rsz(rsz_base, params->oper_mode, RSZ_SRC_MODE);
++
++	/* data source selection  and bypass */
++	val = (rsz_common->passthrough << RSZ_BYPASS_SHIFT) |
++	      rsz_common->source;
++	regw_rsz(rsz_base, val, RSZ_SRC_FMT0);
++
++	/* src image selection */
++	val = (rsz_common->raw_flip & 1) |
++	      (rsz_common->src_img_fmt << RSZ_SRC_IMG_FMT_SHIFT) |
++	      ((rsz_common->y_c & 1) << RSZ_SRC_Y_C_SEL_SHIFT);
++	regw_rsz(rsz_base, val, RSZ_SRC_FMT1);
++
++	regw_rsz(rsz_base, rsz_common->vps & IPIPE_RSZ_VPS_MASK, RSZ_SRC_VPS);
++	regw_rsz(rsz_base, rsz_common->hps & IPIPE_RSZ_HPS_MASK, RSZ_SRC_HPS);
++	regw_rsz(rsz_base, rsz_common->vsz & IPIPE_RSZ_VSZ_MASK, RSZ_SRC_VSZ);
++	regw_rsz(rsz_base, rsz_common->hsz & IPIPE_RSZ_HSZ_MASK, RSZ_SRC_HSZ);
++	regw_rsz(rsz_base, rsz_common->yuv_y_min, RSZ_YUV_Y_MIN);
++	regw_rsz(rsz_base, rsz_common->yuv_y_max, RSZ_YUV_Y_MAX);
++	regw_rsz(rsz_base, rsz_common->yuv_c_min, RSZ_YUV_C_MIN);
++	regw_rsz(rsz_base, rsz_common->yuv_c_max, RSZ_YUV_C_MAX);
++	/* chromatic position */
++	regw_rsz(rsz_base, rsz_common->out_chr_pos, RSZ_YUV_PHS);
++}
++
++static void
++rsz_set_rsz_regs(void *__iomem rsz_base, unsigned int rsz_id,
++		 struct resizer_params *params)
++{
++	struct resizer_scale_param *rsc_params;
++	struct rsz_ext_mem_param *ext_mem;
++	struct resizer_rgb *rgb;
++	u32 reg_base;
++	u32 val;
++
++	rsc_params = &params->rsz_rsc_param[rsz_id];
++	rgb = &params->rsz2rgb[rsz_id];
++	ext_mem = &params->ext_mem_param[rsz_id];
++
++	if (rsz_id == RSZ_A) {
++		val = rsc_params->h_flip << RSZA_H_FLIP_SHIFT;
++		val |= rsc_params->v_flip << RSZA_V_FLIP_SHIFT;
++		reg_base = RSZ_EN_A;
++	} else {
++		val = rsc_params->h_flip << RSZB_H_FLIP_SHIFT;
++		val |= rsc_params->v_flip << RSZB_V_FLIP_SHIFT;
++		reg_base = RSZ_EN_B;
++	}
++	/* update flip settings */
++	regw_rsz(rsz_base, val, RSZ_SEQ);
++
++	regw_rsz(rsz_base, params->oper_mode, reg_base + RSZ_MODE);
++
++	val = (rsc_params->cen << RSZ_CEN_SHIFT) | rsc_params->yen;
++	regw_rsz(rsz_base, val, reg_base + RSZ_420);
++
++	regw_rsz(rsz_base, rsc_params->i_vps & RSZ_VPS_MASK,
++		 reg_base + RSZ_I_VPS);
++	regw_rsz(rsz_base, rsc_params->i_hps & RSZ_HPS_MASK,
++		 reg_base + RSZ_I_HPS);
++	regw_rsz(rsz_base, rsc_params->o_vsz & RSZ_O_VSZ_MASK,
++		 reg_base + RSZ_O_VSZ);
++	regw_rsz(rsz_base, rsc_params->o_hsz & RSZ_O_HSZ_MASK,
++		 reg_base + RSZ_O_HSZ);
++	regw_rsz(rsz_base, rsc_params->v_phs_y & RSZ_V_PHS_MASK,
++		 reg_base + RSZ_V_PHS_Y);
++	regw_rsz(rsz_base, rsc_params->v_phs_c & RSZ_V_PHS_MASK,
++		 reg_base + RSZ_V_PHS_C);
++
++	/* keep this additional adjustment to zero for now */
++	regw_rsz(rsz_base, rsc_params->v_dif & RSZ_V_DIF_MASK,
++		 reg_base + RSZ_V_DIF);
++
++	val = (rsc_params->v_typ_y & 1) |
++	      ((rsc_params->v_typ_c & 1) << RSZ_TYP_C_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_V_TYP);
++
++	val = (rsc_params->v_lpf_int_y & RSZ_LPF_INT_MASK) |
++	      ((rsc_params->v_lpf_int_c & RSZ_LPF_INT_MASK) <<
++	      RSZ_LPF_INT_C_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_V_LPF);
++
++	regw_rsz(rsz_base, rsc_params->h_phs &
++		RSZ_H_PHS_MASK, reg_base + RSZ_H_PHS);
++
++	regw_rsz(rsz_base, 0, reg_base + RSZ_H_PHS_ADJ);
++	regw_rsz(rsz_base, rsc_params->h_dif &
++		RSZ_H_DIF_MASK, reg_base + RSZ_H_DIF);
++
++	val = (rsc_params->h_typ_y & 1) |
++	      ((rsc_params->h_typ_c & 1) << RSZ_TYP_C_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_H_TYP);
++
++	val = (rsc_params->h_lpf_int_y & RSZ_LPF_INT_MASK) |
++		 ((rsc_params->h_lpf_int_c & RSZ_LPF_INT_MASK) <<
++		 RSZ_LPF_INT_C_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_H_LPF);
++
++	regw_rsz(rsz_base, rsc_params->dscale_en & 1, reg_base + RSZ_DWN_EN);
++
++	val = (rsc_params->h_dscale_ave_sz & RSZ_DWN_SCALE_AV_SZ_MASK) |
++	      ((rsc_params->v_dscale_ave_sz & RSZ_DWN_SCALE_AV_SZ_MASK) <<
++	      RSZ_DWN_SCALE_AV_SZ_V_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_DWN_AV);
++
++	/* setting rgb conversion parameters */
++	regw_rsz(rsz_base, rgb->rgb_en, reg_base + RSZ_RGB_EN);
++
++	val = (rgb->rgb_typ << RSZ_RGB_TYP_SHIFT) |
++	      (rgb->rgb_msk0 << RSZ_RGB_MSK0_SHIFT) |
++	      (rgb->rgb_msk1 << RSZ_RGB_MSK1_SHIFT);
++	regw_rsz(rsz_base, val, reg_base + RSZ_RGB_TYP);
++
++	regw_rsz(rsz_base, rgb->rgb_alpha_val & RSZ_RGB_ALPHA_MASK,
++		reg_base + RSZ_RGB_BLD);
++
++	/* setting external memory parameters */
++	regw_rsz(rsz_base, ext_mem->rsz_sdr_oft_y, reg_base + RSZ_SDR_Y_OFT);
++	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_s_y,
++		 reg_base + RSZ_SDR_Y_PTR_S);
++	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_e_y,
++		 reg_base + RSZ_SDR_Y_PTR_E);
++	regw_rsz(rsz_base, ext_mem->rsz_sdr_oft_c, reg_base + RSZ_SDR_C_OFT);
++	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_s_c,
++		 reg_base + RSZ_SDR_C_PTR_S);
++	regw_rsz(rsz_base, (ext_mem->rsz_sdr_ptr_e_c >> 1),
++		 reg_base + RSZ_SDR_C_PTR_E);
++}
++
++/*set the registers of either RSZ0 or RSZ1 */
++static void
++ipipe_setup_resizer(void *__iomem rsz_base, struct resizer_params *params)
++{
++	/* enable MMR gate to write to Resizer */
++	regw_rsz(rsz_base, 1, RSZ_GCK_MMR);
++
++	/* Enable resizer if it is not in bypass mode */
++	if (params->rsz_common.passthrough)
++		regw_rsz(rsz_base, 0, RSZ_GCK_SDR);
++	else
++		regw_rsz(rsz_base, 1, RSZ_GCK_SDR);
++
++	rsz_set_common_params(rsz_base, params);
++
++	regw_rsz(rsz_base, params->rsz_en[RSZ_A], RSZ_EN_A);
++
++	if (params->rsz_en[RSZ_A])
++		/*setting rescale parameters */
++		rsz_set_rsz_regs(rsz_base, RSZ_A, params);
++
++	regw_rsz(rsz_base, params->rsz_en[RSZ_B], RSZ_EN_B);
++
++	if (params->rsz_en[RSZ_B])
++		rsz_set_rsz_regs(rsz_base, RSZ_B, params);
++}
++
++static u32 ipipe_get_color_pat(enum v4l2_mbus_pixelcode pix)
++{
++	switch (pix) {
++	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
++	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
++	case V4L2_MBUS_FMT_SGRBG12_1X12:
++		return ipipe_sgrbg_pattern;
++
++	default:
++		return ipipe_srggb_pattern;
++	}
++}
++
++static int ipipe_get_data_path(struct vpfe_ipipe_device *ipipe)
++{
++	enum v4l2_mbus_pixelcode temp_pix_fmt;
++
++	switch (ipipe->formats[IPIPE_PAD_SINK].code) {
++	case V4L2_MBUS_FMT_SBGGR8_1X8:
++	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
++	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
++	case V4L2_MBUS_FMT_SGRBG12_1X12:
++		temp_pix_fmt = V4L2_MBUS_FMT_SGRBG12_1X12;
++		break;
++
++	default:
++		temp_pix_fmt = V4L2_MBUS_FMT_UYVY8_2X8;
++	}
++
++	if (temp_pix_fmt == V4L2_MBUS_FMT_SGRBG12_1X12) {
++		if (ipipe->formats[IPIPE_PAD_SOURCE].code ==
++			V4L2_MBUS_FMT_SGRBG12_1X12)
++			return IPIPE_RAW2RAW;
++		return IPIPE_RAW2YUV;
++	}
++
++	return IPIPE_YUV2YUV;
++}
++
++static int get_ipipe_mode(struct vpfe_ipipe_device *ipipe)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(ipipe);
++	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
++
++	if (ipipeif_sink == IPIPEIF_INPUT_MEMORY)
++		return IPIPE_MODE_SINGLE_SHOT;
++	else if (ipipeif_sink == IPIPEIF_INPUT_ISIF)
++		return IPIPE_MODE_CONTINUOUS;
++
++	return -EINVAL;
++}
++
++int config_ipipe_hw(struct vpfe_ipipe_device *ipipe)
++{
++	struct vpfe_ipipe_input_config *config = &ipipe->config.input_config;
++	void __iomem *ipipe_base = ipipe->base_addr;
++	struct v4l2_mbus_framefmt *outformat;
++	u32 color_pat;
++	u32 ipipe_mode;
++	u32 data_path;
++
++	/* enable clock to IPIPE */
++	vpss_enable_clock(VPSS_IPIPE_CLOCK, 1);
++	ipipe_clock_enable(ipipe_base);
++
++	if (ipipe->input == IPIPE_INPUT_NONE) {
++		regw_ip(ipipe_base, 0, IPIPE_SRC_EN);
++		return 0;
++	}
++
++	ipipe_mode = get_ipipe_mode(ipipe);
++	if (ipipe < 0) {
++		pr_err("Failed to get ipipe mode");
++		return -EINVAL;
++	}
++	regw_ip(ipipe_base, ipipe_mode, IPIPE_SRC_MODE);
++
++	data_path = ipipe_get_data_path(ipipe);
++	regw_ip(ipipe_base, data_path, IPIPE_SRC_FMT);
++
++	regw_ip(ipipe_base, config->vst & IPIPE_RSZ_VPS_MASK, IPIPE_SRC_VPS);
++	regw_ip(ipipe_base, config->hst & IPIPE_RSZ_HPS_MASK, IPIPE_SRC_HPS);
++
++	outformat = &ipipe->formats[IPIPE_PAD_SOURCE];
++	regw_ip(ipipe_base, (outformat->height + 1) & IPIPE_RSZ_VSZ_MASK,
++		IPIPE_SRC_VSZ);
++	regw_ip(ipipe_base, (outformat->width + 1) & IPIPE_RSZ_HSZ_MASK,
++		IPIPE_SRC_HSZ);
++
++	if (data_path == IPIPE_RAW2YUV ||
++	    data_path == IPIPE_RAW2RAW) {
++		color_pat =
++		ipipe_get_color_pat(ipipe->formats[IPIPE_PAD_SINK].code);
++		regw_ip(ipipe_base, color_pat, IPIPE_SRC_COL);
++	}
++
++	return 0;
++}
++
++/*
++ * config_rsz_hw() - Performs hardware setup of resizer.
++ */
++int config_rsz_hw(struct vpfe_resizer_device *resizer,
++		  struct resizer_params *config)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	void *__iomem ipipe_base = vpfe_dev->vpfe_ipipe.base_addr;
++	void *__iomem rsz_base = vpfe_dev->vpfe_resizer.base_addr;
++
++	/* enable VPSS clock */
++	vpss_enable_clock(VPSS_IPIPE_CLOCK, 1);
++	ipipe_clock_enable(ipipe_base);
++
++	ipipe_setup_resizer(rsz_base, config);
++
++	return 0;
++}
++
++static void
++rsz_set_y_address(void *__iomem rsz_base, unsigned int address,
++		  unsigned int offset)
++{
++	u32 val;
++
++	val = address & SET_LOW_ADDR;
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_BAD_L);
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_SAD_L);
++
++	val = (address & SET_HIGH_ADDR) >> 16;
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_BAD_H);
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_SAD_H);
++}
++
++static void
++rsz_set_c_address(void *__iomem rsz_base, unsigned int address,
++		  unsigned int offset)
++{
++	u32 val;
++
++	val = address & SET_LOW_ADDR;
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_BAD_L);
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_SAD_L);
++
++	val = (address & SET_HIGH_ADDR) >> 16;
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_BAD_H);
++	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_SAD_H);
++}
++
++/*
++ * resizer_set_outaddr() - set the address for given resize_no
++ * @rsz_base: resizer base address
++ * @params: pointer to ipipe_params structure
++ * @resize_no: 0 - Resizer-A, 1 - Resizer B
++ * @address: the address to set
++ */
++int
++resizer_set_outaddr(void *__iomem rsz_base, struct resizer_params *params,
++		    int resize_no, unsigned int address)
++{
++	struct resizer_scale_param *rsc_param;
++	struct rsz_ext_mem_param *mem_param;
++	struct rsz_common_params *rsz_common;
++	unsigned int rsz_start_add;
++	unsigned int val;
++
++	if (resize_no != RSZ_A && resize_no != RSZ_B)
++		return -EINVAL;
++
++	mem_param = &params->ext_mem_param[resize_no];
++	rsc_param = &params->rsz_rsc_param[resize_no];
++	rsz_common = &params->rsz_common;
++
++	if (resize_no == RSZ_A)
++		rsz_start_add = RSZ_EN_A;
++	else
++		rsz_start_add = RSZ_EN_B;
++
++	/* y_c = 0 for y, = 1 for c */
++	if (rsz_common->src_img_fmt == RSZ_IMG_420) {
++		if (rsz_common->y_c) {
++			/* C channel */
++			val = address + mem_param->flip_ofst_c;
++			rsz_set_c_address(rsz_base, val, rsz_start_add);
++		} else {
++			val = address + mem_param->flip_ofst_y;
++			rsz_set_y_address(rsz_base, val, rsz_start_add);
++		}
++	} else {
++		if (rsc_param->cen && rsc_param->yen) {
++			/* 420 */
++			val = address + mem_param->c_offset +
++			      mem_param->flip_ofst_c +
++			      mem_param->user_y_ofst +
++			      mem_param->user_c_ofst;
++			if (resize_no == RSZ_B)
++				val +=
++				params->ext_mem_param[RSZ_A].user_y_ofst +
++				params->ext_mem_param[RSZ_A].user_c_ofst;
++			/* set C address */
++			rsz_set_c_address(rsz_base, val, rsz_start_add);
++		}
++		val = address + mem_param->flip_ofst_y + mem_param->user_y_ofst;
++		if (resize_no == RSZ_B)
++			val += params->ext_mem_param[RSZ_A].user_y_ofst +
++				params->ext_mem_param[RSZ_A].user_c_ofst;
++		/* set Y address */
++		rsz_set_y_address(rsz_base, val, rsz_start_add);
++	}
++	/* resizer must be enabled */
++	regw_rsz(rsz_base, params->rsz_en[resize_no], rsz_start_add);
++
++	return 0;
++}
++
++void
++ipipe_set_lutdpc_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
++		      struct vpfe_ipipe_lutdpc *dpc)
++{
++	u32 max_tbl_size = LUT_DPC_MAX_SIZE >> 1;
++	u32 lut_start_addr = DPC_TB0_START_ADDR;
++	u32 val;
++	u32 count;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, dpc->en, DPC_LUT_EN);
++
++	if (dpc->en != 1)
++		return;
++
++	val = LUTDPC_TBL_256_EN | (dpc->repl_white & 1);
++	regw_ip(base_addr, val, DPC_LUT_SEL);
++	regw_ip(base_addr, LUT_DPC_START_ADDR, DPC_LUT_ADR);
++	regw_ip(base_addr, dpc->dpc_size, DPC_LUT_SIZ & LUT_DPC_SIZE_MASK);
++
++	if (dpc->table == NULL)
++		return;
++
++	for (count = 0; count < dpc->dpc_size; count++) {
++		if (count >= max_tbl_size)
++			lut_start_addr = DPC_TB1_START_ADDR;
++		val = (dpc->table[count].horz_pos & LUT_DPC_H_POS_MASK) |
++		      ((dpc->table[count].vert_pos & LUT_DPC_V_POS_MASK) <<
++			LUT_DPC_V_POS_SHIFT) | (dpc->table[count].method <<
++			LUT_DPC_CORR_METH_SHIFT);
++		w_ip_table(isp5_base_addr, val, (lut_start_addr +
++		((count % max_tbl_size) << 2)));
++	}
++}
++
++static void
++set_dpc_thresholds(void *__iomem base_addr,
++		   struct vpfe_ipipe_otfdpc_2_0_cfg *dpc_thr)
++{
++	regw_ip(base_addr, dpc_thr->corr_thr.r & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2C_THR_R);
++	regw_ip(base_addr, dpc_thr->corr_thr.gr & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2C_THR_GR);
++	regw_ip(base_addr, dpc_thr->corr_thr.gb & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2C_THR_GB);
++	regw_ip(base_addr, dpc_thr->corr_thr.b & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2C_THR_B);
++	regw_ip(base_addr, dpc_thr->det_thr.r & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2D_THR_R);
++	regw_ip(base_addr, dpc_thr->det_thr.gr & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2D_THR_GR);
++	regw_ip(base_addr, dpc_thr->det_thr.gb & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2D_THR_GB);
++	regw_ip(base_addr, dpc_thr->det_thr.b & OTFDPC_DPC2_THR_MASK,
++		DPC_OTF_2D_THR_B);
++}
++
++void ipipe_set_otfdpc_regs(void *__iomem base_addr,
++			   struct vpfe_ipipe_otfdpc *otfdpc)
++{
++	struct vpfe_ipipe_otfdpc_2_0_cfg *dpc_2_0 = &otfdpc->alg_cfg.dpc_2_0;
++	struct vpfe_ipipe_otfdpc_3_0_cfg *dpc_3_0 = &otfdpc->alg_cfg.dpc_3_0;
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++
++	regw_ip(base_addr, (otfdpc->en & 1), DPC_OTF_EN);
++	if (!otfdpc->en)
++		return;
++
++	/* dpc enabled */
++	val = (otfdpc->det_method << OTF_DET_METHOD_SHIFT) | otfdpc->alg;
++	regw_ip(base_addr, val, DPC_OTF_TYP);
++
++	if (otfdpc->det_method == VPFE_IPIPE_DPC_OTF_MIN_MAX) {
++		/* ALG= 0, TYP = 0, DPC_OTF_2D_THR_[x]=0
++		 * DPC_OTF_2C_THR_[x] = Maximum thresohld
++		 * MinMax method
++		 */
++		dpc_2_0->det_thr.r = dpc_2_0->det_thr.gb =
++		dpc_2_0->det_thr.gr = dpc_2_0->det_thr.b = 0;
++		set_dpc_thresholds(base_addr, dpc_2_0);
++		return;
++	}
++	/* MinMax2 */
++	if (otfdpc->alg == VPFE_IPIPE_OTFDPC_2_0) {
++		set_dpc_thresholds(base_addr, dpc_2_0);
++		return;
++	}
++	regw_ip(base_addr, dpc_3_0->act_adj_shf &
++		OTF_DPC3_0_SHF_MASK, DPC_OTF_3_SHF);
++	/* Detection thresholds */
++	regw_ip(base_addr, ((dpc_3_0->det_thr & OTF_DPC3_0_THR_MASK) <<
++		OTF_DPC3_0_THR_SHIFT), DPC_OTF_3D_THR);
++	regw_ip(base_addr, dpc_3_0->det_slp &
++		OTF_DPC3_0_SLP_MASK, DPC_OTF_3D_SLP);
++	regw_ip(base_addr, dpc_3_0->det_thr_min &
++		OTF_DPC3_0_DET_MASK, DPC_OTF_3D_MIN);
++	regw_ip(base_addr, dpc_3_0->det_thr_max &
++		OTF_DPC3_0_DET_MASK, DPC_OTF_3D_MAX);
++	/* Correction thresholds */
++	regw_ip(base_addr, ((dpc_3_0->corr_thr & OTF_DPC3_0_THR_MASK) <<
++		OTF_DPC3_0_THR_SHIFT), DPC_OTF_3C_THR);
++	regw_ip(base_addr, dpc_3_0->corr_slp &
++		OTF_DPC3_0_SLP_MASK, DPC_OTF_3C_SLP);
++	regw_ip(base_addr, dpc_3_0->corr_thr_min &
++		OTF_DPC3_0_CORR_MASK, DPC_OTF_3C_MIN);
++	regw_ip(base_addr, dpc_3_0->corr_thr_max &
++		OTF_DPC3_0_CORR_MASK, DPC_OTF_3C_MAX);
++}
++
++/* 2D Noise filter */
++void
++ipipe_set_d2f_regs(void *__iomem base_addr, unsigned int id,
++		   struct vpfe_ipipe_nf *noise_filter)
++{
++
++	u32 offset = D2F_1ST;
++	int count;
++	u32 val;
++
++	if (id == IPIPE_D2F_2ND)
++		offset = D2F_2ND;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, noise_filter->en & 1, offset + D2F_EN);
++	if (!noise_filter->en)
++		return;
++
++	/*noise filter enabled */
++	/* Combine all the fields to make D2F_CFG register of IPIPE */
++	val = ((noise_filter->spread_val & D2F_SPR_VAL_MASK) <<
++		D2F_SPR_VAL_SHIFT) | ((noise_filter->shft_val &
++		D2F_SHFT_VAL_MASK) << D2F_SHFT_VAL_SHIFT) |
++		(noise_filter->gr_sample_meth << D2F_SAMPLE_METH_SHIFT) |
++		((noise_filter->apply_lsc_gain & 1) <<
++		D2F_APPLY_LSC_GAIN_SHIFT) | D2F_USE_SPR_REG_VAL;
++	regw_ip(base_addr, val, offset + D2F_TYP);
++
++	/* edge detection minimum */
++	regw_ip(base_addr, noise_filter->edge_det_min_thr &
++		D2F_EDGE_DET_THR_MASK, offset + D2F_EDG_MIN);
++
++	/* edge detection maximum */
++	regw_ip(base_addr, noise_filter->edge_det_max_thr &
++		D2F_EDGE_DET_THR_MASK, offset + D2F_EDG_MAX);
++
++	for (count = 0; count < VPFE_IPIPE_NF_STR_TABLE_SIZE; count++)
++		regw_ip(base_addr,
++			(noise_filter->str[count] & D2F_STR_VAL_MASK),
++			offset + D2F_STR + count * 4);
++
++	for (count = 0; count < VPFE_IPIPE_NF_THR_TABLE_SIZE; count++)
++		regw_ip(base_addr, noise_filter->thr[count] & D2F_THR_VAL_MASK,
++			offset + D2F_THR + count * 4);
++}
++
++#define IPIPE_U8Q5(decimal, integer) \
++	(((decimal & 0x1f) | ((integer & 0x7) << 5)))
++
++/* Green Imbalance Correction */
++void ipipe_set_gic_regs(void *__iomem base_addr, struct vpfe_ipipe_gic *gic)
++{
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, gic->en & 1, GIC_EN);
++
++	if (!gic->en)
++		return;
++
++	/*gic enabled */
++	val = (gic->wt_fn_type << GIC_TYP_SHIFT) |
++	      (gic->thr_sel << GIC_THR_SEL_SHIFT) |
++	      ((gic->apply_lsc_gain & 1) << GIC_APPLY_LSC_GAIN_SHIFT);
++	regw_ip(base_addr, val, GIC_TYP);
++
++	regw_ip(base_addr, gic->gain & GIC_GAIN_MASK, GIC_GAN);
++
++	if (gic->gic_alg != VPFE_IPIPE_GIC_ALG_ADAPT_GAIN) {
++		/* Constant Gain. Set threshold to maximum */
++		regw_ip(base_addr, GIC_THR_MASK, GIC_THR);
++		return;
++	}
++
++	if (gic->thr_sel == VPFE_IPIPE_GIC_THR_REG) {
++		regw_ip(base_addr, gic->thr & GIC_THR_MASK, GIC_THR);
++		regw_ip(base_addr, gic->slope & GIC_SLOPE_MASK, GIC_SLP);
++	} else {
++		/* Use NF thresholds */
++		val = IPIPE_U8Q5(gic->nf2_thr_gain.decimal,
++				gic->nf2_thr_gain.integer);
++		regw_ip(base_addr, val, GIC_NFGAN);
++	}
++}
++
++#define IPIPE_U13Q9(decimal, integer) \
++	(((decimal & 0x1ff) | ((integer & 0xf) << 9)))
++/* White balance */
++void ipipe_set_wb_regs(void *__iomem base_addr, struct vpfe_ipipe_wb *wb)
++{
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++	/* Ofsets. S12 */
++	regw_ip(base_addr, wb->ofst_r & WB_OFFSET_MASK, WB2_OFT_R);
++	regw_ip(base_addr, wb->ofst_gr & WB_OFFSET_MASK, WB2_OFT_GR);
++	regw_ip(base_addr, wb->ofst_gb & WB_OFFSET_MASK, WB2_OFT_GB);
++	regw_ip(base_addr, wb->ofst_b & WB_OFFSET_MASK, WB2_OFT_B);
++
++	/* Gains. U13Q9 */
++	val = IPIPE_U13Q9(wb->gain_r.decimal, wb->gain_r.integer);
++	regw_ip(base_addr, val, WB2_WGN_R);
++
++	val = IPIPE_U13Q9(wb->gain_gr.decimal, wb->gain_gr.integer);
++	regw_ip(base_addr, val, WB2_WGN_GR);
++
++	val = IPIPE_U13Q9(wb->gain_gb.decimal, wb->gain_gb.integer);
++	regw_ip(base_addr, val, WB2_WGN_GB);
++
++	val = IPIPE_U13Q9(wb->gain_b.decimal, wb->gain_b.integer);
++	regw_ip(base_addr, val, WB2_WGN_B);
++}
++
++/* CFA */
++void ipipe_set_cfa_regs(void *__iomem base_addr, struct vpfe_ipipe_cfa *cfa)
++{
++	ipipe_clock_enable(base_addr);
++
++	regw_ip(base_addr, cfa->alg, CFA_MODE);
++	regw_ip(base_addr, cfa->hpf_thr_2dir & CFA_HPF_THR_2DIR_MASK,
++		CFA_2DIR_HPF_THR);
++	regw_ip(base_addr, cfa->hpf_slp_2dir & CFA_HPF_SLOPE_2DIR_MASK,
++		CFA_2DIR_HPF_SLP);
++	regw_ip(base_addr, cfa->hp_mix_thr_2dir & CFA_HPF_MIX_THR_2DIR_MASK,
++		CFA_2DIR_MIX_THR);
++	regw_ip(base_addr, cfa->hp_mix_slope_2dir & CFA_HPF_MIX_SLP_2DIR_MASK,
++		CFA_2DIR_MIX_SLP);
++	regw_ip(base_addr, cfa->dir_thr_2dir & CFA_DIR_THR_2DIR_MASK,
++		CFA_2DIR_DIR_THR);
++	regw_ip(base_addr, cfa->dir_slope_2dir & CFA_DIR_SLP_2DIR_MASK,
++		CFA_2DIR_DIR_SLP);
++	regw_ip(base_addr, cfa->nd_wt_2dir & CFA_ND_WT_2DIR_MASK,
++		CFA_2DIR_NDWT);
++	regw_ip(base_addr, cfa->hue_fract_daa & CFA_DAA_HUE_FRA_MASK,
++		CFA_MONO_HUE_FRA);
++	regw_ip(base_addr, cfa->edge_thr_daa & CFA_DAA_EDG_THR_MASK,
++		CFA_MONO_EDG_THR);
++	regw_ip(base_addr, cfa->thr_min_daa & CFA_DAA_THR_MIN_MASK,
++		CFA_MONO_THR_MIN);
++	regw_ip(base_addr, cfa->thr_slope_daa & CFA_DAA_THR_SLP_MASK,
++		CFA_MONO_THR_SLP);
++	regw_ip(base_addr, cfa->slope_min_daa & CFA_DAA_SLP_MIN_MASK,
++		CFA_MONO_SLP_MIN);
++	regw_ip(base_addr, cfa->slope_slope_daa & CFA_DAA_SLP_SLP_MASK,
++		CFA_MONO_SLP_SLP);
++	regw_ip(base_addr, cfa->lp_wt_daa & CFA_DAA_LP_WT_MASK,
++		CFA_MONO_LPWT);
++}
++
++void
++ipipe_set_rgb2rgb_regs(void *__iomem base_addr, unsigned int id,
++		       struct vpfe_ipipe_rgb2rgb *rgb)
++{
++	u32 offset_mask = RGB2RGB_1_OFST_MASK;
++	u32 offset = RGB1_MUL_BASE;
++	u32 integ_mask = 0xf;
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++
++	if (id == IPIPE_RGB2RGB_2) {
++		/* For second RGB module, gain integer is 3 bits instead
++		of 4, offset has 11 bits insread of 13 */
++		offset = RGB2_MUL_BASE;
++		integ_mask = 0x7;
++		offset_mask = RGB2RGB_2_OFST_MASK;
++	}
++	/* Gains */
++	val = (rgb->coef_rr.decimal & 0xff) |
++		((rgb->coef_rr.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_RR);
++	val = (rgb->coef_gr.decimal & 0xff) |
++		((rgb->coef_gr.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_GR);
++	val = (rgb->coef_br.decimal & 0xff) |
++		((rgb->coef_br.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_BR);
++	val = (rgb->coef_rg.decimal & 0xff) |
++		((rgb->coef_rg.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_RG);
++	val = (rgb->coef_gg.decimal & 0xff) |
++		((rgb->coef_gg.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_GG);
++	val = (rgb->coef_bg.decimal & 0xff) |
++		((rgb->coef_bg.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_BG);
++	val = (rgb->coef_rb.decimal & 0xff) |
++		((rgb->coef_rb.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_RB);
++	val = (rgb->coef_gb.decimal & 0xff) |
++		((rgb->coef_gb.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_GB);
++	val = (rgb->coef_bb.decimal & 0xff) |
++		((rgb->coef_bb.integer & integ_mask) << 8);
++	regw_ip(base_addr, val, offset + RGB_MUL_BB);
++
++	/* Offsets */
++	regw_ip(base_addr, rgb->out_ofst_r & offset_mask, offset + RGB_OFT_OR);
++	regw_ip(base_addr, rgb->out_ofst_g & offset_mask, offset + RGB_OFT_OG);
++	regw_ip(base_addr, rgb->out_ofst_b & offset_mask, offset + RGB_OFT_OB);
++}
++
++static void
++ipipe_update_gamma_tbl(void *__iomem isp5_base_addr,
++	struct vpfe_ipipe_gamma_entry *table, int size, u32 addr)
++{
++	int count;
++	u32 val;
++
++	for (count = 0; count < size; count++) {
++		val = table[count].slope & GAMMA_MASK;
++		val |= (table[count].offset & GAMMA_MASK) << GAMMA_SHIFT;
++		w_ip_table(isp5_base_addr, val, (addr + (count * 4)));
++	}
++}
++
++void
++ipipe_set_gamma_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
++			  struct vpfe_ipipe_gamma *gamma)
++{
++	int table_size;
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++	val = (gamma->bypass_r << GAMMA_BYPR_SHIFT) |
++		(gamma->bypass_b << GAMMA_BYPG_SHIFT) |
++		(gamma->bypass_g << GAMMA_BYPB_SHIFT) |
++		(gamma->tbl_sel << GAMMA_TBL_SEL_SHIFT) |
++		(gamma->tbl_size << GAMMA_TBL_SIZE_SHIFT);
++
++	regw_ip(base_addr, val, GMM_CFG);
++
++	if (gamma->tbl_sel != VPFE_IPIPE_GAMMA_TBL_RAM)
++		return;
++
++	table_size = gamma->tbl_size;
++
++	if (!gamma->bypass_r && gamma->table_r != NULL)
++		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_r,
++			table_size, GAMMA_R_START_ADDR);
++	if (!gamma->bypass_b && gamma->table_b != NULL)
++		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_b,
++			table_size, GAMMA_B_START_ADDR);
++	if (!gamma->bypass_g && gamma->table_g != NULL)
++		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_g,
++			table_size, GAMMA_G_START_ADDR);
++}
++
++void
++ipipe_set_3d_lut_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
++			   struct vpfe_ipipe_3d_lut *lut_3d)
++{
++	struct vpfe_ipipe_3d_lut_entry *tbl;
++	u32 bnk_index;
++	u32 tbl_index;
++	u32 val;
++	u32 i;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, lut_3d->en, D3LUT_EN);
++
++	if (!lut_3d->en)
++		return;
++
++	/* lut_3d enabled */
++	if (!lut_3d->table)
++		return;
++
++	/* valied table */
++	tbl = lut_3d->table;
++	for (i = 0 ; i < VPFE_IPIPE_MAX_SIZE_3D_LUT; i++) {
++		/* Each entry has 0-9 (B), 10-19 (G) and
++		20-29 R values */
++		val = tbl[i].b & D3_LUT_ENTRY_MASK;
++		val |= (tbl[i].g & D3_LUT_ENTRY_MASK) <<
++			 D3_LUT_ENTRY_G_SHIFT;
++		val |= (tbl[i].r & D3_LUT_ENTRY_MASK) <<
++			 D3_LUT_ENTRY_R_SHIFT;
++		bnk_index = i % 4;
++		tbl_index = i >> 2;
++		tbl_index <<= 2;
++		if (bnk_index == 0)
++			w_ip_table(isp5_base_addr, val,
++				   tbl_index + D3L_TB0_START_ADDR);
++		else if (bnk_index == 1)
++			w_ip_table(isp5_base_addr, val,
++				   tbl_index + D3L_TB1_START_ADDR);
++		else if (bnk_index == 2)
++			w_ip_table(isp5_base_addr, val,
++				   tbl_index + D3L_TB2_START_ADDR);
++		else
++			w_ip_table(isp5_base_addr, val,
++				   tbl_index + D3L_TB3_START_ADDR);
++	}
++}
++
++/* Lumina adjustments */
++void
++ipipe_set_lum_adj_regs(void *__iomem base_addr, struct ipipe_lum_adj *lum_adj)
++{
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++
++	/* combine fields of YUV_ADJ to set brightness and contrast */
++	val = lum_adj->contrast << LUM_ADJ_CONTR_SHIFT |
++	      lum_adj->brightness << LUM_ADJ_BRIGHT_SHIFT;
++	regw_ip(base_addr, val, YUV_ADJ);
++}
++
++#define IPIPE_S12Q8(decimal, integer) \
++	(((decimal & 0xff) | ((integer & 0xf) << 8)))
++
++void ipipe_set_rgb2ycbcr_regs(void *__iomem base_addr,
++			      struct vpfe_ipipe_rgb2yuv *yuv)
++{
++	u32 val;
++
++	/* S10Q8 */
++	ipipe_clock_enable(base_addr);
++	val = IPIPE_S12Q8(yuv->coef_ry.decimal, yuv->coef_ry.integer);
++	regw_ip(base_addr, val, YUV_MUL_RY);
++	val = IPIPE_S12Q8(yuv->coef_gy.decimal, yuv->coef_gy.integer);
++	regw_ip(base_addr, val, YUV_MUL_GY);
++	val = IPIPE_S12Q8(yuv->coef_by.decimal, yuv->coef_by.integer);
++	regw_ip(base_addr, val, YUV_MUL_BY);
++	val = IPIPE_S12Q8(yuv->coef_rcb.decimal, yuv->coef_rcb.integer);
++	regw_ip(base_addr, val, YUV_MUL_RCB);
++	val = IPIPE_S12Q8(yuv->coef_gcb.decimal, yuv->coef_gcb.integer);
++	regw_ip(base_addr, val, YUV_MUL_GCB);
++	val = IPIPE_S12Q8(yuv->coef_bcb.decimal, yuv->coef_bcb.integer);
++	regw_ip(base_addr, val, YUV_MUL_BCB);
++	val = IPIPE_S12Q8(yuv->coef_rcr.decimal, yuv->coef_rcr.integer);
++	regw_ip(base_addr, val, YUV_MUL_RCR);
++	val = IPIPE_S12Q8(yuv->coef_gcr.decimal, yuv->coef_gcr.integer);
++	regw_ip(base_addr, val, YUV_MUL_GCR);
++	val = IPIPE_S12Q8(yuv->coef_bcr.decimal, yuv->coef_bcr.integer);
++	regw_ip(base_addr, val, YUV_MUL_BCR);
++	regw_ip(base_addr, yuv->out_ofst_y & RGB2YCBCR_OFST_MASK, YUV_OFT_Y);
++	regw_ip(base_addr, yuv->out_ofst_cb & RGB2YCBCR_OFST_MASK, YUV_OFT_CB);
++	regw_ip(base_addr, yuv->out_ofst_cr & RGB2YCBCR_OFST_MASK, YUV_OFT_CR);
++}
++
++/* YUV 422 conversion */
++void
++ipipe_set_yuv422_conv_regs(void *__iomem base_addr,
++			   struct vpfe_ipipe_yuv422_conv *conv)
++{
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++
++	/* Combine all the fields to make YUV_PHS register of IPIPE */
++	val = (conv->chrom_pos << 0) | (conv->en_chrom_lpf << 1);
++	regw_ip(base_addr, val, YUV_PHS);
++}
++
++void
++ipipe_set_gbce_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
++		    struct vpfe_ipipe_gbce *gbce)
++{
++	unsigned int count;
++	u32 mask = GBCE_Y_VAL_MASK;
++
++	if (gbce->type == VPFE_IPIPE_GBCE_GAIN_TBL)
++		mask = GBCE_GAIN_VAL_MASK;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, gbce->en & 1, GBCE_EN);
++
++	if (!gbce->en)
++		return;
++
++	regw_ip(base_addr, gbce->type, GBCE_TYP);
++
++	if (!gbce->table)
++		return;
++
++	for (count = 0; count < VPFE_IPIPE_MAX_SIZE_GBCE_LUT ; count += 2)
++		w_ip_table(isp5_base_addr, ((gbce->table[count + 1] & mask) <<
++		GBCE_ENTRY_SHIFT) | (gbce->table[count] & mask),
++		((count/2) << 2) + GBCE_TB_START_ADDR);
++}
++
++void
++ipipe_set_ee_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
++		  struct vpfe_ipipe_yee *ee)
++{
++	unsigned int count;
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, ee->en, YEE_EN);
++
++	if (!ee->en)
++		return;
++
++	val = ee->en_halo_red & 1;
++	val |= ee->merge_meth << YEE_HALO_RED_EN_SHIFT;
++	regw_ip(base_addr, val, YEE_TYP);
++
++	regw_ip(base_addr, ee->hpf_shft, YEE_SHF);
++	regw_ip(base_addr, ee->hpf_coef_00 & YEE_COEF_MASK, YEE_MUL_00);
++	regw_ip(base_addr, ee->hpf_coef_01 & YEE_COEF_MASK, YEE_MUL_01);
++	regw_ip(base_addr, ee->hpf_coef_02 & YEE_COEF_MASK, YEE_MUL_02);
++	regw_ip(base_addr, ee->hpf_coef_10 & YEE_COEF_MASK, YEE_MUL_10);
++	regw_ip(base_addr, ee->hpf_coef_11 & YEE_COEF_MASK, YEE_MUL_11);
++	regw_ip(base_addr, ee->hpf_coef_12 & YEE_COEF_MASK, YEE_MUL_12);
++	regw_ip(base_addr, ee->hpf_coef_20 & YEE_COEF_MASK, YEE_MUL_20);
++	regw_ip(base_addr, ee->hpf_coef_21 & YEE_COEF_MASK, YEE_MUL_21);
++	regw_ip(base_addr, ee->hpf_coef_22 & YEE_COEF_MASK, YEE_MUL_22);
++	regw_ip(base_addr, ee->yee_thr & YEE_THR_MASK, YEE_THR);
++	regw_ip(base_addr, ee->es_gain & YEE_ES_GAIN_MASK, YEE_E_GAN);
++	regw_ip(base_addr, ee->es_thr1 & YEE_ES_THR1_MASK, YEE_E_THR1);
++	regw_ip(base_addr, ee->es_thr2 & YEE_THR_MASK, YEE_E_THR2);
++	regw_ip(base_addr, ee->es_gain_grad & YEE_THR_MASK, YEE_G_GAN);
++	regw_ip(base_addr, ee->es_ofst_grad & YEE_THR_MASK, YEE_G_OFT);
++
++	if (ee->table == NULL)
++		return;
++
++	for (count = 0; count < VPFE_IPIPE_MAX_SIZE_YEE_LUT; count += 2)
++		w_ip_table(isp5_base_addr, ((ee->table[count + 1] &
++		YEE_ENTRY_MASK) << YEE_ENTRY_SHIFT) |
++		(ee->table[count] & YEE_ENTRY_MASK),
++		((count/2) << 2) + YEE_TB_START_ADDR);
++}
++
++/* Chromatic Artifact Correction. CAR */
++static void ipipe_set_mf(void *__iomem base_addr)
++{
++	/* typ to dynamic switch */
++	regw_ip(base_addr, VPFE_IPIPE_CAR_DYN_SWITCH, CAR_TYP);
++	/* Set SW0 to maximum */
++	regw_ip(base_addr, CAR_MF_THR, CAR_SW);
++}
++
++static void
++ipipe_set_gain_ctrl(void *__iomem base_addr, struct vpfe_ipipe_car *car)
++{
++	regw_ip(base_addr, VPFE_IPIPE_CAR_CHR_GAIN_CTRL, CAR_TYP);
++	regw_ip(base_addr, car->hpf, CAR_HPF_TYP);
++	regw_ip(base_addr, car->hpf_shft & CAR_HPF_SHIFT_MASK, CAR_HPF_SHF);
++	regw_ip(base_addr, car->hpf_thr, CAR_HPF_THR);
++	regw_ip(base_addr, car->gain1.gain, CAR_GN1_GAN);
++	regw_ip(base_addr, car->gain1.shft & CAR_GAIN1_SHFT_MASK, CAR_GN1_SHF);
++	regw_ip(base_addr, car->gain1.gain_min & CAR_GAIN_MIN_MASK,
++		CAR_GN1_MIN);
++	regw_ip(base_addr, car->gain2.gain, CAR_GN2_GAN);
++	regw_ip(base_addr, car->gain2.shft & CAR_GAIN2_SHFT_MASK, CAR_GN2_SHF);
++	regw_ip(base_addr, car->gain2.gain_min & CAR_GAIN_MIN_MASK,
++		CAR_GN2_MIN);
++}
++
++void ipipe_set_car_regs(void *__iomem base_addr, struct vpfe_ipipe_car *car)
++{
++	u32 val;
++
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, car->en, CAR_EN);
++
++	if (!car->en)
++		return;
++
++	switch (car->meth) {
++	case VPFE_IPIPE_CAR_MED_FLTR:
++		ipipe_set_mf(base_addr);
++		break;
++
++	case VPFE_IPIPE_CAR_CHR_GAIN_CTRL:
++		ipipe_set_gain_ctrl(base_addr, car);
++		break;
++
++	default:
++		/* Dynamic switch between MF and Gain Ctrl. */
++		ipipe_set_mf(base_addr);
++		ipipe_set_gain_ctrl(base_addr, car);
++		/* Set the threshold for switching between
++		  * the two Here we overwrite the MF SW0 value
++		  */
++		regw_ip(base_addr, VPFE_IPIPE_CAR_DYN_SWITCH, CAR_TYP);
++		val = car->sw1;
++		val <<= CAR_SW1_SHIFT;
++		val |= car->sw0;
++		regw_ip(base_addr, val, CAR_SW);
++	}
++}
++
++/* Chromatic Gain Suppression */
++void ipipe_set_cgs_regs(void *__iomem base_addr, struct vpfe_ipipe_cgs *cgs)
++{
++	ipipe_clock_enable(base_addr);
++	regw_ip(base_addr, cgs->en, CGS_EN);
++
++	if (!cgs->en)
++		return;
++
++	/* Set the bright side parameters */
++	regw_ip(base_addr, cgs->h_thr, CGS_GN1_H_THR);
++	regw_ip(base_addr, cgs->h_slope, CGS_GN1_H_GAN);
++	regw_ip(base_addr, cgs->h_shft & CAR_SHIFT_MASK, CGS_GN1_H_SHF);
++	regw_ip(base_addr, cgs->h_min, CGS_GN1_H_MIN);
++}
++
++void rsz_src_enable(void *__iomem rsz_base, int enable)
++{
++	regw_rsz(rsz_base, enable, RSZ_SRC_EN);
++}
++
++int rsz_enable(void *__iomem rsz_base, int rsz_id, int enable)
++{
++	if (rsz_id == RSZ_A) {
++		regw_rsz(rsz_base, enable, RSZ_EN_A);
++		/* We always enable RSZ_A. RSZ_B is enable upon request from
++		 * application. So enable RSZ_SRC_EN along with RSZ_A
++		 */
++		regw_rsz(rsz_base, enable, RSZ_SRC_EN);
++	} else if (rsz_id == RSZ_B) {
++		regw_rsz(rsz_base, enable, RSZ_EN_B);
++	} else {
++		BUG();
++	}
++
++	return 0;
++}
+diff --git a/drivers/media/platform/davinci/dm365_ipipe_hw.h b/drivers/media/platform/davinci/dm365_ipipe_hw.h
+new file mode 100644
+index 0000000..010fdb2
+--- /dev/null
++++ b/drivers/media/platform/davinci/dm365_ipipe_hw.h
+@@ -0,0 +1,559 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Inc
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
++ * Contributors:
++ *      Manjunath Hadli <manjunath.hadli@ti.com>
++ *      Prabhakar Lad <prabhakar.lad@ti.com>
++ */
++
++#ifndef _DAVINCI_VPFE_DM365_IPIPE_HW_H
++#define _DAVINCI_VPFE_DM365_IPIPE_HW_H
++
 +#include "vpfe_mc_capture.h"
 +
-+#define MAX_WIDTH	4096
-+#define MAX_HEIGHT	4096
-+
-+static const unsigned int isif_fmts[] = {
-+	V4L2_MBUS_FMT_YUYV8_2X8,
-+	V4L2_MBUS_FMT_UYVY8_2X8,
-+	V4L2_MBUS_FMT_YUYV8_1X16,
-+	V4L2_MBUS_FMT_YUYV10_1X20,
-+	V4L2_MBUS_FMT_SGRBG12_1X12,
-+	V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8,
-+	V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8,
-+};
-+
-+#define ISIF_COLPTN_R_Ye	0x0
-+#define ISIF_COLPTN_Gr_Cy	0x1
-+#define ISIF_COLPTN_Gb_G	0x2
-+#define ISIF_COLPTN_B_Mg	0x3
-+
-+#define ISIF_CCOLP_CP01_0	0
-+#define ISIF_CCOLP_CP03_2	2
-+#define ISIF_CCOLP_CP05_4	4
-+#define ISIF_CCOLP_CP07_6	6
-+#define ISIF_CCOLP_CP11_0	8
-+#define ISIF_CCOLP_CP13_2	10
-+#define ISIF_CCOLP_CP15_4	12
-+#define ISIF_CCOLP_CP17_6	14
-+
-+static const u32 isif_sgrbg_pattern =
-+	ISIF_COLPTN_Gr_Cy <<  ISIF_CCOLP_CP01_0 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP03_2 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP05_4 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP07_6 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP11_0 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP13_2 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP15_4 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP17_6;
-+
-+static const u32 isif_srggb_pattern =
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP01_0 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP03_2 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP05_4 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP07_6 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP11_0 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP13_2 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP15_4 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP17_6;
-+
-+static inline u32 isif_read(void *__iomem base_addr, u32 offset)
-+{
-+	return readl(base_addr + offset);
-+}
-+
-+static inline void isif_write(void *__iomem base_addr, u32 val, u32 offset)
-+{
-+	writel(val, base_addr + offset);
-+}
-+
-+static inline u32 isif_merge(void *__iomem base_addr, u32 mask, u32 val,
-+			     u32 offset)
-+{
-+	u32 new_val = (isif_read(base_addr, offset) & ~mask) | (val & mask);
-+
-+	isif_write(base_addr, new_val, offset);
-+
-+	return new_val;
-+}
-+
-+static void isif_enable_output_to_sdram(struct vpfe_isif_device *isif, int en)
-+{
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_SYNCEN_WEN_MASK,
-+		   en << ISIF_SYNCEN_WEN_SHIFT, SYNCEN);
-+}
-+
-+static inline void
-+isif_regw_lin_tbl(struct vpfe_isif_device *isif, u32 val, u32 offset, int i)
-+{
-+	if (!i)
-+		writel(val, isif->isif_cfg.linear_tbl0_addr + offset);
-+	else
-+		writel(val, isif->isif_cfg.linear_tbl1_addr + offset);
-+}
-+
-+static void isif_disable_all_modules(struct vpfe_isif_device *isif)
-+{
-+	/* disable BC */
-+	isif_write(isif->isif_cfg.base_addr, 0, CLAMPCFG);
-+	/* disable vdfc */
-+	isif_write(isif->isif_cfg.base_addr, 0, DFCCTL);
-+	/* disable CSC */
-+	isif_write(isif->isif_cfg.base_addr, 0, CSCCTL);
-+	/* disable linearization */
-+	isif_write(isif->isif_cfg.base_addr, 0, LINCFG0);
-+}
-+
-+static void isif_enable(struct vpfe_isif_device *isif, int en)
-+{
-+	if (!en)
-+		/* Before disable isif, disable all ISIF modules */
-+		isif_disable_all_modules(isif);
-+
-+	/*
-+	 * wait for next VD. Assume lowest scan rate is 12 Hz. So
-+	 * 100 msec delay is good enough
-+	 */
-+	msleep(100);
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_SYNCEN_VDHDEN_MASK,
-+		   en, SYNCEN);
-+}
-+
-+/*
-+ * ISIF helper functions
-+ */
-+
-+#define DM365_ISIF_MDFS_OFFSET		15
-+#define DM365_ISIF_MDFS_MASK		0x1
-+
-+/* get field id in isif hardware */
-+enum v4l2_field vpfe_isif_get_fid(struct vpfe_device *vpfe_dev)
-+{
-+	struct vpfe_isif_device *isif = &vpfe_dev->vpfe_isif;
-+	u32 field_status;
-+
-+	field_status = isif_read(isif->isif_cfg.base_addr, MODESET);
-+	field_status = (field_status >> DM365_ISIF_MDFS_OFFSET) &
-+			DM365_ISIF_MDFS_MASK;
-+	return field_status;
-+}
-+
-+static int
-+isif_set_pixel_format(struct vpfe_isif_device *isif, unsigned int pixfmt)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (pixfmt == V4L2_PIX_FMT_SBGGR16)
-+			isif->isif_cfg.data_pack = ISIF_PACK_16BIT;
-+		else if ((pixfmt == V4L2_PIX_FMT_SGRBG10DPCM8) ||
-+				(pixfmt == V4L2_PIX_FMT_SGRBG10ALAW8))
-+			isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+		else
-+			return -EINVAL;
-+
-+		isif->isif_cfg.bayer.pix_fmt = ISIF_PIXFMT_RAW;
-+		isif->isif_cfg.bayer.v4l2_pix_fmt = pixfmt;
-+	} else {
-+		if (pixfmt == V4L2_PIX_FMT_YUYV)
-+			isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_YCBYCR;
-+		else if (pixfmt == V4L2_PIX_FMT_UYVY)
-+			isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_CBYCRY;
-+		else
-+			return -EINVAL;
-+
-+		isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+		isif->isif_cfg.ycbcr.v4l2_pix_fmt = pixfmt;
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+isif_set_frame_format(struct vpfe_isif_device *isif,
-+		      enum isif_frmfmt frm_fmt)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		isif->isif_cfg.bayer.frm_fmt = frm_fmt;
-+	else
-+		isif->isif_cfg.ycbcr.frm_fmt = frm_fmt;
-+
-+	return 0;
-+}
-+
-+static int isif_set_image_window(struct vpfe_isif_device *isif)
-+{
-+	struct v4l2_rect *win = &isif->crop;
-+
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		isif->isif_cfg.bayer.win.top = win->top;
-+		isif->isif_cfg.bayer.win.left = win->left;
-+		isif->isif_cfg.bayer.win.width = win->width;
-+		isif->isif_cfg.bayer.win.height = win->height;
-+		return 0;
-+	}
-+	isif->isif_cfg.ycbcr.win.top = win->top;
-+	isif->isif_cfg.ycbcr.win.left = win->left;
-+	isif->isif_cfg.ycbcr.win.width = win->width;
-+	isif->isif_cfg.ycbcr.win.height = win->height;
-+
-+	return 0;
-+}
-+
-+static int
-+isif_set_buftype(struct vpfe_isif_device *isif, enum isif_buftype buf_type)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		isif->isif_cfg.bayer.buf_type = buf_type;
-+	else
-+		isif->isif_cfg.ycbcr.buf_type = buf_type;
-+
-+	return 0;
-+}
-+
-+/* configure format in isif hardware */
-+static int
-+isif_config_format(struct vpfe_device *vpfe_dev, unsigned int pad)
-+{
-+	struct vpfe_isif_device *vpfe_isif = &vpfe_dev->vpfe_isif;
-+	enum isif_frmfmt frm_fmt = ISIF_FRMFMT_INTERLACED;
-+	struct v4l2_pix_format format;
-+	int ret = 0;
-+
-+	v4l2_fill_pix_format(&format, &vpfe_dev->vpfe_isif.formats[pad]);
-+	mbus_to_pix(&vpfe_dev->vpfe_isif.formats[pad], &format);
-+
-+	if (isif_set_pixel_format(vpfe_isif, format.pixelformat) < 0) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			 "Failed to set pixel format in isif\n");
-+		return -EINVAL;
-+	}
-+
-+	/* call for s_crop will override these values */
-+	vpfe_isif->crop.left = 0;
-+	vpfe_isif->crop.top = 0;
-+	vpfe_isif->crop.width = format.width;
-+	vpfe_isif->crop.height = format.height;
-+
-+	/* configure the image window */
-+	isif_set_image_window(vpfe_isif);
-+
-+	switch (vpfe_dev->vpfe_isif.formats[pad].field) {
-+	case V4L2_FIELD_INTERLACED:
-+		/* do nothing, since it is default */
-+		ret = isif_set_buftype(vpfe_isif, ISIF_BUFTYPE_FLD_INTERLEAVED);
-+		break;
-+
-+	case V4L2_FIELD_NONE:
-+		frm_fmt = ISIF_FRMFMT_PROGRESSIVE;
-+		/* buffer type only applicable for interlaced scan */
-+		break;
-+
-+	case V4L2_FIELD_SEQ_TB:
-+		ret = isif_set_buftype(vpfe_isif, ISIF_BUFTYPE_FLD_SEPARATED);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* set the frame format */
-+	if (!ret)
-+		ret = isif_set_frame_format(vpfe_isif, frm_fmt);
-+
-+	return ret;
-+}
-+
-+/*
-+ * isif_try_format() - Try video format on a pad
-+ * @isif: VPFE isif device
-+ * @fh: V4L2 subdev file handle
-+ * @fmt: pointer to v4l2 subdev format structure
-+ */
-+static void
-+isif_try_format(struct vpfe_isif_device *isif, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
-+{
-+	unsigned int width = fmt->format.width;
-+	unsigned int height = fmt->format.height;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(isif_fmts); i++) {
-+		if (fmt->format.code == isif_fmts[i])
-+			break;
-+	}
-+
-+	/* If not found, use YUYV8_2x8 as default */
-+	if (i >= ARRAY_SIZE(isif_fmts))
-+		fmt->format.code = V4L2_MBUS_FMT_YUYV8_2X8;
-+
-+	/* Clamp the size. */
-+	fmt->format.width = clamp_t(u32, width, 32, MAX_WIDTH);
-+	fmt->format.height = clamp_t(u32, height, 32, MAX_HEIGHT);
-+
-+	/* The data formatter truncates the number of horizontal output
-+	 * pixels to a multiple of 16. To avoid clipping data, allow
-+	 * callers to request an output size bigger than the input size
-+	 * up to the nearest multiple of 16.
-+	 */
-+	if (fmt->pad == ISIF_PAD_SOURCE)
-+		fmt->format.width &= ~15;
-+}
-+
-+/*
-+ * vpfe_isif_buffer_isr() - isif module non-progressive buffer scheduling isr
-+ * @isif: Pointer to isif subdevice.
-+ */
-+void vpfe_isif_buffer_isr(struct vpfe_isif_device *isif)
-+{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
-+	struct vpfe_video_device *video = &isif->video_out;
-+	enum v4l2_field field;
-+	int fid;
-+
-+	if (!video->started)
-+		return;
-+
-+	field = video->fmt.fmt.pix.field;
-+
-+	if (field == V4L2_FIELD_NONE) {
-+		/* handle progressive frame capture */
-+		if (video->cur_frm != video->next_frm)
-+			vpfe_video_process_buffer_complete(video);
-+		return;
-+	}
-+
-+	/* interlaced or TB capture check which field we
-+	 * are in hardware
-+	 */
-+	fid = vpfe_isif_get_fid(vpfe_dev);
-+
-+	/* switch the software maintained field id */
-+	video->field_id ^= 1;
-+	if (fid == video->field_id) {
-+		/* we are in-sync here,continue */
-+		if (fid == 0) {
-+			/*
-+			 * One frame is just being captured. If the
-+			 * next frame is available, release the current
-+			 * frame and move on
-+			 */
-+			if (video->cur_frm != video->next_frm)
-+				vpfe_video_process_buffer_complete(video);
-+			/*
-+			 * based on whether the two fields are stored
-+			 * interleavely or separately in memory,
-+			 * reconfigure the ISIF memory address
-+			 */
-+			if (field == V4L2_FIELD_SEQ_TB)
-+				vpfe_video_schedule_bottom_field(video);
-+			return;
-+		}
-+		/*
-+		 * if one field is just being captured configure
-+		 * the next frame get the next frame from the
-+		 * empty queue if no frame is available hold on
-+		 * to the current buffer
-+		 */
-+		spin_lock(&video->dma_queue_lock);
-+		if (!list_empty(&video->dma_queue) &&
-+		video->cur_frm == video->next_frm)
-+			vpfe_video_schedule_next_buffer(video);
-+		spin_unlock(&video->dma_queue_lock);
-+	} else if (fid == 0) {
-+		/*
-+		 * out of sync. Recover from any hardware out-of-sync.
-+		 * May loose one frame
-+		 */
-+		video->field_id = fid;
-+	}
-+}
-+
-+/*
-+ * vpfe_isif_vidint1_isr() - ISIF module progressive buffer scheduling isr
-+ * @isif: Pointer to isif subdevice.
-+ */
-+void vpfe_isif_vidint1_isr(struct vpfe_isif_device *isif)
-+{
-+	struct vpfe_video_device *video = &isif->video_out;
-+
-+	if (!video->started)
-+		return;
-+
-+	spin_lock(&video->dma_queue_lock);
-+	if (video->fmt.fmt.pix.field == V4L2_FIELD_NONE &&
-+	    !list_empty(&video->dma_queue) && video->cur_frm == video->next_frm)
-+		vpfe_video_schedule_next_buffer(video);
-+
-+	spin_unlock(&video->dma_queue_lock);
-+}
-+
-+/*
-+ * VPFE video operations
-+ */
-+
-+static int isif_video_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
-+{
-+	struct vpfe_isif_device *isif = &vpfe_dev->vpfe_isif;
-+
-+	isif_write(isif->isif_cfg.base_addr, (addr >> 21) &
-+		ISIF_CADU_BITS, CADU);
-+	isif_write(isif->isif_cfg.base_addr, (addr >> 5) &
-+		ISIF_CADL_BITS, CADL);
-+
-+	return 0;
-+}
-+
-+static const struct vpfe_video_operations isif_video_ops = {
-+	.queue = isif_video_queue,
-+};
-+
-+/*
-+ * V4L2 subdev operations
-+ */
-+
-+/* Parameter operations */
-+static int isif_get_params(struct v4l2_subdev *sd, void *params)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (isif->formats[ISIF_PAD_SINK].code != V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return -EINVAL;
-+	memcpy(params, &isif->isif_cfg.bayer.config_params,
-+			sizeof(isif->isif_cfg.bayer.config_params));
-+	return 0;
-+}
-+
-+static int isif_validate_df_csc_params(struct vpfe_isif_df_csc *df_csc)
-+{
-+	struct vpfe_isif_color_space_conv *csc;
-+	int err = -EINVAL;
-+	int csc_df_en;
-+	int i;
-+
-+	if (!df_csc->df_or_csc) {
-+		/* csc configuration */
-+		csc = &df_csc->csc;
-+		if (csc->en) {
-+			csc_df_en = 1;
-+			for (i = 0; i < VPFE_ISIF_CSC_NUM_COEFF; i++)
-+				if (csc->coeff[i].integer >
-+				    ISIF_CSC_COEF_INTEG_MASK ||
-+				    csc->coeff[i].decimal >
-+				    ISIF_CSC_COEF_DECIMAL_MASK) {
-+					pr_err("Invalid CSC coefficients\n");
-+					return err;
-+				}
-+		}
-+	}
-+	if (df_csc->start_pix > ISIF_DF_CSC_SPH_MASK) {
-+		pr_err("Invalid df_csc start pix value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->num_pixels > ISIF_DF_NUMPIX) {
-+		pr_err("Invalid df_csc num pixels value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->start_line > ISIF_DF_CSC_LNH_MASK) {
-+		pr_err("Invalid df_csc start_line value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->num_lines > ISIF_DF_NUMLINES) {
-+		pr_err("Invalid df_csc num_lines value\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_MAX_VDFLSFT		4
-+#define DM365_ISIF_MAX_VDFSLV		4095
-+#define DM365_ISIF_MAX_DFCMEM0		0x1fff
-+#define DM365_ISIF_MAX_DFCMEM1		0x1fff
-+
-+static int isif_validate_dfc_params(struct vpfe_isif_dfc *dfc)
-+{
-+	int err = -EINVAL;
-+	int i;
-+
-+	if (!dfc->en)
-+		return 0;
-+
-+	if (dfc->corr_whole_line > 1) {
-+		pr_err("Invalid corr_whole_line value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_level_shift > DM365_ISIF_MAX_VDFLSFT) {
-+		pr_err("Invalid def_level_shift value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_sat_level > DM365_ISIF_MAX_VDFSLV) {
-+		pr_err("Invalid def_sat_level value\n");
-+		return err;
-+	}
-+
-+	if (!dfc->num_vdefects ||
-+	    dfc->num_vdefects > VPFE_ISIF_VDFC_TABLE_SIZE) {
-+		pr_err("Invalid num_vdefects value\n");
-+		return err;
-+	}
-+
-+	for (i = 0; i < VPFE_ISIF_VDFC_TABLE_SIZE; i++) {
-+		if (dfc->table[i].pos_vert > DM365_ISIF_MAX_DFCMEM0) {
-+			pr_err("Invalid pos_vert value\n");
-+			return err;
-+		}
-+		if (dfc->table[i].pos_horz > DM365_ISIF_MAX_DFCMEM1) {
-+			pr_err("Invalid pos_horz value\n");
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_MAX_CLVRV			0xfff
-+#define DM365_ISIF_MAX_CLDC			0x1fff
-+#define DM365_ISIF_MAX_CLHSH			0x1fff
-+#define DM365_ISIF_MAX_CLHSV			0x1fff
-+#define DM365_ISIF_MAX_CLVSH			0x1fff
-+#define DM365_ISIF_MAX_CLVSV			0x1fff
-+#define DM365_ISIF_MAX_HEIGHT_BLACK_REGION	0x1fff
-+
-+static int isif_validate_bclamp_params(struct vpfe_isif_black_clamp *bclamp)
-+{
-+	int err = -EINVAL;
-+
-+	if (bclamp->dc_offset > DM365_ISIF_MAX_CLDC) {
-+		pr_err("Invalid bclamp dc_offset value\n");
-+		return err;
-+	}
-+	if (!bclamp->en)
-+		return 0;
-+	if (bclamp->horz.clamp_pix_limit > 1) {
-+		pr_err("Invalid bclamp horz clamp_pix_limit value\n");
-+		return err;
-+	}
-+	if (bclamp->horz.win_count_calc < 1 ||
-+			bclamp->horz.win_count_calc > 32) {
-+		pr_err("Invalid bclamp horz win_count_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->horz.win_start_h_calc > DM365_ISIF_MAX_CLHSH) {
-+		pr_err("Invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->horz.win_start_v_calc > DM365_ISIF_MAX_CLHSV) {
-+		pr_err("Invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.reset_clamp_val > DM365_ISIF_MAX_CLVRV) {
-+		pr_err("Invalid bclamp reset_clamp_val value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_v_sz_calc > DM365_ISIF_MAX_HEIGHT_BLACK_REGION) {
-+		pr_err("Invalid bclamp ob_v_sz_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_start_h > DM365_ISIF_MAX_CLVSH) {
-+		pr_err("Invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_start_v > DM365_ISIF_MAX_CLVSV) {
-+		pr_err("Invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+	return 0;
-+}
-+
-+static int
-+isif_validate_raw_params(struct vpfe_isif_raw_config *params)
-+{
-+	int ret;
-+
-+	ret = isif_validate_df_csc_params(&params->df_csc);
-+	if (ret)
-+		return ret;
-+	ret = isif_validate_dfc_params(&params->dfc);
-+	if (ret)
-+		return ret;
-+	ret = isif_validate_bclamp_params(&params->bclamp);
-+	return ret;
-+}
-+
-+static int isif_set_params(struct v4l2_subdev *sd, void *params)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct vpfe_isif_raw_config isif_raw_params;
-+	int ret = -EINVAL;
-+
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (isif->formats[ISIF_PAD_SINK].code != V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return ret;
-+
-+	memcpy(&isif_raw_params, params, sizeof(isif_raw_params));
-+	if (!isif_validate_raw_params(&isif_raw_params)) {
-+		memcpy(&isif->isif_cfg.bayer.config_params, &isif_raw_params,
-+			sizeof(isif_raw_params));
-+		ret = 0;
-+	}
-+	return ret;
-+}
-+/*
-+ * isif_ioctl() - isif module private ioctl's
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @cmd: ioctl command
-+ * @arg: ioctl argument
-+ *
-+ * Return 0 on success or a negative error code otherwise.
-+ */
-+static long isif_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
-+{
-+	int ret;
-+
-+	switch (cmd) {
-+	case VIDIOC_VPFE_ISIF_S_RAW_PARAMS:
-+		ret = isif_set_params(sd, arg);
-+		break;
-+
-+	case VIDIOC_VPFE_ISIF_G_RAW_PARAMS:
-+		ret = isif_get_params(sd, arg);
-+		break;
-+
-+	default:
-+		ret = -ENOIOCTLCMD;
-+	}
-+	return ret;
-+}
-+
-+static void isif_config_gain_offset(struct vpfe_isif_device *isif)
-+{
-+	struct vpfe_isif_gain_offsets_adj *gain_off_ptr =
-+		&isif->isif_cfg.bayer.config_params.gain_offset;
-+	void *__iomem base = isif->isif_cfg.base_addr;
-+	u32 val;
-+
-+	val = ((gain_off_ptr->gain_sdram_en & 1) << GAIN_SDRAM_EN_SHIFT) |
-+	      ((gain_off_ptr->gain_ipipe_en & 1) << GAIN_IPIPE_EN_SHIFT) |
-+	      ((gain_off_ptr->gain_h3a_en & 1) << GAIN_H3A_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_sdram_en & 1) << OFST_SDRAM_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_ipipe_en & 1) << OFST_IPIPE_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_h3a_en & 1) << OFST_H3A_EN_SHIFT);
-+	isif_merge(base, GAIN_OFFSET_EN_MASK, val, CGAMMAWD);
-+
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cr_gain, CRGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cgr_gain, CGRGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cgb_gain, CGBGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cb_gain, CBGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.offset & OFFSET_MASK,
-+		   COFSTA);
-+
-+}
-+
-+static void isif_config_bclamp(struct vpfe_isif_device *isif,
-+		   struct vpfe_isif_black_clamp *bc)
-+{
-+	u32 val;
-+
-+	/**
-+	 * DC Offset is always added to image data irrespective of bc enable
-+	 * status
-+	 */
-+	val = bc->dc_offset & ISIF_BC_DCOFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLDCOFST);
-+
-+	if (!bc->en)
-+		return;
-+
-+	val = (bc->bc_mode_color & ISIF_BC_MODE_COLOR_MASK) <<
-+		ISIF_BC_MODE_COLOR_SHIFT;
-+
-+	/* Enable BC and horizontal clamp caculation paramaters */
-+	val = val | 1 | ((bc->horz.mode & ISIF_HORZ_BC_MODE_MASK) <<
-+	      ISIF_HORZ_BC_MODE_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CLAMPCFG);
-+
-+	if (bc->horz.mode != VPFE_ISIF_HORZ_BC_DISABLE) {
-+		/*
-+		 * Window count for calculation
-+		 * Base window selection
-+		 * pixel limit
-+		 * Horizontal size of window
-+		 * vertical size of the window
-+		 * Horizontal start position of the window
-+		 * Vertical start position of the window
-+		 */
-+		val = (bc->horz.win_count_calc & ISIF_HORZ_BC_WIN_COUNT_MASK) |
-+		      ((bc->horz.base_win_sel_calc & 1) <<
-+		      ISIF_HORZ_BC_WIN_SEL_SHIFT) |
-+		      ((bc->horz.clamp_pix_limit & 1) <<
-+		      ISIF_HORZ_BC_PIX_LIMIT_SHIFT) |
-+		      ((bc->horz.win_h_sz_calc &
-+		      ISIF_HORZ_BC_WIN_H_SIZE_MASK) <<
-+		      ISIF_HORZ_BC_WIN_H_SIZE_SHIFT) |
-+		      ((bc->horz.win_v_sz_calc &
-+		      ISIF_HORZ_BC_WIN_V_SIZE_MASK) <<
-+		      ISIF_HORZ_BC_WIN_V_SIZE_SHIFT);
-+
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN0);
-+
-+		val = bc->horz.win_start_h_calc & ISIF_HORZ_BC_WIN_START_H_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN1);
-+
-+		val = bc->horz.win_start_v_calc & ISIF_HORZ_BC_WIN_START_V_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN2);
-+	}
-+
-+	/* vertical clamp caculation paramaters */
-+	/* OB H Valid */
-+	val = bc->vert.ob_h_sz_calc & ISIF_VERT_BC_OB_H_SZ_MASK;
-+
-+	/* Reset clamp value sel for previous line */
-+	val |= (bc->vert.reset_val_sel & ISIF_VERT_BC_RST_VAL_SEL_MASK) <<
-+				ISIF_VERT_BC_RST_VAL_SEL_SHIFT;
-+
-+	/* Line average coefficient */
-+	val |= bc->vert.line_ave_coef << ISIF_VERT_BC_LINE_AVE_COEF_SHIFT;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN0);
-+
-+	/* Configured reset value */
-+	if (bc->vert.reset_val_sel == VPFE_ISIF_VERT_BC_USE_CONFIG_CLAMP_VAL) {
-+		val = bc->vert.reset_clamp_val & ISIF_VERT_BC_RST_VAL_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLVRV);
-+	}
-+
-+	/* Optical Black horizontal start position */
-+	val = bc->vert.ob_start_h & ISIF_VERT_BC_OB_START_HORZ_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN1);
-+
-+	/* Optical Black vertical start position */
-+	val = bc->vert.ob_start_v & ISIF_VERT_BC_OB_START_VERT_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN2);
-+
-+	val = bc->vert.ob_v_sz_calc & ISIF_VERT_BC_OB_VERT_SZ_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN3);
-+
-+	/* Vertical start position for BC subtraction */
-+	val = bc->vert_start_sub & ISIF_BC_VERT_START_SUB_V_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLSV);
-+}
-+
-+/* This function will configure the window size to be capture in ISIF reg */
-+static void
-+isif_setwin(struct vpfe_isif_device *isif, struct v4l2_rect *image_win,
-+	    enum isif_frmfmt frm_fmt, int ppc, int mode)
-+{
-+	int horz_nr_pixels;
-+	int vert_nr_lines;
-+	int horz_start;
-+	int vert_start;
-+	int mid_img;
-+
-+	/*
-+	 * ppc - per pixel count. indicates how many pixels per cell
-+	 * output to SDRAM. example, for ycbcr, it is one y and one c, so 2.
-+	 * raw capture this is 1
-+	 */
-+	horz_start = image_win->left << (ppc - 1);
-+	horz_nr_pixels = (image_win->width << (ppc - 1)) - 1;
-+
-+	/* Writing the horizontal info into the registers */
-+	isif_write(isif->isif_cfg.base_addr,
-+		   horz_start & START_PX_HOR_MASK, SPH);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   horz_nr_pixels & NUM_PX_HOR_MASK, LNH);
-+	vert_start = image_win->top;
-+
-+	if (frm_fmt == ISIF_FRMFMT_INTERLACED) {
-+		vert_nr_lines = (image_win->height >> 1) - 1;
-+		vert_start >>= 1;
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+	} else {
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+		vert_nr_lines = image_win->height - 1;
-+		/* configure VDINT0 and VDINT1 */
-+		mid_img = vert_start + (image_win->height / 2);
-+		isif_write(isif->isif_cfg.base_addr, mid_img, VDINT1);
-+	}
-+
-+	if (!mode)
-+		isif_write(isif->isif_cfg.base_addr, 0, VDINT0);
-+	else
-+		isif_write(isif->isif_cfg.base_addr, vert_nr_lines, VDINT0);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_start & START_VER_ONE_MASK, SLV0);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_start & START_VER_TWO_MASK, SLV1);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_nr_lines & NUM_LINES_VER, LNV);
-+}
-+
-+#define DM365_ISIF_DFCMWR_MEMORY_WRITE		1
-+#define DM365_ISIF_DFCMRD_MEMORY_READ		0x2
-+
-+static void
-+isif_config_dfc(struct vpfe_isif_device *isif, struct vpfe_isif_dfc *vdfc)
-+{
-+#define DFC_WRITE_WAIT_COUNT	1000
-+	u32 count = DFC_WRITE_WAIT_COUNT;
-+	u32 val;
-+	int i;
-+
-+	if (!vdfc->en)
-+		return;
-+
-+	/* Correction mode */
-+	val = (vdfc->corr_mode & ISIF_VDFC_CORR_MOD_MASK) <<
-+	       ISIF_VDFC_CORR_MOD_SHIFT;
-+
-+	/* Correct whole line or partial */
-+	if (vdfc->corr_whole_line)
-+		val |= 1 << ISIF_VDFC_CORR_WHOLE_LN_SHIFT;
-+
-+	/* level shift value */
-+	val |= (vdfc->def_level_shift & ISIF_VDFC_LEVEL_SHFT_MASK) <<
-+		ISIF_VDFC_LEVEL_SHFT_SHIFT;
-+
-+	isif_write(isif->isif_cfg.base_addr, val, DFCCTL);
-+
-+	/* Defect saturation level */
-+	val = vdfc->def_sat_level & ISIF_VDFC_SAT_LEVEL_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, VDFSATLV);
-+
-+	isif_write(isif->isif_cfg.base_addr, vdfc->table[0].pos_vert &
-+		   ISIF_VDFC_POS_MASK, DFCMEM0);
-+	isif_write(isif->isif_cfg.base_addr, vdfc->table[0].pos_horz &
-+		   ISIF_VDFC_POS_MASK, DFCMEM1);
-+	if (vdfc->corr_mode == VPFE_ISIF_VDFC_NORMAL ||
-+	    vdfc->corr_mode == VPFE_ISIF_VDFC_HORZ_INTERPOL_IF_SAT) {
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_at_pos, DFCMEM2);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_up_pixels, DFCMEM3);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_low_pixels, DFCMEM4);
-+	}
-+
-+	val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+	/* set DFCMARST and set DFCMWR */
-+	val |= 1 << ISIF_DFCMEMCTL_DFCMARST_SHIFT;
-+	val |= 1;
-+	isif_write(isif->isif_cfg.base_addr, val, DFCMEMCTL);
-+
-+	while (count && (isif_read(isif->isif_cfg.base_addr, DFCMEMCTL) & 0x01))
-+		count--;
-+
-+	val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+	if (!count) {
-+		pr_debug("defect table write timeout !!\n");
-+		return;
-+	}
-+
-+	for (i = 1; i < vdfc->num_vdefects; i++) {
-+		isif_write(isif->isif_cfg.base_addr, vdfc->table[i].pos_vert &
-+			ISIF_VDFC_POS_MASK, DFCMEM0);
-+
-+		isif_write(isif->isif_cfg.base_addr, vdfc->table[i].pos_horz &
-+			ISIF_VDFC_POS_MASK, DFCMEM1);
-+
-+		if (vdfc->corr_mode == VPFE_ISIF_VDFC_NORMAL ||
-+		    vdfc->corr_mode == VPFE_ISIF_VDFC_HORZ_INTERPOL_IF_SAT) {
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_at_pos, DFCMEM2);
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_up_pixels, DFCMEM3);
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_low_pixels, DFCMEM4);
-+		}
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		/* clear DFCMARST and set DFCMWR */
-+		val &= ~(1 << ISIF_DFCMEMCTL_DFCMARST_SHIFT);
-+		val |= 1;
-+		isif_write(isif->isif_cfg.base_addr, val, DFCMEMCTL);
-+
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count && (isif_read(isif->isif_cfg.base_addr,
-+			DFCMEMCTL) & 0x01))
-+			count--;
-+
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		if (!count) {
-+			pr_debug("defect table write timeout !!\n");
-+			return;
-+		}
-+	}
-+	if (vdfc->num_vdefects < VPFE_ISIF_VDFC_TABLE_SIZE) {
-+		/* Extra cycle needed */
-+		isif_write(isif->isif_cfg.base_addr, 0, DFCMEM0);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_MAX_DFCMEM1, DFCMEM1);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_DFCMWR_MEMORY_WRITE, DFCMEMCTL);
-+	}
-+	/* enable VDFC */
-+	isif_merge(isif->isif_cfg.base_addr, (1 << ISIF_VDFC_EN_SHIFT),
-+		   (1 << ISIF_VDFC_EN_SHIFT), DFCCTL);
-+
-+	isif_merge(isif->isif_cfg.base_addr, (1 << ISIF_VDFC_EN_SHIFT),
-+		   (0 << ISIF_VDFC_EN_SHIFT), DFCCTL);
-+
-+	isif_write(isif->isif_cfg.base_addr, 0x6, DFCMEMCTL);
-+	for (i = 0 ; i < vdfc->num_vdefects; i++) {
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count &&
-+			(isif_read(isif->isif_cfg.base_addr, DFCMEMCTL) & 0x2))
-+			count--;
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		if (!count) {
-+			pr_debug("defect table write timeout !!\n");
-+			return;
-+		}
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_DFCMRD_MEMORY_READ, DFCMEMCTL);
-+	}
-+}
-+
-+static void
-+isif_config_csc(struct vpfe_isif_device *isif, struct vpfe_isif_df_csc *df_csc)
-+{
-+	u32 val1;
-+	u32 val2;
-+	u32 i;
-+
-+	if (!df_csc->csc.en) {
-+		isif_write(isif->isif_cfg.base_addr, 0, CSCCTL);
-+		return;
-+	}
-+	/* initialize all bits to 0 */
-+	val1 = 0;
-+	for (i = 0; i < VPFE_ISIF_CSC_NUM_COEFF; i++) {
-+		if ((i % 2) == 0) {
-+			/* CSCM - LSB */
-+			val1 = ((df_csc->csc.coeff[i].integer &
-+				ISIF_CSC_COEF_INTEG_MASK) <<
-+				ISIF_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				ISIF_CSC_COEF_DECIMAL_MASK));
-+		} else {
-+
-+			/* CSCM - MSB */
-+			val2 = ((df_csc->csc.coeff[i].integer &
-+				ISIF_CSC_COEF_INTEG_MASK) <<
-+				ISIF_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				ISIF_CSC_COEF_DECIMAL_MASK));
-+			val2 <<= ISIF_CSCM_MSB_SHIFT;
-+			val2 |= val1;
-+			isif_write(isif->isif_cfg.base_addr, val2,
-+				   (CSCM0 + ((i-1) << 1)));
-+		}
-+	}
-+	/* program the active area */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->start_pix &
-+		ISIF_DF_CSC_SPH_MASK, FMTSPH);
-+	/*
-+	 * one extra pixel as required for CSC. Actually number of
-+	 * pixel - 1 should be configured in this register. So we
-+	 * need to subtract 1 before writing to FMTSPH, but we will
-+	 * not do this since csc requires one extra pixel
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->num_pixels &
-+		ISIF_DF_CSC_SPH_MASK, FMTLNH);
-+	isif_write(isif->isif_cfg.base_addr, df_csc->start_line &
-+		ISIF_DF_CSC_SPH_MASK, FMTSLV);
-+	/*
-+	 * one extra line as required for CSC. See reason documented for
-+	 * num_pixels
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->num_lines &
-+		ISIF_DF_CSC_SPH_MASK, FMTLNV);
-+	/* Enable CSC */
-+	isif_write(isif->isif_cfg.base_addr, 1, CSCCTL);
-+}
-+
-+static void
-+isif_config_linearization(struct vpfe_isif_device *isif,
-+			  struct vpfe_isif_linearize *linearize)
-+{
-+	u32 val;
-+	u32 i;
-+
-+	if (!linearize->en) {
-+		isif_write(isif->isif_cfg.base_addr, 0, LINCFG0);
-+		return;
-+	}
-+	/* shift value for correction */
-+	val = (linearize->corr_shft & ISIF_LIN_CORRSFT_MASK) <<
-+	      ISIF_LIN_CORRSFT_SHIFT;
-+	/* enable */
-+	val |= 1;
-+	isif_write(isif->isif_cfg.base_addr, val, LINCFG0);
-+	/* Scale factor */
-+	val = (linearize->scale_fact.integer & 1) <<
-+	      ISIF_LIN_SCALE_FACT_INTEG_SHIFT;
-+	val |= linearize->scale_fact.decimal & ISIF_LIN_SCALE_FACT_DECIMAL_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, LINCFG1);
-+
-+	for (i = 0; i < VPFE_ISIF_LINEAR_TAB_SIZE; i++) {
-+		val = linearize->table[i] & ISIF_LIN_ENTRY_MASK;
-+		if (i%2)
-+			isif_regw_lin_tbl(isif, val, ((i >> 1) << 2), 1);
-+		else
-+			isif_regw_lin_tbl(isif, val, ((i >> 1) << 2), 0);
-+	}
-+}
-+
-+static void
-+isif_config_culling(struct vpfe_isif_device *isif, struct vpfe_isif_cul *cul)
-+{
-+	u32 val;
-+
-+	/* Horizontal pattern */
-+	val = cul->hcpat_even << CULL_PAT_EVEN_LINE_SHIFT;
-+	val |= cul->hcpat_odd;
-+	isif_write(isif->isif_cfg.base_addr, val, CULH);
-+	/* vertical pattern */
-+	isif_write(isif->isif_cfg.base_addr, cul->vcpat, CULV);
-+	/* LPF */
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_LPF_MASK << ISIF_LPF_SHIFT,
-+		   cul->en_lpf << ISIF_LPF_SHIFT, MODESET);
-+}
-+
-+static int isif_get_pix_fmt(u32 mbus_code)
-+{
-+	switch (mbus_code) {
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		return ISIF_PIXFMT_RAW;
-+
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		return ISIF_PIXFMT_YCBCR_8BIT;
-+
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		return ISIF_PIXFMT_YCBCR_16BIT;
-+
-+	default:
-+		break;
-+	}
-+	return -EINVAL;
-+}
-+
-+#define ISIF_INTERLACE_INVERSE_MODE		0x4b6d
-+#define ISIF_INTERLACE_NON_INVERSE_MODE		0x0b6d
-+#define ISIF_PROGRESSIVE_INVERSE_MODE		0x4000
-+#define ISIF_PROGRESSIVE_NON_INVERSE_MODE	0x0000
-+
-+static int isif_config_raw(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct isif_params_raw *params = &isif->isif_cfg.bayer;
-+	struct vpfe_isif_raw_config *module_params =
-+				&isif->isif_cfg.bayer.config_params;
-+	struct v4l2_mbus_framefmt *format;
-+	int pix_fmt;
-+	u32 val;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+
-+	/* In case of user has set BT656IF earlier, it should be reset
-+	 * when configuring for raw input.
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, 0, REC656IF);
-+	/* Configure CCDCFG register
-+	 * Set CCD Not to swap input since input is RAW data
-+	 * Set FID detection function to Latch at V-Sync
-+	 * Set WENLOG - isif valid area
-+	 * Set TRGSEL
-+	 * Set EXTRG
-+	 * Packed to 8 or 16 bits
-+	 */
-+	val = ISIF_YCINSWP_RAW | ISIF_CCDCFG_FIDMD_LATCH_VSYNC |
-+	      ISIF_CCDCFG_WENLOG_AND | ISIF_CCDCFG_TRGSEL_WEN |
-+	      ISIF_CCDCFG_EXTRG_DISABLE | (isif->isif_cfg.data_pack &
-+	      ISIF_DATA_PACK_MASK);
-+	isif_write(isif->isif_cfg.base_addr, val, CCDCFG);
-+
-+	pix_fmt = isif_get_pix_fmt(format->code);
-+	if (pix_fmt < 0) {
-+		pr_debug("Invalid pix_fmt(input mode)\n");
-+		return -EINVAL;
-+	}
-+	/*
-+	 * Configure the vertical sync polarity(MODESET.VDPOL)
-+	 * Configure the horizontal sync polarity (MODESET.HDPOL)
-+	 * Configure frame id polarity (MODESET.FLDPOL)
-+	 * Configure data polarity
-+	 * Configure External WEN Selection
-+	 * Configure frame format(progressive or interlace)
-+	 * Configure pixel format (Input mode)
-+	 * Configure the data shift
-+	 */
-+	val = ISIF_VDHDOUT_INPUT | ((params->vd_pol & ISIF_VD_POL_MASK) <<
-+	      ISIF_VD_POL_SHIFT) | ((params->hd_pol & ISIF_HD_POL_MASK) <<
-+	      ISIF_HD_POL_SHIFT) | ((params->fid_pol & ISIF_FID_POL_MASK) <<
-+	      ISIF_FID_POL_SHIFT) | ((ISIF_DATAPOL_NORMAL &
-+	      ISIF_DATAPOL_MASK) << ISIF_DATAPOL_SHIFT) | ((ISIF_EXWEN_DISABLE &
-+	      ISIF_EXWEN_MASK) << ISIF_EXWEN_SHIFT) | ((params->frm_fmt &
-+	      ISIF_FRM_FMT_MASK) << ISIF_FRM_FMT_SHIFT) | ((pix_fmt &
-+	      ISIF_INPUT_MASK) << ISIF_INPUT_SHIFT);
-+
-+	/* currently only V4L2_MBUS_FMT_SGRBG12_1X12 is
-+	 * supported. shift appropriately depending on
-+	 * different MBUS fmt's added
-+	 */
-+	if (format->code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val |= ((VPFE_ISIF_NO_SHIFT &
-+			ISIF_DATASFT_MASK) << ISIF_DATASFT_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, MODESET);
-+	/*
-+	 * Configure GAMMAWD register
-+	 * CFA pattern setting
-+	 */
-+	val = (params->cfa_pat & ISIF_GAMMAWD_CFA_MASK) <<
-+		ISIF_GAMMAWD_CFA_SHIFT;
-+	/* Gamma msb */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10ALAW8)
-+		val = val | ISIF_ALAW_ENABLE;
-+
-+	val = val | ((params->data_msb & ISIF_ALAW_GAMA_WD_MASK) <<
-+			ISIF_ALAW_GAMA_WD_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CGAMMAWD);
-+	/* Configure DPCM compression settings */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10DPCM8) {
-+		val =  1 << ISIF_DPCM_EN_SHIFT;
-+		val |= (params->dpcm_predictor &
-+			ISIF_DPCM_PREDICTOR_MASK) << ISIF_DPCM_PREDICTOR_SHIFT;
-+	}
-+	isif_write(isif->isif_cfg.base_addr, val, MISC);
-+	/* Configure Gain & Offset */
-+	isif_config_gain_offset(isif);
-+	/* Configure Color pattern */
-+	if (format->code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val = isif_sgrbg_pattern;
-+	else
-+		/* default set to rggb */
-+		val = isif_srggb_pattern;
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CCOLP);
-+
-+	/* Configure HSIZE register  */
-+	val = (params->horz_flip_en & ISIF_HSIZE_FLIP_MASK) <<
-+	      ISIF_HSIZE_FLIP_SHIFT;
-+
-+	/* calculate line offset in 32 bytes based on pack value */
-+	if (isif->isif_cfg.data_pack == ISIF_PACK_8BIT)
-+		val |= ((params->win.width + 31) >> 5) & ISIF_LINEOFST_MASK;
-+	else if (isif->isif_cfg.data_pack == ISIF_PACK_12BIT)
-+		val |= ((((params->win.width + (params->win.width >> 2)) +
-+			31) >> 5) & ISIF_LINEOFST_MASK);
-+	else
-+		val |= (((params->win.width * 2) + 31) >> 5) &
-+			ISIF_LINEOFST_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, HSIZE);
-+	/* Configure SDOFST register  */
-+	if (params->frm_fmt == ISIF_FRMFMT_INTERLACED) {
-+		if (params->image_invert_en)
-+			/* For interlace inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_INTERLACE_INVERSE_MODE, SDOFST);
-+		else
-+			/* For interlace non inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_INTERLACE_NON_INVERSE_MODE, SDOFST);
-+	} else if (params->frm_fmt == ISIF_FRMFMT_PROGRESSIVE) {
-+		if (params->image_invert_en)
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_PROGRESSIVE_INVERSE_MODE, SDOFST);
-+		else
-+			/* For progessive non inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_PROGRESSIVE_NON_INVERSE_MODE, SDOFST);
-+	}
-+	/* Configure video window */
-+	isif_setwin(isif, &params->win, params->frm_fmt, 1, mode);
-+	/* Configure Black Clamp */
-+	isif_config_bclamp(isif, &module_params->bclamp);
-+	/* Configure Vertical Defection Pixel Correction */
-+	isif_config_dfc(isif, &module_params->dfc);
-+	if (!module_params->df_csc.df_or_csc)
-+		/* Configure Color Space Conversion */
-+		isif_config_csc(isif, &module_params->df_csc);
-+
-+	isif_config_linearization(isif, &module_params->linearize);
-+	/* Configure Culling */
-+	isif_config_culling(isif, &module_params->culling);
-+	/* Configure Horizontal and vertical offsets(DFC,LSC,Gain) */
-+	val = module_params->horz_offset & ISIF_DATA_H_OFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, DATAHOFST);
-+
-+	val = module_params->vert_offset & ISIF_DATA_V_OFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, DATAVOFST);
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_HSIZE_MASK		0xffffffe0
-+#define DM365_ISIF_SDOFST_2_LINES	0x00000249
-+
-+/* This function will configure ISIF for YCbCr parameters. */
-+static int isif_config_ycbcr(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct isif_ycbcr_config *params = &isif->isif_cfg.ycbcr;
-+	struct v4l2_mbus_framefmt *format;
-+	int pix_fmt;
-+	u32 modeset;
-+	u32 ccdcfg;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+	/*
-+	 * first reset the ISIF
-+	 * all registers have default values after reset
-+	 * This is important since we assume default values to be set in
-+	 * a lot of registers that we didn't touch
-+	 */
-+	/* start with all bits zero */
-+	ccdcfg = modeset = 0;
-+	pix_fmt = isif_get_pix_fmt(format->code);
-+	if (pix_fmt < 0) {
-+		pr_debug("Invalid pix_fmt(input mode)\n");
-+		return -EINVAL;
-+	}
-+	/* configure pixel format or input mode */
-+	modeset = modeset | ((pix_fmt & ISIF_INPUT_MASK) <<
-+		  ISIF_INPUT_SHIFT) | ((params->frm_fmt & ISIF_FRM_FMT_MASK) <<
-+		  ISIF_FRM_FMT_SHIFT) | (((params->fid_pol &
-+		  ISIF_FID_POL_MASK) << ISIF_FID_POL_SHIFT)) |
-+		  (((params->hd_pol & ISIF_HD_POL_MASK) << ISIF_HD_POL_SHIFT)) |
-+		  (((params->vd_pol & ISIF_VD_POL_MASK) << ISIF_VD_POL_SHIFT));
-+	/* pack the data to 8-bit CCDCCFG */
-+	switch (format->code) {
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		modeset |= ((VPFE_PINPOL_NEGATIVE & ISIF_VD_POL_MASK) <<
-+				ISIF_VD_POL_SHIFT);
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		ccdcfg = ccdcfg | ISIF_PACK_8BIT | ISIF_YCINSWP_YCBCR;
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		/* setup BT.656, embedded sync  */
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		/* enable 10 bit mode in ccdcfg */
-+		ccdcfg = ccdcfg | ISIF_PACK_8BIT | ISIF_YCINSWP_YCBCR |
-+			ISIF_BW656_ENABLE;
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_16BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		break;
-+
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		ccdcfg |= ISIF_PACK_8BIT;
-+		ccdcfg |= ISIF_YCINSWP_YCBCR;
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_16BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	default:
-+		/* should never come here */
-+		pr_debug("Invalid interface type\n");
-+		return -EINVAL;
-+	}
-+	isif_write(isif->isif_cfg.base_addr, modeset, MODESET);
-+	/* Set up pix order */
-+	ccdcfg |= (params->pix_order & ISIF_PIX_ORDER_MASK) <<
-+		ISIF_PIX_ORDER_SHIFT;
-+	isif_write(isif->isif_cfg.base_addr, ccdcfg, CCDCFG);
-+	/* configure video window */
-+	if (format->code == V4L2_MBUS_FMT_YUYV10_1X20 ||
-+			format->code == V4L2_MBUS_FMT_YUYV8_1X16)
-+		isif_setwin(isif, &params->win, params->frm_fmt, 1, mode);
-+	else
-+		isif_setwin(isif, &params->win, params->frm_fmt, 2, mode);
-+
-+	/*
-+	 * configure the horizontal line offset
-+	 * this is done by rounding up width to a multiple of 16 pixels
-+	 * and multiply by two to account for y:cb:cr 4:2:2 data
-+	 */
-+	isif_write(isif->isif_cfg.base_addr,
-+		   ((((params->win.width * 2) + 31) &
-+		   DM365_ISIF_HSIZE_MASK) >> 5), HSIZE);
-+
-+	/* configure the memory line offset */
-+	if (params->frm_fmt == ISIF_FRMFMT_INTERLACED &&
-+	    params->buf_type == ISIF_BUFTYPE_FLD_INTERLEAVED)
-+		/* two fields are interleaved in memory */
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_SDOFST_2_LINES, SDOFST);
-+	return 0;
-+}
-+
-+static int isif_configure(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+
-+	switch (format->code) {
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		return isif_config_raw(sd, mode);
-+
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		return isif_config_ycbcr(sd, mode);
-+
-+	default:
-+		break;
-+	}
-+	return -EINVAL;
-+}
-+
-+/*
-+ * isif_set_stream() - Enable/Disable streaming on the ISIF module
-+ * @sd: VPFE ISIF V4L2 subdevice
-+ * @enable: Enable/disable stream
-+ */
-+static int isif_set_stream(struct v4l2_subdev *sd, int enable)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	int ret;
-+
-+	if (enable) {
-+		ret = isif_configure(sd,
-+			(isif->output == ISIF_OUTPUT_MEMORY) ? 0 : 1);
-+		if (ret)
-+			return ret;
-+		if (isif->output == ISIF_OUTPUT_MEMORY)
-+			isif_enable_output_to_sdram(isif, 1);
-+		isif_enable(isif, 1);
-+	} else {
-+		isif_enable(isif, 0);
-+		isif_enable_output_to_sdram(isif, 0);
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * __isif_get_format() - helper function for getting isif format
-+ * @isif: pointer to isif private structure.
-+ * @pad: pad number.
-+ * @fh: V4L2 subdev file handle.
-+ * @which: wanted subdev format.
-+ */
-+static struct v4l2_mbus_framefmt *
-+__isif_get_format(struct vpfe_isif_device *isif, struct v4l2_subdev_fh *fh,
-+		  unsigned int pad, enum v4l2_subdev_format_whence which)
-+{
-+	if (which == V4L2_SUBDEV_FORMAT_TRY) {
-+		struct v4l2_subdev_format fmt;
-+
-+		fmt.pad = pad;
-+		fmt.which = which;
-+
-+		return v4l2_subdev_get_try_format(fh, pad);
-+	}
-+	return &isif->formats[pad];
-+}
-+
-+/*
-+* isif_set_format() - set format on pad
-+* @sd    : VPFE ISIF device
-+* @fh    : V4L2 subdev file handle
-+* @fmt   : pointer to v4l2 subdev format structure
-+*
-+* Return 0 on success or -EINVAL if format or pad is invalid
++#define SET_LOW_ADDR     0x0000ffff
++#define SET_HIGH_ADDR    0xffff0000
++
++/* Below are the internal tables */
++#define DPC_TB0_START_ADDR	0x8000
++#define DPC_TB1_START_ADDR	0x8400
++
++#define GAMMA_R_START_ADDR	0xa800
++#define GAMMA_G_START_ADDR	0xb000
++#define GAMMA_B_START_ADDR	0xb800
++
++/* RAM table addresses for edge enhancement correction*/
++#define YEE_TB_START_ADDR	0x8800
++
++/* RAM table address for GBC LUT */
++#define GBCE_TB_START_ADDR	0x9000
++
++/* RAM table for 3D NF LUT */
++#define D3L_TB0_START_ADDR	0x9800
++#define D3L_TB1_START_ADDR	0x9c00
++#define D3L_TB2_START_ADDR	0xa000
++#define D3L_TB3_START_ADDR	0xa400
++
++/* IPIPE Register Offsets from the base address */
++#define IPIPE_SRC_EN		0x0000
++#define IPIPE_SRC_MODE		0x0004
++#define IPIPE_SRC_FMT		0x0008
++#define IPIPE_SRC_COL		0x000c
++#define IPIPE_SRC_VPS		0x0010
++#define IPIPE_SRC_VSZ		0x0014
++#define IPIPE_SRC_HPS		0x0018
++#define IPIPE_SRC_HSZ		0x001c
++
++#define IPIPE_SEL_SBU		0x0020
++
++#define IPIPE_DMA_STA		0x0024
++#define IPIPE_GCK_MMR		0x0028
++#define IPIPE_GCK_PIX		0x002c
++#define IPIPE_RESERVED0		0x0030
++
++/* Defect Correction */
++#define DPC_LUT_EN		0x0034
++#define DPC_LUT_SEL		0x0038
++#define DPC_LUT_ADR		0x003c
++#define DPC_LUT_SIZ		0x0040
++#define DPC_OTF_EN		0x0044
++#define DPC_OTF_TYP		0x0048
++#define DPC_OTF_2D_THR_R	0x004c
++#define DPC_OTF_2D_THR_GR	0x0050
++#define DPC_OTF_2D_THR_GB	0x0054
++#define DPC_OTF_2D_THR_B	0x0058
++#define DPC_OTF_2C_THR_R	0x005c
++#define DPC_OTF_2C_THR_GR	0x0060
++#define DPC_OTF_2C_THR_GB	0x0064
++#define DPC_OTF_2C_THR_B	0x0068
++#define DPC_OTF_3_SHF		0x006c
++#define DPC_OTF_3D_THR		0x0070
++#define DPC_OTF_3D_SLP		0x0074
++#define DPC_OTF_3D_MIN		0x0078
++#define DPC_OTF_3D_MAX		0x007c
++#define DPC_OTF_3C_THR		0x0080
++#define DPC_OTF_3C_SLP		0x0084
++#define DPC_OTF_3C_MIN		0x0088
++#define DPC_OTF_3C_MAX		0x008c
++
++/* Lense Shading Correction */
++#define LSC_VOFT		0x90
++#define LSC_VA2			0x94
++#define LSC_VA1			0x98
++#define LSC_VS			0x9c
++#define LSC_HOFT		0xa0
++#define LSC_HA2			0xa4
++#define LSC_HA1			0xa8
++#define LSC_HS			0xac
++#define LSC_GAIN_R		0xb0
++#define LSC_GAIN_GR		0xb4
++#define LSC_GAIN_GB		0xb8
++#define LSC_GAIN_B		0xbc
++#define LSC_OFT_R		0xc0
++#define LSC_OFT_GR		0xc4
++#define LSC_OFT_GB		0xc8
++#define LSC_OFT_B		0xcc
++#define LSC_SHF			0xd0
++#define LSC_MAX			0xd4
++
++/* Noise Filter 1. Ofsets from start address given */
++#define D2F_1ST			0xd8
++#define D2F_EN			0x0
++#define D2F_TYP			0x4
++#define D2F_THR			0x8
++#define D2F_STR			0x28
++#define D2F_SPR			0x48
++#define D2F_EDG_MIN		0x68
++#define D2F_EDG_MAX		0x6c
++
++/* Noise Filter 2 */
++#define D2F_2ND			0x148
++
++/* GIC */
++#define GIC_EN			0x1b8
++#define GIC_TYP			0x1bc
++#define GIC_GAN			0x1c0
++#define GIC_NFGAN		0x1c4
++#define GIC_THR			0x1c8
++#define GIC_SLP			0x1cc
++
++/* White Balance */
++#define WB2_OFT_R		0x1d0
++#define WB2_OFT_GR		0x1d4
++#define WB2_OFT_GB		0x1d8
++#define WB2_OFT_B		0x1dc
++#define WB2_WGN_R		0x1e0
++#define WB2_WGN_GR		0x1e4
++#define WB2_WGN_GB		0x1e8
++#define WB2_WGN_B		0x1ec
++
++/* CFA interpolation */
++#define CFA_MODE		0x1f0
++#define CFA_2DIR_HPF_THR	0x1f4
++#define CFA_2DIR_HPF_SLP	0x1f8
++#define CFA_2DIR_MIX_THR	0x1fc
++#define CFA_2DIR_MIX_SLP	0x200
++#define CFA_2DIR_DIR_THR	0x204
++#define CFA_2DIR_DIR_SLP	0x208
++#define CFA_2DIR_NDWT		0x20c
++#define CFA_MONO_HUE_FRA	0x210
++#define CFA_MONO_EDG_THR	0x214
++#define CFA_MONO_THR_MIN	0x218
++#define CFA_MONO_THR_SLP	0x21c
++#define CFA_MONO_SLP_MIN	0x220
++#define CFA_MONO_SLP_SLP	0x224
++#define CFA_MONO_LPWT		0x228
++
++/* RGB to RGB conversiona - 1st */
++#define RGB1_MUL_BASE		0x22c
++/* Offsets from base */
++#define RGB_MUL_RR		0x0
++#define RGB_MUL_GR		0x4
++#define RGB_MUL_BR		0x8
++#define RGB_MUL_RG		0xc
++#define RGB_MUL_GG		0x10
++#define RGB_MUL_BG		0x14
++#define RGB_MUL_RB		0x18
++#define RGB_MUL_GB		0x1c
++#define RGB_MUL_BB		0x20
++#define RGB_OFT_OR		0x24
++#define RGB_OFT_OG		0x28
++#define RGB_OFT_OB		0x2c
++
++/* Gamma */
++#define GMM_CFG			0x25c
++
++/* RGB to RGB conversiona - 2nd */
++#define RGB2_MUL_BASE		0x260
++
++/* 3D LUT */
++#define D3LUT_EN		0x290
++
++/* RGB to YUV(YCbCr) conversion */
++#define YUV_ADJ			0x294
++#define YUV_MUL_RY		0x298
++#define YUV_MUL_GY		0x29c
++#define YUV_MUL_BY		0x2a0
++#define YUV_MUL_RCB		0x2a4
++#define YUV_MUL_GCB		0x2a8
++#define YUV_MUL_BCB		0x2ac
++#define YUV_MUL_RCR		0x2b0
++#define YUV_MUL_GCR		0x2b4
++#define YUV_MUL_BCR		0x2b8
++#define YUV_OFT_Y		0x2bc
++#define YUV_OFT_CB		0x2c0
++#define YUV_OFT_CR		0x2c4
++#define YUV_PHS			0x2c8
++
++/* Global Brightness and Contrast */
++#define GBCE_EN			0x2cc
++#define GBCE_TYP		0x2d0
++
++/* Edge Enhancer */
++#define YEE_EN			0x2d4
++#define YEE_TYP			0x2d8
++#define YEE_SHF			0x2dc
++#define YEE_MUL_00		0x2e0
++#define YEE_MUL_01		0x2e4
++#define YEE_MUL_02		0x2e8
++#define YEE_MUL_10		0x2ec
++#define YEE_MUL_11		0x2f0
++#define YEE_MUL_12		0x2f4
++#define YEE_MUL_20		0x2f8
++#define YEE_MUL_21		0x2fc
++#define YEE_MUL_22		0x300
++#define YEE_THR			0x304
++#define YEE_E_GAN		0x308
++#define YEE_E_THR1		0x30c
++#define YEE_E_THR2		0x310
++#define YEE_G_GAN		0x314
++#define YEE_G_OFT		0x318
++
++/* Chroma Artifact Reduction */
++#define CAR_EN			0x31c
++#define CAR_TYP			0x320
++#define CAR_SW			0x324
++#define CAR_HPF_TYP		0x328
++#define CAR_HPF_SHF		0x32c
++#define	CAR_HPF_THR		0x330
++#define CAR_GN1_GAN		0x334
++#define CAR_GN1_SHF		0x338
++#define CAR_GN1_MIN		0x33c
++#define CAR_GN2_GAN		0x340
++#define CAR_GN2_SHF		0x344
++#define CAR_GN2_MIN		0x348
++
++/* Chroma Gain Suppression */
++#define CGS_EN			0x34c
++#define CGS_GN1_L_THR		0x350
++#define CGS_GN1_L_GAN		0x354
++#define CGS_GN1_L_SHF		0x358
++#define CGS_GN1_L_MIN		0x35c
++#define CGS_GN1_H_THR		0x360
++#define CGS_GN1_H_GAN		0x364
++#define CGS_GN1_H_SHF		0x368
++#define CGS_GN1_H_MIN		0x36c
++#define CGS_GN2_L_THR		0x370
++#define CGS_GN2_L_GAN		0x374
++#define CGS_GN2_L_SHF		0x378
++#define CGS_GN2_L_MIN		0x37c
++
++/* Resizer */
++#define RSZ_SRC_EN		0x0
++#define RSZ_SRC_MODE		0x4
++#define RSZ_SRC_FMT0		0x8
++#define RSZ_SRC_FMT1		0xc
++#define RSZ_SRC_VPS		0x10
++#define RSZ_SRC_VSZ		0x14
++#define RSZ_SRC_HPS		0x18
++#define RSZ_SRC_HSZ		0x1c
++#define RSZ_DMA_RZA		0x20
++#define RSZ_DMA_RZB		0x24
++#define RSZ_DMA_STA		0x28
++#define RSZ_GCK_MMR		0x2c
++#define RSZ_RESERVED0		0x30
++#define RSZ_GCK_SDR		0x34
++#define RSZ_IRQ_RZA		0x38
++#define RSZ_IRQ_RZB		0x3c
++#define RSZ_YUV_Y_MIN		0x40
++#define RSZ_YUV_Y_MAX		0x44
++#define RSZ_YUV_C_MIN		0x48
++#define RSZ_YUV_C_MAX		0x4c
++#define RSZ_YUV_PHS		0x50
++#define RSZ_SEQ			0x54
++
++/* Resizer Rescale Parameters */
++#define RSZ_EN_A		0x58
++#define RSZ_EN_B		0xe8
++/* offset of the registers to be added with base register of
++   either RSZ0 or RSZ1
 +*/
-+static int
-+isif_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
++#define RSZ_MODE		0x4
++#define RSZ_420			0x8
++#define RSZ_I_VPS		0xc
++#define RSZ_I_HPS		0x10
++#define RSZ_O_VSZ		0x14
++#define RSZ_O_HSZ		0x18
++#define RSZ_V_PHS_Y		0x1c
++#define RSZ_V_PHS_C		0x20
++#define RSZ_V_DIF		0x24
++#define RSZ_V_TYP		0x28
++#define RSZ_V_LPF		0x2c
++#define RSZ_H_PHS		0x30
++#define RSZ_H_PHS_ADJ		0x34
++#define RSZ_H_DIF		0x38
++#define RSZ_H_TYP		0x3c
++#define RSZ_H_LPF		0x40
++#define RSZ_DWN_EN		0x44
++#define RSZ_DWN_AV		0x48
++
++/* Resizer RGB Conversion Parameters */
++#define RSZ_RGB_EN		0x4c
++#define RSZ_RGB_TYP		0x50
++#define RSZ_RGB_BLD		0x54
++
++/* Resizer External Memory Parameters */
++#define RSZ_SDR_Y_BAD_H		0x58
++#define RSZ_SDR_Y_BAD_L		0x5c
++#define RSZ_SDR_Y_SAD_H		0x60
++#define RSZ_SDR_Y_SAD_L		0x64
++#define RSZ_SDR_Y_OFT		0x68
++#define RSZ_SDR_Y_PTR_S		0x6c
++#define RSZ_SDR_Y_PTR_E		0x70
++#define RSZ_SDR_C_BAD_H		0x74
++#define RSZ_SDR_C_BAD_L		0x78
++#define RSZ_SDR_C_SAD_H		0x7c
++#define RSZ_SDR_C_SAD_L		0x80
++#define RSZ_SDR_C_OFT		0x84
++#define RSZ_SDR_C_PTR_S		0x88
++#define RSZ_SDR_C_PTR_E		0x8c
++
++/* Macro for resizer */
++#define RSZ_YUV_Y_MIN		0x40
++#define RSZ_YUV_Y_MAX		0x44
++#define RSZ_YUV_C_MIN		0x48
++#define RSZ_YUV_C_MAX		0x4c
++
++#define IPIPE_GCK_MMR_DEFAULT	1
++#define IPIPE_GCK_PIX_DEFAULT	0xe
++#define RSZ_GCK_MMR_DEFAULT	1
++#define RSZ_GCK_SDR_DEFAULT	1
++
++/* LUTDPC */
++#define LUTDPC_TBL_256_EN	0
++#define LUTDPC_INF_TBL_EN	1
++#define LUT_DPC_START_ADDR	0
++#define LUT_DPC_H_POS_MASK	0x1fff
++#define LUT_DPC_V_POS_MASK	0x1fff
++#define LUT_DPC_V_POS_SHIFT	13
++#define LUT_DPC_CORR_METH_SHIFT	26
++#define LUT_DPC_MAX_SIZE	256
++#define LUT_DPC_SIZE_MASK	0x3ff
++
++/* OTFDPC */
++#define OTFDPC_DPC2_THR_MASK	0xfff
++#define OTF_DET_METHOD_SHIFT	1
++#define OTF_DPC3_0_SHF_MASK	3
++#define OTF_DPC3_0_THR_SHIFT	6
++#define OTF_DPC3_0_THR_MASK	0x3f
++#define OTF_DPC3_0_SLP_MASK	0x3f
++#define OTF_DPC3_0_DET_MASK	0xfff
++#define OTF_DPC3_0_CORR_MASK	0xfff
++
++/* NF (D2F) */
++#define D2F_SPR_VAL_MASK		0x1f
++#define D2F_SPR_VAL_SHIFT		0
++#define D2F_SHFT_VAL_MASK		3
++#define D2F_SHFT_VAL_SHIFT		5
++#define D2F_SAMPLE_METH_SHIFT		7
++#define D2F_APPLY_LSC_GAIN_SHIFT	8
++#define D2F_USE_SPR_REG_VAL		0
++#define D2F_STR_VAL_MASK		0x1f
++#define D2F_THR_VAL_MASK		0x3ff
++#define D2F_EDGE_DET_THR_MASK		0x7ff
++
++/* Green Imbalance Correction */
++#define GIC_TYP_SHIFT			0
++#define GIC_THR_SEL_SHIFT		1
++#define	GIC_APPLY_LSC_GAIN_SHIFT	2
++#define GIC_GAIN_MASK			0xff
++#define GIC_THR_MASK			0xfff
++#define GIC_SLOPE_MASK			0xfff
++#define GIC_NFGAN_INT_MASK		7
++#define GIC_NFGAN_DECI_MASK		0x1f
++
++/* WB */
++#define WB_OFFSET_MASK			0xfff
++#define WB_GAIN_INT_MASK		0xf
++#define WB_GAIN_DECI_MASK		0x1ff
++
++/* CFA */
++#define CFA_HPF_THR_2DIR_MASK		0x1fff
++#define CFA_HPF_SLOPE_2DIR_MASK		0x3ff
++#define CFA_HPF_MIX_THR_2DIR_MASK	0x1fff
++#define CFA_HPF_MIX_SLP_2DIR_MASK	0x3ff
++#define CFA_DIR_THR_2DIR_MASK		0x3ff
++#define CFA_DIR_SLP_2DIR_MASK		0x7f
++#define CFA_ND_WT_2DIR_MASK		0x3f
++#define CFA_DAA_HUE_FRA_MASK		0x3f
++#define CFA_DAA_EDG_THR_MASK		0xff
++#define CFA_DAA_THR_MIN_MASK		0x3ff
++#define CFA_DAA_THR_SLP_MASK		0x3ff
++#define CFA_DAA_SLP_MIN_MASK		0x3ff
++#define CFA_DAA_SLP_SLP_MASK		0x3ff
++#define CFA_DAA_LP_WT_MASK		0x3f
++
++/* RGB2RGB */
++#define RGB2RGB_1_OFST_MASK		0x1fff
++#define RGB2RGB_1_GAIN_INT_MASK		0xf
++#define RGB2RGB_GAIN_DECI_MASK		0xff
++#define RGB2RGB_2_OFST_MASK		0x7ff
++#define RGB2RGB_2_GAIN_INT_MASK		0x7
++
++/* Gamma */
++#define GAMMA_BYPR_SHIFT		0
++#define GAMMA_BYPG_SHIFT		1
++#define GAMMA_BYPB_SHIFT		2
++#define GAMMA_TBL_SEL_SHIFT		4
++#define GAMMA_TBL_SIZE_SHIFT		5
++#define GAMMA_MASK			0x3ff
++#define GAMMA_SHIFT			10
++
++/* 3D LUT */
++#define D3_LUT_ENTRY_MASK		0x3ff
++#define D3_LUT_ENTRY_R_SHIFT		20
++#define D3_LUT_ENTRY_G_SHIFT		10
++#define D3_LUT_ENTRY_B_SHIFT		0
++
++/* Lumina adj */
++#define	LUM_ADJ_CONTR_SHIFT		0
++#define	LUM_ADJ_BRIGHT_SHIFT		8
++
++/* RGB2YCbCr */
++#define RGB2YCBCR_OFST_MASK		0x7ff
++#define RGB2YCBCR_COEF_INT_MASK		0xf
++#define RGB2YCBCR_COEF_DECI_MASK	0xff
++
++/* GBCE */
++#define GBCE_Y_VAL_MASK			0xff
++#define GBCE_GAIN_VAL_MASK		0x3ff
++#define GBCE_ENTRY_SHIFT		10
++
++/* Edge Enhancements */
++#define YEE_HALO_RED_EN_SHIFT		1
++#define YEE_HPF_SHIFT_MASK		0xf
++#define YEE_COEF_MASK			0x3ff
++#define YEE_THR_MASK			0x3f
++#define YEE_ES_GAIN_MASK		0xfff
++#define YEE_ES_THR1_MASK		0xfff
++#define YEE_ENTRY_SHIFT			9
++#define YEE_ENTRY_MASK			0x1ff
++
++/* CAR */
++#define CAR_MF_THR			0xff
++#define CAR_SW1_SHIFT			8
++#define CAR_GAIN1_SHFT_MASK		7
++#define CAR_GAIN_MIN_MASK		0x1ff
++#define CAR_GAIN2_SHFT_MASK		0xf
++#define CAR_HPF_SHIFT_MASK		3
++
++/* CGS */
++#define CAR_SHIFT_MASK			3
++
++/* Resizer */
++#define RSZ_BYPASS_SHIFT		1
++#define RSZ_SRC_IMG_FMT_SHIFT		1
++#define RSZ_SRC_Y_C_SEL_SHIFT		2
++#define IPIPE_RSZ_VPS_MASK		0xffff
++#define IPIPE_RSZ_HPS_MASK		0xffff
++#define IPIPE_RSZ_VSZ_MASK		0x1fff
++#define IPIPE_RSZ_HSZ_MASK		0x1fff
++#define RSZ_HPS_MASK			0x1fff
++#define RSZ_VPS_MASK			0x1fff
++#define RSZ_O_HSZ_MASK			0x1fff
++#define RSZ_O_VSZ_MASK			0x1fff
++#define RSZ_V_PHS_MASK			0x3fff
++#define RSZ_V_DIF_MASK			0x3fff
++
++#define RSZA_H_FLIP_SHIFT		0
++#define RSZA_V_FLIP_SHIFT		1
++#define RSZB_H_FLIP_SHIFT		2
++#define RSZB_V_FLIP_SHIFT		3
++#define RSZ_A				0
++#define RSZ_B				1
++#define RSZ_CEN_SHIFT			1
++#define RSZ_YEN_SHIFT			0
++#define RSZ_TYP_Y_SHIFT			0
++#define RSZ_TYP_C_SHIFT			1
++#define RSZ_LPF_INT_MASK		0x3f
++#define RSZ_LPF_INT_MASK		0x3f
++#define RSZ_LPF_INT_C_SHIFT		6
++#define RSZ_H_PHS_MASK			0x3fff
++#define RSZ_H_DIF_MASK			0x3fff
++#define RSZ_DIFF_DOWN_THR		256
++#define RSZ_DWN_SCALE_AV_SZ_V_SHIFT	3
++#define RSZ_DWN_SCALE_AV_SZ_MASK	7
++#define RSZ_RGB_MSK1_SHIFT		2
++#define RSZ_RGB_MSK0_SHIFT		1
++#define RSZ_RGB_TYP_SHIFT		0
++#define RSZ_RGB_ALPHA_MASK		0xff
++
++static inline u32 regr_ip(void *__iomem addr, u32 offset)
 +{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
-+	struct v4l2_mbus_framefmt *format;
-+
-+	format = __isif_get_format(isif, fh, fmt->pad, fmt->which);
-+	if (format == NULL)
-+		return -EINVAL;
-+
-+	isif_try_format(isif, fh, fmt);
-+	memcpy(format, &fmt->format, sizeof(*format));
-+
-+	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
-+		return 0;
-+
-+	if (fmt->pad == ISIF_PAD_SOURCE)
-+		return isif_config_format(vpfe_dev, fmt->pad);
-+
-+	return 0;
++	return readl(addr + offset);
 +}
 +
-+/*
-+ * isif_get_format() - Retrieve the video format on a pad
-+ * @sd: VPFE ISIF V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @fmt: pointer to v4l2 subdev format structure
-+ *
-+ * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
-+ * to the format type.
-+ */
-+static int
-+isif_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
++static inline void regw_ip(void *__iomem addr, u32 val, u32 offset)
 +{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
-+
-+	format = __isif_get_format(vpfe_isif, fh, fmt->pad, fmt->which);
-+	if (format == NULL)
-+		return -EINVAL;
-+
-+	memcpy(&fmt->format, format, sizeof(fmt->format));
-+
-+	return 0;
++	writel(val, addr + offset);
 +}
 +
-+/*
-+ * isif_enum_frame_size() - enum frame sizes on pads
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_frame_size_enum structure
-+ */
-+static int
-+isif_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		     struct v4l2_subdev_frame_size_enum *fse)
++static inline u32 w_ip_table(void *__iomem addr, u32 val, u32 offset)
 +{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_subdev_format format;
++	writel(val, addr + offset);
 +
-+	if (fse->index != 0)
-+		return -EINVAL;
-+
-+	format.pad = fse->pad;
-+	format.format.code = fse->code;
-+	format.format.width = 1;
-+	format.format.height = 1;
-+	format.which = V4L2_SUBDEV_FORMAT_TRY;
-+	isif_try_format(isif, fh, &format);
-+	fse->min_width = format.format.width;
-+	fse->min_height = format.format.height;
-+
-+	if (format.format.code != fse->code)
-+		return -EINVAL;
-+
-+	format.pad = fse->pad;
-+	format.format.code = fse->code;
-+	format.format.width = -1;
-+	format.format.height = -1;
-+	format.which = V4L2_SUBDEV_FORMAT_TRY;
-+	isif_try_format(isif, fh, &format);
-+	fse->max_width = format.format.width;
-+	fse->max_height = format.format.height;
-+
-+	return 0;
++	return val;
 +}
 +
-+/*
-+ * isif_enum_mbus_code() - enum mbus codes for pads
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ */
-+static int
-+isif_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		    struct v4l2_subdev_mbus_code_enum *code)
++static inline u32 regr_rsz(void *__iomem addr, u32 offset)
 +{
-+	switch (code->pad) {
-+	case ISIF_PAD_SINK:
-+	case ISIF_PAD_SOURCE:
-+		if (code->index >= ARRAY_SIZE(isif_fmts))
-+			return -EINVAL;
-+		code->code = isif_fmts[code->index];
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
++	return readl(addr + offset);
 +}
 +
-+/*
-+ * isif_pad_set_crop() - set crop rectangle on pad
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ *
-+ * Return 0 on success, -EINVAL if pad is invalid
-+ */
-+static int
-+isif_pad_set_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		  struct v4l2_subdev_crop *crop)
++static inline u32 regw_rsz(void *__iomem addr, u32 val, u32 offset)
 +{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
++	writel(val, addr + offset);
 +
-+	/* check wether its a valid pad */
-+	if (crop->pad != ISIF_PAD_SINK)
-+		return -EINVAL;
-+
-+	format = __isif_get_format(vpfe_isif, fh, crop->pad, crop->which);
-+	if (format == NULL)
-+		return -EINVAL;
-+
-+	/* check wether crop rect is within limits */
-+	if (crop->rect.top < 0 || crop->rect.left < 0 ||
-+		(crop->rect.left + crop->rect.width >
-+		vpfe_isif->formats[ISIF_PAD_SINK].width) ||
-+		(crop->rect.top + crop->rect.height >
-+			vpfe_isif->formats[ISIF_PAD_SINK].height)) {
-+		crop->rect.left = 0;
-+		crop->rect.top = 0;
-+		crop->rect.width = format->width;
-+		crop->rect.height = format->height;
-+	}
-+	/* adjust the width to 16 pixel boundry */
-+	crop->rect.width = ((crop->rect.width + 15) & ~0xf);
-+	vpfe_isif->crop = crop->rect;
-+	if (crop->which == V4L2_SUBDEV_FORMAT_ACTIVE) {
-+		isif_set_image_window(vpfe_isif);
-+	} else {
-+		struct v4l2_rect *rect;
-+
-+		rect = v4l2_subdev_get_try_crop(fh, ISIF_PAD_SINK);
-+		memcpy(rect, &vpfe_isif->crop, sizeof(*rect));
-+	}
-+	return 0;
++	return val;
 +}
 +
-+/*
-+ * isif_pad_get_crop() - get crop rectangle on pad
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ *
-+ * Return 0 on success, -EINVAL if pad is invalid
-+ */
-+static int
-+isif_pad_get_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		  struct v4l2_subdev_crop *crop)
-+{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+
-+	/* check wether its a valid pad */
-+	if (crop->pad != ISIF_PAD_SINK)
-+		return -EINVAL;
-+
-+	if (crop->which == V4L2_SUBDEV_FORMAT_TRY) {
-+		struct v4l2_rect *rect;
-+		rect = v4l2_subdev_get_try_crop(fh, ISIF_PAD_SINK);
-+		memcpy(&crop->rect, rect, sizeof(*rect));
-+	} else {
-+		crop->rect = vpfe_isif->crop;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * isif_init_formats() - Initialize formats on all pads
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ *
-+ * Initialize all pad formats with default values. If fh is not NULL, try
-+ * formats are initialized on the file handle. Otherwise active formats are
-+ * initialized on the device.
-+ */
-+static int
-+isif_init_formats(struct v4l2_subdev *sd,
-+		  struct v4l2_subdev_fh *fh)
-+{
-+	struct v4l2_subdev_format format;
-+	struct v4l2_subdev_crop crop;
-+
-+	memset(&format, 0, sizeof(format));
-+	format.pad = ISIF_PAD_SINK;
-+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	format.format.width = MAX_WIDTH;
-+	format.format.height = MAX_HEIGHT;
-+	isif_set_format(sd, fh, &format);
-+
-+	memset(&format, 0, sizeof(format));
-+	format.pad = ISIF_PAD_SOURCE;
-+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	format.format.width = MAX_WIDTH;
-+	format.format.height = MAX_HEIGHT;
-+	isif_set_format(sd, fh, &format);
-+
-+	memset(&crop, 0, sizeof(crop));
-+	crop.pad = ISIF_PAD_SINK;
-+	crop.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	crop.rect.width = MAX_WIDTH;
-+	crop.rect.height = MAX_HEIGHT;
-+	isif_pad_set_crop(sd, fh, &crop);
-+
-+	return 0;
-+}
-+
-+/* subdev core operations */
-+static const struct v4l2_subdev_core_ops isif_v4l2_core_ops = {
-+	.ioctl = isif_ioctl,
-+};
-+
-+/* subdev file operations */
-+static const struct v4l2_subdev_internal_ops isif_v4l2_internal_ops = {
-+	.open = isif_init_formats,
-+};
-+
-+/* subdev video operations */
-+static const struct v4l2_subdev_video_ops isif_v4l2_video_ops = {
-+	.s_stream = isif_set_stream,
-+};
-+
-+/* subdev pad operations */
-+static const struct v4l2_subdev_pad_ops isif_v4l2_pad_ops = {
-+	.enum_mbus_code = isif_enum_mbus_code,
-+	.enum_frame_size = isif_enum_frame_size,
-+	.get_fmt = isif_get_format,
-+	.set_fmt = isif_set_format,
-+	.set_crop = isif_pad_set_crop,
-+	.get_crop = isif_pad_get_crop,
-+};
-+
-+/* subdev operations */
-+static const struct v4l2_subdev_ops isif_v4l2_ops = {
-+	.core = &isif_v4l2_core_ops,
-+	.video = &isif_v4l2_video_ops,
-+	.pad = &isif_v4l2_pad_ops,
-+};
-+
-+/*
-+ * Media entity operations
-+ */
-+
-+/*
-+ * isif_link_setup() - Setup isif connections
-+ * @entity: isif media entity
-+ * @local: Pad at the local end of the link
-+ * @remote: Pad at the remote end of the link
-+ * @flags: Link flags
-+ *
-+ * return -EINVAL or zero on success
-+ */
-+static int
-+isif_link_setup(struct media_entity *entity, const struct media_pad *local,
-+		const struct media_pad *remote, u32 flags)
-+{
-+	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+
-+	switch (local->index | media_entity_type(remote->entity)) {
-+	case ISIF_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
-+		/* read from decoder/sensor */
-+		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
-+			isif->input = ISIF_INPUT_NONE;
-+			break;
-+		}
-+		if (isif->input != ISIF_INPUT_NONE)
-+			return -EBUSY;
-+		isif->input = ISIF_INPUT_PARALLEL;
-+		break;
-+
-+	case ISIF_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
-+		/* write to memory */
-+		if (flags & MEDIA_LNK_FL_ENABLED)
-+			isif->output = ISIF_OUTPUT_MEMORY;
-+		else
-+			isif->output = ISIF_OUTPUT_NONE;
-+		break;
-+
-+	case ISIF_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
-+		if (flags & MEDIA_LNK_FL_ENABLED)
-+			isif->output = ISIF_OUTPUT_IPIPEIF;
-+		else
-+			isif->output = ISIF_OUTPUT_NONE;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+static const struct media_entity_operations isif_media_ops = {
-+	.link_setup = isif_link_setup,
-+};
-+
-+/*
-+ * vpfe_isif_unregister_entities() - isif unregister entity
-+ * @isif - pointer to isif subdevice structure.
-+ */
-+void vpfe_isif_unregister_entities(struct vpfe_isif_device *isif)
-+{
-+	vpfe_video_unregister(&isif->video_out);
-+	/* cleanup entity */
-+	media_entity_cleanup(&isif->subdev.entity);
-+	/* unregister subdev */
-+	v4l2_device_unregister_subdev(&isif->subdev);
-+}
-+
-+static void isif_restore_defaults(struct vpfe_isif_device *isif)
-+{
-+	enum vpss_ccdc_source_sel source = VPSS_CCDCIN;
-+	int i;
-+
-+	memset(&isif->isif_cfg.bayer.config_params, 0,
-+	       sizeof(struct vpfe_isif_raw_config));
-+
-+	isif->isif_cfg.bayer.config_params.linearize.corr_shft =
-+					VPFE_ISIF_NO_SHIFT;
-+	isif->isif_cfg.bayer.config_params.linearize.scale_fact.integer = 1;
-+	isif->isif_cfg.bayer.config_params.culling.hcpat_odd =
-+			ISIF_CULLING_HCAPT_ODD;
-+	isif->isif_cfg.bayer.config_params.culling.hcpat_even =
-+			ISIF_CULLING_HCAPT_EVEN;
-+	isif->isif_cfg.bayer.config_params.culling.vcpat = ISIF_CULLING_VCAPT;
-+	/* Enable clock to ISIF, IPIPEIF and BL */
-+	vpss_enable_clock(VPSS_CCDC_CLOCK, 1);
-+	vpss_enable_clock(VPSS_IPIPEIF_CLOCK, 1);
-+	vpss_enable_clock(VPSS_BL_CLOCK, 1);
-+
-+	/* set all registers to default value */
-+	for (i = 0; i <= 0x1f8; i += 4)
-+		isif_write(isif->isif_cfg.base_addr, 0, i);
-+	/* no culling support */
-+	isif_write(isif->isif_cfg.base_addr, 0xffff, CULH);
-+	isif_write(isif->isif_cfg.base_addr, 0xff, CULV);
-+
-+	/* Set default offset and gain */
-+	isif_config_gain_offset(isif);
-+	vpss_select_ccdc_source(source);
-+}
-+
-+/*
-+ * vpfe_isif_register_entities() - isif register entity
-+ * @isif - pointer to isif subdevice structure.
-+ * @vdev: pointer to v4l2 device structure.
-+ */
-+int vpfe_isif_register_entities(struct vpfe_isif_device *isif,
-+			    struct v4l2_device *vdev)
-+{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
-+	unsigned int flags;
-+	int ret;
-+
-+	/* Register the subdev */
-+	ret = v4l2_device_register_subdev(vdev, &isif->subdev);
-+	if (ret < 0)
-+		return ret;
-+
-+	isif_restore_defaults(isif);
-+	ret = vpfe_video_register(&isif->video_out, vdev);
-+	if (ret) {
-+		pr_err("Failed to register isif video out device\n");
-+		goto out_video_register;
-+	}
-+	isif->video_out.vpfe_dev = vpfe_dev;
-+	flags = 0;
-+	/* connect isif to video node */
-+	ret = media_entity_create_link(&isif->subdev.entity, 1,
-+				       &isif->video_out.video_dev.entity,
-+				       0, flags);
-+	if (ret < 0)
-+		goto out_create_link;
-+	return 0;
-+out_create_link:
-+	vpfe_video_unregister(&isif->video_out);
-+out_video_register:
-+	v4l2_device_unregister_subdev(&isif->subdev);
-+	return ret;
-+}
-+
-+/* -------------------------------------------------------------------
-+ * V4L2 subdev control operations
-+ */
-+
-+static int vpfe_isif_s_ctrl(struct v4l2_ctrl *ctrl)
-+{
-+	struct vpfe_isif_device *isif =
-+	     container_of(ctrl->handler, struct vpfe_isif_device, ctrls);
-+	struct isif_oper_config *config = &isif->isif_cfg;
-+
-+	switch (ctrl->id) {
-+	case V4L2_CID_DPCM_PREDICTOR:
-+		config->bayer.dpcm_predictor = ctrl->val;
-+		break;
-+
-+	case VPFE_ISIF_CID_CRGAIN:
-+		config->isif_gain_params.cr_gain = ctrl->val;
-+		break;
-+
-+	case VPFE_ISIF_CID_CGRGAIN:
-+		config->isif_gain_params.cgr_gain = ctrl->val;
-+		break;
-+
-+	case VPFE_ISIF_CID_CGBGAIN:
-+		config->isif_gain_params.cgb_gain = ctrl->val;
-+		break;
-+
-+	case VPFE_ISIF_CID_CBGAIN:
-+		config->isif_gain_params.cb_gain = ctrl->val;
-+		break;
-+
-+	case VPFE_ISIF_CID_GAIN_OFFSET:
-+		config->isif_gain_params.offset = ctrl->val;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static const struct v4l2_ctrl_ops vpfe_isif_ctrl_ops = {
-+	.s_ctrl = vpfe_isif_s_ctrl,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_crgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CRGAIN,
-+	.name = "CRGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cgrgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CGRGAIN,
-+	.name = "CGRGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cgbgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CGBGAIN,
-+	.name = "CGBGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cbgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CBGAIN,
-+	.name = "CBGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_gain_offset = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_GAIN_OFFSET,
-+	.name = "Gain Offset",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static void isif_remove(struct vpfe_isif_device *isif,
-+			struct platform_device *pdev)
-+{
-+	struct resource *res;
-+	int i = 0;
-+
-+	iounmap(isif->isif_cfg.base_addr);
-+	iounmap(isif->isif_cfg.linear_tbl0_addr);
-+	iounmap(isif->isif_cfg.linear_tbl1_addr);
-+
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (res)
-+			release_mem_region(res->start,
-+					   res->end - res->start + 1);
-+		i++;
-+	}
-+}
-+
-+static void isif_config_defaults(struct vpfe_isif_device *isif)
-+{
-+	isif->isif_cfg.ycbcr.v4l2_pix_fmt = V4L2_PIX_FMT_UYVY;
-+	isif->isif_cfg.ycbcr.pix_fmt = ISIF_PIXFMT_YCBCR_8BIT;
-+	isif->isif_cfg.ycbcr.frm_fmt = ISIF_FRMFMT_INTERLACED;
-+	isif->isif_cfg.ycbcr.fid_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.vd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.hd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_CBYCRY;
-+	isif->isif_cfg.ycbcr.buf_type = ISIF_BUFTYPE_FLD_INTERLEAVED;
-+
-+	isif->isif_cfg.bayer.v4l2_pix_fmt = V4L2_PIX_FMT_SGRBG10ALAW8;
-+	isif->isif_cfg.bayer.pix_fmt = ISIF_PIXFMT_RAW;
-+	isif->isif_cfg.bayer.frm_fmt = ISIF_FRMFMT_PROGRESSIVE;
-+	isif->isif_cfg.bayer.fid_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.vd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.hd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.cfa_pat = ISIF_CFA_PAT_MOSAIC;
-+	isif->isif_cfg.bayer.data_msb = ISIF_BIT_MSB_11;
-+	isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+}
-+/*
-+ * vpfe_isif_init() - Initialize V4L2 subdev and media entity
-+ * @isif: VPFE isif module
-+ * @pdev: Pointer to platform device structure.
-+ * Return 0 on success and a negative error code on failure.
-+ */
-+int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev)
-+{
-+	struct v4l2_subdev *sd = &isif->subdev;
-+	struct media_pad *pads = &isif->pads[0];
-+	struct media_entity *me = &sd->entity;
-+	static resource_size_t res_len;
-+	struct resource *res;
-+	void *__iomem addr;
-+	int status;
-+	int i = 0;
-+
-+	/* Get the ISIF base address, linearization table0 and table1 addr. */
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (!res) {
-+			status = -ENOENT;
-+			goto fail_nobase_res;
-+		}
-+		res_len = res->end - res->start + 1;
-+		res = request_mem_region(res->start, res_len, res->name);
-+		if (!res) {
-+			status = -EBUSY;
-+			goto fail_nobase_res;
-+		}
-+		addr = ioremap_nocache(res->start, res_len);
-+		if (!addr) {
-+			status = -EBUSY;
-+			goto fail_base_iomap;
-+		}
-+		switch (i) {
-+		case 0:
-+			/* ISIF base address */
-+			isif->isif_cfg.base_addr = addr;
-+			break;
-+		case 1:
-+			/* ISIF linear tbl0 address */
-+			isif->isif_cfg.linear_tbl0_addr = addr;
-+			break;
-+		default:
-+			/* ISIF linear tbl0 address */
-+			isif->isif_cfg.linear_tbl1_addr = addr;
-+			break;
-+		}
-+		i++;
-+	}
-+	davinci_cfg_reg(DM365_VIN_CAM_WEN);
-+	davinci_cfg_reg(DM365_VIN_CAM_VD);
-+	davinci_cfg_reg(DM365_VIN_CAM_HD);
-+	davinci_cfg_reg(DM365_VIN_YIN4_7_EN);
-+	davinci_cfg_reg(DM365_VIN_YIN0_3_EN);
-+
-+	/* queue ops */
-+	isif->video_out.ops = &isif_video_ops;
-+	v4l2_subdev_init(sd, &isif_v4l2_ops);
-+	sd->internal_ops = &isif_v4l2_internal_ops;
-+	strlcpy(sd->name, "DAVINCI ISIF", sizeof(sd->name));
-+	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
-+	v4l2_set_subdevdata(sd, isif);
-+	sd->flags |= V4L2_SUBDEV_FL_HAS_EVENTS | V4L2_SUBDEV_FL_HAS_DEVNODE;
-+	pads[ISIF_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-+	pads[ISIF_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
-+
-+	isif->input = ISIF_INPUT_NONE;
-+	isif->output = ISIF_OUTPUT_NONE;
-+	me->ops = &isif_media_ops;
-+	status = media_entity_init(me, ISIF_PADS_NUM, pads, 0);
-+	if (status)
-+		goto isif_fail;
-+	isif->video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-+	status = vpfe_video_init(&isif->video_out, "ISIF");
-+	if (status) {
-+		pr_err("Failed to init isif-out video device\n");
-+		goto isif_fail;
-+	}
-+	v4l2_ctrl_handler_init(&isif->ctrls, 6);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_crgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cgrgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cgbgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cbgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_gain_offset, NULL);
-+	v4l2_ctrl_new_std_menu(&isif->ctrls, &vpfe_isif_ctrl_ops,
-+			V4L2_CID_DPCM_PREDICTOR,
-+			V4L2_DPCM_PREDICTOR_ADVANCED, 0,
-+			V4L2_DPCM_PREDICTOR_SIMPLE);
-+	v4l2_ctrl_handler_setup(&isif->ctrls);
-+	sd->ctrl_handler = &isif->ctrls;
-+	isif_config_defaults(isif);
-+	return 0;
-+fail_base_iomap:
-+	release_mem_region(res->start, res_len);
-+	i--;
-+fail_nobase_res:
-+	if (isif->isif_cfg.base_addr)
-+		iounmap(isif->isif_cfg.base_addr);
-+	if (isif->isif_cfg.linear_tbl0_addr)
-+		iounmap(isif->isif_cfg.linear_tbl0_addr);
-+
-+	while (i >= 0) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		release_mem_region(res->start, res_len);
-+		i--;
-+	}
-+	return status;
-+isif_fail:
-+	v4l2_ctrl_handler_free(&isif->ctrls);
-+	isif_remove(isif, pdev);
-+	return status;
-+}
-+
-+/*
-+ * vpfe_isif_cleanup - isif module cleanup
-+ * @isif: pointer to isif subdevice
-+ * @dev: pointer to platform device structure
-+ */
-+void
-+vpfe_isif_cleanup(struct vpfe_isif_device *isif, struct platform_device *pdev)
-+{
-+	isif_remove(isif, pdev);
-+}
-diff --git a/drivers/media/platform/davinci/dm365_isif.h b/drivers/media/platform/davinci/dm365_isif.h
-new file mode 100644
-index 0000000..3c3f645
---- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_isif.h
-@@ -0,0 +1,203 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
-+
-+#ifndef _DAVINCI_VPFE_DM365_ISIF_H
-+#define _DAVINCI_VPFE_DM365_ISIF_H
-+
-+#include <linux/davinci_vpfe.h>
-+#include <linux/platform_device.h>
-+
-+#include <mach/mux.h>
-+
-+#include <media/davinci/vpfe_types.h>
-+#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-device.h>
-+
-+#include "dm365_isif_regs.h"
-+#include "vpfe_video.h"
-+
-+#define ISIF_CULLING_HCAPT_ODD		0xff
-+#define ISIF_CULLING_HCAPT_EVEN		0xff
-+#define ISIF_CULLING_VCAPT		0xff
-+
-+#define ISIF_CADU_BITS			0x07ff
-+#define ISIF_CADL_BITS			0x0ffff
-+
-+enum isif_pixfmt {
-+	ISIF_PIXFMT_RAW = 0,
-+	ISIF_PIXFMT_YCBCR_16BIT = 1,
-+	ISIF_PIXFMT_YCBCR_8BIT = 2,
-+};
-+
-+enum isif_frmfmt {
-+	ISIF_FRMFMT_PROGRESSIVE = 0,
-+	ISIF_FRMFMT_INTERLACED = 1,
-+};
-+
-+/* PIXEL ORDER IN MEMORY from LSB to MSB */
-+/* only applicable for 8-bit input mode  */
-+enum isif_pixorder {
-+	ISIF_PIXORDER_YCBYCR = 0,
-+	ISIF_PIXORDER_CBYCRY = 1,
-+};
-+
-+enum isif_buftype {
-+	ISIF_BUFTYPE_FLD_INTERLEAVED = 0,
-+	ISIF_BUFTYPE_FLD_SEPARATED = 1,
-+};
-+
-+struct isif_ycbcr_config {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* isif pixel format */
-+	enum isif_pixfmt pix_fmt;
-+	/* isif frame format */
-+	enum isif_frmfmt frm_fmt;
-+	/* isif crop window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* isif pix order. Only used for ycbcr capture */
-+	enum isif_pixorder pix_order;
-+	/* isif buffer type. Only used for ycbcr capture */
-+	enum isif_buftype buf_type;
-+};
-+
-+enum isif_cfa_pattern {
-+	ISIF_CFA_PAT_MOSAIC = 0,
-+	ISIF_CFA_PAT_STRIPE = 1,
-+};
-+
-+enum isif_data_msb {
-+	/* MSB b15 */
-+	ISIF_BIT_MSB_15 = 0,
-+	/* MSB b14 */
-+	ISIF_BIT_MSB_14 = 1,
-+	/* MSB b13 */
-+	ISIF_BIT_MSB_13 = 2,
-+	/* MSB b12 */
-+	ISIF_BIT_MSB_12 = 3,
-+	/* MSB b11 */
-+	ISIF_BIT_MSB_11 = 4,
-+	/* MSB b10 */
-+	ISIF_BIT_MSB_10 = 5,
-+	/* MSB b9 */
-+	ISIF_BIT_MSB_9 = 6,
-+	/* MSB b8 */
-+	ISIF_BIT_MSB_8 = 7,
-+	/* MSB b7 */
-+	ISIF_BIT_MSB_7 = 8,
-+};
-+
-+struct isif_params_raw {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* isif pixel format */
-+	enum isif_pixfmt pix_fmt;
-+	/* isif frame format */
-+	enum isif_frmfmt frm_fmt;
-+	/* video window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* buffer type. Applicable for interlaced mode */
-+	enum isif_buftype buf_type;
-+	/* cfa pattern */
-+	enum isif_cfa_pattern cfa_pat;
-+	/* Data MSB position */
-+	enum isif_data_msb data_msb;
-+	/* Enable horizontal flip */
-+	unsigned char horz_flip_en;
-+	/* Enable image invert vertically */
-+	unsigned char image_invert_en;
-+	unsigned char dpcm_predictor;
-+	struct vpfe_isif_raw_config config_params;
-+};
-+
-+enum isif_data_pack {
-+	ISIF_PACK_16BIT = 0,
-+	ISIF_PACK_12BIT = 1,
-+	ISIF_PACK_8BIT = 2,
-+};
-+
-+struct isif_gain_values {
-+	unsigned int cr_gain;
-+	unsigned int cgr_gain;
-+	unsigned int cgb_gain;
-+	unsigned int cb_gain;
-+	unsigned int offset;
-+};
-+
-+struct isif_oper_config {
-+	struct isif_ycbcr_config ycbcr;
-+	struct isif_params_raw bayer;
-+	enum isif_data_pack data_pack;
-+	struct isif_gain_values isif_gain_params;
-+	void *__iomem base_addr;
-+	void *__iomem linear_tbl0_addr;
-+	void *__iomem linear_tbl1_addr;
-+};
-+
-+#define ISIF_PAD_SINK      0
-+#define ISIF_PAD_SOURCE    1
-+
-+#define ISIF_PADS_NUM      2
-+
-+enum isif_input_entity {
-+	ISIF_INPUT_NONE = 0,
-+	ISIF_INPUT_PARALLEL = 1,
-+};
-+
-+#define ISIF_OUTPUT_NONE	(0)
-+#define ISIF_OUTPUT_MEMORY	(1 << 0)
-+#define ISIF_OUTPUT_IPIPEIF	(1 << 1)
-+
-+struct vpfe_isif_device {
-+	struct v4l2_subdev		subdev;
-+	struct media_pad		pads[ISIF_PADS_NUM];
-+	struct v4l2_mbus_framefmt	formats[ISIF_PADS_NUM];
-+	enum isif_input_entity		input;
-+	unsigned int			output;
-+	struct v4l2_ctrl_handler        ctrls;
-+	struct v4l2_rect		crop;
-+	struct isif_oper_config		isif_cfg;
-+	struct vpfe_video_device	video_out;
-+};
-+
-+enum v4l2_field vpfe_isif_get_fid(struct vpfe_device *vpfe_dev);
-+void vpfe_isif_unregister_entities(struct vpfe_isif_device *isif);
-+int vpfe_isif_register_entities(struct vpfe_isif_device *isif,
-+				struct v4l2_device *dev);
-+int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev);
-+void vpfe_isif_cleanup(struct vpfe_isif_device *vpfe_isif,
-+		       struct platform_device *pdev);
-+void vpfe_isif_vidint1_isr(struct vpfe_isif_device *isif);
-+void vpfe_isif_buffer_isr(struct vpfe_isif_device *isif);
-+
-+#endif		/* _DAVINCI_VPFE_DM365_ISIF_H */
-diff --git a/drivers/media/platform/davinci/dm365_isif_regs.h b/drivers/media/platform/davinci/dm365_isif_regs.h
-new file mode 100644
-index 0000000..8aceabb
---- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_isif_regs.h
-@@ -0,0 +1,294 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
-+
-+#ifndef _DAVINCI_VPFE_DM365_ISIF_REGS_H
-+#define _DAVINCI_VPFE_DM365_ISIF_REGS_H
-+
-+/* ISIF registers relative offsets */
-+#define SYNCEN					0x00
-+#define MODESET					0x04
-+#define HDW					0x08
-+#define VDW					0x0c
-+#define PPLN					0x10
-+#define LPFR					0x14
-+#define SPH					0x18
-+#define LNH					0x1c
-+#define SLV0					0x20
-+#define SLV1					0x24
-+#define LNV					0x28
-+#define CULH					0x2c
-+#define CULV					0x30
-+#define HSIZE					0x34
-+#define SDOFST					0x38
-+#define CADU					0x3c
-+#define CADL					0x40
-+#define LINCFG0					0x44
-+#define LINCFG1					0x48
-+#define CCOLP					0x4c
-+#define CRGAIN					0x50
-+#define CGRGAIN					0x54
-+#define CGBGAIN					0x58
-+#define CBGAIN					0x5c
-+#define COFSTA					0x60
-+#define FLSHCFG0				0x64
-+#define FLSHCFG1				0x68
-+#define FLSHCFG2				0x6c
-+#define VDINT0					0x70
-+#define VDINT1					0x74
-+#define VDINT2					0x78
-+#define MISC					0x7c
-+#define CGAMMAWD				0x80
-+#define REC656IF				0x84
-+#define CCDCFG					0x88
-+/*****************************************************
-+* Defect Correction registers
-+*****************************************************/
-+#define DFCCTL					0x8c
-+#define VDFSATLV				0x90
-+#define DFCMEMCTL				0x94
-+#define DFCMEM0					0x98
-+#define DFCMEM1					0x9c
-+#define DFCMEM2					0xa0
-+#define DFCMEM3					0xa4
-+#define DFCMEM4					0xa8
-+/****************************************************
-+* Black Clamp registers
-+****************************************************/
-+#define CLAMPCFG				0xac
-+#define CLDCOFST				0xb0
-+#define CLSV					0xb4
-+#define CLHWIN0					0xb8
-+#define CLHWIN1					0xbc
-+#define CLHWIN2					0xc0
-+#define CLVRV					0xc4
-+#define CLVWIN0					0xc8
-+#define CLVWIN1					0xcc
-+#define CLVWIN2					0xd0
-+#define CLVWIN3					0xd4
-+/****************************************************
-+* Lense Shading Correction
-+****************************************************/
-+#define DATAHOFST				0xd8
-+#define DATAVOFST				0xdc
-+#define LSCHVAL					0xe0
-+#define LSCVVAL					0xe4
-+#define TWODLSCCFG				0xe8
-+#define TWODLSCOFST				0xec
-+#define TWODLSCINI				0xf0
-+#define TWODLSCGRBU				0xf4
-+#define TWODLSCGRBL				0xf8
-+#define TWODLSCGROF				0xfc
-+#define TWODLSCORBU				0x100
-+#define TWODLSCORBL				0x104
-+#define TWODLSCOROF				0x108
-+#define TWODLSCIRQEN				0x10c
-+#define TWODLSCIRQST				0x110
-+/****************************************************
-+* Data formatter
-+****************************************************/
-+#define FMTCFG					0x114
-+#define FMTPLEN					0x118
-+#define FMTSPH					0x11c
-+#define FMTLNH					0x120
-+#define FMTSLV					0x124
-+#define FMTLNV					0x128
-+#define FMTRLEN					0x12c
-+#define FMTHCNT					0x130
-+#define FMTAPTR_BASE				0x134
-+/* Below macro for addresses FMTAPTR0 - FMTAPTR15 */
-+#define FMTAPTR(i)			(FMTAPTR_BASE + (i * 4))
-+#define FMTPGMVF0				0x174
-+#define FMTPGMVF1				0x178
-+#define FMTPGMAPU0				0x17c
-+#define FMTPGMAPU1				0x180
-+#define FMTPGMAPS0				0x184
-+#define FMTPGMAPS1				0x188
-+#define FMTPGMAPS2				0x18c
-+#define FMTPGMAPS3				0x190
-+#define FMTPGMAPS4				0x194
-+#define FMTPGMAPS5				0x198
-+#define FMTPGMAPS6				0x19c
-+#define FMTPGMAPS7				0x1a0
-+/************************************************
-+* Color Space Converter
-+************************************************/
-+#define CSCCTL					0x1a4
-+#define CSCM0					0x1a8
-+#define CSCM1					0x1ac
-+#define CSCM2					0x1b0
-+#define CSCM3					0x1b4
-+#define CSCM4					0x1b8
-+#define CSCM5					0x1bc
-+#define CSCM6					0x1c0
-+#define CSCM7					0x1c4
-+#define OBWIN0					0x1c8
-+#define OBWIN1					0x1cc
-+#define OBWIN2					0x1d0
-+#define OBWIN3					0x1d4
-+#define OBVAL0					0x1d8
-+#define OBVAL1					0x1dc
-+#define OBVAL2					0x1e0
-+#define OBVAL3					0x1e4
-+#define OBVAL4					0x1e8
-+#define OBVAL5					0x1ec
-+#define OBVAL6					0x1f0
-+#define OBVAL7					0x1f4
-+#define CLKCTL					0x1f8
-+
-+/* Masks & Shifts below */
-+#define START_PX_HOR_MASK			0x7fff
-+#define NUM_PX_HOR_MASK				0x7fff
-+#define START_VER_ONE_MASK			0x7fff
-+#define START_VER_TWO_MASK			0x7fff
-+#define NUM_LINES_VER				0x7fff
-+
-+/* gain - offset masks */
-+#define OFFSET_MASK				0xfff
-+#define GAIN_SDRAM_EN_SHIFT			12
-+#define GAIN_IPIPE_EN_SHIFT			13
-+#define GAIN_H3A_EN_SHIFT			14
-+#define OFST_SDRAM_EN_SHIFT			8
-+#define OFST_IPIPE_EN_SHIFT			9
-+#define OFST_H3A_EN_SHIFT			10
-+#define GAIN_OFFSET_EN_MASK			0x7700
-+
-+/* Culling */
-+#define CULL_PAT_EVEN_LINE_SHIFT		8
-+
-+/* CCDCFG register */
-+#define ISIF_YCINSWP_RAW			(0x00 << 4)
-+#define ISIF_YCINSWP_YCBCR			(0x01 << 4)
-+#define ISIF_CCDCFG_FIDMD_LATCH_VSYNC		(0x00 << 6)
-+#define ISIF_CCDCFG_WENLOG_AND			(0x00 << 8)
-+#define ISIF_CCDCFG_TRGSEL_WEN			(0x00 << 9)
-+#define ISIF_CCDCFG_EXTRG_DISABLE		(0x00 << 10)
-+#define ISIF_LATCH_ON_VSYNC_DISABLE		(0x01 << 15)
-+#define ISIF_LATCH_ON_VSYNC_ENABLE		(0x00 << 15)
-+#define ISIF_DATA_PACK_MASK			0x03
-+#define ISIF_PIX_ORDER_SHIFT			11
-+#define ISIF_PIX_ORDER_MASK			0x01
-+#define ISIF_BW656_ENABLE			(0x01 << 5)
-+
-+/* MODESET registers */
-+#define ISIF_VDHDOUT_INPUT			(0x00 << 0)
-+#define ISIF_INPUT_MASK				0x03
-+#define ISIF_INPUT_SHIFT			12
-+#define ISIF_FID_POL_MASK			0x01
-+#define ISIF_FID_POL_SHIFT			4
-+#define ISIF_HD_POL_MASK			0x01
-+#define ISIF_HD_POL_SHIFT			3
-+#define ISIF_VD_POL_MASK			0x01
-+#define ISIF_VD_POL_SHIFT			2
-+#define ISIF_DATAPOL_NORMAL			0x00
-+#define ISIF_DATAPOL_MASK			0x01
-+#define ISIF_DATAPOL_SHIFT			6
-+#define ISIF_EXWEN_DISABLE			0x00
-+#define ISIF_EXWEN_MASK				0x01
-+#define ISIF_EXWEN_SHIFT			5
-+#define ISIF_FRM_FMT_MASK			0x01
-+#define ISIF_FRM_FMT_SHIFT			7
-+#define ISIF_DATASFT_MASK			0x07
-+#define ISIF_DATASFT_SHIFT			8
-+#define ISIF_LPF_SHIFT				14
-+#define ISIF_LPF_MASK				0x1
-+
-+/* GAMMAWD registers */
-+#define ISIF_ALAW_GAMA_WD_MASK			0xf
-+#define ISIF_ALAW_GAMA_WD_SHIFT			1
-+#define ISIF_ALAW_ENABLE			0x01
-+#define ISIF_GAMMAWD_CFA_MASK			0x01
-+#define ISIF_GAMMAWD_CFA_SHIFT			5
-+
-+/* HSIZE registers */
-+#define ISIF_HSIZE_FLIP_MASK			0x01
-+#define ISIF_HSIZE_FLIP_SHIFT			12
-+#define ISIF_LINEOFST_MASK			0xfff
-+
-+/* MISC registers */
-+#define ISIF_DPCM_EN_SHIFT			12
-+#define ISIF_DPCM_PREDICTOR_SHIFT		13
-+#define ISIF_DPCM_PREDICTOR_MASK		1
-+
-+/* Black clamp related */
-+#define ISIF_BC_DCOFFSET_MASK			0x1fff
-+#define ISIF_BC_MODE_COLOR_MASK			1
-+#define ISIF_BC_MODE_COLOR_SHIFT		4
-+#define ISIF_HORZ_BC_MODE_MASK			3
-+#define ISIF_HORZ_BC_MODE_SHIFT			1
-+#define ISIF_HORZ_BC_WIN_COUNT_MASK		0x1f
-+#define ISIF_HORZ_BC_WIN_SEL_SHIFT		5
-+#define ISIF_HORZ_BC_PIX_LIMIT_SHIFT		6
-+#define ISIF_HORZ_BC_WIN_H_SIZE_MASK		3
-+#define ISIF_HORZ_BC_WIN_H_SIZE_SHIFT		8
-+#define ISIF_HORZ_BC_WIN_V_SIZE_MASK		3
-+#define ISIF_HORZ_BC_WIN_V_SIZE_SHIFT		12
-+#define ISIF_HORZ_BC_WIN_START_H_MASK		0x1fff
-+#define ISIF_HORZ_BC_WIN_START_V_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_H_SZ_MASK		7
-+#define ISIF_VERT_BC_RST_VAL_SEL_MASK		3
-+#define ISIF_VERT_BC_RST_VAL_SEL_SHIFT		4
-+#define ISIF_VERT_BC_LINE_AVE_COEF_SHIFT	8
-+#define ISIF_VERT_BC_OB_START_HORZ_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_START_VERT_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_VERT_SZ_MASK		0x1fff
-+#define ISIF_VERT_BC_RST_VAL_MASK		0xfff
-+#define ISIF_BC_VERT_START_SUB_V_MASK		0x1fff
-+
-+/* VDFC registers */
-+#define ISIF_VDFC_EN_SHIFT			4
-+#define ISIF_VDFC_CORR_MOD_MASK			3
-+#define ISIF_VDFC_CORR_MOD_SHIFT		5
-+#define ISIF_VDFC_CORR_WHOLE_LN_SHIFT		7
-+#define ISIF_VDFC_LEVEL_SHFT_MASK		7
-+#define ISIF_VDFC_LEVEL_SHFT_SHIFT		8
-+#define ISIF_VDFC_SAT_LEVEL_MASK		0xfff
-+#define ISIF_VDFC_POS_MASK			0x1fff
-+#define ISIF_DFCMEMCTL_DFCMARST_SHIFT		2
-+
-+/* CSC registers */
-+#define ISIF_CSC_COEF_INTEG_MASK		7
-+#define ISIF_CSC_COEF_DECIMAL_MASK		0x1f
-+#define ISIF_CSC_COEF_INTEG_SHIFT		5
-+#define ISIF_CSCM_MSB_SHIFT			8
-+#define ISIF_DF_CSC_SPH_MASK			0x1fff
-+#define ISIF_DF_CSC_LNH_MASK			0x1fff
-+#define ISIF_DF_CSC_SLV_MASK			0x1fff
-+#define ISIF_DF_CSC_LNV_MASK			0x1fff
-+#define ISIF_DF_NUMLINES			0x7fff
-+#define ISIF_DF_NUMPIX				0x1fff
-+
-+/* Offsets for LSC/DFC/Gain */
-+#define ISIF_DATA_H_OFFSET_MASK			0x1fff
-+#define ISIF_DATA_V_OFFSET_MASK			0x1fff
-+
-+/* Linearization */
-+#define ISIF_LIN_CORRSFT_MASK			7
-+#define ISIF_LIN_CORRSFT_SHIFT			4
-+#define ISIF_LIN_SCALE_FACT_INTEG_SHIFT		10
-+#define ISIF_LIN_SCALE_FACT_DECIMAL_MASK	0x3ff
-+#define ISIF_LIN_ENTRY_MASK			0x3ff
-+
-+/* masks and shifts*/
-+#define ISIF_SYNCEN_VDHDEN_MASK			(1 << 0)
-+#define ISIF_SYNCEN_WEN_MASK			(1 << 1)
-+#define ISIF_SYNCEN_WEN_SHIFT			1
-+
-+#endif		/* _DAVINCI_VPFE_DM365_ISIF_REGS_H */
++int config_ipipe_hw(struct vpfe_ipipe_device *ipipe);
++int resizer_set_outaddr(void *__iomem rsz_base, struct resizer_params *params,
++			int resize_no, unsigned int address);
++int rsz_enable(void *__iomem rsz_base, int rsz_id, int enable);
++void rsz_src_enable(void *__iomem rsz_base, int enable);
++void rsz_set_in_pix_format(unsigned char y_c);
++int config_rsz_hw(struct vpfe_resizer_device *resizer,
++		  struct resizer_params *config);
++void ipipe_set_d2f_regs(void *__iomem base_addr, unsigned int id,
++	struct vpfe_ipipe_nf *noise_filter);
++void ipipe_set_rgb2rgb_regs(void *__iomem base_addr, unsigned int id,
++	struct vpfe_ipipe_rgb2rgb *rgb);
++void ipipe_set_yuv422_conv_regs(void *__iomem base_addr,
++	struct vpfe_ipipe_yuv422_conv *conv);
++void ipipe_set_lum_adj_regs(void *__iomem base_addr,
++	struct ipipe_lum_adj *lum_adj);
++void ipipe_set_rgb2ycbcr_regs(void *__iomem base_addr,
++	struct vpfe_ipipe_rgb2yuv *yuv);
++void ipipe_set_lutdpc_regs(void *__iomem base_addr,
++	void *__iomem isp5_base_addr, struct vpfe_ipipe_lutdpc *lutdpc);
++void ipipe_set_otfdpc_regs(void *__iomem base_addr,
++	struct vpfe_ipipe_otfdpc *otfdpc);
++void ipipe_set_3d_lut_regs(void *__iomem base_addr,
++	void *__iomem isp5_base_addr, struct vpfe_ipipe_3d_lut *lut_3d);
++void ipipe_set_gamma_regs(void *__iomem base_addr,
++	void *__iomem isp5_base_addr, struct vpfe_ipipe_gamma *gamma);
++void ipipe_set_ee_regs(void *__iomem base_addr,
++	void *__iomem isp5_base_addr, struct vpfe_ipipe_yee *ee);
++void ipipe_set_gbce_regs(void *__iomem base_addr,
++	void *__iomem isp5_base_addr, struct vpfe_ipipe_gbce *gbce);
++void ipipe_set_gic_regs(void *__iomem base_addr, struct vpfe_ipipe_gic *gic);
++void ipipe_set_cfa_regs(void *__iomem base_addr, struct vpfe_ipipe_cfa *cfa);
++void ipipe_set_car_regs(void *__iomem base_addr, struct vpfe_ipipe_car *car);
++void ipipe_set_cgs_regs(void *__iomem base_addr, struct vpfe_ipipe_cgs *cgs);
++void ipipe_set_wb_regs(void *__iomem base_addr, struct vpfe_ipipe_wb *wb);
++
++#endif		/* _DAVINCI_VPFE_DM365_IPIPE_HW_H */
 -- 
 1.7.4.1
 
