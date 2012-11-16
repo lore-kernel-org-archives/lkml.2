@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2KPNe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:34:59 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:46739 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2KPNe6 (ORCPT
+	id S1751840Ab2KPNnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:43:15 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:14939 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab2KPNnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:34:58 -0500
-From: <Vineet.Gupta1@synopsys.com>
-To: <viro@zeniv.linux.org.uk>
-CC: <rusty@rustcorp.com.au>, <mingo@kernel.org>, <jim.cromie@gmail.com>,
-        <hpa@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH] Ensure that kernel_init_freebale() is not inlined into non __init code
-Date: Fri, 16 Nov 2012 19:04:34 +0530
-Message-ID: <1353072874-18710-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.205]
+	Fri, 16 Nov 2012 08:43:14 -0500
+Date: Fri, 16 Nov 2012 14:42:56 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, ben-linux@fluff.org,
+        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        bhelgaas@google.com, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] i2c / ACPI: add ACPI enumeration support
+Message-ID: <20121116144256.55b49cae@endymion.delvare>
+In-Reply-To: <1499062.QDd9DGofy9@vostro.rjw.lan>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+	<2439178.tCj2rUMYJS@vostro.rjw.lan>
+	<20121116140357.5e0a6d6b@endymion.delvare>
+	<1499062.QDd9DGofy9@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <vgupta@synopsys.com>
+On Fri, 16 Nov 2012 14:21:54 +0100, Rafael J. Wysocki wrote:
+> On Friday, November 16, 2012 02:03:57 PM Jean Delvare wrote:
+> > Hi Rafael,
+> > 
+> > On Fri, 16 Nov 2012 11:09:03 +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, November 15, 2012 01:03:17 PM Mika Westerberg wrote:
+> > > > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
+> > > > and configure the I2C slave devices behind the I2C controller. This patch
+> > > > adds helper functions to support I2C slave enumeration.
+> > > > 
+> > > > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
+> > > > in order to get its slave devices enumerated, created and bound to the
+> > > > corresponding ACPI handle.
+> > > > 
+> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > 
+> > > Are there any objections against this patch or comments?
+> > > 
+> > > Worfram? Jean? Ben?
+> > 
+> > I am no longer maintaining the i2c subsystem and will not have the time
+> > to look deeply into this. All I can say is that I very happy to see
+> > this finally happen. Maybe with ACPI 5.0 we will finally be done with
+> > resource conflicts plaguing many systems for several years now.
+> > 
+> > I took a quick look, and the only thing which seems suspicious is this
+> > function:
+> > 
+> > > +static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
+> > > +{
+> > > +	struct acpi_resource_i2c_serialbus *sb;
+> > > +	struct acpi_i2c_find *i2c_find = data;
+> > > +
+> > > +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
+> > > +		return 1;
+> > > +
+> > > +	sb = &ares->data.i2c_serial_bus;
+> > > +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
+> > > +		return 1;
+> > > +
+> > > +	if (sb->slave_address == i2c_find->addr)
+> > 
+> > The 7-bit and 10-bit address maps overlap, so the above isn't enough.
+> > You must compare the addresses _and_ sb->access_mode with
+> > i2c_find->access_mode (which needs to be added and filled properly.)
+> > 
+> > > +		i2c_find->found = true;
+> > > +
+> > > +	return 1;
+> > > +}
+> > 
+> > Plus, it seems odd that this function always returns 1.
+> 
+> Yes, this is a bug I think.  Mika?
 
-Commit d6b2123802d "make sure that we always have a return path from
-kernel_execve()" reshuffled kernel_init()/init_post() to ensure that
-kernel_execve() has a caller to return to.
-Just for documentation, here's what that commit did.
+The equivalent function for SPI devices does the same, so if this is a
+bug, it must be fixed there too. If this is not a bug then it is
+questionable why these functions return something in the first place.
 
-Orig
-----
+But then again I didn't look into the design, so I may be missing
+something.
 
-THREAD __init kernel_init()
-	smp_init()
-	...
-	open("/dev/console")
-
-	init_post() --> forced to be noinline
-	return 0;
-
-init_post()
-	free_initmem() --> reaps caller kernel_init()
-	run_init_process("/init")
-		kernel_execve
-
-New
----
-
-THREAD kernel_init()
-	kernel_init_freeable()	--> __init tagged
-		smp_init()
-		...
-		open("/dev/console")
-	free_initmem() --> reaps kernel_init_freeable()
-	run_init_process "init"
-		kernel_execve
-
-However kernel_init_freebale() was NOT marked as noinline making ARC gcc
-4.4 inline it in non __init freeable kernel_init(), wasting a bit of
-memory.
-
-bloat-o-meter vmlinux_orig vmlinux
-add/remove: 1/0 grow/shrink: 0/1 up/down: 374/-330 (44)
-function                                     old     new   delta
-kernel_init_freeable                           -     374    +374
-kernel_init                                  636     306    -330
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- init/main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/init/main.c b/init/main.c
-index e33e09d..cd147a9 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -800,7 +800,7 @@ static int run_init_process(const char *init_filename)
- 	return kernel_execve(init_filename, argv_init, envp_init);
- }
- 
--static void __init kernel_init_freeable(void);
-+static noinline void __init kernel_init_freeable(void);
- 
- static int __ref kernel_init(void *unused)
- {
-@@ -844,7 +844,7 @@ static int __ref kernel_init(void *unused)
- 	      "See Linux Documentation/init.txt for guidance.");
- }
- 
--static void __init kernel_init_freeable(void)
-+static noinline void __init kernel_init_freeable(void)
- {
- 	/*
- 	 * Wait until kthreadd is all set-up.
 -- 
-1.7.4.1
-
+Jean Delvare
