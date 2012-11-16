@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab2KPJJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:09:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33003 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2KPJJc (ORCPT
+	id S1751479Ab2KPJMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:12:36 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:59665 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2KPJMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:09:32 -0500
-Message-ID: <1353056962.4277.2.camel@phoenix>
-Subject: [PATCH RESEND] power: generic-adc-battery: Fix checking return
- value of request_any_context_irq
+	Fri, 16 Nov 2012 04:12:34 -0500
+MIME-Version: 1.0
+X-Originating-IP: [111.255.121.16]
+In-Reply-To: <50A0C3C8.2020501@gmail.com>
+References: <1352641495.3113.1.camel@phoenix>
+	<50A0C3C8.2020501@gmail.com>
+Date: Fri, 16 Nov 2012 17:12:33 +0800
+Message-ID: <CAFRkauABcnqJSqewueY4rzVbm7uAqkZKitkR9ZmYjF0LhR26-Q@mail.gmail.com>
+Subject: Re: [PATCH RFT 1/2] pinctrl: dove: Fix dove_audio1_ctrl_set when
+ BIT(0|1|2|3) of config is clear
 From: Axel Lin <axel.lin@ingics.com>
-To: Anton Vorontsov <cbou@mail.ru>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        anish kumar <anish198519851985@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 16 Nov 2012 17:09:22 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On failure, request_any_context_irq() returns a negative value.
-On success, it returns either IRQC_IS_HARDIRQ or IRQC_IS_NESTED.
+2012/11/12 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
+> On 11/11/2012 02:44 PM, Axel Lin wrote:
+>>
+>> Current implementation in dove_audio1_ctrl_set() does not clear
+>> corresponding
+>> register bit if BIT(0|1|2|3) of config is clear. Fix it.
+>>
+>> Signed-off-by: Axel Lin<axel.lin@ingics.com>
+>
+>
+> Axel,
+>
+> thanks for the hint on not clearing the audio1 bits before setting them.
+> I will test this tonight and guess you should prepare a real patch for
+> this one.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-This was sent on https://lkml.org/lkml/2012/10/11/77
-Nobody picks up this patch, so resend it.
-I think this patch is for 3.7.
+Hi Sebastian,
+Does this patch work for you?
+May I have your Acked-and-Tested-by if you think this patch is ok.
 
-Regards,
+Thanks,
 Axel
- drivers/power/generic-adc-battery.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
-index 9bdf444..4a00ef7 100644
---- a/drivers/power/generic-adc-battery.c
-+++ b/drivers/power/generic-adc-battery.c
-@@ -327,7 +327,7 @@ static int __devinit gab_probe(struct platform_device *pdev)
- 		ret = request_any_context_irq(irq, gab_charged,
- 				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				"battery charged", adc_bat);
--		if (ret)
-+		if (ret < 0)
- 			goto err_gpio;
- 	}
- 
--- 
-1.7.9.5
-
-
-
