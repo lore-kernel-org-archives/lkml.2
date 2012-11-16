@@ -1,212 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142Ab2KPBsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:48:36 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:29805 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab2KPBse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:48:34 -0500
-X-IronPort-AV: E=Sophos;i="4.83,261,1352044800"; 
-   d="scan'208";a="6209380"
-Message-ID: <50A59CE3.9020907@cn.fujitsu.com>
-Date: Fri, 16 Nov 2012 09:54:43 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1751215Ab2KPCEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:04:08 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:47595 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024Ab2KPCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 21:04:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        toshi.kani@hp.com, liuj97@gmail.com
+Subject: Re: [PATCH v6] create sun sysfs file
+Date: Fri, 16 Nov 2012 03:08:27 +0100
+Message-ID: <2113879.lcUtkATo6G@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <50A59A46.2030308@jp.fujitsu.com>
+References: <50A1F711.7020408@jp.fujitsu.com> <50A59A46.2030308@jp.fujitsu.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [Patch v5 2/7] acpi,memory-hotplug: deal with eject request in
- hotplug queue
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <1352962777-24407-3-git-send-email-wency@cn.fujitsu.com> <alpine.DEB.2.00.1211151531310.27188@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1211151531310.27188@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/16 09:48:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/16 09:48:26,
-	Serialize complete at 2012/11/16 09:48:26
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 11/16/2012 07:32 AM, David Rientjes Wrote:
-> On Thu, 15 Nov 2012, Wen Congyang wrote:
+On Friday, November 16, 2012 10:43:34 AM Yasuaki Ishimatsu wrote:
+> Hi Rafael,
 > 
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> We handle the 1st case in the module acpi_memhotplug, and handle
->> the 2nd case in ACPI eject notification. This 2 events may happen
->> at the same time, so we may touch acpi_memory_device.res_list at
->> the same time. This patch reimplements memory-hotremove support
->> through an ACPI eject notification. Now the memory device is
->> offlined and hotremoved only in the function acpi_memory_device_remove()
->> which is protected by device_lock().
->>
+> Please merge this patch into your tree.
+> It has been acked by Len.
+
+Applied.
+
+Thanks,
+Rafael
+
+
+> 2012/11/13 16:30, Yasuaki Ishimatsu wrote:
+> > Hi Rafael,
+> > 
+> > The patch was rebased on linux-next. Ant it has been acked by Len:
+> > 
+> > https://lkml.org/lkml/2012/10/10/65
+> > 
+> > So please merge it into your tree.
+> > 
+> > ---
+> > _SUN method provides the slot unique-ID in the ACPI namespace. And The value
+> > is written in Advanced Configuration and Power Interface Specification as
+> > follows:
+> > 
+> > "The _SUN value is required to be unique among the slots ofthe same type.
+> > It is also recommended that this number match the slot number printed on
+> > the physical slot whenever possible."
+> > 
+> > So if we can know the value, we can identify the physical position of the
+> > slot in the system.
+> > 
+> > The patch creates "sun" file in sysfs for identifying physical position
+> > of the slot.
+> > 
+> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> > Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > 
+> > ---
+> >   Documentation/ABI/testing/sysfs-devices-sun |   14 ++++++++++++++
+> >   drivers/acpi/scan.c                         |   24 ++++++++++++++++++++++++
+> >   include/acpi/acpi_bus.h                     |    1 +
+> >   3 files changed, 39 insertions(+)
+> > 
+> > Index: linux-next/include/acpi/acpi_bus.h
+> > ===================================================================
+> > --- linux-next.orig/include/acpi/acpi_bus.h	2012-11-12 17:58:08.000000000 +0900
+> > +++ linux-next/include/acpi/acpi_bus.h	2012-11-12 19:07:33.577427071 +0900
+> > @@ -179,6 +179,7 @@ struct acpi_device_pnp {
+> >   	acpi_device_name device_name;	/* Driver-determined */
+> >   	acpi_device_class device_class;	/*        "          */
+> >   	union acpi_object *str_obj;	/* unicode string for _STR method */
+> > +	unsigned long sun;		/* _SUN */
+> >   };
+> >   
+> >   #define acpi_device_bid(d)	((d)->pnp.bus_id)
+> > Index: linux-next/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-next.orig/drivers/acpi/scan.c	2012-11-12 17:57:44.000000000 +0900
+> > +++ linux-next/drivers/acpi/scan.c	2012-11-12 19:08:53.387428254 +0900
+> > @@ -292,11 +292,21 @@ static ssize_t description_show(struct d
+> >   }
+> >   static DEVICE_ATTR(description, 0444, description_show, NULL);
+> >   
+> > +static ssize_t
+> > +acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
+> > +		     char *buf) {
+> > +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+> > +
+> > +	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
+> > +}
+> > +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+> > +
+> >   static int acpi_device_setup_files(struct acpi_device *dev)
+> >   {
+> >   	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+> >   	acpi_status status;
+> >   	acpi_handle temp;
+> > +	unsigned long long sun;
+> >   	int result = 0;
+> >   
+> >   	/*
+> > @@ -338,6 +348,16 @@ static int acpi_device_setup_files(struc
+> >   	if (dev->pnp.unique_id)
+> >   		result = device_create_file(&dev->dev, &dev_attr_uid);
+> >   
+> > +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
+> > +	if (ACPI_SUCCESS(status)) {
+> > +		dev->pnp.sun = (unsigned long)sun;
+> > +		result = device_create_file(&dev->dev, &dev_attr_sun);
+> > +		if (result)
+> > +			goto end;
+> > +	} else {
+> > +		dev->pnp.sun = (unsigned long)-1;
+> > +	}
+> > +
+> >           /*
+> >            * If device has _EJ0, 'eject' file is created that is used to trigger
+> >            * hot-removal function from userland.
+> > @@ -369,6 +389,10 @@ static void acpi_device_remove_files(str
+> >   	if (ACPI_SUCCESS(status))
+> >   		device_remove_file(&dev->dev, &dev_attr_eject);
+> >   
+> > +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+> > +	if (ACPI_SUCCESS(status))
+> > +		device_remove_file(&dev->dev, &dev_attr_sun);
+> > +
+> >   	if (dev->pnp.unique_id)
+> >   		device_remove_file(&dev->dev, &dev_attr_uid);
+> >   	if (dev->flags.bus_address)
+> > Index: linux-next/Documentation/ABI/testing/sysfs-devices-sun
+> > ===================================================================
+> > --- /dev/null	1970-01-01 00:00:00.000000000 +0000
+> > +++ linux-next/Documentation/ABI/testing/sysfs-devices-sun	2012-11-12 19:09:26.854428750 +0900
+> > @@ -0,0 +1,14 @@
+> > +Whatt:		/sys/devices/.../sun
+> > +Date:		October 2012
+> > +Contact:	Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > +Description:
+> > +		The file contains a Slot-unique ID which provided by the _SUN
+> > +		method in the ACPI namespace. The value is written in Advanced
+> > +		Configuration and Power Interface Specification as follows:
+> > +
+> > +		"The _SUN value is required to be unique among the slots of
+> > +		the same type. It is also recommended that this number match
+> > +		the slot number printed on the physical slot whenever possible."
+> > +
+> > +		So reading the sysfs file, we can identify a physical position
+> > +		of the slot in the system.
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
-> You mean it's protected by device_lock() before calling the remove() 
-> function for eject?
-
-Yes. We call device_release_driver() to unbind the device from the driver
-(the memory will be offlined/removed when it is unbound from the driver).
-
-we call device_lock() in device_release_driver(), so we only unbind it
-from the driver once.
-
-Thanks
-Wen Congyang
-
 > 
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> CC: Rafael J. Wysocki <rjw@sisk.pl>
->> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>  drivers/acpi/acpi_memhotplug.c | 87 +++++-------------------------------------
->>  1 file changed, 9 insertions(+), 78 deletions(-)
->>
->> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->> index 2918be1..6e12042 100644
->> --- a/drivers/acpi/acpi_memhotplug.c
->> +++ b/drivers/acpi/acpi_memhotplug.c
->> @@ -272,40 +272,6 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->>  	return 0;
->>  }
->>  
->> -static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
->> -{
->> -	acpi_status status;
->> -	struct acpi_object_list arg_list;
->> -	union acpi_object arg;
->> -	unsigned long long current_status;
->> -
->> -
->> -	/* Issue the _EJ0 command */
->> -	arg_list.count = 1;
->> -	arg_list.pointer = &arg;
->> -	arg.type = ACPI_TYPE_INTEGER;
->> -	arg.integer.value = 1;
->> -	status = acpi_evaluate_object(mem_device->device->handle,
->> -				      "_EJ0", &arg_list, NULL);
->> -	/* Return on _EJ0 failure */
->> -	if (ACPI_FAILURE(status)) {
->> -		ACPI_EXCEPTION((AE_INFO, status, "_EJ0 failed"));
->> -		return -ENODEV;
->> -	}
->> -
->> -	/* Evalute _STA to check if the device is disabled */
->> -	status = acpi_evaluate_integer(mem_device->device->handle, "_STA",
->> -				       NULL, &current_status);
->> -	if (ACPI_FAILURE(status))
->> -		return -ENODEV;
->> -
->> -	/* Check for device status.  Device should be disabled */
->> -	if (current_status & ACPI_STA_DEVICE_ENABLED)
->> -		return -EINVAL;
->> -
->> -	return 0;
->> -}
->> -
->>  static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>  {
->>  	int result;
->> @@ -325,34 +291,11 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>  	return 0;
->>  }
->>  
->> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->> -{
->> -	int result;
->> -
->> -	/*
->> -	 * Ask the VM to offline this memory range.
->> -	 * Note: Assume that this function returns zero on success
->> -	 */
->> -	result = acpi_memory_remove_memory(mem_device);
->> -	if (result)
->> -		return result;
->> -
->> -	/* Power-off and eject the device */
->> -	result = acpi_memory_powerdown_device(mem_device);
->> -	if (result) {
->> -		/* Set the status of the device to invalid */
->> -		mem_device->state = MEMORY_INVALID_STATE;
->> -		return result;
->> -	}
->> -
->> -	mem_device->state = MEMORY_POWER_OFF_STATE;
->> -	return result;
->> -}
->> -
->>  static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
->>  {
->>  	struct acpi_memory_device *mem_device;
->>  	struct acpi_device *device;
->> +	struct acpi_eject_event *ej_event = NULL;
->>  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->>  
->>  	switch (event) {
->> @@ -394,31 +337,19 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
->>  			break;
->>  		}
->>  
->> -		/*
->> -		 * Currently disabling memory device from kernel mode
->> -		 * TBD: Can also be disabled from user mode scripts
->> -		 * TBD: Can also be disabled by Callback registration
->> -		 *      with generic sysfs driver
->> -		 */
->> -		if (acpi_memory_disable_device(mem_device)) {
->> -			printk(KERN_ERR PREFIX "Disable memory device\n");
->> -			/*
->> -			 * If _EJ0 was called but failed, _OST is not
->> -			 * necessary.
->> -			 */
->> -			if (mem_device->state == MEMORY_INVALID_STATE)
->> -				return;
->> -
->> +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
->> +		if (!ej_event) {
->> +			pr_err(PREFIX "No memory, dropping EJECT\n");
->>  			break;
->>  		}
->>  
->> -		/*
->> -		 * TBD: Invoke acpi_bus_remove to cleanup data structures
->> -		 */
->> +		ej_event->handle = handle;
->> +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
->> +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
->> +					(void *)ej_event);
->>  
->> -		/* _EJ0 succeeded; _OST is not necessary */
->> +		/* eject is performed asynchronously */
->>  		return;
->> -
->>  	default:
->>  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
->>  				  "Unsupported event [0x%x]\n", event));
 > 
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
