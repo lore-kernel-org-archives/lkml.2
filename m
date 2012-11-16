@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab2KPPrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:47:07 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60830 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2KPPrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:47:05 -0500
+	id S1752548Ab2KPPuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:50:54 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:59117 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752203Ab2KPPuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:50:54 -0500
+Message-ID: <50A660D1.7020001@parallels.com>
+Date: Fri, 16 Nov 2012 19:50:41 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:fc0b:6737:f858:9d93]
-In-Reply-To: <50A65D35.7090307@atmel.com>
-References: <50A65D35.7090307@atmel.com>
-Date: Fri, 16 Nov 2012 07:47:05 -0800
-Message-ID: <CAOesGMjM=mdjArxgFOBSSxF8-3kaUmP1Ka7E6tjwVswovkc6ag@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.7-rc6
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        jhovold@gmail.com, Nicolas Royer <nicolas@eukrea.com>,
-        =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking
+ for dead memcgs
+References: <1352948093-2315-1-git-send-email-glommer@parallels.com> <1352948093-2315-6-git-send-email-glommer@parallels.com> <50A4B8C8.6020202@jp.fujitsu.com> <50A4F289.1090807@parallels.com> <50A5CA16.7070603@jp.fujitsu.com> <50A5E73F.8030201@parallels.com> <50A5E997.6060002@jp.fujitsu.com> <20121116145508.GC2006@dhcp22.suse.cz>
+In-Reply-To: <20121116145508.GC2006@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 7:35 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> (Resent with mailing-lists)
->
-> Arnd, Olof,
->
-> Here is the second at91-fixes pull request for 3.7. I have built it on
-> top of my previous fixes pull request for this kernel revision.
+On 11/16/2012 06:55 PM, Michal Hocko wrote:
+> On Fri 16-11-12 16:21:59, KAMEZAWA Hiroyuki wrote:
+>> (2012/11/16 16:11), Glauber Costa wrote:
+>>> On 11/16/2012 09:07 AM, Kamezawa Hiroyuki wrote:
+>>>> (2012/11/15 22:47), Glauber Costa wrote:
+>>>>> On 11/15/2012 01:41 PM, Kamezawa Hiroyuki wrote:
+>>>>>> (2012/11/15 11:54), Glauber Costa wrote:
+>>>>>>> The idea is to synchronously do it, leaving it up to the shrinking
+>>>>>>> facilities in vmscan.c and/or others. Not actively retrying shrinking
+>>>>>>> may leave the caches alive for more time, but it will remove the ugly
+>>>>>>> wakeups. One would argue that if the caches have free objects but are
+>>>>>>> not being shrunk, it is because we don't need that memory yet.
+>>>>>>>
+>>>>>>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>>>>>>> CC: Michal Hocko <mhocko@suse.cz>
+>>>>>>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>>>>>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>>>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>>>>
+>>>>>> I agree this patch but can we have a way to see the number of unaccounted
+>>>>>> zombie cache usage for debugging ?
+>>>>>>
+>>>>>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>>>>>
+>>>>> Any particular interface in mind ?
+>>>>>
+>>>>
+>>>> Hmm, it's debug interface and having cgroup file may be bad.....
+>>>> If it can be seen in bytes or some, /proc/vmstat ?
+>>>>
+>>>> out_of_track_slabs  xxxxxxx. hm ?
+>>>>
+>>>
+>>> I particularly think that, being this a debug interface, it is also
+>>> useful to have an indication of which caches are still in place. This is
+>>> because the cache itself, is the best indication we have about the
+>>> specific workload that may be keeping it in memory.
+>>>
+>>> I first thought debugfs could help us probing useful information out of
+>>> it, but given all the abuse people inflicted in debugfs... maybe we
+>>> could have a file in the root memcg with that information for all
+>>> removed memcgs? If we do that, we can go further and list the memcgs
+>>> that are pending due to memsw as well. memory.dangling_memcgs ?
+>>>
+>>
+>> Hm, I'm ok with it... others ?
+> 
+> What about memory.kmem.dangling_caches?
+> 
+If that is what it does, sure.
 
-Thanks, pulled. Lucky timing, I'm about to send the pull request this morning.
+But as I said, kmem is not the only thing that can keep caches in
+memory. If we're going for this, maybe we should be more comprehensive
+and show it all.
 
-
--Olof
