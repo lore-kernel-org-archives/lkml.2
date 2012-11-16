@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab2KPOLs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:11:48 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63168 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2KPOLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:11:46 -0500
+	id S1752139Ab2KPOOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:14:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59088 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab2KPOOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:14:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,264,1352102400"; 
+   d="scan'208";a="220655213"
+Date: Fri, 16 Nov 2012 16:17:29 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ben-linux@fluff.org,
+        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        bhelgaas@google.com, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] i2c / ACPI: add ACPI enumeration support
+Message-ID: <20121116141729.GS17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2439178.tCj2rUMYJS@vostro.rjw.lan>
+ <20121116140357.5e0a6d6b@endymion.delvare>
+ <1499062.QDd9DGofy9@vostro.rjw.lan>
+ <20121116144256.55b49cae@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <20121116140912.GB20006@beef>
-References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de>
- <1350570453-24546-5-git-send-email-p.zabel@pengutronix.de>
- <20121114191551.5E8673E0B7C@localhost> <1352985095.2399.184.camel@pizza.hi.pengutronix.de>
- <20121116140912.GB20006@beef>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 16 Nov 2012 14:11:25 +0000
-X-Google-Sender-Auth: ksn8_87sLOxtmPHpCW0bb4i6tGg
-Message-ID: <CACxGe6tEeG6kVBMDbDi3h5hO4PcuO0EfA6q-_5tKB3ipCr+O3g@mail.gmail.com>
-Subject: Re: [PATCH v5 4/4] misc: sram: add support for configurable
- allocation order
-To: Matt Porter <mporter@ti.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121116144256.55b49cae@endymion.delvare>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 2:09 PM, Matt Porter <mporter@ti.com> wrote:
-> On Thu, Nov 15, 2012 at 02:11:35PM +0100, Philipp Zabel wrote:
->> Am Mittwoch, den 14.11.2012, 19:15 +0000 schrieb Grant Likely:
->> > Assuming it is appropriate to put into the device tree, I'd suggest a
->> > different name. Instead of 'order', how about 'sram-alloc-align' (in
->> > address bits) or 'sram-alloc-min-size' (in bytes).
->>
->> A size in bytes would be the most obvious to me, although that allows to
->> enter values that are not a power of two.
->
-> I think the implication is that this isn't even a h/w characteristic of
-> SRAM and, as such, does not belong in a DT binding (for that reason I
-> don't mind seeing that it's been dropped in v6). It's unfortunate since
-> it's otherwise a very clean solution. I sure wish I had a "Software
-> Tree" I could pass in too. ;)
+On Fri, Nov 16, 2012 at 02:42:56PM +0100, Jean Delvare wrote:
+> On Fri, 16 Nov 2012 14:21:54 +0100, Rafael J. Wysocki wrote:
+> > On Friday, November 16, 2012 02:03:57 PM Jean Delvare wrote:
+> > > Hi Rafael,
+> > > 
+> > > On Fri, 16 Nov 2012 11:09:03 +0100, Rafael J. Wysocki wrote:
+> > > > On Thursday, November 15, 2012 01:03:17 PM Mika Westerberg wrote:
+> > > > > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
+> > > > > and configure the I2C slave devices behind the I2C controller. This patch
+> > > > > adds helper functions to support I2C slave enumeration.
+> > > > > 
+> > > > > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
+> > > > > in order to get its slave devices enumerated, created and bound to the
+> > > > > corresponding ACPI handle.
+> > > > > 
+> > > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > > 
+> > > > Are there any objections against this patch or comments?
+> > > > 
+> > > > Worfram? Jean? Ben?
+> > > 
+> > > I am no longer maintaining the i2c subsystem and will not have the time
+> > > to look deeply into this. All I can say is that I very happy to see
+> > > this finally happen. Maybe with ACPI 5.0 we will finally be done with
+> > > resource conflicts plaguing many systems for several years now.
+> > > 
+> > > I took a quick look, and the only thing which seems suspicious is this
+> > > function:
+> > > 
+> > > > +static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
+> > > > +{
+> > > > +	struct acpi_resource_i2c_serialbus *sb;
+> > > > +	struct acpi_i2c_find *i2c_find = data;
+> > > > +
+> > > > +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
+> > > > +		return 1;
+> > > > +
+> > > > +	sb = &ares->data.i2c_serial_bus;
+> > > > +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
+> > > > +		return 1;
+> > > > +
+> > > > +	if (sb->slave_address == i2c_find->addr)
+> > > 
+> > > The 7-bit and 10-bit address maps overlap, so the above isn't enough.
+> > > You must compare the addresses _and_ sb->access_mode with
+> > > i2c_find->access_mode (which needs to be added and filled properly.)
 
-It is however in that grey area where which it isn't really a
-characteristic of the hardware it has a very strong implied usage. I
-do push back on things like this not because they shouldn't be done,
-but rather to make sure it is properly thought through before going
-ahead.
+Ok. I wasn't sure about that and given that 10-bit addresses are not that
+common I tought that we can just compare the addr to zero. I'll add the
+check.
 
-g.
+> > > 
+> > > > +		i2c_find->found = true;
+> > > > +
+> > > > +	return 1;
+> > > > +}
+> > > 
+> > > Plus, it seems odd that this function always returns 1.
+> > 
+> > Yes, this is a bug I think.  Mika?
+> 
+> The equivalent function for SPI devices does the same, so if this is a
+> bug, it must be fixed there too. If this is not a bug then it is
+> questionable why these functions return something in the first place.
+> 
+> But then again I didn't look into the design, so I may be missing
+> something.
+
+It is not a bug, it just means that we don't want the ACPI core to fill in
+normal resources (we only want to peek the ACPI resources and find the
+corresponding I2CSerialBus() resource).
