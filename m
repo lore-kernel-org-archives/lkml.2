@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2KPXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:22:59 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:26876 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab2KPXW5 (ORCPT
+	id S1753835Ab2KPXZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:25:12 -0500
+Received: from nm4.access.bullet.mail.sp2.yahoo.com ([98.139.44.131]:28746
+	"EHLO nm4.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753653Ab2KPXZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:22:57 -0500
-Message-ID: <1353107684.12509.65.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Fri, 16 Nov 2012 16:14:44 -0700
-In-Reply-To: <20121116230143.GA15338@kroah.com>
-References: <1352974970-6643-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1446291.TgLDtXqY7q@vostro.rjw.lan>
-	 <1353105943.12509.60.camel@misato.fc.hp.com>
-	 <20121116230143.GA15338@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 16 Nov 2012 18:25:10 -0500
+X-Yahoo-Newman-Id: 232361.32378.bm@smtp111.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Lk2Wtk4VM1mirP4VEbtv3KUrW.VmthExgPdc0r6XypbOPNj
+ vjaFB7wCtUQXc5HSsNcWFXE3sI_jAEZNC3tpt5j20CyFR4dlDRBH6cqZmiLV
+ D76SQ3aXcsIWZpt82u7QfwPeyvgaFhgMvuGnF119rAa6pHNtTsZrE_CdZ7eY
+ KJ1ZnEwA_LQHMGZGu9ixZAUUK6_.yzo_5nzBsil6g95YlQWaIby6fmhU2nt1
+ fZbC79JJkf_wGRsI_ra_A01u.QAeCvGyIoxnJAo0Zu49ozuBBnIxDU2Ss8ie
+ ZvjXRYG7hKfAY71SCPhMWzltABQAf1At2kCLYK6LkRxxRB3Lk9_6sQRRu08B
+ ePokxwRni5gMWizHdqGVpcew0D.o7TjKWts7CEpLaBluR5uyX04LUF9aBMcO
+ KHTEwF8xeA2rE9vsTQAGduIfZJkn4Kc9oOsqKsa8ZB_PaBOx69c6dLN...u_
+ BDZWeyUk5glzszKNN.xsZkeIcvg--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <50A6CB55.7070706@att.net>
+Date: Fri, 16 Nov 2012 17:25:09 -0600
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v5 9/9] bug.h, compiler.h: Introduce compiletime_assert
+ & BUILD_BUG_ON_MSG
+References: <1352844568-18826-1-git-send-email-daniel.santos@pobox.com> <1352844821-18952-9-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1352844821-18952-9-git-send-email-daniel.santos@pobox.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 15:01 -0800, Greg Kroah-Hartman wrote:
-> On Fri, Nov 16, 2012 at 03:45:43PM -0700, Toshi Kani wrote:
-> > On Fri, 2012-11-16 at 22:43 +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, November 15, 2012 11:22:47 AM Vasilis Liaskovitis wrote:
-> > > > As discussed in https://patchwork.kernel.org/patch/1581581/
-> > > > the driver core remove function needs to always succeed. This means we need
-> > > > to know that the device can be successfully removed before acpi_bus_trim / 
-> > > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > > > eject or driver unbind of memory devices fails e.g with:
-> > > > 
-> > > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> > > > 
-> > > > since the ACPI core goes ahead and ejects the device regardless of whether the
-> > > > the memory is still in use or not.
-> > > 
-> > > So the question is, does the ACPI core have to do that and if so, then why?
-> > 
-> > The problem is that acpi_memory_devcie_remove() can fail.  However,
-> > device_release_driver() is a void function, so it cannot report its
-> > error.  Here are function flows for SCI, sysfs eject and unbind.
-> 
-> Then don't ever let acpi_memory_device_remove() fail.  If the user wants
-> it gone, it needs to go away.  Just like any other device in the system
-> that can go away at any point in time, you can't "fail" that.
+On 11/13/2012 04:13 PM, danielfsantos@att.net wrote:
+> +#define __compiletime_assert(condition, msg, __func)			\
+> +	do {								\
+> +		bool __cond = !(condition);				\
+> +		extern void __func(void) __compiletime_error(msg);	\
+> +		if (__cond)						\
+> +			__func();					\
+> +		__compiletime_error_fallback(__cond);			\
+> +	} while (0)
+> +
+> +#define _compiletime_assert(condition, msg, __func) \
+> +	__compiletime_assert(condition, msg, __func)
+> +
+> +/**
+> + * compiletime_assert - break build and emit msg if condition is false
+> + * @condition: a compile-time constant condition to check
+> + * @msg:       a message to emit if condition is false
+> + *
+> + * In tradition of POSIX assert, this macro will break the build if the
+> + * supplied condition is *false*, emitting the supplied error message if the
+> + * compiler has support to do so.
+> + */
+> +#define compiletime_assert(condition, msg) \
+> +	_compiletime_assert(condition, msg, __compiletime_assert_ ## __LINE__)
+> +
 
-That would be ideal, but we cannot delete a memory device that contains
-kernel memory.  I am curious, how do you deal with a USB device that is
-being mounted in this case?
+Whoops, this implementation pastes the tokens before allowing them to
+expand, it should be something like this:
 
-Thanks,
--Toshi
+#define __compiletime_assert(condition, msg, __func) .... stuff
+#define _compiletime_assert(condition, msg, prefix, suffix) \
+        __compiletime_assert(condition, msg, prefix ## suffix)
+#define compiletime_assert(condition, msg) \
+        _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
 
+I'll fix that as well.
 
+Daniel
