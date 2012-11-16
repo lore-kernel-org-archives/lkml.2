@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab2KPMvD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:51:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33024 "EHLO mx1.redhat.com"
+	id S1751652Ab2KPMwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:52:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751333Ab2KPMvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:51:01 -0500
-Date: Fri, 16 Nov 2012 18:20:39 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Kees Cook <keescook@chromium.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-In-Reply-To: <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk>
- <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz> <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
- <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz> <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com> <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
- <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
+	id S1751333Ab2KPMwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 07:52:14 -0500
+Date: Fri, 16 Nov 2012 13:51:54 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] perf/POWER7: Make event translations available in
+ sysfs
+Message-ID: <20121116125154.GB1121@krava.brq.redhat.com>
+References: <20121107191818.GA16211@us.ibm.com>
+ <20121107191927.GC16211@us.ibm.com>
+ <20121114102534.GA2220@krava.brq.redhat.com>
+ <20121114182045.GA2240@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121114182045.GA2240@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 14, 2012 at 10:20:45AM -0800, Sukadev Bhattiprolu wrote:
+> Jiri Olsa [jolsa@redhat.com] wrote:
+> | On Wed, Nov 07, 2012 at 11:19:28AM -0800, Sukadev Bhattiprolu wrote:
+> | 
+> | SNIP
+> | 
+> | > +struct perf_pmu_events_attr {
+> | > +	struct device_attribute attr;
+> | > +	u64 id;
+> | > +};
+> | > +
+> | > +extern ssize_t power_events_sysfs_show(struct device *dev,
+> | > +				struct device_attribute *attr, char *page);
+> | > +
+> | > +#define EVENT_VAR(_id)	event_attr_##_id
+> | > +#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+> | > +
+> | > +#define EVENT_ATTR(_name, _id)                                             \
+> | > +	static struct perf_pmu_events_attr EVENT_VAR(_id) = {              \
+> | > +		.attr = __ATTR(_name, 0444, power_events_sysfs_show, NULL),\
+> | > +		.id   = PM_##_id,                                               \
+> | > +	};
+> | 
+> | this is duplicating the x86 code, perhaps it could be moved
+> | to include/linux/perf_event.h and shared globaly
+> 
+> Ok.
+> 
+> Can we remove the assumption that the event id is a generic event that
+> has PERF_COUNT_HW_ prefix and also let the architectures pass in a "show"
+> function ? This would allow architectures to display any arch specific
+> events that don't yet have a generic counterpart.
+> 
+> IOW, can we do something like this (untested) and make PERF_EVENT_ATTR global:
 
-  Hello folks,
+hm, then you probably can use following:
 
-+-- On Mon, 12 Nov 2012, Kees Cook wrote --+
-| >   Al, what's your take on the *rare* extra call to request_module?
-| 
-| Without any other feedback, I'd like to use my minimal allocation
-| patch, since it fixes the problem and doesn't change any of the
-| semantics of how/when loading happens.
+http://www.spinics.net/lists/kernel/msg1434233.html
+http://www.spinics.net/lists/kernel/msg1434235.html
+http://www.spinics.net/lists/kernel/msg1434226.html
 
-  I did apply and test this patch with kernel-3.5.3 on my machine. Now it 
-seems to disclose dynamically allocated(kstrdup) bytes, instead of the call 
-stack bytes. Recursions still dodge and exceed the limit of 
-BINPRM_MAX_RECURSION(4).
-
-Please pardon my asking, but - how is this a fix?
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+jirka
