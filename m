@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab2KPJpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 04:45:35 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:39836 "EHLO
+	id S1751537Ab2KPJps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 04:45:48 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:39857 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2KPJpc (ORCPT
+	with ESMTP id S1751382Ab2KPJpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 04:45:32 -0500
+	Fri, 16 Nov 2012 04:45:34 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
@@ -28,9 +28,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V2 3/3] arm: mvebu: Add hardware I/O Coherency support
-Date: Fri, 16 Nov 2012 10:45:00 +0100
-Message-Id: <1353059100-24022-4-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH V2 2/3] arm: plat-orion: Add coherency attribute when setup mbus target
+Date: Fri, 16 Nov 2012 10:44:59 +0100
+Message-Id: <1353059100-24022-3-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1353059100-24022-1-git-send-email-gregory.clement@free-electrons.com>
@@ -38,194 +38,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Armada 370 and XP come with an unit called coherency fabric. This unit
-allows to use the Armada 370/XP as a nearly coherent architecture. The
-coherency mechanism uses snoop filters to ensure the coherency between
-caches, DRAM and devices. This mechanism needs a synchronization
-barrier which guarantees that all the memory writes initiated by the
-devices have reached their target and do not reside in intermediate
-write buffers. That's why the architecture is not totally coherent and
-we need to provide our own functions for some DMA operations.
-
-Beside the use of the coherency fabric, the device units will have to
-set the attribute flag of the decoding address window to select the
-accurate coherency process for the memory transaction. This is done
-each device driver programs the DRAM address windows. The value of the
-attribute set by the driver is retrieved through the
-orion_addr_map_cfg struct filled during the early initialization of
-the platform.
+Recent SoC such as Armada 370/XP came with the possibility to deal
+with the I/O coherency by hardware. In this case the transaction
+attribute of the window must be flagged as "Shared transaction". Once
+this flag is set, then the transactions will be forced to be sent
+through the coherency block, in other case transaction is driven
+directly to DRAM.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
- .../devicetree/bindings/arm/coherency-fabric.txt   |    9 ++-
- arch/arm/boot/dts/armada-370-xp.dtsi               |    3 +-
- arch/arm/mach-mvebu/addr-map.c                     |    3 +
- arch/arm/mach-mvebu/coherency.c                    |   73 ++++++++++++++++++++
- 4 files changed, 85 insertions(+), 3 deletions(-)
+ arch/arm/plat-orion/addr-map.c              |    4 ++++
+ arch/arm/plat-orion/include/plat/addr-map.h |    1 +
+ 2 files changed, 5 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/coherency-fabric.txt b/Documentation/devicetree/bindings/arm/coherency-fabric.txt
-index 2bfbf67..17d8cd1 100644
---- a/Documentation/devicetree/bindings/arm/coherency-fabric.txt
-+++ b/Documentation/devicetree/bindings/arm/coherency-fabric.txt
-@@ -5,12 +5,17 @@ Available on Marvell SOCs: Armada 370 and Armada XP
- Required properties:
+diff --git a/arch/arm/plat-orion/addr-map.c b/arch/arm/plat-orion/addr-map.c
+index a7b8060..febe386 100644
+--- a/arch/arm/plat-orion/addr-map.c
++++ b/arch/arm/plat-orion/addr-map.c
+@@ -42,6 +42,8 @@ EXPORT_SYMBOL_GPL(mv_mbus_dram_info);
+ #define WIN_REMAP_LO_OFF	0x0008
+ #define WIN_REMAP_HI_OFF	0x000c
  
- - compatible: "marvell,coherency-fabric"
--- reg: Should contain,coherency fabric registers location and length.
++#define ATTR_HW_COHERENCY	(0x1 << 4)
 +
-+- reg: Should contain coherency fabric registers location and
-+  length. First pair for the coherency fabric registers, second pair
-+  for the per-CPU fabric registers registers.
- 
- Example:
- 
- coherency-fabric@d0020200 {
- 	compatible = "marvell,coherency-fabric";
--	reg = <0xd0020200 0xb0>;
-+	reg = <0xd0020200 0xb0>,
-+		<0xd0021810 0x1c>;
-+
- };
- 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index b0d075b..98a6b26 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -38,7 +38,8 @@
- 
- 	coherency-fabric@d0020200 {
- 		compatible = "marvell,coherency-fabric";
--		reg = <0xd0020200 0xb0>;
-+		reg = <0xd0020200 0xb0>,
-+		      <0xd0021810 0x1c>;
- 	};
- 
- 	soc {
-diff --git a/arch/arm/mach-mvebu/addr-map.c b/arch/arm/mach-mvebu/addr-map.c
-index fe454a4..595f6b7 100644
---- a/arch/arm/mach-mvebu/addr-map.c
-+++ b/arch/arm/mach-mvebu/addr-map.c
-@@ -108,6 +108,9 @@ static int __init armada_setup_cpu_mbus(void)
- 
- 	addr_map_cfg.bridge_virt_base = mbus_unit_addr_decoding_base;
- 
-+	if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric"))
-+		addr_map_cfg.hw_io_coherency = 1;
-+
- 	/*
- 	 * Disable, clear and configure windows.
- 	 */
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 20a0ccc..153fcfa 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -22,6 +22,8 @@
- #include <linux/of_address.h>
- #include <linux/io.h>
- #include <linux/smp.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/platform_device.h>
- #include <asm/smp_plat.h>
- #include "armada-370-xp.h"
- 
-@@ -32,11 +34,14 @@
-  * value matching its virtual mapping
+ /*
+  * Default implementation
   */
- static void __iomem *coherency_base = ARMADA_370_XP_REGS_VIRT_BASE + 0x20200;
-+static void __iomem *coherency_cpu_base;
+@@ -163,6 +165,8 @@ void __init orion_setup_cpu_mbus_target(const struct orion_addr_map_cfg *cfg,
+ 			w = &orion_mbus_dram_info.cs[cs++];
+ 			w->cs_index = i;
+ 			w->mbus_attr = 0xf & ~(1 << i);
++			if (cfg->hw_io_coherency)
++				w->mbus_attr |= ATTR_HW_COHERENCY;
+ 			w->base = base & 0xffff0000;
+ 			w->size = (size | 0x0000ffff) + 1;
+ 		}
+diff --git a/arch/arm/plat-orion/include/plat/addr-map.h b/arch/arm/plat-orion/include/plat/addr-map.h
+index ec63e4a..b76c065 100644
+--- a/arch/arm/plat-orion/include/plat/addr-map.h
++++ b/arch/arm/plat-orion/include/plat/addr-map.h
+@@ -17,6 +17,7 @@ struct orion_addr_map_cfg {
+ 	const int num_wins;	/* Total number of windows */
+ 	const int remappable_wins;
+ 	void __iomem *bridge_virt_base;
++	int hw_io_coherency;
  
- /* Coherency fabric registers */
- #define COHERENCY_FABRIC_CTL_OFFSET		   0x0
- #define COHERENCY_FABRIC_CFG_OFFSET		   0x4
- 
-+#define IO_SYNC_BARRIER_CTL_OFFSET		   0x0
-+
- static struct of_device_id of_coherency_table[] = {
- 	{.compatible = "marvell,coherency-fabric"},
- 	{ /* end of list */ },
-@@ -75,6 +80,70 @@ int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
- 	return 0;
- }
- 
-+static inline void mvebu_hwcc_sync_io_barrier(void)
-+{
-+	writel(0x1, coherency_cpu_base + IO_SYNC_BARRIER_CTL_OFFSET);
-+	while (readl(coherency_cpu_base + IO_SYNC_BARRIER_CTL_OFFSET) & 0x1);
-+}
-+
-+static dma_addr_t mvebu_hwcc_dma_map_page(struct device *dev, struct page *page,
-+				  unsigned long offset, size_t size,
-+				  enum dma_data_direction dir,
-+				  struct dma_attrs *attrs)
-+{
-+	if (dir != DMA_TO_DEVICE)
-+		mvebu_hwcc_sync_io_barrier();
-+	return pfn_to_dma(dev, page_to_pfn(page)) + offset;
-+}
-+
-+
-+static void mvebu_hwcc_dma_unmap_page(struct device *dev, dma_addr_t dma_handle,
-+			      size_t size, enum dma_data_direction dir,
-+			      struct dma_attrs *attrs)
-+{
-+	if (dir != DMA_TO_DEVICE)
-+		mvebu_hwcc_sync_io_barrier();
-+}
-+
-+static void mvebu_hwcc_dma_sync(struct device *dev, dma_addr_t dma_handle,
-+			size_t size, enum dma_data_direction dir)
-+{
-+	if (dir != DMA_TO_DEVICE)
-+		mvebu_hwcc_sync_io_barrier();
-+}
-+
-+static struct dma_map_ops mvebu_hwcc_dma_ops = {
-+	.alloc			= arm_coherent_dma_alloc,
-+	.free			= arm_coherent_dma_free,
-+	.mmap			= arm_dma_mmap,
-+	.unmap_page		= mvebu_hwcc_dma_unmap_page,
-+	.get_sgtable		= arm_dma_get_sgtable,
-+	.map_page		= mvebu_hwcc_dma_map_page,
-+	.map_sg			= arm_dma_map_sg,
-+	.unmap_sg		= arm_dma_unmap_sg,
-+	.sync_single_for_cpu	= mvebu_hwcc_dma_sync,
-+	.sync_single_for_device	= mvebu_hwcc_dma_sync,
-+	.sync_sg_for_cpu	= arm_dma_sync_sg_for_cpu,
-+	.sync_sg_for_device	= arm_dma_sync_sg_for_device,
-+	.set_dma_mask		= arm_dma_set_mask,
-+};
-+
-+static int mvebu_hwcc_platform_notifier(struct notifier_block *nb,
-+				       unsigned long event, void *__dev)
-+{
-+	struct device *dev = __dev;
-+
-+	if (event != BUS_NOTIFY_ADD_DEVICE)
-+		return NOTIFY_DONE;
-+	set_dma_ops(dev, &mvebu_hwcc_dma_ops);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block mvebu_hwcc_platform_nb = {
-+	.notifier_call = mvebu_hwcc_platform_notifier,
-+};
-+
- int __init coherency_init(void)
- {
- 	struct device_node *np;
-@@ -83,6 +152,10 @@ int __init coherency_init(void)
- 	if (np) {
- 		pr_info("Initializing Coherency fabric\n");
- 		coherency_base = of_iomap(np, 0);
-+		coherency_cpu_base = of_iomap(np, 1);
-+		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
-+		bus_register_notifier(&platform_bus_type,
-+					&mvebu_hwcc_platform_nb);
- 	}
- 
- 	return 0;
+ 	/* If NULL, the default cpu_win_can_remap will be used, using
+ 	   the value in remappable_wins */
 -- 
 1.7.9.5
 
