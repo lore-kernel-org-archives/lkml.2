@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab2KPKye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:54:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab2KPKyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:54:32 -0500
-Date: Fri, 16 Nov 2012 11:54:26 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 3.7-rc3: mouses stopped working
-In-Reply-To: <20121116013405.GA2002@elf.ucw.cz>
-Message-ID: <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
-References: <20121115132849.GA4062@elf.ucw.cz> <alpine.LNX.2.00.1211151429240.15877@pobox.suse.cz> <20121115140736.GA2651@elf.ucw.cz> <alpine.LNX.2.00.1211151508350.15877@pobox.suse.cz> <20121116013405.GA2002@elf.ucw.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751408Ab2KPKzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 05:55:35 -0500
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:49143 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751001Ab2KPKze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 05:55:34 -0500
+Date: Fri, 16 Nov 2012 10:57:15 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
+        celinux-dev@lists.celinuxforum.org, gregkh@linuxfoundation.org,
+        Tim Bird <tim.bird@am.sony.com>, Baruch Siach <baruch@tkos.co.il>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Selim TEMUR <selimtemur@gmail.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH] LDT - Linux Driver Template
+Message-ID: <20121116095715.GE31527@game.jcrosoft.org>
+References: <1352832397-1349-1-git-send-email-const@MakeLinux.com>
+ <20121114111312.13c8ea82@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121114111312.13c8ea82@pyramind.ukuu.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1040894464067283813
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehgedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Pavel Machek wrote:
+On 11:13 Wed 14 Nov     , Alan Cox wrote:
+> Doing this is the past has always led to obsolete stale broken examples
+> because they are not actively in use and maintained. Far better to work
+> from actual live in use driver code.
 
-> > If you have mouse that is buggy and periodically 
-> > disconnecting/reconnecting itself, you need commit df0cfd6990347c, which 
-> > went into 3.7-rc5 (it's a regression fix from -rc1).
-> 
-> I have -rc5 now, and still no mice for me.
-> 
-> root@amd:/tmp# uname -a
-> Linux amd 3.7.0-rc5+ #236 SMP Thu Nov 15 20:07:26 CET 2012 i686 GNU/Linux
-> root@amd:/tmp# cat /dev/input/mice
-> cat: /dev/input/mice: No such device or address
-> root@amd:/tmp# ls -al /dev/input/mice
-> crw-rw---- 1 root root 13, 63 Apr 25  2010 /dev/input/mice
-> root@amd:/tmp# 
+exactly what I tell him on ce-linux
 
-Let's see whether this is /dev/input/mice issue or something else first.
-
-Is anything coming out of corresponding /dev/input/eventX node?
-
-And /dev/hidrawX?
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Best Regards,
+J.
