@@ -1,151 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab2KPAjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 19:39:39 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:47372 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab2KPAji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 19:39:38 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-Date: Fri, 16 Nov 2012 01:44 +0100
-Message-ID: <193302419.NkjaAjIrYa@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1353026174.7176.301.camel@yhuang-dev>
-References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org> <50117675.OVEdDFPCp3@vostro.rjw.lan> <1353026174.7176.301.camel@yhuang-dev>
+	id S1751361Ab2KPAkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 19:40:23 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50292 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab2KPAkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 19:40:22 -0500
+Message-ID: <50A58B6E.8090609@gmail.com>
+Date: Fri, 16 Nov 2012 08:40:14 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com> <alpine.LNX.2.00.1211131935410.30540@eggly.anvils> <50A49C46.9040406@gmail.com> <alpine.LNX.2.00.1211151126440.9273@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1211151126440.9273@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 16, 2012 08:36:14 AM Huang Ying wrote:
-> On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
-> > On Thursday, November 15, 2012 09:03:44 AM Huang Ying wrote:
-> > > On Thu, 2012-11-15 at 00:10 +0100, Rafael J. Wysocki wrote:
-> > > > On Wednesday, November 14, 2012 04:45:01 PM Alan Stern wrote:
-> > > > > On Wed, 14 Nov 2012, Rafael J. Wysocki wrote:
-> > > > > 
-> > > > > > > This has the side effect that when a driver unbinds, it can't leave the 
-> > > > > > > device in a special low-power state.  The device will always end up in 
-> > > > > > > the generic low-power state supported by the PCI core.
-> > > > > > 
-> > > > > > Well, I'm not sure I'd like that.
-> > > > > > 
-> > > > > > Let's just go back even one step more and think what we'd like to have in
-> > > > > > general terms and then how to implement it. :-)
-> > > > > > 
-> > > > > > Suppose that pci_pm_init() calls pm_runtime_enable() for all devices (in
-> > > > > > addition to what it does currently).  The runtime PM status of each device is
-> > > > > > RPM_SUSPENDED at this point.  Then:
-> > > > > 
-> > > > > Wait a moment.  When the device is detected and initialized, it is in
-> > > > > D0, right?  Currently we don't care much because the device starts out
-> > > > > disabled for runtime PM.  But now you are going to enable it.  While
-> > > > > the device is enabled, its runtime status should match the physical
-> > > > > power level.
-> > > > 
-> > > > OK
-> > > 
-> > > If my memory were correct, RPM_SUSPENDED just means device stop working,
-> > > but need not be put into low-power state.  So for RPM_ACTIVE, PCI
-> > > devices should be in D0, but for RPM_SUSPENDED, PCI devices can in any
-> > > power state.
-> > 
-> > Yes, that's correct and I was wrong when I thought we could require the
-> > status to be RPM_ACTIVE all the time when there's no driver, because that
-> > would prevent parents from being suspended.  And we want them to be able to
-> > suspend for driverless children, _unless_ user space has its attribute set
-> > to "on" (i.e. the default).
-> > 
-> > So it looks like what we want to do is:
-> > 
-> > (1) Enable runtime PM in pci_pm_init() and set the status to RPM_ACTIVE right
-> >     before, so that it is in agreement with the pm_runtime_forbid() we do in
-> >     there.
-> > 
-> > (2) If user space switches its attribute to "off" later, but before any
-> >     drivers are probed, we want the status to switch to RPM_SUSPENDED
-> >     _without_ actually changing the devices power state.  For that,
-> >     I think, we can make the PCI bus type's runtime PM callback ignore
-> >     devices without drivers (i.e. return 0 for them).
-> > 
-> > (3) When local_pci_probe() starts, after we've resumed the parent,
-> >     the device will be in D0 (it may be D0-uninitialized, though).
-> >     If the user space's attribute is "on" at this point, the parent's
-> >     resume doesn't change anything.  If it is "auto", the parent's
-> >     resume may actually transition the device, although its status
-> >     will still be RPM_SUSPENDED.  For consistency _and_ compatibility
-> >     with the current code, the driver's .probe() routine needs to see
-> >     the device RPM_ACTIVE and usage_count incremented, but we don't
-> >     want to run its PM callbacks _before_ .probe() runs.  For that
-> >     to work, I think, we can do something like pm_runtime_get_skip_callbacks(),
-> >     treating the device as though it had the power.no_callbacks flag set,
-> >     right before calling ddi->drv->probe().
-> > 
-> >     If the device has been RPM_ACTIVE at that point (i.e. user space has
-> >     had its attribute set to "on") it will just bump up usage_count (which
-> >     is what we want).  If the device has been RPM_SUSPENDED, it will
-> >     bump up usage_count _and_ change the status to RPM_ACTIVE without
-> >     executing any callbacks (the device is in D0 anyway, right?), which
-> >     is what we want too.
-> > 
-> > (4) If ddi->drv->probe() succeeds, we don't want to change anything, so
-> >     as not to confuse the driver, which is now in control of the device.
-> > 
-> > (5) If ddi->drv->probe() fails, we need to restore the situation from
-> >     before calling local_pci_probe(), but we want the pm_runtime_put(parent)
-> >     at the end of it to actually suspend the parent if user space has
-> >     its attribute (for the child!) set to "auto".
-> > 
-> >     Assume that the driver is not buggy and the failing ddi->drv->probe()
-> >     leaves the device in the same configuration as it's received it in.
-> >     Then, the device is RPM_ACTIVE and in D0 (which may be uninitialized).
-> >     For the parent's suspend to work, we need to transition it to
-> >     RPM_SUSPENDED, but again we don't want the driver's PM callbacks to
-> >     run at this point.  Moreover, we don't want the PCI bus type's
-> >     callbacks to run at this point, because dev->driver is still set.
-> >     So again, doing something like pm_runtime_put_skip_callbacks(),
-> >     treating the device as though it had power.no_callbacks set, seems
-> >     to be appropriate.
-> >    
-> >     Namely, if the user space's attribute is "on", it will just drop
-> >     usage_count by 1, which is what we want in that case.  If the user
-> >     space's attribute is "auto", on the other hand, it will drop
-> >     usage_count by 1 and change the status to RPM_SUSPENDED without
-> >     running callbacks, which again is what we want.
-> >     
-> > (6) In drv->remove() the driver is supposed to bump up usage_count by 1,
-> >     so as to restore the situation from before its .probe() routine
-> >     was called.  It also should leave the device as RPM_ACTIVE, because
-> >     that's what it's got in .probe().  Then, after drv->remove exits,
-> >     (and also if drv was NULL to start with), we want to drop usage_count
-> >     by 1.  Moreover, if the user space's attribute is "on", we don't
-> >     want anything more to happen, _but_ if that's "auto", we want to
-> >     suspend the parent.
-> > 
-> >     Note that dev->driver is still not NULL at this point (although
-> >     pci_dev->driver is!) so again we can't run the PCI bus type's callbacks.
-> >     It looks like, then, what we want to do here is
-> >     pm_runtime_put_skip_callbacks() again, because if the user space's
-> >     attribute is "on", it will just drop usage_count by 1, which is what
-> >     we want, 
-> 
-> For this situation, if user "echo auto > .../power/control" for the
-> device, the runtime PM callbacks of device will be called.  I think that
-> is not intended.  So I think it is better to use some kind of flag or
-> state for that.
+On 11/16/2012 03:56 AM, Hugh Dickins wrote:
+> Offtopic...
+>
+> On Thu, 15 Nov 2012, Jaegeuk Hanse wrote:
+>> Another question. Why the function shmem_fallocate which you add to kernel
+>> need call shmem_getpage?
+> Because shmem_getpage(_gfp) is where shmem's
+> page lookup and allocation complexities are handled.
+>
+> I assume the question behind your question is: why does shmem actually
+> allocate pages for its fallocate, instead of just reserving the space?
 
-I'm not sure what situation exactly you have in mind.  Care to give an
-exact scenario?
+Yeah, this is what I want to know.
 
-Rafael
+>
+> I did play with just reserving the space, with more special entries in
+> the radix_tree to note the reservations made.  It should be doable for
+> the vm_enough_memory and sbinfo->used_blocks reservations.
+>
+> What absolutely deterred me from taking that path was the mem_cgroup
+> case: shmem and swap and memcg are not easy to get working right together,
+> and nobody would thank me for complicating memcg just for shmem_fallocate.
+>
+> By allocating pages, the pre-existing memcg code just works; if we used
+> reservations instead, we would have to track their memcg charges in some
+> additional new way.  I see no justification for that complication.
 
+Oh, I see, thanks Hugh. :-)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Hugh
+
