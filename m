@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2KPRIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 12:08:25 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52618 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2KPRIU (ORCPT
+	id S1752755Ab2KPRJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 12:09:16 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46050 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2KPRJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 12:08:20 -0500
-Message-ID: <50A67300.2000001@wwwdotorg.org>
-Date: Fri, 16 Nov 2012 10:08:16 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Fri, 16 Nov 2012 12:09:14 -0500
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-pm@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v8 0/3] Runtime Interpreted Power Sequences
-References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.5
+In-Reply-To: <20121116170616.GB30626@kroah.com>
+References: <1353084911-8908-1-git-send-email-johanmeiring@gmail.com>
+	<20121116170616.GB30626@kroah.com>
+Date: Fri, 16 Nov 2012 19:09:14 +0200
+Message-ID: <CALqZ13upXn+BZhzHOHuudqcQ23-2ZUF9X11qR4ESy0_B4pzRbw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] staging: wlags49_h2: mdd.h: fixes tons of coding
+ style issues
+From: Johan Meiring <johanmeiring@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
+        viro@zeniv.linux.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2012 11:38 PM, Alexandre Courbot wrote:
-> Hopefully the final series before the feature gets merged. Anton Vorontsov
-> kindly accepted to take it into his tree, so this series is mostly a call for
-> acks, tests and reviews notices before the merge window for 3.8 opens. If you
-> are interested in seeing this feature, please add your name.
-> 
-> This series also adds an entry for the subsystem into MAINTAINERS, setting me as
-> the person in charge.
+Will do.  Just a quick question: Is it acceptable to submit small
+patches even if the main file still fails the checkpatch,pl script?
+i.e. is it OK to fix e.g. the first 20 instances of C99 // comment
+usage, even if 200 remain afterwards, and then fix them later?
 
-The series,
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Johan
 
-On Ventana.
-
+On 16 November 2012 19:06, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Nov 16, 2012 at 06:55:11PM +0200, Johan Meiring wrote:
+>> This commit sorts out a ton of styling issues, including the use of
+>> C99 // comments, spaces before and after tabs, etc. I also took the
+>> time to align stuff a little more neatly using tabs. The file is
+>> nowhere near ready, but it's a start.
+>>
+>> Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+>> ---
+>>  drivers/staging/wlags49_h2/mdd.h | 1593 +++++++++++++++++++-------------------
+>>  1 file changed, 797 insertions(+), 796 deletions(-)
+>
+> A patch this big is almost impossible to review, sorry.  Please break it
+> up into smaller pieces.
+>
+> thanks,
+>
+> greg k-h
