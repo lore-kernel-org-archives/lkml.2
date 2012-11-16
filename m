@@ -1,29 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab2KPBXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:23:55 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:47477 "EHLO ogre.sisk.pl"
+	id S1751537Ab2KPBZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 20:25:33 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:47490 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab2KPBXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:23:51 -0500
+	id S1751151Ab2KPBZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 20:25:32 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [Patch v5 0/7] acpi,memory-hotplug: implement framework for hot removing memory
-Date: Fri, 16 Nov 2012 02:28:14 +0100
-Message-ID: <1819346.BWGqmHiiPA@vostro.rjw.lan>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Fri, 16 Nov 2012 02:29:54 +0100
+Message-ID: <1965322.pSDJypqR3K@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50A591E5.9080906@jp.fujitsu.com>
-References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com> <9217155.1eDFuhkN55@vostro.rjw.lan> <50A591E5.9080906@jp.fujitsu.com>
+In-Reply-To: <1353027296.7176.312.camel@yhuang-dev>
+References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org> <5403446.Qq6ASJZlmy@vostro.rjw.lan> <1353027296.7176.312.camel@yhuang-dev>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -31,97 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 16, 2012 10:07:49 AM Yasuaki Ishimatsu wrote:
-> Hi Rafael,
+On Friday, November 16, 2012 08:54:56 AM Huang Ying wrote:
+> On Fri, 2012-11-16 at 01:55 +0100, Rafael J. Wysocki wrote:
+> > On Friday, November 16, 2012 01:44:00 AM Rafael J. Wysocki wrote:
+> > > On Friday, November 16, 2012 08:36:14 AM Huang Ying wrote:
+> > > > On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
+> > 
+> > [...]
+> > 
+> > > > 
+> > > > For this situation, if user "echo auto > .../power/control" for the
+> > > > device, the runtime PM callbacks of device will be called.  I think that
+> > > > is not intended.  So I think it is better to use some kind of flag or
+> > > > state for that.
+> > > 
+> > > I'm not sure what situation exactly you have in mind.  Care to give an
+> > > exact scenario?
+> > 
+> > Ah, I see.  When we've just called drv->remove(), there is a window in
+> > which user space may cause the driver's runtime PM callbacks to be
+> > executed by changing its attribute to "auto".
+> > 
+> > So perhaps we should check pci_dev->driver rather than pci_dev->dev.driver
+> > in the runtime PM callbacks?  With a few more changes that should allow us
+> > to close that race.
 > 
-> 2012/11/16 9:28, Rafael J. Wysocki wrote:
-> > On Thursday, November 15, 2012 02:59:30 PM Wen Congyang wrote:
-> >> The memory device can be removed by 2 ways:
-> >> 1. send eject request by SCI
-> >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> >>
-> >> In the 1st case, acpi_memory_disable_device() will be called.
-> >> In the 2nd case, acpi_memory_device_remove() will be called.
-> >> acpi_memory_device_remove() will also be called when we unbind the
-> >> memory device from the driver acpi_memhotplug or a driver initialization
-> >> fails.
-> >>
-> >> acpi_memory_disable_device() has already implemented a code which
-> >> offlines memory and releases acpi_memory_info struct . But
-> >> acpi_memory_device_remove() has not implemented it yet.
-> >>
-> >> So the patch prepares the framework for hot removing memory and
-> >> adds the framework into acpi_memory_device_remove().
-> >>
-> >> We may hotremove the memory device by this 2 ways at the same time.
-> >> So we remove the function acpi_memory_disable_device(), and use
-> >> acpi_bus_hot_remove_device() which is used by 2nd case to implement it.
-> >> We lock device in acpi_bus_hot_remove_device(), so there is no
-> >> need to add lock in acpi_memhotplug.
-> >>
-> >> The last version of this patchset is here:
-> >> https://lkml.org/lkml/2012/11/8/121
-> >>
-> >> Note:
-> >> 1. The following commit in pm tree can be dropped now(The other two patches
-> >>     are already dropped):
-> >>     54c4c7db6cb94d7d1217df6d7fca6847c61744ab
-> >> 2. This patchset requires the following patch(It is in pm tree now)
-> >>     https://lkml.org/lkml/2012/11/1/225
-> >>
-> >> Changes from v4 to v5:
-> >> 1. patch2: new patch. use acpi_bus_hot_remove_device() to implement memory
-> >>     device hotremove.
-> >>
-> >> Changes from v3 to v4:
-> >> 1. patch1: unlock list_lock when removing memory fails.
-> >> 2. patch2: just rebase them
-> >> 3. patch3-7: these patches are in -mm tree, and they conflict with this
-> >>     patchset, so Adrew Morton drop them from -mm tree. I rebase and merge
-> >>     them into this patchset.
-> >>
-> >> Wen Congyang (6):
-> >>    acpi,memory-hotplug: deal with eject request in hotplug queue
-> >>    acpi_memhotplug.c: fix memory leak when memory device is unbound from
-> >>      the module acpi_memhotplug
-> >>    acpi_memhotplug.c: free memory device if acpi_memory_enable_device()
-> >>      failed
-> >>    acpi_memhotplug.c: don't allow to eject the memory device if it is
-> >>      being used
-> >>    acpi_memhotplug.c: bind the memory device when the driver is being
-> >>      loaded
-> >>    acpi_memhotplug.c: auto bind the memory device which is hotplugged
-> >>      before the driver is loaded
-> >>
-> >> Yasuaki Ishimatsu (1):
-> >>    acpi,memory-hotplug : add memory offline code to
-> >>      acpi_memory_device_remove()
-> >
-> > Well, I have tried _really_ hard to apply this patchset, but pretty much
-> > none of the patches except for [1/7] applied for me.  I have no idea what
-> > tree they are against, but I'm pretty sure it's not my tree.
-> >
-> > I _have_ applied patches [1-4/7] and pushed them to linux-pm.git/linux-next.
-> 
-> I checked your tree and found a mistake.
-> You merged a following patch into your tree.
-> 
-> commitid:2ba281f1
-> ACPI / memory-hotplug: introduce a mutex lock to protect the list
-> in acpi_memory_device
-> 
-> But it is wrong.
-> 
-> [1/7] patch is "acpi,memory-hotplug : add memory offline code to
-> acpi_memory_device_remove()". So we would like you to merge it
-> instead of commitid:2ba281f1.
+> Yes.  And I think, with pci_dev->driver (after some changes suggested by
+> Alan), we need not to use pm_runtime_get/put_skip_callbacks().
 
-Yes, I've found it too.
+Good.  Can you please prepare a patch, then? :-)
 
-Now applied patches [1-6/7], because I agree with Toshi Kani that patch [7/7]
-goes too far, so I'm not going to apply it.
-
-Thanks,
 Rafael
 
 
