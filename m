@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab2KPL2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:28:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33061 "EHLO mx2.suse.de"
+	id S1751789Ab2KPLXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33001 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab2KPLX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:26 -0500
+	id S1751739Ab2KPLXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:20 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 22/43] mm: sched: numa: Implement slow start for working set sampling
-Date: Fri, 16 Nov 2012 11:22:32 +0000
-Message-Id: <1353064973-26082-23-git-send-email-mgorman@suse.de>
+Subject: [PATCH 17/43] sched, mm, x86: Add the ARCH_SUPPORTS_NUMA_BALANCING flag
+Date: Fri, 16 Nov 2012 11:22:27 +0000
+Message-Id: <1353064973-26082-18-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,135 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Ingo Molnar <mingo@kernel.org>
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
+Allow architectures to opt-in to the adaptive affinity NUMA balancing code.
 
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
-
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
-
-In practice this change fixes an observable kbuild regression:
-
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
-
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
-
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
-
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
-
-and it also fixes an observable perf bench (hackbench) regression:
-
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/balance_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
-[ Wrote the changelog, ran measurements, tuned the default. ]
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    2 +-
- kernel/sched/fair.c   |    5 +++++
- kernel/sysctl.c       |    7 +++++++
- 4 files changed, 14 insertions(+), 1 deletion(-)
+ init/Kconfig |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index abb1c70..a2b06ea 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2006,6 +2006,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+diff --git a/init/Kconfig b/init/Kconfig
+index 6fdd6e3..17434ca 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -696,6 +696,13 @@ config LOG_BUF_SHIFT
+ config HAVE_UNSTABLE_SCHED_CLOCK
+ 	bool
  
-+extern unsigned int sysctl_balance_numa_scan_delay;
- extern unsigned int sysctl_balance_numa_scan_period_min;
- extern unsigned int sysctl_balance_numa_scan_period_max;
- extern unsigned int sysctl_balance_numa_scan_size;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 81fa185..047e3c7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1543,7 +1543,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->node_stamp = 0ULL;
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
--	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+	p->numa_scan_period = sysctl_balance_numa_scan_delay;
- 	p->numa_work.next = &p->numa_work;
- #endif /* CONFIG_BALANCE_NUMA */
- }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c673567..1bf97b5 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -788,6 +788,9 @@ unsigned int sysctl_balance_numa_scan_period_max = 100*16;
- /* Portion of address space to scan in MB */
- unsigned int sysctl_balance_numa_scan_size = 256;
- 
-+/* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
-+unsigned int sysctl_balance_numa_scan_delay = 1000;
++#
++# For architectures that want to enable the PROT_NUMA driven,
++# NUMA-affine scheduler balancing logic:
++#
++config ARCH_SUPPORTS_NUMA_BALANCING
++	bool
 +
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-@@ -929,6 +932,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
- 
- 	if (now - curr->node_stamp > period) {
-+		if (!curr->node_stamp)
-+			curr->numa_scan_period = sysctl_balance_numa_scan_period_min;
- 		curr->node_stamp = now;
- 
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d191203..5ee587d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_BALANCE_NUMA
- 	{
-+		.procname	= "balance_numa_scan_delay_ms",
-+		.data		= &sysctl_balance_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "balance_numa_scan_period_min_ms",
- 		.data		= &sysctl_balance_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	depends on EVENTFD
 -- 
 1.7.9.2
 
