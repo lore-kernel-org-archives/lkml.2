@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab2KPCWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:22:07 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49227 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab2KPCV6 (ORCPT
+	id S1751169Ab2KPCWF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:22:05 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61094 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab2KPCWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:21:58 -0500
+	Thu, 15 Nov 2012 21:22:00 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 8/9] irq_work: Make self-IPIs optable
-Date: Fri, 16 Nov 2012 03:21:30 +0100
-Message-Id: <1353032491-16462-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 9/9] printk: Wake up klogd using irq_work
+Date: Fri, 16 Nov 2012 03:21:31 +0100
+Message-Id: <1353032491-16462-10-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
 References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
@@ -25,16 +25,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On irq work initialization, let the user choose to define it
-as "lazy" or not. "Lazy" means that we don't want to send
-an IPI (provided the arch can anyway) when we enqueue this
-work but we rather prefer to wait for the next timer tick
-to execute our work if possible.
+klogd is woken up asynchronously from the tick in order
+to do it safely.
 
-This is going to be a benefit for non-urgent enqueuers
-(like printk in the future) that may prefer not to raise
-an IPI storm in case of frequent enqueuing on short periods
-of time.
+However if printk is called when the tick is stopped, the reader
+won't be woken up until the next interrupt, which might not fire
+for a while. As a result, the user may miss some message.
+
+To fix this, lets implement the printk tick using a lazy irq work.
+This subsystem takes care of the timer tick state and can
+fix up accordingly.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -44,129 +44,133 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/irq_work.h |   14 ++++++++++++++
- kernel/irq_work.c        |   46 ++++++++++++++++++++++++++--------------------
- 2 files changed, 40 insertions(+), 20 deletions(-)
+ include/linux/printk.h   |    3 ---
+ init/Kconfig             |    1 +
+ kernel/printk.c          |   36 ++++++++++++++++++++----------------
+ kernel/time/tick-sched.c |    2 +-
+ kernel/timer.c           |    1 -
+ 5 files changed, 22 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index a69704f..b28eb60 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -3,6 +3,20 @@
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 9afc01e..86c4b62 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -98,9 +98,6 @@ int no_printk(const char *fmt, ...)
+ extern asmlinkage __printf(1, 2)
+ void early_printk(const char *fmt, ...);
  
- #include <linux/llist.h>
- 
-+/*
-+ * An entry can be in one of four states:
-+ *
-+ * free	     NULL, 0 -> {claimed}       : free to be used
-+ * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
-+ * pending   next, 3 -> {busy}          : queued, pending callback
-+ * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
-+ */
-+
-+#define IRQ_WORK_PENDING	1UL
-+#define IRQ_WORK_BUSY		2UL
-+#define IRQ_WORK_FLAGS		3UL
-+#define IRQ_WORK_LAZY		4UL /* Doesn't want IPI, wait for tick */
-+
- struct irq_work {
- 	unsigned long flags;
- 	struct llist_node llnode;
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index fcaadae..cef098d 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -12,23 +12,14 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/irqflags.h>
-+#include <linux/sched.h>
-+#include <linux/tick.h>
- #include <linux/cpu.h>
- #include <asm/processor.h>
- 
--/*
-- * An entry can be in one of four states:
-- *
-- * free	     NULL, 0 -> {claimed}       : free to be used
-- * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
-- * pending   next, 3 -> {busy}          : queued, pending callback
-- * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
-- */
+-extern int printk_needs_cpu(int cpu);
+-extern void printk_tick(void);
 -
--#define IRQ_WORK_PENDING	1UL
--#define IRQ_WORK_BUSY		2UL
--#define IRQ_WORK_FLAGS		3UL
+ #ifdef CONFIG_PRINTK
+ asmlinkage __printf(5, 0)
+ int vprintk_emit(int facility, int level,
+diff --git a/init/Kconfig b/init/Kconfig
+index cdc152c..c575566 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1196,6 +1196,7 @@ config HOTPLUG
+ config PRINTK
+ 	default y
+ 	bool "Enable support for printk" if EXPERT
++	select IRQ_WORK
+ 	help
+ 	  This option enables normal printk support. Removing it
+ 	  eliminates most of the message strings from the kernel image
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 2d607f4..c9104fe 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -42,6 +42,7 @@
+ #include <linux/notifier.h>
+ #include <linux/rculist.h>
+ #include <linux/poll.h>
++#include <linux/irq_work.h>
  
- static DEFINE_PER_CPU(struct llist_head, irq_work_list);
-+static DEFINE_PER_CPU(int, irq_work_raised);
+ #include <asm/uaccess.h>
  
- /*
-  * Claim the entry so that no one else will poke at it.
-@@ -68,14 +59,18 @@ void __weak arch_irq_work_raise(void)
-  */
- static void __irq_work_queue(struct irq_work *work)
+@@ -1955,30 +1956,32 @@ int is_console_locked(void)
+ static DEFINE_PER_CPU(int, printk_pending);
+ static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
+ 
+-void printk_tick(void)
++static void wake_up_klogd_work_func(struct irq_work *irq_work)
  {
--	bool empty;
--
- 	preempt_disable();
- 
--	empty = llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
--	/* The list was empty, raise self-interrupt to start processing. */
--	if (empty)
--		arch_irq_work_raise();
-+	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+-	if (__this_cpu_read(printk_pending)) {
+-		int pending = __this_cpu_xchg(printk_pending, 0);
+-		if (pending & PRINTK_PENDING_SCHED) {
+-			char *buf = __get_cpu_var(printk_sched_buf);
+-			printk(KERN_WARNING "[sched_delayed] %s", buf);
+-		}
+-		if (pending & PRINTK_PENDING_WAKEUP)
+-			wake_up_interruptible(&log_wait);
++	int pending = __this_cpu_xchg(printk_pending, 0);
 +
-+	/*
-+	 * If the work is flagged as "lazy", just wait for the next tick
-+	 * to run it. Otherwise, or if the tick is stopped, raise the irq work.
-+	 */
-+	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
-+		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-+			arch_irq_work_raise();
-+	}
- 
- 	preempt_enable();
- }
-@@ -116,10 +111,19 @@ bool irq_work_needs_cpu(void)
- 
- static void __irq_work_run(void)
- {
-+	unsigned long flags;
- 	struct irq_work *work;
- 	struct llist_head *this_list;
- 	struct llist_node *llnode;
- 
-+
-+	/*
-+	 * Reset the "raised" state right before we check the list because
-+	 * an NMI may enqueue after we find the list empty from the runner.
-+	 */
-+	__this_cpu_write(irq_work_raised, 0);
-+	barrier();
-+
- 	this_list = &__get_cpu_var(irq_work_list);
- 	if (llist_empty(this_list))
- 		return;
-@@ -139,13 +143,15 @@ static void __irq_work_run(void)
- 		 * to claim that work don't rely on us to handle their data
- 		 * while we are in the middle of the func.
- 		 */
--		xchg(&work->flags, IRQ_WORK_BUSY);
-+		flags = work->flags & ~IRQ_WORK_PENDING;
-+		xchg(&work->flags, flags);
-+
- 		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
- 		 * no-one else claimed it meanwhile.
- 		 */
--		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
-+		(void)cmpxchg(&work->flags, flags, flags & ~IRQ_WORK_BUSY);
++	if (pending & PRINTK_PENDING_SCHED) {
++		char *buf = __get_cpu_var(printk_sched_buf);
++		printk(KERN_WARNING "[sched_delayed] %s", buf);
  	}
+-}
+ 
+-int printk_needs_cpu(int cpu)
+-{
+-	if (cpu_is_offline(cpu))
+-		printk_tick();
+-	return __this_cpu_read(printk_pending);
++	if (pending & PRINTK_PENDING_WAKEUP)
++		wake_up_interruptible(&log_wait);
  }
  
++static DEFINE_PER_CPU(struct irq_work, wake_up_klogd_work) = {
++	.func = wake_up_klogd_work_func,
++	.flags = IRQ_WORK_LAZY,
++};
++
+ void wake_up_klogd(void)
+ {
+-	if (waitqueue_active(&log_wait))
++	preempt_disable();
++	if (waitqueue_active(&log_wait)) {
+ 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
++		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
++	}
++	preempt_enable();
+ }
+ 
+ static void console_cont_flush(char *text, size_t size)
+@@ -2458,6 +2461,7 @@ int printk_sched(const char *fmt, ...)
+ 	va_end(args);
+ 
+ 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
++	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
+ 	local_irq_restore(flags);
+ 
+ 	return r;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f249e8c..822d757 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -289,7 +289,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 		time_delta = timekeeping_max_deferment();
+ 	} while (read_seqretry(&xtime_lock, seq));
+ 
+-	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
++	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+ 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 367d008..ff3b516 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1351,7 +1351,6 @@ void update_process_times(int user_tick)
+ 	account_process_tick(p, user_tick);
+ 	run_local_timers();
+ 	rcu_check_callbacks(cpu, user_tick);
+-	printk_tick();
+ #ifdef CONFIG_IRQ_WORK
+ 	if (in_irq())
+ 		irq_work_run();
 -- 
 1.7.5.4
 
