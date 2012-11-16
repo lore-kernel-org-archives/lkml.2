@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2KPLbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:31:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32915 "EHLO mx2.suse.de"
+	id S1751557Ab2KPLXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538Ab2KPLXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:08 -0500
+	id S1751219Ab2KPLXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:05 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/43] mm: numa: Create basic numa page hinting infrastructure
-Date: Fri, 16 Nov 2012 11:22:19 +0000
-Message-Id: <1353064973-26082-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/43] mm: numa: Make pte_numa() and pmd_numa() a generic implementation
+Date: Fri, 16 Nov 2012 11:22:16 +0000
+Message-Id: <1353064973-26082-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,226 +25,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: This patch started as "mm/mpol: Create special PROT_NONE
-	infrastructure" and preserves the basic idea but steals *very*
-	heavily from "autonuma: numa hinting page faults entry points" for
-	the actual fault handlers without the migration parts.	The end
-	result is barely recognisable as either patch so all Signed-off
-	and Reviewed-bys are dropped. If Peter, Ingo and Andrea are ok with
-	this version, I will re-add the signed-offs-by to reflect the history.
+It was pointed out by Ingo Molnar that the per-architecture definition of
+the NUMA PTE helper functions means that each supporting architecture
+will have to cut and paste it which is unfortunate. He suggested instead
+that the helpers should be weak functions that can be overridden by the
+architecture.
 
-In order to facilitate a lazy -- fault driven -- migration of pages, create
-a special transient PAGE_NUMA variant, we can then use the 'spurious'
-protection faults to drive our migrations from.
-
-The meaning of PAGE_NUMA depends on the architecture but on x86 it is
-effectively PROT_NONE. Actual PROT_NONE mappings will not generate these
-NUMA faults for the reason that the page fault code checks the permission on
-the VMA (and will throw a segmentation fault on actual PROT_NONE mappings),
-before it ever calls handle_mm_fault.
+This patch moves the helpers to mm/pgtable-generic.c and makes them weak
+functions. Architectures wishing to use this will still be required to
+define _PAGE_NUMA and potentially update their p[te|md]_present and
+pmd_bad helpers if they choose to make PAGE_NUMA similar to PROT_NONE.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/huge_mm.h |   10 +++++
- mm/huge_memory.c        |   21 ++++++++++
- mm/memory.c             |   98 +++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 126 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/pgtable.h |   56 +---------------------------------------
+ include/asm-generic/pgtable.h  |   17 +++++-------
+ mm/pgtable-generic.c           |   53 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 60 insertions(+), 66 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index b31cb7d..a13ebb1 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -159,6 +159,10 @@ static inline struct page *compound_trans_head(struct page *page)
- 	}
- 	return page;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index e075d57..4a4c11c 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -425,61 +425,6 @@ static inline int pmd_present(pmd_t pmd)
+ 				 _PAGE_NUMA);
  }
-+
-+extern int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
-+				  pmd_t pmd, pmd_t *pmdp);
-+
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
- #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
-@@ -195,6 +199,12 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
+ 
+-#ifdef CONFIG_BALANCE_NUMA
+-/*
+- * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
+- * same bit too). It's set only when _PAGE_PRESET is not set and it's
+- * never set if _PAGE_PRESENT is set.
+- *
+- * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
+- * fault triggers on those regions if pte/pmd_numa returns true
+- * (because _PAGE_PRESENT is not set).
+- */
+-static inline int pte_numa(pte_t pte)
+-{
+-	return (pte_flags(pte) &
+-		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
+-}
+-
+-static inline int pmd_numa(pmd_t pmd)
+-{
+-	return (pmd_flags(pmd) &
+-		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
+-}
+-#endif
+-
+-/*
+- * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
+- * because they're called by the NUMA hinting minor page fault. If we
+- * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
+- * would be forced to set it later while filling the TLB after we
+- * return to userland. That would trigger a second write to memory
+- * that we optimize away by setting _PAGE_ACCESSED here.
+- */
+-static inline pte_t pte_mknonnuma(pte_t pte)
+-{
+-	pte = pte_clear_flags(pte, _PAGE_NUMA);
+-	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
+-}
+-
+-static inline pmd_t pmd_mknonnuma(pmd_t pmd)
+-{
+-	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
+-	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
+-}
+-
+-static inline pte_t pte_mknuma(pte_t pte)
+-{
+-	pte = pte_set_flags(pte, _PAGE_NUMA);
+-	return pte_clear_flags(pte, _PAGE_PRESENT);
+-}
+-
+-static inline pmd_t pmd_mknuma(pmd_t pmd)
+-{
+-	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
+-	return pmd_clear_flags(pmd, _PAGE_PRESENT);
+-}
+-
+ static inline int pmd_none(pmd_t pmd)
  {
- 	return 0;
+ 	/* Only check low word on 32-bit platforms, since it might be
+@@ -534,6 +479,7 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
+ 	return (pte_t *)pmd_page_vaddr(*pmd) + pte_index(address);
  }
-+
-+static inline int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
-+					pmd_t pmd, pmd_t *pmdp);
-+{
-+}
-+
+ 
++extern int pmd_numa(pmd_t pmd);
+ static inline int pmd_bad(pmd_t pmd)
+ {
+ #ifdef CONFIG_BALANCE_NUMA
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 896667e..da3e761 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -554,17 +554,12 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ #endif
+ }
+ 
+-#ifndef CONFIG_BALANCE_NUMA
+-static inline int pte_numa(pte_t pte)
+-{
+-	return 0;
+-}
+-
+-static inline int pmd_numa(pmd_t pmd)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_BALANCE_NUMA */
++extern int pte_numa(pte_t pte);
++extern int pmd_numa(pmd_t pmd);
++extern pte_t pte_mknonnuma(pte_t pte);
++extern pmd_t pmd_mknonnuma(pmd_t pmd);
++extern pte_t pte_mknuma(pte_t pte);
++extern pmd_t pmd_mknuma(pmd_t pmd);
+ 
+ #endif /* CONFIG_MMU */
+ 
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index e642627..6b6507f 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -170,3 +170,56 @@ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
+ }
  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- #endif /* _LINUX_HUGE_MM_H */
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 3aaf242..92a64d2 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1017,6 +1017,27 @@ out:
- 	return page;
- }
- 
-+/* NUMA hinting page fault entry point for trans huge pmds */
-+int do_huge_pmd_numa_page(struct mm_struct *mm, unsigned long addr,
-+				pmd_t pmd, pmd_t *pmdp)
+ #endif
++
++/*
++ * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
++ * same bit too). It's set only when _PAGE_PRESET is not set and it's
++ * never set if _PAGE_PRESENT is set.
++ *
++ * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
++ * fault triggers on those regions if pte/pmd_numa returns true
++ * (because _PAGE_PRESENT is not set).
++ */
++__weak int pte_numa(pte_t pte)
 +{
-+	struct page *page;
-+
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(pmd, *pmdp)))
-+		goto out_unlock;
-+
-+	page = pmd_page(pmd);
-+	pmd = pmd_mknonnuma(pmd);
-+	set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmdp, pmd);
-+	VM_BUG_ON(pmd_numa(*pmdp));
-+	update_mmu_cache_pmd(vma, addr, ptep);
-+
-+out_unlock:
-+	spin_unlock(&mm->page_table_lock);
-+	return 0;
++	return (pte_flags(pte) &
++		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
 +}
 +
- int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		 pmd_t *pmd, unsigned long addr)
- {
-diff --git a/mm/memory.c b/mm/memory.c
-index de8aa11..4291fa3 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3450,6 +3450,89 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
-+int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
++__weak int pmd_numa(pmd_t pmd)
 +{
-+	struct page *page;
-+	spinlock_t *ptl;
-+
-+	/*
-+	* The "pte" at this point cannot be used safely without
-+	* validation through pte_unmap_same(). It's of NUMA type but
-+	* the pfn may be screwed if the read is non atomic.
-+	*
-+	* ptep_modify_prot_start is not called as this is clearing
-+	* the _PAGE_NUMA bit and it is not really expected that there
-+	* would be concurrent hardware modifications to the PTE.
-+	*/
-+	ptl = pte_lockptr(mm, pmd);
-+	spin_lock(ptl);
-+	if (unlikely(!pte_same(*ptep, pte)))
-+		goto out_unlock;
-+	pte = pte_mknonnuma(pte);
-+	set_pte_at(mm, addr, ptep, pte);
-+	page = vm_normal_page(vma, addr, pte);
-+	BUG_ON(!page);
-+	update_mmu_cache(vma, addr, ptep);
-+
-+out_unlock:
-+	pte_unmap_unlock(ptep, ptl);
-+	return 0;
++	return (pmd_flags(pmd) &
++		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
 +}
 +
-+/* NUMA hinting page fault entry point for regular pmds */
-+int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+		     unsigned long addr, pmd_t *pmdp)
++/*
++ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
++ * because they're called by the NUMA hinting minor page fault. If we
++ * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
++ * would be forced to set it later while filling the TLB after we
++ * return to userland. That would trigger a second write to memory
++ * that we optimize away by setting _PAGE_ACCESSED here.
++ */
++__weak pte_t pte_mknonnuma(pte_t pte)
 +{
-+	pmd_t pmd;
-+	pte_t *pte, *orig_pte;
-+	unsigned long _addr = addr & PMD_MASK;
-+	unsigned long offset;
-+	spinlock_t *ptl;
-+	bool numa = false;
-+
-+	spin_lock(&mm->page_table_lock);
-+	pmd = *pmdp;
-+	if (pmd_numa(pmd)) {
-+		set_pmd_at(mm, _addr, pmdp, pmd_mknonnuma(pmd));
-+		numa = true;
-+	}
-+	spin_unlock(&mm->page_table_lock);
-+
-+	if (!numa)
-+		return 0;
-+
-+	/* we're in a page fault so some vma must be in the range */
-+	BUG_ON(!vma);
-+	BUG_ON(vma->vm_start >= _addr + PMD_SIZE);
-+	offset = max(_addr, vma->vm_start) & ~PMD_MASK;
-+	VM_BUG_ON(offset >= PMD_SIZE);
-+	orig_pte = pte = pte_offset_map_lock(mm, pmdp, _addr, &ptl);
-+	pte += offset >> PAGE_SHIFT;
-+	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
-+		pte_t pteval = *pte;
-+		struct page *page;
-+		if (!pte_present(pteval))
-+			continue;
-+		if (addr >= vma->vm_end) {
-+			vma = find_vma(mm, addr);
-+			/* there's a pte present so there must be a vma */
-+			BUG_ON(!vma);
-+			BUG_ON(addr < vma->vm_start);
-+		}
-+		if (pte_numa(pteval)) {
-+			pteval = pte_mknonnuma(pteval);
-+			set_pte_at(mm, addr, pte, pteval);
-+		}
-+		page = vm_normal_page(vma, addr, pteval);
-+		if (unlikely(!page))
-+			continue;
-+	}
-+	pte_unmap_unlock(orig_pte, ptl);
-+
-+	return 0;
++	pte = pte_clear_flags(pte, _PAGE_NUMA);
++	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
 +}
 +
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3488,6 +3571,9 @@ int handle_pte_fault(struct mm_struct *mm,
- 					pte, pmd, flags, entry);
- 	}
- 
-+	if (pte_numa(entry))
-+		return do_numa_page(mm, vma, address, entry, pte, pmd);
++__weak pmd_t pmd_mknonnuma(pmd_t pmd)
++{
++	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
++	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
++}
 +
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
- 	if (unlikely(!pte_same(*pte, entry)))
-@@ -3556,9 +3642,11 @@ retry:
- 
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd)) {
--			if (flags & FAULT_FLAG_WRITE &&
--			    !pmd_write(orig_pmd) &&
--			    !pmd_trans_splitting(orig_pmd)) {
-+			if (pmd_numa(*pmd))
-+				return do_huge_pmd_numa_page(mm, address,
-+							     orig_pmd, pmd);
++__weak pte_t pte_mknuma(pte_t pte)
++{
++	pte = pte_set_flags(pte, _PAGE_NUMA);
++	return pte_clear_flags(pte, _PAGE_PRESENT);
++}
 +
-+			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
- 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
- 							  orig_pmd);
- 				/*
-@@ -3570,10 +3658,14 @@ retry:
- 					goto retry;
- 				return ret;
- 			}
-+
- 			return 0;
- 		}
- 	}
- 
-+	if (pmd_numa(*pmd))
-+		return do_pmd_numa_page(mm, vma, address, pmd);
-+
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
++__weak pmd_t pmd_mknuma(pmd_t pmd)
++{
++	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
++	return pmd_clear_flags(pmd, _PAGE_PRESENT);
++}
 -- 
 1.7.9.2
 
