@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab2KPMWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 07:22:15 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51795 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab2KPMWO (ORCPT
+	id S1751534Ab2KPMXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 07:23:47 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42743 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2KPMXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 07:22:14 -0500
-X-AuditID: b753bd60-977e6ba000004744-2c-50a62ff33eaa
-X-AuditID: b753bd60-977e6ba000004744-2c-50a62ff33eaa
-Message-ID: <50A62FEB.1000002@hitachi.com>
-Date: Fri, 16 Nov 2012 21:22:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 16 Nov 2012 07:23:46 -0500
+Date: Fri, 16 Nov 2012 13:24:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: 3.7-rc3: mouses stopped working
+Message-ID: <20121116122400.GA10994@elf.ucw.cz>
+References: <20121115132849.GA4062@elf.ucw.cz>
+ <alpine.LNX.2.00.1211151429240.15877@pobox.suse.cz>
+ <20121115140736.GA2651@elf.ucw.cz>
+ <alpine.LNX.2.00.1211151508350.15877@pobox.suse.cz>
+ <20121116013405.GA2002@elf.ucw.cz>
+ <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
 MIME-Version: 1.0
-To: Hyeoncheol Lee <hyc.lee@gmail.com>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] uprobes tracer: Add support for @ADDR, @stackN, dereference,
- bitfield arguments
-References: <1352877222-23797-1-git-send-email-hyc.lee@gmail.com>
-In-Reply-To: <1352877222-23797-1-git-send-email-hyc.lee@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hyeoncheol,
+On Fri 2012-11-16 11:54:26, Jiri Kosina wrote:
+> On Fri, 16 Nov 2012, Pavel Machek wrote:
+> 
+> > > If you have mouse that is buggy and periodically 
+> > > disconnecting/reconnecting itself, you need commit df0cfd6990347c, which 
+> > > went into 3.7-rc5 (it's a regression fix from -rc1).
+> > 
+> > I have -rc5 now, and still no mice for me.
+> > 
+> > root@amd:/tmp# uname -a
+> > Linux amd 3.7.0-rc5+ #236 SMP Thu Nov 15 20:07:26 CET 2012 i686 GNU/Linux
+> > root@amd:/tmp# cat /dev/input/mice
+> > cat: /dev/input/mice: No such device or address
+> > root@amd:/tmp# ls -al /dev/input/mice
+> > crw-rw---- 1 root root 13, 63 Apr 25  2010 /dev/input/mice
+> > root@amd:/tmp# 
+> 
+> Let's see whether this is /dev/input/mice issue or something else first.
+> 
+> Is anything coming out of corresponding /dev/input/eventX node?
 
-Thank you for working on uprobe enhancement!
+/dev/input/mouse0 and /dev/input/mouse1 generate events when I move
+internal/USB mouse.
 
-First of all, I've failed to apply this on the latest tip tree
-because of conflict with below patch.
+ls -al /dev/input/mouse0 
+crw-rw---- 1 root root 13, 32 Apr 25  2010 /dev/input/mouse0
+pavel@amd:/tmp$ ls -al /dev/input/mouse1
+crw------T 1 root root 13, 33 Aug 30 16:41 /dev/input/mouse1
+pavel@amd:/tmp$ 
 
-http://marc.info/?l=linux-kernel&m=134869014622386
+> And /dev/hidrawX?
 
-(2012/11/14 16:13), Hyeoncheol Lee wrote:
-> Add support for @ADDR, @stackN, dereference, bitfield arguments. Uprobes
-> tracer supported only register argument. @SYMBOL, $retval, $stack are not
-> supported. because a symbol address and whether function starts at a given
-> address can't be known.
+/dev/hidraw0 seems to correspond to USB mouse and generates
+events. Could not find hidraw corresponding to PS/2 mouse.
 
-I see why the @SYMBOL is not supported, but I can't understand the
-reason why $retval and $stack aren't supported. At least we can
-support $stack, isn't it?
+So it seems to be "/dev/input/mice" issue. Does it work for you?
 
-> Uprobes tracer and kprobes tracer have their own fetch type information
-> tables and fetch type functions. But they share printing type functions
-> and some fetch type functions for register, dereference, and bitfield.
-> The common functions are defined in trace_probe.c.
+Thanks,
+      	       	  		    	   	   Pavel
 
-By the way, for easy to review and debug, please separate this
-into several patches. This seems to do (1) moving some interfaces
-out from trace_probe.c, (2) add fetch_size/fetch members into
-recursive fetch function data, (3) introduce userspace memory
-fetching functions, and some cleanups.
-So, could you split those parts? unless, it is hard to maintain
-the source code.
-
-Thank you,
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
