@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2KPWc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 17:32:57 -0500
-Received: from blackhole.sdinet.de ([176.9.52.58]:46516 "EHLO mail.sdinet.de"
+	id S1753700Ab2KPWhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 17:37:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36954 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab2KPWc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 17:32:56 -0500
-Date: Fri, 16 Nov 2012 23:32:32 +0100 (CET)
-From: Sven-Haegar Koch <haegar@sdinet.de>
-To: Johannes Berg <johannes@sipsolutions.net>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@gmail.com>,
-        John Linville <linville@tuxdriver.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bill Nottingham <notting@redhat.com>, linux-wireless@vger.kernel.org
-Subject: Re: removal of sysfs wext extension broke on F16
-In-Reply-To: <1353098379.9490.22.camel@jlt4.sipsolutions.net>
-Message-ID: <alpine.DEB.2.02.1211162330090.19580@aurora.sdinet.de>
-References: <CAPM=9twSHBet=vDY9q4BXKv7ZUPR-eme75tOzxrWf6Bsp4MMkw@mail.gmail.com>  <1352795227.9466.8.camel@jlt4.sipsolutions.net>  <CA+55aFw8Rx6TScXV_nsh4EFeCDTxsjn9mJPqo8VzPhbG9jC5Fw@mail.gmail.com>  (sfid-20121116_192027_176167_6DFB40B3)
- <1353098137.9490.20.camel@jlt4.sipsolutions.net>  (sfid-20121116_213518_404111_CB0441EC) <1353098204.9490.21.camel@jlt4.sipsolutions.net>  (sfid-20121116_213631_514198_885B62C5) <1353098379.9490.22.camel@jlt4.sipsolutions.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753450Ab2KPWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 17:37:19 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1353104456.7586.27.camel@gandalf.local.home>
+References: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com> <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com> <1353104456.7586.27.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v4 6/8] x86/ftrace: Use __pa_symbol instead of __pa on C visible symbols
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 16 Nov 2012 14:25:28 -0800
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+CC: tglx@linutronix.de, mingo@redhat.com, andi@firstfloor.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <a162a888-9892-43ca-ad17-61c19936c6f4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Johannes Berg wrote:
+It is a performance improvement.
 
-> On Fri, 2012-11-16 at 21:36 +0100, Johannes Berg wrote:
-> > On Fri, 2012-11-16 at 21:35 +0100, Johannes Berg wrote:
-> > > On Fri, 2012-11-16 at 10:20 -0800, Linus Torvalds wrote:
-> > > > On Tue, Nov 13, 2012 at 12:27 AM, Johannes Berg
-> > > > <johannes@sipsolutions.net> wrote:
-> > > > >
-> > > > > Should I revert it and send it in my next pull request?
-> > > > 
-> > > > Please do. Or perhaps we could just add the directory back, without
-> > > > the actual entries, if that is sufficient..
-> > > 
-> > > Yeah, that does seem to be sufficient, I'll queue up the patch below.
-> > 
-> > Err, no, wishful thinking. I need a *little* bit more for sysfs to work.
-> 
-> This works, sorry about that.
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> +#if IS_ENABLED(CONFIG_WIRELESS_EXT) || IS_ENABLED(CONFIG_CFG80211)
-> +static struct attribute *wireless_attrs[] = {
-> +	NULL
-> +};
-> +
-> +static struct attribute_group wireless_group = {
-> +	.name = "wireless",
-> +	.attrs = wireless_attrs,
-> +};
-> +#endif
->  #endif /* CONFIG_SYSFS */
->  
-
-How about a small comment in the source why it is there? I suppose 
-otherwise in a year or two someone will find it, see "WTF? Useless 
-empty directory?" and try to remove it again...
-
-c'ya
-sven-haegar
+>On Fri, 2012-11-16 at 13:57 -0800, Alexander Duyck wrote:
+>> Instead of using __pa which is meant to be a general function for
+>converting
+>> virtual addresses to physical addresses we can use __pa_symbol which
+>is the
+>> preferred way of decoding kernel text virtual addresses to physical
+>addresses.
+>> 
+>> In this case we are not directly converting C visible symbols however
+>if we
+>> know that the instruction pointer is somewhere between _text and
+>_etext we
+>> know that we are going to be translating an address form the kernel
+>text
+>> space.
+>
+>Can I ask what the purpose of this is? I'm a little skeptical of a
+>change that is just "the preferred way".
+>
+>Was there some bug that this fixes?
+>
+>-- Steve
+>
+>> 
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> ---
+>>  arch/x86/kernel/ftrace.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+>> index 1d41402..42a392a 100644
+>> --- a/arch/x86/kernel/ftrace.c
+>> +++ b/arch/x86/kernel/ftrace.c
+>> @@ -89,7 +89,7 @@ do_ftrace_mod_code(unsigned long ip, const void
+>*new_code)
+>>  	 * kernel identity mapping to modify code.
+>>  	 */
+>>  	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+>> -		ip = (unsigned long)__va(__pa(ip));
+>> +		ip = (unsigned long)__va(__pa_symbol(ip));
+>>  
+>>  	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
+>>  }
+>> @@ -279,7 +279,7 @@ static int ftrace_write(unsigned long ip, const
+>char *val, int size)
+>>  	 * kernel identity mapping to modify code.
+>>  	 */
+>>  	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+>> -		ip = (unsigned long)__va(__pa(ip));
+>> +		ip = (unsigned long)__va(__pa_symbol(ip));
+>>  
+>>  	return probe_kernel_write((void *)ip, val, size);
+>>  }
 
 -- 
-Three may keep a secret, if two of them are dead.
-- Ben F.
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
