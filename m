@@ -1,55 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab2KPEpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 23:45:00 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43344 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab2KPEo7 (ORCPT
+	id S1751453Ab2KPEq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 23:46:26 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60717 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab2KPEqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 23:44:59 -0500
-Message-ID: <50A5C4C7.4090309@pobox.com>
-Date: Thu, 15 Nov 2012 23:44:55 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Thu, 15 Nov 2012 23:46:24 -0500
+Message-ID: <50A5C518.7030002@linux.vnet.ibm.com>
+Date: Fri, 16 Nov 2012 12:46:16 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: [PATCH 7/8] ata: highbank: mark ahci_highbank_probe as __devinit
-References: <1352238933-4886-1-git-send-email-arnd@arndb.de> <1352238933-4886-8-git-send-email-arnd@arndb.de>
-In-Reply-To: <1352238933-4886-8-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
+References: <50978DFE.1000005@linux.vnet.ibm.com> <20121112231032.GB5798@amt.cnet> <50A20428.1030004@linux.vnet.ibm.com> <20121114143747.GA7054@amt.cnet> <50A4267B.1030902@linux.vnet.ibm.com> <20121116030222.GA21822@amt.cnet> <50A5B560.2070604@linux.vnet.ibm.com> <20121116035655.GA27414@amt.cnet>
+In-Reply-To: <20121116035655.GA27414@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12111604-4790-0000-0000-0000059651CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 04:55 PM, Arnd Bergmann wrote:
-> The ahci_highbank_probe function is incorrectly marked as __init,
-> which means it can get discarded at boot time, which might be
-> a problem if for some reason the device only becomes operational
-> after loading another module.
->
-> Using __devinit instead avoids seeing this warning for every build:
->
-> WARNING: vmlinux.o(.data+0xf7b0): Section mismatch in reference from the
-> variable ahci_highbank_driver to the function .init.text:ahci_highbank_probe()
-> The variable ahci_highbank_driver references
-> the function __init ahci_highbank_probe()
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Jeff Garzik <jgarzik@redhat.com>
-> ---
->   drivers/ata/sata_highbank.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+On 11/16/2012 11:56 AM, Marcelo Tosatti wrote:
+> On Fri, Nov 16, 2012 at 11:39:12AM +0800, Xiao Guangrong wrote:
+>> On 11/16/2012 11:02 AM, Marcelo Tosatti wrote:
+>>> On Thu, Nov 15, 2012 at 07:17:15AM +0800, Xiao Guangrong wrote:
+>>>> On 11/14/2012 10:37 PM, Marcelo Tosatti wrote:
+>>>>> On Tue, Nov 13, 2012 at 04:26:16PM +0800, Xiao Guangrong wrote:
+>>>>>> Hi Marcelo,
+>>>>>>
+>>>>>> On 11/13/2012 07:10 AM, Marcelo Tosatti wrote:
+>>>>>>> On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
+>>>>>>>> Do not drop large spte until it can be insteaded by small pages so that
+>>>>>>>> the guest can happliy read memory through it
+>>>>>>>>
+>>>>>>>> The idea is from Avi:
+>>>>>>>> | As I mentioned before, write-protecting a large spte is a good idea,
+>>>>>>>> | since it moves some work from protect-time to fault-time, so it reduces
+>>>>>>>> | jitter.  This removes the need for the return value.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>>>>> ---
+>>>>>>>>  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
+>>>>>>>>  1 files changed, 9 insertions(+), 25 deletions(-)
+>>>>>>>
+>>>>>>> Its likely that other 4k pages are mapped read-write in the 2mb range 
+>>>>>>> covered by a read-only 2mb map. Therefore its not entirely useful to
+>>>>>>> map read-only. 
+>>>>>>>
+>>>>>>
+>>>>>> It needs a page fault to install a pte even if it is the read access.
+>>>>>> After the change, the page fault can be avoided.
+>>>>>>
+>>>>>>> Can you measure an improvement with this change?
+>>>>>>
+>>>>>> I have a test case to measure the read time which has been attached.
+>>>>>> It maps 4k pages at first (dirt-loggged), then switch to large sptes
+>>>>>> (stop dirt-logging), at the last, measure the read access time after write
+>>>>>> protect sptes.
+>>>>>>
+>>>>>> Before: 23314111 ns	After: 11404197 ns
+>>>>>
+>>>>> Ok, i'm concerned about cases similar to e49146dce8c3dc6f44 (with shadow),
+>>>>> that is:
+>>>>>
+>>>>> - large page must be destroyed when write protecting due to 
+>>>>> shadowed page.
+>>>>> - with shadow, it does not make sense to write protect 
+>>>>> large sptes as mentioned earlier.
+>>>>>
+>>>>
+>>>> This case is removed now, the code when e49146dce8c3dc6f44 was applied is:
+>>>> |
+>>>> |                pt = sp->spt;
+>>>> |                for (i = 0; i < PT64_ENT_PER_PAGE; ++i)
+>>>> |                        /* avoid RMW */
+>>>> |                        if (is_writable_pte(pt[i]))
+>>>> |                                update_spte(&pt[i], pt[i] & ~PT_WRITABLE_MASK);
+>>>> |        }
+>>>>
+>>>> The real problem in this code is it would write-protect the spte even if
+>>>> it is not a last spte that caused the middle-level shadow page table was
+>>>> write-protected. So e49146dce8c3dc6f44 added this code:
+>>>> |                if (sp->role.level != PT_PAGE_TABLE_LEVEL)
+>>>> |                        continue;
+>>>> |
+>>>> was good to fix this problem.
+>>>>
+>>>> Now, the current code is:
+>>>> |		for (i = 0; i < PT64_ENT_PER_PAGE; ++i) {
+>>>> |			if (!is_shadow_present_pte(pt[i]) ||
+>>>> |			      !is_last_spte(pt[i], sp->role.level))
+>>>> |				continue;
+>>>> |
+>>>> |			spte_write_protect(kvm, &pt[i], &flush, false);
+>>>> |		}
+>>>> It only write-protect the last spte. So, it allows large spte existent.
+>>>> (the large spte can be broken by drop_large_spte() on the page-fault path.)
+>>>>
+>>>>> So i wonder why is this part from your patch
+>>>>>
+>>>>> -               if (level > PT_PAGE_TABLE_LEVEL &&
+>>>>> -                   has_wrprotected_page(vcpu->kvm, gfn, level)) {
+>>>>> -                       ret = 1;
+>>>>> -                       drop_spte(vcpu->kvm, sptep);
+>>>>> -                       goto done;
+>>>>> -               }
+>>>>>
+>>>>> necessary (assuming EPT is in use).
+>>>>
+>>>> This is safe, we change these code to:
+>>>>
+>>>> -		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+>>>> +		if ((level > PT_PAGE_TABLE_LEVEL &&
+>>>> +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
+>>>> +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+>>>>  			pgprintk("%s: found shadow page for %llx, marking ro\n",
+>>>>  				 __func__, gfn);
+>>>>  			ret = 1;
+>>>>
+>>>> The spte become read-only which can ensure the shadow gfn can not be changed.
+>>>>
+>>>> Btw, the origin code allows to create readonly spte under this case if !(pte_access & WRITEABBLE)
+>>>
+>>> Regarding shadow: it should be fine as long as fault path always deletes
+>>> large mappings, when shadowed pages are present in the region.
+>>
+>> For hard mmu is also safe, in this patch i added these code:
+>>
+>> @@ -2635,6 +2617,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+>>  			break;
+>>  		}
+>>
+>> +		drop_large_spte(vcpu, iterator.sptep);
+>> +
+>>
+>> It can delete large mappings like soft mmu does.
+>>
+>> Anything i missed?
+>>
+>>>
+>>> Ah, unshadowing from reexecute_instruction does not handle
+>>> large pages. I suppose that is what "simplification" refers 
+>>> to.
+>>
+>> reexecute_instruction did not directly handle last spte, it just
+>> removes all shadow pages, then let cpu retry the instruction, the
+>> page can become writable when encounter #PF again, large spte is fine
+>> under this case.
+> 
+> While searching for a given "gpa", you don't find large gfn which is
+> mapping it, right? (that is, searching for gfn 4 fails to find large
+> read-only "gfn 0"). Unshadowing gfn 4 will keep large read-only mapping
+> present.
+> 
+> 1. large read-write spte to gfn 0
+> 2. shadow gfn 4
+> 3. write-protect large spte pointing to gfn 0
+> 4. write to gfn 4
+> 5. instruction emulation fails
+> 5. unshadow gfn 4
+> 6. refault, do not drop large spte because no pages shadowed
 
-applied
+Hmm, it is not true. :)
+
+The large spte can become writable since 'no pages adhadoes' (that means
+has_wrprotected_page() can return 0 for this case). No?
+
 
 
