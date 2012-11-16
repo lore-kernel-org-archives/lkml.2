@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2KPXZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:25:12 -0500
-Received: from nm4.access.bullet.mail.sp2.yahoo.com ([98.139.44.131]:28746
-	"EHLO nm4.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753653Ab2KPXZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:25:10 -0500
-X-Yahoo-Newman-Id: 232361.32378.bm@smtp111.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Lk2Wtk4VM1mirP4VEbtv3KUrW.VmthExgPdc0r6XypbOPNj
- vjaFB7wCtUQXc5HSsNcWFXE3sI_jAEZNC3tpt5j20CyFR4dlDRBH6cqZmiLV
- D76SQ3aXcsIWZpt82u7QfwPeyvgaFhgMvuGnF119rAa6pHNtTsZrE_CdZ7eY
- KJ1ZnEwA_LQHMGZGu9ixZAUUK6_.yzo_5nzBsil6g95YlQWaIby6fmhU2nt1
- fZbC79JJkf_wGRsI_ra_A01u.QAeCvGyIoxnJAo0Zu49ozuBBnIxDU2Ss8ie
- ZvjXRYG7hKfAY71SCPhMWzltABQAf1At2kCLYK6LkRxxRB3Lk9_6sQRRu08B
- ePokxwRni5gMWizHdqGVpcew0D.o7TjKWts7CEpLaBluR5uyX04LUF9aBMcO
- KHTEwF8xeA2rE9vsTQAGduIfZJkn4Kc9oOsqKsa8ZB_PaBOx69c6dLN...u_
- BDZWeyUk5glzszKNN.xsZkeIcvg--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <50A6CB55.7070706@att.net>
-Date: Fri, 16 Nov 2012 17:25:09 -0600
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	id S1753839Ab2KPX0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:26:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29873 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753653Ab2KPX0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 18:26:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
+   d="scan'208";a="243518427"
+From: Dave Jiang <dave.jiang@intel.com>
+Subject: [PATCH] ioat: remove chanerr mask setting for IOAT v3.x
+To: djbw@fb.com
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Date: Fri, 16 Nov 2012 16:26:39 -0700
+Message-ID: <20121116232638.1766.86886.stgit@djiang5-linux.ch.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v5 9/9] bug.h, compiler.h: Introduce compiletime_assert
- & BUILD_BUG_ON_MSG
-References: <1352844568-18826-1-git-send-email-daniel.santos@pobox.com> <1352844821-18952-9-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1352844821-18952-9-git-send-email-daniel.santos@pobox.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2012 04:13 PM, danielfsantos@att.net wrote:
-> +#define __compiletime_assert(condition, msg, __func)			\
-> +	do {								\
-> +		bool __cond = !(condition);				\
-> +		extern void __func(void) __compiletime_error(msg);	\
-> +		if (__cond)						\
-> +			__func();					\
-> +		__compiletime_error_fallback(__cond);			\
-> +	} while (0)
-> +
-> +#define _compiletime_assert(condition, msg, __func) \
-> +	__compiletime_assert(condition, msg, __func)
-> +
-> +/**
-> + * compiletime_assert - break build and emit msg if condition is false
-> + * @condition: a compile-time constant condition to check
-> + * @msg:       a message to emit if condition is false
-> + *
-> + * In tradition of POSIX assert, this macro will break the build if the
-> + * supplied condition is *false*, emitting the supplied error message if the
-> + * compiler has support to do so.
-> + */
-> +#define compiletime_assert(condition, msg) \
-> +	_compiletime_assert(condition, msg, __compiletime_assert_ ## __LINE__)
-> +
+The CHANERRMSK_INT register should be 0. The existing code set a value
+for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
+has been fixed when the hardware was released. There is no need for this
+code.
 
-Whoops, this implementation pastes the tokens before allowing them to
-expand, it should be something like this:
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
 
-#define __compiletime_assert(condition, msg, __func) .... stuff
-#define _compiletime_assert(condition, msg, prefix, suffix) \
-        __compiletime_assert(condition, msg, prefix ## suffix)
-#define compiletime_assert(condition, msg) \
-        _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
+ drivers/dma/ioat/dma_v3.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-I'll fix that as well.
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index f7f1dc6..60c15c4 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -1126,12 +1126,8 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+ 	chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+ 	writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
+ 
+-	/* -= IOAT ver.3 workarounds =- */
+-	/* Write CHANERRMSK_INT with 3E07h to mask out the errors
+-	 * that can cause stability issues for IOAT ver.3, and clear any
+-	 * pending errors
+-	 */
+-	pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
++	/* clearn CHANERRMASK_INT and clear any pending errors */
++	pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0);
+ 	err = pci_read_config_dword(pdev, IOAT_PCI_CHANERR_INT_OFFSET, &chanerr);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "channel error register unreachable\n");
 
-Daniel
