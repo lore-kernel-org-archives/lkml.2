@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab2KPKGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:06:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15717 "EHLO mx1.redhat.com"
+	id S1751569Ab2KPKGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 05:06:39 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:48300 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab2KPKGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:06:09 -0500
-Date: Fri, 16 Nov 2012 08:05:48 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC offset
-Message-ID: <20121116100548.GA20892@amt.cnet>
-References: <20121114013611.5338.15086.stgit@yunodevel>
- <20121116031946.GA23939@amt.cnet>
- <50A5F4C4.2030909@hitachi.com>
+	id S1751029Ab2KPKGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 05:06:37 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Fri, 16 Nov 2012 11:10:59 +0100
+Message-ID: <4327787.yACWT6Q3EK@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc5; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1353029225.7176.314.camel@yhuang-dev>
+References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org> <1965322.pSDJypqR3K@vostro.rjw.lan> <1353029225.7176.314.camel@yhuang-dev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50A5F4C4.2030909@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 05:09:40PM +0900, Yoshihiro YUNOMAE wrote:
-> Hi Marcelo,
+On Friday, November 16, 2012 09:27:05 AM Huang Ying wrote:
+> On Fri, 2012-11-16 at 02:29 +0100, Rafael J. Wysocki wrote:
+> > On Friday, November 16, 2012 08:54:56 AM Huang Ying wrote:
+> > > On Fri, 2012-11-16 at 01:55 +0100, Rafael J. Wysocki wrote:
+> > > > On Friday, November 16, 2012 01:44:00 AM Rafael J. Wysocki wrote:
+> > > > > On Friday, November 16, 2012 08:36:14 AM Huang Ying wrote:
+> > > > > > On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > > 
+> > > > > > For this situation, if user "echo auto > .../power/control" for the
+> > > > > > device, the runtime PM callbacks of device will be called.  I think that
+> > > > > > is not intended.  So I think it is better to use some kind of flag or
+> > > > > > state for that.
+> > > > > 
+> > > > > I'm not sure what situation exactly you have in mind.  Care to give an
+> > > > > exact scenario?
+> > > > 
+> > > > Ah, I see.  When we've just called drv->remove(), there is a window in
+> > > > which user space may cause the driver's runtime PM callbacks to be
+> > > > executed by changing its attribute to "auto".
+> > > > 
+> > > > So perhaps we should check pci_dev->driver rather than pci_dev->dev.driver
+> > > > in the runtime PM callbacks?  With a few more changes that should allow us
+> > > > to close that race.
+> > > 
+> > > Yes.  And I think, with pci_dev->driver (after some changes suggested by
+> > > Alan), we need not to use pm_runtime_get/put_skip_callbacks().
+> > 
+> > Good.  Can you please prepare a patch, then? :-)
 > 
-> Thank you for commenting on my patch set.
-> 
-> (2012/11/16 12:19), Marcelo Tosatti wrote:
-> >On Wed, Nov 14, 2012 at 10:36:21AM +0900, Yoshihiro YUNOMAE wrote:
-> [...]
-> >>In this summary, I suggest the patch which TSC offset for each guest can be
-> >>output on the host.
-> >
-> >The guest TSC can change (for example if TSC scaling is used). Moreover
-> >TSC offset can change, and you'd have to monitor that. What
-> 
-> Yes, that's true. Changing TSC offset is the key point to use TSC for
-> merging trace data of guests and the host.
-> 
-> >about a module option so that tsc_offset is written as zero (to be
-> >used as debugging tool). Then the following restrictions apply:
-> >
-> >- TSC must be synchronized across CPUs/VCPUS.
-> >- TSC must be reliable.
-> >
-> >Would that suffice? (a module option to kvm.ko, say zero_tsc_offset).
-> 
-> As you say, the guest TSC can change, so guest TSC needs to meet these
-> two restrictions to merge the trace data in chronological order.
-> 
-> However, the zero-TSC offset method is not enough, I think.
-> I will use TSC values as the tracing timestamp not only for debugging
-> but for failure analysis on actual operations. When we introduce
-> the zero-TSC offset, normally it will be no problem. However, if
-> the guest executes write_tsc or the guest works live migration, TSC
-> offset will be changed. After all, we need to monitor the TSC offset
-> value.
-> 
-> Thank you,
+> Sure.
 
-What i wrote was not precise.
+Cool, thanks!
 
-With TSC scaling (of AMD's svm.c) or TSC trapping, the guest RDTSC is
-not monotonic with reference to the host TSC. That is, TSC scaling
-and/or trapping are fundamentally incompatible with the feature you
-propose.
+Rafael
 
-What you are saying is that is you'd like this feature for production,
-not debugging. Unfortunately this requires a synchronized TSC across
-CPUs, which is not widespread. Therefore the suggestion to introduce a
-debugging facility (you cannot rely on this for failure analysis on all
-systems).
 
-Even then, a more reliable method for reporting TSC offset must be used.
-
-Apart from these issues, it is very useful to correlate guest/host
-events in the way you propose.
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
