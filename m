@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2KPOTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:19:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47937 "EHLO mail.kernel.org"
+	id S1752218Ab2KPOTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:19:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47961 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab2KPOTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:19:02 -0500
-Date: Fri, 16 Nov 2012 06:19:50 -0800
+	id S1752092Ab2KPOTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:19:37 -0500
+Date: Fri, 16 Nov 2012 06:20:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] Staging driver fixes for 3.7-rc5
-Message-ID: <20121116141950.GA2175@kroah.com>
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fixes for 3.7-rc5
+Message-ID: <20121116142027.GA2216@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,23 +28,31 @@ The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.7-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.7-rc5
 
-for you to fetch changes up to d38e0e3fed4f58bcddef4dc93a591dfe2f651cb0:
+for you to fetch changes up to 1838b8c487378c6c576029d9e0e07b5a73036bac:
 
-  Revert "Staging: Android alarm: IOCTL command encoding fix" (2012-11-13 13:04:43 -0800)
+  tty: serial: max310x: Add terminating entry for spi_device_id table (2012-11-14 14:49:42 -0800)
 
 ----------------------------------------------------------------
-Staging tree fix for 3.7-rc5
+TTY fixes for 3.7-rc5
 
-Here is a single patch, a revert of an android driver patch, that
-resolves a bug that has been reported in the Android alarm driver.
+Here are two TTY driver fixes for 3.7-rc5.
+
+They resolve a bug in the hvc driver that has been reported, and fix a
+problem with the list of device ids in the max310x serial driver.
+
+Both have been in linux-next for a while.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Colin Cross (1):
-      Revert "Staging: Android alarm: IOCTL command encoding fix"
+Axel Lin (1):
+      tty: serial: max310x: Add terminating entry for spi_device_id table
 
- drivers/staging/android/android_alarm.h | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Paul Mackerras (1):
+      TTY: hvc_console, fix port reference count going to zero prematurely
+
+ drivers/tty/hvc/hvc_console.c | 7 -------
+ drivers/tty/serial/max310x.c  | 1 +
+ 2 files changed, 1 insertion(+), 7 deletions(-)
