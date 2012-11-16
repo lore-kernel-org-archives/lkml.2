@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310Ab2KPBQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 20:16:33 -0500
-Received: from ozlabs.org ([203.10.76.45]:36894 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab2KPBQc convert rfc822-to-8bit (ORCPT
+	id S1751440Ab2KPBSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 20:18:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61304 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2KPBSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 20:16:32 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: sjur@brendeland.net, "Michael S. Tsirkin" <mst@redhat.com>,
-        linus.walleij@linaro.org, masami.hiramatsu.pt@hitachi.com,
-        ohad@wizery.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [[PATCH v9 3/3] 1/1] virtio_console: Remove buffers from out_vq at port removal
-In-Reply-To: <029d7029bc1186fbd2ec74123dc88922b9600660.1352366215.git.amit.shah@redhat.com>
-References: <029d7029bc1186fbd2ec74123dc88922b9600660.1352366215.git.amit.shah@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 16 Nov 2012 11:22:09 +1030
-Message-ID: <87ip96id3a.fsf@rustcorp.com.au>
+	Thu, 15 Nov 2012 20:18:45 -0500
+Date: Thu, 15 Nov 2012 17:18:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH v5 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20121116011841.GB32285@kroah.com>
+References: <1352160669-4330-1-git-send-email-jon.mason@intel.com>
+ <1352160669-4330-2-git-send-email-jon.mason@intel.com>
+ <20121116002904.GA20876@kroah.com>
+ <20121116010621.GI24723@jonmason-lab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121116010621.GI24723@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit Shah <amit.shah@redhat.com> writes:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->
-> Remove buffers from the out-queue when a port is removed. Rproc_serial
-> communicates with remote processors that may crash and leave buffers in
-> the out-queue. The virtio serial ports may have buffers in the out-queue
-> as well, e.g. for non-blocking ports and the host didn't consume them
-> yet.
->
-> [Amit: Remove WARN_ON for generic ports case.]
->
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+On Thu, Nov 15, 2012 at 06:06:21PM -0700, Jon Mason wrote:
+> > > +static inline unsigned int ntb_query_max_cbs(struct ntb_device *ndev)
+> > > +{
+> > > +	return ndev->max_cbs;
+> > > +}
+> > 
+> > It is shorter, and simpler, to just write the '->variable' version out
+> > for this, than to make the function call here.  Why are these needed?
+> > Especially when I see the driver code not using them.  Please remove.
+> 
+> This is used in ntb_transport.c.  It is used to show how many
+> interrupts, and there-by clients, the transport layer can have.  I can
+> make it a macro and/or put it in a header file, if that suits you
+> better.
 
-I already have this in my pending queue; I've promoted it to my
-virtio-next branch now.
+No, just reference the field of the structure directly, no need for a
+function or a macro.
 
-Thanks,
-Rusty.
+thanks,
+
+greg k-h
