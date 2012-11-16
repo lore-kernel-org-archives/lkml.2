@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449Ab2KPEdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 23:33:49 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:45325 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2KPEdq (ORCPT
+	id S1751434Ab2KPEeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 23:34:37 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5225 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab2KPEeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 23:33:46 -0500
-Message-ID: <50A5C226.1010902@pobox.com>
-Date: Thu, 15 Nov 2012 23:33:42 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Thu, 15 Nov 2012 23:34:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 15 Nov 2012 20:34:35 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] NVIDIA Tegra DRM driver
+Date: Fri, 16 Nov 2012 13:34:34 +0900
+Message-ID: <8931573.Za4gdCbDYv@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.3 (Linux/3.6.6-1-ARCH; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1480191.1noyT4vz0N@percival>
+References: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de> <1480191.1noyT4vz0N@percival>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>, linux-ide@vger.kernel.org
-Subject: Re: [patch,v3 06/10] ata: use scsi_host_alloc_node
-References: <1352488687-19935-1-git-send-email-jmoyer@redhat.com> <1352488687-19935-7-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1352488687-19935-7-git-send-email-jmoyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2012 02:18 PM, Jeff Moyer wrote:
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->   drivers/ata/libata-scsi.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
+On Friday 16 November 2012 11:36:36 Alex Courbot wrote:
+> On Friday 16 November 2012 05:28:21 Thierry Reding wrote:
+> > This third version of the patch series cleans up some minor issues that
+> > were found in the previous versions, such as deferred probe not working
+> > properly and the display remaining enabled after the driver is removed.
+> > 
+> > I've also put the two patches in this series into the tegra/drm/for-3.8
+> > branch of my repository on gitorious[0].
+> 
+> Pulled from your branch and tried to test on my Ventana, but for some reason
+> nothing ever gets displayed. The only DRM-related message I ever get in my
+> log is
+> 
+> [    0.820483] [drm] Initialized drm 1.1.0 20060810
+> 
+> Things were working perfectly with v2 - has something changed with e.g. the
+> DT bindings?
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Argh, the patches that add host1x nodes into tegra20.dtsi were not into your 
+for-3.8 branch. Things are fine now, therefore this series is 
 
+Tested-and-acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
+Thanks,
+Alex.
 
