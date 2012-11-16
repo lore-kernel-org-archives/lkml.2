@@ -1,47 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab2KPXGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:06:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37164 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab2KPXGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:06:20 -0500
-Message-ID: <50A6C6DB.2000205@zytor.com>
-Date: Fri, 16 Nov 2012 15:06:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Alexander Duyck <alexander.h.duyck@intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, andi@firstfloor.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/8] x86/ftrace: Use __pa_symbol instead of __pa on
- C visible symbols
-References: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>  <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>  <1353104456.7586.27.camel@gandalf.local.home>  <a162a888-9892-43ca-ad17-61c19936c6f4@email.android.com> <1353105926.7586.30.camel@gandalf.local.home>
-In-Reply-To: <1353105926.7586.30.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753748Ab2KPXKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 18:10:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46654 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab2KPXKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 18:10:51 -0500
+Date: Fri, 16 Nov 2012 15:10:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: sjenning@linux.vnet.ibm.com, dan.magenheimer@oracle.com,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
+        mgorman@suse.de, fschmaus@gmail.com, andor.daam@googlemail.com,
+        ilendir@googlemail.com
+Subject: Re: [PATCH 1/8] mm: cleancache: lazy initialization to allow tmem
+ backends to build/run as modules
+Message-Id: <20121116151049.244bb8f4.akpm@linux-foundation.org>
+In-Reply-To: <1352919432-9699-2-git-send-email-konrad.wilk@oracle.com>
+References: <1352919432-9699-1-git-send-email-konrad.wilk@oracle.com>
+	<1352919432-9699-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 02:45 PM, Steven Rostedt wrote:
+On Wed, 14 Nov 2012 13:57:05 -0500
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+
+> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> 
+> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
+> built/loaded as modules rather than built-in and enabled by a boot parameter,
+> this patch provides "lazy initialization", allowing backends to register to
+> cleancache even after filesystems were mounted. Calls to init_fs and
+> init_shared_fs are remembered as fake poolids but no real tmem_pools created.
+> On backend registration the fake poolids are mapped to real poolids and
+> respective tmem_pools.
+
+What is your merge plan/path for this work?
+
 >
-> #define __pa(x)		__phys_addr((unsigned long)(x))
-> #define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
+> ...
 >
-> I'm confused. __pa_symbol() just calls __pa() with some macro magic to
-> its parameter. How is this a performance improvement?
+> + * When no backend is registered all calls to init_fs and init_shard_fs
+
+"init_shared_fs"
+
+> + * are registered and fake poolids are given to the respective
+> + * super block but no tmem_pools are created. When a backend
+> + * registers with cleancache the previous calls to init_fs and
+> + * init_shared_fs are executed to create tmem_pools and set the
+> + * respective poolids. While no backend is registered all "puts",
+> + * "gets" and "flushes" are ignored or fail.
+
+The comment could use all 80 cols..
+
+>
+> ...
+>
+>  struct cleancache_ops cleancache_register_ops(struct cleancache_ops *ops)
+>  {
+>  	struct cleancache_ops old = cleancache_ops;
+> +	int i;
+>  
+>  	cleancache_ops = *ops;
+> -	cleancache_enabled = 1;
+> +
+> +	backend_registered = true;
+> +	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+> +		if (fs_poolid_map[i] == FS_NO_BACKEND)
+> +			fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
+> +		if (shared_fs_poolid_map[i] == FS_NO_BACKEND)
+> +			shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
+> +					(uuids[i], PAGE_SIZE);
+> +	}
+>  	return old;
+>  }
+
+I never noticed before - this function returns a large structure by
+value.  That's really really unusual in the kernel.  I see no problem
+with it per-se, but it might generate awful code.
+
+Also, this function has no locking and is blatantly racy.
+
+>  EXPORT_SYMBOL(cleancache_register_ops);
+> @@ -61,15 +91,38 @@ EXPORT_SYMBOL(cleancache_register_ops);
+>  /* Called by a cleancache-enabled filesystem at time of mount */
+>  void __cleancache_init_fs(struct super_block *sb)
+>  {
+> -	sb->cleancache_poolid = (*cleancache_ops.init_fs)(PAGE_SIZE);
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+> +		if (fs_poolid_map[i] == FS_UNKNOWN) {
+> +			sb->cleancache_poolid = i + FAKE_FS_POOLID_OFFSET;
+> +			if (backend_registered)
+> +				fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
+> +			else
+> +				fs_poolid_map[i] = FS_NO_BACKEND;
+> +			break;
+> +		}
+> +	}
+>  }
+>  EXPORT_SYMBOL(__cleancache_init_fs);
+
+This also looks wildly racy.
+
+>  /* Called by a cleancache-enabled clustered filesystem at time of mount */
+>  void __cleancache_init_shared_fs(char *uuid, struct super_block *sb)
+>  {
+> -	sb->cleancache_poolid =
+> -		(*cleancache_ops.init_shared_fs)(uuid, PAGE_SIZE);
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+> +		if (shared_fs_poolid_map[i] == FS_UNKNOWN) {
+> +			sb->cleancache_poolid = i + FAKE_SHARED_FS_POOLID_OFFSET;
+> +			uuids[i] = uuid;
+> +			if (backend_registered)
+> +				shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
+> +						(uuid, PAGE_SIZE);
+> +			else
+> +				shared_fs_poolid_map[i] = FS_NO_BACKEND;
+> +			break;
+> +		}
+> +	}
+>  }
+>  EXPORT_SYMBOL(__cleancache_init_shared_fs);
+
+Again, a huge mess if two threads execute this concurrently.
+
+> @@ -99,6 +152,19 @@ static int cleancache_get_key(struct inode *inode,
+>  }
+>  
+>  /*
+> + * Returns a pool_id that is associated with a given fake poolid.
+
+Was there a comment anywhere which tells the reader what a "fake poolid" is?
+
+> + */
+> +static int get_poolid_from_fake(int fake_pool_id)
+> +{
+> +	if (fake_pool_id >= FAKE_SHARED_FS_POOLID_OFFSET)
+> +		return shared_fs_poolid_map[fake_pool_id -
+> +			FAKE_SHARED_FS_POOLID_OFFSET];
+> +	else if (fake_pool_id >= FAKE_FS_POOLID_OFFSET)
+> +		return fs_poolid_map[fake_pool_id - FAKE_FS_POOLID_OFFSET];
+> +	return FS_NO_BACKEND;
+> +}
+> +
+> +/*
+>   * "Get" data from cleancache associated with the poolid/inode/index
+>   * that were specified when the data was put to cleanache and, if
+>   * successful, use it to fill the specified page with data and return 0.
+> @@ -109,17 +175,26 @@ int __cleancache_get_page(struct page *page)
+>  {
+>  	int ret = -1;
+>  	int pool_id;
+> +	int fake_pool_id;
+>  	struct cleancache_filekey key = { .u.key = { 0 } };
+>  
+> +	if (!backend_registered) {
+> +		cleancache_failed_gets++;
+> +		goto out;
+> +	}
+
+Races everywhere...
+
+>  	VM_BUG_ON(!PageLocked(page));
+> -	pool_id = page->mapping->host->i_sb->cleancache_poolid;
+> -	if (pool_id < 0)
+> +	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
+> +	if (fake_pool_id < 0)
+>  		goto out;
+> +	pool_id = get_poolid_from_fake(fake_pool_id);
+>  
+>  	if (cleancache_get_key(page->mapping->host, &key) < 0)
+>  		goto out;
+>  
+> -	ret = (*cleancache_ops.get_page)(pool_id, key, page->index, page);
+> +	if (pool_id >= 0)
+> +		ret = (*cleancache_ops.get_page)(pool_id,
+> +				key, page->index, page);
+>  	if (ret == 0)
+>  		cleancache_succ_gets++;
+>  	else
+> @@ -138,12 +213,23 @@ EXPORT_SYMBOL(__cleancache_get_page);
+>  void __cleancache_put_page(struct page *page)
+>  {
+>  	int pool_id;
+> +	int fake_pool_id;
+>  	struct cleancache_filekey key = { .u.key = { 0 } };
+>  
+> +	if (!backend_registered) {
+> +		cleancache_puts++;
+> +		return;
+> +	}
+
+More..
+
+>  	VM_BUG_ON(!PageLocked(page));
+> -	pool_id = page->mapping->host->i_sb->cleancache_poolid;
+> +	fake_pool_id = page->mapping->host->i_sb->cleancache_poolid;
+> +	if (fake_pool_id < 0)
+> +		return;
+> +
+> +	pool_id = get_poolid_from_fake(fake_pool_id);
+> +
+>  	if (pool_id >= 0 &&
+> -	      cleancache_get_key(page->mapping->host, &key) >= 0) {
+> +		cleancache_get_key(page->mapping->host, &key) >= 0) {
+>  		(*cleancache_ops.put_page)(pool_id, key, page->index, page);
+>  		cleancache_puts++;
+>  	}
+>
+> ...
 >
 
-One of the earlier patches in this series changes __pa_symbol() to avoid 
-the conditional hidden inside __phys_addr(), since by definition a 
-symbol can only be on one side of that branch.
+I don't understand the timing flow here, nor the existing constraints
+on what can be done and when, but....
 
-	-hpa
+The whole thing looks really hacky?  Why do we need to remember all
+this stuff for later on?  What prevents us from simply synchonously
+doing whatever we need to do when someone wants to register a backend?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Maybe a little ascii time chart/flow diagram would help.
