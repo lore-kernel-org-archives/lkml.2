@@ -1,162 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2KPQxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:53:18 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47276 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab2KPQxR (ORCPT
+	id S1752139Ab2KPQyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:54:33 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62239 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab2KPQyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:53:17 -0500
-From: Johan Meiring <johanmeiring@gmail.com>
-To: pe1dnn@amsat.org, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Johan Meiring <johanmeiring@gmail.com>
-Subject: [PATCH 1/3] staging: wlags49_h2: ap_h2: fixes coding style issues
-Date: Fri, 16 Nov 2012 18:52:39 +0200
-Message-Id: <1353084759-8792-1-git-send-email-johanmeiring@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 16 Nov 2012 11:54:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [GIT PULL] arm-soc: Xilinx zynq changes for v3.8
+Date: Fri, 16 Nov 2012 16:54:23 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        John Linn <John.Linn@xilinx.com>
+References: <CAHTX3dLdGie9gtxbPq_gb8BLao7YYohqQWZFg3LzyNHxu=imdg@mail.gmail.com> <CAHTX3dLijLK45ddZQVYHcrs6QQbmdRmQbPmTKada9nXx3ZAe3w@mail.gmail.com>
+In-Reply-To: <CAHTX3dLijLK45ddZQVYHcrs6QQbmdRmQbPmTKada9nXx3ZAe3w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211161654.23470.arnd@arndb.de>
+X-Provags-ID: V02:K0:Jgh6fex7fNAtE/REPQlfj/ghkMGJWx68281Q3B28KF4
+ 8Qi/Ihh/F+qFkTHwo6jKSgVKN7b5c3UaaO5QDjbv089H7Q6GIc
+ 2phmnGu8nwt2u51v+GAuLVuUyJueoO43s6/H4f/BJcVq8iC/7V
+ 73ZQJfniPoW6Y6mEls5m6+STJdFa7Dr7f/zzQU48FV8VGtVvYZ
+ FQRxepnatcVpjf4+jvWS0cTMfY5ySl7HAUP/FYNRWaX+fDpevV
+ Astfo5c7N9XOl4C51PKw//Gp9Y8TTv4cMLpEVc07nT+1w1AI58
+ HMj5CvJV5SRQS5Zm/mAqaC5gUL8Ce09YCwXUBuWm1lM6oZODg9
+ qrrDNPMFgVUQqiA9JvaE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This corrects several instances of spaces before tabs and incorrect spacing around "*" characters.  It also fixes some 80+ character line length issues, but the majority of such cases have been left as is, as this was probably the author's intention.
+On Friday 16 November 2012, Michal Simek wrote:
+> I have 7 new follow up patches for zynq. They are based on previous patches
+> (arm-soc zynq/cleanup branch).
+> The branch is still based on rc3 but I have also tried to merged it
+> with the v3.7-rc5 and there is no issue.
+> 
+> It should be the last pull request for v3.8.
+> 
 
-Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
----
- drivers/staging/wlags49_h2/ap_h2.c |   56 +++++++++++++++++++-----------------
- 1 file changed, 29 insertions(+), 27 deletions(-)
+Pulled into next/dt, thanks!
 
-diff --git a/drivers/staging/wlags49_h2/ap_h2.c b/drivers/staging/wlags49_h2/ap_h2.c
-index eb8244c..9bba270 100644
---- a/drivers/staging/wlags49_h2/ap_h2.c
-+++ b/drivers/staging/wlags49_h2/ap_h2.c
-@@ -25,10 +25,10 @@
-  */
- 
- 
--#include "hcfcfg.h"				/* to get hcf_16 etc defined as well as */
--					/* possible settings which inluence mdd.h or dhf.h */
--#include "mdd.h"   				/* to get COMP_ID_STA etc defined */
--#include "dhf.h"   				/* used to be "fhfmem.h", to get memblock,plugrecord, */
-+#include "hcfcfg.h"	/* to get hcf_16 etc defined as well as */
-+			/* possible settings which inluence mdd.h or dhf.h */
-+#include "mdd.h"	/* to get COMP_ID_STA etc defined */
-+#include "dhf.h"	/* used to be "fhfmem.h", to get memblock,plugrecord */
- 
- static const hcf_8 fw_image_1_data[] = {
- 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-@@ -3241,9 +3241,9 @@ static const CFG_IDENTITY_STRCT fw_image_infoidentity[] = {
- 		sizeof(CFG_IDENTITY_STRCT) / sizeof(hcf_16) - 1,
- 		CFG_FW_IDENTITY,
- 		COMP_ID_FW_AP,
--		2,							/* Variant /
--		2,							/* Major */
--		36							/* Minor */
-+		2,					/* Variant */
-+		2,					/* Major */
-+		36					/* Minor */
- 	},
- 	{ 0000, 0000, 0000, 0000, 0000, 0000 }		/* endsentinel */
- };
-@@ -3254,43 +3254,43 @@ static const CFG_PROG_STRCT fw_image_code[] = {
- 		CFG_PROG,
- 		CFG_PROG_VOLATILE,			/* mode */
- 		0x0146,		/* sizeof(fw_image_1_data), */
--		0x00000060,					/* Target address in NIC Memory */
--		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
--		(hcf_8 FAR *) fw_image_1_data
-+		0x00000060,	/* Target address in NIC Memory */
-+		0x0000,		/* CRC: yes/no	TYPE: primary/station/tertiary */
-+		(hcf_8 FAR*) fw_image_1_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
- 		CFG_PROG_VOLATILE,			/* mode */
- 		0x1918,		/* sizeof(fw_image_2_data), */
--		0x00000C16,					/* Target address in NIC Memory */
--		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
--		(hcf_8 FAR *) fw_image_2_data
-+		0x00000C16,	/* Target address in NIC Memory */
-+		0x0000,		/* CRC: yes/no	TYPE: primary/station/tertiary */
-+		(hcf_8 FAR*) fw_image_2_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
- 		CFG_PROG_VOLATILE,			/* mode */
- 		0x01bc,		/* sizeof(fw_image_3_data), */
--		0x001E252E,					/* Target address in NIC Memory */
--		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
--		(hcf_8 FAR *) fw_image_3_data
-+		0x001E252E,	/* Target address in NIC Memory */
-+		0x0000,		/* CRC: yes/no	TYPE: primary/station/tertiary */
-+		(hcf_8 FAR*) fw_image_3_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
- 		CFG_PROG_VOLATILE,			/* mode */
- 		0xab28,		/* sizeof(fw_image_4_data), */
--		0x001F4000,					/* Target address in NIC Memory */
--		0x0000,						/* CRC: yes/no	TYPE: primary/station/tertiary */
--		(hcf_8 FAR *) fw_image_4_data
-+		0x001F4000,	/* Target address in NIC Memory */
-+		0x0000,		/* CRC: yes/no	TYPE: primary/station/tertiary */
-+		(hcf_8 FAR*) fw_image_4_data
- 	},
- 	{
- 		5,
- 		CFG_PROG,
- 		CFG_PROG_STOP,				/* mode*/
- 		0000,
--	0x000F1297,					/* Start execution address */
-+	0x000F1297,		/* Start execution address */
- 	},
- 	{ 0000, 0000, 0000, 0000, 00000000, 0000, 00000000}
- };
-@@ -3301,7 +3301,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_SUPL,
- 		COMP_ID_APF,
- 		{
--			{ 2, 2, 4 }  				/* variant, bottom, top */
-+			{ 2, 2, 4 }		/* variant, bottom, top */
- 		}
- 	},
- 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
-@@ -3309,9 +3309,9 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_ACT,
- 		COMP_ID_MFI,
- 		{
--			{ 4, 6, 7 }, 				/* variant, bottom, top */
--			{ 5, 6, 7 }, 				/* variant, bottom, top */
--			{ 6, 6, 7 }  				/* variant, bottom, top */
-+			{ 4, 6, 7 },		/* variant, bottom, top */
-+			{ 5, 6, 7 },		/* variant, bottom, top */
-+			{ 6, 6, 7 }		/* variant, bottom, top */
- 		}
- 	},
- 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
-@@ -3319,14 +3319,16 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_ACT,
- 		COMP_ID_CFI,
- 		{
--			{ 2, 1, 2 }  				/* variant, bottom, top */
-+			{ 2, 1, 2 }		/* variant, bottom, top */
- 		}
- 	},
--	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }			/* endsentinel */
-+	{ 0000, 0000, 0000, 0000,
-+		{ { 0000, 0000, 0000 } }
-+	}	/* endsentinel */
- };
- 
- memimage fw_image = {
--	"FUPU7D37dhfwci\001C",			/* signature, <format number>, C/Bin type */
-+	"FUPU7D37dhfwci\001C",	/* signature, <format number>, C/Bin type */
- 	(CFG_PROG_STRCT *) fw_image_code,
- 	0x000F1297,
- 	00000000,					/* (dummy) pdaplug */
--- 
-1.7.10.4
+This was a small set of patches and you're new to the job, so there is
+no problem with what you sent me, but I have a few comments for the
+future:
 
+* Please provide a description of the series that I can put into the
+merge changeset, either in the introductory mail or (better) into
+the signed tag that you send (git tag -s). Have a look at how
+Tony Lindgren does this, he writes the best descriptions.
+
+* I've used the next/dt branch, since that is what most of the patches
+from this series best fit in. However, some of the patches would
+have made more sense in a different branch (clock, cleanup, ...).
+When you have things that are logically separate, just send separate
+pull requests. This takes some practice to get the dependencies
+right, so please ask if you are not sure how to do it.
+
+* It seems the zynq multiplatform changes didn't make it for 3.8. I
+hope you can do this for 3.9, as this should not be too hard.
+
+	Arnd
