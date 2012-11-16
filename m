@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab2KPH3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 02:29:54 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33388 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2KPH3w (ORCPT
+	id S1751324Ab2KPHfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 02:35:48 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5821 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2KPHfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 02:29:52 -0500
-Date: Thu, 15 Nov 2012 23:26:43 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-pm@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121116072642.GA22291@lizard>
-References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
- <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
+	Fri, 16 Nov 2012 02:35:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 15 Nov 2012 23:35:38 -0800
+Message-ID: <50A5ED93.5080107@nvidia.com>
+Date: Fri, 16 Nov 2012 09:38:59 +0200
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] NVIDIA Tegra DRM driver
+References: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+On 15.11.2012 23:28, Thierry Reding wrote:
+> This third version of the patch series cleans up some minor issues that
+> were found in the previous versions, such as deferred probe not working
+> properly and the display remaining enabled after the driver is removed.
+> 
+> I've also put the two patches in this series into the tegra/drm/for-3.8
+> branch of my repository on gitorious[0].
 
-The code looks neat, thanks for you work!
+Excellent work. Thanks a lot Thierry!
 
-Just a couple of comments...
+I tested this and the device tree patches on my Tegra20 board. For both:
 
-On Fri, Nov 16, 2012 at 03:38:21PM +0900, Alexandre Courbot wrote:
-[...]
-> +
-> +#include "power_seq_delay.c"
-> +#include "power_seq_regulator.c"
-> +#include "power_seq_pwm.c"
-> +#include "power_seq_gpio.c"
+Acked-by: Terje Bergstrom <tbergstrom@nvidia.com>
+Tested-by: Terje Bergstrom <tbergstrom@nvidia.com>
 
-This is odd, although I remember you already explained why you have to
-include the .c files, instead of linking them separately. But I forgot the
-reason. :) I think this deserves a comment in the code.
+Best regards,
+Terje
 
-> +static int of_power_seq_parse_step(struct device *dev,
-> +				   struct device_node *node,
-> +				   struct power_seq *seq,
-> +				   unsigned int step_nbr,
-> +				   struct list_head *resources)
-> +{
-> +	struct power_seq_step *step = &seq->steps[step_nbr];
-> +	struct power_seq_resource res, *res2;
-> +	const char *type;
-> +	int i, err;
-
-nit: one variable declaration per line.
-
-Thanks,
-Anton.
