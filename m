@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab2KPHfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 02:35:48 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5821 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2KPHfq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 02:35:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 15 Nov 2012 23:35:38 -0800
-Message-ID: <50A5ED93.5080107@nvidia.com>
-Date: Fri, 16 Nov 2012 09:38:59 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	id S1751001Ab2KPHqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 02:46:09 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:48308 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750730Ab2KPHqI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 02:46:08 -0500
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Xi Wang <xi.wang@gmail.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] NVIDIA Tegra DRM driver
-References: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1353014903-17429-1-git-send-email-thierry.reding@avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Date: Thu, 15 Nov 2012 23:39:47 -0800
+Subject: RE: [PATCH 2/3] [SCSI] mvsas: fix shift in mvs_94xx_free_reg_set()
+Thread-Topic: [PATCH 2/3] [SCSI] mvsas: fix shift in mvs_94xx_free_reg_set()
+Thread-Index: Ac2+gFSWPrY4h7gFTjaTPyad+f70IgFQixtg
+Message-ID: <F766E4F80769BD478052FB6533FA745D25EA94A704@SC-VEXCH4.marvell.com>
+References: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
+  <1352145183-29355-3-git-send-email-xi.wang@gmail.com>
+ <1352203618.2529.22.camel@dabdike> <50997955.10000@gmail.com>
+ <F766E4F80769BD478052FB6533FA745D25EA5FB180@SC-VEXCH4.marvell.com>
+ <509D08B5.2080303@gmail.com>
+In-Reply-To: <509D08B5.2080303@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.11.2012 23:28, Thierry Reding wrote:
-> This third version of the patch series cleans up some minor issues that
-> were found in the previous versions, such as deferred probe not working
-> properly and the display remaining enabled after the driver is removed.
+Hi, Xi
+
+> > About patch 3, I check the ffz code and found it will check ~0 conditions.
 > 
-> I've also put the two patches in this series into the tegra/drm/for-3.8
-> branch of my repository on gitorious[0].
+> Can you point me to the ~0 check in ffz code?  I also feel like using
+> __ffs64 makes the code simpler.
+Yes, it seem to be ok
 
-Excellent work. Thanks a lot Thierry!
+> 
+> Does patch 1 look good to you?  Thanks.
+> 
+Yes
 
-I tested this and the device tree patches on my Tegra20 board. For both:
-
-Acked-by: Terje Bergstrom <tbergstrom@nvidia.com>
-Tested-by: Terje Bergstrom <tbergstrom@nvidia.com>
-
-Best regards,
-Terje
+Thanks!
 
