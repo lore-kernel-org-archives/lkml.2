@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab2KPLXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:23:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32876 "EHLO mx2.suse.de"
+	id S1751652Ab2KPLXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32925 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab2KPLXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:04 -0500
+	id S1751599Ab2KPLXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:10 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/43] mm: numa: pte_numa() and pmd_numa()
-Date: Fri, 16 Nov 2012 11:22:15 +0000
-Message-Id: <1353064973-26082-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/43] mm: mempolicy: Make MPOL_LOCAL a real policy
+Date: Fri, 16 Nov 2012 11:22:20 +0000
+Message-Id: <1353064973-26082-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,144 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Implement pte_numa and pmd_numa.
+Make MPOL_LOCAL a real and exposed policy such that applications that
+relied on the previous default behaviour can explicitly request it.
 
-We must atomically set the numa bit and clear the present bit to
-define a pte_numa or pmd_numa.
-
-Once a pte or pmd has been set as pte_numa or pmd_numa, the next time
-a thread touches a virtual address in the corresponding virtual range,
-a NUMA hinting page fault will trigger. The NUMA hinting page fault
-will clear the NUMA bit and set the present bit again to resolve the
-page fault.
-
-The expectation is that a NUMA hinting page fault is used as part
-of a placement policy that decides if a page should remain on the
-current node or migrated to a different node.
-
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Requested-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/x86/include/asm/pgtable.h |   65 ++++++++++++++++++++++++++++++++++++++--
- include/asm-generic/pgtable.h  |   12 ++++++++
- 2 files changed, 75 insertions(+), 2 deletions(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |    9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a1f780d..e075d57 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -404,7 +404,8 @@ static inline int pte_same(pte_t a, pte_t b)
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index 23e62e0..3e835c9 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -20,6 +20,7 @@ enum {
+ 	MPOL_PREFERRED,
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
++	MPOL_LOCAL,
+ 	MPOL_MAX,	/* always last member of enum */
+ };
  
- static inline int pte_present(pte_t a)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 66e90ec..54bd3e5 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -269,6 +269,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+ 			     (flags & MPOL_F_RELATIVE_NODES)))
+ 				return ERR_PTR(-EINVAL);
+ 		}
++	} else if (mode == MPOL_LOCAL) {
++		if (!nodes_empty(*nodes))
++			return ERR_PTR(-EINVAL);
++		mode = MPOL_PREFERRED;
+ 	} else if (nodes_empty(*nodes))
+ 		return ERR_PTR(-EINVAL);
+ 	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
+@@ -2399,7 +2403,6 @@ void numa_default_policy(void)
+  * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+  * Used only for mpol_parse_str() and mpol_to_str()
+  */
+-#define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
  {
--	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
-+	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+			       _PAGE_NUMA);
- }
+ 	[MPOL_DEFAULT]    = "default",
+@@ -2452,12 +2455,12 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 	if (flags)
+ 		*flags++ = '\0';	/* terminate mode string */
  
- static inline int pte_hidden(pte_t pte)
-@@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
- 	 * the _PAGE_PSE flag will remain set at all times while the
- 	 * _PAGE_PRESENT bit is clear).
- 	 */
--	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
-+				 _PAGE_NUMA);
-+}
-+
-+#ifdef CONFIG_BALANCE_NUMA
-+/*
-+ * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
-+ * same bit too). It's set only when _PAGE_PRESET is not set and it's
-+ * never set if _PAGE_PRESENT is set.
-+ *
-+ * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
-+ * fault triggers on those regions if pte/pmd_numa returns true
-+ * (because _PAGE_PRESENT is not set).
-+ */
-+static inline int pte_numa(pte_t pte)
-+{
-+	return (pte_flags(pte) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return (pmd_flags(pmd) &
-+		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
-+}
-+#endif
-+
-+/*
-+ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
-+ * because they're called by the NUMA hinting minor page fault. If we
-+ * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
-+ * would be forced to set it later while filling the TLB after we
-+ * return to userland. That would trigger a second write to memory
-+ * that we optimize away by setting _PAGE_ACCESSED here.
-+ */
-+static inline pte_t pte_mknonnuma(pte_t pte)
-+{
-+	pte = pte_clear_flags(pte, _PAGE_NUMA);
-+	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+
-+static inline pmd_t pmd_mknonnuma(pmd_t pmd)
-+{
-+	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
-+	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+
-+static inline pte_t pte_mknuma(pte_t pte)
-+{
-+	pte = pte_set_flags(pte, _PAGE_NUMA);
-+	return pte_clear_flags(pte, _PAGE_PRESENT);
-+}
-+
-+static inline pmd_t pmd_mknuma(pmd_t pmd)
-+{
-+	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
-+	return pmd_clear_flags(pmd, _PAGE_PRESENT);
- }
+-	for (mode = 0; mode <= MPOL_LOCAL; mode++) {
++	for (mode = 0; mode < MPOL_MAX; mode++) {
+ 		if (!strcmp(str, policy_modes[mode])) {
+ 			break;
+ 		}
+ 	}
+-	if (mode > MPOL_LOCAL)
++	if (mode >= MPOL_MAX)
+ 		goto out;
  
- static inline int pmd_none(pmd_t pmd)
-@@ -479,6 +536,10 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
- 
- static inline int pmd_bad(pmd_t pmd)
- {
-+#ifdef CONFIG_BALANCE_NUMA
-+	if (pmd_numa(pmd))
-+		return 0;
-+#endif
- 	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
- }
- 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index b36ce40..896667e 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -554,6 +554,18 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
- }
- 
-+#ifndef CONFIG_BALANCE_NUMA
-+static inline int pte_numa(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_BALANCE_NUMA */
-+
- #endif /* CONFIG_MMU */
- 
- #endif /* !__ASSEMBLY__ */
+ 	switch (mode) {
 -- 
 1.7.9.2
 
