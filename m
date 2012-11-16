@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756Ab2KPOlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:41:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44806 "EHLO mx2.suse.de"
+	id S1751773Ab2KPOoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:44:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49834 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2KPOlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:41:13 -0500
-Date: Fri, 16 Nov 2012 14:41:09 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/43] mm: numa: Make pte_numa() and pmd_numa() a generic
- implementation
-Message-ID: <20121116144109.GA8218@suse.de>
-References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
- <1353064973-26082-7-git-send-email-mgorman@suse.de>
- <50A648FF.2040707@redhat.com>
+	id S1751243Ab2KPOoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:44:23 -0500
+Subject: Re: [PATCH 00/13] MFD: twl drivers: Convert to regmap IO and
+ cleanups
+From: Tero Kristo <t-kristo@ti.com>
+Reply-To: <t-kristo@ti.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1352795334-7406-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Texas Instruments
+Date: Fri, 16 Nov 2012 16:44:20 +0200
+Message-ID: <1353077060.786.18.camel@sokoban>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50A648FF.2040707@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 09:09:03AM -0500, Rik van Riel wrote:
-> On 11/16/2012 06:22 AM, Mel Gorman wrote:
-> >It was pointed out by Ingo Molnar that the per-architecture definition of
-> >the NUMA PTE helper functions means that each supporting architecture
-> >will have to cut and paste it which is unfortunate. He suggested instead
-> >that the helpers should be weak functions that can be overridden by the
-> >architecture.
-> >
-> >This patch moves the helpers to mm/pgtable-generic.c and makes them weak
-> >functions. Architectures wishing to use this will still be required to
-> >define _PAGE_NUMA and potentially update their p[te|md]_present and
-> >pmd_bad helpers if they choose to make PAGE_NUMA similar to PROT_NONE.
-> >
-> >Signed-off-by: Mel Gorman <mgorman@suse.de>
+Hi Peter / Samuel,
+
+I just tested this set on omap3beagle + omap4460 panda boards and both
+seem to work fine. Did a boot + simple PM test for both to see that
+regulator control (which is using the I2C related stuff you have
+changed) works. Also, looking at the code everything seems to be okay to
+me, thus for whole set:
+
+Acked-by: Tero Kristo <t-kristo@ti.com>
+
+On Tue, 2012-11-13 at 09:28 +0100, Peter Ujfalusi wrote:
+> Hello,
 > 
-> Is uninlining these simple tests really the right thing to do,
-> or would they be better off as inlines in asm-generic/pgtable.h ?
+> This series converts the twl-core to use regmap for IO towards the chip.
+> With the conversion to regmap IO we no longer need to allocate bigger buffer for
+> writes.
+> I have appended patches to this series to make some cleanups which will help in
+> the future to further clean up the twl stack.
+> 
+> The series depends on a regression fix patch for the twl-core:
+> https://patchwork.kernel.org/patch/1679421/
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (13):
+>   MFD: twl-core: Register twl4030-madc child only for twl4030 class
+>   MFD: twl-core: Support for proper PWM drivers
+>   MFD: twl-core: Convert to use regmap for I/O
+>   MFD/rtc/gpio: twl: No need to allocate bigger buffer for write
+>   MFD: twl-core: Clean up and correct child registration
+>   mfd: twl: Remove unused TWL_MODULE definitions
+>   mfd: twl: Convert module id definitions to enums
+>   mfd: twl: Use decimal numbers for TWL6030_MODULE_IDs
+>   MFD: twl-core: re-group the twl_mapping table for easier reading
+>   mfd: twl4030-madc: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+>   mfd: twl4030-power: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+>   mfd: twl4030-irq: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+>   mfd: twl-core: Change TWL4030_MODULE_* ids to TWL_MODULE_*
+> 
+>  drivers/gpio/gpio-twl4030.c |  12 +--
+>  drivers/mfd/twl-core.c      | 227 +++++++++++++++++++++++---------------------
+>  drivers/mfd/twl4030-irq.c   |  10 +-
+>  drivers/mfd/twl4030-madc.c  |  14 +--
+>  drivers/mfd/twl4030-power.c | 124 ++++++++++--------------
+>  drivers/mfd/twl6030-irq.c   |   4 +-
+>  drivers/rtc/rtc-twl.c       |  32 +++----
+>  include/linux/i2c/twl.h     |  73 +++++++-------
+>  8 files changed, 241 insertions(+), 255 deletions(-)
 > 
 
-I would have preferred asm-generic/pgtable.h myself and use
-__HAVE_ARCH_whatever tricks to keep the inlining but Ingo's suggestion
-was to use __weak (https://lkml.org/lkml/2012/11/13/134) and I did not
-have a strong reason to disagree. Is there a compelling choice either
-way or a preference?
 
--- 
-Mel Gorman
-SUSE Labs
