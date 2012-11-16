@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab2KPTPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 14:15:19 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:42959 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab2KPTPR (ORCPT
+	id S1753308Ab2KPTRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 14:17:11 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39623 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2KPTRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 14:15:17 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AueTAF2QplBV5h1yPGdsb2JhbABEili3BwOBAxkBAQEBHwIXDSeCHgEBBTocIxAIAw4GBC4UJQoaE4gRvwoUjB9Qg1xhA5V7hXuNOYFaIw
-X-IronPort-AV: E=Sophos;i="4.83,266,1352070000"; 
-   d="scan'208";a="450883350"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 16 Nov 2012 20:21:59 +0100
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: Dave Airlie <airlied@gmail.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] nouveau: Severe screen corruption on (0xaf, nv50)
-Message-ID: <20121116192159.GA491@polaris.bitmath.org>
-References: <20121018095809.GA336@polaris.bitmath.org>
- <20121021071024.GA731@polaris.bitmath.org>
+	Fri, 16 Nov 2012 14:17:09 -0500
+Date: Fri, 16 Nov 2012 11:17:07 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: James Cloos <cloos@jhcloos.com>
+cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: Likely mem leak in 3.7
+In-Reply-To: <m3r4nuwipl.fsf@carbon.jhcloos.org>
+Message-ID: <alpine.DEB.2.00.1211161115001.2788@chino.kir.corp.google.com>
+References: <m3r4nuwipl.fsf@carbon.jhcloos.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121021071024.GA731@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 09:10:24AM +0200, Henrik Rydberg wrote:
-> On Thu, Oct 18, 2012 at 11:58:09AM +0200, Henrik Rydberg wrote:
-> > Hi Ben,
-> > 
-> > 3.7-rc1 messed up the screen on my MacBookAir3,1 (nv50, 0xaf) pretty
-> > badly. Not surprisingly,
-> > 
-> > commit 3863c9bc887e9638a9d905d55f6038641ece78d6
-> > Author: Ben Skeggs <bskeggs@redhat.com>
-> > Date:   Sat Jul 14 19:09:17 2012 +1000
-> > 
-> >     drm/nouveau/instmem: completely new implementation, as a subdev module
-> > 
-> > is the first bad commit. Standing on that commit, booting and then
-> > starting X yields the output below. Hints are especially appreciated,
-> > considering the patch is almost 8000 lines.
+On Thu, 15 Nov 2012, James Cloos wrote:
+
+> The kernel does not log anything relevant to this.
 > 
-> Going through one suspend/resume cycle makes the corruption go away,
-> and there are no more errors in dmesg. Oddly enough, I have seen
-> something very similar when using i915 on the MBP10. Builtin modules
-> and systemd in both cases. Maybe this is a general drm issue. Any
-> thoughts?
 
-This is still a problem in Linus' tree. The screen corruption happens
-during boot, in text mode, presumably in conjunction with alloction of
-the nouveaufb device. It is 100% reproducible, and there is no
-advanced graphics involved, just simple text console. Booting from efi
-or bios does not matter. Modules are builtin.
+Can you do the following as root:
 
-Suspending and resuming once makes the problem go away every time.
+	dmesg -c > /dev/null
+	echo m > /proc/sysrq-trigger
+	dmesg > foo
 
-Since this is a simple usecase, and the failing commit has been
-bisected, it ought to be possible to find the problem. Unfortunately,
-I am not familiar enough with the nouveau code to find the problem in
-an 8000-line patch. Please help. :-)
+and send foo inline in your reply?
 
-Thanks,
-Henrik
+> Slabinfo gives some odd output.  It seems to think there are negative
+> quantities of some slabs:
+> 
+> Name                   Objects Objsize    Space Slabs/Part/Cpu  O/S O %Fr %Ef Flg
+> :at-0000016               5632      16    90.1K 18446744073709551363/0/275  256 0   0 100 *a
+> :t-0000048                3386      48   249.8K 18446744073709551558/22/119   85 0  36  65 *
+> :t-0000120                1022     120   167.9K 18446744073709551604/14/53   34 0  34  73 *
+> blkdev_requests            182     376   122.8K 18446744073709551604/7/27   21 1  46  55 
+> ext4_io_end                348    1128   393.2K 18446744073709551588/0/40   29 3   0  99 a
+> 
+
+Can you send the output of
+
+	zgrep CONFIG_SL[AU]B /proc/config.gz
+	cat /proc/slabinfo
