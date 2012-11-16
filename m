@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750971Ab2KPFIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 00:08:53 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33667 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2KPFIw (ORCPT
+	id S1751102Ab2KPF0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 00:26:30 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58478 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2KPF03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 00:08:52 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50A5CA16.7070603@jp.fujitsu.com>
-Date: Fri, 16 Nov 2012 14:07:34 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Fri, 16 Nov 2012 00:26:29 -0500
+Date: Fri, 16 Nov 2012 05:26:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, arnd@arndb.de
+Subject: Re: [RFC PATCH v1 16/31] ARC: Signal handling
+Message-ID: <20121116052628.GC22671@ZenIV.linux.org.uk>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+ <1352281674-2186-17-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking
- for dead memcgs
-References: <1352948093-2315-1-git-send-email-glommer@parallels.com> <1352948093-2315-6-git-send-email-glommer@parallels.com> <50A4B8C8.6020202@jp.fujitsu.com> <50A4F289.1090807@parallels.com>
-In-Reply-To: <50A4F289.1090807@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352281674-2186-17-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/15 22:47), Glauber Costa wrote:
-> On 11/15/2012 01:41 PM, Kamezawa Hiroyuki wrote:
->> (2012/11/15 11:54), Glauber Costa wrote:
->>> The idea is to synchronously do it, leaving it up to the shrinking
->>> facilities in vmscan.c and/or others. Not actively retrying shrinking
->>> may leave the caches alive for more time, but it will remove the ugly
->>> wakeups. One would argue that if the caches have free objects but are
->>> not being shrunk, it is because we don't need that memory yet.
->>>
->>> Signed-off-by: Glauber Costa <glommer@parallels.com>
->>> CC: Michal Hocko <mhocko@suse.cz>
->>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> CC: Johannes Weiner <hannes@cmpxchg.org>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>
->> I agree this patch but can we have a way to see the number of unaccounted
->> zombie cache usage for debugging ?
->>
->> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
-> Any particular interface in mind ?
-> 
+> +	if (insyscall) {
+> +		/* No handler for syscall: restart it */
+> +		if (regs->r0 == -ERESTARTNOHAND ||
+> +		    regs->r0 == -ERESTARTSYS || regs->r0 == -ERESTARTNOINTR) {
+> +			regs->r0 = regs->orig_r0;
+> +			regs->ret -= 4;
+> +		} else if (regs->r0 == -ERESTART_RESTARTBLOCK) {
+> +			regs->r8 = __NR_restart_syscall;
+> +			regs->ret -= 4;
+> +		}
 
-Hmm, it's debug interface and having cgroup file may be bad.....
-If it can be seen in bytes or some, /proc/vmstat ?
+What's to prevent double decrement on ->ret if two signals arrive?   Note
+that e.g. x86 gets away with similar code only because it uses the same
+register for syscall number and return value; since none of -ERESTART...
+is a valid syscall number, we either won't get into an analog of that code at
+all (-ENOSYS is not restart-worthy) or will revert to a value that is
+a valid syscall number, so all subsequent do_signal() calls will not hit
+that code.  This is subtle and unfortunately not spelled out in the
+architectures where it is enough.
 
-out_of_track_slabs  xxxxxxx. hm ?
-
-Thanks,
--Kame
-
-
-
-
-
-
+You need to make sure that after the first restart in_syscall() will be false.
+Same ought to be done in sigreturn(), BTW...
