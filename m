@@ -1,159 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2KPDLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 22:11:05 -0500
-Received: from mga14.intel.com ([143.182.124.37]:41746 "EHLO mga14.intel.com"
+	id S1751453Ab2KPDL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 22:11:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46500 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084Ab2KPDLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 22:11:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,261,1352102400"; 
-   d="scan'208";a="169033745"
-Message-ID: <1353035460.7176.321.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 16 Nov 2012 11:11:00 +0800
-In-Reply-To: <50117675.OVEdDFPCp3@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1211141608200.1620-100000@iolanthe.rowland.org>
-	 <37583314.JAxoSZqTsM@vostro.rjw.lan> <1352941424.7176.261.camel@yhuang-dev>
-	 <50117675.OVEdDFPCp3@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751084Ab2KPDLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 22:11:24 -0500
+Date: Fri, 16 Nov 2012 04:11:20 +0100
+From: Jan Kara <jack@suse.cz>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Jan Kara <jack@suse.cz>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, arekm@pld-linux.org,
+        baggins@pld-linux.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
+Subject: Re: [3.6.6] panic on reboot / khungtaskd blocked? (WARNING: at
+ arch/x86/kernel/smp.c:123 native_smp_send_reschedule)
+Message-ID: <20121116031120.GA23352@quack.suse.cz>
+References: <56378024.A3Kec8xZj0@pawels>
+ <2413953.H7iie8v1th@pawels>
+ <50A302C9.2060800@linux.vnet.ibm.com>
+ <1984533.1jAeFKDqSR@localhost>
+ <50A44854.6040905@linux.vnet.ibm.com>
+ <20121115094046.GD1394@quack.suse.cz>
+ <50A5AA03.2000707@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50A5AA03.2000707@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 10:51 +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 15, 2012 09:03:44 AM Huang Ying wrote:
-> > On Thu, 2012-11-15 at 00:10 +0100, Rafael J. Wysocki wrote:
-> > > On Wednesday, November 14, 2012 04:45:01 PM Alan Stern wrote:
-> > > > On Wed, 14 Nov 2012, Rafael J. Wysocki wrote:
-> > > > 
-> > > > > > This has the side effect that when a driver unbinds, it can't leave the 
-> > > > > > device in a special low-power state.  The device will always end up in 
-> > > > > > the generic low-power state supported by the PCI core.
-> > > > > 
-> > > > > Well, I'm not sure I'd like that.
-> > > > > 
-> > > > > Let's just go back even one step more and think what we'd like to have in
-> > > > > general terms and then how to implement it. :-)
-> > > > > 
-> > > > > Suppose that pci_pm_init() calls pm_runtime_enable() for all devices (in
-> > > > > addition to what it does currently).  The runtime PM status of each device is
-> > > > > RPM_SUSPENDED at this point.  Then:
-> > > > 
-> > > > Wait a moment.  When the device is detected and initialized, it is in
-> > > > D0, right?  Currently we don't care much because the device starts out
-> > > > disabled for runtime PM.  But now you are going to enable it.  While
-> > > > the device is enabled, its runtime status should match the physical
-> > > > power level.
-> > > 
-> > > OK
-> > 
-> > If my memory were correct, RPM_SUSPENDED just means device stop working,
-> > but need not be put into low-power state.  So for RPM_ACTIVE, PCI
-> > devices should be in D0, but for RPM_SUSPENDED, PCI devices can in any
-> > power state.
+On Fri 16-11-12 10:50:43, Michael Wang wrote:
+> On 11/15/2012 05:40 PM, Jan Kara wrote:
+> > On Thu 15-11-12 09:41:40, Michael Wang wrote:
+> >> On 11/15/2012 05:10 AM, Paweł Sikora wrote:
+> >>> On Wednesday 14 of November 2012 10:32:41 Michael Wang wrote:
+> >>>> On 11/13/2012 05:40 PM, Paweł Sikora wrote:
+> >>>>> On Monday 12 of November 2012 13:33:39 Paweł Sikora wrote:
+> >>>>>> On Monday 12 of November 2012 11:22:47 Paweł Sikora wrote:
+> >>>>>>> On Monday 12 of November 2012 15:40:31 Michael Wang wrote:
+> >>>>>>>> On 11/12/2012 03:16 PM, Paweł Sikora wrote:
+> >>>>>>>>> On Monday 12 of November 2012 11:04:12 Michael Wang wrote:
+> >>>>>>>>>> On 11/09/2012 09:48 PM, Paweł Sikora wrote:
+> >>>>>>>>>>> Hi,
+> >>>>>>>>>>>
+> >>>>>>>>>>> during playing with new ups i've caught an nice oops on reboot:
+> >>>>>>>>>>>
+> >>>>>>>>>>> http://imgbin.org/index.php?page=image&id=10253
+> >>>>>>>>>>>
+> >>>>>>>>>>> probably the upstream is also affected.
+> >>>>>>>>>>
+> >>>>>>>>>> Hi, Paweł
+> >>>>>>>>>>
+> >>>>>>>>>> Are you using a clean 3.6.6 without any modify?
+> >>>>>>>>>
+> >>>>>>>>> yes, pure 3.6.6 form git tree with modular config.
+> >>>>>>>>>
+> >>>>>>>>>> Looks like some threads has set itself to be UNINTERRUPTIBLE with out
+> >>>>>>>>>> any design on switch itself back later(or the time is too long), are you
+> >>>>>>>>>> accidentally using some bad designed module?
+> >>>>>>>>>
+> >>>>>>>>> hmm, hard to say. mostly all modules are loaded automatically by kernel.
+> >>>>>>>>
+> >>>>>>>> Could you please provide the whole dmesg in text? your picture lost the
+> >>>>>>>> print info of the hung task.
+> >>>>>>>
+> >>>>>>> i've grabbed the console via rs232 but there's no more info (see attached txt).
+> >>>>>>
+> >>>>>> hmm, i have one observation.
+> >>>>>>
+> >>>>>> during rc.shutdown there're messages on console like this: Cannot stat file /proc/$pid/fd/1: Connection timed out
+> >>>>>> afaics this file descriptor points to vnc log file on a remote machine, e.g.:
+> >>>>>>
+> >>>>>> # ps aux|grep xfwm4
+> >>>>>> eda       1748  0.0  0.0 320220 11224 ?        S    13:08   0:00 xfwm4 
+> >>>>>>
+> >>>>>> # readlink -m /proc/1748/fd/1
+> >>>>>> /remote/dragon/ahome/eda/.vnc/odra:11.log
+> >>>>>>
+> >>>>>> # mount|grep ahome
+> >>>>>> dragon:/home/users/ on /remote/dragon/ahome type nfs (rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,soft,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.0.2.121,mountvers=3,mountport=45251,mountproto=udp,local_lock=none,addr=10.0.2.121)
+> >>>>>>
+> >>>>>>
+> >>>>>> so, probably during `killall5 -TERM/-KILL` on shutdown stage something sometimes go wrong
+> >>>>>> and these processes (xfce4/vncserver) survive the signal and hang on the nfs i/o.
+> >>>>>>
+> >>>>>
+> >>>>> ok, now i have full sysrq+w backtraces from shutdown process. i hope i'll help you.
+> >>>>
+> >>>> This can only tell us what's the task in UNINTERRUPTABLE state, but with
+> >>>> out time info, we can't find out which one is the hung task...
+> >>
+> >> So it's blocked on __lock_page() for too long?
+> >> Add more experts in mm aspect to cc.
+> >   It's really NFS related. E.g. in trace
+> > https://lkml.org/lkml/2012/11/14/657 we are waiting on PageWriteback bit
+> > in fact - i.e. we have submitted data to the NFS server and are waiting for
+> > its response that the data was written.
 > 
-> Yes, that's correct and I was wrong when I thought we could require the
-> status to be RPM_ACTIVE all the time when there's no driver, because that
-> would prevent parents from being suspended.  And we want them to be able to
-> suspend for driverless children, _unless_ user space has its attribute set
-> to "on" (i.e. the default).
-> 
-> So it looks like what we want to do is:
-> 
-> (1) Enable runtime PM in pci_pm_init() and set the status to RPM_ACTIVE right
->     before, so that it is in agreement with the pm_runtime_forbid() we do in
->     there.
-> 
-> (2) If user space switches its attribute to "off" later, but before any
->     drivers are probed, we want the status to switch to RPM_SUSPENDED
->     _without_ actually changing the devices power state.  For that,
->     I think, we can make the PCI bus type's runtime PM callback ignore
->     devices without drivers (i.e. return 0 for them).
-> 
-> (3) When local_pci_probe() starts, after we've resumed the parent,
->     the device will be in D0 (it may be D0-uninitialized, though).
+> Do you mean, NFS lock some page, then wait on a respond which not come in?
+  Well, in that particular trace we are not waiting for PageLock but on
+PageWriteback bit as I wrote. But otherwise yes, NFS set PageWriteback bit
+and sent the data from the page to the server. When the server responds,
+the PageWriteback bit will get cleared and could continue. But the response
+didn't come.
 
-But the pci_dev->current_state may be PCI_UNKNOWN, although the real
-state should be D0, because of commit:
-2449e06a5696b7af1c8a369b04c97f3b139cf3bb.
-
-Best Regards,
-Huang Ying
-
->     If the user space's attribute is "on" at this point, the parent's
->     resume doesn't change anything.  If it is "auto", the parent's
->     resume may actually transition the device, although its status
->     will still be RPM_SUSPENDED.  For consistency _and_ compatibility
->     with the current code, the driver's .probe() routine needs to see
->     the device RPM_ACTIVE and usage_count incremented, but we don't
->     want to run its PM callbacks _before_ .probe() runs.  For that
->     to work, I think, we can do something like pm_runtime_get_skip_callbacks(),
->     treating the device as though it had the power.no_callbacks flag set,
->     right before calling ddi->drv->probe().
-> 
->     If the device has been RPM_ACTIVE at that point (i.e. user space has
->     had its attribute set to "on") it will just bump up usage_count (which
->     is what we want).  If the device has been RPM_SUSPENDED, it will
->     bump up usage_count _and_ change the status to RPM_ACTIVE without
->     executing any callbacks (the device is in D0 anyway, right?), which
->     is what we want too.
-> 
-> (4) If ddi->drv->probe() succeeds, we don't want to change anything, so
->     as not to confuse the driver, which is now in control of the device.
-> 
-> (5) If ddi->drv->probe() fails, we need to restore the situation from
->     before calling local_pci_probe(), but we want the pm_runtime_put(parent)
->     at the end of it to actually suspend the parent if user space has
->     its attribute (for the child!) set to "auto".
-> 
->     Assume that the driver is not buggy and the failing ddi->drv->probe()
->     leaves the device in the same configuration as it's received it in.
->     Then, the device is RPM_ACTIVE and in D0 (which may be uninitialized).
->     For the parent's suspend to work, we need to transition it to
->     RPM_SUSPENDED, but again we don't want the driver's PM callbacks to
->     run at this point.  Moreover, we don't want the PCI bus type's
->     callbacks to run at this point, because dev->driver is still set.
->     So again, doing something like pm_runtime_put_skip_callbacks(),
->     treating the device as though it had power.no_callbacks set, seems
->     to be appropriate.
->    
->     Namely, if the user space's attribute is "on", it will just drop
->     usage_count by 1, which is what we want in that case.  If the user
->     space's attribute is "auto", on the other hand, it will drop
->     usage_count by 1 and change the status to RPM_SUSPENDED without
->     running callbacks, which again is what we want.
->     
-> (6) In drv->remove() the driver is supposed to bump up usage_count by 1,
->     so as to restore the situation from before its .probe() routine
->     was called.  It also should leave the device as RPM_ACTIVE, because
->     that's what it's got in .probe().  Then, after drv->remove exits,
->     (and also if drv was NULL to start with), we want to drop usage_count
->     by 1.  Moreover, if the user space's attribute is "on", we don't
->     want anything more to happen, _but_ if that's "auto", we want to
->     suspend the parent.
-> 
->     Note that dev->driver is still not NULL at this point (although
->     pci_dev->driver is!) so again we can't run the PCI bus type's callbacks.
->     It looks like, then, what we want to do here is
->     pm_runtime_put_skip_callbacks() again, because if the user space's
->     attribute is "on", it will just drop usage_count by 1, which is what
->     we want, and if that's "auto", it will additionally change the status
->     to RPM_SUSPENDED (without executing callbacks, which we want) _and_
->     it will queue up the parent's suspend (which, again, is what we want).
-> 
-> Did I miss anything?
-> 
-> Rafael
-> 
-> 
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
