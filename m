@@ -1,108 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab2KPOOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:14:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:59088 "EHLO mga09.intel.com"
+	id S1752195Ab2KPOOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:14:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43498 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab2KPOOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:14:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,264,1352102400"; 
-   d="scan'208";a="220655213"
-Date: Fri, 16 Nov 2012 16:17:29 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        bhelgaas@google.com, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121116141729.GS17774@intel.com>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
- <2439178.tCj2rUMYJS@vostro.rjw.lan>
- <20121116140357.5e0a6d6b@endymion.delvare>
- <1499062.QDd9DGofy9@vostro.rjw.lan>
- <20121116144256.55b49cae@endymion.delvare>
+	id S1752157Ab2KPOOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:14:34 -0500
+Date: Fri, 16 Nov 2012 14:14:28 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Benchmark results: "Enhanced NUMA scheduling with adaptive
+ affinity"
+Message-ID: <20121116141428.GZ8218@suse.de>
+References: <20121112160451.189715188@chello.nl>
+ <20121112184833.GA17503@gmail.com>
+ <20121115100805.GS8218@suse.de>
+ <CA+55aFyEJwRvQezg3oKg71Nk9+1QU7qwvo0BH4ykReKxNhFJRg@mail.gmail.com>
+ <50A566FA.2090306@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121116144256.55b49cae@endymion.delvare>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <50A566FA.2090306@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 02:42:56PM +0100, Jean Delvare wrote:
-> On Fri, 16 Nov 2012 14:21:54 +0100, Rafael J. Wysocki wrote:
-> > On Friday, November 16, 2012 02:03:57 PM Jean Delvare wrote:
-> > > Hi Rafael,
-> > > 
-> > > On Fri, 16 Nov 2012 11:09:03 +0100, Rafael J. Wysocki wrote:
-> > > > On Thursday, November 15, 2012 01:03:17 PM Mika Westerberg wrote:
-> > > > > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-> > > > > and configure the I2C slave devices behind the I2C controller. This patch
-> > > > > adds helper functions to support I2C slave enumeration.
-> > > > > 
-> > > > > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-> > > > > in order to get its slave devices enumerated, created and bound to the
-> > > > > corresponding ACPI handle.
-> > > > > 
-> > > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > 
-> > > > Are there any objections against this patch or comments?
-> > > > 
-> > > > Worfram? Jean? Ben?
-> > > 
-> > > I am no longer maintaining the i2c subsystem and will not have the time
-> > > to look deeply into this. All I can say is that I very happy to see
-> > > this finally happen. Maybe with ACPI 5.0 we will finally be done with
-> > > resource conflicts plaguing many systems for several years now.
-> > > 
-> > > I took a quick look, and the only thing which seems suspicious is this
-> > > function:
-> > > 
-> > > > +static int acpi_i2c_find_child_address(struct acpi_resource *ares, void *data)
-> > > > +{
-> > > > +	struct acpi_resource_i2c_serialbus *sb;
-> > > > +	struct acpi_i2c_find *i2c_find = data;
-> > > > +
-> > > > +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-> > > > +		return 1;
-> > > > +
-> > > > +	sb = &ares->data.i2c_serial_bus;
-> > > > +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-> > > > +		return 1;
-> > > > +
-> > > > +	if (sb->slave_address == i2c_find->addr)
-> > > 
-> > > The 7-bit and 10-bit address maps overlap, so the above isn't enough.
-> > > You must compare the addresses _and_ sb->access_mode with
-> > > i2c_find->access_mode (which needs to be added and filled properly.)
-
-Ok. I wasn't sure about that and given that 10-bit addresses are not that
-common I tought that we can just compare the addr to zero. I'll add the
-check.
-
-> > > 
-> > > > +		i2c_find->found = true;
-> > > > +
-> > > > +	return 1;
-> > > > +}
-> > > 
-> > > Plus, it seems odd that this function always returns 1.
-> > 
-> > Yes, this is a bug I think.  Mika?
+On Thu, Nov 15, 2012 at 05:04:42PM -0500, Rik van Riel wrote:
+> On 11/15/2012 03:32 PM, Linus Torvalds wrote:
+> >Ugh.
+> >
+> >According to these numbers, the latest sched-numa actually regresses
+> >against mainline on Specjbb.
+> >
+> >No way is this even close to ready for merging in the 3.8 timeframe.
+> >
+> >I would ask the invilved people to please come up with a set of
+> >initial patches that people agree on, so that we can at least start
+> >merging some of the infrastructure, and see how far we can get on at
+> >least getting *started*. As I mentioned to Andrew and Mel separately,
+> >nobody seems to disagree with the TLB optimization patches. What else?
+> >Is Mel's set of early patches still considered a reasonable starting
+> >point for everybody?
 > 
-> The equivalent function for SPI devices does the same, so if this is a
-> bug, it must be fixed there too. If this is not a bug then it is
-> questionable why these functions return something in the first place.
+> Mel's infrastructure patches, 1-14 and 17 out
+> of his latest series, could be a great starting
+> point.
 > 
-> But then again I didn't look into the design, so I may be missing
-> something.
 
-It is not a bug, it just means that we don't want the ACPI core to fill in
-normal resources (we only want to peek the ACPI resources and find the
-corresponding I2CSerialBus() resource).
+V3 increased a lot in size due to rate-limiting of migration which was
+yanked out of autonuma. The rate limiting has two obvious purposes. One,
+during periods of fast convergency it will prevent the memory bus being
+saturated with traffic and causing stalls. As a side effect it should
+decrease system CPU usage in some cases. Two, if the placement policy
+completely breaks down, it will help contain the damage. If we added a vmstat
+that increments when the rate limiting kicked in then users could report
+broken policies by checking if the migration and rate-limited counter are
+increasing. If they are both increasing rapidly then the placement policy
+is broken. I think identifying when it's broken is just as important as
+identifying when it's working.
+
+The equivalent numbered patches in the new series to match what Rik suggests
+above are Patches 1-17, 19. I'll swap patches 19 and 18 to avoid this mess.
+The TLB patches are 33-35 but are not contested. I am going to move them
+to the start of the series.
+
+With some shuffling the question on what to consider for merging
+becomes
+
+1. TLB optimisation patches 1-3?	 	Patches  1-3
+2. Stats for migration?				Patches  4-6
+3. Common NUMA infrastructure?			Patches  7-21
+4. Basic fault-driven policy, stats, ratelimits	Patches 22-35
+
+Patches 36-43 are complete cabbage and should not be considered at this
+stage. It should be possible to build the placement policies and the
+scheduling decisions from schednuma, autonuma, some combination of the
+above or something completely different on top of patches 1-35.
+
+Peter, Ingo, Andrea?
+
+I know that other common patches that should exist but they are
+optimisations to the policies and not a fundamental design choice.
+
+> Ingo is trying to get the mm/ code in his tree
+> to be mostly the same to Mel's code anyway, so
+> that is the infrastructure everybody wants.
+> 
+> At that point, we can focus our discussions on
+> just the policy side, which could help us zoom in
+> on the issues.
+> 
+
+Preferably yes and we'd have a comparison points of mainline and the most
+basic of placement policies to work with that should be bisectable as a
+last resort.
+
+> It would also make it possible for us to do apple
+> to apple comparisons between the various policy
+> decisions, allowing us to reach a decision based
+> on data, not just gut feel.
+> 
+> As long as each tree has its own basic infrastructure,
+> we cannot do apples to apples comparisons; this has
+> frustrated the discussion for months.
+> 
+> Having all that basic infrastructure upstream should
+> short-circuit that part of the discussion.
+> 
+
+Agreed.
+
+-- 
+Mel Gorman
+SUSE Labs
