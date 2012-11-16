@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab2KPQJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 11:09:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7249 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2KPQJp (ORCPT
+	id S1752670Ab2KPQKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 11:10:04 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57946 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab2KPQKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 11:09:45 -0500
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YI9JNWQxKtAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mFLw-idZFWUA:10 a=LHvCI0dHU1p9FsTZJWEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353082183.7586.19.camel@gandalf.local.home>
-Subject: Re: [PATCH 8/9] irq_work: Make self-IPIs optable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Fri, 16 Nov 2012 11:09:43 -0500
-In-Reply-To: <1353032491-16462-9-git-send-email-fweisbec@gmail.com>
-References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
-	 <1353032491-16462-9-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Fri, 16 Nov 2012 11:10:02 -0500
+Message-ID: <50A66553.3050705@wwwdotorg.org>
+Date: Fri, 16 Nov 2012 09:09:55 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] RFC: pinctrl: grab default handler with bus notifiers
+References: <1352636539-6318-1-git-send-email-linus.walleij@stericsson.com> <50A15A54.3090803@wwwdotorg.org> <20121113063546.GD18224@opensource.wolfsonmicro.com> <CACRpkdY-tye5LNOwxQ-XrjM-x9RffAvj-tPfsFQA3ZWOY8P-Vw@mail.gmail.com> <50A53304.6040904@wwwdotorg.org> <CACRpkdYd6B-fTfUg18q5BjZRbY7sUAUNXA_7VPBs9SQoug9Q4w@mail.gmail.com>
+In-Reply-To: <CACRpkdYd6B-fTfUg18q5BjZRbY7sUAUNXA_7VPBs9SQoug9Q4w@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 03:21 +0100, Frederic Weisbecker wrote:
->  
->  /*
->   * Claim the entry so that no one else will poke at it.
-> @@ -68,14 +59,18 @@ void __weak arch_irq_work_raise(void)
->   */
->  static void __irq_work_queue(struct irq_work *work)
->  {
-> -	bool empty;
-> -
->  	preempt_disable();
->  
-> -	empty = llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-> -	/* The list was empty, raise self-interrupt to start processing. */
-> -	if (empty)
-> -		arch_irq_work_raise();
-> +	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-> +
-> +	/*
-> +	 * If the work is flagged as "lazy", just wait for the next tick
-> +	 * to run it. Otherwise, or if the tick is stopped, raise the irq work.
+On 11/16/2012 04:36 AM, Linus Walleij wrote:
+> On Thu, Nov 15, 2012 at 7:23 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 11/15/2012 07:03 AM, Linus Walleij wrote:
+> 
+>>> OK I'll have to come up with a patch to the device core
+>>> instead... it'll be much simpler anyway and if both of you guys
+>>> can back it I guess Greg might be OK with it too.
+>>
+>> I did have one thought here; how will this interact with hogs? If a
+>> device's pinctrl configuration must be pinctrl_get()'d before the device
+>> is probed, then a pinctrl device with hogs will never get probed because
+>> it won't be registered to provide the pinctrl node parsing.
+> 
+> Catch 22 :-(
+> 
+> Yeah we need to come up with something there.
+> 
+>> Solutions might include:
+>>
+>> a) Some special case where if the pinctrl driver only can't probe due to
+>> missing pinctrl from its own node, don't defer the probe, but defer the
+>> pinctrl_get().
+>>
+>> b) Separate out DT node parsing from device instantiation, so that the
+>> driver can always parse the DT, without needing the context of a
+>> specific pinctrl device to do so.
+> 
+> But this mechanism can't be device tree-specific, we have some
+> of olschool pdata users and ACPI probing around the corner.
+> 
+> I will likely just cook up something like seeing if the
+> dev_name() for provider and consumer is the same and
+> in that case avoid deferral.
 
-Speaking more Greek? ;-)
-
-How about:
-
-	If the work is not "lazy" or the tick is stopped, raise the irq
-	work interrupt (if supported by the arch), otherwise, just wait
-	for the next tick.
-
-Other than that, Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> +	 */
-> +	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
-> +		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> +			arch_irq_work_raise();
-> +	}
->  
-
-
+Well, the DT parsing is all about creating the mapping table from the
+DT. Without DT, this doesn't need to happen, since the board file
+already contains the complete mapping table. So, this isn't so much a
+special case for DT, but rather simply a step we don't need to take for
+DT, if you get what I mean (and that's all true irrespective of the
+change we're discussing here).
