@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab2KPLXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:23:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33171 "EHLO mx2.suse.de"
+	id S1752093Ab2KPL01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:26:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33184 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab2KPLXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:23:43 -0500
+	id S1751980Ab2KPLXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:44 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 32/43] mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
-Date: Fri, 16 Nov 2012 11:22:42 +0000
-Message-Id: <1353064973-26082-33-git-send-email-mgorman@suse.de>
+Subject: [PATCH 33/43] x86: mm: only do a local tlb flush in ptep_set_access_flags()
+Date: Fri, 16 Nov 2012 11:22:43 +0000
+Message-Id: <1353064973-26082-34-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
@@ -25,65 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While it is desirable that all threads in a process run on its home
-node, this is not always possible or necessary. There may be more
-threads than exist within the node or the node might over-subscribed
-with unrelated processes.
+From: Rik van Riel <riel@redhat.com>
 
-This can cause a situation whereby a page gets migrated off its home
-node because the threads clearing pte_numa were running off-node. This
-patch uses page->last_nid to build a two-stage filter before pages get
-migrated to avoid problems with short or unlikely task<->node
-relationships.
+The function ptep_set_access_flags() is only ever invoked to set access
+flags or add write permission on a PTE.  The write bit is only ever set
+together with the dirty bit.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Because we only ever upgrade a PTE, it is safe to skip flushing entries on
+remote TLBs. The worst that can happen is a spurious page fault on other
+CPUs, which would flush that TLB entry.
+
+Lazily letting another CPU incur a spurious page fault occasionally is
+(much!) cheaper than aggressively flushing everybody else's TLB.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 ---
- mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
+ arch/x86/mm/pgtable.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 7acc97b..648423a 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2453,9 +2453,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 8573b83..be3bb46 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -301,6 +301,13 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 	free_page((unsigned long)pgd);
+ }
+ 
++/*
++ * Used to set accessed or dirty bits in the page table entries
++ * on other architectures. On x86, the accessed and dirty bits
++ * are tracked by hardware. However, do_wp_page calls this function
++ * to also make the pte writeable at the same time the dirty bit is
++ * set. In that case we do actually need to write the PTE.
++ */
+ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 			  unsigned long address, pte_t *ptep,
+ 			  pte_t entry, int dirty)
+@@ -310,7 +317,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 	if (changed && dirty) {
+ 		*ptep = entry;
+ 		pte_update_defer(vma->vm_mm, address, ptep);
+-		flush_tlb_page(vma, address);
++		__flush_tlb_one(address);
  	}
  
- 	/* Migrate the page towards the node whose CPU is referencing it */
--	if (pol->flags & MPOL_F_MORON)
-+	if (pol->flags & MPOL_F_MORON) {
-+		int last_nid;
-+
- 		polnid = numa_node_id();
- 
-+		/*
-+		 * Multi-stage node selection is used in conjunction
-+		 * with a periodic migration fault to build a temporal
-+		 * task<->page relation. By using a two-stage filter we
-+		 * remove short/unlikely relations.
-+		 *
-+		 * Using P(p) ~ n_p / n_t as per frequentist
-+		 * probability, we can equate a task's usage of a
-+		 * particular page (n_p) per total usage of this
-+		 * page (n_t) (in a given time-span) to a probability.
-+		 *
-+		 * Our periodic faults will sample this probability and
-+		 * getting the same result twice in a row, given these
-+		 * samples are fully independent, is then given by
-+		 * P(n)^2, provided our sample period is sufficiently
-+		 * short compared to the usage pattern.
-+		 *
-+		 * This quadric squishes small probabilities, making
-+		 * it less likely we act on an unlikely task<->page
-+		 * relation.
-+		 */
-+		last_nid = page_xchg_last_nid(page, polnid);
-+		if (last_nid != polnid)
-+			goto out;
-+	}
-+
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
+ 	return changed;
 -- 
 1.7.9.2
 
