@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab2KPVyV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 16:54:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37036 "EHLO mga11.intel.com"
+	id S1753406Ab2KPVzE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 16:55:04 -0500
+Received: from mga14.intel.com ([143.182.124.37]:1025 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab2KPVyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 16:54:20 -0500
+	id S1753133Ab2KPVzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 16:55:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,266,1352102400"; 
-   d="scan'208";a="250451189"
-Subject: [PATCH v4 1/8] x86: Move some contents of page_64_types.h into
- pgtable_64.h and page_64.h
+   d="scan'208";a="169359041"
+Subject: [PATCH v4 2/8] x86: Improve __phys_addr performance by making use
+ of carry flags and inlining
 To: tglx@linutronix.de, mingo@redhat.com, andi@firstfloor.org, hpa@zytor.com
 From: Alexander Duyck <alexander.h.duyck@intel.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 16 Nov 2012 13:53:09 -0800
-Message-ID: <20121116215244.8521.31505.stgit@ahduyck-cp1.jf.intel.com>
+Date: Fri, 16 Nov 2012 13:53:51 -0800
+Message-ID: <20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com>
 In-Reply-To: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>
 References: <20121116214644.8521.79072.stgit@ahduyck-cp1.jf.intel.com>
 User-Agent: StGit/0.16
@@ -26,97 +26,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is meant to clean-up the fact that we have several functions in
-page_64_types.h which really don't belong there.  I found this issue when I
-had tried to replace __phys_addr with an inline function.  It resulted in the
-realmode bits generating compile warnings about types.  In order to resolve
-that I am relocating the address translation to page_64.h since this is in
-keeping with where these functions are located in 32 bit.
+This patch is meant to improve overall system performance when making use of
+the __phys_addr call.  To do this I have implemented several changes.
 
-In addtion I have relocated several functions defined in init_64.c to
-pgtable_64.h as this seems to be where most of the functions related to
-memory initialization were already located.
+First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
+similar to how this is currently handled in 32 bit.  However in order to do
+this it is required to export phys_base so that it is available if __phys_addr
+is used in kernel modules.
+
+The second change was to streamline the code by making use of the carry flag
+on an add operation instead of performing a compare on a 64 bit value.  The
+advantage to this is that it allows us to significantly reduce the overall
+size of the call.  On my Xeon E5 system the entire __phys_addr inline call
+consumes a little less than 32 bytes and 5 instructions.  I also applied
+similar logic to the debug version of the function.  My testing shows that the
+debug version of the function with this patch applied is slightly faster than
+the non-debug version without the patch.
+
+Finally I also applied the same logic changes to __virt_addr_valid since it
+used the same general code flow as __phys_addr and could achieve similar gains
+though these changes.
 
 Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- arch/x86/include/asm/page_64.h       |   19 +++++++++++++++++++
- arch/x86/include/asm/page_64_types.h |   22 ----------------------
- arch/x86/include/asm/pgtable_64.h    |    5 +++++
- 3 files changed, 24 insertions(+), 22 deletions(-)
+v3:  Added changes to __virt_addr_valid to keep it in sync with __phys_addr
+
+ arch/x86/include/asm/page_64.h   |   14 +++++++++++++
+ arch/x86/kernel/x8664_ksyms_64.c |    3 +++
+ arch/x86/mm/physaddr.c           |   40 ++++++++++++++++++++++++--------------
+ 3 files changed, 42 insertions(+), 15 deletions(-)
 
 diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
-index 072694e..4150999 100644
+index 4150999..5138174 100644
 --- a/arch/x86/include/asm/page_64.h
 +++ b/arch/x86/include/asm/page_64.h
-@@ -3,4 +3,23 @@
+@@ -9,7 +9,21 @@
+ extern unsigned long max_pfn;
+ extern unsigned long phys_base;
  
- #include <asm/page_64_types.h>
- 
-+#ifndef __ASSEMBLY__
++static inline unsigned long __phys_addr_nodebug(unsigned long x)
++{
++	unsigned long y = x - __START_KERNEL_map;
 +
-+/* duplicated to the one in bootmem.h */
-+extern unsigned long max_pfn;
-+extern unsigned long phys_base;
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
 +
-+extern unsigned long __phys_addr(unsigned long);
++	return x;
++}
 +
-+#define __phys_reloc_hide(x)	(x)
-+
-+#ifdef CONFIG_FLATMEM
-+#define pfn_valid(pfn)          ((pfn) < max_pfn)
++#ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
++#else
++#define __phys_addr(x)		__phys_addr_nodebug(x)
 +#endif
-+
-+void clear_page(void *page);
-+void copy_page(void *to, void *from);
-+
-+#endif	/* !__ASSEMBLY__ */
-+
- #endif /* _ASM_X86_PAGE_64_H */
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 320f7bb..8b491e6 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -50,26 +50,4 @@
- #define KERNEL_IMAGE_SIZE	(512 * 1024 * 1024)
- #define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
  
--#ifndef __ASSEMBLY__
--void clear_page(void *page);
--void copy_page(void *to, void *from);
--
--/* duplicated to the one in bootmem.h */
--extern unsigned long max_pfn;
--extern unsigned long phys_base;
--
--extern unsigned long __phys_addr(unsigned long);
--#define __phys_reloc_hide(x)	(x)
--
--#define vmemmap ((struct page *)VMEMMAP_START)
--
--extern void init_extra_mapping_uc(unsigned long phys, unsigned long size);
--extern void init_extra_mapping_wb(unsigned long phys, unsigned long size);
--
--#endif	/* !__ASSEMBLY__ */
--
--#ifdef CONFIG_FLATMEM
--#define pfn_valid(pfn)          ((pfn) < max_pfn)
--#endif
--
- #endif /* _ASM_X86_PAGE_64_DEFS_H */
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 47356f9..b5d30ad 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -183,6 +183,11 @@ extern void cleanup_highmap(void);
+ #define __phys_reloc_hide(x)	(x)
  
- #define __HAVE_ARCH_PTE_SAME
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 1330dd1..b014d94 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ EXPORT_SYMBOL(memmove);
  
-+#define vmemmap ((struct page *)VMEMMAP_START)
++#ifndef CONFIG_DEBUG_VIRTUAL
++EXPORT_SYMBOL(phys_base);
++#endif
+ EXPORT_SYMBOL(empty_zero_page);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
+index d2e2735..fd40d75 100644
+--- a/arch/x86/mm/physaddr.c
++++ b/arch/x86/mm/physaddr.c
+@@ -8,33 +8,43 @@
+ 
+ #ifdef CONFIG_X86_64
+ 
++#ifdef CONFIG_DEBUG_VIRTUAL
+ unsigned long __phys_addr(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
+-		x += phys_base;
++	unsigned long y = x - __START_KERNEL_map;
 +
-+extern void init_extra_mapping_uc(unsigned long phys, unsigned long size);
-+extern void init_extra_mapping_wb(unsigned long phys, unsigned long size);
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
 +
- #endif /* !__ASSEMBLY__ */
++		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
+ 	} else {
+-		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
+-		x -= PAGE_OFFSET;
+-		VIRTUAL_BUG_ON(!phys_addr_valid(x));
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
+ 	}
++
+ 	return x;
+ }
+ EXPORT_SYMBOL(__phys_addr);
++#endif
  
- #endif /* _ASM_X86_PGTABLE_64_H */
+ bool __virt_addr_valid(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		if (x >= KERNEL_IMAGE_SIZE)
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		if (y >= KERNEL_IMAGE_SIZE)
+ 			return false;
+-		x += phys_base;
+ 	} else {
+-		if (x < PAGE_OFFSET)
+-			return false;
+-		x -= PAGE_OFFSET;
+-		if (!phys_addr_valid(x))
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		if ((x > y) || !phys_addr_valid(x))
+ 			return false;
+ 	}
+ 
 
