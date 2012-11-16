@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab2KPNR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 08:17:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22069 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab2KPNR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 08:17:57 -0500
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=cPT-bUsLaBUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=eJptcAyAPSAA:10 a=d0IoTAm37rc9U5oPpCAA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1353071875.7586.5.camel@gandalf.local.home>
-Subject: Re: [PATCH] staging: Add SystemBase Multi-2/PCI driver
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, hjchoi <hjchoi@sysbas.com>
-Date: Fri, 16 Nov 2012 08:17:55 -0500
-In-Reply-To: <20121116050807.GA13122@kroah.com>
-References: <1353040771.7586.2.camel@gandalf.local.home>
-	 <20121116050807.GA13122@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751718Ab2KPNUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 08:20:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37983 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295Ab2KPNUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 08:20:39 -0500
+Date: Fri, 16 Nov 2012 13:20:36 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: MMTests 0.07
+Message-ID: <20121116132036.GY8218@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-15 at 21:08 -0800, Greg Kroah-Hartman wrote:
-> On Thu, Nov 15, 2012 at 11:39:31PM -0500, Steven Rostedt wrote:
-> > I ported the driver supplied by SystemBase to mainline.
-> > 
-> > As the driver had MODULE_LICENSE("GPL") it is declared as a GPL module
-> > and thus I have the right to distribute it upstream. Note, I did the
-> > bare minimum to get it working. It still needs a lot of loving.
-> 
-> Being in staging only requires 2 things, proper license, and it has to
-> build.
-> 
-> This fails on the second one:
-> 
-> In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-> drivers/staging/sb105x/sb_pci_mp.h:279:40: error: array type has incomplete element type
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_startup’:
-> drivers/staging/sb105x/sb_pci_mp.c:546:26: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_shutdown’:
-> drivers/staging/sb105x/sb_pci_mp.c:573:40: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_change_speed’:
-> drivers/staging/sb105x/sb_pci_mp.c:596:14: error: wrong type argument to unary exclamation mark
-> drivers/staging/sb105x/sb_pci_mp.c:599:10: error: incompatible types when assigning to type ‘struct ktermios *’ from type ‘struct ktermios’
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_throttle’:
-> drivers/staging/sb105x/sb_pci_mp.c:734:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_unthrottle’:
-> drivers/staging/sb105x/sb_pci_mp.c:750:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_set_termios’:
-> drivers/staging/sb105x/sb_pci_mp.c:1277:35: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c:1282:4: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_update_termios’:
-> drivers/staging/sb105x/sb_pci_mp.c:1450:19: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_block_til_ready’:
-> drivers/staging/sb105x/sb_pci_mp.c:1476:24: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c:1481:25: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-> drivers/staging/sb105x/sb_pci_mp.c:2763:14: error: bit-field ‘<anonymous>’ width not an integer constant
-> In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-> drivers/staging/sb105x/sb_pci_mp.c: At top level:
-> drivers/staging/sb105x/sb_pci_mp.h:279:40: warning: ‘uart_config’ defined but not used [-Wunused-variable]
-> drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-> drivers/staging/sb105x/sb_pci_mp.c:2766:1: warning: control reaches end of non-void function [-Wreturn-type]
-> make[3]: *** [drivers/staging/sb105x/sb_pci_mp.o] Error 1
-> make[2]: *** [drivers/staging/sb105x] Error 2
-> make[1]: *** [drivers/staging] Error 2
+MMTests 0.07 is a configurable test suite that runs a number of common
+workloads of interest to MM developers. In this release the major point
+of interest is specjbb automation which I was using for evaluating the
+different automatic NUMA migration implementations with the configuration
+file at configs/config-global-dhp__jvm-specjbb. Using this test will
+require setting up an internal mirror with the specjbb tarball. There are
+also some basic monitoring scripts for NUMA-related information.
 
-Ah interesting, probably a missing dependency. Do you have a config I
-can test against. It worked for me against 3.6.6 (the kernel that runs
-the box with the card).
+Changelog since V0.06
+o Add benchmark for specjbb
+o Run multiple instances of tiobench and report variances
+o Basic NUMA monitoring scripts
+o Describe the components of autonumbench and add a configuration file
 
-> 
-> Care to redo this against my staging-next tree, or, even better,
-> linux-next, which contains a bunch of tty changes in it?
+Changelog since v0.05
+o Automatically install packages (need name mappings for other distros)
+o Add benchmark for autonumabench
+o Add support for benchmarking NAS with MPI
+o Add pgbench for autonumabench (may need a bit more work)
+o Upgrade postgres version to 9.2.1
+o Upgrade kernel verion used for kernbench to 3.0 for newer toolchains
+o Alter mailserver config to finish in a reasonable time
+o Add monitor for perf sched
+o Add moinitor that gathers ftrace information with trace-cmd
+o Add preliminary monitors for NUMA stats (very basic)
+o Specify ftrace events to monitor from config file
+o Remove the bulk of whats left of VMRegress
+o Convert shellpacks to a template format to auto-generate boilerplate code
+o Collect lock_stat information if enabled
+o Run multiple iterations of aim9
+o Add basic regression tests for Cross Memory Attach
+o Copy with preempt being enabled in highalloc stres tests
+o Have largedd cope with a missing large file to work with
+o Add a monitor-only mode to just capture logs
+o Report receive-side throughput in netperf for results
 
-Sure, and I may try it against a few randconfigs (but forcing this
-driver enabled, as ktest allows for that ;-)
+At LSF/MM at some point a request was made that a series of tests
+be identified that were of interest to MM developers and that could be
+used for testing the Linux memory management subsystem. There is renewed
+interest in some sort of general testing framework during discussions for
+Kernel Summit 2012 so here is what I use.
 
-> 
-> Or, if you want, I can take a whack at it to get it to build properly,
-> whichever is easier for you.
+http://www.csn.ul.ie/~mel/projects/mmtests/
+http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.07-mmtests-0.01.tar.gz
 
-Of course it would be easier for me to have you do it :-)  But you
-already have enough on your plate. I'll get it done, as I may be the
-only person using this card.
+There is a git repository at
 
--- Steve
+https://github.com/gormanm/mmtests.git
 
+There are a number of stock configurations stored in configs/.  For example
+config-global-dhp__pagealloc-performance runs a number of tests that
+may be able to identify performance regressions or gains in the page
+allocator. Similarly there network and scheduler configs. There are also
+more complex options. config-global-dhp__parallelio-memcachetest will run
+memcachetest in the foreground while doing IO of different sizes in the
+background to measure how much unrelated IO affects the throughput of an
+in-memory database.
 
+Out of the box it should now do something useful by running a page fault
+microbenchmark.
+
+-- 
+Mel Gorman
+SUSE Labs
