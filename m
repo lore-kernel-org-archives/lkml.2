@@ -1,77 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab2KPLaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 06:30:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43034 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab2KPLaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 06:30:18 -0500
-Date: Fri, 16 Nov 2012 12:30:14 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [RESEND PATCH v3 1/4] i2c: introduce i2c-cbus driver
-Message-ID: <20121116113014.GA19028@pengutronix.de>
-References: <1352747326-2195-1-git-send-email-aaro.koskinen@iki.fi>
- <1352747326-2195-2-git-send-email-aaro.koskinen@iki.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-In-Reply-To: <1352747326-2195-2-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1751696Ab2KPLXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 06:23:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32960 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751606Ab2KPLXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 06:23:14 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 13/43] mm: migrate: Introduce migrate_misplaced_page()
+Date: Fri, 16 Nov 2012 11:22:23 +0000
+Message-Id: <1353064973-26082-14-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1353064973-26082-1-git-send-email-mgorman@suse.de>
+References: <1353064973-26082-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Note: This was originally based on Peter's patch "mm/migrate: Introduce
+	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
+	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
+	collection". The end result is barely recognisable so signed-offs
+	had to be dropped. If original authors are ok with it, I'll
+	re-add the signed-off-bys.
 
-On Mon, Nov 12, 2012 at 09:08:42PM +0200, Aaro Koskinen wrote:
-> Add i2c driver to enable access to devices behind CBUS on Nokia Internet
-> Tablets.
->=20
-> The patch also adds CBUS I2C configuration for N8x0 which is one of the
-> users of this driver.
->=20
-> Cc: linux-i2c@vger.kernel.org
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
+Add migrate_misplaced_page() which deals with migrating pages from
+faults.
 
-Mostly good, but the devicetree binding description is missing.
-Please add a proper file with the same name as the driver to
-Documentation/devicetree/bindings/i2c.
-Also, it might make sense to rename the driver to i2c-cbus-gpio?
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/migrate.h |    8 ++++
+ mm/migrate.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 110 insertions(+), 2 deletions(-)
 
-Thanks,
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 9d1c159..69f60b5 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -13,6 +13,7 @@ enum migrate_reason {
+ 	MR_MEMORY_HOTPLUG,
+ 	MR_SYSCALL,		/* also applies to cpusets */
+ 	MR_MEMPOLICY_MBIND,
++	MR_NUMA_MISPLACED,
+ 	MR_CMA
+ };
+ 
+@@ -39,6 +40,7 @@ extern int migrate_vmas(struct mm_struct *mm,
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_misplaced_page(struct page *page, int node);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -72,5 +74,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ #define migrate_page NULL
+ #define fail_migrate_page NULL
+ 
++static inline
++int migrate_misplaced_page(struct page *page, int node)
++{
++	return -EAGAIN; /* can't migrate now */
++}
+ #endif /* CONFIG_MIGRATION */
++
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 27be9c9..4a92808 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
+ {
+-	int expected_count;
++	int expected_count = 0;
+ 	void **pslot;
+ 
+ 	if (!mapping) {
+@@ -1415,4 +1415,104 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+  	}
+  	return err;
+ }
+-#endif
++
++/*
++ * Returns true if this is a safe migration target node for misplaced NUMA
++ * pages. Currently it only checks the watermarks which crude
++ */
++static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
++				   int nr_migrate_pages)
++{
++	int z;
++	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
++		struct zone *zone = pgdat->node_zones + z;
++
++		if (!populated_zone(zone))
++			continue;
++
++		if (zone->all_unreclaimable)
++			continue;
++
++		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
++		if (!zone_watermark_ok(zone, 0,
++				       high_wmark_pages(zone) +
++				       nr_migrate_pages,
++				       0, 0))
++			continue;
++		return true;
++	}
++	return false;
++}
++
++static struct page *alloc_misplaced_dst_page(struct page *page,
++					   unsigned long data,
++					   int **result)
++{
++	int nid = (int) data;
++	struct page *newpage;
++
++	newpage = alloc_pages_exact_node(nid,
++					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
++					  __GFP_NOMEMALLOC | __GFP_NORETRY |
++					  __GFP_NOWARN) &
++					 ~GFP_IOFS, 0);
++	return newpage;
++}
++
++/*
++ * Attempt to migrate a misplaced page to the specified destination
++ * node. Caller is expected to have an elevated reference count on
++ * the page that will be dropped by this function before returning.
++ */
++int migrate_misplaced_page(struct page *page, int node)
++{
++	int isolated = 0;
++	LIST_HEAD(migratepages);
++
++	/*
++	 * Don't migrate pages that are mapped in multiple processes.
++	 * TODO: Handle false sharing detection instead of this hammer
++	 */
++	if (page_mapcount(page) != 1)
++		goto out;
++
++	/* Avoid migrating to a node that is nearly full */
++	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++		int page_lru;
++
++		if (isolate_lru_page(page)) {
++			put_page(page);
++			goto out;
++		}
++		isolated = 1;
++
++		/*
++		 * Page is isolated which takes a reference count so now the
++		 * callers reference can be safely dropped without the page
++		 * disappearing underneath us during migration
++		 */
++		put_page(page);
++
++		page_lru = page_is_file_cache(page);
++		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++		list_add(&page->lru, &migratepages);
++	}
++
++	if (isolated) {
++		int nr_remaining;
++
++		nr_remaining = migrate_pages(&migratepages,
++				alloc_misplaced_dst_page,
++				node, false, MIGRATE_ASYNC,
++				MR_NUMA_MISPLACED);
++		if (nr_remaining) {
++			putback_lru_pages(&migratepages);
++			isolated = 0;
++		}
++	}
++	BUG_ON(!list_empty(&migratepages));
++out:
++	return isolated;
++}
++
++#endif /* CONFIG_NUMA */
+-- 
+1.7.9.2
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---nFreZHaLTZJo0R7j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCmI8YACgkQD27XaX1/VRtX4QCdF84DsfMsJ9LYNWyLg7PrgTcz
-0SkAn310otDcbXSGDnFFgdkor3BYk6CF
-=x/v1
------END PGP SIGNATURE-----
-
---nFreZHaLTZJo0R7j--
