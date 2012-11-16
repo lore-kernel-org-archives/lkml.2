@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab2KPPpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 10:45:53 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53826 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2KPPpu (ORCPT
+	id S1752538Ab2KPPrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:47:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43729 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab2KPPrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 10:45:50 -0500
+	Fri, 16 Nov 2012 10:47:02 -0500
+Date: Fri, 16 Nov 2012 10:44:51 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+Cc: "key@linux.vnet.ibm.com" <key@linux.vnet.ibm.com>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "tpmdd@selhorst.net" <tpmdd@selhorst.net>,
+        "tpmdd@sirrix.com" <tpmdd@sirrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2] add xen-tpmfront.ko: Xen Virtual TPM frontend driver
+Message-ID: <20121116154451.GM22320@phenom.dumpdata.com>
+References: <1352730598-13904-1-git-send-email-matthew.fioravante@jhuapl.edu>
+ <20121112163052.GA9575@phenom.dumpdata.com>
+ <50A13039.2070909@jhuapl.edu>
 MIME-Version: 1.0
-In-Reply-To: <20121116041523.18624.46918.stgit@perseus.themaw.net>
-References: <20121116041523.18624.46918.stgit@perseus.themaw.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 16 Nov 2012 07:45:29 -0800
-X-Google-Sender-Auth: igTdAHhVF0RWWYel7rAxdCC50C8
-Message-ID: <CA+55aFx-9A0xknhX7z9KmLAoGMf5GXhuFgroZUixHtevGAFsOQ@mail.gmail.com>
-Subject: Re: [PATCH] autofs4 - use simple_empty() for empty directory check
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A13039.2070909@jhuapl.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 8:15 PM, Ian Kent <ikent@redhat.com> wrote:
->
-> +static inline int __simple_empty(struct dentry *dentry)
-> +{
+On Mon, Nov 12, 2012 at 12:22:01PM -0500, Matthew Fioravante wrote:
+> On 11/12/2012 11:30 AM, Konrad Rzeszutek Wilk wrote:
+> >On Mon, Nov 12, 2012 at 09:29:58AM -0500, Matthew Fioravante wrote:
+> >>This patch ports the xen vtpm frontend driver for linux
+> >>from the linux-2.6.18-xen.hg tree to linux-stable. This
+> >>driver is designed be used with the mini-os tpmback driver
+> >>in Xen as part of the new mini-os virtual tpm subsystem.
+> >>See docs/misc/vtpm.txt in Xen and the xen-devel mailing list
+> >>for details.
+> >I didn't look in details but off the bat - you are missing
+> >the Documentation/../sysfs file.
+> It looks like Kent submitted a patch that documents sysfs generically
+> for all of the TPM drivers.
 
-This seems completely bogus.
+Great!
+> >
+> >I still think you should include the full vtpm.txt in this
+> >patch description and refer at the end to the docs/misc/vtpm.txt
+> >in Xen as the source for the up-to-date version.
+> The current docs/misc/vtpm.txt in Xen is still the old version. I've
+> just written a new one and am reviewing it. It will come in the next
+> resubmission of my vtpm patches to xen. I'll include the text here
+> for the next resubmission of this patch as well.
 
-It's a duplicate of the existing fs/libfs.c "simple_empty()" function,
-but without taking the outer lock.
+Fantastic. Thank you.
+> 
+> 
 
-That kind of code duplication - and doing it in a totally different
-file, and making it look autofs-specific - seems entirely wrong.
 
-                      Linus
