@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2KPO6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:58:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49141 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab2KPO6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:58:02 -0500
-Date: Fri, 16 Nov 2012 06:58:51 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, hjchoi <hjchoi@sysbas.com>
-Subject: Re: [PATCH] staging: Add SystemBase Multi-2/PCI driver
-Message-ID: <20121116145851.GA20180@kroah.com>
-References: <1353040771.7586.2.camel@gandalf.local.home>
- <20121116050807.GA13122@kroah.com>
- <1353071875.7586.5.camel@gandalf.local.home>
- <20121116133255.GA30683@kroah.com>
- <1353076129.7586.10.camel@gandalf.local.home>
+	id S1752233Ab2KPO60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 09:58:26 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35129 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2KPO6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 09:58:25 -0500
+Date: Fri, 16 Nov 2012 15:58:11 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v6 0/2]  i2c: i2c-ocores: Add support for sparc, custom
+ set and get functions, and the GRLIB port of the controller
+Message-ID: <20121116145811.GH7313@pengutronix.de>
+References: <1352994659-22392-1-git-send-email-andreas@gaisler.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzX0AQGjRQPusK/O"
 Content-Disposition: inline
-In-Reply-To: <1353076129.7586.10.camel@gandalf.local.home>
+In-Reply-To: <1352994659-22392-1-git-send-email-andreas@gaisler.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 09:28:49AM -0500, Steven Rostedt wrote:
-> On Fri, 2012-11-16 at 05:32 -0800, Greg Kroah-Hartman wrote:
-> 
-> > Redo this aginast 3.7-rc5 and we should be better off.  If you really
-> > want to do this right, do this against the tty-next git tree, to catch
-> > all of the recent tty changes that will be going into 3.8.
-> 
-> I did it against linux-next commit:
 
-Much better, that worked, now applied.
+--NzX0AQGjRQPusK/O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
+On Thu, Nov 15, 2012 at 04:50:57PM +0100, Andreas Larsson wrote:
+> On sparc, irqs are not present as an IORESOURCE in the struct platform_de=
+vice
+> representation. By using platform_get_irq instead of platform_get_resourc=
+e the
+> driver works for sparc.
+>=20
+> The GRLIB port of the ocores i2c controller needs custom getreg and setreg
+> functions to allow for big endian register access and to deal with the fa=
+ct that
+> the PRELOW and PREHIGH registers have been merged into one register.
+>=20
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-greg k-h
+Thanks, applied to for-next. I like the outcome, so thanks to Peter as
+well.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--NzX0AQGjRQPusK/O
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlCmVIMACgkQD27XaX1/VRsV8ACff9M6uurXdhW9BO7AN+OJCYXG
+w7AAoJLil3f203jkUjMnMRpt75N5l9l7
+=1/+0
+-----END PGP SIGNATURE-----
+
+--NzX0AQGjRQPusK/O--
