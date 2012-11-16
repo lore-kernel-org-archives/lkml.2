@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab2KPFHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 00:07:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:33697 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab2KPFHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 00:07:19 -0500
-Date: Thu, 15 Nov 2012 21:08:07 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, hjchoi <hjchoi@sysbas.com>
-Subject: Re: [PATCH] staging: Add SystemBase Multi-2/PCI driver
-Message-ID: <20121116050807.GA13122@kroah.com>
-References: <1353040771.7586.2.camel@gandalf.local.home>
+	id S1750971Ab2KPFIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 00:08:53 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33667 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2KPFIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 00:08:52 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50A5CA16.7070603@jp.fujitsu.com>
+Date: Fri, 16 Nov 2012 14:07:34 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353040771.7586.2.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 5/7] memcg: get rid of once-per-second cache shrinking
+ for dead memcgs
+References: <1352948093-2315-1-git-send-email-glommer@parallels.com> <1352948093-2315-6-git-send-email-glommer@parallels.com> <50A4B8C8.6020202@jp.fujitsu.com> <50A4F289.1090807@parallels.com>
+In-Reply-To: <50A4F289.1090807@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 11:39:31PM -0500, Steven Rostedt wrote:
-> I ported the driver supplied by SystemBase to mainline.
+(2012/11/15 22:47), Glauber Costa wrote:
+> On 11/15/2012 01:41 PM, Kamezawa Hiroyuki wrote:
+>> (2012/11/15 11:54), Glauber Costa wrote:
+>>> The idea is to synchronously do it, leaving it up to the shrinking
+>>> facilities in vmscan.c and/or others. Not actively retrying shrinking
+>>> may leave the caches alive for more time, but it will remove the ugly
+>>> wakeups. One would argue that if the caches have free objects but are
+>>> not being shrunk, it is because we don't need that memory yet.
+>>>
+>>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>>> CC: Michal Hocko <mhocko@suse.cz>
+>>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>
+>> I agree this patch but can we have a way to see the number of unaccounted
+>> zombie cache usage for debugging ?
+>>
+>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>
+> Any particular interface in mind ?
 > 
-> As the driver had MODULE_LICENSE("GPL") it is declared as a GPL module
-> and thus I have the right to distribute it upstream. Note, I did the
-> bare minimum to get it working. It still needs a lot of loving.
 
-Being in staging only requires 2 things, proper license, and it has to
-build.
+Hmm, it's debug interface and having cgroup file may be bad.....
+If it can be seen in bytes or some, /proc/vmstat ?
 
-This fails on the second one:
+out_of_track_slabs  xxxxxxx. hm ?
 
-In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-drivers/staging/sb105x/sb_pci_mp.h:279:40: error: array type has incomplete element type
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_startup’:
-drivers/staging/sb105x/sb_pci_mp.c:546:26: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_shutdown’:
-drivers/staging/sb105x/sb_pci_mp.c:573:40: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_change_speed’:
-drivers/staging/sb105x/sb_pci_mp.c:596:14: error: wrong type argument to unary exclamation mark
-drivers/staging/sb105x/sb_pci_mp.c:599:10: error: incompatible types when assigning to type ‘struct ktermios *’ from type ‘struct ktermios’
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_throttle’:
-drivers/staging/sb105x/sb_pci_mp.c:734:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_unthrottle’:
-drivers/staging/sb105x/sb_pci_mp.c:750:18: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_set_termios’:
-drivers/staging/sb105x/sb_pci_mp.c:1277:35: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c:1282:4: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_update_termios’:
-drivers/staging/sb105x/sb_pci_mp.c:1450:19: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘mp_block_til_ready’:
-drivers/staging/sb105x/sb_pci_mp.c:1476:24: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c:1481:25: error: invalid type argument of ‘->’ (have ‘struct ktermios’)
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-drivers/staging/sb105x/sb_pci_mp.c:2763:14: error: bit-field ‘<anonymous>’ width not an integer constant
-In file included from drivers/staging/sb105x/sb_pci_mp.c:1:0:
-drivers/staging/sb105x/sb_pci_mp.c: At top level:
-drivers/staging/sb105x/sb_pci_mp.h:279:40: warning: ‘uart_config’ defined but not used [-Wunused-variable]
-drivers/staging/sb105x/sb_pci_mp.c: In function ‘multi_type’:
-drivers/staging/sb105x/sb_pci_mp.c:2766:1: warning: control reaches end of non-void function [-Wreturn-type]
-make[3]: *** [drivers/staging/sb105x/sb_pci_mp.o] Error 1
-make[2]: *** [drivers/staging/sb105x] Error 2
-make[1]: *** [drivers/staging] Error 2
+Thanks,
+-Kame
 
-Care to redo this against my staging-next tree, or, even better,
-linux-next, which contains a bunch of tty changes in it?
 
-Or, if you want, I can take a whack at it to get it to build properly,
-whichever is easier for you.
 
-thanks,
 
-greg k-h
+
+
