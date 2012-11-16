@@ -1,223 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab2KPKfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 05:35:17 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45672 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2KPKfP convert rfc822-to-8bit (ORCPT
+	id S1751377Ab2KPKrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 05:47:13 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:33506 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751166Ab2KPKrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 05:35:15 -0500
-Date: Fri, 16 Nov 2012 10:35:11 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	Fri, 16 Nov 2012 05:47:12 -0500
+Date: Fri, 16 Nov 2012 16:16:50 +0530
+From: Shiraz Hashim <shiraz.hashim@st.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        "alain.pasteur@st.com" <alain.pasteur@st.com>,
+        "Joerg.Wienand@sma.de" <Joerg.Wienand@sma.de>,
+        "amit.goel@st.com" <amit.goel@st.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121116103511.GB16084@e106331-lin.cambridge.arm.com>
-References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
- <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
+        <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] Set bit 22 in the PL310 (cache controller) AuxCtlr
+ register
+Message-ID: <20121116104650.GI19100@localhost.localdomain>
+References: <1352433712-16364-1-git-send-email-shiraz.hashim@st.com>
+ <20121109095400.GC2357@mudshark.cambridge.arm.com>
+ <20121112064547.GN32313@localhost.localdomain>
+ <20121112105641.GC2346@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1353047903-14363-2-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 16 Nov 2012 10:35:12.0448 (UTC) FILETIME=[0EF58C00:01CDC3E6]
-X-MC-Unique: 112111610351301601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <20121112105641.GC2346@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 06:38:21AM +0000, Alexandre Courbot wrote:
-> Some device drivers (e.g. panel or backlights) need to follow precise
-> sequences for powering on and off, involving GPIOs, regulators, PWMs
-> with a precise powering order and delays to respect between steps.
-> These sequences are device-specific, and do not belong to a particular
-> driver - therefore they have been performed by board-specific hook
-> functions to far.
+Hi Catalin,
+
+On Mon, Nov 12, 2012 at 10:56:41AM +0000, Will Deacon wrote:
+> On Mon, Nov 12, 2012 at 06:45:47AM +0000, Shiraz Hashim wrote:
+> > On Fri, Nov 09, 2012 at 09:54:01AM +0000, Will Deacon wrote:
+> > > On Fri, Nov 09, 2012 at 04:01:52AM +0000, Shiraz Hashim wrote:
+> > > > From: Catalin Marinas <catalin.marinas@arm.com>
+> > > > 
+> > > > Clearing bit 22 in the PL310 Auxiliary Control register (shared
+> > > > attribute override enable) has the side effect of transforming Normal
+> > > > Shared Non-cacheable reads into Cacheable no-allocate reads.
+> > > > 
+> > > > Coherent DMA buffers in Linux always have a Cacheable alias via the
+> > > > kernel linear mapping and the processor can speculatively load cache
+> > > > lines into the PL310 controller. With bit 22 cleared, Non-cacheable
+> > > > reads would unexpectedly hit such cache lines leading to buffer
+> > > > corruption.
+> > > 
+> > > Is this still the case with recent kernels? I thought the dma-mapping/cma
+> > > work avoided the cacheable alias, but perhaps I'm mistaken.
+> > 
+> > I haven't used CMA but DMA mappings are still normal memory
+> > non-cacheable.
 > 
-> With the advent of the device tree and of ARM kernels that are not
-> board-tied, we cannot rely on these board-specific hooks anymore but
-> need a way to implement these sequences in a portable manner. This patch
-> introduces a simple interpreter that can execute such power sequences
-> encoded either as platform data or within the device tree.
-
-Given there are several ARM platforms that may have an interest in this, please
-consider posting this to the ARM mailing list:
-linux-arm-kernel@lists.infradead.org.
-
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  .../devicetree/bindings/power/power_seq.txt        | 121 +++++++
->  Documentation/power/power_seq.txt                  | 253 ++++++++++++++
->  drivers/power/Kconfig                              |   1 +
->  drivers/power/Makefile                             |   1 +
->  drivers/power/power_seq/Kconfig                    |   2 +
->  drivers/power/power_seq/Makefile                   |   1 +
->  drivers/power/power_seq/power_seq.c                | 376 +++++++++++++++++++++
->  drivers/power/power_seq/power_seq_delay.c          |  65 ++++
->  drivers/power/power_seq/power_seq_gpio.c           |  94 ++++++
->  drivers/power/power_seq/power_seq_pwm.c            |  82 +++++
->  drivers/power/power_seq/power_seq_regulator.c      |  83 +++++
->  include/linux/power_seq.h                          | 203 +++++++++++
->  12 files changed, 1282 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power/power_seq.txt
->  create mode 100644 Documentation/power/power_seq.txt
->  create mode 100644 drivers/power/power_seq/Kconfig
->  create mode 100644 drivers/power/power_seq/Makefile
->  create mode 100644 drivers/power/power_seq/power_seq.c
->  create mode 100644 drivers/power/power_seq/power_seq_delay.c
->  create mode 100644 drivers/power/power_seq/power_seq_gpio.c
->  create mode 100644 drivers/power/power_seq/power_seq_pwm.c
->  create mode 100644 drivers/power/power_seq/power_seq_regulator.c
->  create mode 100644 include/linux/power_seq.h
+> Ok, so trawling through the list reveals we only have this issue for normal
+> DMA mappings and not with CMA:
 > 
-> diff --git a/Documentation/devicetree/bindings/power/power_seq.txt b/Documentation/devicetree/bindings/power/power_seq.txt
-> new file mode 100644
-> index 0000000..7880a6c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power/power_seq.txt
-> @@ -0,0 +1,121 @@
-> +Runtime Interpreted Power Sequences
-> +===================================
-> +
-> +Power sequences are sequential descriptions of actions to be performed on
-> +power-related resources. Having these descriptions in a well-defined data format
-> +allows us to take much of the board- or device- specific power control code out
-> +of the kernel and place it into the device tree instead, making kernels less
-> +board-dependant.
-> +
-> +A device typically makes use of multiple power sequences, for different purposes
-> +such as powering on and off. All the power sequences of a given device are
-> +grouped into a set. In the device tree, this set is a sub-node of the device
-> +node named "power-sequences".
-> +
-> +Power Sequences Structure
-> +-------------------------
-> +Every device that makes use of power sequences must have a "power-sequences"
-> +node into which individual power sequences are declared as sub-nodes. The name
-> +of the node becomes the name of the sequence within the power sequences
-> +framework.
-> +
-> +Similarly, each power sequence declares its steps as sub-nodes of itself. Steps
-> +must be named sequentially, with the first step named step0, the second step1,
-> +etc. Failure to follow this rule will result in a parsing error.
+>   http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/124276.html
+> 
+> I wonder whether we shouldn't just fix that, rather than work around it with
+> a PL310-specific hack?
 
-Could we not encode the step number in the unit-address? i.e. step@N rather than
-stepN.
+What do you say?
 
-If we ever add additional (non step) data to sequences it might make it easier
-to filter, as we only reserve one name rather than a class of names.
-
-> +
-> +Power Sequences Steps
-> +---------------------
-> +Steps of a sequence describe an action to be performed on a resource. They
-> +always include a "type" property which indicates what kind of resource this
-> +step works on. Depending on the resource type, additional properties are defined
-> +to control the action to be performed.
-> +
-> +"delay" type required properties:
-> +  - delay: delay to wait (in microseconds)
-> +
-> +"regulator" type required properties:
-> +  - id: name of the regulator to use.
-> +  - enable / disable: one of these two empty properties must be present to
-> +                      enable or disable the resource
-> +
-> +"pwm" type required properties:
-> +  - id: name of the PWM to use.
-> +  - enable / disable: one of these two empty properties must be present to
-> +                      enable or disable the resource
-> +
-> +"gpio" type required properties:
-> +  - gpio: phandle of the GPIO to use.
-> +  - value: value this GPIO should take. Must be 0 or 1.
-
-Is there any reason for id to be a name rather than a phandle? It seems
-inconsistent with the gpio case.
-
-I also see from the example below that the gpio property is not just a phandle,
-as it has the gpio-specifier appended. Is there a better way of describing this
-format in the documentation?
-
-> +Example
-> +-------
-> +Here are example sequences declared within a backlight device that use all the
-> +supported resources types:
-> +
-> +       backlight {
-> +               compatible = "pwm-backlight";
-> +               ...
-> +
-> +               /* resources used by the power sequences */
-> +               pwms = <&pwm 2 5000000>;
-> +               pwm-names = "backlight";
-> +               power-supply = <&backlight_reg>;
-> +
-> +               power-sequences {
-> +                       power-on {
-> +                               step0 {
-> +                                       type = "regulator";
-> +                                       id = "power";
-> +                                       enable;
-> +                               };
-> +                               step1 {
-> +                                       type = "delay";
-> +                                       delay = <10000>;
-> +                               };
-> +                               step2 {
-> +                                       type = "pwm";
-> +                                       id = "backlight";
-> +                                       enable;
-> +                               };
-> +                               step3 {
-> +                                       type = "gpio";
-> +                                       gpio = <&gpio 28 0>;
-> +                                       value = <1>;
-> +                               };
-> +                       };
-> +
-> +                       power-off {
-> +                               step0 {
-> +                                       type = "gpio";
-> +                                       gpio = <&gpio 28 0>;
-> +                                       value = <0>;
-> +                               };
-> +                               step1 {
-> +                                       type = "pwm";
-> +                                       id = "backlight";
-> +                                       disable;
-> +                               };
-> +                               step2 {
-> +                                       type = "delay";
-> +                                       delay = <10000>;
-> +                               };
-> +                               step3 {
-> +                                       type = "regulator";
-> +                                       id = "power";
-> +                                       disable;
-> +                               };
-> +                       };
-> +               };
-> +       };
- 
-Thanks,
-Mark
-
+--
+regards
+Shiraz
