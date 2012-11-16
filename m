@@ -1,164 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab2KPC5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:57:25 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:47624 "EHLO smtp.outflux.net"
+	id S1751358Ab2KPDCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 22:02:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084Ab2KPC5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:57:24 -0500
-Date: Thu, 15 Nov 2012 18:57:20 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH] audit: catch possible NULL buffers
-Message-ID: <20121116025719.GA6435@www.outflux.net>
+	id S1751084Ab2KPDCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Nov 2012 22:02:31 -0500
+Date: Fri, 16 Nov 2012 01:02:22 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: MMU: lazily drop large spte
+Message-ID: <20121116030222.GA21822@amt.cnet>
+References: <50978DFE.1000005@linux.vnet.ibm.com>
+ <20121112231032.GB5798@amt.cnet>
+ <50A20428.1030004@linux.vnet.ibm.com>
+ <20121114143747.GA7054@amt.cnet>
+ <50A4267B.1030902@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <50A4267B.1030902@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's possible for audit_log_start() to return NULL. Handle it in various
-callers.
+On Thu, Nov 15, 2012 at 07:17:15AM +0800, Xiao Guangrong wrote:
+> On 11/14/2012 10:37 PM, Marcelo Tosatti wrote:
+> > On Tue, Nov 13, 2012 at 04:26:16PM +0800, Xiao Guangrong wrote:
+> >> Hi Marcelo,
+> >>
+> >> On 11/13/2012 07:10 AM, Marcelo Tosatti wrote:
+> >>> On Mon, Nov 05, 2012 at 05:59:26PM +0800, Xiao Guangrong wrote:
+> >>>> Do not drop large spte until it can be insteaded by small pages so that
+> >>>> the guest can happliy read memory through it
+> >>>>
+> >>>> The idea is from Avi:
+> >>>> | As I mentioned before, write-protecting a large spte is a good idea,
+> >>>> | since it moves some work from protect-time to fault-time, so it reduces
+> >>>> | jitter.  This removes the need for the return value.
+> >>>>
+> >>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >>>> ---
+> >>>>  arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
+> >>>>  1 files changed, 9 insertions(+), 25 deletions(-)
+> >>>
+> >>> Its likely that other 4k pages are mapped read-write in the 2mb range 
+> >>> covered by a read-only 2mb map. Therefore its not entirely useful to
+> >>> map read-only. 
+> >>>
+> >>
+> >> It needs a page fault to install a pte even if it is the read access.
+> >> After the change, the page fault can be avoided.
+> >>
+> >>> Can you measure an improvement with this change?
+> >>
+> >> I have a test case to measure the read time which has been attached.
+> >> It maps 4k pages at first (dirt-loggged), then switch to large sptes
+> >> (stop dirt-logging), at the last, measure the read access time after write
+> >> protect sptes.
+> >>
+> >> Before: 23314111 ns	After: 11404197 ns
+> > 
+> > Ok, i'm concerned about cases similar to e49146dce8c3dc6f44 (with shadow),
+> > that is:
+> > 
+> > - large page must be destroyed when write protecting due to 
+> > shadowed page.
+> > - with shadow, it does not make sense to write protect 
+> > large sptes as mentioned earlier.
+> > 
+> 
+> This case is removed now, the code when e49146dce8c3dc6f44 was applied is:
+> |
+> |                pt = sp->spt;
+> |                for (i = 0; i < PT64_ENT_PER_PAGE; ++i)
+> |                        /* avoid RMW */
+> |                        if (is_writable_pte(pt[i]))
+> |                                update_spte(&pt[i], pt[i] & ~PT_WRITABLE_MASK);
+> |        }
+> 
+> The real problem in this code is it would write-protect the spte even if
+> it is not a last spte that caused the middle-level shadow page table was
+> write-protected. So e49146dce8c3dc6f44 added this code:
+> |                if (sp->role.level != PT_PAGE_TABLE_LEVEL)
+> |                        continue;
+> |
+> was good to fix this problem.
+> 
+> Now, the current code is:
+> |		for (i = 0; i < PT64_ENT_PER_PAGE; ++i) {
+> |			if (!is_shadow_present_pte(pt[i]) ||
+> |			      !is_last_spte(pt[i], sp->role.level))
+> |				continue;
+> |
+> |			spte_write_protect(kvm, &pt[i], &flush, false);
+> |		}
+> It only write-protect the last spte. So, it allows large spte existent.
+> (the large spte can be broken by drop_large_spte() on the page-fault path.)
+> 
+> > So i wonder why is this part from your patch
+> > 
+> > -               if (level > PT_PAGE_TABLE_LEVEL &&
+> > -                   has_wrprotected_page(vcpu->kvm, gfn, level)) {
+> > -                       ret = 1;
+> > -                       drop_spte(vcpu->kvm, sptep);
+> > -                       goto done;
+> > -               }
+> > 
+> > necessary (assuming EPT is in use).
+> 
+> This is safe, we change these code to:
+> 
+> -		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+> +		if ((level > PT_PAGE_TABLE_LEVEL &&
+> +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
+> +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+>  			pgprintk("%s: found shadow page for %llx, marking ro\n",
+>  				 __func__, gfn);
+>  			ret = 1;
+> 
+> The spte become read-only which can ensure the shadow gfn can not be changed.
+> 
+> Btw, the origin code allows to create readonly spte under this case if !(pte_access & WRITEABBLE)
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- kernel/audit.c       |    4 ++++
- kernel/audit_tree.c  |   26 +++++++++++++++++---------
- kernel/audit_watch.c |    2 ++
- kernel/auditsc.c     |    8 ++++++--
- 4 files changed, 29 insertions(+), 11 deletions(-)
+Regarding shadow: it should be fine as long as fault path always deletes
+large mappings, when shadowed pages are present in the region.
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 40414e9..a219998 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -272,6 +272,8 @@ static int audit_log_config_change(char *function_name, int new, int old,
- 	int rc = 0;
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
-+	if (unlikely(!ab))
-+		return rc;
- 	audit_log_format(ab, "%s=%d old=%d auid=%u ses=%u", function_name, new,
- 			 old, from_kuid(&init_user_ns, loginuid), sessionid);
- 	if (sid) {
-@@ -619,6 +621,8 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
- 	}
- 
- 	*ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
-+	if (unlikely(!*ab))
-+		return rc;
- 	audit_log_format(*ab, "pid=%d uid=%u auid=%u ses=%u",
- 			 task_tgid_vnr(current),
- 			 from_kuid(&init_user_ns, current_uid()),
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index ed206fd..29dc061 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -449,11 +449,26 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 	return 0;
- }
- 
-+static void audit_log_remove_rule(struct audit_krule *rule)
-+{
-+	struct audit_buffer *ab;
-+
-+	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
-+	if (unlikely(!ab))
-+		return;
-+	audit_log_format(ab, "op=");
-+	audit_log_string(ab, "remove rule");
-+	audit_log_format(ab, " dir=");
-+	audit_log_untrustedstring(ab, rule->tree->pathname);
-+	audit_log_key(ab, rule->filterkey);
-+	audit_log_format(ab, " list=%d res=1", rule->listnr);
-+	audit_log_end(ab);
-+}
-+
- static void kill_rules(struct audit_tree *tree)
- {
- 	struct audit_krule *rule, *next;
- 	struct audit_entry *entry;
--	struct audit_buffer *ab;
- 
- 	list_for_each_entry_safe(rule, next, &tree->rules, rlist) {
- 		entry = container_of(rule, struct audit_entry, rule);
-@@ -461,14 +476,7 @@ static void kill_rules(struct audit_tree *tree)
- 		list_del_init(&rule->rlist);
- 		if (rule->tree) {
- 			/* not a half-baked one */
--			ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
--			audit_log_format(ab, "op=");
--			audit_log_string(ab, "remove rule");
--			audit_log_format(ab, " dir=");
--			audit_log_untrustedstring(ab, rule->tree->pathname);
--			audit_log_key(ab, rule->filterkey);
--			audit_log_format(ab, " list=%d res=1", rule->listnr);
--			audit_log_end(ab);
-+			audit_log_remove_rule(rule);
- 			rule->tree = NULL;
- 			list_del_rcu(&entry->list);
- 			list_del(&entry->rule.list);
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 9a9ae6e..3e29b7a 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -240,6 +240,8 @@ static void audit_watch_log_rule_change(struct audit_krule *r, struct audit_watc
- 	if (audit_enabled) {
- 		struct audit_buffer *ab;
- 		ab = audit_log_start(NULL, GFP_NOFS, AUDIT_CONFIG_CHANGE);
-+		if (unlikely(!ab))
-+			return;
- 		audit_log_format(ab, "auid=%u ses=%u op=",
- 				 from_kuid(&init_user_ns, audit_get_loginuid(current)),
- 				 audit_get_sessionid(current));
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 2f186ed..9a836b8 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1481,14 +1481,14 @@ static void show_special(struct audit_context *context, int *call_panic)
- 			audit_log_end(ab);
- 			ab = audit_log_start(context, GFP_KERNEL,
- 					     AUDIT_IPC_SET_PERM);
-+			if (unlikely(!ab))
-+				return;
- 			audit_log_format(ab,
- 				"qbytes=%lx ouid=%u ogid=%u mode=%#ho",
- 				context->ipc.qbytes,
- 				context->ipc.perm_uid,
- 				context->ipc.perm_gid,
- 				context->ipc.perm_mode);
--			if (!ab)
--				return;
- 		}
- 		break; }
- 	case AUDIT_MQ_OPEN: {
-@@ -2775,6 +2775,8 @@ void audit_core_dumps(long signr)
- 		return;
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
-+	if (unlikely(!ab))
-+		return;
- 	audit_log_abend(ab, "memory violation", signr);
- 	audit_log_end(ab);
- }
-@@ -2784,6 +2786,8 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
- 	struct audit_buffer *ab;
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
-+	if (unlikely(!ab))
-+		return;
- 	audit_log_abend(ab, "seccomp", signr);
- 	audit_log_format(ab, " syscall=%ld", syscall);
- 	audit_log_format(ab, " compat=%d", is_compat_task());
--- 
-1.7.9.5
+Ah, unshadowing from reexecute_instruction does not handle
+large pages. I suppose that is what "simplification" refers 
+to.
 
-
--- 
-Kees Cook
-Chrome OS Security
