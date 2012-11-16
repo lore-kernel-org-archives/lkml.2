@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab2KPIyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 03:54:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22849 "EHLO
+	id S1751514Ab2KPIxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 03:53:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22785 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2KPIxj (ORCPT
+	with ESMTP id S1751345Ab2KPIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 03:53:39 -0500
+	Fri, 16 Nov 2012 03:53:34 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Rob Landley <rob@landley.net>, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 7/9] x86, boot: add field to support load bzImage and ramdisk high
-Date: Fri, 16 Nov 2012 00:53:07 -0800
-Message-Id: <1353055989-31939-8-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 5/9] x86: Merge early_reserve_initrd for 32bit and 64bit
+Date: Fri, 16 Nov 2012 00:53:05 -0800
+Message-Id: <1353055989-31939-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
 References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
@@ -23,101 +22,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext_ramdisk_image/size will record high 32bits for ramdisk info.
+They are the same, could move them out from head32/64.c to setup.c.
 
-code64_start_offset will be set for bzImage that support 64bit.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first, and just need to make sure
+we reserve them before we are using memblock to find free mem to use.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- Documentation/x86/boot.txt       |    4 ++++
- arch/x86/boot/header.S           |   11 ++++++++++-
- arch/x86/include/asm/bootparam.h |    3 +++
- arch/x86/kernel/setup.c          |    6 ++++++
- 4 files changed, 23 insertions(+), 1 deletions(-)
+ arch/x86/kernel/head32.c |   11 -----------
+ arch/x86/kernel/head64.c |   11 -----------
+ arch/x86/kernel/setup.c  |   22 ++++++++++++++++++----
+ 3 files changed, 18 insertions(+), 26 deletions(-)
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 9efceff..26c7dcc 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -193,6 +193,10 @@ Offset	Proto	Name		Meaning
- 0258/8	2.10+	pref_address	Preferred loading address
- 0260/4	2.10+	init_size	Linear memory required during initialization
- 0264/4	2.11+	handover_offset	Offset of handover entry point
-+0268/4	2.12+	ext_ramdisk_image initrd load address high 32 bits
-+				(set by boot loader)
-+026C/4	2.12+	ext_ramdisk_size initrd size high 32 bits (set by boot loader)
-+0270/4	2.12+   code64_start_offset 64bit start offset for bzImage
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index c18f59d..4c52efc 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -33,17 +33,6 @@ void __init i386_start_kernel(void)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
  
- (1) For backwards compatibility, if the setup_sects field contains 0, the
-     real value is 4.
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 2a01744..85ce1a4 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -279,7 +279,7 @@ _start:
- 	# Part 2 of the header, from the old setup.S
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 037df57..00e612a 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -100,17 +100,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
  
- 		.ascii	"HdrS"		# header signature
--		.word	0x020b		# header version number (>= 0x0105)
-+		.word	0x020c		# header version number (>= 0x0105)
- 					# or else old loadlin-1.5 will fail)
- 		.globl realmode_swtch
- realmode_swtch:	.word	0, 0		# default_switch, SETUPSEG
-@@ -400,6 +400,15 @@ init_size:		.long INIT_SIZE		# kernel initialization size
- handover_offset:	.long 0x30		# offset to the handover
- 						# protocol entry point
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+-		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	reserve_ebda_region();
  
-+ext_ramdisk_image:	.long	0	# address of loaded ramdisk image
-+					# Here the loader puts the high 32 bits
-+					# address where it loaded the image.
-+					# This only will be read by the kernel.
-+
-+ext_ramdisk_size:	.long	0	# its size in bytes high 32 bits.
-+code64_start_offset:	.long	BOOT_CODE64_START_OFFSET	# startup_64 in
-+					# arch/x86/boot/compressed/head_64.S
-+
- # End of setup header #####################################################
- 
- 	.section ".entrytext", "ax"
-diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
-index 2ad874c..4e42fd1 100644
---- a/arch/x86/include/asm/bootparam.h
-+++ b/arch/x86/include/asm/bootparam.h
-@@ -67,6 +67,9 @@ struct setup_header {
- 	__u64	pref_address;
- 	__u32	init_size;
- 	__u32	handover_offset;
-+	__u32	ext_ramdisk_image;
-+	__u32	ext_ramdisk_size;
-+	__u32	code64_start_offset;
- } __attribute__((packed));
- 
- struct sys_desc_table {
+ 	/*
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 194e151..c2eb535 100644
+index 6d29d1f..ee6d267 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -302,12 +302,18 @@ static u64 __init get_ramdisk_image(void)
- {
- 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+@@ -364,6 +364,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
  
-+	if (boot_params.hdr.version >= 0x020c)
-+		ramdisk_image |= (u64)boot_params.hdr.ext_ramdisk_image << 32;
-+
- 	return ramdisk_image;
+ 	return mapped_pages << PAGE_SHIFT;
  }
- static u64 __init get_ramdisk_size(void)
- {
- 	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
- 
-+	if (boot_params.hdr.version >= 0x020c)
-+		ramdisk_size |= (u64)boot_params.hdr.ext_ramdisk_size << 32;
++static void __init early_reserve_initrd(void)
++{
++	/* Assume only end is not page aligned */
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
 +
- 	return ramdisk_size;
++	if (!boot_params.hdr.type_of_loader ||
++	    !ramdisk_image || !ramdisk_size)
++		return;		/* No initrd provided by bootloader */
++
++	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
++}
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+@@ -390,10 +403,6 @@ static void __init reserve_initrd(void)
+ 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
+ 				PFN_DOWN(ramdisk_end))) {
+ 		/* All are mapped, easy case */
+-		/*
+-		 * don't need to reserve again, already reserved early
+-		 * in i386_start_kernel
+-		 */
+ 		initrd_start = ramdisk_image + PAGE_OFFSET;
+ 		initrd_end = initrd_start + ramdisk_size;
+ 		return;
+@@ -404,6 +413,9 @@ static void __init reserve_initrd(void)
+ 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
  }
+ #else
++static void __init early_reserve_initrd(void)
++{
++}
+ static void __init reserve_initrd(void)
+ {
+ }
+@@ -665,6 +677,8 @@ early_param("reservelow", parse_reservelow);
  
+ void __init setup_arch(char **cmdline_p)
+ {
++	early_reserve_initrd();
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
 -- 
 1.7.7
 
