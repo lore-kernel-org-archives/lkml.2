@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab2KPCVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Nov 2012 21:21:43 -0500
+	id S1751559Ab2KPCVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Nov 2012 21:21:54 -0500
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:61094 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2KPCVm (ORCPT
+	with ESMTP id S1750804Ab2KPCVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Nov 2012 21:21:42 -0500
+	Thu, 15 Nov 2012 21:21:51 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anish Kumar <anish198519851985@gmail.com>
-Subject: [PATCH 1/9] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-Date: Fri, 16 Nov 2012 03:21:23 +0100
-Message-Id: <1353032491-16462-2-git-send-email-fweisbec@gmail.com>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 5/9] irq_work: Don't stop the tick with pending works
+Date: Fri, 16 Nov 2012 03:21:27 +0100
+Message-Id: <1353032491-16462-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
 References: <1353032491-16462-1-git-send-email-fweisbec@gmail.com>
@@ -25,78 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQ_WORK_BUSY flag is set right before we execute the
-work. Once this flag value is set, the work enters a
-claimable state again.
+Don't stop the tick if we have pending irq works on the
+queue, otherwise if the arch can't raise self-IPIs, we may not
+find an opportunity to execute the pending works for a while.
 
-So if we have specific data to compute in our work, we ensure it's
-either handled by another CPU or locally by enqueuing the work again.
-This state machine is guanranteed by atomic operations on the flags.
-
-So when we set IRQ_WORK_BUSY without using an xchg-like operation,
-we break this guarantee as in the following summarized scenario:
-
-        CPU 1                                   CPU 2
-        -----                                   -----
-                                                (flags = 0)
-                                                old_flags = flags;
-        (flags = 0)
-        cmpxchg(flags, old_flags,
-                old_flags | IRQ_WORK_FLAGS)
-        (flags = 3)
-        [...]
-        flags = IRQ_WORK_BUSY
-        (flags = 2)
-        func()
-                                                (sees flags = 3)
-                                                cmpxchg(flags, old_flags,
-                                                        old_flags | IRQ_WORK_FLAGS)
-                                                (give up)
-
-        cmpxchg(flags, 2, 0);
-        (flags = 0)
-
-CPU 1 claims a work and executes it, so it sets IRQ_WORK_BUSY and
-the work is again in a claimable state. Now CPU 2 has new data to process
-and try to claim that work but it may see a stale value of the flags
-and think the work is still pending somewhere that will handle our data.
-This is because CPU 1 doesn't set IRQ_WORK_BUSY atomically.
-
-As a result, the data expected to be handle by CPU 2 won't get handled.
-
-To fix this, use xchg() to set IRQ_WORK_BUSY, this way we ensure the CPU 2
-will see the correct value with cmpxchg() using the expected ordering.
-
-Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Anish Kumar <anish198519851985@gmail.com>
 ---
- kernel/irq_work.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ include/linux/irq_work.h |    6 ++++++
+ kernel/irq_work.c        |   11 +++++++++++
+ kernel/time/tick-sched.c |    3 ++-
+ 3 files changed, 19 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..a69704f 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -20,4 +20,10 @@ bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
+ 
++#ifdef CONFIG_IRQ_WORK
++bool irq_work_needs_cpu(void);
++#else
++static bool irq_work_needs_cpu(void) { return false; }
++#endif
++
+ #endif /* _LINUX_IRQ_WORK_H */
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 1588e3b..57be1a6 100644
+index 64eddd5..b3c113a 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
-@@ -119,8 +119,11 @@ void irq_work_run(void)
- 		/*
- 		 * Clear the PENDING bit, after this point the @work
- 		 * can be re-used.
-+		 * Make it immediately visible so that other CPUs trying
-+		 * to claim that work don't rely on us to handle their data
-+		 * while we are in the middle of the func.
- 		 */
--		work->flags = IRQ_WORK_BUSY;
-+		xchg(&work->flags, IRQ_WORK_BUSY);
- 		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
+@@ -99,6 +99,17 @@ bool irq_work_queue(struct irq_work *work)
+ }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
++bool irq_work_needs_cpu(void)
++{
++	struct llist_head *this_list;
++
++	this_list = &__get_cpu_var(irq_work_list);
++	if (llist_empty(this_list))
++		return false;
++
++	return true;
++}
++
+ /*
+  * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+  * context with local IRQs disabled.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9e945aa..f249e8c 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -20,6 +20,7 @@
+ #include <linux/profile.h>
+ #include <linux/sched.h>
+ #include <linux/module.h>
++#include <linux/irq_work.h>
+ 
+ #include <asm/irq_regs.h>
+ 
+@@ -289,7 +290,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 	} while (read_seqretry(&xtime_lock, seq));
+ 
+ 	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
+-	    arch_needs_cpu(cpu)) {
++	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
+ 	} else {
 -- 
 1.7.5.4
 
