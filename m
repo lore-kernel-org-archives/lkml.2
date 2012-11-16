@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab2KPO60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 09:58:26 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35129 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab2KPO6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 09:58:25 -0500
-Date: Fri, 16 Nov 2012 15:58:11 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v6 0/2]  i2c: i2c-ocores: Add support for sparc, custom
- set and get functions, and the GRLIB port of the controller
-Message-ID: <20121116145811.GH7313@pengutronix.de>
-References: <1352994659-22392-1-git-send-email-andreas@gaisler.com>
+	id S1752135Ab2KPPAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 10:00:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:49183 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665Ab2KPPAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 10:00:32 -0500
+Date: Fri, 16 Nov 2012 07:01:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jun Chen <jun.d.chen@intel.com>, serial <linux-serial@vger.kernel.org>,
+        "russ.gorby" <russ.gorby@intel.com>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Bi Chao <chao.bi@intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] serial: ifx6x60: Add module parameters to manage the
+ modem status through sysfs
+Message-ID: <20121116150118.GA26219@kroah.com>
+References: <1353070789.24092.6.camel@chenjun-workstation>
+ <20121116123806.GA9303@kroah.com>
+ <20121116150007.273b7038@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzX0AQGjRQPusK/O"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352994659-22392-1-git-send-email-andreas@gaisler.com>
+In-Reply-To: <20121116150007.273b7038@pyramind.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 16, 2012 at 03:00:07PM +0000, Alan Cox wrote:
+> On Fri, 16 Nov 2012 04:38:06 -0800
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Fri, Nov 16, 2012 at 07:59:49AM -0500, Jun Chen wrote:
+> > > 
+> > > The Medfield Platform implements a recovery procedure consisting in an escalation
+> > > from simple and light recovery procedures to stronger ones with increased visibility
+> > > and impact to end-user.After platform find some problem from Modem,such as no response,
+> > > platform will try do modem warm reset.If several tries failed, platform will try to
+> > > do modem cold boot procedure.For Modem Cold Boot, AP is responsible to generate
+> > > blob (binary object containing PIN code and other necessary information).
+> > > Blob is stored in AP volatile memory. AP decides to read PIN code from cache instead of
+> > > prompting end-user, and sends it to modem as if end-user had entered it.
+> > > 
+> > > This patch add module parameters to manage the modem status through sysfs.
+> > > Reset_modem can be read and write by user space.When read the reset_modem,user space will
+> > > get the mdm_reset_state which used to avoid to run twice at once.When set the reset_modem to
+> > > IFX_COLD_RESET_REQ,modem will do cold reset, other val value will trigger modem reset.
+> > > 
+> > > Hangup_reasons used to give one interface to user space to know and clear the modem reset reasons.
+> > > Now there are four reasons:SPI timeout, modem initiative reset,modem coredump,spi tranfer error.
+> > 
+> > Why are these module parameters?  Why not just "real" sysfs files
+> > instead?  That way, if you have multiple devices in a system, it will
+> > work properly for them.  Right now you are limited to 1 device, right?
+> 
+> Yes and its highly unlikely that there will ever be anyone who needs two.
 
---NzX0AQGjRQPusK/O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, but why a module parameter?  That's a very "odd" way to do this type
+of interaction, why not just a "normal" sysfs file instead?
 
-On Thu, Nov 15, 2012 at 04:50:57PM +0100, Andreas Larsson wrote:
-> On sparc, irqs are not present as an IORESOURCE in the struct platform_de=
-vice
-> representation. By using platform_get_irq instead of platform_get_resourc=
-e the
-> driver works for sparc.
->=20
-> The GRLIB port of the ocores i2c controller needs custom getreg and setreg
-> functions to allow for big endian register access and to deal with the fa=
-ct that
-> the PRELOW and PREHIGH registers have been merged into one register.
->=20
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Either way, there's no documentation here, which is needed for a new
+kernel/user api that is being created.  Someone needs to add an entry
+for Documentation/ABI/ here.
 
-Thanks, applied to for-next. I like the outcome, so thanks to Peter as
-well.
+thanks,
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---NzX0AQGjRQPusK/O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCmVIMACgkQD27XaX1/VRsV8ACff9M6uurXdhW9BO7AN+OJCYXG
-w7AAoJLil3f203jkUjMnMRpt75N5l9l7
-=1/+0
------END PGP SIGNATURE-----
-
---NzX0AQGjRQPusK/O--
+greg k-h
