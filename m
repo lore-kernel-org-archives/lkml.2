@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2KPUKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 15:10:43 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57826 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab2KPUKm (ORCPT
+	id S1753527Ab2KPUMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 15:12:53 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58632 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab2KPUMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 15:10:42 -0500
-Date: Fri, 16 Nov 2012 12:10:39 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v5 05/11] thp: change_huge_pmd(): keep huge zero page
- write-protected
-In-Reply-To: <20121116181321.GA18313@otc-wbsnb-06>
-Message-ID: <alpine.DEB.2.00.1211161208120.2788@chino.kir.corp.google.com>
-References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com> <1352300463-12627-6-git-send-email-kirill.shutemov@linux.intel.com> <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com> <20121115084635.GC9676@otc-wbsnb-06>
- <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com> <20121116181321.GA18313@otc-wbsnb-06>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 16 Nov 2012 15:12:52 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <a06b0eea-8d4a-4033-9c74-705b0d72ad83@email.android.com>
+References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
+	<1353055989-31939-9-git-send-email-yinghai@kernel.org>
+	<50A6644D.80205@zytor.com>
+	<CAE9FiQXJqyUf7qAspG_ZKUPV96QQjayp8cM0ihQ0RpyU5AxBMA@mail.gmail.com>
+	<50A69664.6070009@zytor.com>
+	<CAE9FiQUJO-HfLs8ddLJ3D_jwpJi_tkxrx19Ro6PNOMGfu4=O-A@mail.gmail.com>
+	<a06b0eea-8d4a-4033-9c74-705b0d72ad83@email.android.com>
+Date: Fri, 16 Nov 2012 12:12:50 -0800
+X-Google-Sender-Auth: O1lhQZJve3Cvi3vtbRA7bB3dGSw
+Message-ID: <CAE9FiQUKAhqM-4CRyF2g3VEJ3gA7FEt3ifgA+TvAPRF2Es6vdA@mail.gmail.com>
+Subject: Re: [PATCH 8/9] x86: ramdisk info print with high bits.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Nov 2012, Kirill A. Shutemov wrote:
+On Fri, Nov 16, 2012 at 12:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Use %#010llx
 
-> > > > > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > > > > index d767a7c..05490b3 100644
-> > > > > --- a/mm/huge_memory.c
-> > > > > +++ b/mm/huge_memory.c
-> > > > > @@ -1259,6 +1259,8 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> > > > >  		pmd_t entry;
-> > > > >  		entry = pmdp_get_and_clear(mm, addr, pmd);
-> > > > >  		entry = pmd_modify(entry, newprot);
-> > > > > +		if (is_huge_zero_pmd(entry))
-> > > > > +			entry = pmd_wrprotect(entry);
-> > > > >  		set_pmd_at(mm, addr, pmd, entry);
-> > > > >  		spin_unlock(&vma->vm_mm->page_table_lock);
-> > > > >  		ret = 1;
-> > > > 
-> > > > Nack, this should be handled in pmd_modify().
-> > > 
-> > > I disagree. It means we will have to enable hzp per arch. Bad idea.
-> > > 
-> > 
-> > pmd_modify() only exists for those architectures with thp support already, 
-> > so you've already implicitly enabled for all the necessary architectures 
-> > with your patchset.
-> 
-> Now we have huge zero page fully implemented inside mm/huge_memory.c. Push
-> this logic to pmd_modify() means we expose hzp implementation details to
-> arch code. Looks ugly for me.
-> 
-
-So you are suggesting that anybody who ever does pmd_modify() in the 
-future is responsible for knowing about the zero page and to protect 
-against giving it write permission in the calling code??
+that will only print out 0x87654321 when val is 0xa987654321
