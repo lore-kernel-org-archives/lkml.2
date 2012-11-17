@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab2KQDk4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:40:56 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27536 "EHLO
+	id S1754388Ab2KQDlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:41:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27554 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2KQDkw (ORCPT
+	with ESMTP id S1754320Ab2KQDk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:52 -0500
+	Fri, 16 Nov 2012 22:40:56 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,115 +14,101 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 37/46] x86, mm: use pfn instead of pos in split_mem_range
-Date: Fri, 16 Nov 2012 19:39:14 -0800
-Message-Id: <1353123563-3103-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 43/46] x86, mm: kill numa_64.h
+Date: Fri, 16 Nov 2012 19:39:20 -0800
+Message-Id: <1353123563-3103-44-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-could save some bit shifting operations.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/numa.h    |    2 --
+ arch/x86/include/asm/numa_64.h |    4 ----
+ arch/x86/kernel/acpi/boot.c    |    1 -
+ arch/x86/kernel/cpu/amd.c      |    1 -
+ arch/x86/kernel/cpu/intel.c    |    1 -
+ arch/x86/kernel/setup.c        |    3 ---
+ 6 files changed, 0 insertions(+), 12 deletions(-)
+ delete mode 100644 arch/x86/include/asm/numa_64.h
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 1cca052..4bf1c53 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -204,12 +204,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 				     unsigned long end)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long pos;
-+	unsigned long pfn;
- 	int i;
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 49119fc..52560a2 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -54,8 +54,6 @@ static inline int numa_cpu_node(int cpu)
  
- 	/* head if not big page alignment ? */
--	start_pfn = PFN_DOWN(start);
--	pos = PFN_PHYS(start_pfn);
-+	pfn = start_pfn = PFN_DOWN(start);
  #ifdef CONFIG_X86_32
- 	/*
- 	 * Don't use a large page for the first 2/4MB of memory
-@@ -217,26 +216,26 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * and overlapping MTRRs into large pages can cause
- 	 * slowdowns.
- 	 */
--	if (pos == 0)
-+	if (pfn == 0)
- 		end_pfn = PFN_DOWN(PMD_SIZE);
- 	else
--		end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+		end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+ # include <asm/numa_32.h>
+-#else
+-# include <asm/numa_64.h>
  #endif
- 	if (end_pfn > PFN_DOWN(end))
- 		end_pfn = PFN_DOWN(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
  
- 	/* big page (2M) range */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #ifdef CONFIG_X86_32
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
- 		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #endif
-@@ -244,32 +243,32 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
+ #ifdef CONFIG_NUMA
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+deleted file mode 100644
+index fe4d2d4..0000000
+--- a/arch/x86/include/asm/numa_64.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef _ASM_X86_NUMA_64_H
+-#define _ASM_X86_NUMA_64_H
+-
+-#endif /* _ASM_X86_NUMA_64_H */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index e651f7a..4b23aa1 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -51,7 +51,6 @@ EXPORT_SYMBOL(acpi_disabled);
+ 
+ #ifdef	CONFIG_X86_64
+ # include <asm/proto.h>
+-# include <asm/numa_64.h>
+ #endif				/* X86 */
+ 
+ #define BAD_MADT_ENTRY(entry, end) (					    \
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9619ba6..913f94f 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -12,7 +12,6 @@
+ #include <asm/pci-direct.h>
  
  #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
- 				 ((1<<PG_LEVEL_2M)|(1<<PG_LEVEL_1G)));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
+-# include <asm/numa_64.h>
+ # include <asm/mmconfig.h>
+ # include <asm/cacheflush.h>
+ #endif
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 198e019..3b547cc 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -17,7 +17,6 @@
  
- 	/* tail is not big page (1G) alignment */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
+ #ifdef CONFIG_X86_64
+ #include <linux/topology.h>
+-#include <asm/numa_64.h>
  #endif
  
- 	/* tail is not big page (2M) alignment */
--	start_pfn = PFN_DOWN(pos);
-+	start_pfn = pfn;
- 	end_pfn = PFN_DOWN(end);
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 
+ #include "cpu.h"
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 85b62f1..6d29d1f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -108,9 +108,6 @@
+ #include <asm/topology.h>
+ #include <asm/apicdef.h>
+ #include <asm/amd_nb.h>
+-#ifdef CONFIG_X86_64
+-#include <asm/numa_64.h>
+-#endif
+ #include <asm/mce.h>
+ #include <asm/alternative.h>
+ #include <asm/prom.h>
 -- 
 1.7.7
 
