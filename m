@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2KQEAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 23:00:17 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:54169 "EHLO
+	id S1754141Ab2KQEAa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 23:00:30 -0500
+Received: from [12.239.217.82] ([12.239.217.82]:52515 "EHLO
 	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753883Ab2KQD74 (ORCPT
+	by vger.kernel.org with ESMTP id S1753883Ab2KQEA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:59:56 -0500
+	Fri, 16 Nov 2012 23:00:27 -0500
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Jean Delvare <khali@linux-fr.org>,
@@ -21,22 +21,24 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-Date: Fri, 16 Nov 2012 19:58:49 -0800
-Message-Id: <1353124734-16803-2-git-send-email-cheiny@synaptics.com>
+Subject: =?UTF-8?q?=5BRFC=20PATCH=2005/06=5D=20input/rmi4=3A=20F01=20-=20device=20control?=
+Date: Fri, 16 Nov 2012 19:58:53 -0800
+Message-Id: <1353124734-16803-6-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
 References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmi.h provides public definitions required by the RMI bus implementation and
-modules that interact with it.
+RMI Function 01 implements basic device control and power management
+behaviors for the RMI4 sensor.
 
-debugfs and sysfs attributes are documented in files in
-Documentation/ABI/testing.  There's two files, one for debugfs and one for
-sysfs.
+rmi_f01.h exports definitions that we expect to be used by other functionality
+in the future (such as firmware reflash).
 
 
 Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
@@ -46,235 +48,21 @@ Cc: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 Cc: Joeri de Gram <j.de.gram@gmail.com>
 
+
 ---
 
- Documentation/ABI/testing/debugfs-rmi4 |   99 ++++++
- Documentation/ABI/testing/sysfs-rmi4   |  103 ++++++
- include/linux/rmi.h                    |  596 ++++++++++++++++++++++++++++++++
- 3 files changed, 798 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f01.c | 1348 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/input/rmi4/rmi_f01.h |  160 +++++
+ 2 files changed, 1508 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/testing/debugfs-rmi4 b/Documentation/ABI/testing/debugfs-rmi4
+diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
 new file mode 100644
-index 0000000..ef0739d
+index 0000000..038266c
 --- /dev/null
-+++ b/Documentation/ABI/testing/debugfs-rmi4
-@@ -0,0 +1,99 @@
-+What:		/sys/kernel/debug/rmi/devices
-+Date:		October 2012
-+KernelVersion:	3.x
-+Contact:	Christopher Heiny <cheiny@synaptics.com>
-+Description:
-+
-+  The RMI4 driver implementation exposes a set of informational and control
-+  parameters via debugfs.  These parameters are those that typically are only
-+  viewed or adjusted during product development, tuning, and debug.
-+  For parameters that are  referenced and/or adjusted during normal operation,
-+  please see sysfs-rmi4 in this directory.
-+
-+  General debugging parameters for a particular RMI4 sensor are found in
-+  /sys/kernel/debug/rmi/sensorXX/, where XX is a the device's ID as a two
-+  digit number (padded with leading zeros).  Function specific parameters
-+  for an RMI4 sensor are found in /sys/kernel/debug/rmi/devices/FYY/, where
-+  XX is a the device's ID as a two digit number (padded with leading zeros)
-+  and YY is the hexdecimal function number (for example, F11 for RMI function
-+  F11).
-+
-+  For RMI4 functions that support multiple sensor instances (such as F11),
-+  the parameters for individual sensors have .Z appended to them, where Z is
-+  the index of the sensor instance (for example, clip.0, clip.1, clip.2, and
-+  so on).
-+
-+  Some of the parameters exposed here are described in detail in the
-+  RMI4 Specification, which is found here:
-+    http://www.synaptics.com/sites/default/files/511-000136-01_revD.pdf
-+  For such parameters, we'll reference you to that document, rather than
-+  copying the contents here.
-+
-+  /sys/kernel/debug/rmi/
-+      /sensorXX/
-+          attn_count - (ro) Shows the number of ATTN interrupts handled so far.
-+          comms_debug - (rw) Write 1 to this dump information about register
-+                  reads and writes to the console.  Write 0 to this to turn
-+                  this feature off.  WARNING: Imposes a major performance
-+                  penalty when turned on.
-+          irq_debug - (rw) Write 1 to this dump information about interrupts
-+                  to the console.  Write 0 to this to turn this feature off.
-+                  WARNIG: Imposes a major performance penalty when turned on.
-+          phys - (ro) Presents information about the physical connection of
-+                  this device.  It has one line, with the format:
-+
-+                       prot tx_count tx_bytes tx_errors rx_count rx_bytes rx_errors attn
-+
-+                  Where
-+                       prot is one of i2c, spi1, or spi2
-+                       tx_count is the number of write operations
-+                       tx_bytes is the number of bytes written
-+                       tx_errors is the number of write operations that encountered errors
-+                       rx_count is the number of read operations
-+                       rx_bytes is the total number of bytes read
-+                       rx_errors is the number of read operations that encountered errors
-+
-+                  All counts are 64-bit unsigned values, and are set to zero
-+                  when the physical layer driver is initialized.
-+
-+      /sensorXX/F01/
-+          interrupt_enable - (rw) allows you to read or modify the F01
-+                  interrupt enable mask (the F01_RMI_Ctrl1 register(s)).
-+
-+      /sensorXX/F11/
-+          clip.Z - (rw) Controls in-driver coordinate clipping for the 2D
-+                  sensor Z.  This is a set of four unsigned values in the
-+                  range [0..65535], representing the lower bounds on X, the
-+                  upper bounds on X, the lower bounds on Y, and the upper
-+                  bounds on Y.  Coordinates will be clipped to these ranges.
-+                  If enabled, clip is the final transformation to be applied
-+                  to the coordinates. The default upper and lower bounds for
-+                  clip are 0 and 65535 respectively for both axes.
-+          delta_threshold.Z - (rw) Controls the F11 distance thresholds. This
-+                  contains two values, corresponding to F11_2D_Ctrl2 and
-+                  F11_2D_Ctrl3.  Se the spec for more details.
-+          flip.Z - (rw) This parameter is a pair of single binary digits (for
-+                  example, "0 0" or "1 0"), corresponding to the X and Y axis.
-+                  Writing a 1 for a particular axis will invert the coordinates
-+                  reported by the device along that axis.  For example writing
-+                  "0 1" to this parameter will flip the Y axis top to bottom,
-+                  but leave the X axis unchanged.  If enabled, flip is applied
-+                  after swap and before offset.
-+          offset.Z - (rw) This is a pair of values that will be SUBTRACTED
-+                  from the X and Y coordinates, respectively.  If non-zero,
-+                  offset will be applied after flip and before clip.  The
-+                  default value for offset is 0 for both X and Y.
-+          rezero_wait - (rw) If non-zero, F11 will wait this many milliseconds
-+                  after exiting suspend mode before recalibrating the sensor(s).
-+                  This is useful in systems were there may be unusual
-+                  electrical conditions during the resume process, allowing
-+                  you to delay recalibration until the electrical environment
-+                  has stabilized.
-+          swap.Z - (rw) Writing 1 to this parameter swaps the X and Y axis as
-+                  reported by the sensor instance Z, rotating the reported
-+                  coordinates by 90 degrees.  This can be useful when
-+                  installing a landscape sensor over a portrait display, for
-+                  example. The default state for this parameter is 0.  If
-+                  enabled, swap is applied before any other transformation.
-+          type_a - (rw) Most RMI4 F11 implementations support MT-B reporting.
-+                  You can write 1 to this parameter to force MT-A reporting.
-diff --git a/Documentation/ABI/testing/sysfs-rmi4 b/Documentation/ABI/testing/sysfs-rmi4
-new file mode 100644
-index 0000000..3354d10
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-rmi4
-@@ -0,0 +1,103 @@
-+What:		/sys/bus/rmi/devices
-+Date:		October 2012
-+KernelVersion:	3.x
-+Contact:	Christopher Heiny <cheiny@synaptics.com>
-+Description:
-+
-+  The RMI4 driver implementation exposes a set of informational and control
-+  parameters via sysfs.  These parameters are those that typically will be
-+  referenced and/or adjusted during normal operation of products containing
-+  RMI sensors.  For paramters that are only viewed or adjusted during product
-+  development and debug, please see debugfs-rmi4 in this directory.
-+
-+  General parameters for a particular RMI4 sensor are found in
-+  /sys/bus/rmi/devices/sensorXX/, where XX is a the device's ID as a two
-+  digit number (padded with leading zeros).  Function specific parameters
-+  for an RMI4 sensor are found in /sys/bus/rmi/devices/sensorXX.fnYY/, where
-+  XX is a the device's ID as a two digit number (padded with leading zeros)
-+  and YY is the hexdecimal function number (for example, fn11 for RMI function
-+  F11).
-+
-+  Many of the parameters exposed here are described in detail in the
-+  RMI4 Specification, which is found here:
-+    http://www.synaptics.com/sites/default/files/511-000136-01_revD.pdf
-+  For such parameters, we'll reference you to that document, rather than
-+  copying the contents here.
-+
-+  /sys/bus/rmi/devices
-+      /sensorXX/
-+          bsr ... (rw) bus select register, if supported (see spec)
-+          enabled ... (rw) enable/disable interrupt management [deprecated]
-+
-+      /sensor00.fn01/
-+          chargerinput ... (rw) User space programs can use this to tell the
-+                  sensor that the system is plugged into an external power
-+                  source (as opposed to running on batteries).  This allows
-+                  the sensor firmware to make necessary adjustments for the
-+                  current capacitence regime.  Write 1 to this when the
-+                  system is using external power, write 0 to this when the
-+                  system is running on batteries.  See spec for full details.
-+          configured ... (ro) Shows the current state of the configured bit.
-+                  This will be 1 most of the time (indicating the device has
-+                  been appropriately configured), but will switch to 0 briefly
-+                  if the sensor experiences a firmware or ASIC reset event.
-+                  See spec for full details.
-+          datecode ... (ro) The date on which the module was manufactured.
-+                  See spec for full details.
-+          doze_holdoff ... (rw) Controls how long the sensor will wait before
-+                  entering the doze state when no fingers are present on the
-+                  device. The time is in terms of 10 milliseconds - a
-+                  doze_holdoff value of 3 corresponds to a time period of 30
-+                  milliseconds.  See spec for full details.
-+          flashprog ... (ro) Defines the current device operating mode. The
-+                  flashprog flag is set if the normal operation of the device
-+                  is suspended because the device is in a flash programming
-+                  enabled state.  See spec for full details.
-+          interrupt_enable ... (ro) This represents the current RMI4 interrupt
-+                  mask (F01_RMI_Ctrl1 registers).  See spec for full details.
-+          manufacturer ... (ro) This is the identity of the manufacturer of
-+                  the device, as obtained from F01_RMI_Query0.  See spec for
-+                  full details.
-+          nosleep ... (rw) Writing 1 to this parameter disables all normal
-+                  firmware powersaving behaviors and forces the device to run
-+                  at full power without sleeping.  See spec for full details.
-+          productid ... (ro) The product info bytes, as determined from
-+                  F01_RMI_Query2 and F01_RMI_Query3 registers.  See spec for
-+                  full details.
-+          productinfo ... (ro) A string of up to 10 characters, identifying
-+                  the product.  See spec for full details.
-+          reportrate ... (rw) This is the current value of the RMI4 ReportRate
-+                  bit (F01_RMI_Ctrl0, bit 6).  The meaning of this bit is very
-+                  much device-dependent. Please see both the RMI4 spec and the
-+                  sensor spec sheet for details.
-+          reset ... (wo)  Writing a 1 to this write only register forces the
-+                  device to reset.
-+          sleepmode ... (rw) Controls power management on the device.  Writing
-+                  0 to this parameter puts the device into its normal operating
-+                  mode.  Writing 1 to this parameter fully disables touch
-+                  sensors and similar inputs - no touch data will be reported
-+                  from the device in this mode.  Writing 2 or 3 to this device
-+                  may or may not have an effect, depending on the particular
-+                  device - see the product specification for your sensor for
-+                  details.
-+          statuscode ... (ro) Reports the most recent device status, such as
-+                  invalid configuration, device reset, CRC failure, and so on.
-+                  Please se the RMI4 specification for details.
-+          unconfigured ... (ro) This is the opposite of the configured bit,
-+                  described above.
-+          wakeup_threshold ... (rw) This controls the change in capacitive
-+                  signal needed to wake the device from the doze state.  Please
-+                  see the RMI4 specification for the F01_RMI_Ctrl3 register
-+                  for more details.
-+
-+      /sensor00.fn11/
-+          abs_pos_filt ... (rw) Enables or disables the absolute position
-+                  filter feature.  See spec for full details.
-+          maxPos ... (rw) Adjusts the  maximum X and Y position control
-+                  registers (F11_2D_Ctrl6 through F11_2D_Ctrl9).  See spec for
-+                  full details.
-+          relreport ... (rw) Enables or disabled relative finger motion
-+                  reporting.  See spec for full details.
-+          rezero ... (wo) Force recalibration of the F11 2D sensor(s).  See
-+                  spec for full details.
-+
-diff --git a/include/linux/rmi.h b/include/linux/rmi.h
-new file mode 100644
-index 0000000..b7d0a34
---- /dev/null
-+++ b/include/linux/rmi.h
-@@ -0,0 +1,596 @@
++++ b/drivers/input/rmi4/rmi_f01.c
+@@ -0,0 +1,1348 @@
 +/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
++ * Copyright (c) 2011-2012 Synaptics Incorporated
 + * Copyright (c) 2011 Unixphere
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -292,580 +80,1498 @@ index 0000000..b7d0a34
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
-+#ifndef _RMI_H
-+#define _RMI_H
 +#include <linux/kernel.h>
-+#include <linux/cdev.h>
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/input.h>
-+#include <linux/list.h>
-+#include <linux/lockdep.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/stat.h>
-+#include <linux/types.h>
-+#include <linux/wait.h>
 +#include <linux/debugfs.h>
++#include <linux/kconfig.h>
++#include <linux/rmi.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include "rmi_driver.h"
++#include "rmi_f01.h"
 +
-+extern struct bus_type rmi_bus_type;
++#define FUNCTION_NUMBER 0x01
 +
-+extern struct device_type rmi_function_type;
-+extern struct device_type rmi_sensor_type;
-+
-+
-+/* Permissions for sysfs attributes.  Since the permissions policy will change
-+ * on a global basis in the future, rather than edit all sysfs attrs everywhere
-+ * in the driver (and risk screwing that up in the process), we use this handy
-+ * set of #defines.  That way when we change the policy for sysfs permissions,
-+ * we only need to change them here.
++/**
++ * @reset - set this bit to force a firmware reset of the sensor.
 + */
-+#define RMI_RO_ATTR S_IRUGO
-+#define RMI_RW_ATTR (S_IRUGO | S_IWUGO)
-+#define RMI_WO_ATTR S_IWUGO
-+
-+enum rmi_attn_polarity {
-+	RMI_ATTN_ACTIVE_LOW = 0,
-+	RMI_ATTN_ACTIVE_HIGH = 1
++struct f01_device_commands {
++	bool reset:1;
++	u8 reserved:7;
 +};
 +
 +/**
-+ * struct rmi_f11_axis_alignment - target axis alignment
-+ * @swap_axes: set to TRUE if desired to swap x- and y-axis
-+ * @flip_x: set to TRUE if desired to flip direction on x-axis
-+ * @flip_y: set to TRUE if desired to flip direction on y-axis
-+ * @clip_X_low - reported X coordinates below this setting will be clipped to
-+ *               the specified value
-+ * @clip_X_high - reported X coordinates above this setting will be clipped to
-+ *               the specified value
-+ * @clip_Y_low - reported Y coordinates below this setting will be clipped to
-+ *               the specified value
-+ * @clip_Y_high - reported Y coordinates above this setting will be clipped to
-+ *               the specified value
-+ * @offset_X - this value will be added to all reported X coordinates
-+ * @offset_Y - this value will be added to all reported Y coordinates
-+ * @rel_report_enabled - if set to true, the relative reporting will be
-+ *               automatically enabled for this sensor.
-+ */
-+struct rmi_f11_2d_axis_alignment {
-+	bool swap_axes;
-+	bool flip_x;
-+	bool flip_y;
-+	int clip_X_low;
-+	int clip_Y_low;
-+	int clip_X_high;
-+	int clip_Y_high;
-+	int offset_X;
-+	int offset_Y;
-+	int rel_report_enabled;
-+	u8 delta_x_threshold;
-+	u8 delta_y_threshold;
-+};
-+
-+/** This is used to override any hints an F11 2D sensor might have provided
-+ * as to what type of sensor it is.
-+ *
-+ * @rmi_f11_sensor_default - do not override, determine from F11_2D_QUERY14 if
-+ * available.
-+ * @rmi_f11_sensor_touchscreen - treat the sensor as a touchscreen (direct
-+ * pointing).
-+ * @rmi_f11_sensor_touchpad - thread the sensor as a touchpad (indirect
-+ * pointing).
-+ */
-+enum rmi_f11_sensor_type {
-+	rmi_f11_sensor_default = 0,
-+	rmi_f11_sensor_touchscreen,
-+	rmi_f11_sensor_touchpad
-+};
-+
-+/**
-+ * struct rmi_f11_sensor_data - overrides defaults for a single F11 2D sensor.
-+ * @axis_align - provides axis alignment overrides (see above).
-+ * @type_a - all modern RMI F11 firmwares implement Multifinger Type B
-+ * protocol.  Set this to true to force MF Type A behavior, in case you find
-+ * an older sensor.
-+ * @sensor_type - Forces the driver to treat the sensor as an indirect
-+ * pointing device (touchpad) rather than a direct pointing device
-+ * (touchscreen).  This is useful when F11_2D_QUERY14 register is not
-+ * available.
-+ */
-+struct rmi_f11_sensor_data {
-+	struct rmi_f11_2d_axis_alignment axis_align;
-+	bool type_a;
-+	enum rmi_f11_sensor_type sensor_type;
-+};
-+
-+/**
-+ * struct rmi_f01_power - override default power management settings.
-+ *
-+ */
-+enum rmi_f01_nosleep {
-+	RMI_F01_NOSLEEP_DEFAULT = 0,
-+	RMI_F01_NOSLEEP_OFF = 1,
-+	RMI_F01_NOSLEEP_ON = 2
-+};
-+
-+/**
-+ * struct rmi_f01_power_management -When non-zero, these values will be written
-+ * to the touch sensor to override the default firmware settigns.  For a
-+ * detailed explanation of what each field does, see the corresponding
-+ * documention in the RMI4 specification.
-+ *
-+ * @nosleep - specifies whether the device is permitted to sleep or doze (that
-+ * is, enter a temporary low power state) when no fingers are touching the
-+ * sensor.
++ * @ctrl0 - see documentation in rmi_f01.h.
++ * @interrupt_enable - A mask of per-function interrupts on the touch sensor.
++ * @doze_interval - controls the interval between checks for finger presence
++ * when the touch sensor is in doze mode, in units of 10ms.
 + * @wakeup_threshold - controls the capacitance threshold at which the touch
 + * sensor will decide to wake up from that low power state.
 + * @doze_holdoff - controls how long the touch sensor waits after the last
 + * finger lifts before entering the doze state, in units of 100ms.
-+ * @doze_interval - controls the interval between checks for finger presence
-+ * when the touch sensor is in doze mode, in units of 10ms.
 + */
-+struct rmi_f01_power_management {
-+	enum rmi_f01_nosleep nosleep;
++struct f01_device_control {
++	struct f01_device_control_0 ctrl0;
++	u8 *interrupt_enable;
++	u8 doze_interval;
 +	u8 wakeup_threshold;
 +	u8 doze_holdoff;
-+	u8 doze_interval;
 +};
 +
 +/**
-+ * struct rmi_button_map - used to specify the initial input subsystem key
-+ * event codes to be generated by buttons (or button like entities) on the
-+ * touch sensor.
-+ * @nbuttons - length of the button map.
-+ * @map - the key event codes for the corresponding buttons on the touch
-+ * sensor.
++ * @has_ds4_queries - if true, the query registers relating to Design Studio 4
++ * features are present.
++ * @has_multi_phy - if true, multiple physical communications interfaces are
++ * supported.
++ * @has_guest - if true, a "guest" device is supported.
 + */
-+struct rmi_button_map {
-+	u8 nbuttons;
-+	u8 *map;
-+};
-+
-+struct rmi_f30_gpioled_map {
-+	u8 ngpioleds;
-+	u8 *map;
-+};
++struct f01_query_42 {
++		bool has_ds4_queries:1;
++		bool has_multi_phy:1;
++		bool has_guest:1;
++		u8 reserved:5;
++} __attribute__((__packed__));
 +
 +/**
-+ * struct rmi_device_platform_data_spi - provides parameters used in SPI
-+ * communications.  All Synaptics SPI products support a standard SPI
-+ * interface; some also support what is called SPI V2 mode, depending on
-+ * firmware and/or ASIC limitations.  In V2 mode, the touch sensor can
-+ * support shorter delays during certain operations, and these are specified
-+ * separately from the standard mode delays.
-+ *
-+ * @block_delay - for standard SPI transactions consisting of both a read and
-+ * write operation, the delay (in microseconds) between the read and write
-+ * operations.
-+ * @split_read_block_delay_us - for V2 SPI transactions consisting of both a
-+ * read and write operation, the delay (in microseconds) between the read and
-+ * write operations.
-+ * @read_delay_us - the delay between each byte of a read operation in normal
-+ * SPI mode.
-+ * @write_delay_us - the delay between each byte of a write operation in normal
-+ * SPI mode.
-+ * @split_read_byte_delay_us - the delay between each byte of a read operation
-+ * in V2 mode.
-+ * @pre_delay_us - the delay before the start of a SPI transaction.  This is
-+ * typically useful in conjunction with custom chip select assertions (see
-+ * below).
-+ * @post_delay_us - the delay after the completion of an SPI transaction.  This
-+ * is typically useful in conjunction with custom chip select assertions (see
-+ * below).
-+ * @cs_assert - For systems where the SPI subsystem does not control the CS/SSB
-+ * line, or where such control is broken, you can provide a custom routine to
-+ * handle a GPIO as CS/SSB.  This routine will be called at the beginning and
-+ * end of each SPI transaction.  The RMI SPI implementation will wait
-+ * pre_delay_us after this routine returns before starting the SPI transfer;
-+ * and post_delay_us after completion of the SPI transfer(s) before calling it
-+ * with assert==FALSE.
++ * @length - the length of the remaining Query43.* register block, not
++ * including the first register.
++ * @has_package_id_query -  the package ID query data will be accessible from
++ * inside the ProductID query registers.
++ * @has_packrat_query -  the packrat query data will be accessible from inside
++ * the ProductID query registers.
++ * @has_reset_query - the reset pin related registers are valid.
++ * @has_maskrev_query - the silicon mask revision number will be reported.
++ * @has_i2c_control - the register F01_RMI_Ctrl6 will exist.
++ * @has_spi_control - the register F01_RMI_Ctrl7 will exist.
++ * @has_attn_control - the register F01_RMI_Ctrl8 will exist.
++ * @reset_enabled - the hardware reset pin functionality has been enabled
++ * for this device.
++ * @reset_polarity - If this bit reports as ‘0’, it means that the reset state
++ * is active low. A ‘1’ means that the reset state is active high.
++ * @pullup_enabled - If set, it indicates that a built-in weak pull up has
++ * been enabled on the Reset pin; clear means that no pull-up is present.
++ * @reset_pin_number - This field represents which GPIO pin number has been
++ * assigned the reset functionality.
 + */
-+struct rmi_device_platform_data_spi {
-+	int block_delay_us;
-+	int split_read_block_delay_us;
-+	int read_delay_us;
-+	int write_delay_us;
-+	int split_read_byte_delay_us;
-+	int pre_delay_us;
-+	int post_delay_us;
++struct f01_ds4_queries {
++	u8 length:4;
++	u8 reserved_1:4;
 +
-+	void *cs_assert_data;
-+	int (*cs_assert) (const void *cs_assert_data, const bool assert);
-+};
++	bool has_package_id_query:1;
++	bool has_packrat_query:1;
++	bool has_reset_query:1;
++	bool has_maskrev_query:1;
++	u8 reserved_2:4;
 +
-+/**
-+ * struct rmi_device_platform_data - system specific configuration info.
-+ *
-+ * @sensor_name - this is used for various diagnostic messages.
-+ *
-+ * @firmware_name - if specified will override default firmware name,
-+ * for reflashing.
-+ *
-+ * @attn_gpio - the index of a GPIO that will be used to provide the ATTN
-+ * interrupt from the touch sensor.
-+ * @attn_polarity - indicates whether ATTN is active high or low.
-+ * @level_triggered - by default, the driver uses edge triggered interrupts.
-+ * However, this can cause problems with suspend/resume on some platforms.  In
-+ * that case, set this to 1 to use level triggered interrupts.
-+ * @gpio_config - a routine that will be called when the driver is loaded to
-+ * perform any platform specific GPIO configuration, and when it is unloaded
-+ * for GPIO de-configuration.  This is typically used to configure the ATTN
-+ * GPIO and the I2C or SPI pins, if necessary.
-+ * @gpio_data - platform specific data to be passed to the GPIO configuration
-+ * function.
-+ *
-+ * @poll_interval_ms - the time in milliseconds between reads of the interrupt
-+ * status register.  This is ignored if attn_gpio is non-zero.
-+ *
-+ * @reset_delay_ms - after issuing a reset command to the touch sensor, the
-+ * driver waits a few milliseconds to give the firmware a chance to
-+ * to re-initialize.  You can override the default wait period here.
-+ *
-+ * @spi_data - override default settings for SPI delays and SSB management (see
-+ * above).
-+ *
-+ * @f11_sensor_data - an array of platform data for individual F11 2D sensors.
-+ * @f11_sensor_count - the length of f11_sensor_data array.  Extra entries will
-+ * be ignored; if there are too few entries, all settings for the additional
-+ * sensors will be defaulted.
-+ * @f11_rezero_wait - if non-zero, this is how may milliseconds the F11 2D
-+ * sensor(s) will wait before being be rezeroed on exit from suspend.  If
-+ * this value is zero, the F11 2D sensor(s) will not be rezeroed on resume.
-+ * @pre_suspend - this will be called before any other suspend operations are
-+ * done.
-+ * @power_management - overrides default touch sensor doze mode settings (see
-+ * above)
-+ * @f19_button_map - provide initial input subsystem key mappings for F19.
-+ * @f1a_button_map - provide initial input subsystem key mappings for F1A.
-+ * @gpioled_map - provides initial settings for GPIOs and LEDs controlled by
-+ * F30.
-+ * @f41_button_map - provide initial input subsystem key mappings for F41.
-+ *
-+ * @post_suspend - this will be called after all suspend operations are
-+ * completed.  This is the ONLY safe place to power off an RMI sensor
-+ * during the suspend process.
-+ * @pre_resume - this is called before any other resume operations.  If you
-+ * powered off the RMI4 sensor in post_suspend(), then you MUST power it back
-+ * here, and you MUST wait an appropriate time for the ASIC to come up
-+ * (100ms to 200ms, depending on the sensor) before returning.
-+ * @pm_data - this will be passed to the various (pre|post)_(suspend/resume)
-+ * functions.
-+ */
-+struct rmi_device_platform_data {
-+	char *sensor_name;	/* Used for diagnostics. */
++	bool has_i2c_control:1;
++	bool has_spi_control:1;
++	bool has_attn_control:1;
++	u8 reserved_3:5;
 +
-+	int attn_gpio;
-+	enum rmi_attn_polarity attn_polarity;
-+	bool level_triggered;
-+	void *gpio_data;
-+	int (*gpio_config)(void *gpio_data, bool configure);
++	bool reset_enabled:1;
++	bool reset_polarity:1;
++	bool pullup_enabled:1;
++	u8 reserved_4:1;
++	u8 reset_pin_number:4;
++} __attribute__((__packed__));
 +
-+	int poll_interval_ms;
++struct f01_data {
++	struct f01_device_control device_control;
++	struct f01_basic_queries basic_queries;
++	struct f01_device_status device_status;
++	u8 product_id[RMI_PRODUCT_ID_LENGTH+1];
 +
-+	int reset_delay_ms;
++	u16 interrupt_enable_addr;
++	u16 doze_interval_addr;
++	u16 wakeup_threshold_addr;
++	u16 doze_holdoff_addr;
 +
-+	struct rmi_device_platform_data_spi spi_data;
-+
-+	/* function handler pdata */
-+	struct rmi_f11_sensor_data *f11_sensor_data;
-+	u8 f11_sensor_count;
-+	u16 f11_rezero_wait;
-+	struct rmi_f01_power_management power_management;
-+	struct rmi_button_map *f19_button_map;
-+	struct rmi_button_map *f1a_button_map;
-+	struct rmi_f30_gpioled_map *gpioled_map;
-+	struct rmi_button_map *f41_button_map;
-+
-+#ifdef CONFIG_RMI4_FWLIB
-+	char *firmware_name;
-+#endif
++	int irq_count;
++	int num_of_irq_regs;
 +
 +#ifdef	CONFIG_PM
-+	void *pm_data;
-+	int (*pre_suspend) (const void *pm_data);
-+	int (*post_suspend) (const void *pm_data);
-+	int (*pre_resume) (const void *pm_data);
-+	int (*post_resume) (const void *pm_data);
++	bool suspended;
++	bool old_nosleep;
++#endif
++
++#ifdef	CONFIG_RMI4_DEBUG
++	struct dentry *debugfs_interrupt_enable;
 +#endif
 +};
 +
-+/**
-+ * struct rmi_function_descriptor - RMI function base addresses
-+ *
-+ * @query_base_addr: The RMI Query base address
-+ * @command_base_addr: The RMI Command base address
-+ * @control_base_addr: The RMI Control base address
-+ * @data_base_addr: The RMI Data base address
-+ * @interrupt_source_count: The number of irqs this RMI function needs
-+ * @function_number: The RMI function number
-+ *
-+ * This struct is used when iterating the Page Description Table. The addresses
-+ * are 16-bit values to include the current page address.
-+ *
-+ */
-+struct rmi_function_descriptor {
-+	u16 query_base_addr;
-+	u16 command_base_addr;
-+	u16 control_base_addr;
-+	u16 data_base_addr;
-+	u8 interrupt_source_count;
-+	u8 function_number;
-+	u8 function_version;
++#ifdef	CONFIG_RMI4_DEBUG
++struct f01_debugfs_data {
++	bool done;
++	struct rmi_function_container *fc;
 +};
 +
-+struct rmi_function_container;
-+struct rmi_device;
++static int f01_debug_open(struct inode *inodep, struct file *filp)
++{
++	struct f01_debugfs_data *data;
++	struct rmi_function_container *fc = inodep->i_private;
 +
-+/**
-+ * struct rmi_function_handler - driver routines for a particular RMI function.
-+ *
-+ * @func: The RMI function number
-+ * @reset: Called when a reset of the touch sensor is detected.  The routine
-+ * should perform any out-of-the-ordinary reset handling that might be
-+ * necessary.  Restoring of touch sensor configuration registers should be
-+ * handled in the config() callback, below.
-+ * @config: Called when the function container is first initialized, and
-+ * after a reset is detected.  This routine should write any necessary
-+ * configuration settings to the device.
-+ * @attention: Called when the IRQ(s) for the function are set by the touch
-+ * sensor.
-+ * @suspend: Should perform any required operations to suspend the particular
-+ * function.
-+ * @resume: Should perform any required operations to resume the particular
-+ * function.
-+ *
-+ * All callbacks are expected to return 0 on success, error code on failure.
-+ */
-+struct rmi_function_handler {
-+	struct device_driver driver;
++	data = kzalloc(sizeof(struct f01_debugfs_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
 +
-+	u8 func;
-+	int (*config)(struct rmi_function_container *fc);
-+	int (*reset)(struct rmi_function_container *fc);
-+	int (*attention)(struct rmi_function_container *fc,
-+				unsigned long *irq_bits);
++	data->fc = fc;
++	filp->private_data = data;
++	return 0;
++}
++
++static int f01_debug_release(struct inode *inodep, struct file *filp)
++{
++	kfree(filp->private_data);
++	return 0;
++}
++
++static ssize_t interrupt_enable_read(struct file *filp, char __user *buffer,
++				     size_t size, loff_t *offset) {
++	int i;
++	int len;
++	int total_len = 0;
++	char local_buf[size];
++	char *current_buf = local_buf;
++	struct f01_debugfs_data *data = filp->private_data;
++	struct f01_data *f01 = data->fc->data;
++
++	if (data->done)
++		return 0;
++
++	data->done = 1;
++
++	/* loop through each irq value and copy its
++	 * string representation into buf */
++	for (i = 0; i < f01->irq_count; i++) {
++		int irq_reg;
++		int irq_shift;
++		int interrupt_enable;
++
++		irq_reg = i / 8;
++		irq_shift = i % 8;
++		interrupt_enable =
++		    ((f01->device_control.interrupt_enable[irq_reg]
++			>> irq_shift) & 0x01);
++
++		/* get next irq value and write it to buf */
++		len = snprintf(current_buf, size - total_len,
++			"%u ", interrupt_enable);
++		/* bump up ptr to next location in buf if the
++		 * snprintf was valid.  Otherwise issue an error
++		 * and return. */
++		if (len > 0) {
++			current_buf += len;
++			total_len += len;
++		} else {
++			dev_err(&data->fc->dev, "Failed to build interrupt_enable buffer, code = %d.\n",
++						len);
++			return snprintf(local_buf, size, "unknown\n");
++		}
++	}
++	len = snprintf(current_buf, size - total_len, "\n");
++	if (len > 0)
++		total_len += len;
++	else
++		dev_warn(&data->fc->dev, "%s: Failed to append carriage return.\n",
++			 __func__);
++
++	if (copy_to_user(buffer, local_buf, total_len))
++		return -EFAULT;
++
++	return total_len;
++}
++
++static ssize_t interrupt_enable_write(struct file *filp,
++		const char __user *buffer, size_t size, loff_t *offset) {
++	int retval;
++	char buf[size];
++	char *local_buf = buf;
++	int i;
++	int irq_count = 0;
++	int irq_reg = 0;
++	struct f01_debugfs_data *data = filp->private_data;
++	struct f01_data *f01 = data->fc->data;
++
++	retval = copy_from_user(buf, buffer, size);
++	if (retval)
++		return -EFAULT;
++
++	for (i = 0; i < f01->irq_count && *local_buf != 0;
++	     i++, local_buf += 2) {
++		int irq_shift;
++		int interrupt_enable;
++		int result;
++
++		irq_reg = i / 8;
++		irq_shift = i % 8;
++
++		/* get next interrupt mapping value and store and bump up to
++		 * point to next item in local_buf */
++		result = sscanf(local_buf, "%u", &interrupt_enable);
++		if ((result != 1) ||
++			(interrupt_enable != 0 && interrupt_enable != 1)) {
++			dev_err(&data->fc->dev, "Interrupt enable[%d] is not a valid value 0x%x.\n",
++				i, interrupt_enable);
++			return -EINVAL;
++		}
++		if (interrupt_enable == 0) {
++			f01->device_control.interrupt_enable[irq_reg] &=
++				(1 << irq_shift) ^ 0xFF;
++		} else
++			f01->device_control.interrupt_enable[irq_reg] |=
++				(1 << irq_shift);
++		irq_count++;
++	}
++
++	/* Make sure the irq count matches */
++	if (irq_count != f01->irq_count) {
++		dev_err(&data->fc->dev, "Interrupt enable count of %d doesn't match device count of %d.\n",
++			 irq_count, f01->irq_count);
++		return -EINVAL;
++	}
++
++	/* write back to the control register */
++	retval = rmi_write_block(data->fc->rmi_dev, f01->interrupt_enable_addr,
++			f01->device_control.interrupt_enable,
++			f01->num_of_irq_regs);
++	if (retval < 0) {
++		dev_err(&data->fc->dev, "Could not write interrupt_enable mask to %#06x\n",
++			f01->interrupt_enable_addr);
++		return retval;
++	}
++
++	return size;
++}
++
++static const struct file_operations interrupt_enable_fops = {
++	.owner = THIS_MODULE,
++	.open = f01_debug_open,
++	.release = f01_debug_release,
++	.read = interrupt_enable_read,
++	.write = interrupt_enable_write,
++};
++
++static int setup_debugfs(struct rmi_function_container *fc)
++{
++	struct f01_data *data = fc->data;
++
++	if (!fc->debugfs_root)
++		return -ENODEV;
++
++	data->debugfs_interrupt_enable = debugfs_create_file("interrupt_enable",
++		RMI_RW_ATTR, fc->debugfs_root, fc, &interrupt_enable_fops);
++	if (!data->debugfs_interrupt_enable)
++		dev_warn(&fc->dev,
++			 "Failed to create debugfs interrupt_enable.\n");
++
++	return 0;
++}
++
++static void teardown_debugfs(struct f01_data *f01)
++{
++	if (f01->debugfs_interrupt_enable)
++		debugfs_remove(f01->debugfs_interrupt_enable);
++}
++#endif
++
++/* Utility routine to set the value of a bit field in a register. */
++int rmi_mask_and_set(struct rmi_device *rmi_dev,
++		      u16 address,
++		      u8 mask,
++		      u8 set)
++{
++	u8 reg_contents;
++	int retval;
++
++	retval = rmi_read(rmi_dev, address, &reg_contents);
++	if (retval < 0)
++		return retval;
++	reg_contents = (reg_contents & ~mask) | set;
++	retval = rmi_write(rmi_dev, address, reg_contents);
++	if (retval == 1)
++		return 0;
++	else if (retval == 0)
++		return -EIO;
++	return retval;
++}
++
++static ssize_t rmi_fn_01_productinfo_show(struct device *dev,
++					  struct device_attribute *attr,
++					  char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "0x%02x 0x%02x\n",
++			data->basic_queries.productinfo_1,
++			data->basic_queries.productinfo_2);
++}
++
++static ssize_t rmi_fn_01_productid_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", data->product_id);
++}
++
++static ssize_t rmi_fn_01_manufacturer_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "0x%02x\n",
++			data->basic_queries.manufacturer_id);
++}
++
++static ssize_t rmi_fn_01_datecode_show(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "20%02u-%02u-%02u\n",
++			data->basic_queries.year,
++			data->basic_queries.month,
++			data->basic_queries.day);
++}
++
++static ssize_t rmi_fn_01_reset_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct rmi_function_container *fc = NULL;
++	unsigned int reset;
++	int retval = 0;
++
++	fc = to_rmi_function_container(dev);
++
++	if (sscanf(buf, "%u", &reset) != 1)
++		return -EINVAL;
++	if (reset < 0 || reset > 1)
++		return -EINVAL;
++
++	/* Per spec, 0 has no effect, so we skip it entirely. */
++	if (reset) {
++		/* Command register always reads as 0, so just use a local. */
++		struct f01_device_commands commands = {
++			.reset = 1
++		};
++		retval = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
++				&commands, sizeof(commands));
++		if (retval < 0) {
++			dev_err(dev, "Failed to issue reset command, code = %d.",
++						retval);
++			return retval;
++		}
++	}
++
++	return count;
++}
++
++static ssize_t rmi_fn_01_sleepmode_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE,
++			"%d\n", data->device_control.ctrl0.sleep_mode);
++}
++
++static ssize_t rmi_fn_01_sleepmode_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || !RMI_IS_VALID_SLEEPMODE(new_value)) {
++		dev_err(dev, "%s: Invalid sleep mode %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	dev_dbg(dev, "Setting sleep mode to %ld.", new_value);
++	data->device_control.ctrl0.sleep_mode = new_value;
++	retval = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write sleep mode, code %d.\n", retval);
++	return retval;
++}
++
++static ssize_t rmi_fn_01_nosleep_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++		data->device_control.ctrl0.nosleep);
++}
++
++static ssize_t rmi_fn_01_nosleep_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 1) {
++		dev_err(dev, "%s: Invalid nosleep bit %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.ctrl0.nosleep = new_value;
++	retval = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write nosleep bit.\n");
++	return retval;
++}
++
++static ssize_t rmi_fn_01_chargerinput_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.ctrl0.charger_input);
++}
++
++static ssize_t rmi_fn_01_chargerinput_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 1) {
++		dev_err(dev, "%s: Invalid chargerinput bit %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.ctrl0.charger_input = new_value;
++	retval = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write chargerinput bit.\n");
++	return retval;
++}
++
++static ssize_t rmi_fn_01_reportrate_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.ctrl0.report_rate);
++}
++
++static ssize_t rmi_fn_01_reportrate_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 1) {
++		dev_err(dev, "%s: Invalid reportrate bit %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.ctrl0.report_rate = new_value;
++	retval = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write reportrate bit.\n");
++	return retval;
++}
++
++static ssize_t rmi_fn_01_interrupt_enable_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f01_data *data;
++	int i, len, total_len = 0;
++	char *current_buf = buf;
++
++	fc = to_rmi_function_container(dev);
++	data = fc->data;
++	/* loop through each irq value and copy its
++	 * string representation into buf */
++	for (i = 0; i < data->irq_count; i++) {
++		int irq_reg;
++		int irq_shift;
++		int interrupt_enable;
++
++		irq_reg = i / 8;
++		irq_shift = i % 8;
++		interrupt_enable =
++		    ((data->device_control.interrupt_enable[irq_reg]
++			>> irq_shift) & 0x01);
++
++		/* get next irq value and write it to buf */
++		len = snprintf(current_buf, PAGE_SIZE - total_len,
++			"%u ", interrupt_enable);
++		/* bump up ptr to next location in buf if the
++		 * snprintf was valid.  Otherwise issue an error
++		 * and return. */
++		if (len > 0) {
++			current_buf += len;
++			total_len += len;
++		} else {
++			dev_err(dev, "Failed to build interrupt_enable buffer, code = %d.\n",
++						len);
++			return snprintf(buf, PAGE_SIZE, "unknown\n");
++		}
++	}
++	len = snprintf(current_buf, PAGE_SIZE - total_len, "\n");
++	if (len > 0)
++		total_len += len;
++	else
++		dev_warn(dev, "%s: Failed to append carriage return.\n",
++			 __func__);
++	return total_len;
++
++}
++
++static ssize_t rmi_fn_01_doze_interval_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.doze_interval);
++
++}
++
++static ssize_t rmi_fn_01_doze_interval_store(struct device *dev,
++					  struct device_attribute *attr,
++					  const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++	u16 ctrl_base_addr;
++
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 255) {
++		dev_err(dev, "%s: Invalid doze interval %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.doze_interval = new_value;
++	ctrl_base_addr = fc->fd.control_base_addr + sizeof(u8) +
++			(sizeof(u8)*(data->num_of_irq_regs));
++	dev_dbg(dev, "doze_interval store address %x, value %d",
++		ctrl_base_addr, data->device_control.doze_interval);
++
++	retval = rmi_write_block(fc->rmi_dev, data->doze_interval_addr,
++			&data->device_control.doze_interval,
++			sizeof(u8));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write doze interval.\n");
++	return retval;
++
++}
++
++static ssize_t rmi_fn_01_wakeup_threshold_show(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.wakeup_threshold);
++}
++
++static ssize_t rmi_fn_01_wakeup_threshold_store(struct device *dev,
++					  struct device_attribute *attr,
++					  const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 255) {
++		dev_err(dev, "%s: Invalid wakeup threshold %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.doze_interval = new_value;
++	retval = rmi_write_block(fc->rmi_dev, data->wakeup_threshold_addr,
++			&data->device_control.wakeup_threshold,
++			sizeof(u8));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write wakeup threshold.\n");
++	return retval;
++
++}
++
++static ssize_t rmi_fn_01_doze_holdoff_show(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.doze_holdoff);
++
++}
++
++
++static ssize_t rmi_fn_01_doze_holdoff_store(struct device *dev,
++					  struct device_attribute *attr,
++					  const char *buf, size_t count)
++{
++	struct f01_data *data = NULL;
++	unsigned long new_value;
++	int retval;
++
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	retval = strict_strtoul(buf, 10, &new_value);
++	if (retval < 0 || new_value > 255) {
++		dev_err(dev, "%s: Invalid doze holdoff %s.", __func__, buf);
++		return -EINVAL;
++	}
++
++	data->device_control.doze_interval = new_value;
++	retval = rmi_write_block(fc->rmi_dev, data->doze_holdoff_addr,
++			&data->device_control.doze_holdoff,
++			sizeof(u8));
++	if (retval >= 0)
++		retval = count;
++	else
++		dev_err(dev, "Failed to write doze holdoff.\n");
++	return retval;
++
++}
++
++static ssize_t rmi_fn_01_configured_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_control.ctrl0.configured);
++}
++
++static ssize_t rmi_fn_01_unconfigured_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_status.unconfigured);
++}
++
++static ssize_t rmi_fn_01_flashprog_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			data->device_status.flash_prog);
++}
++
++static ssize_t rmi_fn_01_statuscode_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct f01_data *data = NULL;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "0x%02x\n",
++			data->device_status.status_code);
++}
++
++static struct device_attribute fn_01_attrs[] = {
++	__ATTR(productinfo, RMI_RO_ATTR,
++	       rmi_fn_01_productinfo_show, NULL),
++	__ATTR(productid, RMI_RO_ATTR,
++	       rmi_fn_01_productid_show, NULL),
++	__ATTR(manufacturer, RMI_RO_ATTR,
++	       rmi_fn_01_manufacturer_show, NULL),
++	__ATTR(datecode, RMI_RO_ATTR,
++	       rmi_fn_01_datecode_show, NULL),
++
++	/* control register access */
++	__ATTR(sleepmode, RMI_RW_ATTR,
++	       rmi_fn_01_sleepmode_show, rmi_fn_01_sleepmode_store),
++	__ATTR(nosleep, RMI_RW_ATTR,
++	       rmi_fn_01_nosleep_show, rmi_fn_01_nosleep_store),
++	__ATTR(chargerinput, RMI_RW_ATTR,
++	       rmi_fn_01_chargerinput_show, rmi_fn_01_chargerinput_store),
++	__ATTR(reportrate, RMI_RW_ATTR,
++	       rmi_fn_01_reportrate_show, rmi_fn_01_reportrate_store),
++	/* We don't want arbitrary callers changing the interrupt enable mask,
++	 * so it's read only.
++	 */
++	__ATTR(interrupt_enable, RMI_RO_ATTR,
++	       rmi_fn_01_interrupt_enable_show, NULL),
++	__ATTR(doze_interval, RMI_RW_ATTR,
++	       rmi_fn_01_doze_interval_show, rmi_fn_01_doze_interval_store),
++	__ATTR(wakeup_threshold, RMI_RW_ATTR,
++	       rmi_fn_01_wakeup_threshold_show,
++		rmi_fn_01_wakeup_threshold_store),
++	__ATTR(doze_holdoff, RMI_RW_ATTR,
++	       rmi_fn_01_doze_holdoff_show, rmi_fn_01_doze_holdoff_store),
++
++	/* We make report rate RO, since the driver uses that to look for
++	 * resets.  We don't want someone faking us out by changing that
++	 * bit.
++	 */
++	__ATTR(configured, RMI_RO_ATTR,
++	       rmi_fn_01_configured_show, NULL),
++
++	/* Command register access. */
++	__ATTR(reset, RMI_WO_ATTR,
++	       NULL, rmi_fn_01_reset_store),
++
++	/* STatus register access. */
++	__ATTR(unconfigured, RMI_RO_ATTR,
++	       rmi_fn_01_unconfigured_show, NULL),
++	__ATTR(flashprog, RMI_RO_ATTR,
++	       rmi_fn_01_flashprog_show, NULL),
++	__ATTR(statuscode, RMI_RO_ATTR,
++	       rmi_fn_01_statuscode_show, NULL),
++};
++
++static int rmi_f01_alloc_memory(struct rmi_function_container *fc,
++	int num_of_irq_regs)
++{
++	struct f01_data *f01;
++
++	f01 = devm_kzalloc(&fc->dev, sizeof(struct f01_data), GFP_KERNEL);
++	if (!f01) {
++		dev_err(&fc->dev, "Failed to allocate fn_01_data.\n");
++		return -ENOMEM;
++	}
++
++	f01->device_control.interrupt_enable = devm_kzalloc(&fc->dev,
++			sizeof(u8)*(num_of_irq_regs),
++			GFP_KERNEL);
++	if (!f01->device_control.interrupt_enable) {
++		dev_err(&fc->dev, "Failed to allocate interrupt enable.\n");
++		return -ENOMEM;
++	}
++	fc->data = f01;
++
++	return 0;
++}
++
++static int rmi_f01_initialize(struct rmi_function_container *fc)
++{
++	u8 temp;
++	int retval;
++	u16 ctrl_base_addr;
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct rmi_driver_data *driver_data = dev_get_drvdata(&rmi_dev->dev);
++	struct f01_data *data = fc->data;
++	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
++
++	/* Set the configured bit and (optionally) other important stuff
++	 * in the device control register. */
++	ctrl_base_addr = fc->fd.control_base_addr;
++	retval = rmi_read_block(rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read F01 control.\n");
++		return retval;
++	}
++	switch (pdata->power_management.nosleep) {
++	case RMI_F01_NOSLEEP_DEFAULT:
++		break;
++	case RMI_F01_NOSLEEP_OFF:
++		data->device_control.ctrl0.nosleep = 0;
++		break;
++	case RMI_F01_NOSLEEP_ON:
++		data->device_control.ctrl0.nosleep = 1;
++		break;
++	}
++	/* Sleep mode might be set as a hangover from a system crash or
++	 * reboot without power cycle.  If so, clear it so the sensor
++	 * is certain to function.
++	 */
++	if (data->device_control.ctrl0.sleep_mode != RMI_SLEEP_MODE_NORMAL) {
++		dev_warn(&fc->dev,
++			 "WARNING: Non-zero sleep mode found. Clearing...\n");
++		data->device_control.ctrl0.sleep_mode = RMI_SLEEP_MODE_NORMAL;
++	}
++
++	data->device_control.ctrl0.configured = 1;
++	retval = rmi_write_block(rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to write F01 control.\n");
++		return retval;
++	}
++
++	data->irq_count = driver_data->irq_count;
++	data->num_of_irq_regs = driver_data->num_of_irq_regs;
++	ctrl_base_addr += sizeof(struct f01_device_control_0);
++
++	data->interrupt_enable_addr = ctrl_base_addr;
++	retval = rmi_read_block(rmi_dev, ctrl_base_addr,
++			data->device_control.interrupt_enable,
++			sizeof(u8)*(data->num_of_irq_regs));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read F01 control interrupt enable register.\n");
++		goto error_exit;
++	}
++	ctrl_base_addr += data->num_of_irq_regs;
++
++	/* dummy read in order to clear irqs */
++	retval = rmi_read(rmi_dev, fc->fd.data_base_addr + 1, &temp);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read Interrupt Status.\n");
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, fc->fd.query_base_addr,
++				&data->basic_queries,
++				sizeof(data->basic_queries));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read device query registers.\n");
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev,
++		fc->fd.query_base_addr + sizeof(data->basic_queries),
++		data->product_id, RMI_PRODUCT_ID_LENGTH);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read product ID.\n");
++		return retval;
++	}
++	data->product_id[RMI_PRODUCT_ID_LENGTH] = '\0';
++	dev_info(&fc->dev, "found RMI device, manufacturer: %s, product: %s\n",
++		 data->basic_queries.manufacturer_id == 1 ?
++							"synaptics" : "unknown",
++		 data->product_id);
++
++	/* read control register */
++	if (data->basic_queries.has_adjustable_doze) {
++		data->doze_interval_addr = ctrl_base_addr;
++		ctrl_base_addr++;
++
++		if (pdata->power_management.doze_interval) {
++			data->device_control.doze_interval =
++				pdata->power_management.doze_interval;
++			retval = rmi_write(rmi_dev, data->doze_interval_addr,
++					data->device_control.doze_interval);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to configure F01 doze interval register.\n");
++				goto error_exit;
++			}
++		} else {
++			retval = rmi_read(rmi_dev, data->doze_interval_addr,
++					&data->device_control.doze_interval);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to read F01 doze interval register.\n");
++				goto error_exit;
++			}
++		}
++
++		data->wakeup_threshold_addr = ctrl_base_addr;
++		ctrl_base_addr++;
++
++		if (pdata->power_management.wakeup_threshold) {
++			data->device_control.wakeup_threshold =
++				pdata->power_management.wakeup_threshold;
++			retval = rmi_write(rmi_dev, data->wakeup_threshold_addr,
++					data->device_control.wakeup_threshold);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to configure F01 wakeup threshold register.\n");
++				goto error_exit;
++			}
++		} else {
++			retval = rmi_read(rmi_dev, data->wakeup_threshold_addr,
++					&data->device_control.wakeup_threshold);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to read F01 wakeup threshold register.\n");
++				goto error_exit;
++			}
++		}
++	}
++
++	if (data->basic_queries.has_adjustable_doze_holdoff) {
++		data->doze_holdoff_addr = ctrl_base_addr;
++		ctrl_base_addr++;
++
++		if (pdata->power_management.doze_holdoff) {
++			data->device_control.doze_holdoff =
++				pdata->power_management.doze_holdoff;
++			retval = rmi_write(rmi_dev, data->doze_holdoff_addr,
++					data->device_control.doze_holdoff);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to configure F01 doze holdoff register.\n");
++				goto error_exit;
++			}
++		} else {
++			retval = rmi_read(rmi_dev, data->doze_holdoff_addr,
++					&data->device_control.doze_holdoff);
++			if (retval < 0) {
++				dev_err(&fc->dev, "Failed to read F01 doze holdoff register.\n");
++				goto error_exit;
++			}
++		}
++	}
++
++	retval = rmi_read_block(rmi_dev, fc->fd.data_base_addr,
++		&data->device_status, sizeof(data->device_status));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read device status.\n");
++		goto error_exit;
++	}
++
++	if (data->device_status.unconfigured) {
++		dev_err(&fc->dev, "Device reset during configuration process, status: %#02x!\n",
++				data->device_status.status_code);
++		retval = -EINVAL;
++		goto error_exit;
++	}
++
++	if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
++		retval = setup_debugfs(fc);
++		if (retval < 0)
++			dev_warn(&fc->dev, "Failed to setup debugfs. Code: %d.\n",
++				retval);
++	}
++
++	return retval;
++
++ error_exit:
++	kfree(data);
++	return retval;
++}
++
++static int rmi_f01_create_sysfs(struct rmi_function_container *fc)
++{
++	int attr_count = 0;
++	int retval = 0;
++	struct f01_data *data = fc->data;
++
++	dev_dbg(&fc->dev, "Creating sysfs files.");
++	for (attr_count = 0; attr_count < ARRAY_SIZE(fn_01_attrs);
++			attr_count++) {
++		if (!strcmp("doze_interval", fn_01_attrs[attr_count].attr.name)
++			&& !data->basic_queries.has_lts) {
++			continue;
++		}
++		if (!strcmp("wakeup_threshold",
++			fn_01_attrs[attr_count].attr.name)
++			&& !data->basic_queries.has_adjustable_doze) {
++			continue;
++		}
++		if (!strcmp("doze_holdoff", fn_01_attrs[attr_count].attr.name)
++			&& !data->basic_queries.has_adjustable_doze_holdoff) {
++			continue;
++		}
++		retval = sysfs_create_file(&fc->dev.kobj,
++				      &fn_01_attrs[attr_count].attr);
++		if (retval < 0) {
++			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
++			       fn_01_attrs[attr_count].attr.name);
++			goto err_remove_sysfs;
++		}
++	}
++
++	return 0;
++
++err_remove_sysfs:
++	for (attr_count--; attr_count >= 0; attr_count--)
++		sysfs_remove_file(&fc->dev.kobj,
++				  &fn_01_attrs[attr_count].attr);
++
++	return retval;
++}
++
++static int rmi_f01_config(struct rmi_function_container *fc)
++{
++	struct f01_data *data = fc->data;
++	int retval;
++
++	retval = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to write device_control.reg.\n");
++		return retval;
++	}
++
++	retval = rmi_write_block(fc->rmi_dev, data->interrupt_enable_addr,
++			data->device_control.interrupt_enable,
++			sizeof(u8)*(data->num_of_irq_regs));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to write interrupt enable.\n");
++		return retval;
++	}
++	if (data->basic_queries.has_lts) {
++		retval = rmi_write_block(fc->rmi_dev, data->doze_interval_addr,
++				&data->device_control.doze_interval,
++				sizeof(u8));
++		if (retval < 0) {
++			dev_err(&fc->dev, "Failed to write doze interval.\n");
++			return retval;
++		}
++	}
++
++	if (data->basic_queries.has_adjustable_doze) {
++		retval = rmi_write_block(
++				fc->rmi_dev, data->wakeup_threshold_addr,
++				&data->device_control.wakeup_threshold,
++				sizeof(u8));
++		if (retval < 0) {
++			dev_err(&fc->dev, "Failed to write wakeup threshold.\n");
++			return retval;
++		}
++	}
++
++	if (data->basic_queries.has_adjustable_doze_holdoff) {
++		retval = rmi_write_block(fc->rmi_dev, data->doze_holdoff_addr,
++				&data->device_control.doze_holdoff,
++				sizeof(u8));
++		if (retval < 0) {
++			dev_err(&fc->dev, "Failed to write doze holdoff.\n");
++			return retval;
++		}
++	}
++	return 0;
++}
++
++static int f01_device_init(struct rmi_function_container *fc)
++{
++	struct rmi_driver_data *driver_data =
++			dev_get_drvdata(&fc->rmi_dev->dev);
++	int error;
++
++	error = rmi_f01_alloc_memory(fc, driver_data->num_of_irq_regs);
++	if (error < 0)
++		return error;
++
++	error = rmi_f01_initialize(fc);
++	if (error < 0)
++		return error;
++
++	error = rmi_f01_create_sysfs(fc);
++	if (error < 0)
++		return error;
++
++	return 0;
++}
++
 +#ifdef CONFIG_PM
-+	int (*suspend)(struct rmi_function_container *fc);
-+	int (*resume)(struct rmi_function_container *fc);
-+#endif
-+};
-+
-+#define to_rmi_function_handler(d) \
-+		container_of(d, struct rmi_function_handler, driver);
-+
-+/**
-+ * struct rmi_function_container - represents the implementation of an RMI4
-+ * function for a particular device (basically, a driver for that RMI4 function)
-+ *
-+ * @fd: The function descriptor of the RMI function
-+ * @rmi_dev: Pointer to the RMI device associated with this function container
-+ * @dev: The device associated with this particular function.
-+ *
-+ * @num_of_irqs: The number of irqs needed by this function
-+ * @irq_pos: The position in the irq bitfield this function holds
-+ * @irq_mask: For convience, can be used to mask IRQ bits off during ATTN
-+ * interrupt handling.
-+ * @data: Private data pointer
-+ *
-+ * @list: Used to create a list of function containers.
-+ * @debugfs_root: used during debugging
-+ *
-+ */
-+struct rmi_function_container {
-+
-+	struct rmi_function_descriptor fd;
-+	struct rmi_device *rmi_dev;
-+	struct device dev;
-+	int num_of_irqs;
-+	int irq_pos;
-+	unsigned long *irq_mask;
-+	void *data;
-+	struct list_head list;
-+
-+#ifdef CONFIG_RMI4_DEBUG
-+	struct dentry *debugfs_root;
-+#endif
-+};
-+
-+#define to_rmi_function_container(d) \
-+		container_of(d, struct rmi_function_container, dev);
-+
-+/**
-+ * struct rmi_driver - driver for an RMI4 sensor on the RMI bus.
-+ *
-+ * @driver: Device driver model driver
-+ * @irq_handler: Callback for handling irqs
-+ * @reset_handler: Called when a reset is detected.
-+ * @get_func_irq_mask: Callback for calculating interrupt mask
-+ * @store_irq_mask: Callback for storing and replacing interrupt mask
-+ * @restore_irq_mask: Callback for restoring previously stored interrupt mask
-+ * @store_productid: Callback for cache product id from function 01
-+ * @data: Private data pointer
-+ *
-+ */
-+struct rmi_driver {
-+	struct device_driver driver;
-+
-+	int (*irq_handler)(struct rmi_device *rmi_dev, int irq);
-+	int (*reset_handler)(struct rmi_device *rmi_dev);
-+	int (*store_irq_mask)(struct rmi_device *rmi_dev,
-+				unsigned long *new_interupts);
-+	int (*restore_irq_mask)(struct rmi_device *rmi_dev);
-+	int (*store_productid)(struct rmi_device *rmi_dev);
-+	int (*set_input_params)(struct rmi_device *rmi_dev,
-+			struct input_dev *input);
-+	void *data;
-+};
-+
-+#define to_rmi_driver(d) \
-+	container_of(d, struct rmi_driver, driver);
-+
-+/** struct rmi_phys_info - diagnostic information about the RMI physical
-+ * device, used in the phys debugfs file.
-+ *
-+ * @proto String indicating the protocol being used.
-+ * @tx_count Number of transmit operations.
-+ * @tx_bytes Number of bytes transmitted.
-+ * @tx_errs  Number of errors encountered during transmit operations.
-+ * @rx_count Number of receive operations.
-+ * @rx_bytes Number of bytes received.
-+ * @rx_errs  Number of errors encountered during receive operations.
-+ * @att_count Number of times ATTN assertions have been handled.
-+ */
-+struct rmi_phys_info {
-+	char *proto;
-+	long tx_count;
-+	long tx_bytes;
-+	long tx_errs;
-+	long rx_count;
-+	long rx_bytes;
-+	long rx_errs;
-+};
-+
-+/**
-+ * struct rmi_phys_device - represent an RMI physical device
-+ *
-+ * @dev: Pointer to the communication device, e.g. i2c or spi
-+ * @rmi_dev: Pointer to the RMI device
-+ * @write_block: Writing a block of data to the specified address
-+ * @read_block: Read a block of data from the specified address.
-+ * @irq_thread: if not NULL, the sensor driver will use this instead of the
-+ * default irq_thread implementation.
-+ * @hard_irq: if not NULL, the sensor driver will use this for the hard IRQ
-+ * handling
-+ * @data: Private data pointer
-+ *
-+ * The RMI physical device implements the glue between different communication
-+ * buses such as I2C and SPI.
-+ *
-+ */
-+struct rmi_phys_device {
-+	struct device *dev;
-+	struct rmi_device *rmi_dev;
-+
-+	int (*write_block)(struct rmi_phys_device *phys, u16 addr,
-+			   const void *buf, const int len);
-+	int (*read_block)(struct rmi_phys_device *phys, u16 addr,
-+			  void *buf, const int len);
-+
-+	int (*enable_device) (struct rmi_phys_device *phys);
-+	void (*disable_device) (struct rmi_phys_device *phys);
-+
-+	irqreturn_t (*irq_thread)(int irq, void *p);
-+	irqreturn_t (*hard_irq)(int irq, void *p);
-+
-+	void *data;
-+
-+	struct rmi_phys_info info;
-+};
-+
-+/**
-+ * struct rmi_device - represents an RMI4 sensor device on the RMI bus.
-+ *
-+ * @dev: The device created for the RMI bus
-+ * @number: Unique number for the device on the bus.
-+ * @driver: Pointer to associated driver
-+ * @phys: Pointer to the physical interface
-+ * @debugfs_root: base for this particular sensor device.
-+ *
-+ */
-+struct rmi_device {
-+	struct device dev;
-+	int number;
-+
-+	struct rmi_driver *driver;
-+	struct rmi_phys_device *phys;
-+
-+#ifdef CONFIG_RMI4_DEBUG
-+	struct dentry *debugfs_root;
-+#endif
-+};
-+
-+#define to_rmi_device(d) container_of(d, struct rmi_device, dev);
-+#define to_rmi_platform_data(d) ((d)->phys->dev->platform_data);
-+
-+/**
-+ * rmi_read - read a single byte
-+ * @d: Pointer to an RMI device
-+ * @addr: The address to read from
-+ * @buf: The read buffer
-+ *
-+ * Reads a byte of data using the underlaying physical protocol in to buf. It
-+ * returns zero or a negative error code.
-+ */
-+static inline int rmi_read(struct rmi_device *d, u16 addr, void *buf)
++static int rmi_f01_suspend(struct rmi_function_container *fc)
 +{
-+	return d->phys->read_block(d->phys, addr, buf, 1);
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f01_data *data = fc->data;
++	int retval = 0;
++
++	if (data->suspended)
++		return 0;
++
++	data->old_nosleep = data->device_control.ctrl0.nosleep;
++	data->device_control.ctrl0.nosleep = 0;
++	data->device_control.ctrl0.sleep_mode = RMI_SLEEP_MODE_SENSOR_SLEEP;
++
++	retval = rmi_write_block(rmi_dev,
++			fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to write sleep mode. Code: %d.\n",
++			retval);
++		data->device_control.ctrl0.nosleep = data->old_nosleep;
++		data->device_control.ctrl0.sleep_mode = RMI_SLEEP_MODE_NORMAL;
++	} else {
++		data->suspended = true;
++		retval = 0;
++	}
++
++	return retval;
 +}
 +
-+/**
-+ * rmi_read_block - read a block of bytes
-+ * @d: Pointer to an RMI device
-+ * @addr: The start address to read from
-+ * @buf: The read buffer
-+ * @len: Length of the read buffer
-+ *
-+ * Reads a block of byte data using the underlaying physical protocol in to buf.
-+ * It returns the amount of bytes read or a negative error code.
-+ */
-+static inline int rmi_read_block(struct rmi_device *d, u16 addr, void *buf,
-+				 const int len)
++static int rmi_f01_resume(struct rmi_function_container *fc)
 +{
-+	return d->phys->read_block(d->phys, addr, buf, len);
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f01_data *data = fc->data;
++	int retval = 0;
++
++	if (!data->suspended)
++		return 0;
++
++	data->device_control.ctrl0.nosleep = data->old_nosleep;
++	data->device_control.ctrl0.sleep_mode = RMI_SLEEP_MODE_NORMAL;
++
++	retval = rmi_write_block(rmi_dev, fc->fd.control_base_addr,
++			&data->device_control.ctrl0,
++			sizeof(data->device_control.ctrl0));
++	if (retval < 0)
++		dev_err(&fc->dev,
++			"Failed to restore normal operation. Code: %d.\n",
++			retval);
++	else {
++		data->suspended = false;
++		retval = 0;
++	}
++
++	return retval;
++}
++#endif /* CONFIG_PM */
++
++static int f01_remove_device(struct device *dev)
++{
++	int attr_count;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	if (IS_ENABLED(CONFIG_RMI4_DEBUG))
++		teardown_debugfs(fc->data);
++
++	for (attr_count = 0; attr_count < ARRAY_SIZE(fn_01_attrs);
++			attr_count++) {
++		sysfs_remove_file(&fc->dev.kobj, &fn_01_attrs[attr_count].attr);
++	}
++	return 0;
 +}
 +
-+/**
-+ * rmi_write - write a single byte
-+ * @d: Pointer to an RMI device
-+ * @addr: The address to write to
-+ * @data: The data to write
-+ *
-+ * Writes a byte from buf using the underlaying physical protocol. It
-+ * returns zero or a negative error code.
-+ */
-+static inline int rmi_write(struct rmi_device *d, u16 addr, const u8 data)
++static int rmi_f01_attention(struct rmi_function_container *fc,
++						unsigned long *irq_bits)
 +{
-+	return d->phys->write_block(d->phys, addr, &data, 1);
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f01_data *data = fc->data;
++	int retval;
++
++	retval = rmi_read_block(rmi_dev, fc->fd.data_base_addr,
++		&data->device_status, sizeof(data->device_status));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read device status, code: %d.\n",
++			retval);
++		return retval;
++	}
++	if (data->device_status.unconfigured) {
++		dev_warn(&fc->dev, "Device reset detected.\n");
++		retval = rmi_dev->driver->reset_handler(rmi_dev);
++		if (retval < 0)
++			return retval;
++	}
++	return 0;
 +}
 +
-+/**
-+ * rmi_write_block - write a block of bytes
-+ * @d: Pointer to an RMI device
-+ * @addr: The start address to write to
-+ * @buf: The write buffer
-+ * @len: Length of the write buffer
-+ *
-+ * Writes a block of byte data from buf using the underlaying physical protocol.
-+ * It returns the amount of bytes written or a negative error code.
-+ */
-+static inline int rmi_write_block(struct rmi_device *d, u16 addr,
-+				  const void *buf, const int len)
++static __devinit int f01_probe(struct device *dev)
 +{
-+	return d->phys->write_block(d->phys, addr, buf, len);
++	struct rmi_function_container *fc;
++
++	if (dev->type != &rmi_function_type)
++		return 1;
++
++	fc = to_rmi_function_container(dev);
++	if (fc->fd.function_number != FUNCTION_NUMBER)
++		return 1;
++
++	return f01_device_init(fc);
 +}
 +
-+int rmi_register_phys_device(struct rmi_phys_device *phys);
-+void rmi_unregister_phys_device(struct rmi_phys_device *phys);
-+int rmi_for_each_dev(void *data, int (*func)(struct device *dev, void *data));
++static struct rmi_function_handler function_handler = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = "rmi_f01",
++		.bus = &rmi_bus_type,
++		.probe = f01_probe,
++		.remove = f01_remove_device,
++	},
++	.func = FUNCTION_NUMBER,
++	.config = rmi_f01_config,
++	.attention = rmi_f01_attention,
++
++#ifdef	CONFIG_PM
++	.suspend = rmi_f01_suspend,
++	.resume = rmi_f01_resume,
++#endif  /* CONFIG_PM */
++};
++
++
++static int __init rmi_f01_module_init(void)
++{
++	int error;
++
++	error = driver_register(&function_handler.driver);
++	if (error < 0) {
++		pr_err("%s: register failed!\n", __func__);
++		return error;
++	}
++
++	return 0;
++}
++
++static void __exit rmi_f01_module_exit(void)
++{
++	driver_unregister(&function_handler.driver);
++}
++
++module_init(rmi_f01_module_init);
++module_exit(rmi_f01_module_exit);
++
++MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
++MODULE_DESCRIPTION("RMI F01 module");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(RMI_DRIVER_VERSION);
+diff --git a/drivers/input/rmi4/rmi_f01.h b/drivers/input/rmi4/rmi_f01.h
+new file mode 100644
+index 0000000..6bc5724
+--- /dev/null
++++ b/drivers/input/rmi4/rmi_f01.h
+@@ -0,0 +1,160 @@
++/*
++ * Copyright (c) 2012 Synaptics Incorporated
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++
++#ifndef _RMI_F01_H
++#define _RMI_F01_H
++
++#define RMI_PRODUCT_ID_LENGTH    10
++#define RMI_PRODUCT_INFO_LENGTH   2
++
++#define RMI_DATE_CODE_LENGTH      3
++
++#define PRODUCT_ID_OFFSET 0x10
++#define PRODUCT_INFO_OFFSET 0x1E
++
++#define F01_RESET_MASK 0x01
++
++/**
++ * @manufacturer_id - reports the identity of the manufacturer of the RMI
++ * device. Synaptics RMI devices report a Manufacturer ID of $01.
++ * @custom_map - at least one custom, non
++ * RMI-compatible register exists in the register address map for this device.
++ * @non-compliant - the device implements a register map that is not compliant
++ * with the RMI specification.
++ * @has_lts - the device uses Synaptics' LTS hardware architecture.
++ * @has_sensor_id - the SensorID query register (F01_RMI_Query22) exists.
++ * @has_charger_input - the ChargerConnected bit (F01_RMI_Ctrl0, bit 5) is
++ * meaningful.
++ * @has_adjustable_doze - the doze (power management) control registers exist.
++ * @has_adjustable_doze_holdoff - the doze holdoff register exists.
++ * @has_product_properties - indicates the presence of F01_RMI_Query42,
++ * ProductProperties2.
++ * @productinfo_1 - meaning varies from product to product, consult your
++ * product spec sheet.
++ * @productinfo_2 - meaning varies from product to product, consult your
++ * product spec sheet.
++ * @year - year of manufacture MOD 2000.
++ * @month - month of manufacture
++ * @day - day of manufacture
++ * @wafer_id1_lsb - The wafer-lot ID registers record the lot number of the
++ * wafer from which the module’s touch controller was produced.
++ * @wafer_id1_msb - The wafer-lot ID registers record the lot number of the
++ * wafer from which the module’s touch controller was produced.
++ * @wafer_id2_lsb - The wafer-lot ID registers record the lot number of the
++ * wafer from which the module’s touch controller was produced.
++ * @wafer_id2_msb - The wafer-lot ID registers record the lot number of the
++ * wafer from which the module’s touch controller was produced.
++ * @wafer_id3_lsb - The wafer-lot ID registers record the lot number of the
++ * wafer from which the module’s touch controller was produced.
++ */
++struct f01_basic_queries {
++	u8 manufacturer_id:8;
++
++	bool custom_map:1;
++	bool non_compliant:1;
++	bool has_lts:1;
++	bool has_sensor_id:1;
++	bool has_charger_input:1;
++	bool has_adjustable_doze:1;
++	bool has_adjustable_doze_holdoff:1;
++	bool has_product_properties_2:1;
++
++	u8 productinfo_1:7;
++	bool q2_bit_7:1;
++	u8 productinfo_2:7;
++	bool q3_bit_7:1;
++
++	u8 year:5;
++	u8 month:4;
++	u8 day:5;
++	bool cp1:1;
++	bool cp2:1;
++	u8 wafer_id1_lsb:8;
++	u8 wafer_id1_msb:8;
++	u8 wafer_id2_lsb:8;
++	u8 wafer_id2_msb:8;
++	u8 wafer_id3_lsb:8;
++} __attribute__((__packed__));
++
++/** The status code field reports the most recent device status event.
++ * @no_error - should be self explanatory.
++ * @reset_occurred - no other event was seen since the last reset.
++ * @invalid_config - general device configuration has a problem.
++ * @device_failure - general device hardware failure.
++ * @config_crc - configuration failed memory self check.
++ * @firmware_crc - firmware failed memory self check.
++ * @crc_in_progress - bootloader is currently testing config and fw areas.
++ */
++enum rmi_device_status {
++	no_error = 0x00,
++	reset_occurred = 0x01,
++	invalid_config = 0x02,
++	device_failure = 0x03,
++	config_crc = 0x04,
++	firmware_crc = 0x05,
++	crc_in_progress = 0x06
++};
++
++/**
++ * @status_code - reports the most recent device status event.
++ * @flash_prog - if set, this indicates that flash programming is enabled and
++ * normal operation is not possible.
++ * @unconfigured - the device has lost its configuration for some reason.
++ */
++struct f01_device_status {
++	enum rmi_device_status status_code:4;
++	u8 reserved:2;
++	bool flash_prog:1;
++	bool unconfigured:1;
++} __attribute__((__packed__));
++
++/* control register bits */
++#define RMI_SLEEP_MODE_NORMAL (0x00)
++#define RMI_SLEEP_MODE_SENSOR_SLEEP (0x01)
++#define RMI_SLEEP_MODE_RESERVED0 (0x02)
++#define RMI_SLEEP_MODE_RESERVED1 (0x03)
++
++#define RMI_IS_VALID_SLEEPMODE(mode) \
++	(mode >= RMI_SLEEP_MODE_NORMAL && mode <= RMI_SLEEP_MODE_RESERVED1)
++
++/**
++ * @sleep_mode - This field controls power management on the device. This
++ * field affects all functions of the device together.
++ * @nosleep - When set to ‘1’, this bit disables whatever sleep mode may be
++ * selected by the sleep_mode field,and forces the device to run at full power
++ * without sleeping.
++ * @charger_input - When this bit is set to ‘1’, the touch controller employs
++ * a noise-filtering algorithm designed for use with a connected battery
++ * charger.
++ * @report_rate - sets the report rate for the device.  The effect of this
++ * setting is highly product dependent.  Check the spec sheet for your
++ * particular touch sensor.
++ * @configured - written by the host as an indicator that the device has been
++ * successfuly configured.
++ */
++struct f01_device_control_0 {
++	u8 sleep_mode:2;
++	bool nosleep:1;
++	u8 reserved:2;
++	bool charger_input:1;
++	bool report_rate:1;
++	bool configured:1;
++} __attribute__((__packed__));
 +
 +#endif
