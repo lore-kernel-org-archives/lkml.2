@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab2KQDmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:42:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27549 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab2KQDky (ORCPT
+	id S1754472Ab2KQDmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:42:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16911 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab2KQDkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:54 -0500
+	Fri, 16 Nov 2012 22:40:51 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,101 +14,114 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 42/46] x86, mm: kill numa_free_all_bootmem()
-Date: Fri, 16 Nov 2012 19:39:19 -0800
-Message-Id: <1353123563-3103-43-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 39/46] x86, mm: Unifying after_bootmem for 32bit and 64bit
+Date: Fri, 16 Nov 2012 19:39:16 -0800
+Message-Id: <1353123563-3103-40-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now NO_BOOTMEM version free_all_bootmem_node() does not really
-do free_bootmem at all, and it only call register_page_bootmem_info_node
-instead.
+after_bootmem has different meaning in 32bit and 64bit.
+        32bit: after bootmem is ready
+        64bit: after bootmem is distroyed
+Let's merget them make 32bit the same as 64bit.
 
-That is confusing, try to kill that free_all_bootmem_node().
+for 32bit, it is mixing alloc_bootmem_pages, and alloc_low_page under
+after_bootmem is set or not set.
 
-Before that, this patch will remove numa_free_all_bootmem().
+alloc_bootmem is just wrapper for memblock for x86.
 
-That function could be replaced with register_page_bootmem_info() and
-free_all_bootmem();
+Now we have alloc_low_page() with memblock too. We can drop bootmem path
+now, and only alloc_low_page only.
+
+At the same time, we make alloc_low_page could handle real after_bootmem
+for 32bit, because alloc_bootmem_pages could fallback to use slab too.
+
+At last move after_bootmem set position for 32bit the same as 64bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/numa_64.h |    2 --
- arch/x86/mm/init_64.c          |   15 +++++++++++----
- arch/x86/mm/numa_64.c          |   13 -------------
- 3 files changed, 11 insertions(+), 19 deletions(-)
+ arch/x86/mm/init.c    |    2 --
+ arch/x86/mm/init_32.c |   21 ++++-----------------
+ 2 files changed, 4 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 0c05f7a..fe4d2d4 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -1,6 +1,4 @@
- #ifndef _ASM_X86_NUMA_64_H
- #define _ASM_X86_NUMA_64_H
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index f410dc6..2a27e5a 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -39,7 +39,6 @@ __ref void *alloc_low_pages(unsigned int num)
+ 	unsigned long pfn;
+ 	int i;
  
--extern unsigned long numa_free_all_bootmem(void);
--
- #endif /* _ASM_X86_NUMA_64_H */
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 1d53def..4178530 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -629,6 +629,16 @@ EXPORT_SYMBOL_GPL(arch_add_memory);
+-#ifdef CONFIG_X86_64
+ 	if (after_bootmem) {
+ 		unsigned int order;
  
- static struct kcore_list kcore_vsyscall;
- 
-+static void __init register_page_bootmem_info(void)
-+{
-+#ifdef CONFIG_NUMA
-+	int i;
-+
-+	for_each_online_node(i)
-+		register_page_bootmem_info_node(NODE_DATA(i));
-+#endif
-+}
-+
- void __init mem_init(void)
- {
- 	long codesize, reservedpages, datasize, initsize;
-@@ -641,11 +651,8 @@ void __init mem_init(void)
- 	reservedpages = 0;
- 
- 	/* this will put all low memory onto the freelists */
--#ifdef CONFIG_NUMA
--	totalram_pages = numa_free_all_bootmem();
--#else
-+	register_page_bootmem_info();
- 	totalram_pages = free_all_bootmem();
+@@ -47,7 +46,6 @@ __ref void *alloc_low_pages(unsigned int num)
+ 		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
+ 						__GFP_ZERO, order);
+ 	}
 -#endif
  
- 	absent_pages = absent_pages_in_range(0, max_pfn);
- 	reservedpages = max_pfn - totalram_pages - absent_pages;
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 92e2711..9405ffc 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -10,16 +10,3 @@ void __init initmem_init(void)
+ 	if ((pgt_buf_end + num) >= pgt_buf_top) {
+ 		unsigned long ret;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 19ef9f0..f4fc4a2 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -73,10 +73,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
+ 
+ #ifdef CONFIG_X86_PAE
+ 	if (!(pgd_val(*pgd) & _PAGE_PRESENT)) {
+-		if (after_bootmem)
+-			pmd_table = (pmd_t *)alloc_bootmem_pages(PAGE_SIZE);
+-		else
+-			pmd_table = (pmd_t *)alloc_low_page();
++		pmd_table = (pmd_t *)alloc_low_page();
+ 		paravirt_alloc_pmd(&init_mm, __pa(pmd_table) >> PAGE_SHIFT);
+ 		set_pgd(pgd, __pgd(__pa(pmd_table) | _PAGE_PRESENT));
+ 		pud = pud_offset(pgd, 0);
+@@ -98,17 +95,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
+ static pte_t * __init one_page_table_init(pmd_t *pmd)
  {
- 	x86_numa_init();
+ 	if (!(pmd_val(*pmd) & _PAGE_PRESENT)) {
+-		pte_t *page_table = NULL;
+-
+-		if (after_bootmem) {
+-#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+-			page_table = (pte_t *) alloc_bootmem_pages(PAGE_SIZE);
+-#endif
+-			if (!page_table)
+-				page_table =
+-				(pte_t *)alloc_bootmem_pages(PAGE_SIZE);
+-		} else
+-			page_table = (pte_t *)alloc_low_page();
++		pte_t *page_table = (pte_t *)alloc_low_page();
+ 
+ 		paravirt_alloc_pte(&init_mm, __pa(page_table) >> PAGE_SHIFT);
+ 		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
+@@ -708,8 +695,6 @@ void __init setup_bootmem_allocator(void)
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+ 		 max_pfn_mapped<<PAGE_SHIFT);
+ 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
+-
+-	after_bootmem = 1;
  }
--
--unsigned long __init numa_free_all_bootmem(void)
--{
--	unsigned long pages = 0;
--	int i;
--
--	for_each_online_node(i)
--		pages += free_all_bootmem_node(NODE_DATA(i));
--
--	pages += free_low_memory_core_early(MAX_NUMNODES);
--
--	return pages;
--}
+ 
+ /*
+@@ -795,6 +780,8 @@ void __init mem_init(void)
+ 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+ 			reservedpages++;
+ 
++	after_bootmem = 1;
++
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
 -- 
 1.7.7
 
