@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2KQA16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:27:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43559 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2KQA15 (ORCPT
+	id S1753919Ab2KQA2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:28:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37701 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2KQA2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:27:57 -0500
-Date: Fri, 16 Nov 2012 16:27:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>, Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, ellyjones@chromium.org
-Subject: Re: [PATCH] devtmpfs: mount with noexec and nosuid
-Message-ID: <20121117002753.GA22778@kroah.com>
-References: <20121117002016.GA13493@www.outflux.net>
+	Fri, 16 Nov 2012 19:28:32 -0500
+Date: Fri, 16 Nov 2012 16:27:57 -0800
+From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
+Message-ID: <tip-f38ad48f05973079aff40ac7a5a5ab463f7cee32@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, alexander.h.duyck@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, alexander.h.duyck@intel.com, rostedt@goodmis.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/ftrace:
+  Use __pa_symbol instead of __pa on C visible symbols
+Git-Commit-ID: f38ad48f05973079aff40ac7a5a5ab463f7cee32
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121117002016.GA13493@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:28:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 04:20:16PM -0800, Kees Cook wrote:
-> Since devtmpfs is writable, make the default noexec nosuid as well. This
-> protects from the case of a privileged process having an arbitrary file
-> write flaw and an argumentless arbitrary execution (i.e. it would lack
-> the ability to run "mount -o remount,exec,suid /dev"), with a system
-> that already has nosuid,noexec on all other writable mounts.
-> 
-> Cc: ellyjones@chromium.org
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/base/devtmpfs.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+Commit-ID:  f38ad48f05973079aff40ac7a5a5ab463f7cee32
+Gitweb:     http://git.kernel.org/tip/f38ad48f05973079aff40ac7a5a5ab463f7cee32
+Author:     Alexander Duyck <alexander.h.duyck@intel.com>
+AuthorDate: Fri, 16 Nov 2012 13:57:32 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 16 Nov 2012 15:20:43 -0800
 
-Have you tested this to verify that it doesn't break anything?
+x86/ftrace: Use __pa_symbol instead of __pa on C visible symbols
 
-Kay, could this cause any problems that you could think of?
+Instead of using __pa which is meant to be a general function for converting
+virtual addresses to physical addresses we can use __pa_symbol which is the
+preferred way of decoding kernel text virtual addresses to physical addresses.
 
-thanks,
+In this case we are not directly converting C visible symbols however if we
+know that the instruction pointer is somewhere between _text and _etext we
+know that we are going to be translating an address form the kernel text
+space.
 
-greg k-h
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Link: http://lkml.kernel.org/r/20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/ftrace.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> 
-> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-> index 147d1a4..b7e2e57 100644
-> --- a/drivers/base/devtmpfs.c
-> +++ b/drivers/base/devtmpfs.c
-> @@ -340,6 +340,7 @@ static int handle_remove(const char *nodename, struct device *dev)
->  int devtmpfs_mount(const char *mntdir)
->  {
->  	int err;
-> +	int mflags = MS_SILENT | MS_NOEXEC | MS_NOSUID;
->  
->  	if (!mount_dev)
->  		return 0;
-> @@ -347,7 +348,7 @@ int devtmpfs_mount(const char *mntdir)
->  	if (!thread)
->  		return 0;
->  
-> -	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
-> +	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", mflags, NULL);
->  	if (err)
->  		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
->  	else
-> @@ -368,11 +369,12 @@ static int handle(const char *name, umode_t mode, struct device *dev)
->  static int devtmpfsd(void *p)
->  {
->  	char options[] = "mode=0755";
-> +	int mflags = MS_SILENT | MS_NOEXEC | MS_NOSUID;
->  	int *err = p;
->  	*err = sys_unshare(CLONE_NEWNS);
->  	if (*err)
->  		goto out;
-> -	*err = sys_mount("devtmpfs", "/", "devtmpfs", MS_SILENT, options);
-> +	*err = sys_mount("devtmpfs", "/", "devtmpfs", mflags, options);
->  	if (*err)
->  		goto out;
->  	sys_chdir("/.."); /* will traverse into overmounted root */
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 1d41402..42a392a 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -89,7 +89,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_code)
+ 	 * kernel identity mapping to modify code.
+ 	 */
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+-		ip = (unsigned long)__va(__pa(ip));
++		ip = (unsigned long)__va(__pa_symbol(ip));
+ 
+ 	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
+ }
+@@ -279,7 +279,7 @@ static int ftrace_write(unsigned long ip, const char *val, int size)
+ 	 * kernel identity mapping to modify code.
+ 	 */
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+-		ip = (unsigned long)__va(__pa(ip));
++		ip = (unsigned long)__va(__pa_symbol(ip));
+ 
+ 	return probe_kernel_write((void *)ip, val, size);
+ }
