@@ -1,76 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2KQFXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 00:23:34 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52942 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab2KQFXd (ORCPT
+	id S1753999Ab2KQFke (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 00:40:34 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37602 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab2KQFkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 00:23:33 -0500
+	Sat, 17 Nov 2012 00:40:31 -0500
+Message-ID: <50A7234A.7080309@gmail.com>
+Date: Fri, 16 Nov 2012 23:40:26 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Date: Sat, 17 Nov 2012 13:23:32 +0800
-Message-ID: <CAJd=RBASBZQj+s_M3uUgPn5v+LL-6Rmst1vR1T4eTj29Z5EgVw@mail.gmail.com>
-Subject: [PATCH 5/5] balancenuma: no task swap in finding placement
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Feng Tang <feng.tang@intel.com>
+CC: "Moore, Robert" <robert.moore@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Azat Khuzhin <dohardgopro@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Zheng, Lv" <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: ACPI errors with 3.7-rc3
+References: <20121031014527.GA2984@kroah.com> <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com> <20121106124826.GA21806@kroah.com> <41011456.LYWJPCi9Xt@vostro.rjw.lan> <20121109092851.GA9179@feng-snb> <94F2FBAB4432B54E8AACC7DFDE6C92E346BBFC97@ORSMSX101.amr.corp.intel.com> <20121109163625.GA10171@feng-snb>
+In-Reply-To: <20121109163625.GA10171@feng-snb>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Node is selected on behalf of given task, but no reason to punish
-the currently running tasks on other nodes. That punishment maybe benifit,
-who knows. Better if they are treated not in random way.
+On 11/09/2012 10:36 AM, Feng Tang wrote:
+> On Fri, Nov 09, 2012 at 10:30:43PM +0800, Moore, Robert wrote:
+>> The ACPI Global Lock is in fact intended to provide exclusion between the BIOS and the OS.
+>> Bob
+>
+> Thanks for the info.
+>
+> And per my check, most of ACPI FW don't implement this lock, say
+> after driver probe, the ec->global_lock will be 0.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+The DSDT is supposed to define the _GLK control method on the EC if the 
+BIOS needs to perform its own access which may conflict with the OS 
+usage. If it doesn't, then it should be the case that either the BIOS 
+doesn't touch the EC itself or it uses a separate interface that doesn't 
+cause conflicts with what the OS is doing.
 
---- a/kernel/sched/fair.c	Sat Nov 17 12:29:08 2012
-+++ b/kernel/sched/fair.c	Sat Nov 17 12:34:52 2012
-@@ -872,7 +872,7 @@ static inline unsigned long balancenuma_
+>
+> - Feng
+>
+>>
+>>
+>>> -----Original Message-----
+>>> From: Tang, Feng
+>>> Sent: Friday, November 09, 2012 1:29 AM
+>>> To: Rafael J. Wysocki
+>>> Cc: Greg KH; Azat Khuzhin; linux-acpi@vger.kernel.org; Linux Kernel
+>>> Mailing List; Zheng, Lv; Len Brown; Moore, Robert
+>>> Subject: Re: ACPI errors with 3.7-rc3
+>>>
+>>> On Thu, Nov 08, 2012 at 05:49:40AM +0800, Rafael J. Wysocki wrote:
+>>>> On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
+>>>>> On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
+>>>>>> I'v also have such errors on my macbook pro.
+>>>>>>
+>>>>>> $ dmesg | tail
+>>>>>> [17056.008564] ACPI Error: Method parse/execution failed
+>>>>>> [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.011194] ACPI Error: Method parse/execution failed
+>>>>>> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.013793] ACPI Error: Method parse/execution failed
+>>>>>> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST
+>>>>>> (20120711/battery-464) [17056.511373] ACPI: EC: input buffer is
+>>>>>> not empty, aborting transaction [17056.512672] ACPI Exception:
+>>>>>> AE_TIME, Returned by Handler for [EmbeddedControl]
+>>>>>> (20120711/evregion-501) [17056.515256] ACPI Error: Method
+>>>>>> parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node
+>>>>>> ffff88026547ea10), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.517886] ACPI Error: Method parse/execution failed
+>>>>>> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.520479] ACPI Error: Method parse/execution failed
+>>>>>> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+>>>>>> (20120711/psparse-536)
+>>>>>> [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST
+>>>>>> (20120711/battery-464)
+>>>>>
+>>>>> I'm seeing this again right now.  I'm wondering if it's because I'm
+>>>>> running on battery power at the moment:
+>>>>>
+>>>>> [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for
+>>>>> [EmbeddedControl] (20120913/evregion-501) [41694.309282] ACPI Error:
+>>>>> Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node
+>>>>> ffff88045cc64618), AE_TIME (20120913/psparse-536) [41694.309300]
+>>>>> ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node
+>>>>> ffff88045cc64988), AE_TIME (20120913/psparse-536) [41694.309310]
+>>>>> ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node
+>>>>> ffff88045cc648c0), AE_TIME (20120913/psparse-536) [41694.309324]
+>>>>> ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
+>>>>> [41694.809093] ACPI: EC: input buffer is not empty, aborting
+>>>>> transaction
+>>>>>
+>>>>> ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/
+>>>>> so that's not the issue here.
+>>>>>
+>>>>>> And also loadavg is too high ~ 10
+>>>>>> While there is no process that load CPU up to 100% or like that.
+>>>>>> I think that this because of processes that is done in kernel space.
+>>>>>> (basically that one who write such errors)
+>>>>>>
+>>>>>> $ uname -a
+>>>>>> Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
+>>>>>> 12:39:03 UTC 2012 x86_64 GNU/Linux
+>>>>>
+>>>>> Ah, ok, that means it's not something new in 3.7-rc, so maybe it's
+>>>>> just never worked properly for this hardware :)
+>>>>>
+>>>>> So it's not a regression, just an ACPI issue, any ACPI developer
+>>>>> have an idea about this?
+>>>>
+>>>> Can you please send the output of acpidump from the affected machine(s)?
+>>>
+>>> I doubt this problem is sometimes inevitable for some machines, because
+>>> AFAIK most modern machines have the race problem for EC HW controller, as
+>>> both OS side and the BIOS may access the EC HW at the same time
+>>> without any race control.
+>>>
+>>> For this case, usually the battery and thermal modules (which may be
+>>> controlled through EC) are always monitored by BIOS, when OS also
+>>> frequently visit them too, the EC's own state machine may be broken and
+>>> not responsive due to the race, then cause the timeout error.
+>>> And how severe the problem will be depends on the EC HW, the quality of
+>>> BIOS code and OS/driver code.
+>>>
+>>> Myself have seen the similar "ACPI: EC: input buffer is not empty,
+>>> aborting transaction" error message on one laptop when its EC is busy
+>>> visited by OS.
+>>>
+>>> btw, in EC driver I see a "ec->global_lock", don't know if it was designed
+>>> to control the race between OS and BIOS.
+>>>
+>>> Thanks,
+>>> Feng
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
- /*
-  * Examines all other nodes examining remote tasks to see if there would
-- * be fewer remote numa faults if tasks swapped home nodes
-+ * be fewer remote numa faults
-  */
- static void task_numa_find_placement(struct task_struct *p)
- {
-@@ -933,13 +933,6 @@ static void task_numa_find_placement(str
- 				continue;
- 			}
-
--			/* Ensure the other task can be swapped */
--			if (!cpumask_test_cpu(this_cpu,
--					      tsk_cpus_allowed(other_task))) {
--				raw_spin_unlock_irq(&rq->lock);
--				continue;
--			}
--
- 			/*
- 			 * Read the fault statistics. If the remote task is a
- 			 * thread in the process then use the task statistics.
-@@ -973,8 +966,7 @@ compare_other:
- 			this_diff = this_weight - p_weight;
-
- 			/*
--			 * Would swapping the tasks reduce the overall
--			 * cross-node NUMA faults?
-+			 * Would nid reduce the overall cross-node NUMA faults?
- 			 */
- 			if (other_diff > 0 && this_diff > 0) {
- 				long weight_diff = other_diff + this_diff;
-@@ -995,11 +987,8 @@ compare_other:
- 		}
- 	}
-
--	/* Swap the task on the selected target node */
- 	if (selected_nid != -1) {
- 		sched_setnode(p, selected_nid);
--		if (selected_task)
--			sched_setnode(selected_task, this_nid);
- 	}
- }
-
---
