@@ -1,188 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2KQEAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 23:00:14 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:64069 "EHLO
-	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753904Ab2KQEAK (ORCPT
+	id S1754039Ab2KQEEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 23:04:23 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63756 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab2KQEEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 23:00:10 -0500
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 04/06] input/rmi4: Config files and makefiles
-Date: Fri, 16 Nov 2012 19:58:52 -0800
-Message-Id: <1353124734-16803-5-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
-References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
+	Fri, 16 Nov 2012 23:04:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121116103511.GB16084@e106331-lin.cambridge.arm.com>
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
+ <1353047903-14363-2-git-send-email-acourbot@nvidia.com> <20121116103511.GB16084@e106331-lin.cambridge.arm.com>
+From: Alexandre Courbot <acourbot@nvidia.com>
+Date: Sat, 17 Nov 2012 13:04:00 +0900
+X-Google-Sender-Auth: 1a_41d3jyilRBrh8EOTF58YvZe4
+Message-ID: <CAAVeFuL_r8PGM=0gDv=x2ff3GFCZQ4=DaZq4N9gfvXtnFC=aNg@mail.gmail.com>
+Subject: Re: [PATCH v8 1/3] Runtime Interpreted Power Sequences
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
-Infrastructure files for configuration and building.
+On Fri, Nov 16, 2012 at 7:35 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Given there are several ARM platforms that may have an interest in this, please
+> consider posting this to the ARM mailing list:
+> linux-arm-kernel@lists.infradead.org.
 
+That's right. New revision on the way.
 
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+>> +Similarly, each power sequence declares its steps as sub-nodes of itself. Steps
+>> +must be named sequentially, with the first step named step0, the second step1,
+>> +etc. Failure to follow this rule will result in a parsing error.
+>
+> Could we not encode the step number in the unit-address? i.e. step@N rather than
+> stepN.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Cc: Joeri de Gram <j.de.gram@gmail.com>
+That was the way I did it initially, but it has been pointed out that
+doing so would require to have #address-cells and #size-cells in every
+power sequence, as well as a "reg" property in every step (see
+https://lkml.org/lkml/2012/7/31/454 ). Although I'd prefer to use the
+@ notation too (and neither dtc nor the kernel complained when I did
+it), I tend to think the current solution is less burdensome than
+having these redundant properties.
 
+>> +"gpio" type required properties:
+>> +  - gpio: phandle of the GPIO to use.
+>> +  - value: value this GPIO should take. Must be 0 or 1.
+>
+> Is there any reason for id to be a name rather than a phandle? It seems
+> inconsistent with the gpio case.
 
----
+That's another long story. But to make it short, I'd like to make it
+possible for power sequences to be referenced and shared between
+devices of the same type (as everybody knows, copy/pasting is bad). If
+we use phandles in steps, the power sequence becomes tied to the
+referred resources and thus cannot be shared with another instance of
+the same device. On the other hand, using an identifier that is
+resolved at runtime (through e.g. regulator_get(device *, char *)
+leverages the existing frameworks and makes things more flexible.
 
- drivers/input/Kconfig       |    2 +
- drivers/input/Makefile      |    3 ++
- drivers/input/rmi4/Kconfig  |   76 +++++++++++++++++++++++++++++++++++++++++++
- drivers/input/rmi4/Makefile |   22 ++++++++++++
- 4 files changed, 103 insertions(+), 0 deletions(-)
+GPIO is currently the exception. It is the only framework for which
+you cannot currently resolve a resource from a device and an
+identifier. So at the moment we have to use a phandle - but we are
+also working with Linus Walleij to provide an alternative GPIO API
+that will be more like what we have for regulators/pinctrl/PWM/etc.
 
-diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-index 55f7e57..2c543c0 100644
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -188,6 +188,8 @@ source "drivers/input/touchscreen/Kconfig"
+Another problem with phandles is that some of the functions that
+resolve them are not publicly exported (i.e. AFAIK there is no public
+function that returns a regulator from a phandle - the only to obtain
+one is through regulator_get)
 
- source "drivers/input/misc/Kconfig"
+> I also see from the example below that the gpio property is not just a phandle,
+> as it has the gpio-specifier appended. Is there a better way of describing this
+> format in the documentation?
 
-+source "drivers/input/rmi4/Kconfig"
-+
- endif
+This is already clearly be defined in
+Documentation/devicetree/bindings/gpio/, isn't it?
 
- menu "Hardware I/O ports"
-diff --git a/drivers/input/Makefile b/drivers/input/Makefile
-index 5ca3f63..88354fc 100644
---- a/drivers/input/Makefile
-+++ b/drivers/input/Makefile
-@@ -24,4 +24,7 @@ obj-$(CONFIG_INPUT_TABLET)	+= tablet/
- obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
- obj-$(CONFIG_INPUT_MISC)	+= misc/
-
-+obj-y += rmi4/
-+
- obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
-+
-diff --git a/drivers/input/rmi4/Kconfig b/drivers/input/rmi4/Kconfig
-new file mode 100644
-index 0000000..41cbbee
---- /dev/null
-+++ b/drivers/input/rmi4/Kconfig
-@@ -0,0 +1,76 @@
-+#
-+# RMI4 configuration
-+#
-+config RMI4_BUS
-+	bool "Synaptics RMI4 bus support"
-+	help
-+	  Say Y here if you want to support the Synaptics RMI4 bus.  This is
-+	  required for all RMI4 device support.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_DEBUG
-+	bool "RMI4 Debugging"
-+	depends on RMI4_BUS
-+	select DEBUG_FS
-+	help
-+	  Say Y here to enable debug feature in the RMI4 driver.
-+
-+	  Note that the RMI4 driver debug features can generate a lot of
-+	  output (potentially clogging up your dmesg output) and generally
-+	  slow down driver operation.  It's recommended to enable them only
-+	  if you are actively developing/debugging RMI4 features.
-+
-+	  If unsure, say N.
-+
-+config RMI4_I2C
-+	bool "RMI4 I2C Support"
-+	depends on RMI4_BUS && I2C
-+	help
-+	  Say Y here if you want to support RMI4 devices connected to an I2C
-+	  bus.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_GENERIC
-+	bool "RMI4 Generic driver"
-+	depends on RMI4_BUS
-+	help
-+	  Say Y here if you want to support generic RMI4 devices.
-+
-+	  This is pretty much required if you want to do anything useful with
-+	  your RMI device.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_F11
-+	tristate "RMI4 Function 11 (2D pointing)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 11.
-+
-+	  Function 11 provides 2D multifinger pointing for touchscreens and
-+	  touchpads.  For sensors that support relative pointing, F11 also
-+	  provides mouse input.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f11.
-+
-+config RMI4_F11_PEN
-+	bool "RMI4 F11 Pen Support"
-+	depends on RMI4_F11
-+	help
-+	  Say Y here to add support for pen input to RMI4 function 11.
-+
-+	  If this feature is enabled, when pen inputs are detected they
-+	  will be reported to the input stream as MT_TOOL_PEN.  Otherwise,
-+	  pens will be treated the same as fingers.
-+
-+	  Not all UI implementations deal gracefully with pen discrimination.
-+	  If your system is not recognizing pen touches and you know your
-+	  sensor supports pen input, you probably want to turn this feature
-+	  off.
-diff --git a/drivers/input/rmi4/Makefile b/drivers/input/rmi4/Makefile
-new file mode 100644
-index 0000000..8882c3d
---- /dev/null
-+++ b/drivers/input/rmi4/Makefile
-@@ -0,0 +1,22 @@
-+obj-$(CONFIG_RMI4_BUS) += rmi_bus.o
-+obj-$(CONFIG_RMI4_I2C) += rmi_i2c.o
-+obj-$(CONFIG_RMI4_GENERIC) += rmi_driver.o rmi_f01.o
-+obj-$(CONFIG_RMI4_F11) += rmi_f11.o
-+
-+ccflags-$(CONFIG_RMI4_DEBUG) += -DDEBUG
-+
-+ifeq ($(KERNELRELEASE),)
-+
-+# KERNELDIR ?= /home/<AndroidKernelDirectory>
-+PWD := $(shell pwd)
-+
-+.PHONY: build clean
-+
-+build:
-+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-+
-+clean:
-+	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c
-+
-+endif
-+
+Thanks,
+Alex.
