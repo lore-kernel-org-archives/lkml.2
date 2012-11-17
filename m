@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2KQWyr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 17:54:47 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:65519 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab2KQWyp (ORCPT
+	id S1752491Ab2KQW4S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 17:56:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35670 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2KQW4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 17:54:45 -0500
+	Sat, 17 Nov 2012 17:56:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353124734-16803-7-git-send-email-cheiny@synaptics.com>
+In-Reply-To: <1353124734-16803-6-git-send-email-cheiny@synaptics.com>
 References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
-	<1353124734-16803-7-git-send-email-cheiny@synaptics.com>
-Date: Sat, 17 Nov 2012 23:54:44 +0100
-Message-ID: <CACRpkdbm2+gkXDSMWf56My3pVU6_hpM5FCK-FKq1zLJqqBp9ug@mail.gmail.com>
-Subject: Re: [RFC PATCH 06/06] input/rmi4: F11 - 2D touch interface
+	<1353124734-16803-6-git-send-email-cheiny@synaptics.com>
+Date: Sat, 17 Nov 2012 23:56:15 +0100
+Message-ID: <CACRpkdZOowrdgP4LTrvywVwsRhh7KZmEmO6t29dy9bcs-2tc3g@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/06] input/rmi4: F01 - device control
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Christopher Heiny <cheiny@synaptics.com>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
@@ -35,10 +35,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, Nov 17, 2012 at 4:58 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
 
-> rmi_f11.c is a driver for 2D touch sensors using the RMI4 protocol.  It supports
-> both touchscreen and touchpad input, in both absolute and relative formats.
-> Support for Type-B multitouch is the default, Type-A support is included for
-> certain legacy sensors.
+> RMI Function 01 implements basic device control and power management
+> behaviors for the RMI4 sensor.
+>
+> rmi_f01.h exports definitions that we expect to be used by other functionality
+> in the future (such as firmware reflash).
 >
 >
 > Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
@@ -46,14 +47,12 @@ On Sat, Nov 17, 2012 at 4:58 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
 
 Cut blank line.
 
-> To: Henrik Rydberg <rydberg@euromail.se>
 > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > Cc: Linus Walleij <linus.walleij@stericsson.com>
 > Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 > Cc: Joeri de Gram <j.de.gram@gmail.com>
 
-I'm happy. Now you only need to convince Dmitry and Henrik too ;-)
-
+All other comments I've had appear to be fixed.
 Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
