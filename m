@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2KQU1P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 15:27:15 -0500
-Received: from mail-in-18.arcor-online.net ([151.189.21.58]:55200 "EHLO
-	mail-in-18.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752133Ab2KQU1O (ORCPT
+	id S1752226Ab2KQUbq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 15:31:46 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54417 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab2KQUbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 15:27:14 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-15.arcor-online.net 85EB61AB520
-Subject: [PATCH] HID: roccat: Fixed wrong sysfs attr size for koneplus tcu.
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Nov 2012 21:27:11 +0100
-Message-ID: <1353184031.4973.9.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Sat, 17 Nov 2012 15:31:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1353048646-10935-7-git-send-email-tushar.behera@linaro.org>
+References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
+	<1353048646-10935-7-git-send-email-tushar.behera@linaro.org>
+Date: Sat, 17 Nov 2012 21:31:43 +0100
+Message-ID: <CACRpkdZ5EyiKrUDNaa4Rkn_cbJF1yD91CcpNfwxNXAd58FP8Aw@mail.gmail.com>
+Subject: Re: [PATCH 06/14] pinctrl: samsung: Update error check for unsigned variables
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More thorough testing revealed a typo in last koneplus cleanups.
+On Fri, Nov 16, 2012 at 7:50 AM, Tushar Behera <tushar.behera@linaro.org> wrote:
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- drivers/hid/hid-roccat-koneplus.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Checking '< 0' for unsigned variables always returns false. For error
+> codes, use IS_ERR_VALUE() instead.
+>
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  drivers/pinctrl/pinctrl-samsung.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+> index 81c9896..3b52c17 100644
+> --- a/drivers/pinctrl/pinctrl-samsung.c
+> +++ b/drivers/pinctrl/pinctrl-samsung.c
+> @@ -560,7 +560,7 @@ static int __devinit samsung_pinctrl_parse_dt_pins(struct platform_device *pdev,
+>         const char *pin_name;
+>
+>         *npins = of_property_count_strings(cfg_np, "samsung,pins");
+> -       if (*npins < 0) {
+> +       if (IS_ERR_VALUE(*npins)) {
+>                 dev_err(dev, "invalid pin list in %s node", cfg_np->name);
+>                 return -EINVAL;
+>         }
 
-diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
-index d2b55f2..af7f57e 100644
---- a/drivers/hid/hid-roccat-koneplus.h
-+++ b/drivers/hid/hid-roccat-koneplus.h
-@@ -24,7 +24,7 @@ enum {
- 	KONEPLUS_SIZE_PROFILE_BUTTONS = 0x4d,
- 	KONEPLUS_SIZE_SENSOR = 0x06,
- 	KONEPLUS_SIZE_TALK = 0x10,
--	KONEPLUS_SIZE_TCU = 0x03,
-+	KONEPLUS_SIZE_TCU = 0x04,
- 	KONEPLUS_SIZE_TCU_IMAGE = 0x0404,
- };
- 
--- 
-1.7.3.4
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+For this merge window Kukjin is handling the Samsung pinctrl patches,
+Kukjin can you pick this to your tree to avoid any mess?
 
-
+Yours,
+Linus Walleij
