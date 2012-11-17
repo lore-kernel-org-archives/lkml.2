@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2KQDly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:41:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27561 "EHLO
+	id S1754308Ab2KQDkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:40:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27539 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab2KQDk6 (ORCPT
+	with ESMTP id S1754287Ab2KQDkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:58 -0500
+	Fri, 16 Nov 2012 22:40:53 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH v8 44/46] sparc, mm: Remove calling of free_all_bootmem_node()
-Date: Fri, 16 Nov 2012 19:39:21 -0800
-Message-Id: <1353123563-3103-45-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v8 38/46] x86, mm: use limit_pfn for end pfn
+Date: Fri, 16 Nov 2012 19:39:15 -0800
+Message-Id: <1353123563-3103-39-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
@@ -26,72 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now NO_BOOTMEM version free_all_bootmem_node() does not really
-do free_bootmem at all, and it only call
-register_page_bootmem_info_node instead.
-
-That is confusing, try to kill that free_all_bootmem_node().
-
-Before that, this patch will remove calling of free_all_bootmem_node()
-
-We add register_page_bootmem_info() to call register_page_bootmem_info_node
-directly.
-
-Also could use free_all_bootmem() for numa case, and it is just
-the same as free_low_memory_core_early().
+instead of shifting end to get that.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: sparclinux@vger.kernel.org
-Acked-by: "David S. Miller" <davem@davemloft.net>
 ---
- arch/sparc/mm/init_64.c |   24 +++++++++++-------------
- 1 files changed, 11 insertions(+), 13 deletions(-)
+ arch/x86/mm/init.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 9e28a11..b24bac2 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2021,6 +2021,16 @@ static void __init patch_tlb_miss_handler_bitmap(void)
- 	flushi(&valid_addr_bitmap_insn[0]);
- }
- 
-+static void __init register_page_bootmem_info(void)
-+{
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+	int i;
-+
-+	for_each_online_node(i)
-+		if (NODE_DATA(i)->node_spanned_pages)
-+			register_page_bootmem_info_node(NODE_DATA(i));
-+#endif
-+}
- void __init mem_init(void)
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 4bf1c53..f410dc6 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -203,10 +203,12 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 				     unsigned long start,
+ 				     unsigned long end)
  {
- 	unsigned long codepages, datapages, initpages;
-@@ -2038,20 +2048,8 @@ void __init mem_init(void)
+-	unsigned long start_pfn, end_pfn;
++	unsigned long start_pfn, end_pfn, limit_pfn;
+ 	unsigned long pfn;
+ 	int i;
  
- 	high_memory = __va(last_valid_pfn << PAGE_SHIFT);
++	limit_pfn = PFN_DOWN(end);
++
+ 	/* head if not big page alignment ? */
+ 	pfn = start_pfn = PFN_DOWN(start);
+ #ifdef CONFIG_X86_32
+@@ -223,8 +225,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ #else /* CONFIG_X86_64 */
+ 	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+ #endif
+-	if (end_pfn > PFN_DOWN(end))
+-		end_pfn = PFN_DOWN(end);
++	if (end_pfn > limit_pfn)
++		end_pfn = limit_pfn;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 		pfn = end_pfn;
+@@ -233,11 +235,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	/* big page (2M) range */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+ #ifdef CONFIG_X86_32
+-	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ #else /* CONFIG_X86_64 */
+ 	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
+-	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
+-		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	if (end_pfn > round_down(limit_pfn, PFN_DOWN(PMD_SIZE)))
++		end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ #endif
  
--#ifdef CONFIG_NEED_MULTIPLE_NODES
--	{
--		int i;
--		for_each_online_node(i) {
--			if (NODE_DATA(i)->node_spanned_pages != 0) {
--				totalram_pages +=
--					free_all_bootmem_node(NODE_DATA(i));
--			}
--		}
--		totalram_pages += free_low_memory_core_early(MAX_NUMNODES);
--	}
--#else
-+	register_page_bootmem_info();
- 	totalram_pages = free_all_bootmem();
--#endif
+ 	if (start_pfn < end_pfn) {
+@@ -249,7 +251,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
+-	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PUD_SIZE));
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -259,7 +261,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
  
- 	/* We subtract one to account for the mem_map_zero page
- 	 * allocated below.
+ 	/* tail is not big page (1G) alignment */
+ 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
+-	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
++	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
+@@ -269,7 +271,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ 	/* tail is not big page (2M) alignment */
+ 	start_pfn = pfn;
+-	end_pfn = PFN_DOWN(end);
++	end_pfn = limit_pfn;
+ 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ 
+ 	/* try to merge same page size and continuous */
 -- 
 1.7.7
 
