@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab2KQSei (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 13:34:38 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:37277 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab2KQSeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 13:34:37 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Borislav Petkov <bp@alien8.de>, Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, herrmann.der.user@googlemail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h processors
-Date: Sat, 17 Nov 2012 13:34:33 -0500
-References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com> <50A57C35.10906@amd.com> <20121117144117.GD16441@x1.osrc.amd.com>
-In-Reply-To: <20121117144117.GD16441@x1.osrc.amd.com>
+	id S1752113Ab2KQSl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 13:41:59 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37830 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2KQSl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 13:41:58 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211171334.34239.gheskett@wdtv.com>
+In-Reply-To: <201211122044.13663.arnd@arndb.de>
+References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
+	<1352406191-14303-6-git-send-email-sasha.levin@oracle.com>
+	<201211122044.13663.arnd@arndb.de>
+Date: Sat, 17 Nov 2012 19:41:56 +0100
+Message-ID: <CACRpkdZeM_FBGSa+UcH6GTK-Q7ekHbZO7Az7wQibfuFYqLFFhA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: integrator: use BUG_ON where possible
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        David Howells <dhowells@redhat.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 17 November 2012, Borislav Petkov wrote:
->On Thu, Nov 15, 2012 at 06:35:17PM -0500, Boris Ostrovsky wrote:
->> One possibility is that BIOS already incorporated all patches (which
->> typically is the case) and so the driver doesn't have to do anything.
+On Mon, Nov 12, 2012 at 9:44 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 >
->/proc/cpuinfo contains ucode version and the processor's f/m/s, which
->is enough information to tell us whether your old phenom needs ucode
->patching.
+> Linus Walleij is doing most of the integrator work these days, maybe he
+> wants to apply the patch.
 >
->Thanks.
-Well, in my case that returns 4 stanza's of this:
-processor	: 3
-vendor_id	: AuthenticAMD
-cpu family	: 16
-model		: 2
-model name	: AMD Phenom(tm) 9550 Quad-Core Processor
-stepping	: 3
-cpu MHz		: 2210.462
-cache size	: 512 KB
-physical id	: 0
-siblings	: 4
-core id		: 3
-cpu cores	: 4
-apicid		: 3
-initial apicid	: 3
-fdiv_bug	: no
-hlt_bug		: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 5
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic mtrr pge mca cmov 
-pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb 
-rdtscp lm 3dnowext 3dnow constant_tsc nonstop_tsc extd_apicid pni monitor 
-cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 
-3dnowprefetch osvw ibs
-bogomips	: 4420.70
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 48 bits physical, 48 bits virtual
-power management: ts ttp tm stc 100mhzsteps hwpstate
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-And I don't see anything there that looks like a 'patch level'.
-The ucode obviously can, which is what counts in this game of horseshoes.  
-Perhaps something in that very long 'flags' string?
+OK I'll apply it to my stash and submit a pull request to
+simplify things.
 
-Thanks Borislav.
+I could split this into its own topic but with noone else changing
+anything orthogonally on the Integrator I don't know if it's really
+worth it, probably it's just better to take the stuff I sent yesterday
+and a patch I made this evening and request it all to be pulled
+at once.
 
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
-Biz is better.
+Yours,
+Linus Walleij
