@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab2KQA2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:28:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37701 "EHLO
+	id S1753923Ab2KQA3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:29:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37713 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2KQA2c (ORCPT
+	with ESMTP id S1753832Ab2KQA3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:28:32 -0500
-Date: Fri, 16 Nov 2012 16:27:57 -0800
+	Fri, 16 Nov 2012 19:29:48 -0500
+Date: Fri, 16 Nov 2012 16:28:59 -0800
 From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
-Message-ID: <tip-f38ad48f05973079aff40ac7a5a5ab463f7cee32@git.kernel.org>
+Message-ID: <tip-40276eb3568125e86014d703bae48dbfcb3c20f3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, alexander.h.duyck@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
+        alexander.h.duyck@intel.com, pavel@ucw.cz, tglx@linutronix.de,
+        hpa@linux.intel.com, rjw@sisk.pl, len.brown@intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, alexander.h.duyck@intel.com, rostedt@goodmis.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>
-References: <20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com>
+        alexander.h.duyck@intel.com, pavel@ucw.cz, tglx@linutronix.de,
+        hpa@linux.intel.com, rjw@sisk.pl, len.brown@intel.com
+In-Reply-To: <20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/ftrace:
+Subject: [tip:x86/mm] x86/acpi:
   Use __pa_symbol instead of __pa on C visible symbols
-Git-Commit-ID: f38ad48f05973079aff40ac7a5a5ab463f7cee32
+Git-Commit-ID: 40276eb3568125e86014d703bae48dbfcb3c20f3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,57 +30,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:28:23 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:29:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f38ad48f05973079aff40ac7a5a5ab463f7cee32
-Gitweb:     http://git.kernel.org/tip/f38ad48f05973079aff40ac7a5a5ab463f7cee32
+Commit-ID:  40276eb3568125e86014d703bae48dbfcb3c20f3
+Gitweb:     http://git.kernel.org/tip/40276eb3568125e86014d703bae48dbfcb3c20f3
 Author:     Alexander Duyck <alexander.h.duyck@intel.com>
-AuthorDate: Fri, 16 Nov 2012 13:57:32 -0800
+AuthorDate: Fri, 16 Nov 2012 13:57:43 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 16 Nov 2012 15:20:43 -0800
+CommitDate: Fri, 16 Nov 2012 15:20:50 -0800
 
-x86/ftrace: Use __pa_symbol instead of __pa on C visible symbols
+x86/acpi: Use __pa_symbol instead of __pa on C visible symbols
 
-Instead of using __pa which is meant to be a general function for converting
-virtual addresses to physical addresses we can use __pa_symbol which is the
-preferred way of decoding kernel text virtual addresses to physical addresses.
+This change just updates one spot where __pa was being used when __pa_symbol
+should have been used.  By using __pa_symbol we are able to drop a few extra
+lines of code as we don't have to test to see if the virtual pointer is a
+part of the kernel text or just standard virtual memory.
 
-In this case we are not directly converting C visible symbols however if we
-know that the instruction pointer is somewhere between _text and _etext we
-know that we are going to be translating an address form the kernel text
-space.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Link: http://lkml.kernel.org/r/20121116215718.8521.24026.stgit@ahduyck-cp1.jf.intel.com
+Link: http://lkml.kernel.org/r/20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/ftrace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/acpi/sleep.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 1d41402..42a392a 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -89,7 +89,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_code)
- 	 * kernel identity mapping to modify code.
- 	 */
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa(ip));
-+		ip = (unsigned long)__va(__pa_symbol(ip));
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 11676cf..f146a3c 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -69,7 +69,7 @@ int acpi_suspend_lowlevel(void)
  
- 	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
- }
-@@ -279,7 +279,7 @@ static int ftrace_write(unsigned long ip, const char *val, int size)
- 	 * kernel identity mapping to modify code.
- 	 */
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa(ip));
-+		ip = (unsigned long)__va(__pa_symbol(ip));
- 
- 	return probe_kernel_write((void *)ip, val, size);
- }
+ #ifndef CONFIG_64BIT
+ 	header->pmode_entry = (u32)&wakeup_pmode_return;
+-	header->pmode_cr3 = (u32)__pa(&initial_page_table);
++	header->pmode_cr3 = (u32)__pa_symbol(initial_page_table);
+ 	saved_magic = 0x12345678;
+ #else /* CONFIG_64BIT */
+ #ifdef CONFIG_SMP
