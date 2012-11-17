@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2KQSl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 13:41:59 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37830 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2KQSl6 (ORCPT
+	id S1752083Ab2KQSy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 13:54:29 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:46973 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751996Ab2KQSy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 13:41:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <201211122044.13663.arnd@arndb.de>
-References: <1352406191-14303-1-git-send-email-sasha.levin@oracle.com>
-	<1352406191-14303-6-git-send-email-sasha.levin@oracle.com>
-	<201211122044.13663.arnd@arndb.de>
-Date: Sat, 17 Nov 2012 19:41:56 +0100
-Message-ID: <CACRpkdZeM_FBGSa+UcH6GTK-Q7ekHbZO7Az7wQibfuFYqLFFhA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: integrator: use BUG_ON where possible
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        David Howells <dhowells@redhat.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Nov 2012 13:54:28 -0500
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>, joe@perches.com
+Cc: Constantine Shulyupin <const@MakeLinux.com>
+Subject: [PATCH v3] checkpatch: debugfs_remove() can take NULL
+Date: Sat, 17 Nov 2012 20:54:22 +0200
+Message-Id: <1353178462-3868-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.126.70.233 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 12, 2012 at 9:44 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+From: Constantine Shulyupin <const@MakeLinux.com>
 
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->
-> Linus Walleij is doing most of the integrator work these days, maybe he
-> wants to apply the patch.
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+debugfs_remove() and  debugfs_remove_recursive() can take a NULL, so let's check and warn about that.
 
-OK I'll apply it to my stash and submit a pull request to
-simplify things.
+Changes since v2, as Joe Perches suggested:
+- match whitespace around argument
 
-I could split this into its own topic but with noone else changing
-anything orthogonally on the Integrator I don't know if it's really
-worth it, probably it's just better to take the stuff I sent yesterday
-and a patch I made this evening and request it all to be pulled
-at once.
+Changes since v1, as Joe Perches suggested:
+- added debugfs_remove_recursive
+- all tests for patterns are "if (a) xxx(a)" are consolidates
 
-Yours,
-Linus Walleij
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+---
+ scripts/checkpatch.pl |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f18750e..c041e97 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3213,21 +3213,30 @@ sub process {
+ 				$herecurr);
+ 		}
+ 
++# check for needless "if (<foo>) fn(<foo>)" uses
++		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
++			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
++
+ # check for needless kfree() checks
+-		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+-			my $expr = $1;
+-			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
++			if ($line =~ /\bkfree$expr/) {
+ 				WARN("NEEDLESS_KFREE",
+ 				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
+-		}
+ # check for needless usb_free_urb() checks
+-		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+-			my $expr = $1;
+-			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
++			if ($line =~ /\busb_free_urb$expr/) {
+ 				WARN("NEEDLESS_USB_FREE_URB",
+ 				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
++# check for needless debugfs_remove() and debugfs_remove_recursive*() checks
++			if ($line =~ /\b(debugfs_remove(?:_recursive)?)$expr/) {
++				WARN("NEEDLESS_DEBUGFS_REMOVE",
++				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
++			}
++# check for needless debugfs_remove_recursive() and debugfs_remove_recursive*() checks
++			if ($line =~ /\b(debugfs_remove_recursive(?:_recursive)?)$expr/) {
++				WARN("NEEDLESS_DEBUGFS_REMOVE_RECURSIVE",
++				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
++			}
+ 		}
+ 
+ # prefer usleep_range over udelay
+-- 
+1.7.9.5
+
