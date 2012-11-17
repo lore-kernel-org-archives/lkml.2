@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2KPX4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 18:56:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47045 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab2KPX4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 18:56:05 -0500
-Date: Fri, 16 Nov 2012 15:56:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
-Message-Id: <20121116155603.2118394c.akpm@linux-foundation.org>
-In-Reply-To: <20121114152239.936025193@openvz.org>
-References: <20121114151937.344922058@openvz.org>
-	<20121114152239.936025193@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753837Ab2KQACA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:02:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:37517 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab2KQAB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 19:01:59 -0500
+Date: Fri, 16 Nov 2012 16:02:50 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH v2 0/3] acpi: Introduce prepare_remove device
+ operation
+Message-ID: <20121117000250.GA4425@kroah.com>
+References: <1352974970-6643-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <1446291.TgLDtXqY7q@vostro.rjw.lan>
+ <1353105943.12509.60.camel@misato.fc.hp.com>
+ <20121116230143.GA15338@kroah.com>
+ <1353107684.12509.65.camel@misato.fc.hp.com>
+ <20121116233355.GA21144@kroah.com>
+ <1353108906.10624.5.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353108906.10624.5.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Nov 2012 19:19:44 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-
-> This allow us to print out fsnotify details such as
-> watchee inode, device, mask and optionally a file handle.
+On Fri, Nov 16, 2012 at 04:35:06PM -0700, Toshi Kani wrote:
+> On Fri, 2012-11-16 at 15:33 -0800, Greg Kroah-Hartman wrote:
+> > On Fri, Nov 16, 2012 at 04:14:44PM -0700, Toshi Kani wrote:
+> > > On Fri, 2012-11-16 at 15:01 -0800, Greg Kroah-Hartman wrote:
+> > > > On Fri, Nov 16, 2012 at 03:45:43PM -0700, Toshi Kani wrote:
+> > > > > On Fri, 2012-11-16 at 22:43 +0100, Rafael J. Wysocki wrote:
+> > > > > > On Thursday, November 15, 2012 11:22:47 AM Vasilis Liaskovitis wrote:
+> > > > > > > As discussed in https://patchwork.kernel.org/patch/1581581/
+> > > > > > > the driver core remove function needs to always succeed. This means we need
+> > > > > > > to know that the device can be successfully removed before acpi_bus_trim / 
+> > > > > > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > > > > > > eject or driver unbind of memory devices fails e.g with:
+> > > > > > > 
+> > > > > > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > > > > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > > > > > > 
+> > > > > > > since the ACPI core goes ahead and ejects the device regardless of whether the
+> > > > > > > the memory is still in use or not.
+> > > > > > 
+> > > > > > So the question is, does the ACPI core have to do that and if so, then why?
+> > > > > 
+> > > > > The problem is that acpi_memory_devcie_remove() can fail.  However,
+> > > > > device_release_driver() is a void function, so it cannot report its
+> > > > > error.  Here are function flows for SCI, sysfs eject and unbind.
+> > > > 
+> > > > Then don't ever let acpi_memory_device_remove() fail.  If the user wants
+> > > > it gone, it needs to go away.  Just like any other device in the system
+> > > > that can go away at any point in time, you can't "fail" that.
+> > > 
+> > > That would be ideal, but we cannot delete a memory device that contains
+> > > kernel memory.  I am curious, how do you deal with a USB device that is
+> > > being mounted in this case?
+> > 
+> > As the device is physically gone now, we deal with it and clean up
+> > properly.
+> > 
+> > And that's the point here, what happens if the memory really is gone?
+> > You will still have to handle it now being removed, you can't "fail" a
+> > physical removal of a device.
+> > 
+> > If you remove a memory device that has kernel memory on it, well, you
+> > better be able to somehow remap it before the kernel needs it :)
 > 
-> For inotify objects if kernel compiled with exportfs support
-> the output will be
+> :)
 > 
->  | pos:	0
->  | flags:	02000000
->  | inotify wd:        3 ino:             9e7e sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 7e9e0000640d1b6d
->  | inotify wd:        2 ino:             a111 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 11a1000020542153
->  | inotify wd:        1 ino:            6b149 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 49b1060023552153
+> Well, we are not trying to support surprise removal here.  All three
+> use-cases (SCI, eject, and unbind) are for graceful removal.  Therefore
+> they should fail if the removal operation cannot complete in graceful
+> way.
 
-This is a lousy output format.  It's sort-of like a sensible set of
-name-value tuples: "name:value name:value name:value" but
+Then handle that in the ACPI bus code, it isn't anything that the driver
+core should care about, right?
 
-a) it has lots of random pointless whitespace after the colons and
+And odds are, eventually you will have to handle surprise removal, it's
+only a matter of time :)
 
-b) several of the labels have spaces in them, just to make life
-   harder for parsing code and
-
-c) inotify-wd is secretly printed in decimal while everything else
-   is in hex.
-
-
-What happens if we do something like the below (which will require a
-changelog update)?
-
---- a/fs/notify/fdinfo.c~fs-notify-add-procfs-fdinfo-helper-v6-fix
-+++ a/fs/notify/fdinfo.c
-@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
- 	f.handle.handle_bytes = sizeof(f.pad);
- 	size = f.handle.handle_bytes >> 2;
- 
--	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size,  0);
-+	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
- 	if ((ret == 255) || (ret == -ENOSPC)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
- 		return 0;
-@@ -59,7 +59,7 @@ static int show_mark_fhandle(struct seq_
- 	f.handle.handle_type = ret;
- 	f.handle.handle_bytes = size * sizeof(u32);
- 
--	ret = seq_printf(m, "fhandle-bytes: %8x fhandle-type: %8x f_handle: ",
-+	ret = seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
- 			 f.handle.handle_bytes, f.handle.handle_type);
- 
- 	for (i = 0; i < f.handle.handle_bytes; i++)
-@@ -86,8 +86,8 @@ static int inotify_fdinfo(struct seq_fil
- 	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
- 	inode = igrab(mark->i.inode);
- 	if (inode) {
--		ret = seq_printf(m, "inotify wd: %8d ino: %16lx sdev: %8x "
--				 "mask: %8x ignored_mask: %8x ",
-+		ret = seq_printf(m, "inotify-wd:%x ino:%lx sdev:%x "
-+				 "mask:%x ignored_mask:%x ",
- 				 inode_mark->wd, inode->i_ino,
- 				 inode->i_sb->s_dev,
- 				 mark->mask, mark->ignored_mask);
-@@ -120,15 +120,16 @@ static int fanotify_fdinfo(struct seq_fi
- 		inode = igrab(mark->i.inode);
- 		if (!inode)
- 			goto out;
--		ret = seq_printf(m, "fanotify ino: %16lx sdev: %8x "
--				 "mask: %8x ignored_mask: %8x\n",
-+		ret = seq_printf(m, "fanotify-ino:%x sdev:%x "
-+				 "mask:%x ignored_mask:%x\n",
- 				 inode->i_ino, inode->i_sb->s_dev,
- 				 mark->mask, mark->ignored_mask);
- 		iput(inode);
- 	} else if (mark->flags & FSNOTIFY_MARK_FLAG_VFSMOUNT) {
- 		struct mount *mnt = real_mount(mark->m.mnt);
- 
--		ret = seq_printf(m, "fanotify mnt_id: %8x mask: %8x ignored_mask: %8x\n",
-+		ret = seq_printf(m, "fanotify-mnt_id:%x mask:%x "
-+				 "ignored_mask:%x\n",
- 				 mnt->mnt_id, mark->mask, mark->ignored_mask);
- 	}
- out:
-_
-
+greg k-h
