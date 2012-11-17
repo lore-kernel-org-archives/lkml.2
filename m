@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab2KQSy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 13:54:29 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:46973 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751996Ab2KQSy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 13:54:28 -0500
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Andy Whitcroft <apw@canonical.com>, joe@perches.com
-Cc: Constantine Shulyupin <const@MakeLinux.com>
-Subject: [PATCH v3] checkpatch: debugfs_remove() can take NULL
-Date: Sat, 17 Nov 2012 20:54:22 +0200
-Message-Id: <1353178462-3868-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.126.70.233 authed with poster@makelinux.net}
+	id S1752092Ab2KQTAr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 14:00:47 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:45888 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752031Ab2KQTAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 14:00:46 -0500
+Message-ID: <1353178846.15959.2.camel@joe-AO722>
+Subject: Re: [PATCH v3] checkpatch: debugfs_remove() can take NULL
+From: Joe Perches <joe@perches.com>
+To: Constantine Shulyupin <const@MakeLinux.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>
+Date: Sat, 17 Nov 2012 11:00:46 -0800
+In-Reply-To: <1353178462-3868-1-git-send-email-const@MakeLinux.com>
+References: <1353178462-3868-1-git-send-email-const@MakeLinux.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+On Sat, 2012-11-17 at 20:54 +0200, Constantine Shulyupin wrote:
+> From: Constantine Shulyupin <const@MakeLinux.com>
 
-debugfs_remove() and  debugfs_remove_recursive() can take a NULL, so let's check and warn about that.
+Hi Constantine.
 
-Changes since v2, as Joe Perches suggested:
-- match whitespace around argument
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> +# check for needless debugfs_remove() and debugfs_remove_recursive*() checks
+> +			if ($line =~ /\b(debugfs_remove(?:_recursive)?)$expr/) {
+> +				WARN("NEEDLESS_DEBUGFS_REMOVE",
+> +				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
+> +			}
 
-Changes since v1, as Joe Perches suggested:
-- added debugfs_remove_recursive
-- all tests for patterns are "if (a) xxx(a)" are consolidates
+OK,
 
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
----
- scripts/checkpatch.pl |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+> +# check for needless debugfs_remove_recursive() and debugfs_remove_recursive*() checks
+> +			if ($line =~ /\b(debugfs_remove_recursive(?:_recursive)?)$expr/) {
+> +				WARN("NEEDLESS_DEBUGFS_REMOVE_RECURSIVE",
+> +				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
+> +			}
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f18750e..c041e97 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3213,21 +3213,30 @@ sub process {
- 				$herecurr);
- 		}
- 
-+# check for needless "if (<foo>) fn(<foo>)" uses
-+		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
-+			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
-+
- # check for needless kfree() checks
--		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
--			my $expr = $1;
--			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
-+			if ($line =~ /\bkfree$expr/) {
- 				WARN("NEEDLESS_KFREE",
- 				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
- 			}
--		}
- # check for needless usb_free_urb() checks
--		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
--			my $expr = $1;
--			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
-+			if ($line =~ /\busb_free_urb$expr/) {
- 				WARN("NEEDLESS_USB_FREE_URB",
- 				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
- 			}
-+# check for needless debugfs_remove() and debugfs_remove_recursive*() checks
-+			if ($line =~ /\b(debugfs_remove(?:_recursive)?)$expr/) {
-+				WARN("NEEDLESS_DEBUGFS_REMOVE",
-+				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
-+			}
-+# check for needless debugfs_remove_recursive() and debugfs_remove_recursive*() checks
-+			if ($line =~ /\b(debugfs_remove_recursive(?:_recursive)?)$expr/) {
-+				WARN("NEEDLESS_DEBUGFS_REMOVE_RECURSIVE",
-+				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
-+			}
- 		}
- 
- # prefer usleep_range over udelay
--- 
-1.7.9.5
+You don't need thus second block.
+The first check finds both
+	debugfs_remove(foo)
+and
+	debugfs_remove_recursive(bar)
+
+The second one is redundant
 
