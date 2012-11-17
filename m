@@ -1,40 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab2KQOJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 09:09:56 -0500
-Received: from plane.gmane.org ([80.91.229.3]:39807 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab2KQOJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 09:09:55 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Ricardo Nabinger Sanchez <rnsanchez@wait4.org>
-Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
-Date: Sat, 17 Nov 2012 13:49:49 +0000 (UTC)
-Message-ID: <pan.2012.11.17.13.49.51@wait4.org>
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 187.60.101.50
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
-	git://git.gnome.org/pan2)
+	id S1751905Ab2KQOcb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 09:32:31 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:49854 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751868Ab2KQOca (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 09:32:30 -0500
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>, joe@perches.com
+Cc: Constantine Shulyupin <const@MakeLinux.com>
+Subject: 
+Date: Sat, 17 Nov 2012 16:32:24 +0200
+Message-Id: <1353162744-489-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.126.70.233 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Nov 2012 21:04:12 +0800, Alex Shi wrote:
+>From 21f1095ce30b21f1729c64eb26b7921bbb3bcc8d Mon Sep 17 00:00:00 2001
+From: Constantine Shulyupin <const@MakeLinux.com>
+Date: Sat, 17 Nov 2012 14:27:18 +0200
+Subject: [PATCH v2] checkpatch: debugfs_remove() can take NULL
 
-> This patchset try to consider runnable load avg when do cpu load
-> comparison in load balance.
+debugfs_remove() and  debugfs_remove_recursive() can take a NULL, so let's check and warn about that.
 
-I found the wording in the commit messages (pretty much all of them, 
-including the introductory message) rather confusing, especially patch 
-4/5.
+Channegs since v1:
 
+- added debugfs_remove_recursive
+- all tests for pattenrs are "if (a) xxx(a)" are consolidates
 
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+---
+ scripts/checkpatch.pl |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f18750e..2339b54 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3213,21 +3213,29 @@ sub process {
+ 				$herecurr);
+ 		}
+ 
+-# check for needless kfree() checks
++# check for needless "if"
+ 		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+ 			my $expr = $1;
++# check for needless kfree() checks
+ 			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
+ 				WARN("NEEDLESS_KFREE",
+ 				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
+-		}
+ # check for needless usb_free_urb() checks
+-		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+-			my $expr = $1;
+ 			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
+ 				WARN("NEEDLESS_USB_FREE_URB",
+ 				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
++# check for needless debugfs_remove() checks
++			if ($line =~ /\bdebugfs_remove\(\Q$expr\E\);/) {
++				WARN("NEEDLESS_DEBUGFS_REMOVE",
++				     "debugfs_remove(NULL) is safe this check is probably not required\n" . $hereprev);
++			}
++# check for needless debugfs_remove_recursive() checks
++			if ($line =~ /\bdebugfs_remove_recursive\(\Q$expr\E\);/) {
++				WARN("NEEDLESS_DEBUGFS_REMOVE",
++				     "debugfs_remove_recursive(NULL) is safe this check is probably not required\n" . $hereprev);
++			}
+ 		}
+ 
+ # prefer usleep_range over udelay
 -- 
-Ricardo Nabinger Sanchez           http://rnsanchez.wait4.org/
-  "Left to themselves, things tend to go from bad to worse."
+1.7.9.5
 
