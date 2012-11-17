@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab2KQJS3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 04:18:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18982 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab2KQJS1 (ORCPT
+	id S1754086Ab2KQJlT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 04:41:19 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:50947 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab2KQJlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 04:18:27 -0500
-Message-ID: <50A7563C.4040404@oracle.com>
-Date: Sat, 17 Nov 2012 17:17:48 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Sat, 17 Nov 2012 04:41:16 -0500
+Message-ID: <50A75BB4.4070003@free-electrons.com>
+Date: Sat, 17 Nov 2012 10:41:08 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: axboe@kernel.dk
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Documentation/cgroups/blkio-controller.txt: s/disk_time|disk_sectors/time|sectors/
+To: Andrew Lunn <andrew@lunn.ch>
+CC: linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control
+ provider for DT
+References: <1353014906-31566-6-git-send-email-andrew@lunn.ch> <1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com> <1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com> <20121117082602.GF24569@lunn.ch>
+In-Reply-To: <20121117082602.GF24569@lunn.ch>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Andrew
 
-For blkio controller of cgroup, both disk_time and disk_sectors were
-obsolated file names.  Now we're using blkio.time and blkio.sectors to
-examine how much disk time each cgroup got and how many sectors each
-cgroup dispatched separately.
+On 11/17/2012 09:26 AM, Andrew Lunn wrote:
+> Hi Gregory
+> 
+> Nice work
 
-This patch fix the document to reflect those changes as well as a couple
-of typos(secotors and io.disk_time).
+Thanks!
 
-Thanks,
--Jeff
+> 
+> On Fri, Nov 16, 2012 at 07:01:59PM +0100, Gregory CLEMENT wrote:
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> ---
+>>  .../bindings/clock/mvebu-gated-clock.txt           |   43 ++++++++++++++
+>>  arch/arm/mach-mvebu/Kconfig                        |    1 +
+>>  drivers/clk/mvebu/clk-gating-ctrl.c                |   61 ++++++++++++++++++++
+>>  3 files changed, 105 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/mvebu-gated-clock.txt b/Documentation/devicetree/bindings/clock/mvebu-gated-clock.txt
+>> index 7497cc0..9dbcdd9 100644
+>> --- a/Documentation/devicetree/bindings/clock/mvebu-gated-clock.txt
+>> +++ b/Documentation/devicetree/bindings/clock/mvebu-gated-clock.txt
+>> @@ -6,6 +6,49 @@ the clock ID in its "clocks" phandle cell. The clock ID is directly mapped to
+>>  the corresponding clock gating control bit in HW to ease manual clock lookup
+>>  in datasheet.
+>>  
+>> +The following is a list of provided IDs for Armada XP:
+> 
+> Should that the 370, not XP?
+
+Yes indeed, it was a wrong copy and paste.
+
+> 
+>> +ID	Clock	Peripheral
+>> +-----------------------------------
+>> +0	Audio	AC97 Cntrl
+>> +1	pex0_en	PCIe 0 Clock out
+>> +2	pex1_en	PCIe 1 Clock out
+>> +3	ge1	Gigabit Ethernet 1
+>> +4	ge0	Gigabit Ethernet 0
+>> +5	pex0	PCIe Cntrl 0
+>> +9	pex1	PCIe Cntrl 1
+>> +15	sata0	SATA Host 0
+>> +17	sdio	SDHCI Host
+>> +25	tdm	Time Division Mplx
+>> +28	ddr	DDR Cntrl
+>> +30	sata1	SATA Host 0
+> 
+> Not many clocks there. USB? XOR? Crypto?
+
+Yes I was surprised too, but it was I found on the datasheet.
+For USB, for example you can turn the USB in low power mode but
+at the PHY level.
 
 
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+> 
+> What is the ddr clock for? Does bad things happen if you turn it off?
+> Kirkwood has a similar clock, dunit, which i decided not to export,
+> since when you turn it off, the whole SoC locks up.
 
----
- Documentation/cgroups/blkio-controller.txt |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Well of course if you code run in DDR then it could be a problem. But
+I think it could be useful to turn it off when going to suspend, it
+the DDR can do self-refresh. In this case it should be possible to run
+the code from SRAM or L2 Cache.
 
-diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-index b4b1fb3..ffa26d1 100644
---- a/Documentation/cgroups/blkio-controller.txt
-+++ b/Documentation/cgroups/blkio-controller.txt
-@@ -57,11 +57,11 @@ cgroups. Here is what you can do.
- 	cat /sys/fs/cgroup/blkio/test2/tasks
- 
- - At macro level, first dd should finish first. To get more precise data, keep
--  on looking at (with the help of script), at blkio.disk_time and
--  blkio.disk_sectors files of both test1 and test2 groups. This will tell how
--  much disk time (in milli seconds), each group got and how many secotors each
--  group dispatched to the disk. We provide fairness in terms of disk time, so
--  ideally io.disk_time of cgroups should be in proportion to the weight.
-+  on looking at (with the help of script), at blkio.time and blkio.sectors files
-+  of both test1 and test2 groups. This will tell how much disk time (in milli
-+  seconds), each group got and how many sectors each group dispatched to the disk.
-+  We provide fairness in terms of disk time, so ideally blkio.time of cgroups
-+  should be in proportion to the weight.
- 
- Throttling/Upper Limit policy
- -----------------------------
-@@ -84,8 +84,8 @@ Throttling/Upper Limit policy
- 
- - Run dd to read a file and see if rate is throttled to 1MB/s or not.
- 
--		# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024
--		# iflag=direct
-+	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024
-+	# iflag=direct
-         1024+0 records in
-         1024+0 records out
-         4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
--- 
-1.7.9.5
+Gregory
