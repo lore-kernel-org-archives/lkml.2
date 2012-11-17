@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab2KQEAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 23:00:33 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:58026 "EHLO
+	id S1754222Ab2KQEAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 23:00:46 -0500
+Received: from [12.239.217.82] ([12.239.217.82]:7312 "EHLO
 	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754106Ab2KQEAa (ORCPT
+	by vger.kernel.org with ESMTP id S1753981Ab2KQEAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 23:00:30 -0500
+	Fri, 16 Nov 2012 23:00:41 -0500
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Jean Delvare <khali@linux-fr.org>,
@@ -19,45 +19,30 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Joerie de Gram <j.de.gram@gmail.com>,
         Wolfram Sang <w.sang@pengutronix.de>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 02/06] input/rmi4: Core files
-Date: Fri, 16 Nov 2012 19:58:50 -0800
-Message-Id: <1353124734-16803-3-git-send-email-cheiny@synaptics.com>
+Subject: =?UTF-8?q?=5BRFC=20PATCH=2006/06=5D=20input/rmi4=3A=20F11=20-=202D=20touch=20interface?=
+Date: Fri, 16 Nov 2012 19:58:54 -0800
+Message-Id: <1353124734-16803-7-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
 References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmi_bus.c implements the basic functionality of the RMI bus.  This file is
-greatly simplified compared to the previous patch - we've switched from
-"do it yourself" device/driver binding to using device_type to distinguish
-between the two kinds of devices on the bus (sensor devices and function
-specific devices) and using the standard bus implementation to manage devices
-and drivers.
-
-
-rmi_driver.c is a driver for the general functionality of the RMI sensor as a
-whole, managing those behaviors (including IRQ handling) that are not specific
-to any RMI4 function.  It has some unavoidable dependencies on F01 behavior,
-though we have worked to minimize those as far as possible.
-
-
-The header file rmi_driver.h provides definitions that are shared among
-the modules of the RMI implementation, but not thought to be necessary
-outside it.
-
-
-Greg KH - Linus Walleij recommended that we seek your input on these core
-files, particularly the bus implementation.
+rmi_f11.c is a driver for 2D touch sensors using the RMI4 protocol.  It supports
+both touchscreen and touchpad input, in both absolute and relative formats.
+Support for Type-B multitouch is the default, Type-A support is included for
+certain legacy sensors.
 
 
 Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Henrik Rydberg <rydberg@euromail.se>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
@@ -65,20 +50,17 @@ Cc: Joeri de Gram <j.de.gram@gmail.com>
 
 ---
 
- drivers/input/rmi4/rmi_bus.c    |  248 ++++++
- drivers/input/rmi4/rmi_driver.c | 1663 +++++++++++++++++++++++++++++++++++++++
- drivers/input/rmi4/rmi_driver.h |  139 ++++
- include/uapi/linux/input.h      |    1 +
- 4 files changed, 2051 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f11.c | 2813 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 2813 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_bus.c b/drivers/input/rmi4/rmi_bus.c
+diff --git a/drivers/input/rmi4/rmi_f11.c b/drivers/input/rmi4/rmi_f11.c
 new file mode 100644
-index 0000000..a912349
+index 0000000..b9a84bc
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_bus.c
-@@ -0,0 +1,248 @@
++++ b/drivers/input/rmi4/rmi_f11.c
+@@ -0,0 +1,2813 @@
 +/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
++ * Copyright (c) 2011,2012 Synaptics Incorporated
 + * Copyright (c) 2011 Unixphere
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -96,347 +78,997 @@ index 0000000..a912349
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
++#define FUNCTION_DATA f11_data
++#define FNUM 11
++
 +#include <linux/kernel.h>
++#include <linux/delay.h>
 +#include <linux/device.h>
++#include <linux/input.h>
++#include <linux/input/mt.h>
 +#include <linux/kconfig.h>
-+#include <linux/list.h>
-+#include <linux/pm.h>
 +#include <linux/rmi.h>
 +#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/debugfs.h>
 +#include "rmi_driver.h"
 +
-+DEFINE_MUTEX(rmi_bus_mutex);
++#ifdef CONFIG_RMI4_DEBUG
++#include <linux/debugfs.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
++#endif
 +
-+static struct attribute *function_dev_attrs[] = {
-+	NULL,
++#define F11_MAX_NUM_OF_SENSORS		8
++#define F11_MAX_NUM_OF_FINGERS		10
++#define F11_MAX_NUM_OF_TOUCH_SHAPES	16
++
++#define F11_REL_POS_MIN		-128
++#define F11_REL_POS_MAX		127
++
++#define FINGER_STATE_MASK	0x03
++
++#define F11_CTRL_SENSOR_MAX_X_POS_OFFSET	6
++#define F11_CTRL_SENSOR_MAX_Y_POS_OFFSET	8
++
++#define DEFAULT_XY_MAX 9999
++#define DEFAULT_MAX_ABS_MT_PRESSURE 255
++#define DEFAULT_MAX_ABS_MT_TOUCH 15
++#define DEFAULT_MAX_ABS_MT_ORIENTATION 1
++#define DEFAULT_MIN_ABS_MT_TRACKING_ID 1
++#define DEFAULT_MAX_ABS_MT_TRACKING_ID 10
++#define NAME_BUFFER_SIZE 256
++#define FUNCTION_NUMBER 0x11
++
++/** A note about RMI4 F11 register structure.
++ *
++ *  There may be one or more individual 2D touch surfaces associated with an
++ * instance for F11.  For example, a handheld device might have a touchscreen
++ * display on the front, and a touchpad on the back.  F11 represents these touch
++ * surfaces as individual sensors, up to 7 on a given RMI4 device.
++ *
++ * The properties for
++ * a given sensor are described by its query registers.  The number of query
++ * registers and the layout of their contents are described by the F11 device
++ * queries as well as the per-sensor query information.  The query registers
++ * for sensor[n+1] immediately follow those for sensor[n], so the start address
++ * of the sensor[n+1] queries can only be computed if you know the size of the
++ * sensor[n] queries.  Because each of the sensors may have different
++ * properties, the size of the query registers for each sensor must be
++ * calculated on a sensor by sensor basis.
++ *
++ * Similarly, each sensor has control registers that govern its behavior.  The
++ * size and layout of the control registers for a given sensor can be determined
++ * by parsing that sensors query registers.  The control registers for
++ * sensor[n+1] immediately follow those for sensor[n], so you can only know
++ * the start address for the sensor[n+1] controls if you know the size (and
++ * location) of the sensor[n] controls.
++ *
++ * And in a likewise fashion, each sensor has data registers where it reports
++ * its touch data and other interesting stuff.  The size and layout of a
++ * sensors data registers must be determined by parsing its query registers.
++ * The data registers for sensor[n+1] immediately follow those for sensor[n],
++ * so you can only know the start address for the sensor[n+1] controls if you
++ * know the size (and location) of the sensor[n] controls.
++ *
++ * The short story is that we need to read and parse a lot of query
++ * registers in order to determine the attributes of a sensor[0].  Then
++ * we need to use that data to compute the size of the control and data
++ * registers for sensor[0].  Once we have that figured out, we can then do
++ * the same thing for each subsequent sensor.
++ *
++ * The end result is that we have a number of structs that aren't used to
++ * directly generate the input events, but their size, location and contents
++ * are critical to determining where the data we are interested in lives.
++ *
++ * At this time, the driver does not yet comprehend all possible F11
++ * configuration options, but it should be sufficient to cover 99% of RMI4 F11
++ * devices currently in the field.
++ */
++
++/**
++ * @rezero - writing 1 to this will cause the sensor to calibrate to the
++ * current capacitive state.
++ */
++struct f11_2d_commands {
++	bool rezero:1;
++	u8 reserved:7;
++} __attribute__((__packed__));
++
++/** This query is always present, and is on a per device basis.  All other
++ * queries are on a per-sensor basis.
++ *
++ * @nbr_of_sensors - the number of 2D sensors on the touch device.
++ * @has_query9 - indicates the F11_2D_Query9 register exists.
++ * @has_query11 - indicates the F11_2D_Query11 register exists.
++ * @has_query12 - indicates the F11_2D_Query12 register exists.
++ */
++struct f11_2d_device_query {
++	u8 nbr_of_sensors:3;
++	bool has_query9:1;
++	bool has_query11:1;
++	bool has_query12:1;
++	bool has_query27:1;
++	bool has_query28:1;
++} __attribute__((__packed__));
++
++/** Query registers 1 through 4 are always present.
++ * @number_of_fingers - describes the maximum number of fingers the 2-D sensor
++ * supports.
++ * @has_rel - the sensor supports relative motion reporting.
++ * @has_abs - the sensor supports absolute poition reporting.
++ * @has_gestures - the sensor supports gesture reporting.
++ * @has_sensitivity_adjust - the sensor supports a global sensitivity
++ * adjustment.
++ * @configurable - the sensor supports various configuration options.
++ * @num_of_x_electrodes -  the maximum number of electrodes the 2-D sensor
++ * supports on the X axis.
++ * @num_of_y_electrodes -  the maximum number of electrodes the 2-D sensor
++ * supports on the Y axis.
++ * @max_electrodes - the total number of X and Y electrodes that may be
++ * configured.
++ */
++struct f11_2d_sensor_info {
++	/* query1 */
++	u8 number_of_fingers:3;
++	bool has_rel:1;
++	bool has_abs:1;
++	bool has_gestures:1;
++	bool has_sensitivity_adjust:1;
++	bool configurable:1;
++	/* query2 */
++	u8 num_of_x_electrodes:7;
++	u8 reserved_1:1;
++	/* query3 */
++	u8 num_of_y_electrodes:7;
++	u8 reserved_2:1;
++	/* query4 */
++	u8 max_electrodes:7;
++	u8 reserved_3:1;
++} __attribute__((__packed__));
++
++/** Query 5 - this is present if the has_abs bit is set.
++ *
++ * @abs_data_size - describes the format of data reported by the absolute
++ * data source.  Only one format (the kind used here) is supported at this
++ * time.
++ * @has_anchored_finger - then the sensor supports the high-precision second
++ * finger tracking provided by the manual tracking and motion sensitivity
++ * options.
++ * @has_adjust_hyst - the difference between the finger release threshold and
++ * the touch threshold.
++ * @has_dribble - the sensor supports the generation of dribble interrupts,
++ * which may be enabled or disabled with the dribble control bit.
++ * @has_bending_correction - Bending related data registers 28 and 36, and
++ * control register 52..57 are present.
++ * @has_large_object_suppression - control register 58 and data register 28
++ * exist.
++ * @has_jitter_filter - query 13 and control 73..76 exist.
++ */
++struct f11_2d_abs_info {
++	u8 abs_data_size:2;
++	bool has_anchored_finger:1;
++	bool has_adj_hyst:1;
++	bool has_dribble:1;
++	bool has_bending_correction:1;
++	bool has_large_object_suppression:1;
++	bool has_jitter_filter:1;
++} __attribute__((__packed__));
++
++/** Gesture information queries 7 and 8 are present if has_gestures bit is set.
++ *
++ * @has_single_tap - a basic single-tap gesture is supported.
++ * @has_tap_n_hold - tap-and-hold gesture is supported.
++ * @has_double_tap - double-tap gesture is supported.
++ * @has_early_tap - early tap is supported and reported as soon as the finger
++ * lifts for any tap event that could be interpreted as either a single tap
++ * or as the first tap of a double-tap or tap-and-hold gesture.
++ * @has_flick - flick detection is supported.
++ * @has_press - press gesture reporting is supported.
++ * @has_pinch - pinch gesture detection is supported.
++ * @has_palm_det - the 2-D sensor notifies the host whenever a large conductive
++ * object such as a palm or a cheek touches the 2-D sensor.
++ * @has_rotate - rotation gesture detection is supported.
++ * @has_touch_shapes - TouchShapes are supported.  A TouchShape is a fixed
++ * rectangular area on the sensor that behaves like a capacitive button.
++ * @has_scroll_zones - scrolling areas near the sensor edges are supported.
++ * @has_individual_scroll_zones - if 1, then 4 scroll zones are supported;
++ * if 0, then only two are supported.
++ * @has_multi_finger_scroll - the multifinger_scrolling bit will be set when
++ * more than one finger is involved in a scrolling action.
++ */
++struct f11_2d_gesture_info {
++	bool has_single_tap:1;
++	bool has_tap_n_hold:1;
++	bool has_double_tap:1;
++	bool has_early_tap:1;
++	bool has_flick:1;
++	bool has_press:1;
++	bool has_pinch:1;
++	bool has_chiral:1;
++
++	bool has_palm_det:1;
++	bool has_rotate:1;
++	bool has_touch_shapes:1;
++	bool has_scroll_zones:1;
++	bool has_individual_scroll_zones:1;
++	bool has_multi_finger_scroll:1;
++	bool has_mf_edge_motion:1;
++	bool has_mf_scroll_inertia:1;
++} __attribute__((__packed__));
++
++/** Utility for checking bytes in the gesture info registers.  This is done
++ * often enough that we put it here to declutter the conditionals.
++ */
++static bool has_gesture_bits(const struct f11_2d_gesture_info *info,
++			     const u8 byte) {
++	return ((u8 *) info)[byte] != 0;
++}
++
++/**
++ * @has_pen - detection of a stylus is supported and registers F11_2D_Ctrl20
++ * and F11_2D_Ctrl21 exist.
++ * @has_proximity - detection of fingers near the sensor is supported and
++ * registers F11_2D_Ctrl22 through F11_2D_Ctrl26 exist.
++ * @has_palm_det_sensitivity -  the sensor supports the palm detect sensitivity
++ * feature and register F11_2D_Ctrl27 exists.
++ * @has_two_pen_thresholds - is has_pen is also set, then F11_2D_Ctrl35 exists.
++ * @has_contact_geometry - the sensor supports the use of contact geometry to
++ * map absolute X and Y target positions and registers F11_2D_Data18.* through
++ * F11_2D_Data27 exist.
++ */
++struct f11_2d_query9 {
++	bool has_pen:1;
++	bool has_proximity:1;
++	bool has_palm_det_sensitivity:1;
++	bool has_suppress_on_palm_detect:1;
++	bool has_two_pen_thresholds:1;
++	bool has_contact_geometry:1;
++	bool has_pen_hover_discrimination:1;
++	bool has_pen_filters:1;
++} __attribute__((__packed__));
++
++/** Touch shape info (query 10) is present if has_touch_shapes is set.
++ *
++ * @nbr_touch_shapes - the total number of touch shapes supported.
++ */
++struct f11_2d_ts_info {
++	u8 nbr_touch_shapes:5;
++	u8 reserved:3;
++} __attribute__((__packed__));
++
++/** Query 11 is present if the has_query11 bit is set in query 0.
++ *
++ * @has_z_tuning - if set, the sensor supports Z tuning and registers
++ * F11_2D_Ctrl29 through F11_2D_Ctrl33 exist.
++ * @has_algorithm_selection - controls choice of noise suppression algorithm
++ * @has_w_tuning - the sensor supports Wx and Wy scaling and registers
++ * F11_2D_Ctrl36 through F11_2D_Ctrl39 exist.
++ * @has_pitch_info - the X and Y pitches of the sensor electrodes can be
++ * configured and registers F11_2D_Ctrl40 and F11_2D_Ctrl41 exist.
++ * @has_finger_size -  the default finger width settings for the
++ * sensor can be configured and registers F11_2D_Ctrl42 through F11_2D_Ctrl44
++ * exist.
++ * @has_segmentation_aggressiveness - the sensor’s ability to distinguish
++ * multiple objects close together can be configured and register F11_2D_Ctrl45
++ * exists.
++ * @has_XY_clip -  the inactive outside borders of the sensor can be
++ * configured and registers F11_2D_Ctrl46 through F11_2D_Ctrl49 exist.
++ * @has_drumming_filter - the sensor can be configured to distinguish
++ * between a fast flick and a quick drumming movement and registers
++ * F11_2D_Ctrl50 and F11_2D_Ctrl51 exist.
++ */
++struct f11_2d_query11 {
++	bool has_z_tuning:1;
++	bool has_algorithm_selection:1;
++	bool has_w_tuning:1;
++	bool has_pitch_info:1;
++	bool has_finger_size:1;
++	bool has_segmentation_aggressiveness:1;
++	bool has_XY_clip:1;
++	bool has_drumming_filter:1;
++} __attribute__((__packed__));
++
++/**
++ * @has_gapless_finger - control registers relating to gapless finger are
++ * present.
++ * @has_gapless_finger_tuning - additional control and data registers relating
++ * to gapless finger are present.
++ * @has_8bit_w - larger W value reporting is supported.
++ * @has_adjustable_mapping - TBD
++ * @has_info2 - the general info query14 is present
++ * @has_physical_props - additional queries describing the physical properties
++ * of the sensor are present.
++ * @has_finger_limit - indicates that F11 Ctrl 80 exists.
++ * @has_linear_coeff - indicates that F11 Ctrl 81 exists.
++ */
++struct f11_2d_query12 {
++	bool has_gapless_finger:1;
++	bool has_gapless_finger_tuning:1;
++	bool has_8bit_w:1;
++	bool has_adjustable_mapping:1;
++	bool has_info2:1;
++	bool has_physical_props:1;
++	bool has_finger_limit:1;
++	bool has_linear_coeff_2:1;
++} __attribute__((__packed__));
++
++/** This register is present if Query 5's has_jitter_filter bit is set.
++ * @jitter_window_size - used by Design Studio 4.
++ * @jitter_filter_type - used by Design Studio 4.
++ */
++struct f11_2d_query13 {
++	u8 jtter_window_size:5;
++	u8 jitter_filter_type:2;
++	u8 reserved:1;
++} __attribute__((__packed__));
++
++/** This register is present if query 12's has_general_info2 flag is set.
++ *
++ * @light_control - Indicates what light/led control features are present, if
++ * any.
++ * @is_clear - if set, this is a clear sensor (indicating direct pointing
++ * application), otherwise it's opaque (indicating indirect pointing).
++ * @clickpad_props - specifies if this is a clickpad, and if so what sort of
++ * mechanism it uses
++ * @mouse_buttons - specifies the number of mouse buttons present (if any).
++ * @has_advanced_gestures - advanced driver gestures are supported.
++ */
++struct f11_2d_query14 {
++	u8 light_control:2;
++	bool is_clear:1;
++	u8 clickpad_props:2;
++	u8 mouse_buttons:2;
++	bool has_advanced_gestures:1;
++} __attribute__((__packed__));
++
++#define F11_LIGHT_CTL_NONE 0x00
++#define F11_LUXPAD	   0x01
++#define F11_DUAL_MODE      0x02
++
++#define F11_NOT_CLICKPAD     0x00
++#define F11_HINGED_CLICKPAD  0x01
++#define F11_UNIFORM_CLICKPAD 0x02
++
++/** See notes above for information about specific query register sets.
++ */
++struct f11_2d_sensor_queries {
++	struct f11_2d_sensor_info info;
++
++	struct f11_2d_abs_info abs_info;
++
++	u8 f11_2d_query6;
++
++	struct f11_2d_gesture_info gesture_info;
++
++	struct f11_2d_query9 query9;
++
++	struct f11_2d_ts_info ts_info;
++
++	struct f11_2d_query11 features_1;
++
++	struct f11_2d_query12 features_2;
++
++	struct f11_2d_query13 jitter_filter;
++
++	struct f11_2d_query14 info_2;
 +};
 +
-+static struct attribute_group function_dev_attr_group = {
-+	.attrs = function_dev_attrs,
++/**
++ * @reporting_mode - controls how often finger position data is reported.
++ * @abs_pos_filt - when set, enables various noise and jitter filtering
++ * algorithms for absolute reports.
++ * @rel_pos_filt - when set, enables various noise and jitter filtering
++ * algorithms for relative reports.
++ * @rel_ballistics - enables ballistics processing for the relative finger
++ * motion on the 2-D sensor.
++ * @dribble - enables the dribbling feature.
++ * @report_beyond_clip - when this is set, fingers outside the active area
++ * specified by the x_clip and y_clip registers will be reported, but with
++ * reported finger position clipped to the edge of the active area.
++ * @palm_detect_thresh - the threshold at which a wide finger is considered a
++ * palm. A value of 0 inhibits palm detection.
++ * @motion_sensitivity - specifies the threshold an anchored finger must move
++ * before it is considered no longer anchored.  High values mean more
++ * sensitivity.
++ * @man_track_en - for anchored finger tracking, whether the host (1) or the
++ * device (0) determines which finger is the tracked finger.
++ * @man_tracked_finger - when man_track_en is 1, specifies whether finger 0 or
++ * finger 1 is the tracked finger.
++ * @delta_x_threshold - 2-D position update interrupts are inhibited unless
++ * the finger moves more than a certain threshold distance along the X axis.
++ * @delta_y_threshold - 2-D position update interrupts are inhibited unless
++ * the finger moves more than a certain threshold distance along the Y axis.
++ * @velocity - When rel_ballistics is set, this register defines the
++ * velocity ballistic parameter applied to all relative motion events.
++ * @acceleration - When rel_ballistics is set, this register defines the
++ * acceleration ballistic parameter applied to all relative motion events.
++ * @sensor_max_x_pos - the maximum X coordinate reported by the sensor.
++ * @sensor_max_y_pos - the maximum Y coordinate reported by the sensor.
++ */
++struct f11_2d_ctrl0_9 {
++	/* F11_2D_Ctrl0 */
++	u8 reporting_mode:3;
++	bool abs_pos_filt:1;
++	bool rel_pos_filt:1;
++	bool rel_ballistics:1;
++	bool dribble:1;
++	bool report_beyond_clip:1;
++	/* F11_2D_Ctrl1 */
++	u8 palm_detect_thres:4;
++	u8 motion_sensitivity:2;
++	bool man_track_en:1;
++	bool man_tracked_finger:1;
++	/* F11_2D_Ctrl2 and 3 */
++	u8 delta_x_threshold:8;
++	u8 delta_y_threshold:8;
++	/* F11_2D_Ctrl4 and 5 */
++	u8 velocity:8;
++	u8 acceleration:8;
++	/* F11_2D_Ctrl6 thru 9 */
++	u16 sensor_max_x_pos:12;
++	u8 ctrl7_reserved:4;
++	u16 sensor_max_y_pos:12;
++	u8 ctrl9_reserved:4;
++} __attribute__((__packed__));
++
++/**
++ * @single_tap_int_enable - enable tap gesture recognition.
++ * @tap_n_hold_int_enable - enable tap-and-hold gesture recognition.
++ * @double_tap_int_enable - enable double-tap gesture recognition.
++ * @early_tap_int_enable - enable early tap notification.
++ * @flick_int_enable - enable flick detection.
++ * @press_int_enable - enable press gesture recognition.
++ * @pinch_int_enable - enable pinch detection.
++ */
++struct f11_2d_ctrl10 {
++	bool single_tap_int_enable:1;
++	bool tap_n_hold_int_enable:1;
++	bool double_tap_int_enable:1;
++	bool early_tap_int_enable:1;
++	bool flick_int_enable:1;
++	bool press_int_enable:1;
++	bool pinch_int_enable:1;
++	u8 reserved:1;
++} __attribute__((__packed__));
++
++/**
++ * @palm_detect_int_enable - enable palm detection feature.
++ * @rotate_int_enable - enable rotate gesture detection.
++ * @touch_shape_int_enable - enable the TouchShape feature.
++ * @scroll_zone_int_enable - enable scroll zone reporting.
++ * @multi_finger_scroll_int_enable - enable the multfinger scroll feature.
++ */
++struct f11_2d_ctrl11 {
++	bool palm_detect_int_enable:1;
++	bool rotate_int_enable:1;
++	bool touch_shape_int_enable:1;
++	bool scroll_zone_int_enable:1;
++	bool multi_finger_scroll_int_enable:1;
++	u8 reserved:3;
++} __attribute__((__packed__));
++
++/**
++ * @sens_adjustment - allows a host to alter the overall sensitivity of a
++ * 2-D sensor. A positive value in this register will make the sensor more
++ * sensitive than the factory defaults, and a negative value will make it
++ * less sensitive.
++ * @hyst_adjustment - increase the touch/no-touch hysteresis by 2 Z-units for
++ * each one unit increment in this setting.
++ */
++struct f11_2d_ctrl14 {
++	s8 sens_adjustment:5;
++	u8 hyst_adjustment:3;
++} __attribute__((__packed__));
++
++/**
++ * @max_tap_time - the maximum duration of a tap, in 10-millisecond units.
++ */
++struct f11_2d_ctrl15 {
++	u8 max_tap_time:8;
++} __attribute__((__packed__));
++
++/**
++ * @min_press_time - The minimum duration required for stationary finger(s) to
++ * generate a press gesture, in 10-millisecond units.
++ */
++struct f11_2d_ctrl16 {
++	u8 min_press_time:8;
++} __attribute__((__packed__));
++
++/**
++ * @max_tap_distance - Determines the maximum finger movement allowed during
++ * a tap, in 0.1-millimeter units.
++ */
++struct f11_2d_ctrl17 {
++	u8 max_tap_distance:8;
++} __attribute__((__packed__));
++
++/**
++ * @min_flick_distance - the minimum finger movement for a flick gesture,
++ * in 1-millimeter units.
++ * @min_flick_speed - the minimum finger speed for a flick gesture, in
++ * 10-millimeter/second units.
++ */
++struct f11_2d_ctrl18_19 {
++	u8 min_flick_distance:8;
++	u8 min_flick_speed:8;
++} __attribute__((__packed__));
++
++/**
++ * @pen_detect_enable - enable reporting of stylus activity.
++ * @pen_jitter_filter_enable - Setting this enables the stylus anti-jitter
++ * filter.
++ * @pen_z_threshold - This is the stylus-detection lower threshold. Smaller
++ * values result in higher sensitivity.
++ */
++struct f11_2d_ctrl20_21 {
++	bool pen_detect_enable:1;
++	bool pen_jitter_filter_enable:1;
++	u8 ctrl20_reserved:6;
++	u8 pen_z_threshold:8;
++} __attribute__((__packed__));
++
++/**
++ * These are not accessible through sysfs yet.
++ *
++ * @proximity_detect_int_en - enable proximity detection feature.
++ * @proximity_jitter_filter_en - enables an anti-jitter filter on proximity
++ * data.
++ * @proximity_detection_z_threshold - the threshold for finger-proximity
++ * detection.
++ * @proximity_delta_x_threshold - In reduced-reporting modes, this is the
++ * threshold for proximate-finger movement in the direction parallel to the
++ * X-axis.
++ * @proximity_delta_y_threshold - In reduced-reporting modes, this is the
++ * threshold for proximate-finger movement in the direction parallel to the
++ * Y-axis.
++ * * @proximity_delta_Z_threshold - In reduced-reporting modes, this is the
++ * threshold for proximate-finger movement in the direction parallel to the
++ * Z-axis.
++ */
++struct f11_2d_ctrl22_26 {
++	/* control 22 */
++	bool proximity_detect_int_en:1;
++	bool proximity_jitter_filter_en:1;
++	u8 f11_2d_ctrl6_b3__7:6;
++
++	/* control 23 */
++	u8 proximity_detection_z_threshold;
++
++	/* control 24 */
++	u8 proximity_delta_x_threshold;
++
++	/* control 25 */
++	u8 proximity_delta_y_threshold;
++
++	/* control 26 */
++	u8 proximity_delta_z_threshold;
++} __attribute__((__packed__));
++
++/**
++ * @palm_detecy_sensitivity - When this value is small, smaller objects will
++ * be identified as palms; when this value is large, only larger objects will
++ * be identified as palms. 0 represents the factory default.
++ * @suppress_on_palm_detect - when set, all F11 interrupts except palm_detect
++ * are suppressed while a palm is detected.
++ */
++struct f11_2d_ctrl27 {
++	s8 palm_detect_sensitivity:4;
++	bool suppress_on_palm_detect:1;
++	u8 f11_2d_ctrl27_b5__7:3;
++} __attribute__((__packed__));
++
++/**
++ * @multi_finger_scroll_mode - allows choice of multi-finger scroll mode and
++ * determines whether and how X or Y displacements are reported.
++ * @edge_motion_en - enables the edge_motion feature.
++ * @multi_finger_scroll_momentum - controls the length of time that scrolling
++ * continues after fingers have been lifted.
++ */
++struct f11_2d_ctrl28 {
++	u8 multi_finger_scroll_mode:2;
++	bool edge_motion_en:1;
++	bool f11_2d_ctrl28b_3:1;
++	u8 multi_finger_scroll_momentum:4;
++} __attribute__((__packed__));
++
++/**
++ * @z_touch_threshold - Specifies the finger-arrival Z threshold. Large values
++ * may cause smaller fingers to be rejected.
++ * @z_touch_hysteresis - Specifies the difference between the finger-arrival
++ * Z threshold and the finger-departure Z threshold.
++ */
++struct f11_2d_ctrl29_30 {
++	u8 z_touch_threshold;
++	u8 z_touch_hysteresis;
++} __attribute__((__packed__));
++
++
++struct f11_2d_ctrl {
++	struct f11_2d_ctrl0_9		 *ctrl0_9;
++	u16				ctrl0_9_address;
++	struct f11_2d_ctrl10		*ctrl10;
++	struct f11_2d_ctrl11		*ctrl11;
++	u8				ctrl12_size;
++	struct f11_2d_ctrl14		*ctrl14;
++	struct f11_2d_ctrl15		*ctrl15;
++	struct f11_2d_ctrl16		*ctrl16;
++	struct f11_2d_ctrl17		*ctrl17;
++	struct f11_2d_ctrl18_19		*ctrl18_19;
++	struct f11_2d_ctrl20_21		*ctrl20_21;
++	struct f11_2d_ctrl22_26		*ctrl22_26;
++	struct f11_2d_ctrl27		*ctrl27;
++	struct f11_2d_ctrl28		*ctrl28;
++	struct f11_2d_ctrl29_30		*ctrl29_30;
 +};
 +
-+static const struct attribute_group *function_dev_attr_groups[] = {
-+	&function_dev_attr_group,
-+	NULL,
++/**
++ * @x_msb - top 8 bits of X finger position.
++ * @y_msb - top 8 bits of Y finger position.
++ * @x_lsb - bottom 4 bits of X finger position.
++ * @y_lsb - bottom 4 bits of Y finger position.
++ * @w_y - contact patch width along Y axis.
++ * @w_x - contact patch width along X axis.
++ * @z - finger Z value (proxy for pressure).
++ */
++struct f11_2d_data_1_5 {
++	u8 x_msb;
++	u8 y_msb;
++	u8 x_lsb:4;
++	u8 y_lsb:4;
++	u8 w_y:4;
++	u8 w_x:4;
++	u8 z;
++} __attribute__((__packed__));
++
++/**
++ * @delta_x - relative motion along X axis.
++ * @delta_y - relative motion along Y axis.
++ */
++struct f11_2d_data_6_7 {
++	s8 delta_x;
++	s8 delta_y;
++} __attribute__((__packed__));
++
++/**
++ * @single_tap - a single tap was recognized.
++ * @tap_and_hold - a tap-and-hold gesture was recognized.
++ * @double_tap - a double tap gesture was recognized.
++ * @early_tap - a tap gesture might be happening.
++ * @flick - a flick gesture was detected.
++ * @press - a press gesture was recognized.
++ * @pinch - a pinch gesture was detected.
++ */
++struct f11_2d_data_8 {
++	bool single_tap:1;
++	bool tap_and_hold:1;
++	bool double_tap:1;
++	bool early_tap:1;
++	bool flick:1;
++	bool press:1;
++	bool pinch:1;
++} __attribute__((__packed__));
++
++/**
++ * @palm_detect - a palm or other large object is in contact with the sensor.
++ * @rotate - a rotate gesture was detected.
++ * @shape - a TouchShape has been activated.
++ * @scrollzone - scrolling data is available.
++ * @finger_count - number of fingers involved in the reported gesture.
++ */
++struct f11_2d_data_9 {
++	bool palm_detect:1;
++	bool rotate:1;
++	bool shape:1;
++	bool scrollzone:1;
++	u8 finger_count:3;
++} __attribute__((__packed__));
++
++/**
++ * @pinch_motion - when a pinch gesture is detected, this is the change in
++ * distance between the two fingers since this register was last read.
++ */
++struct f11_2d_data_10 {
++	s8 pinch_motion;
++} __attribute__((__packed__));
++
++/**
++ * @x_flick_dist - when a flick gesture is detected,  the distance of flick
++ * gesture in X direction.
++ * @y_flick_dist - when a flick gesture is detected,  the distance of flick
++ * gesture in Y direction.
++ * @flick_time - the total time of the flick gesture, in 10ms units.
++ */
++struct f11_2d_data_10_12 {
++	s8 x_flick_dist;
++	s8 y_flick_dist;
++	u8 flick_time;
++} __attribute__((__packed__));
++
++/**
++ * @motion - when a rotate gesture is detected, the accumulated distance
++ * of the rotate motion. Clockwise motion is positive and counterclockwise
++ * motion is negative.
++ * @finger_separation - when a rotate gesture is detected, the distance
++ * between the fingers.
++ */
++struct f11_2d_data_11_12 {
++	s8 motion;
++	u8 finger_separation;
++} __attribute__((__packed__));
++
++/**
++ * @shape_n - a bitmask of the currently activate TouchShapes (if any).
++ */
++struct f11_2d_data_13 {
++	u8 shape_n;
++} __attribute__((__packed__));
++
++/**
++ * @horizontal - chiral scrolling distance in the X direction.
++ * @vertical - chiral scrolling distance in the Y direction.
++ */
++struct f11_2d_data_14_15 {
++	s8 horizontal;
++	s8 vertical;
++} __attribute__((__packed__));
++
++/**
++ * @x_low - scroll zone motion along the lower edge of the sensor.
++ * @y_right - scroll zone motion along the right edge of the sensor.
++ * @x_upper - scroll zone motion along the upper edge of the sensor.
++ * @y_left - scroll zone motion along the left edge of the sensor.
++ */
++struct f11_2d_data_14_17 {
++	s8 x_low;
++	s8 y_right;
++	s8 x_upper;
++	s8 y_left;
++} __attribute__((__packed__));
++
++struct f11_2d_data {
++	u8				*f_state;
++	const struct f11_2d_data_1_5	*abs_pos;
++	const struct f11_2d_data_6_7	*rel_pos;
++	const struct f11_2d_data_8	*gest_1;
++	const struct f11_2d_data_9	*gest_2;
++	const struct f11_2d_data_10	*pinch;
++	const struct f11_2d_data_10_12	*flick;
++	const struct f11_2d_data_11_12	*rotate;
++	const struct f11_2d_data_13	*shapes;
++	const struct f11_2d_data_14_15	*multi_scroll;
++	const struct f11_2d_data_14_17	*scroll_zones;
 +};
 +
-+struct device_type rmi_function_type = {
-+	.name = "rmi_function",
-+	.groups = function_dev_attr_groups,
-+};
-+EXPORT_SYMBOL_GPL(rmi_function_type);
-+
-+static struct attribute *sensor_dev_attrs[] = {
-+	NULL,
-+};
-+static struct attribute_group sensor_dev_attr_group = {
-+	.attrs = sensor_dev_attrs,
-+};
-+
-+static const struct attribute_group *sensor_dev_attr_groups[] = {
-+	&sensor_dev_attr_group,
-+	NULL,
-+};
-+
-+struct device_type rmi_sensor_type = {
-+	.name = "rmi_sensor",
-+	.groups = sensor_dev_attr_groups,
-+};
-+EXPORT_SYMBOL_GPL(rmi_sensor_type);
-+
-+static atomic_t physical_device_count = ATOMIC_INIT(0);
++/**
++ * @axis_align - controls parameters that are useful in system prototyping
++ * and bring up.
++ * @sens_query - query registers for this particular sensor.
++ * @data - the data reported by this sensor, mapped into a collection of
++ * structs.
++ * @max_x - The maximum X coordinate that will be reported by this sensor.
++ * @max_y - The maximum Y coordinate that will be reported by this sensor.
++ * @nbr_fingers - How many fingers can this sensor report?
++ * @data_pkt - buffer for data reported by this sensor.
++ * @pkt_size - number of bytes in that buffer.
++ * @sensor_index - identifies this particular 2D touch sensor
++ * @type_a - some early RMI4 2D sensors do not reliably track the finger
++ * position when two fingers are on the device.  When this is true, we
++ * assume we have one of those sensors and report events appropriately.
++ * @sensor_type - indicates whether we're touchscreen or touchpad.
++ * @input - input device for absolute pointing stream
++ * @mouse_input - input device for relative pointing stream.
++ * @input_phys - buffer for the absolute phys name for this sensor.
++ * @input_mouse_phys - buffer for the relative phys name for this sensor.
++ * @debugfs_flip - inverts one or both axes.  Useful in prototyping new
++ * systems.
++ * @debugfs_flip - coordinate clipping range for one or both axes.  Useful in
++ * prototyping new systems.
++ * @debugfs_delta_threshold - adjusts motion sensitivity for relative reports
++ * and (in reduced reporting mode) absolute reports.  Useful in prototyping new
++ * systems.
++ * @debugfs_offset - offsets one or both axes.  Useful in prototyping new
++ * systems.
++ * @debugfs_swap - swaps X and Y axes.  Useful in prototyping new systems.
++ * @debugfs_type_a - forces type A behavior.  Useful in bringing up old systems
++ * when you're not sure if you've got a Type A or Type B sensor.
++ */
++struct f11_2d_sensor {
++	struct rmi_f11_2d_axis_alignment axis_align;
++	struct f11_2d_sensor_queries sens_query;
++	struct f11_2d_data data;
++	u16 max_x;
++	u16 max_y;
++	u8 nbr_fingers;
++	u8 *data_pkt;
++	int pkt_size;
++	u8 sensor_index;
++	bool type_a;
++	enum rmi_f11_sensor_type sensor_type;
++	struct input_dev *input;
++	struct input_dev *mouse_input;
++	struct rmi_function_container *fc;
++	char input_phys[NAME_BUFFER_SIZE];
++	char input_phys_mouse[NAME_BUFFER_SIZE];
 +
 +#ifdef CONFIG_RMI4_DEBUG
-+static struct dentry *rmi_debugfs_root;
++	struct dentry *debugfs_flip;
++	struct dentry *debugfs_clip;
++	struct dentry *debugfs_delta_threshold;
++	struct dentry *debugfs_offset;
++	struct dentry *debugfs_swap;
++	struct dentry *debugfs_type_a;
 +#endif
-+
-+#ifdef CONFIG_PM
-+static int rmi_bus_suspend(struct device *dev)
-+{
-+	struct device_driver *driver = dev->driver;
-+	const struct dev_pm_ops *pm;
-+
-+	if (!driver)
-+		return 0;
-+
-+	pm = driver->pm;
-+	if (pm && pm->suspend)
-+		return pm->suspend(dev);
-+	if (driver->suspend)
-+		return driver->suspend(dev, PMSG_SUSPEND);
-+
-+	return 0;
-+}
-+
-+static int rmi_bus_resume(struct device *dev)
-+{
-+	struct device_driver *driver = dev->driver;
-+	const struct dev_pm_ops *pm;
-+
-+	if (!driver)
-+		return 0;
-+
-+	pm = driver->pm;
-+	if (pm && pm->resume)
-+		return pm->resume(dev);
-+	if (driver->resume)
-+		return driver->resume(dev);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(rmi_bus_pm_ops,
-+			 rmi_bus_suspend, rmi_bus_resume);
-+
-+struct bus_type rmi_bus_type = {
-+	.name		= "rmi",
-+	.pm		= &rmi_bus_pm_ops
 +};
-+EXPORT_SYMBOL_GPL(rmi_bus_type);
 +
-+static void release_rmidev_device(struct device *dev)
++/** Data pertaining to F11 in general.  For per-sensor data, see struct
++ * f11_2d_sensor.
++ *
++ * @dev_query - F11 device specific query registers.
++ * @dev_controls - F11 device specific control registers.
++ * @dev_controls_mutex - lock for the control registers.
++ * @rezero_wait_ms - if nonzero, upon resume we will wait this many
++ * milliseconds before rezeroing the sensor(s).  This is useful in systems with
++ * poor electrical behavior on resume, where the initial calibration of the
++ * sensor(s) coming out of sleep state may be bogus.
++ * @sensors - per sensor data structures.
++ * @debugfs_rezero_wait - allows control of the rezero_wait value.  Useful
++ * during system prototyping.
++ */
++struct f11_data {
++	struct f11_2d_device_query dev_query;
++	struct f11_2d_ctrl dev_controls;
++	struct mutex dev_controls_mutex;
++	u16 rezero_wait_ms;
++	struct f11_2d_sensor sensors[F11_MAX_NUM_OF_SENSORS];
++
++#ifdef CONFIG_RMI4_DEBUG
++	struct dentry *debugfs_rezero_wait;
++#endif
++};
++
++enum finger_state_values {
++	F11_NO_FINGER	= 0x00,
++	F11_PRESENT	= 0x01,
++	F11_INACCURATE	= 0x02,
++	F11_RESERVED	= 0x03
++};
++
++static ssize_t f11_maxPos_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
 +{
-+	device_unregister(dev);
++	struct rmi_function_container *fc;
++	struct f11_data *data;
++
++	fc = to_rmi_function_container(dev);
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u %u\n",
++			data->sensors[0].max_x, data->sensors[0].max_y);
 +}
 +
-+/**
-+ * rmi_register_phys_device - register a physical device connection on the RMI
-+ * bus.  Physical drivers provide communication from the devices on the bus to
-+ * the RMI4 sensor on a bus such as SPI, I2C, and so on.
-+ *
-+ * @phys: the physical device to register
-+ */
-+int rmi_register_phys_device(struct rmi_phys_device *phys)
++static ssize_t f11_relreport_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
 +{
-+	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
-+	struct rmi_device *rmi_dev;
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
 +
-+	if (!pdata) {
-+		dev_err(phys->dev, "no platform data!\n");
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->
++			sensors[0].axis_align.rel_report_enabled);
++}
++
++static ssize_t f11_relreport_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf,
++					 size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	unsigned int new_value;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++
++	if (sscanf(buf, "%u", &new_value) != 1)
 +		return -EINVAL;
-+	}
++	if (new_value > 1)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.rel_report_enabled = new_value;
 +
-+	rmi_dev = kzalloc(sizeof(struct rmi_device), GFP_KERNEL);
-+	if (!rmi_dev)
-+		return -ENOMEM;
-+
-+	rmi_dev->phys = phys;
-+	rmi_dev->dev.bus = &rmi_bus_type;
-+	rmi_dev->dev.type = &rmi_sensor_type;
-+
-+	rmi_dev->number = atomic_inc_return(&physical_device_count) - 1;
-+	rmi_dev->dev.release = release_rmidev_device;
-+
-+	dev_set_name(&rmi_dev->dev, "sensor%02d", rmi_dev->number);
-+	dev_dbg(phys->dev, "%s: Registered %s as %s.\n", __func__,
-+		pdata->sensor_name, dev_name(&rmi_dev->dev));
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG) && rmi_debugfs_root) {
-+		rmi_dev->debugfs_root = debugfs_create_dir(
-+			dev_name(&rmi_dev->dev), rmi_debugfs_root);
-+		if (!rmi_dev->debugfs_root)
-+			dev_err(&rmi_dev->dev, "Failed to create debugfs root.\n");
-+	}
-+
-+	phys->rmi_dev = rmi_dev;
-+	return device_register(&rmi_dev->dev);
++	return count;
 +}
-+EXPORT_SYMBOL(rmi_register_phys_device);
 +
-+/**
-+ * rmi_unregister_phys_device - unregister a physical device connection
-+ * @phys: the physical driver to unregister
-+ *
-+ */
-+void rmi_unregister_phys_device(struct rmi_phys_device *phys)
++static ssize_t f11_rezero_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
 +{
-+	struct rmi_device *rmi_dev = phys->rmi_dev;
++	struct rmi_function_container *fc = NULL;
++	unsigned int rezero;
++	int retval = 0;
 +
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG) && rmi_dev->debugfs_root)
-+		debugfs_remove(rmi_dev->debugfs_root);
++	fc = to_rmi_function_container(dev);
 +
-+	kfree(rmi_dev);
-+}
-+EXPORT_SYMBOL(rmi_unregister_phys_device);
++	if (sscanf(buf, "%u", &rezero) != 1)
++		return -EINVAL;
++	if (rezero > 1)
++		return -EINVAL;
 +
-+/**
-+ * rmi_for_each_dev - provides a way for other parts of the system to enumerate
-+ * the devices on the RMI bus.
-+ *
-+ * @data - will be passed into the callback function.
-+ * @func - will be called for each device.
-+ */
-+int rmi_for_each_dev(void *data, int (*func)(struct device *dev, void *data))
-+{
-+	int retval;
-+	mutex_lock(&rmi_bus_mutex);
-+	retval = bus_for_each_dev(&rmi_bus_type, NULL, data, func);
-+	mutex_unlock(&rmi_bus_mutex);
-+	return retval;
-+}
-+EXPORT_SYMBOL_GPL(rmi_for_each_dev);
++	/* Per spec, 0 has no effect, so we skip it entirely. */
++	if (rezero) {
++		/* Command register always reads as 0, so just use a local. */
++		struct f11_2d_commands commands = {
++			.rezero = true,
++		};
 +
-+static int __init rmi_bus_init(void)
-+{
-+	int error;
-+
-+	mutex_init(&rmi_bus_mutex);
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
-+		rmi_debugfs_root = debugfs_create_dir(rmi_bus_type.name, NULL);
-+		if (!rmi_debugfs_root)
-+			pr_err("%s: Failed to create debugfs root.\n",
-+			       __func__);
-+		else if (IS_ERR(rmi_debugfs_root)) {
-+			pr_err("%s: Kernel may not contain debugfs support, code=%ld\n",
-+				__func__, PTR_ERR(rmi_debugfs_root));
-+			rmi_debugfs_root = NULL;
++		retval = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
++				&commands, sizeof(commands));
++		if (retval < 0) {
++			dev_err(dev, "%s: failed to issue rezero command, error = %d.",
++				__func__, retval);
++			return retval;
 +		}
 +	}
 +
-+	error = bus_register(&rmi_bus_type);
-+	if (error < 0) {
-+		pr_err("%s: error registering the RMI bus: %d\n", __func__,
-+		       error);
-+		return error;
-+	}
-+	pr_debug("%s: successfully registered RMI bus.\n", __func__);
-+
-+	return 0;
++	return count;
 +}
 +
-+static void __exit rmi_bus_exit(void)
-+{
-+	/* We should only ever get here if all drivers are unloaded, so
-+	 * all we have to do at this point is unregister ourselves.
-+	 */
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG) && rmi_debugfs_root)
-+		debugfs_remove(rmi_debugfs_root);
-+	bus_unregister(&rmi_bus_type);
-+}
-+
-+module_init(rmi_bus_init);
-+module_exit(rmi_bus_exit);
-+
-+MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com");
-+MODULE_DESCRIPTION("RMI bus");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(RMI_DRIVER_VERSION);
-diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
-new file mode 100644
-index 0000000..05a73ae
---- /dev/null
-+++ b/drivers/input/rmi4/rmi_driver.c
-@@ -0,0 +1,1663 @@
-+/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
-+ * Copyright (c) 2011 Unixphere
-+ *
-+ * This driver adds support for generic RMI4 devices from Synpatics. It
-+ * implements the mandatory f01 RMI register and depends on the presence of
-+ * other required RMI functions.
-+ *
-+ * The RMI4 specification can be found here (URL split after files/ for
-+ * style reasons):
-+ * http://www.synaptics.com/sites/default/files/
-+ *           511-000136-01-Rev-E-RMI4%20Intrfacing%20Guide.pdf
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/bitmap.h>
-+#include <linux/debugfs.h>
-+#include <linux/delay.h>
-+#include <linux/device.h>
-+#include <linux/fs.h>
-+#include <linux/gpio.h>
-+#include <linux/kconfig.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/pm.h>
-+#include <linux/rmi.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <uapi/linux/input.h>
-+#include "rmi_driver.h"
-+#include "rmi_f01.h"
-+
-+#define HAS_NONSTANDARD_PDT_MASK 0x40
-+#define RMI4_MAX_PAGE 0xff
-+#define RMI4_PAGE_SIZE 0x100
-+
-+#define RMI_DEVICE_RESET_CMD	0x01
-+#define DEFAULT_RESET_DELAY_MS	100
-+
-+#define DEFAULT_POLL_INTERVAL_MS	13
-+
-+#define IRQ_DEBUG(data) (IS_ENABLED(CONFIG_RMI4_DEBUG) && data->irq_debug)
-+
-+#ifdef	CONFIG_RMI4_DEBUG
-+struct driver_debugfs_data {
-+	bool done;
-+	struct rmi_device *rmi_dev;
++static struct device_attribute attrs[] = {
++	__ATTR(relreport, RMI_RW_ATTR, f11_relreport_show, f11_relreport_store),
++	__ATTR(maxPos, RMI_RO_ATTR, f11_maxPos_show, NULL),
++	__ATTR(rezero, RMI_WO_ATTR, NULL, f11_rezero_store)
 +};
 +
-+static int debug_open(struct inode *inodep, struct file *filp)
-+{
-+	struct driver_debugfs_data *data;
-+	struct rmi_device *rmi_dev;
++#ifdef CONFIG_RMI4_DEBUG
 +
-+	rmi_dev = inodep->i_private;
-+	data = kzalloc(sizeof(struct driver_debugfs_data),
-+				GFP_KERNEL);
++struct sensor_debugfs_data {
++	bool done;
++	struct f11_2d_sensor *sensor;
++};
++
++static int sensor_debug_open(struct inode *inodep, struct file *filp)
++{
++	struct sensor_debugfs_data *data;
++	struct f11_2d_sensor *sensor = inodep->i_private;
++
++	data = kzalloc(sizeof(struct sensor_debugfs_data), GFP_KERNEL);
 +	if (!data)
 +		return -ENOMEM;
 +
-+	data->rmi_dev = inodep->i_private;
++	data->sensor = sensor;
 +	filp->private_data = data;
 +	return 0;
 +}
 +
-+static int debug_release(struct inode *inodep, struct file *filp)
++static int sensor_debug_release(struct inode *inodep, struct file *filp)
 +{
 +	kfree(filp->private_data);
 +	return 0;
 +}
 +
-+static ssize_t delay_read(struct file *filp, char __user *buffer, size_t size,
++static ssize_t flip_read(struct file *filp, char __user *buffer, size_t size,
 +		    loff_t *offset) {
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_device_platform_data *pdata =
-+			data->rmi_dev->phys->dev->platform_data;
 +	int retval;
 +	char *local_buf;
++	struct sensor_debugfs_data *data = filp->private_data;
 +
 +	if (data->done)
 +		return 0;
-+
-+	data->done = 1;
 +
 +	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
 +	if (!local_buf)
 +		return -ENOMEM;
 +
-+	retval = snprintf(local_buf, size, "%d %d %d %d %d\n",
-+		pdata->spi_data.read_delay_us, pdata->spi_data.write_delay_us,
-+		pdata->spi_data.block_delay_us,
-+		pdata->spi_data.pre_delay_us, pdata->spi_data.post_delay_us);
++	data->done = 1;
++
++	retval = snprintf(local_buf, size, "%u %u\n",
++			data->sensor->axis_align.flip_x,
++			data->sensor->axis_align.flip_y);
 +
 +	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
 +		retval = -EFAULT;
@@ -445,18 +1077,13 @@ index 0000000..05a73ae
 +	return retval;
 +}
 +
-+static ssize_t delay_write(struct file *filp, const char __user *buffer,
++static ssize_t flip_write(struct file *filp, const char __user *buffer,
 +			   size_t size, loff_t *offset) {
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_device_platform_data *pdata =
-+			data->rmi_dev->phys->dev->platform_data;
 +	int retval;
 +	char *local_buf;
-+	unsigned int new_read_delay;
-+	unsigned int new_write_delay;
-+	unsigned int new_block_delay;
-+	unsigned int new_pre_delay;
-+	unsigned int new_post_delay;
++	unsigned int new_X;
++	unsigned int new_Y;
++	struct sensor_debugfs_data *data = filp->private_data;
 +
 +	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
 +	if (!local_buf)
@@ -468,80 +1095,32 @@ index 0000000..05a73ae
 +		return -EFAULT;
 +	}
 +
-+	retval = sscanf(local_buf, "%u %u %u %u %u", &new_read_delay,
-+			&new_write_delay, &new_block_delay,
-+			&new_pre_delay, &new_post_delay);
++	retval = sscanf(local_buf, "%u %u", &new_X, &new_Y);
 +	kfree(local_buf);
-+
-+	if (retval != 5) {
-+		dev_err(&data->rmi_dev->dev,
-+			"Incorrect number of values provided for delay.");
++	if (retval != 2 || new_X > 1 || new_Y > 1)
 +		return -EINVAL;
-+	}
-+	dev_dbg(&data->rmi_dev->dev,
-+		 "Setting delays to %u %u %u %u %u.\n", new_read_delay,
-+		 new_write_delay, new_block_delay, new_pre_delay,
-+		 new_post_delay);
-+	pdata->spi_data.read_delay_us = new_read_delay;
-+	pdata->spi_data.write_delay_us = new_write_delay;
-+	pdata->spi_data.block_delay_us = new_block_delay;
-+	pdata->spi_data.pre_delay_us = new_pre_delay;
-+	pdata->spi_data.post_delay_us = new_post_delay;
++
++	data->sensor->axis_align.flip_x = new_X;
++	data->sensor->axis_align.flip_y = new_Y;
 +
 +	return size;
 +}
 +
-+static const struct file_operations delay_fops = {
++static const struct file_operations flip_fops = {
 +	.owner = THIS_MODULE,
-+	.open = debug_open,
-+	.release = debug_release,
-+	.read = delay_read,
-+	.write = delay_write,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = flip_read,
++	.write = flip_write,
 +};
 +
-+#define PHYS_NAME "phys"
-+
-+static ssize_t phys_read(struct file *filp, char __user *buffer, size_t size,
-+		    loff_t *offset) {
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_phys_info *info = &data->rmi_dev->phys->info;
-+	int retval;
-+	char *local_buf;
-+
-+	if (data->done)
-+		return 0;
-+
-+	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
-+	if (!local_buf)
-+		return -ENOMEM;
-+
-+	data->done = 1;
-+
-+	retval = snprintf(local_buf, size,
-+		"%-5s %ld %ld %ld %ld %ld %ld\n",
-+		 info->proto ? info->proto : "unk",
-+		 info->tx_count, info->tx_bytes, info->tx_errs,
-+		 info->rx_count, info->rx_bytes, info->rx_errs);
-+	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
-+		retval = -EFAULT;
-+	kfree(local_buf);
-+
-+	return retval;
-+}
-+
-+static const struct file_operations phys_fops = {
-+	.owner = THIS_MODULE,
-+	.open = debug_open,
-+	.release = debug_release,
-+	.read = phys_read,
-+};
-+
-+static ssize_t attn_count_read(struct file *filp, char __user *buffer,
++static ssize_t delta_threshold_read(struct file *filp, char __user *buffer,
 +		size_t size, loff_t *offset) {
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_driver_data *rmi_data = dev_get_drvdata(&data->rmi_dev->dev);
 +	int retval;
 +	char *local_buf;
++	struct sensor_debugfs_data *data = filp->private_data;
++	struct f11_data *f11 = data->sensor->fc->data;
++	struct f11_2d_ctrl *ctrl = &f11->dev_controls;
 +
 +	if (data->done)
 +		return 0;
@@ -552,28 +1131,76 @@ index 0000000..05a73ae
 +
 +	data->done = 1;
 +
-+	retval = snprintf(local_buf, size, "%d\n",
-+			  rmi_data->attn_count.counter);
++	retval = snprintf(local_buf, size, "%u %u\n",
++			ctrl->ctrl0_9->delta_x_threshold,
++			ctrl->ctrl0_9->delta_y_threshold);
++
 +	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
 +		retval = -EFAULT;
 +	kfree(local_buf);
 +
 +	return retval;
++
 +}
 +
-+static const struct file_operations attn_count_fops = {
++static ssize_t delta_threshold_write(struct file *filp,
++		const char __user *buffer, size_t size, loff_t *offset) {
++	int retval;
++	char *local_buf;
++	unsigned int new_X, new_Y;
++	u8 save_X, save_Y;
++	int rc;
++	struct sensor_debugfs_data *data = filp->private_data;
++	struct f11_data *f11 = data->sensor->fc->data;
++	struct f11_2d_ctrl *ctrl = &f11->dev_controls;
++	struct rmi_device *rmi_dev =  data->sensor->fc->rmi_dev;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	retval = copy_from_user(local_buf, buffer, size);
++	if (retval) {
++		kfree(local_buf);
++		return -EFAULT;
++	}
++
++	retval = sscanf(local_buf, "%u %u", &new_X, &new_Y);
++	kfree(local_buf);
++	if (retval != 2 || new_X > 1 || new_Y > 1)
++		return -EINVAL;
++
++	save_X = ctrl->ctrl0_9->delta_x_threshold;
++	save_Y = ctrl->ctrl0_9->delta_y_threshold;
++
++	ctrl->ctrl0_9->delta_x_threshold = new_X;
++	ctrl->ctrl0_9->delta_y_threshold = new_Y;
++	rc = rmi_write_block(rmi_dev, ctrl->ctrl0_9_address,
++			ctrl->ctrl0_9, sizeof(*ctrl->ctrl0_9));
++	if (rc < 0) {
++		dev_warn(&data->sensor->fc->dev,
++			"Failed to write to delta_threshold. Code: %d.\n",
++			rc);
++		ctrl->ctrl0_9->delta_x_threshold = save_X;
++		ctrl->ctrl0_9->delta_y_threshold = save_Y;
++	}
++
++	return size;
++}
++
++static const struct file_operations delta_threshold_fops = {
 +	.owner = THIS_MODULE,
-+	.open = debug_open,
-+	.release = debug_release,
-+	.read = attn_count_read,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = delta_threshold_read,
++	.write = delta_threshold_write,
 +};
 +
-+static ssize_t irq_debug_read(struct file *filp, char __user *buffer,
-+			size_t size, loff_t *offset) {
++static ssize_t offset_read(struct file *filp, char __user *buffer, size_t size,
++		    loff_t *offset) {
 +	int retval;
 +	char *local_buf;
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_driver_data *rmi_data = dev_get_drvdata(&data->rmi_dev->dev);
++	struct sensor_debugfs_data *data = filp->private_data;
 +
 +	if (data->done)
 +		return 0;
@@ -584,7 +1211,9 @@ index 0000000..05a73ae
 +
 +	data->done = 1;
 +
-+	retval = snprintf(local_buf, size, "%u\n", rmi_data->irq_debug);
++	retval = snprintf(local_buf, size, "%u %u\n",
++			data->sensor->axis_align.offset_X,
++			data->sensor->axis_align.offset_Y);
 +
 +	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
 +		retval = -EFAULT;
@@ -593,18 +1222,210 @@ index 0000000..05a73ae
 +	return retval;
 +}
 +
-+static ssize_t irq_debug_write(struct file *filp, const char __user *buffer,
-+			   size_t size, loff_t *offset) {
++static ssize_t offset_write(struct file *filp, const char __user *buffer,
++			   size_t size, loff_t *offset)
++{
 +	int retval;
 +	char *local_buf;
-+	unsigned int new_value;
-+	struct driver_debugfs_data *data = filp->private_data;
-+	struct rmi_driver_data *rmi_data = dev_get_drvdata(&data->rmi_dev->dev);
-+
++	int new_X;
++	int new_Y;
++	struct sensor_debugfs_data *data = filp->private_data;
 +
 +	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
 +	if (!local_buf)
 +		return -ENOMEM;
++
++	retval = copy_from_user(local_buf, buffer, size);
++	if (retval) {
++		kfree(local_buf);
++		return -EFAULT;
++	}
++	retval = sscanf(local_buf, "%u %u", &new_X, &new_Y);
++	kfree(local_buf);
++	if (retval != 2)
++		return -EINVAL;
++
++	data->sensor->axis_align.offset_X = new_X;
++	data->sensor->axis_align.offset_Y = new_Y;
++
++	return size;
++}
++
++static const struct file_operations offset_fops = {
++	.owner = THIS_MODULE,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = offset_read,
++	.write = offset_write,
++};
++
++static ssize_t clip_read(struct file *filp, char __user *buffer, size_t size,
++		    loff_t *offset) {
++	int retval;
++	char *local_buf;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	if (data->done)
++		return 0;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	data->done = 1;
++
++	retval = snprintf(local_buf, size, "%u %u %u %u\n",
++			data->sensor->axis_align.clip_X_low,
++			data->sensor->axis_align.clip_X_high,
++			data->sensor->axis_align.clip_Y_low,
++			data->sensor->axis_align.clip_Y_high);
++
++	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
++		retval = -EFAULT;
++	kfree(local_buf);
++
++	return retval;
++}
++
++static ssize_t clip_write(struct file *filp, const char __user *buffer,
++			   size_t size, loff_t *offset)
++{
++	int retval;
++	char *local_buf;
++	unsigned int new_X_low, new_X_high, new_Y_low, new_Y_high;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	retval = copy_from_user(local_buf, buffer, size);
++	if (retval) {
++		kfree(local_buf);
++		return -EFAULT;
++	}
++
++	retval = sscanf(local_buf, "%u %u %u %u",
++		&new_X_low, &new_X_high, &new_Y_low, &new_Y_high);
++	kfree(local_buf);
++	if (retval != 4)
++		return -EINVAL;
++
++	if (new_X_low >= new_X_high || new_Y_low >= new_Y_high)
++		return -EINVAL;
++
++	data->sensor->axis_align.clip_X_low = new_X_low;
++	data->sensor->axis_align.clip_X_high = new_X_high;
++	data->sensor->axis_align.clip_Y_low = new_Y_low;
++	data->sensor->axis_align.clip_Y_high = new_Y_high;
++
++	return size;
++}
++
++static const struct file_operations clip_fops = {
++	.owner = THIS_MODULE,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = clip_read,
++	.write = clip_write,
++};
++
++static ssize_t swap_read(struct file *filp, char __user *buffer, size_t size,
++		    loff_t *offset) {
++	int retval;
++	char *local_buf;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	if (data->done)
++		return 0;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	data->done = 1;
++
++	retval = snprintf(local_buf, size, "%u\n",
++			data->sensor->axis_align.swap_axes);
++
++	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
++		retval = -EFAULT;
++	kfree(local_buf);
++
++	return retval;
++}
++
++static ssize_t swap_write(struct file *filp, const char __user *buffer,
++			   size_t size, loff_t *offset)
++{
++	int retval;
++	char *local_buf;
++	int new_value;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	retval = copy_from_user(local_buf, buffer, size);
++	if (retval) {
++		kfree(local_buf);
++		return -EFAULT;
++	}
++	retval = sscanf(local_buf, "%u", &new_value);
++	kfree(local_buf);
++	if (retval != 1 || new_value > 1)
++		return -EINVAL;
++
++	data->sensor->axis_align.swap_axes = new_value;
++	return size;
++}
++
++static const struct file_operations swap_fops = {
++	.owner = THIS_MODULE,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = swap_read,
++	.write = swap_write,
++};
++
++static ssize_t type_a_read(struct file *filp, char __user *buffer, size_t size,
++		    loff_t *offset) {
++	int retval;
++	char *local_buf;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	if (data->done)
++		return 0;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	data->done = 1;
++
++	retval = snprintf(local_buf, size, "%u\n",
++			data->sensor->type_a);
++
++	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
++		retval = -EFAULT;
++	kfree(local_buf);
++
++	return retval;
++}
++
++static ssize_t type_a_write(struct file *filp, const char __user *buffer,
++			   size_t size, loff_t *offset)
++{
++	int retval;
++	char *local_buf;
++	int new_value;
++	struct sensor_debugfs_data *data = filp->private_data;
++
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
 +	retval = copy_from_user(local_buf, buffer, size);
 +	if (retval) {
 +		kfree(local_buf);
@@ -612,1542 +1433,1442 @@ index 0000000..05a73ae
 +	}
 +
 +	retval = sscanf(local_buf, "%u", &new_value);
-+	if (retval != 1 || new_value > 1)
-+		retval = -EINVAL;
 +	kfree(local_buf);
-+	rmi_data->irq_debug = new_value;
++	if (retval != 1 || new_value > 1)
++		return -EINVAL;
 +
++	data->sensor->type_a = new_value;
 +	return size;
 +}
 +
-+static const struct file_operations irq_debug_fops = {
++static const struct file_operations type_a_fops = {
 +	.owner = THIS_MODULE,
-+	.open = debug_open,
-+	.release = debug_release,
-+	.read = irq_debug_read,
-+	.write = irq_debug_write,
++	.open = sensor_debug_open,
++	.release = sensor_debug_release,
++	.read = type_a_read,
++	.write = type_a_write,
 +};
 +
-+static int setup_debugfs(struct rmi_device *rmi_dev)
++static int setup_sensor_debugfs(struct f11_2d_sensor *sensor)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct rmi_phys_info *info = &rmi_dev->phys->info;
 +	int retval = 0;
++	char fname[NAME_BUFFER_SIZE];
++	struct rmi_function_container *fc = sensor->fc;
 +
-+	if (!rmi_dev->debugfs_root)
++	if (!fc->debugfs_root)
 +		return -ENODEV;
 +
-+	if (IS_ENABLED(CONFIG_RMI4_SPI) && !strncmp("spi", info->proto, 3)) {
-+		data->debugfs_delay = debugfs_create_file("delay",
-+				RMI_RW_ATTR, rmi_dev->debugfs_root, rmi_dev,
-+				&delay_fops);
-+		if (!data->debugfs_delay || IS_ERR(data->debugfs_delay)) {
-+			dev_warn(&rmi_dev->dev, "Failed to create debugfs delay.\n");
-+			data->debugfs_delay = NULL;
-+		}
-+	}
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "flip.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_flip = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor, &flip_fops);
++	if (!sensor->debugfs_flip)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
-+	data->debugfs_phys = debugfs_create_file(PHYS_NAME, RMI_RO_ATTR,
-+				rmi_dev->debugfs_root, rmi_dev, &phys_fops);
-+	if (!data->debugfs_phys || IS_ERR(data->debugfs_phys)) {
-+		dev_warn(&rmi_dev->dev, "Failed to create debugfs phys.\n");
-+		data->debugfs_phys = NULL;
-+	}
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "clip.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_clip = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor, &clip_fops);
++	if (!sensor->debugfs_clip)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
-+	data->debugfs_irq = debugfs_create_file("irq_debug",
-+			RMI_RW_ATTR,
-+			rmi_dev->debugfs_root,
-+			rmi_dev, &irq_debug_fops);
-+	if (!data->debugfs_irq || IS_ERR(data->debugfs_irq)) {
-+		dev_warn(&rmi_dev->dev, "Failed to create debugfs irq_debug.\n");
-+		data->debugfs_irq = NULL;
-+	}
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "delta_threshold.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_clip = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor,
++				&delta_threshold_fops);
++	if (!sensor->debugfs_delta_threshold)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
-+	data->debugfs_attn_count = debugfs_create_file("attn_count",
-+				RMI_RO_ATTR,
-+				rmi_dev->debugfs_root,
-+				rmi_dev, &attn_count_fops);
-+	if (!data->debugfs_phys || IS_ERR(data->debugfs_attn_count)) {
-+		dev_warn(&rmi_dev->dev, "Failed to create debugfs attn_count.\n");
-+		data->debugfs_attn_count = NULL;
-+	}
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "offset.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_offset = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor, &offset_fops);
++	if (!sensor->debugfs_offset)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
-+	return retval;
-+}
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "swap.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_swap = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor, &swap_fops);
++	if (!sensor->debugfs_swap)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
-+static void teardown_debugfs(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	if (IS_ENABLED(CONFIG_RMI4_SPI) && data->debugfs_delay)
-+		debugfs_remove(data->debugfs_delay);
-+	if (data->debugfs_phys)
-+		debugfs_remove(data->debugfs_phys);
-+	if (data->debugfs_irq)
-+		debugfs_remove(data->debugfs_irq);
-+	if (data->debugfs_attn_count)
-+		debugfs_remove(data->debugfs_attn_count);
-+}
-+#else
-+#define teardown_debugfs(rmi_dev)
-+#define setup_debugfs(rmi_dev) 0
-+#endif
-+
-+static irqreturn_t rmi_irq_thread(int irq, void *p)
-+{
-+	struct rmi_phys_device *phys = p;
-+	struct rmi_device *rmi_dev = phys->rmi_dev;
-+	struct rmi_driver *driver = rmi_dev->driver;
-+	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
-+	struct rmi_driver_data *data;
-+
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	if IRQ_DEBUG(data)
-+		dev_dbg(phys->dev, "ATTN gpio, value: %d.\n",
-+				gpio_get_value(pdata->attn_gpio));
-+
-+	if (gpio_get_value(pdata->attn_gpio) == pdata->attn_polarity) {
-+		atomic_inc(&data->attn_count);
-+		if (driver && driver->irq_handler && rmi_dev)
-+			driver->irq_handler(rmi_dev, irq);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int process_interrupt_requests(struct rmi_device *rmi_dev);
-+
-+static void rmi_poll_work(struct work_struct *work)
-+{
-+	struct rmi_driver_data *data =
-+			container_of(work, struct rmi_driver_data, poll_work);
-+	struct rmi_device *rmi_dev = data->rmi_dev;
-+
-+	process_interrupt_requests(rmi_dev);
-+}
-+
-+/* This is the timer function for polling - it simply has to schedule work
-+ * and restart the timer. */
-+static enum hrtimer_restart rmi_poll_timer(struct hrtimer *timer)
-+{
-+	struct rmi_driver_data *data =
-+			container_of(timer, struct rmi_driver_data, poll_timer);
-+
-+	if (!data->enabled)
-+		return HRTIMER_NORESTART;
-+	if (!work_pending(&data->poll_work))
-+		schedule_work(&data->poll_work);
-+	hrtimer_start(&data->poll_timer, data->poll_interval, HRTIMER_MODE_REL);
-+	return HRTIMER_NORESTART;
-+}
-+
-+static int enable_polling(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	dev_dbg(&rmi_dev->dev, "Polling enabled.\n");
-+	INIT_WORK(&data->poll_work, rmi_poll_work);
-+	hrtimer_init(&data->poll_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	data->poll_timer.function = rmi_poll_timer;
-+	hrtimer_start(&data->poll_timer, data->poll_interval, HRTIMER_MODE_REL);
-+
-+	return 0;
-+}
-+
-+static void disable_polling(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	dev_dbg(&rmi_dev->dev, "Polling disabled.\n");
-+	hrtimer_cancel(&data->poll_timer);
-+	cancel_work_sync(&data->poll_work);
-+}
-+
-+static void disable_sensor(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	if (!data->enabled)
-+		return;
-+
-+	if (!data->irq)
-+		disable_polling(rmi_dev);
-+
-+	if (rmi_dev->phys->disable_device)
-+		rmi_dev->phys->disable_device(rmi_dev->phys);
-+
-+	if (data->irq) {
-+		disable_irq(data->irq);
-+		free_irq(data->irq, rmi_dev->phys);
-+	}
-+
-+	data->enabled = false;
-+}
-+
-+static int enable_sensor(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct rmi_phys_device *rmi_phys;
-+	int retval = 0;
-+	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
-+
-+	if (data->enabled)
-+		return 0;
-+
-+	if (rmi_dev->phys->enable_device) {
-+		retval = rmi_dev->phys->enable_device(rmi_dev->phys);
-+		if (retval)
-+			return retval;
-+	}
-+
-+	rmi_phys = rmi_dev->phys;
-+	if (data->irq) {
-+		retval = request_threaded_irq(data->irq,
-+				rmi_phys->hard_irq ? rmi_phys->hard_irq : NULL,
-+				rmi_phys->irq_thread ?
-+					rmi_phys->irq_thread : rmi_irq_thread,
-+				data->irq_flags,
-+				dev_name(&rmi_dev->dev), rmi_phys);
-+		if (retval)
-+			return retval;
-+	} else {
-+		retval = enable_polling(rmi_dev);
-+		if (retval < 0)
-+			return retval;
-+	}
-+
-+	data->enabled = true;
-+
-+	if (!pdata->level_triggered &&
-+		    gpio_get_value(pdata->attn_gpio) == pdata->attn_polarity)
-+		retval = process_interrupt_requests(rmi_dev);
++	retval = snprintf(fname, NAME_BUFFER_SIZE, "type_a.%d",
++			  sensor->sensor_index);
++	sensor->debugfs_type_a = debugfs_create_file(fname, RMI_RW_ATTR,
++				fc->debugfs_root, sensor, &type_a_fops);
++	if (!sensor->debugfs_type_a)
++		dev_warn(&fc->dev, "Failed to create debugfs %s.\n",
++			 fname);
 +
 +	return retval;
 +}
 +
-+/* sysfs show and store fns for driver attributes */
-+
-+static ssize_t rmi_driver_bsr_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
++static void teardown_sensor_debugfs(struct f11_2d_sensor *sensor)
 +{
-+	struct rmi_device *rmi_dev;
-+	struct rmi_driver_data *data;
-+	rmi_dev = to_rmi_device(dev);
-+	data = dev_get_drvdata(&rmi_dev->dev);
++	if (sensor->debugfs_flip)
++		debugfs_remove(sensor->debugfs_flip);
 +
-+	return snprintf(buf, PAGE_SIZE, "%u\n", data->bsr);
++	if (sensor->debugfs_clip)
++		debugfs_remove(sensor->debugfs_clip);
++
++	if (sensor->debugfs_offset)
++		debugfs_remove(sensor->debugfs_offset);
++
++	if (sensor->debugfs_swap)
++		debugfs_remove(sensor->debugfs_swap);
++
++	if (sensor->debugfs_type_a)
++		debugfs_remove(sensor->debugfs_type_a);
 +}
 +
-+static ssize_t rmi_driver_bsr_store(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	int retval;
-+	unsigned long val;
-+	struct rmi_device *rmi_dev;
-+	struct rmi_driver_data *data;
-+
-+	rmi_dev = to_rmi_device(dev);
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	/* need to convert the string data to an actual value */
-+	retval = strict_strtoul(buf, 10, &val);
-+	if (retval < 0 || val > 255) {
-+		dev_err(dev, "Invalid value '%s' written to BSR.\n", buf);
-+		return -EINVAL;
-+	}
-+
-+	retval = rmi_write(rmi_dev, BSR_LOCATION, (u8)val);
-+	if (retval < 0) {
-+		dev_err(dev, "%s : failed to write bsr %lu to %#06x\n",
-+			__func__, val, BSR_LOCATION);
-+		return retval;
-+	}
-+
-+	data->bsr = val;
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_driver_enabled_show(struct device *dev,
-+				       struct device_attribute *attr, char *buf)
-+{
-+	struct rmi_device *rmi_dev;
-+	struct rmi_driver_data *data;
-+
-+	rmi_dev = to_rmi_device(dev);
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
-+}
-+
-+static ssize_t rmi_driver_enabled_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	int retval;
-+	int new_value;
-+	struct rmi_device *rmi_dev;
-+	struct rmi_driver_data *data;
-+
-+	rmi_dev = to_rmi_device(dev);
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	if (sysfs_streq(buf, "0"))
-+		new_value = false;
-+	else if (sysfs_streq(buf, "1"))
-+		new_value = true;
-+	else
-+		return -EINVAL;
-+
-+	if (new_value) {
-+		retval = enable_sensor(rmi_dev);
-+		if (retval) {
-+			dev_err(dev, "Failed to enable sensor, code=%d.\n",
-+				retval);
-+			return -EIO;
-+		}
-+	} else {
-+		disable_sensor(rmi_dev);
-+	}
-+
-+	return count;
-+}
-+
-+/** This sysfs attribute is deprecated, and will be removed in a future release.
-+ */
-+static struct device_attribute attrs[] = {
-+	__ATTR(enabled, RMI_RW_ATTR,
-+	       rmi_driver_enabled_show, rmi_driver_enabled_store),
++struct f11_debugfs_data {
++	bool done;
++	struct rmi_function_container *fc;
 +};
 +
-+static struct device_attribute bsr_attribute = __ATTR(bsr, RMI_RW_ATTR,
-+	       rmi_driver_bsr_show, rmi_driver_bsr_store);
-+
-+static void rmi_free_function_list(struct rmi_device *rmi_dev)
++static int f11_debug_open(struct inode *inodep, struct file *filp)
 +{
-+	struct rmi_function_container *entry, *n;
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
++	struct f11_debugfs_data *data;
++	struct rmi_function_container *fc = inodep->i_private;
 +
-+	if (!data) {
-+		dev_err(&rmi_dev->dev, "WTF: No driver data in %s\n", __func__);
-+		return;
-+	}
++	data = devm_kzalloc(&fc->dev, sizeof(struct f11_debugfs_data),
++		GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
 +
-+	data->f01_container = NULL;
-+
-+	if (list_empty(&data->rmi_functions.list))
-+		return;
-+
-+	list_for_each_entry_safe(entry, n, &data->rmi_functions.list, list) {
-+		device_unregister(&entry->dev);
-+		list_del(&entry->list);
-+	}
++	data->fc = fc;
++	filp->private_data = data;
++	return 0;
 +}
 +
-+static void release_fc_device(struct device *dev)
-+{
-+	dev_dbg(dev, "REMOVING KOBJ!");
-+	kobject_put(&dev->kobj);
-+}
++static ssize_t rezero_wait_read(struct file *filp, char __user *buffer,
++		size_t size, loff_t *offset) {
++	int retval;
++	char *local_buf;
++	struct f11_debugfs_data *data = filp->private_data;
++	struct f11_data *f11 = data->fc->data;
 +
-+static int reset_one_function(struct rmi_function_container *fc)
-+{
-+	struct rmi_function_handler *fh;
-+	int retval = 0;
-+
-+	if (!fc || !fc->dev.driver)
++	if (data->done)
 +		return 0;
 +
-+	fh = to_rmi_function_handler(fc->dev.driver);
-+	if (fh->reset) {
-+		retval = fh->reset(fc);
-+		if (retval < 0)
-+			dev_err(&fc->dev, "Reset failed with code %d.\n",
-+				retval);
-+	}
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
++
++	data->done = 1;
++
++	retval = snprintf(local_buf, size, "%u\n", f11->rezero_wait_ms);
++
++	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
++		retval = -EFAULT;
++	kfree(local_buf);
 +
 +	return retval;
 +}
 +
-+static int configure_one_function(struct rmi_function_container *fc)
++static ssize_t rezero_wait_write(struct file *filp, const char __user *buffer,
++			   size_t size, loff_t *offset)
 +{
-+	struct rmi_function_handler *fh;
-+	int retval = 0;
-+
-+	if (!fc || !fc->dev.driver)
-+		return 0;
-+
-+	fh = to_rmi_function_handler(fc->dev.driver);
-+	if (fh->config) {
-+		retval = fh->config(fc);
-+		if (retval < 0)
-+			dev_err(&fc->dev, "Config failed with code %d.\n",
-+				retval);
-+	}
-+
-+	return retval;
-+}
-+
-+static int rmi_driver_process_reset_requests(struct rmi_device *rmi_dev)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct rmi_function_container *entry;
 +	int retval;
++	char *local_buf;
++	int new_value;
++	struct f11_debugfs_data *data = filp->private_data;
++	struct f11_data *f11 = data->fc->data;
 +
-+	if (list_empty(&data->rmi_functions.list))
-+		return 0;
++	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
++	if (!local_buf)
++		return -ENOMEM;
 +
-+	list_for_each_entry(entry, &data->rmi_functions.list, list) {
-+		retval = reset_one_function(entry);
-+		if (retval < 0)
-+			return retval;
++	retval = copy_from_user(local_buf, buffer, size);
++	if (retval) {
++		kfree(local_buf);
++		return -EFAULT;
 +	}
++
++	retval = sscanf(local_buf, "%u", &new_value);
++	kfree(local_buf);
++	if (retval != 1 || new_value > 65535)
++		return -EINVAL;
++
++	f11->rezero_wait_ms = new_value;
++	return size;
++}
++
++static const struct file_operations rezero_wait_fops = {
++	.owner = THIS_MODULE,
++	.open = f11_debug_open,
++	.read = rezero_wait_read,
++	.write = rezero_wait_write,
++};
++
++static int setup_f11_debugfs(struct rmi_function_container *fc)
++{
++	struct f11_data *f11 = fc->data;
++
++	if (!fc->debugfs_root)
++		return -ENODEV;
++
++	f11->debugfs_rezero_wait = debugfs_create_file("rezero_wait",
++		RMI_RW_ATTR, fc->debugfs_root, fc, &rezero_wait_fops);
++	if (!f11->debugfs_rezero_wait)
++		dev_warn(&fc->dev,
++			 "Failed to create debugfs rezero_wait.\n");
 +
 +	return 0;
 +}
 +
-+static int rmi_driver_process_config_requests(struct rmi_device *rmi_dev)
++static void teardown_f11_debugfs(struct f11_data *f11)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct rmi_function_container *entry;
-+	int retval;
++	if (f11->debugfs_rezero_wait)
++		debugfs_remove(f11->debugfs_rezero_wait);
++}
++#endif
++/* End adding debugfs */
 +
-+	if (list_empty(&data->rmi_functions.list))
-+		return 0;
++/** F11_INACCURATE state is overloaded to indicate pen present. */
++#define F11_PEN F11_INACCURATE
 +
-+	list_for_each_entry(entry, &data->rmi_functions.list, list) {
-+		retval = configure_one_function(entry);
-+		if (retval < 0)
-+			return retval;
-+	}
-+
-+	return 0;
++static int get_tool_type(struct f11_2d_sensor *sensor, u8 finger_state)
++{
++	if (IS_ENABLED(CONFIG_RMI4_F11_PEN) &&
++			sensor->sens_query.query9.has_pen &&
++			finger_state == F11_PEN)
++		return MT_TOOL_PEN;
++	return MT_TOOL_FINGER;
 +}
 +
-+static void process_one_interrupt(struct rmi_function_container *fc,
-+		unsigned long *irq_status, struct rmi_driver_data *data)
++static void rmi_f11_rel_pos_report(struct f11_2d_sensor *sensor, u8 n_finger)
 +{
-+	struct rmi_function_handler *fh;
-+	DECLARE_BITMAP(irq_bits, data->num_of_irq_regs);
++	struct f11_2d_data *data = &sensor->data;
++	struct rmi_f11_2d_axis_alignment *axis_align = &sensor->axis_align;
++	s8 x, y;
++	s8 temp;
 +
-+	if (!fc || !fc->dev.driver)
-+		return;
++	x = data->rel_pos[n_finger].delta_x;
++	y = data->rel_pos[n_finger].delta_y;
 +
-+	fh = to_rmi_function_handler(fc->dev.driver);
-+	if (fc->irq_mask && fh->attention) {
-+		bitmap_and(irq_bits, irq_status, fc->irq_mask,
-+				data->irq_count);
-+		if (!bitmap_empty(irq_bits, data->irq_count))
-+			fh->attention(fc, irq_bits);
++	x = min(F11_REL_POS_MAX, max(F11_REL_POS_MIN, (int)x));
++	y = min(F11_REL_POS_MAX, max(F11_REL_POS_MIN, (int)y));
++
++	if (axis_align->swap_axes) {
++		temp = x;
++		x = y;
++		y = temp;
 +	}
++	if (axis_align->flip_x)
++		x = min(F11_REL_POS_MAX, -x);
++	if (axis_align->flip_y)
++		y = min(F11_REL_POS_MAX, -y);
 +
++	if (x || y) {
++		input_report_rel(sensor->input, REL_X, x);
++		input_report_rel(sensor->input, REL_Y, y);
++		input_report_rel(sensor->mouse_input, REL_X, x);
++		input_report_rel(sensor->mouse_input, REL_Y, y);
++	}
++	input_sync(sensor->mouse_input);
 +}
 +
-+static int process_interrupt_requests(struct rmi_device *rmi_dev)
++static void rmi_f11_abs_pos_report(struct f11_data *f11,
++				   struct f11_2d_sensor *sensor,
++				   u8 finger_state, u8 n_finger)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct device *dev = &rmi_dev->dev;
-+	struct rmi_function_container *entry;
-+	int error;
++	struct f11_2d_data *data = &sensor->data;
++	struct rmi_f11_2d_axis_alignment *axis_align = &sensor->axis_align;
++	int x, y, z;
++	int w_x, w_y, w_max, w_min, orient;
++	int temp;
 +
-+	error = rmi_read_block(rmi_dev,
-+				data->f01_container->fd.data_base_addr + 1,
-+				data->irq_status, data->num_of_irq_regs);
-+	if (error < 0) {
-+		dev_err(dev, "Failed to read irqs, code=%d\n", error);
-+		return error;
-+	}
++	if (finger_state) {
++		x = ((data->abs_pos[n_finger].x_msb << 4) |
++			data->abs_pos[n_finger].x_lsb);
++		y = ((data->abs_pos[n_finger].y_msb << 4) |
++			data->abs_pos[n_finger].y_lsb);
++		z = data->abs_pos[n_finger].z;
++		w_x = data->abs_pos[n_finger].w_x;
++		w_y = data->abs_pos[n_finger].w_y;
++		w_max = max(w_x, w_y);
++		w_min = min(w_x, w_y);
 +
-+	mutex_lock(&data->irq_mutex);
-+	bitmap_and(data->irq_status, data->irq_status, data->current_irq_mask,
-+	       data->irq_count);
-+	/* At this point, irq_status has all bits that are set in the
-+	 * interrupt status register and are enabled.
-+	 */
-+	mutex_unlock(&data->irq_mutex);
-+
-+	/* It would be nice to be able to use irq_chip to handle these
-+	 * nested IRQs.  Unfortunately, most of the current customers for
-+	 * this driver are using older kernels (3.0.x) that don't support
-+	 * the features required for that.  Once they've shifted to more
-+	 * recent kernels (say, 3.3 and higher), this should be switched to
-+	 * use irq_chip.
-+	 */
-+	list_for_each_entry(entry, &data->rmi_functions.list, list) {
-+		if (entry->irq_mask)
-+			process_one_interrupt(entry, data->irq_status,
-+					      data);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * rmi_driver_set_input_params - set input device id and other data.
-+ *
-+ * @rmi_dev: Pointer to an RMI device
-+ * @input: Pointer to input device
-+ *
-+ */
-+static int rmi_driver_set_input_params(struct rmi_device *rmi_dev,
-+				struct input_dev *input)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	input->name = SYNAPTICS_INPUT_DEVICE_NAME;
-+	input->id.vendor  = SYNAPTICS_VENDOR_ID;
-+	input->id.product = data->board;
-+	input->id.version = data->rev;
-+	input->id.bustype = BUS_RMI;
-+	return 0;
-+}
-+
-+/**
-+ * This pair of functions allows functions like function 54 to request to have
-+ * other interrupts disabled until the restore function is called. Only one
-+ * store happens at a time.
-+ */
-+static int rmi_driver_irq_save(struct rmi_device *rmi_dev,
-+				unsigned long *new_ints)
-+{
-+	int retval = 0;
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct device *dev = &rmi_dev->dev;
-+
-+	mutex_lock(&data->irq_mutex);
-+	if (!data->irq_stored) {
-+		/* Save current enabled interrupts */
-+		retval = rmi_read_block(rmi_dev,
-+				data->f01_container->fd.control_base_addr+1,
-+				data->irq_mask_store, data->num_of_irq_regs);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to read enabled interrupts!",
-+								__func__);
-+			goto error_unlock;
++		if (axis_align->swap_axes) {
++			temp = x;
++			x = y;
++			y = temp;
++			temp = w_x;
++			w_x = w_y;
++			w_y = temp;
 +		}
++
++		orient = w_x > w_y ? 1 : 0;
++
++		if (axis_align->flip_x)
++			x = max(sensor->max_x - x, 0);
++
++		if (axis_align->flip_y)
++			y = max(sensor->max_y - y, 0);
++
 +		/*
-+		 * Disable every interrupt except for function 54
-+		 * TODO:Will also want to not disable function 1-like functions.
-+		 * No need to take care of this now, since there's no good way
-+		 * to identify them.
-+		 */
-+		retval = rmi_write_block(rmi_dev,
-+				data->f01_container->fd.control_base_addr+1,
-+				new_ints, data->num_of_irq_regs);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to change enabled interrupts!",
-+								__func__);
-+			goto error_unlock;
-+		}
-+		bitmap_copy(data->current_irq_mask, new_ints, data->irq_count);
-+		data->irq_stored = true;
++		* here checking if X offset or y offset are specified is
++		*  redundant.  We just add the offsets or, clip the values
++		*
++		* note: offsets need to be done before clipping occurs,
++		* or we could get funny values that are outside
++		* clipping boundaries.
++		*/
++		x += axis_align->offset_X;
++		y += axis_align->offset_Y;
++		x =  max(axis_align->clip_X_low, x);
++		y =  max(axis_align->clip_Y_low, y);
++		if (axis_align->clip_X_high)
++			x = min(axis_align->clip_X_high, x);
++		if (axis_align->clip_Y_high)
++			y =  min(axis_align->clip_Y_high, y);
++
++	}
++
++	/* Some UIs ignore W of zero, so we fudge it to 1 for pens.  This
++	 * only appears to be an issue when reporting pens, not plain old
++	 * fingers. */
++	if (IS_ENABLED(CONFIG_RMI4_F11_PEN) &&
++			get_tool_type(sensor, finger_state) == MT_TOOL_PEN) {
++		w_max = max(1, w_max);
++		w_min = max(1, w_min);
++	}
++
++	if (sensor->type_a) {
++		input_report_abs(sensor->input, ABS_MT_TRACKING_ID, n_finger);
++		input_report_abs(sensor->input, ABS_MT_TOOL_TYPE,
++					get_tool_type(sensor, finger_state));
 +	} else {
-+		retval = -ENOSPC; /* No space to store IRQs.*/
-+		dev_err(dev, "Attempted to save IRQs when already stored!");
++		input_mt_slot(sensor->input, n_finger);
++		input_mt_report_slot_state(sensor->input,
++			get_tool_type(sensor, finger_state), finger_state);
 +	}
 +
-+error_unlock:
-+	mutex_unlock(&data->irq_mutex);
-+	return retval;
++	if (finger_state) {
++		input_report_abs(sensor->input, ABS_MT_PRESSURE, z);
++		input_report_abs(sensor->input, ABS_MT_TOUCH_MAJOR, w_max);
++		input_report_abs(sensor->input, ABS_MT_TOUCH_MINOR, w_min);
++		input_report_abs(sensor->input, ABS_MT_ORIENTATION, orient);
++		input_report_abs(sensor->input, ABS_MT_POSITION_X, x);
++		input_report_abs(sensor->input, ABS_MT_POSITION_Y, y);
++		dev_dbg(&sensor->fc->dev,
++			"finger[%d]:%d - x:%d y:%d z:%d w_max:%d w_min:%d\n",
++			n_finger, finger_state, x, y, z, w_max, w_min);
++	}
++	/* MT sync between fingers */
++	if (sensor->type_a)
++		input_mt_sync(sensor->input);
 +}
 +
-+static int rmi_driver_irq_restore(struct rmi_device *rmi_dev)
++static void rmi_f11_finger_handler(struct f11_data *f11,
++				   struct f11_2d_sensor *sensor)
 +{
-+	int retval = 0;
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct device *dev = &rmi_dev->dev;
++	const u8 *f_state = sensor->data.f_state;
++	u8 finger_state;
++	u8 finger_pressed_count;
++	u8 i;
 +
-+	mutex_lock(&data->irq_mutex);
-+
-+	if (data->irq_stored) {
-+		retval = rmi_write_block(rmi_dev,
-+				data->f01_container->fd.control_base_addr+1,
-+				data->irq_mask_store, data->num_of_irq_regs);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to write enabled interupts!",
-+								__func__);
-+			goto error_unlock;
++	for (i = 0, finger_pressed_count = 0; i < sensor->nbr_fingers; i++) {
++		/* Possible of having 4 fingers per f_statet register */
++		finger_state = (f_state[i / 4] >> (2 * (i % 4))) &
++					FINGER_STATE_MASK;
++		if (finger_state == F11_RESERVED) {
++			pr_err("%s: Invalid finger state[%d]:0x%02x.", __func__,
++					i, finger_state);
++			continue;
++		} else if ((finger_state == F11_PRESENT) ||
++				(finger_state == F11_INACCURATE)) {
++			finger_pressed_count++;
 +		}
-+		memcpy(data->current_irq_mask, data->irq_mask_store,
-+					data->num_of_irq_regs * sizeof(u8));
-+		data->irq_stored = false;
-+	} else {
-+		retval = -EINVAL;
-+		dev_err(dev, "%s: Attempted to restore values when not stored!",
-+			__func__);
-+	}
 +
-+error_unlock:
-+	mutex_unlock(&data->irq_mutex);
-+	return retval;
++		if (sensor->data.abs_pos)
++			rmi_f11_abs_pos_report(f11, sensor, finger_state, i);
++
++		if (sensor->data.rel_pos)
++			rmi_f11_rel_pos_report(sensor, i);
++	}
++	input_mt_sync(sensor->input);
++	input_sync(sensor->input);
 +}
 +
-+static int rmi_driver_irq_handler(struct rmi_device *rmi_dev, int irq)
++static int f11_2d_construct_data(struct f11_2d_sensor *sensor)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
++	struct f11_2d_sensor_queries *query = &sensor->sens_query;
++	struct f11_2d_data *data = &sensor->data;
++	int i;
 +
-+	might_sleep();
-+	/* Can get called before the driver is fully ready to deal with
-+	 * interrupts.
-+	 */
-+	if (!data || !data->f01_container) {
-+		dev_dbg(&rmi_dev->dev,
-+			 "Not ready to handle interrupts yet!\n");
-+		return 0;
++	sensor->nbr_fingers = (query->info.number_of_fingers == 5 ? 10 :
++				query->info.number_of_fingers + 1);
++
++	sensor->pkt_size = DIV_ROUND_UP(sensor->nbr_fingers, 4);
++
++	if (query->info.has_abs)
++		sensor->pkt_size += (sensor->nbr_fingers * 5);
++
++	if (query->info.has_rel)
++		sensor->pkt_size +=  (sensor->nbr_fingers * 2);
++
++	/* Check if F11_2D_Query7 is non-zero */
++	if (has_gesture_bits(&query->gesture_info, 0))
++		sensor->pkt_size += sizeof(u8);
++
++	/* Check if F11_2D_Query7 or F11_2D_Query8 is non-zero */
++	if (has_gesture_bits(&query->gesture_info, 0) ||
++				has_gesture_bits(&query->gesture_info, 1))
++		sensor->pkt_size += sizeof(u8);
++
++	if (query->gesture_info.has_pinch || query->gesture_info.has_flick
++			|| query->gesture_info.has_rotate) {
++		sensor->pkt_size += 3;
++		if (!query->gesture_info.has_flick)
++			sensor->pkt_size--;
++		if (!query->gesture_info.has_rotate)
++			sensor->pkt_size--;
 +	}
 +
-+	return process_interrupt_requests(rmi_dev);
++	if (query->gesture_info.has_touch_shapes)
++		sensor->pkt_size +=
++			DIV_ROUND_UP(query->ts_info.nbr_touch_shapes + 1, 8);
++
++	sensor->data_pkt = kzalloc(sensor->pkt_size, GFP_KERNEL);
++	if (!sensor->data_pkt)
++		return -ENOMEM;
++
++	data->f_state = sensor->data_pkt;
++	i = DIV_ROUND_UP(sensor->nbr_fingers, 4);
++
++	if (query->info.has_abs) {
++		data->abs_pos = (struct f11_2d_data_1_5 *)
++				&sensor->data_pkt[i];
++		i += (sensor->nbr_fingers * 5);
++	}
++
++	if (query->info.has_rel) {
++		data->rel_pos = (struct f11_2d_data_6_7 *)
++				&sensor->data_pkt[i];
++		i += (sensor->nbr_fingers * 2);
++	}
++
++	if (has_gesture_bits(&query->gesture_info, 0)) {
++		data->gest_1 = (struct f11_2d_data_8 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (has_gesture_bits(&query->gesture_info, 0) ||
++				has_gesture_bits(&query->gesture_info, 1)) {
++		data->gest_2 = (struct f11_2d_data_9 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (query->gesture_info.has_pinch) {
++		data->pinch = (struct f11_2d_data_10 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (query->gesture_info.has_flick) {
++		if (query->gesture_info.has_pinch) {
++			data->flick = (struct f11_2d_data_10_12 *)data->pinch;
++			i += 2;
++		} else {
++			data->flick = (struct f11_2d_data_10_12 *)
++					&sensor->data_pkt[i];
++			i += 3;
++		}
++	}
++
++	if (query->gesture_info.has_rotate) {
++		if (query->gesture_info.has_flick) {
++			data->rotate = (struct f11_2d_data_11_12 *)
++					(data->flick + 1);
++		} else {
++			data->rotate = (struct f11_2d_data_11_12 *)
++					&sensor->data_pkt[i];
++			i += 2;
++		}
++	}
++
++	if (query->gesture_info.has_touch_shapes)
++		data->shapes = (struct f11_2d_data_13 *)&sensor->data_pkt[i];
++
++	return 0;
 +}
 +
-+static int rmi_driver_reset_handler(struct rmi_device *rmi_dev)
++static int f11_read_control_regs(struct rmi_function_container *fc,
++				struct f11_2d_ctrl *ctrl, u16 ctrl_base_addr) {
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	u16 read_address = ctrl_base_addr;
++	int error = 0;
++
++	ctrl->ctrl0_9_address = read_address;
++	error = rmi_read_block(rmi_dev, read_address, ctrl->ctrl0_9,
++		sizeof(*ctrl->ctrl0_9));
++	if (error < 0) {
++		dev_err(&fc->dev, "Failed to read ctrl0, code: %d.\n", error);
++		return error;
++	}
++	read_address += sizeof(*ctrl->ctrl0_9);
++
++	if (ctrl->ctrl10) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl10, sizeof(*ctrl->ctrl10));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl10, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl10);
++	}
++
++	if (ctrl->ctrl11) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl11, sizeof(*ctrl->ctrl11));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl11, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl11);
++	}
++
++	if (ctrl->ctrl14) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl14, sizeof(*ctrl->ctrl14));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl14, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl14);
++	}
++
++	if (ctrl->ctrl15) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl15, sizeof(*ctrl->ctrl15));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl15, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl15);
++	}
++
++	if (ctrl->ctrl16) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl16, sizeof(*ctrl->ctrl16));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl16, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl16);
++	}
++
++	if (ctrl->ctrl17) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl17, sizeof(*ctrl->ctrl17));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl17, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl17);
++	}
++
++	if (ctrl->ctrl18_19) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl18_19, sizeof(*ctrl->ctrl18_19));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl18_19, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl18_19);
++	}
++
++	if (ctrl->ctrl20_21) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl20_21, sizeof(*ctrl->ctrl20_21));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl20_21, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl20_21);
++	}
++
++	if (ctrl->ctrl22_26) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl22_26, sizeof(*ctrl->ctrl22_26));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl22_26, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl22_26);
++	}
++
++	if (ctrl->ctrl27) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl27, sizeof(*ctrl->ctrl27));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl27, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl27);
++	}
++
++	if (ctrl->ctrl28) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl28, sizeof(*ctrl->ctrl28));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl28, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl28);
++	}
++
++	if (ctrl->ctrl29_30) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl29_30, sizeof(*ctrl->ctrl29_30));
++		if (error < 0) {
++			dev_err(&fc->dev,
++				"Failed to read ctrl29_30, code: %d.\n", error);
++			return error;
++		}
++		read_address += sizeof(*ctrl->ctrl29_30);
++	}
++	return 0;
++}
++
++static int f11_allocate_control_regs(struct rmi_function_container *fc,
++				struct f11_2d_device_query *device_query,
++				struct f11_2d_sensor_queries *sensor_query,
++				struct f11_2d_ctrl *ctrl,
++				u16 ctrl_base_addr) {
++
++	ctrl->ctrl0_9 = devm_kzalloc(&fc->dev, sizeof(struct f11_2d_ctrl0_9),
++				       GFP_KERNEL);
++	if (!ctrl->ctrl0_9)
++		return -ENOMEM;
++	if (has_gesture_bits(&sensor_query->gesture_info, 0)) {
++		ctrl->ctrl10 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl10), GFP_KERNEL);
++		if (!ctrl->ctrl10)
++			return -ENOMEM;
++	}
++
++	if (has_gesture_bits(&sensor_query->gesture_info, 1)) {
++		ctrl->ctrl11 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl11), GFP_KERNEL);
++		if (!ctrl->ctrl11)
++			return -ENOMEM;
++	}
++
++	if (device_query->has_query9 && sensor_query->query9.has_pen) {
++		ctrl->ctrl20_21 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl20_21), GFP_KERNEL);
++		if (!ctrl->ctrl20_21)
++			return -ENOMEM;
++	}
++
++	if (device_query->has_query9 && sensor_query->query9.has_proximity) {
++		ctrl->ctrl22_26 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl22_26), GFP_KERNEL);
++		if (!ctrl->ctrl22_26)
++			return -ENOMEM;
++	}
++
++	if (device_query->has_query9 &&
++		(sensor_query->query9.has_palm_det_sensitivity ||
++		sensor_query->query9.has_suppress_on_palm_detect)) {
++		ctrl->ctrl27 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl27), GFP_KERNEL);
++		if (!ctrl->ctrl27)
++			return -ENOMEM;
++	}
++
++	if (sensor_query->gesture_info.has_multi_finger_scroll) {
++		ctrl->ctrl28 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl28), GFP_KERNEL);
++		if (!ctrl->ctrl28)
++			return -ENOMEM;
++	}
++
++	if (device_query->has_query11 &&
++			sensor_query->features_1.has_z_tuning) {
++		ctrl->ctrl29_30 = devm_kzalloc(&fc->dev,
++			sizeof(struct f11_2d_ctrl29_30), GFP_KERNEL);
++		if (!ctrl->ctrl29_30)
++			return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static int f11_write_control_regs(struct rmi_function_container *fc,
++					struct f11_2d_sensor_queries *query,
++					struct f11_2d_ctrl *ctrl,
++					u16 ctrl_base_addr)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	u16 write_address = ctrl_base_addr;
 +	int error;
 +
-+	/* Can get called before the driver is fully ready to deal with
-+	 * this situation.
-+	 */
-+	if (!data || !data->f01_container) {
-+		dev_warn(&rmi_dev->dev,
-+			 "Not ready to handle reset yet!\n");
-+		return 0;
-+	}
-+
-+	error = rmi_driver_process_reset_requests(rmi_dev);
++	error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl0_9,
++				 sizeof(*ctrl->ctrl0_9));
 +	if (error < 0)
 +		return error;
++	write_address += sizeof(ctrl->ctrl0_9);
 +
-+
-+	error = rmi_driver_process_config_requests(rmi_dev);
-+	if (error < 0)
-+		return error;
-+
-+	if (data->irq_stored) {
-+		error = rmi_driver_irq_restore(rmi_dev);
++	if (ctrl->ctrl10) {
++		error = rmi_write_block(rmi_dev, write_address,
++					ctrl->ctrl10, sizeof(*ctrl->ctrl10));
 +		if (error < 0)
 +			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl11) {
++		error = rmi_write_block(rmi_dev, write_address,
++					ctrl->ctrl11, sizeof(*ctrl->ctrl11));
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl14) {
++		error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl14, sizeof(ctrl->ctrl14));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl15);
++	}
++
++	if (ctrl->ctrl15) {
++		error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl15, sizeof(*ctrl->ctrl15));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl15);
++	}
++
++	if (ctrl->ctrl16) {
++		error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl16, sizeof(*ctrl->ctrl16));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl16);
++	}
++
++	if (ctrl->ctrl17) {
++		error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl17, sizeof(*ctrl->ctrl17));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl17);
++	}
++
++	if (ctrl->ctrl18_19) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl18_19, sizeof(*ctrl->ctrl18_19));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl18_19);
++	}
++
++	if (ctrl->ctrl20_21) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl20_21, sizeof(*ctrl->ctrl20_21));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl20_21);
++	}
++
++	if (ctrl->ctrl22_26) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl22_26, sizeof(*ctrl->ctrl22_26));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl22_26);
++	}
++
++	if (ctrl->ctrl27) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl27, sizeof(*ctrl->ctrl27));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl27);
++	}
++
++	if (ctrl->ctrl28) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl28, sizeof(*ctrl->ctrl28));
++		if (error < 0)
++			return error;
++		write_address += sizeof(*ctrl->ctrl28);
++	}
++
++	if (ctrl->ctrl29_30) {
++		error = rmi_write_block(rmi_dev, write_address,
++					ctrl->ctrl29_30,
++					sizeof(struct f11_2d_ctrl29_30));
++		if (error < 0)
++			return error;
++		write_address += sizeof(struct f11_2d_ctrl29_30);
 +	}
 +
 +	return 0;
 +}
 +
-+/*
-+ * Construct a function's IRQ mask. This should be called once and stored.
-+ */
-+int rmi_driver_irq_get_mask(struct rmi_device *rmi_dev,
-+		struct rmi_function_container *fc) {
-+	int i;
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
++static int rmi_f11_get_query_parameters(struct rmi_device *rmi_dev,
++			struct f11_2d_device_query *dev_query,
++			struct f11_2d_sensor_queries *sensor_query,
++			u16 query_base_addr)
++{
++	int query_size;
++	int rc;
 +
-+	/* call devm_kcalloc when it will be defined in kernel in future */
-+	fc->irq_mask = devm_kzalloc(&rmi_dev->dev,
-+			BITS_TO_LONGS(data->irq_count)*sizeof(unsigned long),
-+			GFP_KERNEL);
++	rc = rmi_read_block(rmi_dev, query_base_addr,
++			    &sensor_query->info, sizeof(sensor_query->info));
++	if (rc < 0)
++		return rc;
++	query_size = sizeof(sensor_query->info);
 +
-+	if (fc->irq_mask) {
-+		for (i = 0; i < fc->num_of_irqs; i++)
-+			set_bit(fc->irq_pos+i, fc->irq_mask);
-+		return 0;
-+	} else
-+		return -ENOMEM;
++	if (sensor_query->info.has_abs) {
++		rc = rmi_read(rmi_dev, query_base_addr + query_size,
++					&sensor_query->abs_info);
++		if (rc < 0)
++			return rc;
++		query_size++;
++	}
++
++	if (sensor_query->info.has_rel) {
++		rc = rmi_read(rmi_dev, query_base_addr + query_size,
++					&sensor_query->f11_2d_query6);
++		if (rc < 0)
++			return rc;
++		query_size++;
++	}
++
++	if (sensor_query->info.has_gestures) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->gesture_info,
++					sizeof(sensor_query->gesture_info));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->gesture_info);
++	}
++
++	if (dev_query->has_query9) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->query9,
++					sizeof(sensor_query->query9));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->query9);
++	}
++
++	if (sensor_query->gesture_info.has_touch_shapes) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->ts_info,
++					sizeof(sensor_query->ts_info));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->ts_info);
++	}
++
++	if (dev_query->has_query11) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->features_1,
++					sizeof(sensor_query->features_1));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->features_1);
++	}
++
++	if (dev_query->has_query12) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->features_2,
++					sizeof(sensor_query->features_2));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->features_2);
++	}
++
++	if (sensor_query->abs_info.has_jitter_filter) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					&sensor_query->jitter_filter,
++					sizeof(sensor_query->jitter_filter));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->jitter_filter);
++	}
++
++	if (dev_query->has_query12 && sensor_query->features_2.has_info2) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++				    &sensor_query->info_2,
++					sizeof(sensor_query->info_2));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(sensor_query->info_2);
++	}
++
++	return query_size;
 +}
 +
-+static int init_function_device(struct rmi_device *rmi_dev,
-+			     struct rmi_function_container *fc)
++/* This operation is done in a number of places, so we have a handy routine
++ * for it.
++ */
++static void f11_set_abs_params(struct rmi_function_container *fc, int index)
 +{
-+	int retval;
++	struct f11_data *f11 = fc->data;
++	struct f11_2d_sensor *sensor = &f11->sensors[index];
++	struct input_dev *input = sensor->input;
++	int device_x_max =
++		f11->dev_controls.ctrl0_9->sensor_max_x_pos;
++	int device_y_max =
++		f11->dev_controls.ctrl0_9->sensor_max_y_pos;
++	int x_min, x_max, y_min, y_max;
++	unsigned int input_flags;
 +
-+	/* This memset might not be what we want to do... */
-+	memset(&(fc->dev), 0, sizeof(struct device));
-+	dev_set_name(&(fc->dev), "%s.fn%02x", dev_name(&rmi_dev->dev),
-+			fc->fd.function_number);
-+	fc->dev.release = release_fc_device;
++	/* We assume touchscreen unless demonstrably a touchpad or specified
++	 * as a touchpad in the platform data
++	 */
++	if (sensor->sensor_type == rmi_f11_sensor_touchpad ||
++			(sensor->sens_query.features_2.has_info2 &&
++				!sensor->sens_query.info_2.is_clear))
++		input_flags = INPUT_PROP_POINTER;
++	else
++		input_flags = INPUT_PROP_DIRECT;
++	set_bit(input_flags, input->propbit);
 +
-+	fc->dev.parent = &rmi_dev->dev;
-+	fc->dev.type = &rmi_function_type;
-+	fc->dev.bus = &rmi_bus_type;
-+	dev_dbg(&rmi_dev->dev, "Register F%02X.\n", fc->fd.function_number);
-+	retval = device_register(&fc->dev);
-+	if (retval) {
-+		dev_err(&rmi_dev->dev, "Failed device_register for F%02X.\n",
-+			fc->fd.function_number);
-+		return retval;
++	if (sensor->axis_align.swap_axes) {
++		int temp = device_x_max;
++		device_x_max = device_y_max;
++		device_y_max = temp;
++	}
++	/* Use the max X and max Y read from the device, or the clip values,
++	 * whichever is stricter.
++	 */
++	x_min = sensor->axis_align.clip_X_low;
++	if (sensor->axis_align.clip_X_high)
++		x_max = min((int) device_x_max,
++			sensor->axis_align.clip_X_high);
++	else
++		x_max = device_x_max;
++
++	y_min = sensor->axis_align.clip_Y_low;
++	if (sensor->axis_align.clip_Y_high)
++		y_max = min((int) device_y_max,
++			sensor->axis_align.clip_Y_high);
++	else
++		y_max = device_y_max;
++
++	dev_dbg(&fc->dev, "Set ranges X=[%d..%d] Y=[%d..%d].",
++			x_min, x_max, y_min, y_max);
++
++	input_set_abs_params(input, ABS_MT_PRESSURE, 0,
++			DEFAULT_MAX_ABS_MT_PRESSURE, 0, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR,
++			0, DEFAULT_MAX_ABS_MT_TOUCH, 0, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MINOR,
++			0, DEFAULT_MAX_ABS_MT_TOUCH, 0, 0);
++	input_set_abs_params(input, ABS_MT_ORIENTATION,
++			0, DEFAULT_MAX_ABS_MT_ORIENTATION, 0, 0);
++	input_set_abs_params(input, ABS_MT_TRACKING_ID,
++			DEFAULT_MIN_ABS_MT_TRACKING_ID,
++			DEFAULT_MAX_ABS_MT_TRACKING_ID, 0, 0);
++	/* TODO get max_x_pos (and y) from control registers. */
++	input_set_abs_params(input, ABS_MT_POSITION_X,
++			x_min, x_max, 0, 0);
++	input_set_abs_params(input, ABS_MT_POSITION_Y,
++			y_min, y_max, 0, 0);
++	if (!sensor->type_a)
++		input_mt_init_slots(input, sensor->nbr_fingers, input_flags);
++	if (IS_ENABLED(CONFIG_RMI4_F11_PEN) &&
++			sensor->sens_query.query9.has_pen)
++		input_set_abs_params(input, ABS_MT_TOOL_TYPE,
++				     0, MT_TOOL_MAX, 0, 0);
++	else
++		input_set_abs_params(input, ABS_MT_TOOL_TYPE,
++				     0, MT_TOOL_FINGER, 0, 0);
++}
++
++static int rmi_f11_initialize(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *f11;
++	struct f11_2d_ctrl *ctrl;
++	u8 query_offset;
++	u16 query_base_addr;
++	u16 control_base_addr;
++	u16 max_x_pos, max_y_pos, temp;
++	int rc;
++	int i;
++	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
++
++	dev_dbg(&fc->dev, "Initializing F11 values for %s.\n",
++		 pdata->sensor_name);
++
++	/*
++	** init instance data, fill in values and create any sysfs files
++	*/
++	f11 = devm_kzalloc(&fc->dev, sizeof(struct f11_data), GFP_KERNEL);
++	if (!f11)
++		return -ENOMEM;
++
++	fc->data = f11;
++	f11->rezero_wait_ms = pdata->f11_rezero_wait;
++
++	query_base_addr = fc->fd.query_base_addr;
++	control_base_addr = fc->fd.control_base_addr;
++
++	rc = rmi_read(rmi_dev, query_base_addr, &f11->dev_query);
++	if (rc < 0)
++		return rc;
++
++	query_offset = (query_base_addr + 1);
++	/* Increase with one since number of sensors is zero based */
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		struct f11_2d_sensor *sensor = &f11->sensors[i];
++		sensor->sensor_index = i;
++		sensor->fc = fc;
++
++		rc = rmi_f11_get_query_parameters(rmi_dev, &f11->dev_query,
++				&sensor->sens_query, query_offset);
++		if (rc < 0)
++			return rc;
++		query_offset += rc;
++
++		rc = f11_allocate_control_regs(fc,
++				&f11->dev_query, &sensor->sens_query,
++				&f11->dev_controls, control_base_addr);
++		if (rc < 0) {
++			dev_err(&fc->dev,
++				"Failed to allocate F11 control params.\n");
++			return rc;
++		}
++
++		rc = f11_read_control_regs(fc, &f11->dev_controls,
++				control_base_addr);
++		if (rc < 0) {
++			dev_err(&fc->dev,
++				"Failed to read F11 control params.\n");
++			return rc;
++		}
++
++		if (i < pdata->f11_sensor_count) {
++			sensor->axis_align =
++				pdata->f11_sensor_data[i].axis_align;
++			sensor->type_a = pdata->f11_sensor_data[i].type_a;
++			sensor->sensor_type =
++					pdata->f11_sensor_data[i].sensor_type;
++		}
++
++		rc = rmi_read_block(rmi_dev,
++			control_base_addr + F11_CTRL_SENSOR_MAX_X_POS_OFFSET,
++			(u8 *)&max_x_pos, sizeof(max_x_pos));
++		if (rc < 0)
++			return rc;
++
++		rc = rmi_read_block(rmi_dev,
++			control_base_addr + F11_CTRL_SENSOR_MAX_Y_POS_OFFSET,
++			(u8 *)&max_y_pos, sizeof(max_y_pos));
++		if (rc < 0)
++			return rc;
++
++		if (sensor->axis_align.swap_axes) {
++			temp = max_x_pos;
++			max_x_pos = max_y_pos;
++			max_y_pos = temp;
++		}
++		sensor->max_x = max_x_pos;
++		sensor->max_y = max_y_pos;
++
++		rc = f11_2d_construct_data(sensor);
++		if (rc < 0)
++			return rc;
++
++		ctrl = &f11->dev_controls;
++		if (sensor->axis_align.delta_x_threshold) {
++			ctrl->ctrl0_9->delta_x_threshold =
++				sensor->axis_align.delta_x_threshold;
++			rc = rmi_write_block(rmi_dev,
++					ctrl->ctrl0_9_address,
++					ctrl->ctrl0_9,
++					sizeof(*ctrl->ctrl0_9));
++			if (rc < 0)
++				dev_warn(&fc->dev, "Failed to write to delta_x_threshold %d. Code: %d.\n",
++					i, rc);
++
++		}
++
++		if (sensor->axis_align.delta_y_threshold) {
++			ctrl->ctrl0_9->delta_y_threshold =
++				sensor->axis_align.delta_y_threshold;
++			rc = rmi_write_block(rmi_dev,
++					ctrl->ctrl0_9_address,
++					ctrl->ctrl0_9,
++					sizeof(*ctrl->ctrl0_9));
++			if (rc < 0)
++				dev_warn(&fc->dev, "Failed to write to delta_y_threshold %d. Code: %d.\n",
++					i, rc);
++		}
++
++		if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
++			rc = setup_sensor_debugfs(sensor);
++			if (rc < 0)
++				dev_warn(&fc->dev, "Failed to setup debugfs for F11 sensor %d. Code: %d.\n",
++					i, rc);
++		}
 +	}
 +
 +	if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
-+		char dirname[12];
-+
-+		snprintf(dirname, 12, "F%02X", fc->fd.function_number);
-+		fc->debugfs_root = debugfs_create_dir(dirname,
-+						      rmi_dev->debugfs_root);
-+		if (!fc->debugfs_root)
-+			dev_warn(&fc->dev, "Failed to create debugfs dir.\n");
++		rc = setup_f11_debugfs(fc);
++		if (rc < 0)
++			dev_warn(&fc->dev, "Failed to setup debugfs for F11. Code: %d.\n",
++				rc);
 +	}
 +
++	mutex_init(&f11->dev_controls_mutex);
 +	return 0;
 +}
 +
-+static int create_function_container(struct rmi_device *rmi_dev,
-+				     struct pdt_entry *pdt_ptr,
-+				     int *current_irq_count,
-+				     u16 page_start)
++static int rmi_f11_register_devices(struct rmi_function_container *fc)
 +{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct rmi_function_container *fc = NULL;
-+	int retval = 0;
-+	struct device *dev = &rmi_dev->dev;
-+	struct rmi_device_platform_data *pdata;
-+
-+	pdata = to_rmi_platform_data(rmi_dev);
-+
-+	dev_dbg(dev, "Initializing F%02X for %s.\n", pdt_ptr->function_number,
-+		pdata->sensor_name);
-+
-+	fc = devm_kzalloc(dev, sizeof(struct rmi_function_container),
-+			GFP_KERNEL);
-+	if (!fc) {
-+		dev_err(dev, "Failed to allocate F%02X container.\n",
-+			pdt_ptr->function_number);
-+		return -ENOMEM;
-+	}
-+
-+	copy_pdt_entry_to_fd(pdt_ptr, &fc->fd, page_start);
-+
-+	fc->rmi_dev = rmi_dev;
-+	fc->num_of_irqs = pdt_ptr->interrupt_source_count;
-+
-+	fc->irq_pos = *current_irq_count;
-+	*current_irq_count += fc->num_of_irqs;
-+
-+	retval = init_function_device(rmi_dev, fc);
-+	if (retval < 0) {
-+		dev_err(dev, "Failed to initialize F%02X device.\n",
-+			pdt_ptr->function_number);
-+		goto error_free_data;
-+	}
-+
-+	INIT_LIST_HEAD(&fc->list);
-+	/* we need to ensure that F01 is at the head of the list.
-+	 */
-+	if (pdt_ptr->function_number == 0x01) {
-+		list_add(&fc->list, &data->rmi_functions.list);
-+		data->f01_container = fc;
-+	} else
-+		list_add_tail(&fc->list, &data->rmi_functions.list);
-+	return 0;
-+
-+error_free_data:
-+	return retval;
-+}
-+
-+/*
-+ * Once we find F01, we need to see if we're in bootloader mode.  If we are,
-+ * we'll stop scanning the PDT with the current page (usually 0x00 in that
-+ * case).
-+ */
-+static void check_bootloader_mode(struct rmi_device *rmi_dev,
-+				     struct pdt_entry *pdt_ptr,
-+				     u16 page_start)
-+{
-+	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-+	struct f01_device_status device_status;
-+	int retval = 0;
-+
-+	retval = rmi_read(rmi_dev, pdt_ptr->data_base_addr+page_start,
-+			  &device_status);
-+	if (retval < 0) {
-+		dev_err(&rmi_dev->dev, "Failed to read device status.\n");
-+		return;
-+	}
-+	data->f01_bootloader_mode = device_status.flash_prog;
-+	if (device_status.flash_prog)
-+		dev_warn(&rmi_dev->dev,
-+			 "WARNING: RMI4 device is in bootloader mode!\n");
-+
-+}
-+
-+/*
-+ * Scan the PDT for F01 so we can force a reset before anything else
-+ * is done.  This forces the sensor into a known state, and also
-+ * forces application of any pending updates from reflashing the
-+ * firmware or configuration.
-+ *
-+ * At this time, we also reflash the device if (a) in kernel reflashing is
-+ * enabled, and (b) the reflash module decides it requires reflashing.
-+ *
-+ * We have to do this before actually building the PDT because the reflash
-+ * might cause various registers to move around.
-+ */
-+static int reset_and_reflash(struct rmi_device *rmi_dev)
-+{
-+	struct pdt_entry pdt_entry;
-+	int page;
-+	struct device *dev = &rmi_dev->dev;
-+	bool done = false;
-+	bool has_f01 = false;
-+	bool has_f34 = false;
-+	struct pdt_entry f34_pdt, f01_pdt;
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *f11 = fc->data;
++	struct input_dev *input_dev;
++	struct input_dev *input_dev_mouse;
++	struct rmi_driver_data *driver_data = dev_get_drvdata(&rmi_dev->dev);
++	struct rmi_driver *driver = rmi_dev->driver;
++	int sensors_itertd = 0;
 +	int i;
-+	int retval;
-+	struct rmi_device_platform_data *pdata;
++	int rc;
++	int board, version;
 +
-+	dev_dbg(dev, "Initial reset.\n");
-+	pdata = to_rmi_platform_data(rmi_dev);
-+	for (page = 0; (page <= RMI4_MAX_PAGE) && !done; page++) {
-+		u16 page_start = RMI4_PAGE_SIZE * page;
-+		u16 pdt_start = page_start + PDT_START_SCAN_LOCATION;
-+		u16 pdt_end = page_start + PDT_END_SCAN_LOCATION;
++	board = driver_data->board;
++	version = driver_data->rev;
 +
-+		done = true;
-+		for (i = pdt_start; i >= pdt_end; i -= sizeof(pdt_entry)) {
-+			retval = rmi_read_block(rmi_dev, i, &pdt_entry,
-+					       sizeof(pdt_entry));
-+			if (retval != sizeof(pdt_entry)) {
-+				dev_err(dev, "Read PDT entry at %#06x failed, code = %d.\n",
-+						i, retval);
-+				return retval;
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		struct f11_2d_sensor *sensor = &f11->sensors[i];
++		sensors_itertd = i;
++		input_dev = input_allocate_device();
++		if (!input_dev) {
++			rc = -ENOMEM;
++			goto error_unregister;
++		}
++
++		sensor->input = input_dev;
++		if (driver->set_input_params) {
++			rc = driver->set_input_params(rmi_dev, input_dev);
++			if (rc < 0) {
++				dev_err(&fc->dev,
++				"%s: Error in setting input device.\n",
++				__func__);
++				goto error_unregister;
++			}
++		}
++		sprintf(sensor->input_phys, "%s.abs%d/input0",
++			dev_name(&fc->dev), i);
++		input_dev->phys = sensor->input_phys;
++		input_dev->dev.parent = &rmi_dev->dev;
++		input_set_drvdata(input_dev, f11);
++
++		set_bit(EV_SYN, input_dev->evbit);
++		set_bit(EV_ABS, input_dev->evbit);
++		input_set_capability(input_dev, EV_KEY, BTN_TOUCH);
++
++		f11_set_abs_params(fc, i);
++
++		if (sensor->sens_query.info.has_rel) {
++			set_bit(EV_REL, input_dev->evbit);
++			set_bit(REL_X, input_dev->relbit);
++			set_bit(REL_Y, input_dev->relbit);
++		}
++		rc = input_register_device(input_dev);
++		if (rc < 0) {
++			input_free_device(input_dev);
++			sensor->input = NULL;
++			goto error_unregister;
++		}
++
++		if (sensor->sens_query.info.has_rel) {
++			/*create input device for mouse events  */
++			input_dev_mouse = input_allocate_device();
++			if (!input_dev_mouse) {
++				rc = -ENOMEM;
++				goto error_unregister;
 +			}
 +
-+			if (RMI4_END_OF_PDT(pdt_entry.function_number))
-+				break;
-+			done = false;
-+
-+			if (pdt_entry.function_number == 0x01) {
-+				u16 cmd_addr = page_start +
-+					pdt_entry.command_base_addr;
-+				u8 cmd_buf = RMI_DEVICE_RESET_CMD;
-+				retval = rmi_write_block(rmi_dev, cmd_addr,
-+						&cmd_buf, 1);
-+				if (retval < 0) {
-+					dev_err(dev, "Initial reset failed. Code = %d.\n",
-+						retval);
-+					return retval;
++			sensor->mouse_input = input_dev_mouse;
++			if (driver->set_input_params) {
++				rc = driver->set_input_params(rmi_dev,
++					input_dev_mouse);
++				if (rc < 0) {
++					dev_err(&fc->dev,
++					"%s: Error in setting input device.\n",
++					__func__);
++					goto error_unregister;
 +				}
-+				mdelay(pdata->reset_delay_ms);
-+				if (IS_ENABLED(CONFIG_RMI4_FWLIB))
-+					memcpy(&f01_pdt, &pdt_entry,
-+							sizeof(pdt_entry));
-+				else
-+					done = true;
-+				has_f01 = true;
-+				break;
-+			} else if (IS_ENABLED(CONFIG_RMI4_FWLIB) &&
-+					pdt_entry.function_number == 0x34) {
-+				memcpy(&f34_pdt, &pdt_entry, sizeof(pdt_entry));
-+				has_f34 = true;
 +			}
++			sprintf(sensor->input_phys_mouse, "%s.rel%d/input0",
++				dev_name(&fc->dev), i);
++			set_bit(EV_REL, input_dev_mouse->evbit);
++			set_bit(REL_X, input_dev_mouse->relbit);
++			set_bit(REL_Y, input_dev_mouse->relbit);
++
++			set_bit(BTN_MOUSE, input_dev_mouse->evbit);
++			/* Register device's buttons and keys */
++			set_bit(EV_KEY, input_dev_mouse->evbit);
++			set_bit(BTN_LEFT, input_dev_mouse->keybit);
++			set_bit(BTN_MIDDLE, input_dev_mouse->keybit);
++			set_bit(BTN_RIGHT, input_dev_mouse->keybit);
++
++			rc = input_register_device(input_dev_mouse);
++			if (rc < 0) {
++				input_free_device(input_dev_mouse);
++				sensor->mouse_input = NULL;
++				goto error_unregister;
++			}
++
++			set_bit(BTN_RIGHT, input_dev_mouse->keybit);
++		}
++
++	}
++
++	return 0;
++
++error_unregister:
++	for (; sensors_itertd > 0; sensors_itertd--) {
++		if (f11->sensors[sensors_itertd].input) {
++			if (f11->sensors[sensors_itertd].mouse_input) {
++				input_unregister_device(
++				   f11->sensors[sensors_itertd].mouse_input);
++				f11->sensors[sensors_itertd].mouse_input = NULL;
++			}
++			input_unregister_device(f11->sensors[i].input);
++			f11->sensors[i].input = NULL;
 +		}
 +	}
 +
-+	if (!has_f01) {
-+		dev_warn(dev, "WARNING: Failed to find F01 for initial reset.\n");
-+		return -ENODEV;
++	return rc;
++}
++
++static void rmi_f11_free_devices(struct rmi_function_container *fc)
++{
++	struct f11_data *f11 = fc->data;
++	int i;
++
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		if (f11->sensors[i].input)
++			input_unregister_device(f11->sensors[i].input);
++		if (f11->sensors[i].mouse_input)
++			input_unregister_device(f11->sensors[i].mouse_input);
++	}
++}
++
++static int rmi_f11_create_sysfs(struct rmi_function_container *fc)
++{
++	int attr_count = 0;
++	int rc;
++
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
++		if (sysfs_create_file
++		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
++			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
++				attrs[attr_count].attr.name);
++			rc = -ENODEV;
++			goto err_remove_sysfs;
++		}
 +	}
 +
-+	if (IS_ENABLED(CONFIG_RMI4_FWLIB)) {
-+		if (has_f34)
-+			rmi4_fw_update(rmi_dev, &f01_pdt, &f34_pdt);
-+		else
-+			dev_warn(dev, "WARNING: No F34, firmware update will not be done.\n");
++	return 0;
++
++err_remove_sysfs:
++	for (attr_count--; attr_count >= 0; attr_count--)
++		sysfs_remove_file(&fc->dev.kobj, &attrs[attr_count].attr);
++	return rc;
++}
++
++static int rmi_f11_config(struct rmi_function_container *fc)
++{
++	struct f11_data *f11 = fc->data;
++	int i;
++	int rc;
++
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		rc = f11_write_control_regs(fc, &f11->sensors[i].sens_query,
++				   &f11->dev_controls, fc->fd.query_base_addr);
++		if (rc < 0)
++			return rc;
 +	}
 +
 +	return 0;
 +}
 +
-+
-+/* extract product ID */
-+void get_prod_id(struct rmi_device *rmi_dev, struct rmi_driver_data *drvdata)
++int rmi_f11_attention(struct rmi_function_container *fc,
++						unsigned long *irq_bits)
 +{
-+	struct device *dev = &rmi_dev->dev;
-+	int retval;
-+	int board = 0, rev = 0;
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *f11 = fc->data;
++	u16 data_base_addr = fc->fd.data_base_addr;
++	u16 data_base_addr_offset = 0;
++	int error;
 +	int i;
-+	static const char * const pattern[] = {
-+		"tm%4d-%d", "s%4d-%d", "s%4d-ver%1d"};
-+	u8 product_id[RMI_PRODUCT_ID_LENGTH+1];
 +
-+	retval = rmi_read_block(rmi_dev,
-+		drvdata->f01_container->fd.query_base_addr+
-+		sizeof(struct f01_basic_queries),
-+		product_id, RMI_PRODUCT_ID_LENGTH);
-+	if (retval < 0) {
-+		dev_err(dev, "Failed to read product id, code=%d!", retval);
-+		return;
++	for (i = 0; i < f11->dev_query.nbr_of_sensors + 1; i++) {
++		error = rmi_read_block(rmi_dev,
++				data_base_addr + data_base_addr_offset,
++				f11->sensors[i].data_pkt,
++				f11->sensors[i].pkt_size);
++		if (error < 0)
++			return error;
++
++		rmi_f11_finger_handler(f11, &f11->sensors[i]);
++		data_base_addr_offset += f11->sensors[i].pkt_size;
 +	}
-+	product_id[RMI_PRODUCT_ID_LENGTH] = '\0';
 +
-+	for (i = 0; i < sizeof(product_id); i++)
-+		product_id[i] = tolower(product_id[i]);
-+
-+	for (i = 0; i < sizeof(pattern); i++) {
-+		retval = sscanf(product_id, pattern[i], &board, &rev);
-+		if (retval)
-+			break;
-+	}
-+	/* save board and rev data in the rmi_driver_data */
-+	drvdata->board = board;
-+	drvdata->rev = rev;
-+	dev_dbg(dev, "Rmi_driver getProdID, set board: %d rev: %d\n",
-+		drvdata->board, drvdata->rev);
++	return 0;
 +}
 +
-+static int rmi_scan_pdt(struct rmi_device *rmi_dev)
++#ifdef CONFIG_PM
++static int rmi_f11_resume(struct rmi_function_container *fc)
 +{
-+	struct rmi_driver_data *data;
-+	struct pdt_entry pdt_entry;
-+	int page;
-+	struct device *dev = &rmi_dev->dev;
-+	int irq_count = 0;
-+	bool done = false;
-+	int i;
-+	int retval;
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *data = fc->data;
++	/* Command register always reads as 0, so we can just use a local. */
++	struct f11_2d_commands commands = {
++		.rezero = true,
++	};
++	int retval = 0;
 +
-+	dev_dbg(dev, "Scanning PDT...\n");
++	dev_dbg(&fc->dev, "Resuming...\n");
++	if (!data->rezero_wait_ms)
++		return 0;
 +
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+	mutex_lock(&data->pdt_mutex);
++	mdelay(data->rezero_wait_ms);
 +
-+	for (page = 0; (page <= RMI4_MAX_PAGE) && !done; page++) {
-+		u16 page_start = RMI4_PAGE_SIZE * page;
-+		u16 pdt_start = page_start + PDT_START_SCAN_LOCATION;
-+		u16 pdt_end = page_start + PDT_END_SCAN_LOCATION;
-+
-+		done = true;
-+		for (i = pdt_start; i >= pdt_end; i -= sizeof(pdt_entry)) {
-+			retval = rmi_read_block(rmi_dev, i, &pdt_entry,
-+					       sizeof(pdt_entry));
-+			if (retval != sizeof(pdt_entry)) {
-+				dev_err(dev, "Read of PDT entry at %#06x failed.\n",
-+					i);
-+				goto error_exit;
-+			}
-+
-+			if (RMI4_END_OF_PDT(pdt_entry.function_number))
-+				break;
-+
-+			dev_dbg(dev, "Found F%02X on page %#04x\n",
-+					pdt_entry.function_number, page);
-+			done = false;
-+
-+			if (pdt_entry.function_number == 0x01)
-+				check_bootloader_mode(rmi_dev, &pdt_entry,
-+						      page_start);
-+
-+
-+			retval = create_function_container(rmi_dev,
-+					&pdt_entry, &irq_count, page_start);
-+
-+			if (retval)
-+				goto error_exit;
-+
-+			if (pdt_entry.function_number == 0x01)
-+				get_prod_id(rmi_dev, data);
-+		}
-+		done = done || data->f01_bootloader_mode;
++	retval = rmi_write_block(rmi_dev, fc->fd.command_base_addr,
++			&commands, sizeof(commands));
++	if (retval < 0) {
++		dev_err(&fc->dev, "%s: failed to issue rezero command, error = %d.",
++			__func__, retval);
++		return retval;
 +	}
-+	data->irq_count = irq_count;
-+	data->num_of_irq_regs = (irq_count + 7) / 8;
-+	dev_dbg(dev, "%s: Done with PDT scan.\n", __func__);
-+	retval = 0;
 +
-+error_exit:
-+	mutex_unlock(&data->pdt_mutex);
 +	return retval;
 +}
++#endif /* CONFIG_PM */
 +
-+static int f01_notifier_call(struct notifier_block *nb,
-+				unsigned long action, void *data)
++static int f11_remove_device(struct device *dev)
 +{
-+	struct device *dev = data;
++	int attr_count = 0;
++	struct f11_data *f11;
++	struct rmi_function_container *fc = to_rmi_function_container(dev);
++
++	f11 = fc->data;
++
++	if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
++		int i;
++
++		for (i = 0; i < f11->dev_query.nbr_of_sensors + 1; i++)
++			teardown_sensor_debugfs(&f11->sensors[i]);
++		teardown_f11_debugfs(f11);
++	}
++
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
++		sysfs_remove_file(&fc->dev.kobj, &attrs[attr_count].attr);
++
++	rmi_f11_free_devices(fc);
++	return 0;
++}
++
++static int f11_device_init(struct rmi_function_container *fc)
++{
++	int rc;
++
++	rc = rmi_f11_initialize(fc);
++	if (rc < 0)
++		return rc;
++
++	rc = rmi_f11_register_devices(fc);
++	if (rc < 0)
++		return rc;
++
++	rc = rmi_f11_create_sysfs(fc);
++	if (rc < 0)
++		return rc;
++
++	return 0;
++}
++
++static __devinit int f11_probe(struct device *dev)
++{
 +	struct rmi_function_container *fc;
 +
 +	if (dev->type != &rmi_function_type)
-+		return 0;
++		return 1;
 +
 +	fc = to_rmi_function_container(dev);
-+	if (fc->fd.function_number != 0x01)
-+		return 0;
-+
-+	switch (action) {
-+	case BUS_NOTIFY_BOUND_DRIVER:
-+		dev_dbg(dev, "%s: F01 driver bound.\n", __func__);
-+		enable_sensor(fc->rmi_dev);
-+		break;
-+	case BUS_NOTIFY_UNBIND_DRIVER:
-+		dev_dbg(dev, "%s: F01 driver going away.\n", __func__);
-+		disable_sensor(fc->rmi_dev);
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static struct notifier_block rmi_bus_notifier = {
-+	.notifier_call = f01_notifier_call,
-+};
-+
-+#ifdef CONFIG_PM
-+static int suspend_one_device(struct rmi_function_container *fc)
-+{
-+	struct rmi_function_handler *fh;
-+	int retval = 0;
-+
-+	if (!fc->dev.driver)
-+		return 0;
-+
-+	fh = to_rmi_function_handler(fc->dev.driver);
-+
-+	if (fh->suspend) {
-+		retval = fh->suspend(fc);
-+		if (retval < 0)
-+			dev_err(&fc->dev, "Suspend failed, code: %d",
-+				retval);
-+	}
-+
-+	return retval;
-+}
-+
-+static int rmi_driver_suspend(struct device *dev)
-+{
-+	struct rmi_driver_data *data;
-+	struct rmi_function_container *entry;
-+	int retval = 0;
-+	struct rmi_device *rmi_dev = to_rmi_device(dev);
-+
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	mutex_lock(&data->suspend_mutex);
-+	if (data->suspended)
-+		goto exit;
-+
-+	if (data->pre_suspend) {
-+		retval = data->pre_suspend(data->pm_data);
-+		if (retval)
-+			goto exit;
-+	}
-+
-+	disable_sensor(rmi_dev);
-+
-+	/** Do it backwards so F01 comes last. */
-+	list_for_each_entry_reverse(entry, &data->rmi_functions.list, list)
-+		if (suspend_one_device(entry) < 0)
-+			goto exit;
-+
-+	data->suspended = true;
-+
-+	if (data->post_suspend)
-+		retval = data->post_suspend(data->pm_data);
-+
-+exit:
-+	mutex_unlock(&data->suspend_mutex);
-+	return retval;
-+}
-+
-+static int resume_one_device(struct rmi_function_container *fc)
-+{
-+	struct rmi_function_handler *fh;
-+	int retval = 0;
-+
-+	if (!fc->dev.driver)
-+		return 0;
-+
-+	fh = to_rmi_function_handler(fc->dev.driver);
-+
-+	if (fh->resume) {
-+		retval = fh->resume(fc);
-+		if (retval < 0)
-+			dev_err(&fc->dev, "Resume failed, code: %d",
-+				retval);
-+	}
-+
-+	return retval;
-+}
-+
-+static int rmi_driver_resume(struct device *dev)
-+{
-+	struct rmi_driver_data *data;
-+	struct rmi_function_container *entry;
-+	int retval = 0;
-+	struct rmi_device *rmi_dev = to_rmi_device(dev);
-+
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+	mutex_lock(&data->suspend_mutex);
-+	if (!data->suspended)
-+		goto exit;
-+
-+	if (data->pre_resume) {
-+		retval = data->pre_resume(data->pm_data);
-+		if (retval)
-+			goto exit;
-+	}
-+
-+	/** Do it forwards, so F01 comes first. */
-+	list_for_each_entry(entry, &data->rmi_functions.list, list) {
-+		if (resume_one_device(entry) < 0)
-+			goto exit;
-+	}
-+
-+	retval = enable_sensor(rmi_dev);
-+	if (retval)
-+		goto exit;
-+
-+
-+	if (data->post_resume) {
-+		retval = data->post_resume(data->pm_data);
-+		if (retval)
-+			goto exit;
-+	}
-+
-+	data->suspended = false;
-+exit:
-+	mutex_unlock(&data->suspend_mutex);
-+	return retval;
-+}
-+
-+#endif /* CONFIG_PM */
-+
-+static int __devexit rmi_driver_remove(struct device *dev)
-+{
-+	struct rmi_driver_data *data;
-+	int i;
-+	struct rmi_device *rmi_dev = to_rmi_device(dev);
-+
-+	data = dev_get_drvdata(&rmi_dev->dev);
-+
-+	disable_sensor(rmi_dev);
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG))
-+		teardown_debugfs(rmi_dev);
-+
-+	rmi_free_function_list(rmi_dev);
-+	for (i = 0; i < ARRAY_SIZE(attrs); i++)
-+		device_remove_file(&rmi_dev->dev, &attrs[i]);
-+	if (data->pdt_props.has_bsr)
-+		device_remove_file(&rmi_dev->dev, &bsr_attribute);
-+	return 0;
-+}
-+
-+static int __devinit rmi_driver_probe(struct device *dev)
-+{
-+	struct rmi_driver *rmi_driver;
-+	struct rmi_driver_data *data = NULL;
-+	struct rmi_function_container *fc;
-+	struct rmi_device_platform_data *pdata;
-+	int retval = 0;
-+	int attr_count = 0;
-+	struct rmi_device *rmi_dev;
-+
-+	dev_dbg(dev, "%s: Starting probe.\n", __func__);
-+	if (!dev->driver) {
-+		dev_err(dev, "No driver for RMI4 device during probe!\n");
-+		return -ENODEV;
-+	}
-+
-+	if (dev->type != &rmi_sensor_type) {
-+		dev_dbg(dev, "Not a sensor device.\n");
++	if (fc->fd.function_number != FUNCTION_NUMBER)
 +		return 1;
-+	}
 +
-+	rmi_dev = to_rmi_device(dev);
-+	rmi_driver = to_rmi_driver(dev->driver);
-+	rmi_dev->driver = rmi_driver;
-+
-+	pdata = to_rmi_platform_data(rmi_dev);
-+
-+	data = devm_kzalloc(dev, sizeof(struct rmi_driver_data), GFP_KERNEL);
-+	if (!data) {
-+		dev_err(dev, "%s: Failed to allocate driver data.\n", __func__);
-+		return -ENOMEM;
-+	}
-+	INIT_LIST_HEAD(&data->rmi_functions.list);
-+	data->rmi_dev = rmi_dev;
-+	dev_set_drvdata(&rmi_dev->dev, data);
-+	mutex_init(&data->pdt_mutex);
-+
-+	/* Right before a warm boot, the sensor might be in some unusual state,
-+	 * such as F54 diagnostics, or F34 bootloader mode.  In order to clear
-+	 * the sensor to a known state, we issue a initial reset to clear any
-+	 * previous settings and force it into normal operation.
-+	 *
-+	 * For a number of reasons, this initial reset may fail to return
-+	 * within the specified time, but we'll still be able to bring up the
-+	 * driver normally after that failure.  This occurs most commonly in
-+	 * a cold boot situation (where then firmware takes longer to come up
-+	 * than from a warm boot) and the reset_delay_ms in the platform data
-+	 * has been set too short to accomodate that.  Since the sensor will
-+	 * eventually come up and be usable, we don't want to just fail here
-+	 * and leave the customer's device unusable.  So we warn them, and
-+	 * continue processing.
-+	 */
-+	if (!pdata->reset_delay_ms)
-+		pdata->reset_delay_ms = DEFAULT_RESET_DELAY_MS;
-+	retval = reset_and_reflash(rmi_dev);
-+	if (retval)
-+		dev_warn(dev, "RMI initial reset failed! Continuing in spite of this.\n");
-+
-+
-+	retval = rmi_scan_pdt(rmi_dev);
-+	if (retval) {
-+		dev_err(dev, "PDT scan for %s failed with code %d.\n",
-+			pdata->sensor_name, retval);
-+		goto err_free_data;
-+	}
-+
-+	if (!data->f01_container) {
-+		dev_err(dev, "missing F01 container!\n");
-+		retval = -EINVAL;
-+		goto err_free_data;
-+	}
-+
-+	list_for_each_entry(fc, &data->rmi_functions.list, list) {
-+		retval = rmi_driver_irq_get_mask(rmi_dev, fc);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to create irq_mask.\n",
-+				__func__);
-+			goto err_free_data;
-+		}
-+	}
-+
-+	retval = rmi_read(rmi_dev, PDT_PROPERTIES_LOCATION, &data->pdt_props);
-+	if (retval < 0) {
-+		/* we'll print out a warning and continue since
-+		 * failure to get the PDT properties is not a cause to fail
-+		 */
-+		dev_warn(dev, "Could not read PDT properties from %#06x. Assuming 0x00.\n",
-+			 PDT_PROPERTIES_LOCATION);
-+	}
-+
-+	dev_dbg(dev, "%s: Creating sysfs files.", __func__);
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-+		retval = device_create_file(dev, &attrs[attr_count]);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to create sysfs file %s.\n",
-+				__func__, attrs[attr_count].attr.name);
-+			goto err_free_data;
-+		}
-+	}
-+	if (data->pdt_props.has_bsr) {
-+		retval = device_create_file(dev, &bsr_attribute);
-+		if (retval < 0) {
-+			dev_err(dev, "%s: Failed to create sysfs file bsr.\n",
-+				__func__);
-+			goto err_free_data;
-+		}
-+	}
-+
-+	mutex_init(&data->irq_mutex);
-+	data->irq_status = devm_kzalloc(dev,
-+		BITS_TO_LONGS(data->irq_count)*sizeof(unsigned long),
-+		GFP_KERNEL);
-+	if (!data->irq_status) {
-+		dev_err(dev, "Failed to allocate irq_status.\n");
-+		retval = -ENOMEM;
-+		goto err_free_data;
-+	}
-+
-+	data->current_irq_mask = devm_kzalloc(dev,
-+				data->num_of_irq_regs,
-+				GFP_KERNEL);
-+	if (!data->current_irq_mask) {
-+		dev_err(dev, "Failed to allocate current_irq_mask.\n");
-+		retval = -ENOMEM;
-+		goto err_free_data;
-+	}
-+
-+	retval = rmi_read_block(rmi_dev,
-+				data->f01_container->fd.control_base_addr+1,
-+				data->current_irq_mask, data->num_of_irq_regs);
-+	if (retval < 0) {
-+		dev_err(dev, "%s: Failed to read current IRQ mask.\n",
-+			__func__);
-+		goto err_free_data;
-+	}
-+
-+	data->irq_mask_store = devm_kzalloc(dev,
-+		BITS_TO_LONGS(data->irq_count)*sizeof(unsigned long),
-+		GFP_KERNEL);
-+	if (!data->irq_mask_store) {
-+		dev_err(dev, "Failed to allocate mask store.\n");
-+		retval = -ENOMEM;
-+		goto err_free_data;
-+	}
-+	if (IS_ENABLED(CONFIG_PM)) {
-+		data->pm_data = pdata->pm_data;
-+		data->pre_suspend = pdata->pre_suspend;
-+		data->post_suspend = pdata->post_suspend;
-+		data->pre_resume = pdata->pre_resume;
-+		data->post_resume = pdata->post_resume;
-+
-+		mutex_init(&data->suspend_mutex);
-+	}
-+
-+	if (pdata->attn_gpio) {
-+		data->irq = gpio_to_irq(pdata->attn_gpio);
-+		if (pdata->level_triggered) {
-+			data->irq_flags = IRQF_ONESHOT |
-+				((pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH)
-+				? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW);
-+		} else {
-+			data->irq_flags =
-+				(pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH)
-+				? IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
-+		}
-+	} else
-+		data->poll_interval = ktime_set(0,
-+			(pdata->poll_interval_ms ? pdata->poll_interval_ms :
-+			DEFAULT_POLL_INTERVAL_MS) * 1000);
-+
-+	if (data->f01_container->dev.driver) {
-+		/* Driver already bound, so enable ATTN now. */
-+		enable_sensor(rmi_dev);
-+	}
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG)) {
-+		retval = setup_debugfs(rmi_dev);
-+		if (retval < 0)
-+			dev_warn(&fc->dev, "Failed to setup debugfs. Code: %d.\n",
-+				retval);
-+	}
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEV) && pdata->attn_gpio) {
-+		retval = gpio_export(pdata->attn_gpio, false);
-+		if (retval) {
-+			dev_warn(dev, "WARNING: Failed to export ATTN gpio!\n");
-+			retval = 0;
-+		} else {
-+			retval = gpio_export_link(dev,
-+						  "attn", pdata->attn_gpio);
-+			if (retval) {
-+				dev_warn(dev,
-+					"WARNING: Failed to symlink ATTN gpio!\n");
-+				retval = 0;
-+			} else {
-+				dev_info(dev, "Exported ATTN GPIO %d.",
-+					pdata->attn_gpio);
-+			}
-+		}
-+	}
-+
-+	return 0;
-+
-+ err_free_data:
-+	rmi_free_function_list(rmi_dev);
-+	for (attr_count--; attr_count >= 0; attr_count--)
-+		device_remove_file(dev, &attrs[attr_count]);
-+	if (data->pdt_props.has_bsr)
-+		device_remove_file(dev, &bsr_attribute);
-+	return retval;
++	return f11_device_init(fc);
 +}
 +
-+static UNIVERSAL_DEV_PM_OPS(rmi_driver_pm, rmi_driver_suspend,
-+			    rmi_driver_resume, NULL);
 +
-+static struct rmi_driver sensor_driver = {
++static struct rmi_function_handler function_handler = {
 +	.driver = {
 +		.owner = THIS_MODULE,
-+		.name = "rmi_generic",
++		.name = "rmi_f11",
 +		.bus = &rmi_bus_type,
-+		.pm = &rmi_driver_pm,
-+		.probe = rmi_driver_probe,
-+		.remove = __devexit_p(rmi_driver_remove),
++		.probe = f11_probe,
++		.remove = f11_remove_device,
 +	},
-+	.irq_handler = rmi_driver_irq_handler,
-+	.reset_handler = rmi_driver_reset_handler,
-+	.store_irq_mask = rmi_driver_irq_save,
-+	.restore_irq_mask = rmi_driver_irq_restore,
-+	.set_input_params = rmi_driver_set_input_params,
++	.func = FUNCTION_NUMBER,
++	.config = rmi_f11_config,
++	.attention = rmi_f11_attention,
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	.late_resume = rmi_f11_resume
++#elif defined(CONFIG_PM)
++	.resume = rmi_f11_resume
++#endif  /* defined(CONFIG_HAS_EARLYSUSPEND) */
 +};
 +
-+static int __init rmi_driver_init(void)
++static int __init rmi_f11_module_init(void)
 +{
-+	int retval;
++	int error;
 +
-+	retval = driver_register(&sensor_driver.driver);
-+	if (retval) {
-+		pr_err("%s: driver register failed, code=%d.\n", __func__,
-+		       retval);
-+		return retval;
++	error = driver_register(&function_handler.driver);
++	if (error < 0) {
++		pr_err("%s: register driver failed!\n", __func__);
++		return error;
 +	}
 +
-+	/* Ask the bus to let us know when drivers are bound to devices. */
-+	retval = bus_register_notifier(&rmi_bus_type, &rmi_bus_notifier);
-+	if (retval) {
-+		pr_err("%s: failed to register bus notifier, code=%d.\n",
-+		       __func__, retval);
-+		return retval;
-+	}
-+
-+	return retval;
++	return 0;
 +}
 +
-+static void __exit rmi_driver_exit(void)
++static void __exit rmi_f11_module_exit(void)
 +{
-+	bus_unregister_notifier(&rmi_bus_type, &rmi_bus_notifier);
-+	driver_unregister(&sensor_driver.driver);
++	driver_unregister(&function_handler.driver);
 +}
 +
-+module_init(rmi_driver_init);
-+module_exit(rmi_driver_exit);
++module_init(rmi_f11_module_init);
++module_exit(rmi_f11_module_exit);
 +
 +MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com");
-+MODULE_DESCRIPTION("RMI generic driver");
++MODULE_DESCRIPTION("RMI F11 module");
 +MODULE_LICENSE("GPL");
 +MODULE_VERSION(RMI_DRIVER_VERSION);
-diff --git a/drivers/input/rmi4/rmi_driver.h b/drivers/input/rmi4/rmi_driver.h
-new file mode 100644
-index 0000000..f5b221a
---- /dev/null
-+++ b/drivers/input/rmi4/rmi_driver.h
-@@ -0,0 +1,139 @@
-+/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
-+ * Copyright (c) 2011 Unixphere
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#ifndef _RMI_DRIVER_H
-+#define _RMI_DRIVER_H
-+
-+#include <linux/ctype.h>
-+#include <linux/hrtimer.h>
-+#include <linux/ktime.h>
-+
-+#define RMI_DRIVER_VERSION "1.6"
-+
-+#define SYNAPTICS_INPUT_DEVICE_NAME "Synaptics RMI4 Touch Sensor"
-+#define SYNAPTICS_VENDOR_ID 0x06cb
-+
-+#define GROUP(_attrs) { \
-+	.attrs = _attrs,  \
-+}
-+
-+#define attrify(nm) (&dev_attr_##nm.attr)
-+
-+#define PDT_PROPERTIES_LOCATION 0x00EF
-+#define BSR_LOCATION 0x00FE
-+
-+struct pdt_properties {
-+	u8 reserved_1:6;
-+	u8 has_bsr:1;
-+	u8 reserved_2:1;
-+} __attribute__((__packed__));
-+
-+struct rmi_driver_data {
-+	struct rmi_function_container rmi_functions;
-+	struct rmi_device *rmi_dev;
-+
-+	struct rmi_function_container *f01_container;
-+	bool f01_bootloader_mode;
-+
-+	atomic_t attn_count;
-+	bool irq_debug;
-+	int irq;
-+	int irq_flags;
-+	int num_of_irq_regs;
-+	int irq_count;
-+	unsigned long *irq_status;
-+	unsigned long *current_irq_mask;
-+	unsigned long *irq_mask_store;
-+	bool irq_stored;
-+	struct mutex irq_mutex;
-+
-+	/* Following are used when polling. */
-+	struct hrtimer poll_timer;
-+	struct work_struct poll_work;
-+	ktime_t poll_interval;
-+
-+	struct mutex pdt_mutex;
-+	struct pdt_properties pdt_props;
-+	u8 bsr;
-+
-+	int board;
-+	int rev;
-+
-+	bool enabled;
-+#ifdef CONFIG_PM
-+	bool suspended;
-+	struct mutex suspend_mutex;
-+
-+	void *pm_data;
-+	int (*pre_suspend) (const void *pm_data);
-+	int (*post_suspend) (const void *pm_data);
-+	int (*pre_resume) (const void *pm_data);
-+	int (*post_resume) (const void *pm_data);
-+#endif
-+
-+#ifdef CONFIG_RMI4_DEBUG
-+	struct dentry *debugfs_delay;
-+	struct dentry *debugfs_phys;
-+	struct dentry *debugfs_reg_ctl;
-+	struct dentry *debugfs_reg;
-+	struct dentry *debugfs_irq;
-+	struct dentry *debugfs_attn_count;
-+	u16 reg_debug_addr;
-+	u8 reg_debug_size;
-+#endif
-+
-+	void *data;
-+};
-+
-+#define PDT_START_SCAN_LOCATION 0x00e9
-+#define PDT_END_SCAN_LOCATION	0x0005
-+#define RMI4_END_OF_PDT(id) ((id) == 0x00 || (id) == 0xff)
-+
-+struct pdt_entry {
-+	u8 query_base_addr:8;
-+	u8 command_base_addr:8;
-+	u8 control_base_addr:8;
-+	u8 data_base_addr:8;
-+	u8 interrupt_source_count:3;
-+	u8 bits3and4:2;
-+	u8 function_version:2;
-+	u8 bit7:1;
-+	u8 function_number:8;
-+} __attribute__((__packed__));
-+
-+static inline void copy_pdt_entry_to_fd(struct pdt_entry *pdt,
-+				 struct rmi_function_descriptor *fd,
-+				 u16 page_start)
-+{
-+	fd->query_base_addr = pdt->query_base_addr + page_start;
-+	fd->command_base_addr = pdt->command_base_addr + page_start;
-+	fd->control_base_addr = pdt->control_base_addr + page_start;
-+	fd->data_base_addr = pdt->data_base_addr + page_start;
-+	fd->function_number = pdt->function_number;
-+	fd->interrupt_source_count = pdt->interrupt_source_count;
-+	fd->function_version = pdt->function_version;
-+}
-+
-+#ifdef	CONFIG_RMI4_FWLIB
-+extern void rmi4_fw_update(struct rmi_device *rmi_dev,
-+		struct pdt_entry *f01_pdt, struct pdt_entry *f34_pdt);
-+#else
-+#define rmi4_fw_update(rmi_dev, f01_pdt, f34_pdt)
-+#endif
-+
-+#endif
-diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-index 5588285..5019cb0 100644
---- a/include/uapi/linux/input.h
-+++ b/include/uapi/linux/input.h
-@@ -920,6 +920,7 @@ struct input_keymap_entry {
- #define BUS_GSC			0x1A
- #define BUS_ATARI		0x1B
- #define BUS_SPI			0x1C
-+#define BUS_RMI			0x1D
-
- /*
-  * MT_TOOL types
