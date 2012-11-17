@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2KQDtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:49:23 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16724 "EHLO
+	id S1754477Ab2KQDtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:49:21 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16741 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab2KQDkT (ORCPT
+	with ESMTP id S1754077Ab2KQDkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:19 -0500
+	Fri, 16 Nov 2012 22:40:20 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 05/46] x86, mm: Revert back good_end setting for 64bit
-Date: Fri, 16 Nov 2012 19:38:42 -0800
-Message-Id: <1353123563-3103-6-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH v8 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
+Date: Fri, 16 Nov 2012 19:38:39 -0800
+Message-Id: <1353123563-3103-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After
+So make init_memory_mapping smaller and readable.
 
-| commit 8548c84da2f47e71bbbe300f55edb768492575f7
-| Author: Takashi Iwai <tiwai@suse.de>
-| Date:   Sun Oct 23 23:19:12 2011 +0200
-|
-|    x86: Fix S4 regression
-|
-|    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
-|    regression since 2.6.39, namely the machine reboots occasionally at S4
-|    resume.  It doesn't happen always, overall rate is about 1/20.  But,
-|    like other bugs, once when this happens, it continues to happen.
-|
-|    This patch fixes the problem by essentially reverting the memory
-|    assignment in the older way.
+-v2: use 0 instead of nr_range as input parameter found by Yasuaki Ishimatsu.
 
-Have some page table around 512M again, that will prevent kdump to find 512M
-under 768M.
-
-We need revert that reverting, so we could put page table high again for 64bit.
-
-Takashi agreed that S4 regression could be something else.
-
-	https://lkml.org/lkml/2012/6/15/182
-
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- arch/x86/mm/init.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/mm/init.c |   41 +++++++++++++++++++++++++----------------
+ 1 files changed, 25 insertions(+), 16 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 9e17f9e..dbef4ff 100644
+index aa5b0da..6368b86 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -234,8 +234,8 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
- 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
--#endif
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
-+#endif
+@@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
  
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (!base)
+-/*
+- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+- * This runs before bootmem is initialized and gets pages directly from
+- * the physical memory. To access them they are temporarily mapped.
+- */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++				     unsigned long start,
++				     unsigned long end)
+ {
+ 	unsigned long start_pfn, end_pfn;
+-	unsigned long ret = 0;
+ 	unsigned long pos;
+-	struct map_range mr[NR_RANGE_MR];
+-	int nr_range, i;
+-
+-	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+-	       start, end - 1);
+-
+-	memset(mr, 0, sizeof(mr));
+-	nr_range = 0;
++	int i;
+ 
+ 	/* head if not big page alignment ? */
+ 	start_pfn = start >> PAGE_SHIFT;
+@@ -258,6 +246,27 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+ 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+ 
++	return nr_range;
++}
++
++/*
++ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
++ * This runs before bootmem is initialized and gets pages directly from
++ * the physical memory. To access them they are temporarily mapped.
++ */
++unsigned long __init_refok init_memory_mapping(unsigned long start,
++					       unsigned long end)
++{
++	struct map_range mr[NR_RANGE_MR];
++	unsigned long ret = 0;
++	int nr_range, i;
++
++	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
++
++	memset(mr, 0, sizeof(mr));
++	nr_range = split_mem_range(mr, 0, start, end);
++
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
 -- 
 1.7.7
 
