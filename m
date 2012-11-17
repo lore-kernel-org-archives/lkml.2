@@ -1,149 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2KQAZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:25:08 -0500
-Received: from 79.132.231.86.static.edpnet.net ([79.132.231.86]:46498 "EHLO
-	mail.offline.be" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2KQAZG (ORCPT
+	id S1753901Ab2KQAZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:25:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37660 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2KQAZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:25:06 -0500
-Date: Sat, 17 Nov 2012 01:18:26 +0100
-From: Marc Duponcheel <marc@offline.be>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Marc Duponcheel <marc@offline.be>
-Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
-Message-ID: <20121117001826.GC9816@offline.be>
-Reply-To: Marc Duponcheel <marc@offline.be>
-References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
- <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
- <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
- <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
- <20121114100154.GI8218@suse.de>
- <20121114132940.GA13196@offline.be>
- <alpine.DEB.2.00.1211141342460.13515@chino.kir.corp.google.com>
- <20121115011449.GA20858@offline.be>
+	Fri, 16 Nov 2012 19:25:21 -0500
+Date: Fri, 16 Nov 2012 16:24:49 -0800
+From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
+Message-ID: <tip-bf4010fcf8f241a81693556b5abb48d9dbc33f97@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20121116215356.8521.92472.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121116215356.8521.92472.stgit@ahduyck-cp1.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86:
+  Make it so that __pa_symbol can only process kernel symbols on x86_64
+Git-Commit-ID: bf4010fcf8f241a81693556b5abb48d9dbc33f97
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="cWoXeonUoKmBZSoM"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121115011449.GA20858@offline.be>
-Organization: OFFLINE
-X-uname: Linux 3.6.6-gentoo x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:25:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  bf4010fcf8f241a81693556b5abb48d9dbc33f97
+Gitweb:     http://git.kernel.org/tip/bf4010fcf8f241a81693556b5abb48d9dbc33f97
+Author:     Alexander Duyck <alexander.h.duyck@intel.com>
+AuthorDate: Fri, 16 Nov 2012 13:55:46 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 16 Nov 2012 15:20:25 -0800
 
---cWoXeonUoKmBZSoM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86: Make it so that __pa_symbol can only process kernel symbols on x86_64
 
- Hi David, others
+I submitted an earlier patch that make __phys_addr an inline.  This obviously
+results in an increase in the code size.  One step I can take to reduce that
+is to make it so that the __pa_symbol call does a direct translation for
+kernel addresses instead of covering all of virtual memory.
 
-Results seem OK
+On my system this reduced the size for __pa_symbol from 5 instructions
+totalling 30 bytes to 3 instructions totalling 16 bytes.
 
- recap: I have 2 6core 64bit opterons and I make -j13
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Link: http://lkml.kernel.org/r/20121116215356.8521.92472.stgit@ahduyck-cp1.jf.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/page.h    |  3 ++-
+ arch/x86/include/asm/page_32.h |  1 +
+ arch/x86/include/asm/page_64.h |  3 +++
+ arch/x86/mm/physaddr.c         | 11 +++++++++++
+ 4 files changed, 17 insertions(+), 1 deletion(-)
 
-I do
-
-# echo always >/sys/kernel/mm/transparent_hugepage/enabled
-# while [ 1 ]
-  do
-   sleep 10
-   date
-   echo = vmstat
-   egrep "(thp|compact)" /proc/vmstat
-   echo = khugepaged stack
-   cat /proc/501/stack
- done > /tmp/49361.xxxx
-# emerge icedtea
-(where 501 = pidof khugepaged)
-
-for xxxx = base = 3.6.6
-and xxxx = test = 3.6.6 + diff you provided
-
-I attach 
- /tmp/49361.base.gz
-and
- /tmp/49361.test.gz
-
-Note:
-
- with xxx=base, I could see
-  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
- 8617 root      20   0 3620m  41m  10m S 988.3  0.5   6:19.06 javac
-    1 root      20   0  4208  588  556 S   0.0  0.0   0:03.25 init
- already during configure and I needed to kill -9 javac
-
- with xxx=test, I could see
-  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
-9275 root      20   0 2067m 474m  10m S 304.2  5.9   0:32.81 javac
- 710 root       0 -20     0    0    0 S   0.3  0.0   0:01.07 kworker/0:1H
- later when processing >700 java files
-
-Also note that with xxx=test compact_blocks_moved stays 0
-
-hope this helps
-
- Thanks
-
-have a nice day
-
-On 2012 Nov 15, Marc Duponcheel wrote:
->  Hi David
-> 
-> Thanks for the changeset
-> 
-> I will test 3.6.6 without&with this weekend.
-> 
->  Have a nice day
-
---
- Marc Duponcheel
- Velodroomstraat 74 - 2600 Berchem - Belgium
- +32 (0)478 68.10.91 - marc@offline.be
-
---cWoXeonUoKmBZSoM
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="49361.base.gz"
-Content-Transfer-Encoding: base64
-
-H4sICF7OplACAzQ5MzYxLmJhc2UA7dnLTttAFAbgfZ7C+y469wsq3VTddkN3VWWNx2MSxYld
-2wnw9j2TC9QxEXFUECgnsED2P8eXmU8xxzeuS35U64TqhJArLq6YSr59/5kwQtnkOlkv2s51
-E18taue7NCsrP2/TRbUOeaI5kVor/ri3drdhv1MZTrmVvX2L2W3jupAWblZChHJilFbsMQOH
-KsuEW/U0LEYTDrGn0Mr70LaJNZNuWkNgVXYpjKt8Qv7ZUsCmzPn5bqOvytLVbegl+xv3p7Xd
-19blrIO/r5P5dHUb4unnCZygn09+fSl2H0OJCrlyX38nefizCquQdq6dx0rNJ3LP3WdyX5De
-AEoLXRAY8FQWkgSClOt+lAid0RitmypectrNFqFadfv8oLD39rCwyO2zpWVGdSztVl3VhDhl
-6Z2bw9Sslr6bVcvdMcT5Jy+dZjxGu2kTXMxZDkHXjwll8kLEWGiWoUy34XQayjrEWyiGFwqV
-lSW9yuRIYXK88OAO7j8wBCbt4DO5OWTCRzExmokjTCT88heZ9ATsmZhDJjAH5zKhY5nQMUwo
-lVrFad6W2N6B9cLBRGSbKfa49D/M0he49Md8Q4xdylRnvWW2O3ZbhlDDIJ/FUfL/LGpGMuYP
-FzXl3KOc15AjUQ7KQTmj5cgrMkqOFdQekaOUZuwlOZorMpRjB3IoykE571wORTkoB+WcIef0
-TpgRUlvD9RE5WnGmX5ID10MHcuzgac3YoRw7kCOekyOQDtJ5Gzqnd8estFoqZZEO0kE6QOf0
-7holmmvKGL1wOyazOdzcrnlIuyrN45wAnyZtH5Z+0weGGRm8WjFZwTavbQ7SnEFaYjf6w3g5
-vadGKZDQlhH08tpezjoEInunyNSI9hsYoUoQoRAZIkNkY5Cd3qkDHlIaKSQiQ2SIbAyy05t6
-VDIrmbb47xUiQ2SjkJ3e/oNnRS40MxyRITJENgbZiEahllowCCIyRIbIxiAb0V00mnIhpUBk
-iAyRnY5Mj+kuGivgR77F46I9H5l8j8ikK1S2EQCFmxAH3rlZFCDj62I7eO1Lcn64PE3gSOA1
-CFAkgAQumwBDAkjgsglwJIAELpuAQAJI4LIJSCSABC6ZgMGOEBK4MAJ/AbNhavSISQAA
-
---cWoXeonUoKmBZSoM
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="49361.test.gz"
-Content-Transfer-Encoding: base64
-
-H4sICEXTplACAzQ5MzYxLnRlc3QA7dg7b9swEADg3b9Ce4ceH3oZTZeia5d0KwqCkihbMG2q
-EuUm/76kmzSR4wBFIZSMcZps8niiSH4QdLfSJl/MMSF5ArBO0zWF5NPnrwkFQlc3yXE/WmlX
-tdn3srai0qbejWJvjqpJ4E9zLzfqcuu+2wzSKtHKTs86XVqtn/33Ac+7p7pW4+ha7LZ3nZO2
-wg0w9ayldU2VrHcPjbXRWvajmkXOG58m4vvGXnfW/b5Jdttpo/yEm8TNrN6tvn1oH66CQKaa
-TH78njTqx6QmJawcdz7T8A7umHwPdy3MBhDSVgW4AU9pXSS4QMLyeSjwvCI+tB+Mf2Jhu70y
-k32MP0tMAdLyPDFvyoup04rkPrWcrBmU3x7xU+7cZkyH2nbm8HAP/u+TT2VOmQ+120FJH1cy
-FyjnYTwrScV9mBoOSovfwWKrdK/8EvKXD+oyZyXMMsMrieH1xC9W8PFyQ9ymnV2r23ML7Gos
-sMUsNE3R+C1vB6XE1liftDk9n9Dd6M9t6o9Adbafyinyyz4oraSbwWmZXDApW79JLap4Myr4
-1aggBFkgi4VYpNfDokQWyGIRFtkaroYFzZEFsliIBbmeTwv8tkAWS7GgyGIxFryoysYNs8O9
-sEY0frvcUR/EeH+oT4fYDcJy1NvBwRAH4kAcl3FwEjeOlKIO1BFKRxq5DgIMeSCPMDzyNUTO
-g/EMeSCPUDxI9G8PSNEH+gjlg8bug6MP9BHOB4veBy/QB/oI5YNH7yPn6AN9hPIRffWqwOou
-+gjlo4i+fEWBYf0KfQTzEXv9ijKO7w/0EcxH7PUrWhb4/kAfwXzEXr9iDPLlfRD0gT7+ykfs
-9StOKPpAH8F8xF6/4kVJ0Af6COOjjL5+lRZ5gT7Qx3/y8Qv1soDrlEcAAA==
-
---cWoXeonUoKmBZSoM--
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 8ca8283..3698a6a 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -44,7 +44,8 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
+  * case properly. Once all supported versions of gcc understand it, we can
+  * remove this Voodoo magic stuff. (i.e. once gcc3.x is deprecated)
+  */
+-#define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
++#define __pa_symbol(x) \
++	__phys_addr_symbol(__phys_reloc_hide((unsigned long)(x)))
+ 
+ #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
+ 
+diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
+index da4e762..4d550d0 100644
+--- a/arch/x86/include/asm/page_32.h
++++ b/arch/x86/include/asm/page_32.h
+@@ -15,6 +15,7 @@ extern unsigned long __phys_addr(unsigned long);
+ #else
+ #define __phys_addr(x)		__phys_addr_nodebug(x)
+ #endif
++#define __phys_addr_symbol(x)	__phys_addr(x)
+ #define __phys_reloc_hide(x)	RELOC_HIDE((x), 0)
+ 
+ #ifdef CONFIG_FLATMEM
+diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
+index 5138174..0f1ddee 100644
+--- a/arch/x86/include/asm/page_64.h
++++ b/arch/x86/include/asm/page_64.h
+@@ -21,8 +21,11 @@ static inline unsigned long __phys_addr_nodebug(unsigned long x)
+ 
+ #ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
++extern unsigned long __phys_addr_symbol(unsigned long);
+ #else
+ #define __phys_addr(x)		__phys_addr_nodebug(x)
++#define __phys_addr_symbol(x) \
++	((unsigned long)(x) - __START_KERNEL_map + phys_base)
+ #endif
+ 
+ #define __phys_reloc_hide(x)	(x)
+diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
+index fd40d75..c73fedd 100644
+--- a/arch/x86/mm/physaddr.c
++++ b/arch/x86/mm/physaddr.c
+@@ -28,6 +28,17 @@ unsigned long __phys_addr(unsigned long x)
+ 	return x;
+ }
+ EXPORT_SYMBOL(__phys_addr);
++
++unsigned long __phys_addr_symbol(unsigned long x)
++{
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* only check upper bounds since lower bounds will trigger carry */
++	VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
++
++	return y + phys_base;
++}
++EXPORT_SYMBOL(__phys_addr_symbol);
+ #endif
+ 
+ bool __virt_addr_valid(unsigned long x)
