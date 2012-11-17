@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2KQUQN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 15:16:13 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50500 "EHLO
+	id S1752250Ab2KQUVF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 15:21:05 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41300 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab2KQUQL (ORCPT
+	with ESMTP id S1752144Ab2KQUVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 15:16:11 -0500
+	Sat, 17 Nov 2012 15:21:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352799313-21019-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1352799313-21019-1-git-send-email-peter.ujfalusi@ti.com>
-Date: Sat, 17 Nov 2012 21:16:10 +0100
-Message-ID: <CACRpkdayZK2sPXJW=COFi7C=P5=fbi-q7UukWbQ8dheaJ=bjAA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: twl4030: Use only TWL4030_MODULE_LED for LED configuration
+In-Reply-To: <1352987980-5112-1-git-send-email-stigge@antcom.de>
+References: <1352987980-5112-1-git-send-email-stigge@antcom.de>
+Date: Sat, 17 Nov 2012 21:21:01 +0100
+Message-ID: <CACRpkda2FNAOrNBeyedLXvPWfOdEttQxiQwnu4iFHqmCLpk9+g@mail.gmail.com>
+Subject: Re: [PATCH] gpio: gpio-max710x: Support device tree probing
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
+To: Roland Stigge <stigge@antcom.de>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 10:35 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+On Thu, Nov 15, 2012 at 2:59 PM, Roland Stigge <stigge@antcom.de> wrote:
 
-> Avoid using the TWL4030_MODULE_PWMA/B as module ID. The LEDEN, PWMA ON/OFF
-> and PWMB ON/OFF registers are in a continuous range starting from LED base.
-> This is going to be helpful for further cleanup in the twl stack.
+> For probing via device tree, we need to support the case without platform_data.
+> In this case, chip.base is set to -1 for automatic numbering.
 >
-> No functional changes.
->
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-OK if you say so.
-
-Patch applied!
+Patch applied with Wolfram's ACK.
+Thanks!
 
 Yours,
 Linus Walleij
