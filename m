@@ -1,231 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab2KQLmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 06:42:04 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58470 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab2KQLmA (ORCPT
+	id S1751686Ab2KQLtk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 06:49:40 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:21267 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab2KQLti convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 06:42:00 -0500
-Date: Sat, 17 Nov 2012 03:38:50 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-pm@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCHv9 1/3] Runtime Interpreted Power Sequences
-Message-ID: <20121117113849.GA5228@lizard>
-References: <1353149747-31871-1-git-send-email-acourbot@nvidia.com>
- <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
+	Sat, 17 Nov 2012 06:49:38 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
+        "Zhang Yanmin" <yanmin.zhang@intel.com>
+Subject: [PATCH v3] PCI-AER: Do not report successful error recovery for
+ devices with AER-unaware drivers
+Thread-Topic: [PATCH v3] PCI-AER: Do not report successful error recovery
+ for devices with AER-unaware drivers
+Thread-Index: AQHNxLlMB2gqX9CkQEKNBgETX4uTyA==
+Date: Sat, 17 Nov 2012 11:47:18 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C90146A2F8@G9W0717.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1353149747-31871-2-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 07:55:45PM +0900, Alexandre Courbot wrote:
-> Some device drivers (e.g. panel or backlights) need to follow precise
-> sequences for powering on and off, involving GPIOs, regulators, PWMs
-> and other power-related resources, with a defined powering order and
-> delays to respect between steps. These sequences are device-specific,
-> and do not belong to a particular driver - therefore they have been
-> performed by board-specific hook functions so far.
-> 
-> With the advent of the device tree and of ARM kernels that are not
-> board-tied, we cannot rely on these board-specific hooks anymore but
-> need a way to implement these sequences in a portable manner. This patch
-> introduces a simple interpreter that can execute such power sequences
-> encoded either as platform data or within the device tree. It also
-> introduces first support for regulator, GPIO and PWM resources.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
+When an error is detected on a PCIe device which does not have an
+AER-aware driver, prevent AER infrastructure from reporting
+successful error recovery.
 
-This looks almost perfect!
+This is because the report_error_detected() function that gets
+called in the first phase of recovery process allows forward
+progress even when the driver for the device does not have AER
+capabilities. It seems that all callbacks (in pci_error_handlers
+structure) registered by drivers that gets called during error
+recovery are not mandatory. So the intention of the infrastructure
+design seems to be to allow forward progress even when a specific
+callback has not been registered by a driver. However, if error
+handler structure itself has not been registered, it doesn't make
+sense to allow forward progress.
 
-Just a few final notes, again mostly about the build system bits.
+As a result of the current design, in the case of a single device
+having an AER-unaware driver or in the case of any function in a
+multi-function card having an AER-unaware driver, a successful
+recovery is reported.
 
-[...]
-> diff --git a/drivers/power/power_seq/Kconfig b/drivers/power/power_seq/Kconfig
-> new file mode 100644
-> index 0000000..0ece819
-> --- /dev/null
-> +++ b/drivers/power/power_seq/Kconfig
-> @@ -0,0 +1,2 @@
-> +config POWER_SEQ
-> +	tristate
+Typical scenario this happens is when a PCI device is detached
+from a KVM host and the pci-stub driver on the host claims the
+device. The pci-stub driver does not have error handling capabilities
+but the AER infrastructure still reports that the device recovered
+successfully.
 
-This really needs a proper Kconfig description and a help text, shortly
-describing the purpose of the subsystem.
+The changes proposed here leaves the device(s)in an unrecovered state
+if the driver for the device or for any device in the subtree
+does not have error handler structure registered. This reflects
+the true state of the device and prevents any partial recovery (or no
+recovery at all) reported as successful.
 
-> diff --git a/drivers/power/power_seq/Makefile b/drivers/power/power_seq/Makefile
-> new file mode 100644
-> index 0000000..964b91e
-> --- /dev/null
-> +++ b/drivers/power/power_seq/Makefile
-> @@ -0,0 +1,2 @@
-> +obj-$(CONFIG_POWER_SEQ)		+= power_seq.o
-> +power_seq-y			:= core.o delay.o regulator.o gpio.o pwm.o
-> diff --git a/drivers/power/power_seq/core.c b/drivers/power/power_seq/core.c
-> new file mode 100644
-> index 0000000..d51b9b8
-> --- /dev/null
-> +++ b/drivers/power/power_seq/core.c
-> @@ -0,0 +1,362 @@
-> +/*
-> + * core.c - power sequence interpreter for platform devices and device tree
 
-We usually don't write file names in the comments.
+v3:
+  - Fixed a checkpatch/build issue
 
-> + *
-> + * Author: Alexandre Courbot <acourbot@nvidia.com>
-> + *
-[...]
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(power_seq_run);
-> +
-> +/* defined in power_seq_*.c files */
+v2:
+  - Made changes so that all devices in the subtree have the error
+    state set correctly.
 
-Why not place the decls into the _priv.h file?.. I understand that this
-might be a temporary stuff until we have something better for ops
-registration, but still, I believe it belongs to the header file.
 
-> +extern const struct power_seq_res_ops power_seq_delay_ops;
-> +extern const struct power_seq_res_ops power_seq_gpio_ops;
-> +extern const struct power_seq_res_ops power_seq_regulator_ops;
-> +extern const struct power_seq_res_ops power_seq_pwm_ops;
-> +
-> +static const struct power_seq_res_ops *power_seq_ops[POWER_SEQ_NUM_TYPES] = {
-> +	[POWER_SEQ_DELAY] = &power_seq_delay_ops,
-> +	[POWER_SEQ_REGULATOR] = &power_seq_regulator_ops,
-> +	[POWER_SEQ_PWM] = &power_seq_gpio_ops,
-> +	[POWER_SEQ_GPIO] = &power_seq_pwm_ops,
-> +};
-> +
-> +MODULE_AUTHOR("Alexandre Courbot <acourbot@nvidia.com>");
-> +MODULE_DESCRIPTION("Runtime Interpreted Power Sequences");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/power/power_seq/delay.c b/drivers/power/power_seq/delay.c
-> new file mode 100644
-> index 0000000..de6810b
-> --- /dev/null
-> +++ b/drivers/power/power_seq/delay.c
-> @@ -0,0 +1,66 @@
-> +/*
-> + * Copyright (c) 2012 NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#include "power_seq_priv.h"
-> +#include <linux/delay.h>
+Reviewed-by: Linas Vepstas <linasvepstas <at> gmail.com>
+Reviewed-by: Myron Stowe <mstowe <at> redhat.com>
+Reviewed-by: Bjorn Helgaas <bhelgaas <at> google.com>
+Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+---
+ drivers/pci/pcie/aer/aerdrv.h      |  5 ++++-
+ drivers/pci/pcie/aer/aerdrv_core.c | 21 ++++++++++++++++++---
+ include/linux/pci.h                |  3 +++
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
-Things should not depend on _priv.h's includes. I.e. I see this file uses
-of_ routines, so it should include <linux/of.h>. <linux/delay.h> for
-udelay_range(), etc.
+diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
+index 94a7598..22f840f 100644
+--- a/drivers/pci/pcie/aer/aerdrv.h
++++ b/drivers/pci/pcie/aer/aerdrv.h
+@@ -87,6 +87,9 @@ struct aer_broadcast_data {
+ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+ 		enum pci_ers_result new)
+ {
++	if (new == PCI_ERS_RESULT_NO_AER_DRIVER)
++		return PCI_ERS_RESULT_NO_AER_DRIVER;
++
+ 	if (new == PCI_ERS_RESULT_NONE)
+ 		return orig;
+ 
+@@ -97,7 +100,7 @@ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+ 		break;
+ 	case PCI_ERS_RESULT_DISCONNECT:
+ 		if (new == PCI_ERS_RESULT_NEED_RESET)
+-			orig = new;
++			orig = PCI_ERS_RESULT_NEED_RESET;
+ 		break;
+ 	default:
+ 		break;
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index 9f80cb0..b67f91a 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -232,11 +232,26 @@ static int report_error_detected(struct pci_dev *dev, void *data)
+ 				   dev->driver ?
+ 				   "no AER-aware driver" : "no driver");
+ 		}
+-		return 0;
++
++		/*
++		 * If there's any device in the subtree that does not
++		 * have an error_detected callback, returning
++		 * PCI_ERS_RESULT_NO_AER_DRIVER prevents calling of
++		 * the subsequent mmio_enabled/slot_reset/resume
++		 * callbacks of "any" device in the subtree. All the
++		 * devices in the subtree are left in the error state
++		 * without recovery.
++		 */
++
++		if (!(dev->hdr_type & PCI_HEADER_TYPE_BRIDGE))
++			vote = PCI_ERS_RESULT_NO_AER_DRIVER;
++		else
++			vote = PCI_ERS_RESULT_NONE;
++	} else {
++		err_handler = dev->driver->err_handler;
++		vote = err_handler->error_detected(dev, result_data->state);
+ 	}
+ 
+-	err_handler = dev->driver->err_handler;
+-	vote = err_handler->error_detected(dev, result_data->state);
+ 	result_data->result = merge_result(result_data->result, vote);
+ 	return 0;
+ }
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index ab17a08..c458602 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -540,6 +540,9 @@ enum pci_ers_result {
+ 
+ 	/* Device driver is fully recovered and operational */
+ 	PCI_ERS_RESULT_RECOVERED = (__force pci_ers_result_t) 5,
++
++	/* No AER capabilities registered for the driver */
++	PCI_ERS_RESULT_NO_AER_DRIVER = (__force pci_ers_result_t) 6,
+ };
+ 
+ /* PCI bus error event callbacks */
+-- 
+1.7.11.3
 
-Also, usually we place "private" headers at the very end, not at the
-beginning.
-
-> +
-> +#ifdef CONFIG_OF
-> +static int of_power_seq_parse_delay(struct device_node *node,
-> +				    struct power_seq *seq,
-> +				    unsigned int step_nbr,
-> +				    struct power_seq_resource *res)
-> +{
-> +	struct power_seq_step *step = &seq->steps[step_nbr];
-> +	int err;
-> +
-> +	err = of_property_read_u32(node, "delay",
-> +				   &step->delay.delay);
-> +	if (err < 0)
-> +		power_seq_err(seq, step_nbr, "error reading delay property\n");
-> +
-> +	return err;
-> +}
-> +#else
-> +#define of_power_seq_parse_delay NULL
-> +#endif
-
-[...]
-> +#define power_seq_err(seq, step_nbr, format, ...)			\
-> +	dev_err(seq->set->dev, "%s[%d]: " format, seq->id, step_nbr,	\
-> +	##__VA_ARGS__);
-> +
-> +#ifdef CONFIG_OF
-> +int of_power_seq_parse_enable_properties(struct device_node *node,
-> +					 struct power_seq *seq,
-> +					 unsigned int step_nbr, bool *enable);
-
-Um, I believe you don't need CONFIG_OF here. (If it's about 'struct
-device_node', then as I see it in of.h, the header always declares it,
-even for the !OF case.)
-
-> +#endif
-> +
-> +/**
-[...]
-> +++ b/drivers/power/power_seq/regulator.c
-> @@ -0,0 +1,87 @@
-> +/*
-> + * Copyright (c) 2012 NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#include "power_seq_priv.h"
-> +
-> +#ifdef CONFIG_REGULATOR
-
-Would be really great if you could get rid of the #ifdefs in the .c files.
-
-To do so, in the makefile you could write something like this:
-
-power_seq-$(CONFIG_REGULATOR) += regulator.o
-
-And in the header file (as explained above), you'd have
-
-#ifdef CONFIG_REGULATOR
-#define ...REGULATOR_OPS &power_seq_regulator_ops
-#else
-#define ...REGULATOR_OPS NULL
-#endif
-
-Or something along these lines...
-
-Thanks,
-Anton.
