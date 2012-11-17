@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab2KQUVF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 15:21:05 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41300 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2KQUVC (ORCPT
+	id S1752234Ab2KQU1P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 15:27:15 -0500
+Received: from mail-in-18.arcor-online.net ([151.189.21.58]:55200 "EHLO
+	mail-in-18.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752133Ab2KQU1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 15:21:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352987980-5112-1-git-send-email-stigge@antcom.de>
-References: <1352987980-5112-1-git-send-email-stigge@antcom.de>
-Date: Sat, 17 Nov 2012 21:21:01 +0100
-Message-ID: <CACRpkda2FNAOrNBeyedLXvPWfOdEttQxiQwnu4iFHqmCLpk9+g@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpio-max710x: Support device tree probing
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Nov 2012 15:27:14 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-15.arcor-online.net 85EB61AB520
+Subject: [PATCH] HID: roccat: Fixed wrong sysfs attr size for koneplus tcu.
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Nov 2012 21:27:11 +0100
+Message-ID: <1353184031.4973.9.camel@neuromancer.tessier-ashpool>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 15, 2012 at 2:59 PM, Roland Stigge <stigge@antcom.de> wrote:
+More thorough testing revealed a typo in last koneplus cleanups.
 
-> For probing via device tree, we need to support the case without platform_data.
-> In this case, chip.base is set to -1 for automatic numbering.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+---
+ drivers/hid/hid-roccat-koneplus.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Patch applied with Wolfram's ACK.
-Thanks!
+diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
+index d2b55f2..af7f57e 100644
+--- a/drivers/hid/hid-roccat-koneplus.h
++++ b/drivers/hid/hid-roccat-koneplus.h
+@@ -24,7 +24,7 @@ enum {
+ 	KONEPLUS_SIZE_PROFILE_BUTTONS = 0x4d,
+ 	KONEPLUS_SIZE_SENSOR = 0x06,
+ 	KONEPLUS_SIZE_TALK = 0x10,
+-	KONEPLUS_SIZE_TCU = 0x03,
++	KONEPLUS_SIZE_TCU = 0x04,
+ 	KONEPLUS_SIZE_TCU_IMAGE = 0x0404,
+ };
+ 
+-- 
+1.7.3.4
 
-Yours,
-Linus Walleij
+
+
