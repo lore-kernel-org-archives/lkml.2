@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab2KQLNW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 06:13:22 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:1795 "EHLO mms3.broadcom.com"
+	id S1751578Ab2KQLSG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 06:18:06 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:1682 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab2KQLNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 06:13:20 -0500
+	id S1750742Ab2KQLSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 06:18:04 -0500
 X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <1353150776.14327.13.camel@lb-tlvb-eilong.il.broadcom.com>
-Subject: Re: [PATCH] checkpatch: add double empty line check
+Message-ID: <1353151057.14327.18.camel@lb-tlvb-eilong.il.broadcom.com>
+Subject: [PATCH v2] checkpatch: add double empty line check
 From: "Eilon Greenstein" <eilong@broadcom.com>
 Reply-to: eilong@broadcom.com
-To: "Joe Perches" <joe@perches.com>
-cc: "David Rientjes" <rientjes@google.com>,
-        "Andy Whitcroft" <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Sat, 17 Nov 2012 13:12:56 +0200
-In-Reply-To: <1353113454.2512.21.camel@joe-AO722>
-References: <1353094919.14327.4.camel@lb-tlvb-eilong.il.broadcom.com>
- <alpine.DEB.2.00.1211161154280.2788@chino.kir.corp.google.com>
- <1353096274.14327.9.camel@lb-tlvb-eilong.il.broadcom.com>
- <1353113454.2512.21.camel@joe-AO722>
+To: "Andy Whitcroft" <apw@canonical.com>
+cc: "Joe Perches" <joe@perches.com>, "David Rientjes" <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Sat, 17 Nov 2012 13:17:37 +0200
 Organization: Broadcom
 X-Mailer: Evolution 3.2.3-0ubuntu6
 MIME-Version: 1.0
-X-WSS-ID: 7CB9AFDF3P84212350-01-01
+X-WSS-ID: 7CB9AEE43P84215914-01-01
 Content-Type: text/plain;
  charset=utf-8
 Content-Transfer-Encoding: 7bit
@@ -32,43 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 16:50 -0800, Joe Perches wrote:
+Changes from previous attempt:
+- Use CHK instead of WARN
+- Issue only one warning per empty lines block
 
-Hi Joe, thanks for replying.
+Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
+---
+ scripts/checkpatch.pl |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> On Fri, 2012-11-16 at 22:04 +0200, Eilon Greenstein wrote:
-> > On Fri, 2012-11-16 at 11:55 -0800, David Rientjes wrote:
-> > > On Fri, 16 Nov 2012, Eilon Greenstein wrote:
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 21a9f5d..13d264f 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3579,6 +3579,14 @@ sub process {
+ 			WARN("EXPORTED_WORLD_WRITABLE",
+ 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 		}
++
++# check for double empty lines
++		if ($line =~ /^\+\s*$/ &&
++		    ($rawlines[$linenr] =~ /^\s*$/ ||
++		     $prevline =~ /^\+?\s*$/ && $rawlines[$linenr] !~ /^\+\s*$/)) {
++			CHK("DOUBLE_EMPTY_LINE",
++			    "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
++		}
+ 	}
+ 
+ 	# If we have no input at all, then there is nothing to report on
+-- 
+1.7.9.5
 
-> > > This is fairly common in all the acpi code where variables declared in a 
-> > > function are separated from the code in a function.
-> > > 
-> > 
-> > Indeed, I see that you do use it in some functions.
-> > 
-> > Maybe we can limit it only to the networking tree (similar to the
-> > networking comments style) or if the ACPI is the exception, we can apply
-> > to all but ACPI.
-> 
-> I'm not sure this should be done.
-> Double line spacing has some utility and
-> is pretty common.
-
-Since adding double empty line can cause a patch to be rejected, we
-should have an easy way to catch it before submitting.
-
-> Perhaps make this a --strict/CHK option
-> and also perhaps make sure this isn't
-> emitted on consecutive lines.
-
-Indeed, CHK makes more sense. I wanted to have a warning per redundant
-line, but since it can be annoying when adding 3 or more empty lines
-intentionally, I will issue one comment for consecutive lines.
-
-v2 is on its way.
-
-Thanks,
-Eilon
 
 
 
