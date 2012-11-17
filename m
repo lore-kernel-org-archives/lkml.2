@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2KQOyo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 09:54:44 -0500
-Received: from mx.treblig.org ([80.68.94.177]:39581 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2KQOyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 09:54:43 -0500
-X-Greylist: delayed 1871 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Nov 2012 09:54:43 EST
-Date: Sat, 17 Nov 2012 14:23:31 +0000
-From: "Dr. David Alan Gilbert" <dave@treblig.org>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>, nik@linuxbox.cz
-Subject: Re: strange values of loadavg and nr of io-blocked tasks
-Message-ID: <20121117142331.GA2868@gallifrey>
-References: <20121116114703.GA8634@pcnci.linuxbox.cz>
+	id S1752003Ab2KQO4d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 09:56:33 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39432 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2KQO4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 09:56:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121116114703.GA8634@pcnci.linuxbox.cz>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.36.4-kvm-i386-20110819 (i686)
-X-Uptime: 14:12:58 up 257 days, 46 min,  2 users,  load average: 0.00,
- 0.01, 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121117145015.GF16441@x1.osrc.amd.com>
+References: <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+ <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+ <m2pq45qu0s.fsf@firstfloor.org> <508A8D31.9000106@redhat.com>
+ <20121026132601.GC9886@gmail.com> <20121026144502.6e94643e@dull>
+ <20121026221254.7d32c8bf@pyramind.ukuu.org.uk> <508BE459.2080406@redhat.com>
+ <20121029165705.GA4693@x1.osrc.amd.com> <CA+55aFzbwaHxWPkJ-t-TEh9hUwmA+D-unHGuJ7FPx7ULmrwKMg@mail.gmail.com>
+ <20121117145015.GF16441@x1.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 17 Nov 2012 06:56:10 -0800
+X-Google-Sender-Auth: YiBd5YxpIwl4CPx9bBQrvM9_ECY
+Message-ID: <CA+55aFxunZ94QkhxUKB0iJ0p1mFuWGzr0mR8icM=XJZadcSuRw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Florian Fainelli <florian@openwrt.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nikola Ciprich (nikola.ciprich@linuxbox.cz) wrote:
-> Hi,
-> 
-> I was doing some I/O tuning of our KVM host, and noticed some
-> strange behaviour. When I start some heavy I/O load on guest
-> (ie run some fio benchmark), loadavg value of the host jumps
-> to value about 65 and holds until load ends. sar reports similar
-> number of blocked tasks. I don't really understand those numbers,
-> because only active tasks are 4 qemu-kvm threads and few other sleeping
-> tasks (so none in R or D state).
-> is it possible to somehow find which tasks seem to be blocked?
-> or why is loadavg value so high?
-> the system is x86_64 quad core with 4GB RAM running centos 6 with 3.0.52-rc1 kernel.
+On Sat, Nov 17, 2012 at 6:50 AM, Borislav Petkov <bp@alien8.de> wrote:
+>
+> Albeit with a slight delay, the answer is yes: all AMD cpus
+> automatically invalidate cached TLB entries (and intermediate walk
+> results, for that matter) on a #PF.
 
-Recebt qemu split there io across multiple threads (as an alternative to AIO),
-so what you"ll see is each qemu will dynamically start a load of threads when
-is doing heavy IO, none of them will usr much cpu, but each will be blocking on io, and hence count as a 1 for the load.
+Thanks. I suspect it ends up being basically architectural, and that
+Windows (and quite possibly Linux versions too) have depended on the
+behavior.
 
-It does have some flags (which I forget) that let you limit the number of
-threads or flip to AIO.
+> I don't know, however, whether it would be prudent to have some sort of
+> a cheap assertion in the code (cheaper than INVLPG %ADDR, although on
+> older cpus we do MOV CR3) just in case. This should be enabled only with
+> DEBUG_VM on, of course...
 
-Other than getting a scary loadavg number, it doesn't seem to have any bad
-effecta.
+I wonder how we could actually test for it. We'd have to have some
+per-cpu page-fault address check (along with a generation count on the
+mm or similar). I doubt we'd figure out anything that works reliably
+and efficiently and would actually show any problems (plus we would
+have no way to ever know we even got the code right, since presumably
+we'd never find hardware that actually shows the behavior we'd be
+looking for..)
 
-Dave
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+               Linus
