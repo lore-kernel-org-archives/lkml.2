@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2KQSU2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 13:20:28 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47087 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2KQSU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 13:20:26 -0500
-Message-ID: <50A7D524.2060809@gmail.com>
-Date: Sat, 17 Nov 2012 19:19:16 +0100
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1752099Ab2KQSei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 13:34:38 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:37277 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab2KQSeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 13:34:37 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Borislav Petkov <bp@alien8.de>, Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, herrmann.der.user@googlemail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, microcode, AMD: Add support for family 16h processors
+Date: Sat, 17 Nov 2012 13:34:33 -0500
+References: <1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com> <50A57C35.10906@amd.com> <20121117144117.GD16441@x1.osrc.amd.com>
+In-Reply-To: <20121117144117.GD16441@x1.osrc.amd.com>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mel Gorman <mel@csn.ul.ie>, Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Linaro-mm-sig] [PATCH] mm: skip watermarks check for already
- isolated blocks in split_free_page()
-References: <1352357944-14830-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1352357944-14830-1-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201211171334.34239.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Saturday 17 November 2012, Borislav Petkov wrote:
+>On Thu, Nov 15, 2012 at 06:35:17PM -0500, Boris Ostrovsky wrote:
+>> One possibility is that BIOS already incorporated all patches (which
+>> typically is the case) and so the driver doesn't have to do anything.
+>
+>/proc/cpuinfo contains ucode version and the processor's f/m/s, which
+>is enough information to tell us whether your old phenom needs ucode
+>patching.
+>
+>Thanks.
+Well, in my case that returns 4 stanza's of this:
+processor	: 3
+vendor_id	: AuthenticAMD
+cpu family	: 16
+model		: 2
+model name	: AMD Phenom(tm) 9550 Quad-Core Processor
+stepping	: 3
+cpu MHz		: 2210.462
+cache size	: 512 KB
+physical id	: 0
+siblings	: 4
+core id		: 3
+cpu cores	: 4
+apicid		: 3
+initial apicid	: 3
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 5
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic mtrr pge mca cmov 
+pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb 
+rdtscp lm 3dnowext 3dnow constant_tsc nonstop_tsc extd_apicid pni monitor 
+cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 
+3dnowprefetch osvw ibs
+bogomips	: 4420.70
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 48 bits physical, 48 bits virtual
+power management: ts ttp tm stc 100mhzsteps hwpstate
 
-On 11/08/2012 07:59 AM, Marek Szyprowski wrote:
-> Since commit 2139cbe627b8 ("cma: fix counting of isolated pages") free
-> pages in isolated pageblocks are not accounted to NR_FREE_PAGES counters,
-> so watermarks check is not required if one operates on a free page in
-> isolated pageblock.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  mm/page_alloc.c |   10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index fd154fe..43ab09f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1394,10 +1394,12 @@ int capture_free_page(struct page *page, int alloc_order, int migratetype)
->  	zone = page_zone(page);
->  	order = page_order(page);
->  
-> -	/* Obey watermarks as if the page was being allocated */
-> -	watermark = low_wmark_pages(zone) + (1 << order);
-> -	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
-> -		return 0;
-> +	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE) {
+And I don't see anything there that looks like a 'patch level'.
+The ucode obviously can, which is what counts in this game of horseshoes.  
+Perhaps something in that very long 'flags' string?
 
-get_pageblock_migratetype(page) is also called later on in this function
-and assigned to the mt variable: maybe the assignment should be moved
-before (or inside) the above line?
+Thanks Borislav.
 
---
-Francesco
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
+Biz is better.
