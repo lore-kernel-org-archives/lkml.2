@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab2KQBcX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 20:32:23 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49752 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753651Ab2KQBcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 20:32:22 -0500
-Message-ID: <1353115941.6139.10.camel@joe-AO722>
-Subject: Re: [PATCH] staging/serqt_usb2: Refactor qt_status_change_check()
- in serqt_usb2.c
-From: Joe Perches <joe@perches.com>
-To: YAMANE Toshiaki <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 Nov 2012 17:32:21 -0800
-In-Reply-To: <1353097162-4479-1-git-send-email-yamanetoshi@gmail.com>
-References: <1353097162-4479-1-git-send-email-yamanetoshi@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754006Ab2KQCAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 21:00:08 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45706 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab2KQCAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 21:00:06 -0500
+From: Cyril Roelandt <tipecaml@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
+        kernel-janitors@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>
+Subject: [PATCH] acpi_system_write_wakeup_device(): fix error check for unsigned variable.
+Date: Sat, 17 Nov 2012 02:54:23 +0100
+Message-Id: <1353117263-6957-1-git-send-email-tipecaml@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-17 at 05:19 +0900, YAMANE Toshiaki wrote:
-> Modify qt_status_change_check() and delete qt_status_change().
-> 
-> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/serqt_usb2/serqt_usb2.c |   53 +++++++++++++------------------
->  1 file changed, 22 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-[]
-> @@ -334,11 +307,29 @@ static void qt_status_change_check(struct tty_struct *tty,
->  			flag = 0;
->  			switch (data[i + 2]) {
->  			case 0x00:
-> +				if (i > (RxCount - 4)) {
-> +					dev_dbg(&port->dev,
-> +						"Illegal escape seuences in received data\n");
+The LEN variable is unsigned, therefore checking whether it is less than 0 is
+useless.
 
-trivia: seuences/sequence
+Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+---
+ drivers/acpi/proc.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-> +					break;
-> +				}
-> +
-> +				ProcessLineStatus(qt_port, data[i + 3]);
-> +
-> +				i += 3;
-
-you could move the i += 3 before the ProcessLineStatus
-and use data[i]
-
-> +				flag = 1;
-> +				break;
-> +
->  			case 0x01:
-> -				flag = qt_status_change((RxCount - 4), data, i,
-> -							qt_port, port);
-> -				if (flag == 1)
-> -					i += 3;
-> +				if (i > (RxCount - 4)) {
-> +					dev_dbg(&port->dev,
-> +						"Illegal escape seuences in received data\n");
-
-typo here too
-
-> +					break;
-> +				}
-> +
-> +				ProcessModemStatus(qt_port, data[i + 3]);
-> +
-> +				i += 3;
-
-same i += 3
-
-> +				flag = 1;
->  				break;
->  
->  			case 0xff:
-
-What about something like:
-
-			case 0x0:
-			case 0x1:
-				if (i > (RxCount - 4)) {
-					dev_dbg(&port->dev,
-						"Illegal escape sequence in received data\n");
-					break;
-				}
-
-				if (data[i + 2] == 0x0)
-					ProcessLineStatus(qt_port, data[i + 3]);
-				else
-					ProcessModemStatus(qt_port, data[i + 3]);
-
-				i += 3;
-				flag = 1;
-  				break;
-
-
+diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
+index 27adb09..37871a7 100644
+--- a/drivers/acpi/proc.c
++++ b/drivers/acpi/proc.c
+@@ -366,8 +366,6 @@ acpi_system_write_wakeup_device(struct file *file,
+ 
+ 	if (len > 4)
+ 		len = 4;
+-	if (len < 0)
+-		return -EFAULT;
+ 
+ 	if (copy_from_user(strbuf, buffer, len))
+ 		return -EFAULT;
+-- 
+1.7.10.4
 
