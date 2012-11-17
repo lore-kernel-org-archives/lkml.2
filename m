@@ -1,120 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab2KQAXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:23:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28358 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab2KQAXO (ORCPT
+	id S1753883Ab2KQAXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:23:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37627 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab2KQAXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:23:14 -0500
-Date: Fri, 16 Nov 2012 19:22:48 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: jeremy@goop.org, x86@kernel.org, virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] x86/xen: Use __pa_symbol instead of __pa on C visible
- symbols
-Message-ID: <20121117002248.GA7124@phenom.dumpdata.com>
-References: <20121116214217.8308.55518.stgit@ahduyck-cp1.jf.intel.com>
+	Fri, 16 Nov 2012 19:23:35 -0500
+Date: Fri, 16 Nov 2012 16:22:44 -0800
+From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
+Message-ID: <tip-66d61384e9b4087f044ce86cb4adb12fe4623a6b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20121116215244.8521.31505.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121116215244.8521.31505.stgit@ahduyck-cp1.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86:
+  Move some contents of page_64_types.h into pgtable_64.h and page_64.h
+Git-Commit-ID: 66d61384e9b4087f044ce86cb4adb12fe4623a6b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121116214217.8308.55518.stgit@ahduyck-cp1.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:23:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 01:45:25PM -0800, Alexander Duyck wrote:
-> This change updates a few of the functions to use __pa_symbol when
-> translating C visible symbols instead of __pa.  By using __pa_symbol we are
-> able to drop a few extra lines of code as don't have to test to see if the
-> virtual pointer is a part of the kernel text or just standard virtual memory.
-> 
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> ---
-> 
-> v4:  I have spun this patch off as a separate patch for v4 due to the fact that
->      this patch doesn't apply cleanly to Linus's tree.  As such I am
->      submitting it based off of the linux-next tree to be accepted in the Xen
->      tree since this patch can actually exist on its own without the need
->      for the other patches in the original __phys_addr performance series.
+Commit-ID:  66d61384e9b4087f044ce86cb4adb12fe4623a6b
+Gitweb:     http://git.kernel.org/tip/66d61384e9b4087f044ce86cb4adb12fe4623a6b
+Author:     Alexander Duyck <alexander.h.duyck@intel.com>
+AuthorDate: Fri, 16 Nov 2012 13:53:09 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 16 Nov 2012 15:20:10 -0800
 
-OK, let me stick it in my tree then.
+x86: Move some contents of page_64_types.h into pgtable_64.h and page_64.h
 
-> 
->  arch/x86/xen/mmu.c |   21 +++++++++++----------
->  1 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 4a05b39..a63e5f9 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1486,7 +1486,8 @@ static int xen_pgd_alloc(struct mm_struct *mm)
->  
->  		if (user_pgd != NULL) {
->  			user_pgd[pgd_index(VSYSCALL_START)] =
-> -				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
-> +				__pgd(__pa_symbol(level3_user_vsyscall) |
-> +				      _PAGE_TABLE);
->  			ret = 0;
->  		}
->  
-> @@ -1958,10 +1959,10 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	 * pgd.
->  	 */
->  	if (xen_feature(XENFEAT_writable_page_tables)) {
-> -		native_write_cr3(__pa(init_level4_pgt));
-> +		native_write_cr3(__pa_symbol(init_level4_pgt));
->  	} else {
->  		xen_mc_batch();
-> -		__xen_write_cr3(true, __pa(init_level4_pgt));
-> +		__xen_write_cr3(true, __pa_symbol(init_level4_pgt));
->  		xen_mc_issue(PARAVIRT_LAZY_CPU);
->  	}
->  	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
-> @@ -1984,10 +1985,10 @@ static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
->  
->  static void __init xen_write_cr3_init(unsigned long cr3)
->  {
-> -	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
-> +	unsigned long pfn = PFN_DOWN(__pa_symbol(swapper_pg_dir));
->  
-> -	BUG_ON(read_cr3() != __pa(initial_page_table));
-> -	BUG_ON(cr3 != __pa(swapper_pg_dir));
-> +	BUG_ON(read_cr3() != __pa_symbol(initial_page_table));
-> +	BUG_ON(cr3 != __pa_symbol(swapper_pg_dir));
->  
->  	/*
->  	 * We are switching to swapper_pg_dir for the first time (from
-> @@ -2011,7 +2012,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
->  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
->  
->  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
-> -			  PFN_DOWN(__pa(initial_page_table)));
-> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
->  	set_page_prot(initial_page_table, PAGE_KERNEL);
->  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
->  
-> @@ -2036,7 +2037,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  
->  	copy_page(initial_page_table, pgd);
->  	initial_page_table[KERNEL_PGD_BOUNDARY] =
-> -		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
-> +		__pgd(__pa_symbol(initial_kernel_pmd) | _PAGE_PRESENT);
->  
->  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
->  	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
-> @@ -2045,8 +2046,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
->  
->  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
-> -			  PFN_DOWN(__pa(initial_page_table)));
-> -	xen_write_cr3(__pa(initial_page_table));
-> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
-> +	xen_write_cr3(__pa_symbol(initial_page_table));
->  
->  	memblock_reserve(__pa(xen_start_info->pt_base),
->  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+This patch is meant to clean-up the fact that we have several functions in
+page_64_types.h which really don't belong there.  I found this issue when I
+had tried to replace __phys_addr with an inline function.  It resulted in the
+realmode bits generating compile warnings about types.  In order to resolve
+that I am relocating the address translation to page_64.h since this is in
+keeping with where these functions are located in 32 bit.
+
+In addtion I have relocated several functions defined in init_64.c to
+pgtable_64.h as this seems to be where most of the functions related to
+memory initialization were already located.
+
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Link: http://lkml.kernel.org/r/20121116215244.8521.31505.stgit@ahduyck-cp1.jf.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/page_64.h       | 19 +++++++++++++++++++
+ arch/x86/include/asm/page_64_types.h | 22 ----------------------
+ arch/x86/include/asm/pgtable_64.h    |  5 +++++
+ 3 files changed, 24 insertions(+), 22 deletions(-)
+
+diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
+index 072694e..4150999 100644
+--- a/arch/x86/include/asm/page_64.h
++++ b/arch/x86/include/asm/page_64.h
+@@ -3,4 +3,23 @@
+ 
+ #include <asm/page_64_types.h>
+ 
++#ifndef __ASSEMBLY__
++
++/* duplicated to the one in bootmem.h */
++extern unsigned long max_pfn;
++extern unsigned long phys_base;
++
++extern unsigned long __phys_addr(unsigned long);
++
++#define __phys_reloc_hide(x)	(x)
++
++#ifdef CONFIG_FLATMEM
++#define pfn_valid(pfn)          ((pfn) < max_pfn)
++#endif
++
++void clear_page(void *page);
++void copy_page(void *to, void *from);
++
++#endif	/* !__ASSEMBLY__ */
++
+ #endif /* _ASM_X86_PAGE_64_H */
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 320f7bb..8b491e6 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -50,26 +50,4 @@
+ #define KERNEL_IMAGE_SIZE	(512 * 1024 * 1024)
+ #define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
+ 
+-#ifndef __ASSEMBLY__
+-void clear_page(void *page);
+-void copy_page(void *to, void *from);
+-
+-/* duplicated to the one in bootmem.h */
+-extern unsigned long max_pfn;
+-extern unsigned long phys_base;
+-
+-extern unsigned long __phys_addr(unsigned long);
+-#define __phys_reloc_hide(x)	(x)
+-
+-#define vmemmap ((struct page *)VMEMMAP_START)
+-
+-extern void init_extra_mapping_uc(unsigned long phys, unsigned long size);
+-extern void init_extra_mapping_wb(unsigned long phys, unsigned long size);
+-
+-#endif	/* !__ASSEMBLY__ */
+-
+-#ifdef CONFIG_FLATMEM
+-#define pfn_valid(pfn)          ((pfn) < max_pfn)
+-#endif
+-
+ #endif /* _ASM_X86_PAGE_64_DEFS_H */
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index 47356f9..b5d30ad 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -183,6 +183,11 @@ extern void cleanup_highmap(void);
+ 
+ #define __HAVE_ARCH_PTE_SAME
+ 
++#define vmemmap ((struct page *)VMEMMAP_START)
++
++extern void init_extra_mapping_uc(unsigned long phys, unsigned long size);
++extern void init_extra_mapping_wb(unsigned long phys, unsigned long size);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _ASM_X86_PGTABLE_64_H */
