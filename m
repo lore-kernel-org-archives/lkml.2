@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2KQA4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:56:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37963 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab2KQA4d (ORCPT
+	id S1753900Ab2KQBWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 20:22:38 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18965 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753651Ab2KQBWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:56:33 -0500
-Date: Fri, 16 Nov 2012 16:55:52 -0800
-From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
-Message-ID: <tip-afd51a0e32cd79261f0e823400886ed322a355ac@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alexander.h.duyck@intel.com, pavel@ucw.cz, tglx@linutronix.de,
-        hpa@linux.intel.com, rjw@sisk.pl, len.brown@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        alexander.h.duyck@intel.com, pavel@ucw.cz, tglx@linutronix.de,
-        hpa@linux.intel.com, rjw@sisk.pl, len.brown@intel.com
-In-Reply-To: <20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com>
-References: <20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/acpi:
-  Use __pa_symbol instead of __pa on C visible symbols
-Git-Commit-ID: afd51a0e32cd79261f0e823400886ed322a355ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Nov 2012 20:22:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19wGHm6Dhq5wo5Xj5ouIGSE
+Date: Fri, 16 Nov 2012 17:22:32 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: oleg.matcovschi@ti.com
+Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] OMAP2+: mux: Fixed gpio mux mode analysis.
+Message-ID: <20121117012231.GQ6801@atomide.com>
+References: <1353015597-22703-1-git-send-email-oleg.matcovschi@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:56:19 -0800 (PST)
+In-Reply-To: <1353015597-22703-1-git-send-email-oleg.matcovschi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  afd51a0e32cd79261f0e823400886ed322a355ac
-Gitweb:     http://git.kernel.org/tip/afd51a0e32cd79261f0e823400886ed322a355ac
-Author:     Alexander Duyck <alexander.h.duyck@intel.com>
-AuthorDate: Fri, 16 Nov 2012 13:57:43 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 16 Nov 2012 16:42:10 -0800
+* oleg.matcovschi@ti.com <oleg.matcovschi@ti.com> [121115 13:42]:
+> From: Oleg Matcovschi <oleg.matcovschi@ti.com>
+> 
+> OMAP_MODE_GPIO() macro verified only OMAP_MUX_MODE4.
 
-x86/acpi: Use __pa_symbol instead of __pa on C visible symbols
+Indeed, that needs to be fixed.
 
-This change just updates one spot where __pa was being used when __pa_symbol
-should have been used.  By using __pa_symbol we are able to drop a few extra
-lines of code as we don't have to test to see if the virtual pointer is a
-part of the kernel text or just standard virtual memory.
+> It is not correct for following platforms:
+>     2430 - gpio mux mode 3
+>     44xx - gpio mux mode 3
 
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Acked-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Link: http://lkml.kernel.org/r/20121116215737.8521.51167.stgit@ahduyck-cp1.jf.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/acpi/sleep.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks like these are set properly to GPIO_IN_MODE3 with
+omap_mux_init().
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 11676cf..f146a3c 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -69,7 +69,7 @@ int acpi_suspend_lowlevel(void)
+>     54xx - gpio mux mode 6
+
+This will be only using pinctrl-single.c, so we don't
+really have to worrry about this one. But I guess we might
+as well fix that too while at it if somebody backports omap5
+support to some older kernel..
  
- #ifndef CONFIG_64BIT
- 	header->pmode_entry = (u32)&wakeup_pmode_return;
--	header->pmode_cr3 = (u32)__pa(&initial_page_table);
-+	header->pmode_cr3 = (u32)__pa_symbol(initial_page_table);
- 	saved_magic = 0x12345678;
- #else /* CONFIG_64BIT */
- #ifdef CONFIG_SMP
+> Patch reserves first 3 bits in partition flags for storing gpio mux
+> mode in same format as stored in control pad register.
+> Modified OMAP_MODE_GPIO() macro handles all possible cases of gpio mux mode.
+> Modified omap_mux_init() flags of omap34xx to include OMAP_MUX_GPIO_IN_MODE4.
+
+Why don't you just add int gpio to struct omap_mux_partition?
+
+You're not saving many bytes as at most we have two partitions
+so far per SoC.
+ 
+> --- a/arch/arm/mach-omap2/mux34xx.c
+> +++ b/arch/arm/mach-omap2/mux34xx.c
+> @@ -2053,7 +2053,7 @@ int __init omap3_mux_init(struct omap_board_mux *board_subset, int flags)
+>  		return -EINVAL;
+>  	}
+>  
+> -	return omap_mux_init("core", 0,
+> +	return omap_mux_init("core", OMAP_MUX_GPIO_IN_MODE4,
+>  			     OMAP3_CONTROL_PADCONF_MUX_PBASE,
+>  			     OMAP3_CONTROL_PADCONF_MUX_SIZE,
+>  			     omap3_muxmodes, package_subset, board_subset,
+
+The default is GPIO_IN_MODE4, but that seems to be a bad
+default choice as only omap3 uses it. So yeah, might as well
+initialize that too and not assume any defaults GPIO mode.
+
+Regards,
+
+Tony
