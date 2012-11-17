@@ -1,177 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab2KQAYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:24:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37638 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2KQAYS (ORCPT
+	id S1753887Ab2KQAZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:25:08 -0500
+Received: from 79.132.231.86.static.edpnet.net ([79.132.231.86]:46498 "EHLO
+	mail.offline.be" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2KQAZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:24:18 -0500
-Date: Fri, 16 Nov 2012 16:23:46 -0800
-From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
-Message-ID: <tip-9dfc3fc0305e158f44c9bb05e9fa13be6125cc4b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com>
-References: <20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86:
-  Improve __phys_addr performance by making use of carry flags and inlining
-Git-Commit-ID: 9dfc3fc0305e158f44c9bb05e9fa13be6125cc4b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Nov 2012 19:25:06 -0500
+Date: Sat, 17 Nov 2012 01:18:26 +0100
+From: Marc Duponcheel <marc@offline.be>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Marc Duponcheel <marc@offline.be>
+Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
+Message-ID: <20121117001826.GC9816@offline.be>
+Reply-To: Marc Duponcheel <marc@offline.be>
+References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
+ <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
+ <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
+ <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
+ <20121114100154.GI8218@suse.de>
+ <20121114132940.GA13196@offline.be>
+ <alpine.DEB.2.00.1211141342460.13515@chino.kir.corp.google.com>
+ <20121115011449.GA20858@offline.be>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="cWoXeonUoKmBZSoM"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:24:12 -0800 (PST)
+In-Reply-To: <20121115011449.GA20858@offline.be>
+Organization: OFFLINE
+X-uname: Linux 3.6.6-gentoo x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9dfc3fc0305e158f44c9bb05e9fa13be6125cc4b
-Gitweb:     http://git.kernel.org/tip/9dfc3fc0305e158f44c9bb05e9fa13be6125cc4b
-Author:     Alexander Duyck <alexander.h.duyck@intel.com>
-AuthorDate: Fri, 16 Nov 2012 13:53:51 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 16 Nov 2012 15:20:20 -0800
 
-x86: Improve __phys_addr performance by making use of carry flags and inlining
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch is meant to improve overall system performance when making use of
-the __phys_addr call.  To do this I have implemented several changes.
+ Hi David, others
 
-First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
-similar to how this is currently handled in 32 bit.  However in order to do
-this it is required to export phys_base so that it is available if __phys_addr
-is used in kernel modules.
+Results seem OK
 
-The second change was to streamline the code by making use of the carry flag
-on an add operation instead of performing a compare on a 64 bit value.  The
-advantage to this is that it allows us to significantly reduce the overall
-size of the call.  On my Xeon E5 system the entire __phys_addr inline call
-consumes a little less than 32 bytes and 5 instructions.  I also applied
-similar logic to the debug version of the function.  My testing shows that the
-debug version of the function with this patch applied is slightly faster than
-the non-debug version without the patch.
+ recap: I have 2 6core 64bit opterons and I make -j13
 
-Finally I also applied the same logic changes to __virt_addr_valid since it
-used the same general code flow as __phys_addr and could achieve similar gains
-though these changes.
+I do
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Link: http://lkml.kernel.org/r/20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/page_64.h   | 14 ++++++++++++++
- arch/x86/kernel/x8664_ksyms_64.c |  3 +++
- arch/x86/mm/physaddr.c           | 40 +++++++++++++++++++++++++---------------
- 3 files changed, 42 insertions(+), 15 deletions(-)
+# echo always >/sys/kernel/mm/transparent_hugepage/enabled
+# while [ 1 ]
+  do
+   sleep 10
+   date
+   echo = vmstat
+   egrep "(thp|compact)" /proc/vmstat
+   echo = khugepaged stack
+   cat /proc/501/stack
+ done > /tmp/49361.xxxx
+# emerge icedtea
+(where 501 = pidof khugepaged)
 
-diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
-index 4150999..5138174 100644
---- a/arch/x86/include/asm/page_64.h
-+++ b/arch/x86/include/asm/page_64.h
-@@ -9,7 +9,21 @@
- extern unsigned long max_pfn;
- extern unsigned long phys_base;
- 
-+static inline unsigned long __phys_addr_nodebug(unsigned long x)
-+{
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* use the carry flag to determine if x was < __START_KERNEL_map */
-+	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
-+
-+	return x;
-+}
-+
-+#ifdef CONFIG_DEBUG_VIRTUAL
- extern unsigned long __phys_addr(unsigned long);
-+#else
-+#define __phys_addr(x)		__phys_addr_nodebug(x)
-+#endif
- 
- #define __phys_reloc_hide(x)	(x)
- 
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 1330dd1..b014d94 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
- EXPORT_SYMBOL(__memcpy);
- EXPORT_SYMBOL(memmove);
- 
-+#ifndef CONFIG_DEBUG_VIRTUAL
-+EXPORT_SYMBOL(phys_base);
-+#endif
- EXPORT_SYMBOL(empty_zero_page);
- #ifndef CONFIG_PARAVIRT
- EXPORT_SYMBOL(native_load_gs_index);
-diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
-index d2e2735..fd40d75 100644
---- a/arch/x86/mm/physaddr.c
-+++ b/arch/x86/mm/physaddr.c
-@@ -8,33 +8,43 @@
- 
- #ifdef CONFIG_X86_64
- 
-+#ifdef CONFIG_DEBUG_VIRTUAL
- unsigned long __phys_addr(unsigned long x)
- {
--	if (x >= __START_KERNEL_map) {
--		x -= __START_KERNEL_map;
--		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
--		x += phys_base;
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* use the carry flag to determine if x was < __START_KERNEL_map */
-+	if (unlikely(x > y)) {
-+		x = y + phys_base;
-+
-+		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
- 	} else {
--		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
--		x -= PAGE_OFFSET;
--		VIRTUAL_BUG_ON(!phys_addr_valid(x));
-+		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-+
-+		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-+		VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
- 	}
-+
- 	return x;
- }
- EXPORT_SYMBOL(__phys_addr);
-+#endif
- 
- bool __virt_addr_valid(unsigned long x)
- {
--	if (x >= __START_KERNEL_map) {
--		x -= __START_KERNEL_map;
--		if (x >= KERNEL_IMAGE_SIZE)
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* use the carry flag to determine if x was < __START_KERNEL_map */
-+	if (unlikely(x > y)) {
-+		x = y + phys_base;
-+
-+		if (y >= KERNEL_IMAGE_SIZE)
- 			return false;
--		x += phys_base;
- 	} else {
--		if (x < PAGE_OFFSET)
--			return false;
--		x -= PAGE_OFFSET;
--		if (!phys_addr_valid(x))
-+		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-+
-+		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-+		if ((x > y) || !phys_addr_valid(x))
- 			return false;
- 	}
- 
+for xxxx = base = 3.6.6
+and xxxx = test = 3.6.6 + diff you provided
+
+I attach 
+ /tmp/49361.base.gz
+and
+ /tmp/49361.test.gz
+
+Note:
+
+ with xxx=base, I could see
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
+ 8617 root      20   0 3620m  41m  10m S 988.3  0.5   6:19.06 javac
+    1 root      20   0  4208  588  556 S   0.0  0.0   0:03.25 init
+ already during configure and I needed to kill -9 javac
+
+ with xxx=test, I could see
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
+9275 root      20   0 2067m 474m  10m S 304.2  5.9   0:32.81 javac
+ 710 root       0 -20     0    0    0 S   0.3  0.0   0:01.07 kworker/0:1H
+ later when processing >700 java files
+
+Also note that with xxx=test compact_blocks_moved stays 0
+
+hope this helps
+
+ Thanks
+
+have a nice day
+
+On 2012 Nov 15, Marc Duponcheel wrote:
+>  Hi David
+> 
+> Thanks for the changeset
+> 
+> I will test 3.6.6 without&with this weekend.
+> 
+>  Have a nice day
+
+--
+ Marc Duponcheel
+ Velodroomstraat 74 - 2600 Berchem - Belgium
+ +32 (0)478 68.10.91 - marc@offline.be
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="49361.base.gz"
+Content-Transfer-Encoding: base64
+
+H4sICF7OplACAzQ5MzYxLmJhc2UA7dnLTttAFAbgfZ7C+y469wsq3VTddkN3VWWNx2MSxYld
+2wnw9j2TC9QxEXFUECgnsED2P8eXmU8xxzeuS35U64TqhJArLq6YSr59/5kwQtnkOlkv2s51
+E18taue7NCsrP2/TRbUOeaI5kVor/ri3drdhv1MZTrmVvX2L2W3jupAWblZChHJilFbsMQOH
+KsuEW/U0LEYTDrGn0Mr70LaJNZNuWkNgVXYpjKt8Qv7ZUsCmzPn5bqOvytLVbegl+xv3p7Xd
+19blrIO/r5P5dHUb4unnCZygn09+fSl2H0OJCrlyX38nefizCquQdq6dx0rNJ3LP3WdyX5De
+AEoLXRAY8FQWkgSClOt+lAid0RitmypectrNFqFadfv8oLD39rCwyO2zpWVGdSztVl3VhDhl
+6Z2bw9Sslr6bVcvdMcT5Jy+dZjxGu2kTXMxZDkHXjwll8kLEWGiWoUy34XQayjrEWyiGFwqV
+lSW9yuRIYXK88OAO7j8wBCbt4DO5OWTCRzExmokjTCT88heZ9ATsmZhDJjAH5zKhY5nQMUwo
+lVrFad6W2N6B9cLBRGSbKfa49D/M0he49Md8Q4xdylRnvWW2O3ZbhlDDIJ/FUfL/LGpGMuYP
+FzXl3KOc15AjUQ7KQTmj5cgrMkqOFdQekaOUZuwlOZorMpRjB3IoykE571wORTkoB+WcIef0
+TpgRUlvD9RE5WnGmX5ID10MHcuzgac3YoRw7kCOekyOQDtJ5Gzqnd8estFoqZZEO0kE6QOf0
+7holmmvKGL1wOyazOdzcrnlIuyrN45wAnyZtH5Z+0weGGRm8WjFZwTavbQ7SnEFaYjf6w3g5
+vadGKZDQlhH08tpezjoEInunyNSI9hsYoUoQoRAZIkNkY5Cd3qkDHlIaKSQiQ2SIbAyy05t6
+VDIrmbb47xUiQ2SjkJ3e/oNnRS40MxyRITJENgbZiEahllowCCIyRIbIxiAb0V00mnIhpUBk
+iAyRnY5Mj+kuGivgR77F46I9H5l8j8ikK1S2EQCFmxAH3rlZFCDj62I7eO1Lcn64PE3gSOA1
+CFAkgAQumwBDAkjgsglwJIAELpuAQAJI4LIJSCSABC6ZgMGOEBK4MAJ/AbNhavSISQAA
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="49361.test.gz"
+Content-Transfer-Encoding: base64
+
+H4sICEXTplACAzQ5MzYxLnRlc3QA7dg7b9swEADg3b9Ce4ceH3oZTZeia5d0KwqCkihbMG2q
+EuUm/76kmzSR4wBFIZSMcZps8niiSH4QdLfSJl/MMSF5ArBO0zWF5NPnrwkFQlc3yXE/WmlX
+tdn3srai0qbejWJvjqpJ4E9zLzfqcuu+2wzSKtHKTs86XVqtn/33Ac+7p7pW4+ha7LZ3nZO2
+wg0w9ayldU2VrHcPjbXRWvajmkXOG58m4vvGXnfW/b5Jdttpo/yEm8TNrN6tvn1oH66CQKaa
+TH78njTqx6QmJawcdz7T8A7umHwPdy3MBhDSVgW4AU9pXSS4QMLyeSjwvCI+tB+Mf2Jhu70y
+k32MP0tMAdLyPDFvyoup04rkPrWcrBmU3x7xU+7cZkyH2nbm8HAP/u+TT2VOmQ+120FJH1cy
+FyjnYTwrScV9mBoOSovfwWKrdK/8EvKXD+oyZyXMMsMrieH1xC9W8PFyQ9ymnV2r23ML7Gos
+sMUsNE3R+C1vB6XE1liftDk9n9Dd6M9t6o9Adbafyinyyz4oraSbwWmZXDApW79JLap4Myr4
+1aggBFkgi4VYpNfDokQWyGIRFtkaroYFzZEFsliIBbmeTwv8tkAWS7GgyGIxFryoysYNs8O9
+sEY0frvcUR/EeH+oT4fYDcJy1NvBwRAH4kAcl3FwEjeOlKIO1BFKRxq5DgIMeSCPMDzyNUTO
+g/EMeSCPUDxI9G8PSNEH+gjlg8bug6MP9BHOB4veBy/QB/oI5YNH7yPn6AN9hPIRffWqwOou
++gjlo4i+fEWBYf0KfQTzEXv9ijKO7w/0EcxH7PUrWhb4/kAfwXzEXr9iDPLlfRD0gT7+ykfs
+9StOKPpAH8F8xF6/4kVJ0Af6COOjjL5+lRZ5gT7Qx3/y8Qv1soDrlEcAAA==
+
+--cWoXeonUoKmBZSoM--
