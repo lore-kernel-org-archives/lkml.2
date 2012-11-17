@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab2KQPIg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 10:08:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28383 "EHLO
+	id S1751946Ab2KQPQj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 10:16:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40648 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab2KQPIf (ORCPT
+	with ESMTP id S1751766Ab2KQPQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 10:08:35 -0500
-Date: Sat, 17 Nov 2012 18:08:21 +0300
+	Sat, 17 Nov 2012 10:16:37 -0500
+Date: Sat, 17 Nov 2012 18:16:11 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] [SCSI] MegaRAID: use GFP_ATOMIC under spin lock
-Message-ID: <20121117150821.GB19951@elgon.mountain>
+To: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Russ Anderson <rja@sgi.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] x86, UV: integer wrap bug in uv_hub_ipi_value()
+Message-ID: <20121117151611.GB16900@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're holding a spin_lock here so we should use GFP_ATOMIC.
+This is a static checker fix.  The problem is that we store the bits
+from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
+shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
+them.
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+This is for an SGI product, and I can't test it.
 
-diff --git a/drivers/scsi/megaraid/megaraid_mm.c b/drivers/scsi/megaraid/megaraid_mm.c
-index 25506c7..5205275 100644
---- a/drivers/scsi/megaraid/megaraid_mm.c
-+++ b/drivers/scsi/megaraid/megaraid_mm.c
-@@ -568,7 +568,7 @@ mraid_mm_attach_buf(mraid_mmadp_t *adp, uioc_t *kioc, int xferlen)
+diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+index 21f7385..f3a0f91 100644
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -573,7 +573,7 @@ static inline void uv_set_cpu_scir_bits(int cpu, unsigned char value)
+ }
  
- 	kioc->pool_index	= right_pool;
- 	kioc->free_buf		= 1;
--	kioc->buf_vaddr 	= pci_pool_alloc(pool->handle, GFP_KERNEL,
-+	kioc->buf_vaddr		= pci_pool_alloc(pool->handle, GFP_ATOMIC,
- 							&kioc->buf_paddr);
- 	spin_unlock_irqrestore(&pool->lock, flags);
+ extern unsigned int uv_apicid_hibits;
+-static unsigned long uv_hub_ipi_value(int apicid, int vector, int mode)
++static unsigned long uv_hub_ipi_value(ulong apicid, ulong vector, ulong mode)
+ {
+ 	apicid |= uv_apicid_hibits;
+ 	return (1UL << UVH_IPI_INT_SEND_SHFT) |
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 8cfade9..6d93b2f 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -194,13 +194,13 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
+ 	pnode = uv_apicid_to_pnode(phys_apicid);
+ 	phys_apicid |= uv_apicid_hibits;
+ 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
+-	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
++	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+ 	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
+ 	    APIC_DM_INIT;
+ 	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
  
+ 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
+-	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
++	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+ 	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
+ 	    APIC_DM_STARTUP;
+ 	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
