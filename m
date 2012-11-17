@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2KQDp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:45:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16859 "EHLO
+	id S1754171Ab2KQDkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:40:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16822 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab2KQDkh (ORCPT
+	with ESMTP id S1754136Ab2KQDkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:37 -0500
+	Fri, 16 Nov 2012 22:40:31 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,156 +14,73 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 29/46] x86, mm: only call early_ioremap_page_table_range_init() once
-Date: Fri, 16 Nov 2012 19:39:06 -0800
-Message-Id: <1353123563-3103-30-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 17/46] x86, mm: Align start address to correct big page size
+Date: Fri, 16 Nov 2012 19:38:54 -0800
+Message-Id: <1353123563-3103-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32bit, before patcheset that only set page table for ram, we only
-call that one time.
+We are going to use buffer in BRK to map small range just under memory top,
+and use those new mapped ram to map ram range under it.
 
-Now, we are calling that during every init_memory_mapping if we have holes
-under max_low_pfn.
+The ram range that will be mapped at first could be only page aligned,
+but ranges around it are ram too, we could use bigger page to map it to
+avoid small page size.
 
-We should only call it one time after all ranges under max_low_page get
-mapped just like we did before.
+We will adjust page_size_mask in following patch:
+	x86, mm: Use big page size for small memory range
+to use big page size for small ram range.
 
-Also that could avoid the risk to run out of pgt_buf in BRK.
-
-Need to update page_table_range_init() to count the pages for kmap page table
-at first, and use new added alloc_low_pages() to get pages in sequence.
-That will conform to the requirement that pages need to be in low to high order.
+Before that patch, this patch will make sure start address to be
+aligned down according to bigger page size, otherwise entry in page
+page will not have correct value.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c    |   13 +++++--------
- arch/x86/mm/init_32.c |   47 +++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 46 insertions(+), 14 deletions(-)
+ arch/x86/mm/init_32.c |    1 +
+ arch/x86/mm/init_64.c |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index cb4f8ba..bed4888 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -343,14 +343,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
- 						   mr[i].page_size_mask);
- 
--#ifdef CONFIG_X86_32
--	early_ioremap_page_table_range_init();
--
--	load_cr3(swapper_pg_dir);
--#endif
--
--	__flush_tlb_all();
--
- 	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
- 
- 	return ret >> PAGE_SHIFT;
-@@ -447,7 +439,12 @@ void __init init_mem_mapping(void)
- 		/* can we preseve max_low_pfn ?*/
- 		max_low_pfn = max_pfn;
- 	}
-+#else
-+	early_ioremap_page_table_range_init();
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
- #endif
-+
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
- 
 diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index a7f2df1..0ae1ba8 100644
+index 11a5800..27f7fc6 100644
 --- a/arch/x86/mm/init_32.c
 +++ b/arch/x86/mm/init_32.c
-@@ -135,8 +135,39 @@ pte_t * __init populate_extra_pte(unsigned long vaddr)
- 	return one_page_table_init(pmd) + pte_idx;
- }
+@@ -310,6 +310,7 @@ repeat:
+ 					__pgprot(PTE_IDENT_ATTR |
+ 						 _PAGE_PSE);
  
-+static unsigned long __init
-+page_table_range_init_count(unsigned long start, unsigned long end)
-+{
-+	unsigned long count = 0;
-+#ifdef CONFIG_HIGHMEM
-+	int pmd_idx_kmap_begin = fix_to_virt(FIX_KMAP_END) >> PMD_SHIFT;
-+	int pmd_idx_kmap_end = fix_to_virt(FIX_KMAP_BEGIN) >> PMD_SHIFT;
-+	int pgd_idx, pmd_idx;
-+	unsigned long vaddr;
-+
-+	if (pmd_idx_kmap_begin == pmd_idx_kmap_end)
-+		return 0;
-+
-+	vaddr = start;
-+	pgd_idx = pgd_index(vaddr);
-+
-+	for ( ; (pgd_idx < PTRS_PER_PGD) && (vaddr != end); pgd_idx++) {
-+		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
-+							pmd_idx++) {
-+			if ((vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin &&
-+			    (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end)
-+				count++;
-+			vaddr += PMD_SIZE;
-+		}
-+		pmd_idx = 0;
-+	}
-+#endif
-+	return count;
-+}
-+
- static pte_t *__init page_table_kmap_check(pte_t *pte, pmd_t *pmd,
--					   unsigned long vaddr, pte_t *lastpte)
-+					   unsigned long vaddr, pte_t *lastpte,
-+					   void **adr)
- {
- #ifdef CONFIG_HIGHMEM
- 	/*
-@@ -150,16 +181,15 @@ static pte_t *__init page_table_kmap_check(pte_t *pte, pmd_t *pmd,
++				pfn &= PMD_MASK >> PAGE_SHIFT;
+ 				addr2 = (pfn + PTRS_PER_PTE-1) * PAGE_SIZE +
+ 					PAGE_OFFSET + PAGE_SIZE-1;
  
- 	if (pmd_idx_kmap_begin != pmd_idx_kmap_end
- 	    && (vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin
--	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end
--	    && ((__pa(pte) >> PAGE_SHIFT) < pgt_buf_start
--		|| (__pa(pte) >> PAGE_SHIFT) >= pgt_buf_end)) {
-+	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end) {
- 		pte_t *newpte;
- 		int i;
- 
- 		BUG_ON(after_bootmem);
--		newpte = alloc_low_page();
-+		newpte = *adr;
- 		for (i = 0; i < PTRS_PER_PTE; i++)
- 			set_pte(newpte + i, pte[i]);
-+		*adr = (void *)(((unsigned long)(*adr)) + PAGE_SIZE);
- 
- 		paravirt_alloc_pte(&init_mm, __pa(newpte) >> PAGE_SHIFT);
- 		set_pmd(pmd, __pmd(__pa(newpte)|_PAGE_TABLE));
-@@ -193,6 +223,11 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
- 	pgd_t *pgd;
- 	pmd_t *pmd;
- 	pte_t *pte = NULL;
-+	unsigned long count = page_table_range_init_count(start, end);
-+	void *adr = NULL;
-+
-+	if (count)
-+		adr = alloc_low_pages(count);
- 
- 	vaddr = start;
- 	pgd_idx = pgd_index(vaddr);
-@@ -205,7 +240,7 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
- 		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
- 							pmd++, pmd_idx++) {
- 			pte = page_table_kmap_check(one_page_table_init(pmd),
--			                            pmd, vaddr, pte);
-+						    pmd, vaddr, pte, &adr);
- 
- 			vaddr += PMD_SIZE;
- 		}
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 32c7e38..869372a 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -464,7 +464,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 			pages++;
+ 			spin_lock(&init_mm.page_table_lock);
+ 			set_pte((pte_t *)pmd,
+-				pfn_pte(address >> PAGE_SHIFT,
++				pfn_pte((address & PMD_MASK) >> PAGE_SHIFT,
+ 					__pgprot(pgprot_val(prot) | _PAGE_PSE)));
+ 			spin_unlock(&init_mm.page_table_lock);
+ 			last_map_addr = next;
+@@ -541,7 +541,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			pages++;
+ 			spin_lock(&init_mm.page_table_lock);
+ 			set_pte((pte_t *)pud,
+-				pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL_LARGE));
++				pfn_pte((addr & PUD_MASK) >> PAGE_SHIFT,
++					PAGE_KERNEL_LARGE));
+ 			spin_unlock(&init_mm.page_table_lock);
+ 			last_map_addr = next;
+ 			continue;
 -- 
 1.7.7
 
