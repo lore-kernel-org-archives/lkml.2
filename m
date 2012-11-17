@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab2KQO4d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 09:56:33 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39432 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2KQO4c (ORCPT
+	id S1751967Ab2KQPEq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 10:04:46 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:39711 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2KQPEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 09:56:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121117145015.GF16441@x1.osrc.amd.com>
-References: <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
- <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
- <m2pq45qu0s.fsf@firstfloor.org> <508A8D31.9000106@redhat.com>
- <20121026132601.GC9886@gmail.com> <20121026144502.6e94643e@dull>
- <20121026221254.7d32c8bf@pyramind.ukuu.org.uk> <508BE459.2080406@redhat.com>
- <20121029165705.GA4693@x1.osrc.amd.com> <CA+55aFzbwaHxWPkJ-t-TEh9hUwmA+D-unHGuJ7FPx7ULmrwKMg@mail.gmail.com>
- <20121117145015.GF16441@x1.osrc.amd.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 17 Nov 2012 06:56:10 -0800
-X-Google-Sender-Auth: YiBd5YxpIwl4CPx9bBQrvM9_ECY
-Message-ID: <CA+55aFxunZ94QkhxUKB0iJ0p1mFuWGzr0mR8icM=XJZadcSuRw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Florian Fainelli <florian@openwrt.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Nov 2012 10:04:45 -0500
+From: Joachim Eastwood <manabian@gmail.com>
+To: dhowells@redhat.com, hskinnemoen@gmail.com, egtvedt@samfundet.no
+Cc: linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        Joachim Eastwood <manabian@gmail.com>
+Subject: [PATCH] AVR32: switch to generic param.h
+Date: Sat, 17 Nov 2012 16:04:18 +0100
+Message-Id: <1353164658-14509-1-git-send-email-manabian@gmail.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 6:50 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> Albeit with a slight delay, the answer is yes: all AMD cpus
-> automatically invalidate cached TLB entries (and intermediate walk
-> results, for that matter) on a #PF.
+Since commit 83b9d3a0 (UAPI: (Scripted) Disintegrate arch/avr32/include/asm)
+building AVR32 spews out tons warnings like this:
+ In file included from include/linux/sched.h:11,
+                  from init/do_mounts_initrd.c:17:
+ /linux-2.6/arch/avr32/include/asm/param.h:6:1: warning: "HZ" redefined
 
-Thanks. I suspect it ends up being basically architectural, and that
-Windows (and quite possibly Linux versions too) have depended on the
-behavior.
+Everything we need from param.h on AVR32 is already in
+asm-generic so let's use that.
 
-> I don't know, however, whether it would be prudent to have some sort of
-> a cheap assertion in the code (cheaper than INVLPG %ADDR, although on
-> older cpus we do MOV CR3) just in case. This should be enabled only with
-> DEBUG_VM on, of course...
+Signed-off-by: Joachim Eastwood <manabian@gmail.com>
+---
+ arch/avr32/include/asm/Kbuild  | 1 +
+ arch/avr32/include/asm/param.h | 9 ---------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
+ delete mode 100644 arch/avr32/include/asm/param.h
 
-I wonder how we could actually test for it. We'd have to have some
-per-cpu page-fault address check (along with a generation count on the
-mm or similar). I doubt we'd figure out anything that works reliably
-and efficiently and would actually show any problems (plus we would
-have no way to ever know we even got the code right, since presumably
-we'd never find hardware that actually shows the behavior we'd be
-looking for..)
+diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
+index 4807ded..f52bd7d 100644
+--- a/arch/avr32/include/asm/Kbuild
++++ b/arch/avr32/include/asm/Kbuild
+@@ -1,3 +1,4 @@
+ 
+ generic-y	+= clkdev.h
+ generic-y	+= exec.h
++generic-y	+= param.h
+diff --git a/arch/avr32/include/asm/param.h b/arch/avr32/include/asm/param.h
+deleted file mode 100644
+index 009a167..0000000
+--- a/arch/avr32/include/asm/param.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-#ifndef __ASM_AVR32_PARAM_H
+-#define __ASM_AVR32_PARAM_H
+-
+-#include <uapi/asm/param.h>
+-
+-# define HZ		CONFIG_HZ
+-# define USER_HZ	100		/* User interfaces are in "ticks" */
+-# define CLOCKS_PER_SEC	(USER_HZ)	/* frequency at which times() counts */
+-#endif /* __ASM_AVR32_PARAM_H */
+-- 
+1.8.0
 
-               Linus
