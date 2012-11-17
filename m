@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2KQEAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 23:00:16 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:46114 "EHLO
+	id S1754043Ab2KQEAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 23:00:14 -0500
+Received: from [12.239.217.82] ([12.239.217.82]:64069 "EHLO
 	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753900Ab2KQD74 (ORCPT
+	by vger.kernel.org with ESMTP id S1753904Ab2KQEAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:59:56 -0500
+	Fri, 16 Nov 2012 23:00:10 -0500
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Jean Delvare <khali@linux-fr.org>,
@@ -21,9 +21,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 03/06] input/rmi4: I2C physical interface
-Date: Fri, 16 Nov 2012 19:58:51 -0800
-Message-Id: <1353124734-16803-4-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 04/06] input/rmi4: Config files and makefiles
+Date: Fri, 16 Nov 2012 19:58:52 -0800
+Message-Id: <1353124734-16803-5-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
 References: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
@@ -32,11 +32,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-rmi_i2c.c abstracts an RMI4 device on some arbitrary I2C bus as a logical
-device in the RMI bus.  It handles reads/writes from/to the RMI4 devices,
-and manages the page select register setting (since the meaning of page
-select is dependent on the physical layer used to communicate with the RMi4
-device).
+Infrastructure files for configuration and building.
 
 
 Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
@@ -46,506 +42,147 @@ Cc: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 Cc: Joeri de Gram <j.de.gram@gmail.com>
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
- drivers/input/rmi4/rmi_i2c.c |  490 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 490 insertions(+), 0 deletions(-)
+ drivers/input/Kconfig       |    2 +
+ drivers/input/Makefile      |    3 ++
+ drivers/input/rmi4/Kconfig  |   76 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/input/rmi4/Makefile |   22 ++++++++++++
+ 4 files changed, 103 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_i2c.c b/drivers/input/rmi4/rmi_i2c.c
+diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
+index 55f7e57..2c543c0 100644
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -188,6 +188,8 @@ source "drivers/input/touchscreen/Kconfig"
+
+ source "drivers/input/misc/Kconfig"
+
++source "drivers/input/rmi4/Kconfig"
++
+ endif
+
+ menu "Hardware I/O ports"
+diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+index 5ca3f63..88354fc 100644
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -24,4 +24,7 @@ obj-$(CONFIG_INPUT_TABLET)	+= tablet/
+ obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
+ obj-$(CONFIG_INPUT_MISC)	+= misc/
+
++obj-y += rmi4/
++
+ obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
++
+diff --git a/drivers/input/rmi4/Kconfig b/drivers/input/rmi4/Kconfig
 new file mode 100644
-index 0000000..ca32101
+index 0000000..41cbbee
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_i2c.c
-@@ -0,0 +1,490 @@
-+/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
-+ * Copyright (c) 2011 Unixphere
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/debugfs.h>
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/kconfig.h>
-+#include <linux/lockdep.h>
-+#include <linux/module.h>
-+#include <linux/pm.h>
-+#include <linux/rmi.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include "rmi_driver.h"
-+
-+#define BUFFER_SIZE_INCREMENT 32
-+/**
-+ * struct rmi_i2c_data - stores information for i2c communication
-+ *
-+ * @page_mutex: Locks current page to avoid changing pages in unexpected ways.
-+ * @page: Keeps track of the current virtual page
-+ * @phys: Pointer to the physical interface
-+ *
-+ * @tx_buf: Buffer used for transmitting data to the sensor over i2c.
-+ * @tx_buf_size: Size of the buffer
-+ * @debug_buf: Buffer used for exposing buffer contents using dev_dbg
-+ * @debug_buf_size: Size of the debug buffer.
-+ *
-+ * @comms_debug: Latest data read/written for debugging I2C communications
-+ * @debugfs_comms: Debugfs file for debugging I2C communications
-+ *
-+ */
-+struct rmi_i2c_data {
-+	struct mutex page_mutex;
-+	int page;
-+	struct rmi_phys_device *phys;
-+
-+	u8 *tx_buf;
-+	int tx_buf_size;
-+	u8 *debug_buf;
-+	int debug_buf_size;
-+
-+	bool comms_debug;
-+#ifdef CONFIG_RMI4_DEBUG
-+	struct dentry *debugfs_comms;
-+#endif
-+};
-+
-+#ifdef CONFIG_RMI4_DEBUG
-+
-+
-+/**
-+ * struct i2c_debugfs_data - stores information for debugfs
-+ *
-+ * @done: Indicates that we are done reading debug data. Subsequent reads
-+ * will return EOF.
-+ * @i2c_data: Pointer to the i2c data
-+ *
-+ */
-+struct i2c_debugfs_data {
-+	bool done;
-+	struct rmi_i2c_data *i2c_data;
-+};
-+
-+static int debug_open(struct inode *inodep, struct file *filp)
-+{
-+	struct i2c_debugfs_data *data;
-+
-+	data = kzalloc(sizeof(struct i2c_debugfs_data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->i2c_data = inodep->i_private;
-+	filp->private_data = data;
-+	return 0;
-+}
-+
-+static int debug_release(struct inode *inodep, struct file *filp)
-+{
-+	kfree(filp->private_data);
-+	return 0;
-+}
-+
-+static ssize_t comms_debug_read(struct file *filp, char __user *buffer,
-+		size_t size, loff_t *offset) {
-+	int retval;
-+	char *local_buf;
-+	struct i2c_debugfs_data *dfs = filp->private_data;
-+	struct rmi_i2c_data *data = dfs->i2c_data;
-+
-+	if (dfs->done)
-+		return 0;
-+
-+	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
-+	if (!local_buf)
-+		return -ENOMEM;
-+
-+	dfs->done = 1;
-+
-+	retval = snprintf(local_buf, PAGE_SIZE, "%u\n", data->comms_debug);
-+
-+	if (retval <= 0 || copy_to_user(buffer, local_buf, retval))
-+		retval = -EFAULT;
-+	kfree(local_buf);
-+
-+	return retval;
-+}
-+
-+static ssize_t comms_debug_write(struct file *filp, const char __user *buffer,
-+			   size_t size, loff_t *offset) {
-+	int retval;
-+	char *local_buf;
-+	unsigned int new_value;
-+	struct i2c_debugfs_data *dfs = filp->private_data;
-+	struct rmi_i2c_data *data = dfs->i2c_data;
-+
-+	local_buf = kcalloc(size, sizeof(u8), GFP_KERNEL);
-+	if (!local_buf)
-+		return -ENOMEM;
-+	retval = copy_from_user(local_buf, buffer, size);
-+	if (retval) {
-+		kfree(local_buf);
-+		return -EFAULT;
-+	}
-+
-+	retval = sscanf(local_buf, "%u", &new_value);
-+	kfree(local_buf);
-+	if (retval != 1 || new_value > 1)
-+		return -EINVAL;
-+
-+	data->comms_debug = new_value;
-+
-+	return size;
-+}
-+
-+
-+static const struct file_operations comms_debug_fops = {
-+	.owner = THIS_MODULE,
-+	.open = debug_open,
-+	.release = debug_release,
-+	.read = comms_debug_read,
-+	.write = comms_debug_write,
-+};
-+
-+static int setup_debugfs(struct rmi_device *rmi_dev, struct rmi_i2c_data *data)
-+{
-+	if (!rmi_dev->debugfs_root)
-+		return -ENODEV;
-+
-+	data->debugfs_comms = debugfs_create_file("comms_debug", RMI_RW_ATTR,
-+			rmi_dev->debugfs_root, data, &comms_debug_fops);
-+	if (!data->debugfs_comms || IS_ERR(data->debugfs_comms)) {
-+		dev_warn(&rmi_dev->dev, "Failed to create debugfs comms_debug.\n");
-+		data->debugfs_comms = NULL;
-+	}
-+
-+	return 0;
-+}
-+
-+static void teardown_debugfs(struct rmi_i2c_data *data)
-+{
-+	if (data->debugfs_comms)
-+		debugfs_remove(data->debugfs_comms);
-+}
-+#endif
-+
-+#define COMMS_DEBUG(data) (IS_ENABLED(CONFIG_RMI4_DEBUG) && data->comms_debug)
-+
-+#define RMI_PAGE_SELECT_REGISTER 0xff
-+#define RMI_I2C_PAGE(addr) (((addr) >> 8) & 0xff)
-+
-+static char *phys_proto_name = "i2c";
-+
-+/*
-+ * rmi_set_page - Set RMI page
-+ * @phys: The pointer to the rmi_phys_device struct
-+ * @page: The new page address.
-+ *
-+ * RMI devices have 16-bit addressing, but some of the physical
-+ * implementations (like SMBus) only have 8-bit addressing. So RMI implements
-+ * a page address at 0xff of every page so we can reliable page addresses
-+ * every 256 registers.
-+ *
-+ * The page_mutex lock must be held when this function is entered.
-+ *
-+ * Returns zero on success, non-zero on failure.
-+ */
-+static int rmi_set_page(struct rmi_phys_device *phys, u8 page)
-+{
-+	struct i2c_client *client = to_i2c_client(phys->dev);
-+	struct rmi_i2c_data *data = phys->data;
-+	u8 txbuf[2] = {RMI_PAGE_SELECT_REGISTER, page};
-+	int retval;
-+
-+	if (COMMS_DEBUG(data))
-+		dev_dbg(&client->dev, "writes 3 bytes: %02x %02x\n",
-+			txbuf[0], txbuf[1]);
-+	phys->info.tx_count++;
-+	phys->info.tx_bytes += sizeof(txbuf);
-+	retval = i2c_master_send(client, txbuf, sizeof(txbuf));
-+	if (retval != sizeof(txbuf)) {
-+		phys->info.tx_errs++;
-+		dev_err(&client->dev,
-+			"%s: set page failed: %d.", __func__, retval);
-+		return (retval < 0) ? retval : -EIO;
-+	}
-+	data->page = page;
-+	return 0;
-+}
-+
-+static int copy_to_debug_buf(struct device *dev, struct rmi_i2c_data *data,
-+			     const u8 *buf, const int len) {
-+	int i;
-+	int n = 0;
-+	char *temp;
-+	int dbg_size = 3 * len + 1;
-+
-+	if (!data->debug_buf || data->debug_buf_size < dbg_size) {
-+		if (data->debug_buf)
-+			devm_kfree(dev, data->debug_buf);
-+		data->debug_buf_size = dbg_size + BUFFER_SIZE_INCREMENT;
-+		data->debug_buf = devm_kzalloc(dev, data->debug_buf_size,
-+					       GFP_KERNEL);
-+		if (!data->debug_buf) {
-+			data->debug_buf_size = 0;
-+			return -ENOMEM;
-+		}
-+	}
-+	temp = data->debug_buf;
-+
-+	for (i = 0; i < len; i++) {
-+		n = sprintf(temp, " %02x", buf[i]);
-+		temp += n;
-+	}
-+
-+	return 0;
-+}
-+
-+static int rmi_i2c_write_block(struct rmi_phys_device *phys, u16 addr,
-+			       const void *buf, const int len)
-+{
-+	struct i2c_client *client = to_i2c_client(phys->dev);
-+	struct rmi_i2c_data *data = phys->data;
-+	int retval;
-+	int tx_size = len + 1;
-+
-+	mutex_lock(&data->page_mutex);
-+
-+	if (!data->tx_buf || data->tx_buf_size < tx_size) {
-+		if (data->tx_buf)
-+			devm_kfree(&client->dev, data->tx_buf);
-+		data->tx_buf_size = tx_size + BUFFER_SIZE_INCREMENT;
-+		data->tx_buf = devm_kzalloc(&client->dev, data->tx_buf_size,
-+					    GFP_KERNEL);
-+		if (!data->tx_buf) {
-+			data->tx_buf_size = 0;
-+			retval = -ENOMEM;
-+			goto exit;
-+		}
-+	}
-+	data->tx_buf[0] = addr & 0xff;
-+	memcpy(data->tx_buf + 1, buf, len);
-+
-+	if (RMI_I2C_PAGE(addr) != data->page) {
-+		retval = rmi_set_page(phys, RMI_I2C_PAGE(addr));
-+		if (retval < 0)
-+			goto exit;
-+	}
-+
-+	if (COMMS_DEBUG(data)) {
-+		retval = copy_to_debug_buf(&client->dev, data, (u8 *) buf, len);
-+		if (!retval)
-+			dev_dbg(&client->dev, "writes %d bytes at %#06x:%s\n",
-+				len, addr, data->debug_buf);
-+	}
-+
-+	phys->info.tx_count++;
-+	phys->info.tx_bytes += tx_size;
-+	retval = i2c_master_send(client, data->tx_buf, tx_size);
-+	if (retval < 0)
-+		phys->info.tx_errs++;
-+	else
-+		retval--; /* don't count the address byte */
-+
-+exit:
-+	mutex_unlock(&data->page_mutex);
-+	return retval;
-+}
-+
-+
-+static int rmi_i2c_read_block(struct rmi_phys_device *phys, u16 addr,
-+			      void *buf, const int len)
-+{
-+	struct i2c_client *client = to_i2c_client(phys->dev);
-+	struct rmi_i2c_data *data = phys->data;
-+	u8 txbuf[1] = {addr & 0xff};
-+	int retval;
-+
-+	mutex_lock(&data->page_mutex);
-+
-+	if (RMI_I2C_PAGE(addr) != data->page) {
-+		retval = rmi_set_page(phys, RMI_I2C_PAGE(addr));
-+		if (retval < 0)
-+			goto exit;
-+	}
-+
-+	if (COMMS_DEBUG(data))
-+		dev_dbg(&client->dev, "writes 1 bytes: %02x\n", txbuf[0]);
-+
-+	phys->info.tx_count++;
-+	phys->info.tx_bytes += sizeof(txbuf);
-+	retval = i2c_master_send(client, txbuf, sizeof(txbuf));
-+	if (retval != sizeof(txbuf)) {
-+		phys->info.tx_errs++;
-+		retval = (retval < 0) ? retval : -EIO;
-+		goto exit;
-+	}
-+
-+	retval = i2c_master_recv(client, (u8 *) buf, len);
-+
-+	phys->info.rx_count++;
-+	phys->info.rx_bytes += len;
-+	if (retval < 0)
-+		phys->info.rx_errs++;
-+	else if (COMMS_DEBUG(data)) {
-+		retval = copy_to_debug_buf(&client->dev, data, (u8 *) buf, len);
-+		if (!retval)
-+			dev_dbg(&client->dev, "read %d bytes at %#06x:%s\n",
-+				len, addr, data->debug_buf);
-+	}
-+
-+exit:
-+	mutex_unlock(&data->page_mutex);
-+	return retval;
-+}
-+
-+static int __devinit rmi_i2c_probe(struct i2c_client *client,
-+				  const struct i2c_device_id *id)
-+{
-+	struct rmi_phys_device *rmi_phys;
-+	struct rmi_i2c_data *data;
-+	struct rmi_device_platform_data *pdata = client->dev.platform_data;
-+	int retval;
-+
-+	if (!pdata) {
-+		dev_err(&client->dev, "no platform data\n");
-+		return -EINVAL;
-+	}
-+	dev_info(&client->dev, "Probing %s at %#02x (IRQ %d).\n",
-+		pdata->sensor_name ? pdata->sensor_name : "-no name-",
-+		client->addr, pdata->attn_gpio);
-+
-+	if (pdata->gpio_config) {
-+		dev_info(&client->dev, "Configuring GPIOs.\n");
-+		retval = pdata->gpio_config(pdata->gpio_data, true);
-+		if (retval < 0) {
-+			dev_err(&client->dev, "Failed to configure GPIOs, code: %d.\n",
-+				retval);
-+			return retval;
-+		}
-+		dev_info(&client->dev, "Done with GPIO configuration.\n");
-+	}
-+
-+	retval = i2c_check_functionality(client->adapter, I2C_FUNC_I2C);
-+	if (!retval) {
-+		dev_err(&client->dev, "i2c_check_functionality error %d.\n",
-+			retval);
-+		return retval;
-+	}
-+
-+	rmi_phys = devm_kzalloc(&client->dev, sizeof(struct rmi_phys_device),
-+				GFP_KERNEL);
-+
-+	if (!rmi_phys)
-+		return -ENOMEM;
-+
-+	data = devm_kzalloc(&client->dev, sizeof(struct rmi_i2c_data),
-+				GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->phys = rmi_phys;
-+
-+	rmi_phys->data = data;
-+	rmi_phys->dev = &client->dev;
-+
-+	rmi_phys->write_block = rmi_i2c_write_block;
-+	rmi_phys->read_block = rmi_i2c_read_block;
-+	rmi_phys->info.proto = phys_proto_name;
-+
-+	mutex_init(&data->page_mutex);
-+
-+	/* Setting the page to zero will (a) make sure the PSR is in a
-+	 * known state, and (b) make sure we can talk to the device.
-+	 */
-+	retval = rmi_set_page(rmi_phys, 0);
-+	if (retval) {
-+		dev_err(&client->dev, "Failed to set page select to 0.\n");
-+		return retval;
-+	}
-+
-+	retval = rmi_register_phys_device(rmi_phys);
-+	if (retval) {
-+		dev_err(&client->dev,
-+			"failed to register physical driver at 0x%.2X.\n",
-+			client->addr);
-+		goto err_gpio;
-+	}
-+	i2c_set_clientdata(client, rmi_phys);
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG))
-+		retval = setup_debugfs(rmi_phys->rmi_dev, data);
-+
-+	dev_info(&client->dev, "registered rmi i2c driver at %#04x.\n",
-+			client->addr);
-+	return 0;
-+
-+err_gpio:
-+	if (pdata->gpio_config)
-+		pdata->gpio_config(pdata->gpio_data, false);
-+	return retval;
-+}
-+
-+static int __devexit rmi_i2c_remove(struct i2c_client *client)
-+{
-+	struct rmi_phys_device *phys = i2c_get_clientdata(client);
-+	struct rmi_device_platform_data *pd = client->dev.platform_data;
-+
-+	if (IS_ENABLED(CONFIG_RMI4_DEBUG))
-+		teardown_debugfs(phys->data);
-+
-+	rmi_unregister_phys_device(phys);
-+
-+	if (pd->gpio_config)
-+		pd->gpio_config(&pd->gpio_data, false);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id rmi_id[] = {
-+	{ "rmi_i2c", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, rmi_id);
-+
-+static struct i2c_driver rmi_i2c_driver = {
-+	.driver = {
-+		.owner	= THIS_MODULE,
-+		.name	= "rmi_i2c"
-+	},
-+	.id_table	= rmi_id,
-+	.probe		= rmi_i2c_probe,
-+	.remove		= __devexit_p(rmi_i2c_remove),
-+};
-+
-+static int __init rmi_i2c_init(void)
-+{
-+	return i2c_add_driver(&rmi_i2c_driver);
-+}
-+
-+static void __exit rmi_i2c_exit(void)
-+{
-+	i2c_del_driver(&rmi_i2c_driver);
-+}
-+
-+module_init(rmi_i2c_init);
-+module_exit(rmi_i2c_exit);
-+
-+MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
-+MODULE_DESCRIPTION("RMI I2C driver");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(RMI_DRIVER_VERSION);
++++ b/drivers/input/rmi4/Kconfig
+@@ -0,0 +1,76 @@
++#
++# RMI4 configuration
++#
++config RMI4_BUS
++	bool "Synaptics RMI4 bus support"
++	help
++	  Say Y here if you want to support the Synaptics RMI4 bus.  This is
++	  required for all RMI4 device support.
++
++	  If unsure, say Y.
++
++	  This feature is not currently available as a loadable module.
++
++config RMI4_DEBUG
++	bool "RMI4 Debugging"
++	depends on RMI4_BUS
++	select DEBUG_FS
++	help
++	  Say Y here to enable debug feature in the RMI4 driver.
++
++	  Note that the RMI4 driver debug features can generate a lot of
++	  output (potentially clogging up your dmesg output) and generally
++	  slow down driver operation.  It's recommended to enable them only
++	  if you are actively developing/debugging RMI4 features.
++
++	  If unsure, say N.
++
++config RMI4_I2C
++	bool "RMI4 I2C Support"
++	depends on RMI4_BUS && I2C
++	help
++	  Say Y here if you want to support RMI4 devices connected to an I2C
++	  bus.
++
++	  If unsure, say Y.
++
++	  This feature is not currently available as a loadable module.
++
++config RMI4_GENERIC
++	bool "RMI4 Generic driver"
++	depends on RMI4_BUS
++	help
++	  Say Y here if you want to support generic RMI4 devices.
++
++	  This is pretty much required if you want to do anything useful with
++	  your RMI device.
++
++	  This feature is not currently available as a loadable module.
++
++config RMI4_F11
++	tristate "RMI4 Function 11 (2D pointing)"
++	depends on RMI4_BUS && RMI4_GENERIC
++	help
++	  Say Y here if you want to add support for RMI4 function 11.
++
++	  Function 11 provides 2D multifinger pointing for touchscreens and
++	  touchpads.  For sensors that support relative pointing, F11 also
++	  provides mouse input.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called rmi-f11.
++
++config RMI4_F11_PEN
++	bool "RMI4 F11 Pen Support"
++	depends on RMI4_F11
++	help
++	  Say Y here to add support for pen input to RMI4 function 11.
++
++	  If this feature is enabled, when pen inputs are detected they
++	  will be reported to the input stream as MT_TOOL_PEN.  Otherwise,
++	  pens will be treated the same as fingers.
++
++	  Not all UI implementations deal gracefully with pen discrimination.
++	  If your system is not recognizing pen touches and you know your
++	  sensor supports pen input, you probably want to turn this feature
++	  off.
+diff --git a/drivers/input/rmi4/Makefile b/drivers/input/rmi4/Makefile
+new file mode 100644
+index 0000000..8882c3d
+--- /dev/null
++++ b/drivers/input/rmi4/Makefile
+@@ -0,0 +1,22 @@
++obj-$(CONFIG_RMI4_BUS) += rmi_bus.o
++obj-$(CONFIG_RMI4_I2C) += rmi_i2c.o
++obj-$(CONFIG_RMI4_GENERIC) += rmi_driver.o rmi_f01.o
++obj-$(CONFIG_RMI4_F11) += rmi_f11.o
++
++ccflags-$(CONFIG_RMI4_DEBUG) += -DDEBUG
++
++ifeq ($(KERNELRELEASE),)
++
++# KERNELDIR ?= /home/<AndroidKernelDirectory>
++PWD := $(shell pwd)
++
++.PHONY: build clean
++
++build:
++	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
++
++clean:
++	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c
++
++endif
++
