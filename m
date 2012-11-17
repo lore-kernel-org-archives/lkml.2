@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab2KQNFE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 08:05:04 -0500
+	id S1751931Ab2KQNFw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 08:05:52 -0500
 Received: from mga03.intel.com ([143.182.124.21]:42654 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab2KQNFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 08:05:02 -0500
+	id S1751710Ab2KQNFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 08:05:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,270,1352102400"; 
-   d="scan'208";a="219067104"
+   d="scan'208";a="219067082"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, pjt@google.com,
         preeti@linux.vnet.ibm.com, vincent.guittot@linaro.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 3/5] sched: using runnable load avg in cpu_load and cpu_avg_load_per_task
-Date: Sat, 17 Nov 2012 21:04:15 +0800
-Message-Id: <1353157457-3649-4-git-send-email-alex.shi@intel.com>
+Subject: [RFC PATCH 1/5] sched: get rq runnable load average for load balance
+Date: Sat, 17 Nov 2012 21:04:13 +0800
+Message-Id: <1353157457-3649-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353157457-3649-1-git-send-email-alex.shi@intel.com>
 References: <1353157457-3649-1-git-send-email-alex.shi@intel.com>
@@ -23,64 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the base values in load balance, update them with rq runnable
-load average, then the load balance will consider runnable load avg
-naturally.
+In load balance, rq load weight is the core of balance judgement.
+Now it's time to consider the PJT's runnable load tracking in load
+balance.
 
-The base idea of runnable load avg usage is just cosider the runnable
-load coefficient in direct load balance process, like load comparison
-between cpus.
+Since we already have rq runnable_avg_sum and rq load weight,
+the rq runnable load average is easy to get:
+	runnable_load(rq) = runnable_avg(rq) * weight(rq)
+
+then reuse rq->avg.load_avg_contrib to store the value.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/core.c |    4 ++--
- kernel/sched/fair.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/debug.c |    1 +
+ kernel/sched/fair.c  |   20 ++++++++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bacfee0..ee6d765 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2501,7 +2501,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
--	unsigned long load = this_rq->load.weight;
-+	unsigned long load = this_rq->avg.load_avg_contrib;
- 	unsigned long pending_updates;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..1cd5639 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -71,6 +71,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+ 		struct sched_avg *avg = &cpu_rq(cpu)->avg;
+ 		P(avg->runnable_avg_sum);
+ 		P(avg->runnable_avg_period);
++		P(avg->load_avg_contrib);
+ 		return;
+ 	}
  
- 	/*
-@@ -2551,7 +2551,7 @@ static void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-+	__update_cpu_load(this_rq, this_rq->avg.load_avg_contrib, 1);
- 
- 	calc_load_account_active(this_rq);
- }
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 44c07ed..f918919 100644
+index a624d3b..bc60e43 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2950,7 +2950,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- /* Used instead of source_load when we know the type == 0 */
- static unsigned long weighted_cpuload(const int cpu)
+@@ -1439,14 +1439,25 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+ #endif
+ 
+-static inline void __update_task_entity_contrib(struct sched_entity *se)
++static inline void __update_load_avg_contrib(struct sched_avg *sa,
++						struct load_weight *load)
  {
--	return cpu_rq(cpu)->load.weight;
-+	return cpu_rq(cpu)->avg.load_avg_contrib;
+ 	u32 contrib;
+ 
+ 	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
+-	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+-	contrib /= (se->avg.runnable_avg_period + 1);
+-	se->avg.load_avg_contrib = scale_load(contrib);
++	contrib = sa->runnable_avg_sum * scale_load_down(load->weight);
++	contrib /= (sa->runnable_avg_period + 1);
++	sa->load_avg_contrib = scale_load(contrib);
++}
++
++static inline void __update_task_entity_contrib(struct sched_entity *se)
++{
++	__update_load_avg_contrib(&se->avg, &se->load);
++}
++
++static inline void __update_rq_load_contrib(struct rq *rq)
++{
++	__update_load_avg_contrib(&rq->avg, &rq->load);
  }
  
- /*
-@@ -2997,7 +2997,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
- 
- 	if (nr_running)
--		return rq->load.weight / nr_running;
-+		return rq->avg.load_avg_contrib / nr_running;
- 
- 	return 0;
+ /* Compute the current contribution to load_avg by se, return any delta */
+@@ -1539,6 +1550,7 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++	__update_rq_load_contrib(rq);
  }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
 -- 
 1.7.5.4
 
