@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab2KQM1r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 07:27:47 -0500
-Received: from 8bytes.org ([85.214.48.195]:55107 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab2KQM1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 07:27:46 -0500
-Date: Sat, 17 Nov 2012 13:27:43 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, prometheanfire@gentoo.org,
-        cardoe@gentoo.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mthode@mthode.org, ddutile@redhat.com,
-        bhelgaas@google.com, dwmw2@infradead.org
-Subject: Re: [PATCH] intel-iommu: Fix lookup in add device
-Message-ID: <20121117122743.GB11220@8bytes.org>
-References: <20121113172144.6783.37724.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121113172144.6783.37724.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sat Nov 17 13:27:45 2012
-X-DSPAM-Confidence: 0.9984
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50a782c122971381013324
+	id S1751818Ab2KQMdI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 07:33:08 -0500
+Received: from 50-87-16-10.unifiedlayer.com ([50.87.16.10]:59646 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751696Ab2KQMdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 07:33:07 -0500
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>
+Cc: Constantine Shulyupin <const@MakeLinux.com>
+Subject: [PATCH] checkpatch: debugfs_remove() can take NULL
+Date: Sat, 17 Nov 2012 14:33:01 +0200
+Message-Id: <1353155581-30852-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.126.70.233 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 13, 2012 at 10:22:03AM -0700, Alex Williamson wrote:
-> We can't assume this device exists, fall back to the bridge itself.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Tested-by: Matthew Thode <prometheanfire@gentoo.org>
-> Cc: stable@vger.kernel.org
+From: Constantine Shulyupin <const@MakeLinux.com>
 
-Applied to iommu/fixes, thanks.
+debugfs_remove() can take a NULL, so let's check and warn about that.
+
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+---
+ scripts/checkpatch.pl |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f18750e..c062476 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3221,6 +3221,14 @@ sub process {
+ 				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
+ 			}
+ 		}
++# check for needless debugfs_remove() checks
++		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
++			my $expr = $1;
++			if ($line =~ /\bdebugfs_remove\(\Q$expr\E\);/) {
++				WARN("NEEDLESS_DEBUGFS_REMOVE",
++				     "debugfs_remove(NULL) is safe this check is probably not required\n" . $hereprev);
++			}
++		}
+ # check for needless usb_free_urb() checks
+ 		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+ 			my $expr = $1;
+-- 
+1.7.9.5
 
