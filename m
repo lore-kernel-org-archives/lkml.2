@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab2KQDsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:48:31 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27372 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab2KQDk1 (ORCPT
+	id S1754454Ab2KQDsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:48:47 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16753 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2KQDkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:27 -0500
+	Fri, 16 Nov 2012 22:40:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,13 +14,13 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 13/46] x86, mm: use pfn_range_is_mapped() with gart
-Date: Fri, 16 Nov 2012 19:38:50 -0800
-Message-Id: <1353123563-3103-14-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 12/46] x86, mm: use pfn_range_is_mapped() with CPA
+Date: Fri, 16 Nov 2012 19:38:49 -0800
+Message-Id: <1353123563-3103-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,26 +32,47 @@ Use pfn_range_is_mapped() directly.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/amd_gart_64.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/mm/pageattr.c |   16 +++-------------
+ 1 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
-index e663112..b574b29 100644
---- a/arch/x86/kernel/amd_gart_64.c
-+++ b/arch/x86/kernel/amd_gart_64.c
-@@ -768,10 +768,9 @@ int __init gart_iommu_init(void)
- 	aper_base	= info.aper_base;
- 	end_pfn		= (aper_base>>PAGE_SHIFT) + (aper_size>>PAGE_SHIFT);
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index a718e0d..44acfcd 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -551,16 +551,10 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	for (i = 0; i < PTRS_PER_PTE; i++, pfn += pfninc)
+ 		set_pte(&pbase[i], pfn_pte(pfn, ref_prot));
  
--	if (end_pfn > max_low_pfn_mapped) {
--		start_pfn = (aper_base>>PAGE_SHIFT);
-+	start_pfn = PFN_DOWN(aper_base);
-+	if (!pfn_range_is_mapped(start_pfn, end_pfn))
- 		init_memory_mapping(start_pfn<<PAGE_SHIFT, end_pfn<<PAGE_SHIFT);
--	}
+-	if (address >= (unsigned long)__va(0) &&
+-		address < (unsigned long)__va(max_low_pfn_mapped << PAGE_SHIFT))
++	if (pfn_range_is_mapped(PFN_DOWN(__pa(address)),
++				PFN_DOWN(__pa(address)) + 1))
+ 		split_page_count(level);
  
- 	pr_info("PCI-DMA: using GART IOMMU.\n");
- 	iommu_size = check_iommu_size(info.aper_base, aper_size);
+-#ifdef CONFIG_X86_64
+-	if (address >= (unsigned long)__va(1UL<<32) &&
+-		address < (unsigned long)__va(max_pfn_mapped << PAGE_SHIFT))
+-		split_page_count(level);
+-#endif
+-
+ 	/*
+ 	 * Install the new, split up pagetable.
+ 	 *
+@@ -729,13 +723,9 @@ static int cpa_process_alias(struct cpa_data *cpa)
+ 	unsigned long vaddr;
+ 	int ret;
+ 
+-	if (cpa->pfn >= max_pfn_mapped)
++	if (!pfn_range_is_mapped(cpa->pfn, cpa->pfn + 1))
+ 		return 0;
+ 
+-#ifdef CONFIG_X86_64
+-	if (cpa->pfn >= max_low_pfn_mapped && cpa->pfn < (1UL<<(32-PAGE_SHIFT)))
+-		return 0;
+-#endif
+ 	/*
+ 	 * No need to redo, when the primary call touched the direct
+ 	 * mapping already:
 -- 
 1.7.7
 
