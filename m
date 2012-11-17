@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab2KQN2L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 08:28:11 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:61274 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2KQN2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 08:28:10 -0500
-X-Nat-Received: from [202.181.97.72]:61543 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1353158866.8441
-To: dhowells@redhat.com
-Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        davej@redhat.com, linux-kernel@vger.kernel.org
-Subject: [3.7-rc6] Build failure with scripts/Makefile.headersinst
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201211172227.BHB30739.OVOMFtFLHOFSQJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 17 Nov 2012 22:27:43 +0900
+	id S1751712Ab2KQNaS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 08:30:18 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:51924 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751102Ab2KQNaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 08:30:17 -0500
+Message-ID: <1353159017.12430.21.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: debugfs_remove() can take NULL
+From: Joe Perches <joe@perches.com>
+To: Constantine Shulyupin <const@MakeLinux.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>
+Date: Sat, 17 Nov 2012 05:30:17 -0800
+In-Reply-To: <1353155581-30852-1-git-send-email-const@MakeLinux.com>
+References: <1353155581-30852-1-git-send-email-const@MakeLinux.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17112012 #8400019, status: clean
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get build error which complains that include/uapi/asm-generic/auxvec.h is
-missing although the file exists. I'm using gcc 3.3.5.
-This bug seems to not happen with gcc 4.x.
+On Sat, 2012-11-17 at 14:33 +0200, Constantine Shulyupin wrote:
+> From: Constantine Shulyupin <const@MakeLinux.com>
+> 
+> debugfs_remove() can take a NULL, so let's check and warn about that.
+> 
+> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+> ---
+>  scripts/checkpatch.pl |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index f18750e..c062476 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3221,6 +3221,14 @@ sub process {
+>  				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
+>  			}
+>  		}
+> +# check for needless debugfs_remove() checks
+> +		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+> +			my $expr = $1;
+> +			if ($line =~ /\bdebugfs_remove\(\Q$expr\E\);/) {
+> +				WARN("NEEDLESS_DEBUGFS_REMOVE",
+> +				     "debugfs_remove(NULL) is safe this check is probably not required\n" . $hereprev);
+> +			}
+> +		}
+>  # check for needless usb_free_urb() checks
+>  		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
+>  			my $expr = $1;
 
-# make
-make[1]: Nothing to be done for `all'.
-make[1]: Nothing to be done for `relocs'.
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-make[3]: `arch/x86/realmode/rm/realmode.bin' is up to date.
-  CHK     include/generated/uapi/linux/version.h
-make[2]: Nothing to be done for `all'.
-make[2]: Nothing to be done for `relocs'.
-/usr/src/all/linux/scripts/Makefile.headersinst:50: *** Missing UAPI file /usr/src/all/linux/include/uapi/asm-generic/auxvec.h.  Stop.
-make[2]: *** [asm-generic] Error 2
-make[1]: *** [headers_install] Error 2
-make: *** [vmlinux] Error 2
-# ls -l /usr/src/all/linux/include/uapi/asm-generic/auxvec.h
--rw-r--r--  1 root root 218 Oct 20 14:56 /usr/src/all/linux/include/uapi/asm-generic/auxvec.h
+Perhaps debugfs_remove_recursive should be added too.
 
-Linux 3.6 builds fine. I can't use "git bisect" until Linux 3.7-rc6 but
-possibly caused by either commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into
-the user header installation and checking" or commit 40f1d4c2 "UAPI: Remove the
-objhdr-y export list".
+Please create a consolidated block of tests for these
+checks of:
+
+	if (foo)
+		something_with(foo)
+
+and add kfree, usb_free_urb and your debugfs_remove (and
+debugfs_remove_recursive?) to that block so that the
+"if ($prevline..." test is done only once per patch line.
+
+
+
