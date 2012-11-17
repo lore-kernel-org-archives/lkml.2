@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2KQAjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:39:24 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34079 "EHLO
+	id S1753970Ab2KQAkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:40:09 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47362 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab2KQAjX (ORCPT
+	with ESMTP id S1753864Ab2KQAkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:39:23 -0500
+	Fri, 16 Nov 2012 19:40:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121117002753.GA22778@kroah.com>
-References: <20121117002016.GA13493@www.outflux.net> <20121117002753.GA22778@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sat, 17 Nov 2012 01:39:02 +0100
-Message-ID: <CAPXgP12e5LpN6XVxaXOHhH=u8XXN==2reTaJDCoCk4tP4QduDQ@mail.gmail.com>
-Subject: Re: [PATCH] devtmpfs: mount with noexec and nosuid
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        ellyjones@chromium.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <50A66726.8070804@zytor.com>
+References: <1353055989-31939-1-git-send-email-yinghai@kernel.org>
+	<50A66726.8070804@zytor.com>
+Date: Fri, 16 Nov 2012 16:40:06 -0800
+X-Google-Sender-Auth: c8Gk-TO87J2FQuWZBWAWX-vItiQ
+Message-ID: <CAE9FiQVhkUaYAp06JE1gUpgjW6KSv7+RpHH95q4OxHF5q+431w@mail.gmail.com>
+Subject: Re: [PATCH 0/9] x86, boot, 64bit: Add support for loading ramdisk and
+ bzImage high
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 1:27 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Nov 16, 2012 at 04:20:16PM -0800, Kees Cook wrote:
->> Since devtmpfs is writable, make the default noexec nosuid as well. This
->> protects from the case of a privileged process having an arbitrary file
->> write flaw and an argumentless arbitrary execution (i.e. it would lack
->> the ability to run "mount -o remount,exec,suid /dev"), with a system
->> that already has nosuid,noexec on all other writable mounts.
->>
->> Cc: ellyjones@chromium.org
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  drivers/base/devtmpfs.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> Have you tested this to verify that it doesn't break anything?
->
-> Kay, could this cause any problems that you could think of?
+On Fri, Nov 16, 2012 at 8:17 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 
-It breaks all sorts of old, possibly outdated, stuff, that does things
-like mapping /dev/mem executable. It for sure used to break X drivers,
-that fiddle with the BIOS of cards.
+> How is collecting comments and ACKs for for-x86-mm coming?  I'd like to
+> do another review pass today and putting it in -tip if it is in better
+> shape.  Otherwise I suspect we'll be looking at 3.9, which is OK, of course.
 
-Kay
+get three Acks from Stefano.
+
+Konard test -v6 and found one bug, and it is address in -v7.
+--- xen domU does not have hole under 4G when 8G ram is configured.
+
+please check updated one with acks and updated log from
+    git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
+
+Hope you can put them in tip early for more test coverage.
+
+Thanks
+
+Yinghai
