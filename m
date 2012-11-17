@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2KQDkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:40:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16736 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2KQDkT (ORCPT
+	id S1754208Ab2KQDkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:40:41 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27455 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab2KQDkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:19 -0500
+	Fri, 16 Nov 2012 22:40:39 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,58 +14,55 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 06/46] x86, mm: Change find_early_table_space() paramters
-Date: Fri, 16 Nov 2012 19:38:43 -0800
-Message-Id: <1353123563-3103-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 30/46] x86, mm: Move back pgt_buf_* to mm/init.c
+Date: Fri, 16 Nov 2012 19:39:07 -0800
+Message-Id: <1353123563-3103-31-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call split_mem_range inside the function.
+Also change them to static.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/init.h |    4 ----
+ arch/x86/mm/init.c          |    6 +++---
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 4f13998..626ea8d 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,8 +12,4 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
+ 
+-extern unsigned long __initdata pgt_buf_start;
+-extern unsigned long __meminitdata pgt_buf_end;
+-extern unsigned long __meminitdata pgt_buf_top;
+-
+ #endif /* _ASM_X86_INIT_32_H */
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index dbef4ff..51f919f 100644
+index bed4888..3cadf10 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -196,12 +196,18 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-  * pages. Then find enough contiguous space for those page tables.
-  */
--static void __init find_early_table_space(struct map_range *mr, int nr_range)
-+static void __init find_early_table_space(unsigned long start, unsigned long end)
- {
- 	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
--	unsigned long start = 0, good_end;
-+	unsigned long good_end;
- 	phys_addr_t base;
-+	struct map_range mr[NR_RANGE_MR];
-+	int nr_range;
-+
-+	memset(mr, 0, sizeof(mr));
-+	nr_range = 0;
-+	nr_range = split_mem_range(mr, nr_range, start, end);
+@@ -19,9 +19,9 @@
  
- 	for (i = 0; i < nr_range; i++) {
- 		unsigned long range, extra;
-@@ -276,7 +282,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(mr, nr_range);
-+		find_early_table_space(start, end);
+ #include "mm_internal.h"
  
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+-unsigned long __initdata pgt_buf_start;
+-unsigned long __meminitdata pgt_buf_end;
+-unsigned long __meminitdata pgt_buf_top;
++static unsigned long __initdata pgt_buf_start;
++static unsigned long __initdata pgt_buf_end;
++static unsigned long __initdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
+ 
 -- 
 1.7.7
 
