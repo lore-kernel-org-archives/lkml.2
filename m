@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab2KQDnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:43:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16892 "EHLO
+	id S1754190Ab2KQDki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:40:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16823 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab2KQDko (ORCPT
+	with ESMTP id S1754137Ab2KQDkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:44 -0500
+	Fri, 16 Nov 2012 22:40:31 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,119 +14,116 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 36/46] x86, mm: use PFN_DOWN in split_mem_range()
-Date: Fri, 16 Nov 2012 19:39:13 -0800
-Message-Id: <1353123563-3103-37-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 19/46] x86, mm: Don't clear page table if range is ram
+Date: Fri, 16 Nov 2012 19:38:56 -0800
+Message-Id: <1353123563-3103-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to replace own inline version for shifting.
+After we add code use buffer in BRK to pre-map buf for page table in
+following patch:
+	x86, mm: setup page table in top-down
+it should be safe to remove early_memmap for page table accessing.
+Instead we get panic with that.
+
+It turns out that we clear the initial page table wrongly for next range
+that is separated by holes.
+And it only happens when we are trying to map ram range one by one.
+
+We need to check if the range is ram before clearing page table.
+
+We change the loop structure to remove the extra little loop and use
+one loop only, and in that loop will caculate next at first, and check if
+[addr,next) is covered by E820_RAM.
+
+-v2: E820_RESERVED_KERN is treated as E820_RAM. EFI one change some E820_RAM
+     to that, so next kernel by kexec will know that range is used already.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   44 ++++++++++++++++++++++----------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+ arch/x86/mm/init_64.c |   40 +++++++++++++++++++---------------------
+ 1 files changed, 19 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 0e625e6..1cca052 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -208,8 +208,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 869372a..fa28e3e 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -363,20 +363,20 @@ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
+ {
+-	unsigned pages = 0;
++	unsigned long pages = 0, next;
+ 	unsigned long last_map_addr = end;
  	int i;
  
- 	/* head if not big page alignment ? */
--	start_pfn = start >> PAGE_SHIFT;
--	pos = start_pfn << PAGE_SHIFT;
-+	start_pfn = PFN_DOWN(start);
-+	pos = PFN_PHYS(start_pfn);
- #ifdef CONFIG_X86_32
- 	/*
- 	 * Don't use a large page for the first 2/4MB of memory
-@@ -218,59 +218,59 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * slowdowns.
- 	 */
- 	if (pos == 0)
--		end_pfn = PMD_SIZE >> PAGE_SHIFT;
-+		end_pfn = PFN_DOWN(PMD_SIZE);
- 	else
--		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
-+		end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
- #endif
--	if (end_pfn > (end >> PAGE_SHIFT))
--		end_pfn = end >> PAGE_SHIFT;
-+	if (end_pfn > PFN_DOWN(end))
-+		end_pfn = PFN_DOWN(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
--		pos = end_pfn << PAGE_SHIFT;
-+		pos = PFN_PHYS(end_pfn);
- 	}
+ 	pte_t *pte = pte_page + pte_index(addr);
  
- 	/* big page (2M) range */
--	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
-+	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
- #ifdef CONFIG_X86_32
--	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
--	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
--		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
-+		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #endif
+-	for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
+-
++	for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
++		next = (addr & PAGE_MASK) + PAGE_SIZE;
+ 		if (addr >= end) {
+-			if (!after_bootmem) {
+-				for(; i < PTRS_PER_PTE; i++, pte++)
+-					set_pte(pte, __pte(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RESERVED_KERN))
++				set_pte(pte, __pte(0));
++			continue;
+ 		}
  
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = end_pfn << PAGE_SHIFT;
-+		pos = PFN_PHYS(end_pfn);
- 	}
+ 		/*
+@@ -419,16 +419,15 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
  
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
--	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
-+	start_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
- 				 ((1<<PG_LEVEL_2M)|(1<<PG_LEVEL_1G)));
--		pos = end_pfn << PAGE_SHIFT;
-+		pos = PFN_PHYS(end_pfn);
- 	}
++		next = (address & PMD_MASK) + PMD_SIZE;
+ 		if (address >= end) {
+-			if (!after_bootmem) {
+-				for (; i < PTRS_PER_PMD; i++, pmd++)
+-					set_pmd(pmd, __pmd(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(address & PMD_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(address & PMD_MASK, next, E820_RESERVED_KERN))
++				set_pmd(pmd, __pmd(0));
++			continue;
+ 		}
  
- 	/* tail is not big page (1G) alignment */
--	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
--	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
-+	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = end_pfn << PAGE_SHIFT;
-+		pos = PFN_PHYS(end_pfn);
- 	}
- #endif
+-		next = (address & PMD_MASK) + PMD_SIZE;
+-
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+@@ -497,13 +496,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
  
- 	/* tail is not big page (2M) alignment */
--	start_pfn = pos>>PAGE_SHIFT;
--	end_pfn = end>>PAGE_SHIFT;
-+	start_pfn = PFN_DOWN(pos);
-+	end_pfn = PFN_DOWN(end);
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+-		if (addr >= end)
+-			break;
+-
+ 		next = (addr & PUD_MASK) + PUD_SIZE;
+-
+-		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
+-			set_pud(pud, __pud(0));
++		if (addr >= end) {
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PUD_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(addr & PUD_MASK, next, E820_RESERVED_KERN))
++				set_pud(pud, __pud(0));
+ 			continue;
+ 		}
  
- 	/* try to merge same page size and continuous */
 -- 
 1.7.7
 
