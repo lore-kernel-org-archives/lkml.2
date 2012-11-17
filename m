@@ -1,223 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab2KQA1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:27:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37688 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2KQA1h (ORCPT
+	id S1753917Ab2KQA16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:27:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43559 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab2KQA15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:27:37 -0500
-Date: Fri, 16 Nov 2012 16:26:54 -0800
-From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
-Message-ID: <tip-132bc57b030fcdc0968e7cd217e3063f64ec5dce@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20121116215640.8521.80483.stgit@ahduyck-cp1.jf.intel.com>
-References: <20121116215640.8521.80483.stgit@ahduyck-cp1.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86:
-  Use __pa_symbol instead of __pa on C visible symbols
-Git-Commit-ID: 132bc57b030fcdc0968e7cd217e3063f64ec5dce
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Nov 2012 19:27:57 -0500
+Date: Fri, 16 Nov 2012 16:27:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>, Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, ellyjones@chromium.org
+Subject: Re: [PATCH] devtmpfs: mount with noexec and nosuid
+Message-ID: <20121117002753.GA22778@kroah.com>
+References: <20121117002016.GA13493@www.outflux.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:27:30 -0800 (PST)
+In-Reply-To: <20121117002016.GA13493@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  132bc57b030fcdc0968e7cd217e3063f64ec5dce
-Gitweb:     http://git.kernel.org/tip/132bc57b030fcdc0968e7cd217e3063f64ec5dce
-Author:     Alexander Duyck <alexander.h.duyck@intel.com>
-AuthorDate: Fri, 16 Nov 2012 13:57:13 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 16 Nov 2012 15:20:42 -0800
+On Fri, Nov 16, 2012 at 04:20:16PM -0800, Kees Cook wrote:
+> Since devtmpfs is writable, make the default noexec nosuid as well. This
+> protects from the case of a privileged process having an arbitrary file
+> write flaw and an argumentless arbitrary execution (i.e. it would lack
+> the ability to run "mount -o remount,exec,suid /dev"), with a system
+> that already has nosuid,noexec on all other writable mounts.
+> 
+> Cc: ellyjones@chromium.org
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/base/devtmpfs.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 
-x86: Use __pa_symbol instead of __pa on C visible symbols
+Have you tested this to verify that it doesn't break anything?
 
-When I made an attempt at separating __pa_symbol and __pa I found that there
-were a number of cases where __pa was used on an obvious symbol.
+Kay, could this cause any problems that you could think of?
 
-I also caught one non-obvious case as _brk_start and _brk_end are based on the
-address of __brk_base which is a C visible symbol.
+thanks,
 
-In mark_rodata_ro I was able to reduce the overhead of kernel symbol to
-virtual memory translation by using a combination of __va(__pa_symbol())
-instead of page_address(virt_to_page()).
+greg k-h
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Link: http://lkml.kernel.org/r/20121116215640.8521.80483.stgit@ahduyck-cp1.jf.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/intel.c |  2 +-
- arch/x86/kernel/setup.c     | 16 ++++++++--------
- arch/x86/mm/init_64.c       | 18 ++++++++----------
- arch/x86/mm/pageattr.c      |  8 ++++----
- arch/x86/platform/efi/efi.c |  4 ++--
- arch/x86/realmode/init.c    |  8 ++++----
- 6 files changed, 27 insertions(+), 29 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 198e019..2249e7e 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -168,7 +168,7 @@ int __cpuinit ppro_with_ram_bug(void)
- #ifdef CONFIG_X86_F00F_BUG
- static void __cpuinit trap_init_f00f_bug(void)
- {
--	__set_fixmap(FIX_F00F_IDT, __pa(&idt_table), PAGE_KERNEL_RO);
-+	__set_fixmap(FIX_F00F_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
- 
- 	/*
- 	 * Update the IDT descriptor and reload the IDT so that
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ca45696..2702c5d 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -300,8 +300,8 @@ static void __init cleanup_highmap(void)
- static void __init reserve_brk(void)
- {
- 	if (_brk_end > _brk_start)
--		memblock_reserve(__pa(_brk_start),
--				 __pa(_brk_end) - __pa(_brk_start));
-+		memblock_reserve(__pa_symbol(_brk_start),
-+				 _brk_end - _brk_start);
- 
- 	/* Mark brk area as locked down and no longer taking any
- 	   new allocations */
-@@ -761,12 +761,12 @@ void __init setup_arch(char **cmdline_p)
- 	init_mm.end_data = (unsigned long) _edata;
- 	init_mm.brk = _brk_end;
- 
--	code_resource.start = virt_to_phys(_text);
--	code_resource.end = virt_to_phys(_etext)-1;
--	data_resource.start = virt_to_phys(_etext);
--	data_resource.end = virt_to_phys(_edata)-1;
--	bss_resource.start = virt_to_phys(&__bss_start);
--	bss_resource.end = virt_to_phys(&__bss_stop)-1;
-+	code_resource.start = __pa_symbol(_text);
-+	code_resource.end = __pa_symbol(_etext)-1;
-+	data_resource.start = __pa_symbol(_etext);
-+	data_resource.end = __pa_symbol(_edata)-1;
-+	bss_resource.start = __pa_symbol(__bss_start);
-+	bss_resource.end = __pa_symbol(__bss_stop)-1;
- 
- #ifdef CONFIG_CMDLINE_BOOL
- #ifdef CONFIG_CMDLINE_OVERRIDE
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 3baff25..0374a10 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -770,12 +770,10 @@ void set_kernel_text_ro(void)
- void mark_rodata_ro(void)
- {
- 	unsigned long start = PFN_ALIGN(_text);
--	unsigned long rodata_start =
--		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
-+	unsigned long rodata_start = PFN_ALIGN(__start_rodata);
- 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
--	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
--	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
--	unsigned long data_start = (unsigned long) &_sdata;
-+	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
-+	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
- 
- 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
- 	       (end - start) >> 10);
-@@ -800,12 +798,12 @@ void mark_rodata_ro(void)
- #endif
- 
- 	free_init_pages("unused kernel memory",
--			(unsigned long) page_address(virt_to_page(text_end)),
--			(unsigned long)
--				 page_address(virt_to_page(rodata_start)));
-+			(unsigned long) __va(__pa_symbol(text_end)),
-+			(unsigned long) __va(__pa_symbol(rodata_start)));
-+
- 	free_init_pages("unused kernel memory",
--			(unsigned long) page_address(virt_to_page(rodata_end)),
--			(unsigned long) page_address(virt_to_page(data_start)));
-+			(unsigned long) __va(__pa_symbol(rodata_end)),
-+			(unsigned long) __va(__pa_symbol(_sdata)));
- }
- 
- #endif
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index a718e0d..40f92f3 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -94,12 +94,12 @@ static inline void split_page_count(int level) { }
- 
- static inline unsigned long highmap_start_pfn(void)
- {
--	return __pa(_text) >> PAGE_SHIFT;
-+	return __pa_symbol(_text) >> PAGE_SHIFT;
- }
- 
- static inline unsigned long highmap_end_pfn(void)
- {
--	return __pa(roundup(_brk_end, PMD_SIZE)) >> PAGE_SHIFT;
-+	return __pa_symbol(roundup(_brk_end, PMD_SIZE)) >> PAGE_SHIFT;
- }
- 
- #endif
-@@ -276,8 +276,8 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	 * The .rodata section needs to be read-only. Using the pfn
- 	 * catches all aliases.
- 	 */
--	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
--		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
-+	if (within(pfn, __pa_symbol(__start_rodata) >> PAGE_SHIFT,
-+		   __pa_symbol(__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index ad44391..1b60026 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -410,8 +410,8 @@ void __init efi_reserve_boot_services(void)
- 		 * - Not within any part of the kernel
- 		 * - Not the bios reserved area
- 		*/
--		if ((start+size >= virt_to_phys(_text)
--				&& start <= virt_to_phys(_end)) ||
-+		if ((start+size >= __pa_symbol(_text)
-+				&& start <= __pa_symbol(_end)) ||
- 			!e820_all_mapped(start, start+size, E820_RAM) ||
- 			memblock_is_region_reserved(start, size)) {
- 			/* Could not reserve, skip it */
-diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
-index cbca565..8045026 100644
---- a/arch/x86/realmode/init.c
-+++ b/arch/x86/realmode/init.c
-@@ -62,9 +62,9 @@ void __init setup_real_mode(void)
- 		__va(real_mode_header->trampoline_header);
- 
- #ifdef CONFIG_X86_32
--	trampoline_header->start = __pa(startup_32_smp);
-+	trampoline_header->start = __pa_symbol(startup_32_smp);
- 	trampoline_header->gdt_limit = __BOOT_DS + 7;
--	trampoline_header->gdt_base = __pa(boot_gdt);
-+	trampoline_header->gdt_base = __pa_symbol(boot_gdt);
- #else
- 	/*
- 	 * Some AMD processors will #GP(0) if EFER.LMA is set in WRMSR
-@@ -78,8 +78,8 @@ void __init setup_real_mode(void)
- 	*trampoline_cr4_features = read_cr4();
- 
- 	trampoline_pgd = (u64 *) __va(real_mode_header->trampoline_pgd);
--	trampoline_pgd[0] = __pa(level3_ident_pgt) + _KERNPG_TABLE;
--	trampoline_pgd[511] = __pa(level3_kernel_pgt) + _KERNPG_TABLE;
-+	trampoline_pgd[0] = __pa_symbol(level3_ident_pgt) + _KERNPG_TABLE;
-+	trampoline_pgd[511] = __pa_symbol(level3_kernel_pgt) + _KERNPG_TABLE;
- #endif
- }
- 
+> 
+> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+> index 147d1a4..b7e2e57 100644
+> --- a/drivers/base/devtmpfs.c
+> +++ b/drivers/base/devtmpfs.c
+> @@ -340,6 +340,7 @@ static int handle_remove(const char *nodename, struct device *dev)
+>  int devtmpfs_mount(const char *mntdir)
+>  {
+>  	int err;
+> +	int mflags = MS_SILENT | MS_NOEXEC | MS_NOSUID;
+>  
+>  	if (!mount_dev)
+>  		return 0;
+> @@ -347,7 +348,7 @@ int devtmpfs_mount(const char *mntdir)
+>  	if (!thread)
+>  		return 0;
+>  
+> -	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
+> +	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", mflags, NULL);
+>  	if (err)
+>  		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
+>  	else
+> @@ -368,11 +369,12 @@ static int handle(const char *name, umode_t mode, struct device *dev)
+>  static int devtmpfsd(void *p)
+>  {
+>  	char options[] = "mode=0755";
+> +	int mflags = MS_SILENT | MS_NOEXEC | MS_NOSUID;
+>  	int *err = p;
+>  	*err = sys_unshare(CLONE_NEWNS);
+>  	if (*err)
+>  		goto out;
+> -	*err = sys_mount("devtmpfs", "/", "devtmpfs", MS_SILENT, options);
+> +	*err = sys_mount("devtmpfs", "/", "devtmpfs", mflags, options);
+>  	if (*err)
+>  		goto out;
+>  	sys_chdir("/.."); /* will traverse into overmounted root */
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
