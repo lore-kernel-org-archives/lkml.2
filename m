@@ -1,162 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab2KQDkB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:40:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36834 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab2KQDkA (ORCPT
+	id S1753989Ab2KQD76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:59:58 -0500
+Received: from [12.239.217.82] ([12.239.217.82]:30743 "EHLO
+	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753904Ab2KQD74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:00 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 01/46] x86, mm: Add global page_size_mask and probe one time only
-Date: Fri, 16 Nov 2012 19:38:38 -0800
-Message-Id: <1353123563-3103-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 16 Nov 2012 22:59:56 -0500
+From: Christopher Heiny <cheiny@synaptics.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Christopher Heiny <cheiny@synaptics.com>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: [RFC PATCH 00/06] input: Synaptics RMI4 Touchscreen Driver
+Date: Fri, 16 Nov 2012 19:58:48 -0800
+Message-Id: <1353124734-16803-1-git-send-email-cheiny@synaptics.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we pass around use_gbpages and use_pse for calculating page table size,
-Later we will need to call init_memory_mapping for every ram range one by one,
-that mean those calculation will be done several times.
+This patch implements a driver supporting Synaptics ClearPad and other
+touchscreen sensors that use the RMI4 protocol, as defined here:
 
-Those information are the same for all ram range and could be stored in
-page_size_mask and could be probed it one time only.
+    http://www.synaptics.com/sites/default/files/511-000136-01-Rev-E-RMI4%20Intrfacing%20Guide.pdf
 
-Move that probing code out of init_memory_mapping into separated function
-probe_page_size_mask(), and call it before all init_memory_mapping.
+as well as successor documents that haven't made their way through to
+publication yet.
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+This code supersedes the patch submitted on 2012-10-05.  For all files
+included in this patch, we believe that all outstanding issues arising
+from the previous submissions have been addressed, except as follows:
+
+* we've investigated using irq_chip to manage chip interrupt dispatch, and
+that certainly is a good idea.  However, we need to support kernels back to
+3.0.x, and the required functionality is not yet present in those older kernels.
+Once we no longer need to support 3.0.x, we'll jump onto irq_chip right
+away.
+
+* some of the requested changes to rmi_f11.c are simply not possible while
+still retaining general driver functionality.  We've clarified existing comments
+and added new ones to explain why that is the case.
+
+
+This patch is against the v3.7-rc5 tag of Linus' kernel tree, object
+77b67063bb6bce6d475e910d3b886a606d0d91f7.  It should work fine with that kernel,
+but will not work with earlier kernels due to changes in the input subsystem.
+
+
+
+Included in this patch are:
+    - full support for an RMI virtual bus as a standard kernel bus
+
+    - physical layer implementation for I2C
+
+    - device driver for general RMI4 sensor functionality
+
+    - function implementations for the following RMI4 functions:
+        * F01 device control
+        * F11 multifinger pointing
+
+The driver supports a system having one or more RMI sensors attached to it.
+Most devices have just a single touch sensor, but some have more than one.
+An example is the Fuse concept phone, which has 4 RMI sensors in it.
+
+Each sensor is presented as a device on the RMI logical bus (/sys/bus/rmi).
+Devices are named/numbered in the order they are discovered on the bus,
+starting with /sys/bus/rmi/devices/sensor00 for the first once, .../sensor01
+for the second one, and so on.
+
+Individual RMI functions are presented as child devices of the sensor device.
+For example, sensor00.fn01, sensor00.fn11, and so on.  Control of an RMI
+function's operating parameters is implemented via sysfs or debugfs (depending
+on whether the parameters are used during normal operation or system
+development/prototyping).
+
+
+
+The amount of feedback received on previous patches precludes addressing each
+item individually.  However, major changes for this patch are:
+    - elimination of sysfs management macros
+    - elimination of roll-your-own bitmask management
+    - moved potentially large arrays and structs from the stack to the heap
+    - elimination of the union/struct idiom for mapping register groups
+    - corrected identification of input devices, including adding a BUS_RMI
+      bus type.
+
+
+We've broken this patch into 6 parts, as follows:
+    01 - public header files and documentation
+    02 - core sensor and bus implementation
+    03 - I2C physical layer driver
+    04 - Kconfigs and Makefiles
+    05..06 - drivers for individual RMI functions
+
+
+Comments and other feedback on this driver are welcomed.
+
+Christopher Heiny and the Synaptics RMI4 driver team
+
+Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Cc: Joeri de Gram <j.de.gram@gmail.com>
+
 ---
- arch/x86/include/asm/pgtable.h |    1 +
- arch/x86/kernel/setup.c        |    1 +
- arch/x86/mm/init.c             |   55 ++++++++++++++++++---------------------
- 3 files changed, 27 insertions(+), 30 deletions(-)
-
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a1f780d..98ac76d 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -602,6 +602,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
-+void probe_page_size_mask(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ca45696..01fb5f9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -913,6 +913,7 @@ void __init setup_arch(char **cmdline_p)
- 	setup_real_mode();
- 
- 	init_gbpages();
-+	probe_page_size_mask();
- 
- 	/* max_pfn_mapped is updated here */
- 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index d7aea41..aa5b0da 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -35,6 +35,7 @@ struct map_range {
- 	unsigned page_size_mask;
- };
- 
-+static int page_size_mask;
- /*
-  * First calculate space needed for kernel direct mapping page tables to cover
-  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-@@ -94,6 +95,30 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- }
- 
-+void probe_page_size_mask(void)
-+{
-+#if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
-+	/*
-+	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
-+	 * This will simplify cpa(), which otherwise needs to support splitting
-+	 * large pages into small in interrupt context, etc.
-+	 */
-+	if (direct_gbpages)
-+		page_size_mask |= 1 << PG_LEVEL_1G;
-+	if (cpu_has_pse)
-+		page_size_mask |= 1 << PG_LEVEL_2M;
-+#endif
-+
-+	/* Enable PSE if available */
-+	if (cpu_has_pse)
-+		set_in_cr4(X86_CR4_PSE);
-+
-+	/* Enable PGE if available */
-+	if (cpu_has_pge) {
-+		set_in_cr4(X86_CR4_PGE);
-+		__supported_pte_mask |= _PAGE_GLOBAL;
-+	}
-+}
- void __init native_pagetable_reserve(u64 start, u64 end)
- {
- 	memblock_reserve(start, end - start);
-@@ -129,45 +154,15 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
- unsigned long __init_refok init_memory_mapping(unsigned long start,
- 					       unsigned long end)
- {
--	unsigned long page_size_mask = 0;
- 	unsigned long start_pfn, end_pfn;
- 	unsigned long ret = 0;
- 	unsigned long pos;
--
- 	struct map_range mr[NR_RANGE_MR];
- 	int nr_range, i;
--	int use_pse, use_gbpages;
- 
- 	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
- 	       start, end - 1);
- 
--#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
--	/*
--	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
--	 * This will simplify cpa(), which otherwise needs to support splitting
--	 * large pages into small in interrupt context, etc.
--	 */
--	use_pse = use_gbpages = 0;
--#else
--	use_pse = cpu_has_pse;
--	use_gbpages = direct_gbpages;
--#endif
--
--	/* Enable PSE if available */
--	if (cpu_has_pse)
--		set_in_cr4(X86_CR4_PSE);
--
--	/* Enable PGE if available */
--	if (cpu_has_pge) {
--		set_in_cr4(X86_CR4_PGE);
--		__supported_pte_mask |= _PAGE_GLOBAL;
--	}
--
--	if (use_gbpages)
--		page_size_mask |= 1 << PG_LEVEL_1G;
--	if (use_pse)
--		page_size_mask |= 1 << PG_LEVEL_2M;
--
- 	memset(mr, 0, sizeof(mr));
- 	nr_range = 0;
- 
--- 
-1.7.7
-
