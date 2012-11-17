@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab2KQEst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 23:48:49 -0500
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43341 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab2KQEsr (ORCPT
+	id S1752494Ab2KQFC6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 00:02:58 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62520 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab2KQFC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 23:48:47 -0500
-Date: Fri, 16 Nov 2012 20:48:46 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-In-Reply-To: <50A6089B.7010708@gmail.com>
-Message-ID: <alpine.LNX.2.00.1211162018010.1164@eggly.anvils>
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
- <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com>
- <alpine.LNX.2.00.1211131935410.30540@eggly.anvils> <50A49C46.9040406@gmail.com> <alpine.LNX.2.00.1211151126440.9273@eggly.anvils> <50A6089B.7010708@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 17 Nov 2012 00:02:56 -0500
+Message-ID: <50A71A74.7040706@vlnb.net>
+Date: Sat, 17 Nov 2012 00:02:44 -0500
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Richard Hipp <drh@hwaci.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org> <508B3EED.2080003@vlnb.net> <20121027044456.GA2764@thunk.org> <5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk> <5092D90F.7020105@vlnb.net> <20121101212418.140e3a82@pyramind.ukuu.org.uk> <50931601.4060102@symas.com> <20121102123359.2479a7dc@pyramind.ukuu.org.uk> <50A1C15E.2080605@vlnb.net> <20121113174000.6457a68b@pyramind.ukuu.org.uk> <CAK3OfOgK7a9+g-KU8v5-b2d+8-vLb75kuKKQnPK-zeFV1fLmxw@mail.gmail.com> <50A442AF.9020407@vlnb.net> <alpine.DEB.2.02.1211150353080.32408@nftneq.ynat.uz> <CABK4GYNGrbes2Yhig4ioh-37OXg6iy6gqb3u8A2P2_dqNpMqoQ@mail.gmail.com>
+In-Reply-To: <CABK4GYNGrbes2Yhig4ioh-37OXg6iy6gqb3u8A2P2_dqNpMqoQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:VjjA/PgoHtzuYldPFVfFuBjAvGEE5HAB03y7kLj557P
+ 7F0QNEqi8gct93DFADNMWpxbHiT9Npaptc9AB1WemM9eN1RIxM
+ ue5tPlcBJIlUD09tG5C6B0P4bP+JokeGW8EeecE7nmfc/crENP
+ Xx64lpBMj6ZGi2IpniEUfFSY57JtY5BweHkpTTOz5CQsgP/6sF
+ UECfofvRQT5GCUAKLRCyRwDg7tcElcmLUtkuVSIveHe0YTC7O3
+ onOr7qScavwSy9RhcVsud/Hh3MKMpyTi5Bicsg4QYsuUO0Hx27
+ KiN+2Fg2eWk21L4YjpQtxPk14yzug/VXrlSiTAvFg7V781lFkt
+ UP/xDi8iFjKjNSsUEefM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further offtopic..
+杨苏立 Yang Su Li, on 11/15/2012 11:14 AM wrote:
+> 1. fsync actually does two things at the same time: ordering writes (in a
+> barrier-like manner), and forcing cached writes to disk. This makes it very
+> difficult to implement fsync efficiently.
 
-On Fri, 16 Nov 2012, Jaegeuk Hanse wrote:
-> Some questions about your shmem/tmpfs: misc and fallocate patchset.
-> 
-> - Since shmem_setattr can truncate tmpfs files, why need add another similar
-> codes in function shmem_fallocate? What's the trick?
+Exactly!
 
-I don't know if I understand you.  In general, hole-punching is different
-from truncation.  Supporting the hole-punch mode of the fallocate system
-call is different from supporting truncation.  They're closely related,
-and share code, but meet different specifications.
+> However, logically they are two distinctive functionalities
 
-> - in tmpfs: support fallocate preallocation patch changelog:
->   "Christoph Hellwig: What for exactly?  Please explain why preallocating on
-> tmpfs would make any sense.
->   Kay Sievers: To be able to safely use mmap(), regarding SIGBUS, on files on
-> the /dev/shm filesystem.  The glibc fallback loop for -ENOSYS [or
-> -EOPNOTSUPP] on fallocate is just ugly."
->   Could shmem/tmpfs fallocate prevent one process truncate the file which the
-> second process mmap() and get SIGBUS when the second process access mmap but
-> out of current size of file?
+Exactly!
 
-Again, I don't know if I understand you.  fallocate does not prevent
-truncation or races or SIGBUS.  I believe that Kay meant that without
-using fallocate to allocate the memory in advance, systemd found it hard
-to protect itself from the possibility of getting a SIGBUS, if access to
-a shmem mapping happened to run out of memory/space in the middle.
+Those two points are exactly why concept of barriers must be forgotten for sake of 
+productivity and be replaced by a finer grained abstractions as well as why they 
+where removed from the Linux kernel
 
-I never grasped why writing the file in advance was not good enough:
-fallocate happened to be what they hoped to use, and it was hard to
-deny it, given that tmpfs already supported hole-punching, and was
-about to convert to the fallocate interface for that.
-
-Hugh
+Vlad
