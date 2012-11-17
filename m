@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2KQDop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:44:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27450 "EHLO
+	id S1754271Ab2KQDpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:45:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27445 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab2KQDki (ORCPT
+	with ESMTP id S1754178Ab2KQDki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Nov 2012 22:40:38 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 27/46] x86, mm: Add alloc_low_pages(num)
-Date: Fri, 16 Nov 2012 19:39:04 -0800
-Message-Id: <1353123563-3103-28-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 31/46] x86, mm: Move init_gbpages() out of setup.c
+Date: Fri, 16 Nov 2012 19:39:08 -0800
+Message-Id: <1353123563-3103-32-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
@@ -25,106 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-32bit kmap mapping needs pages to be used for low to high.
-At this point those pages are still from pgt_buf_* from BRK, so it is
-ok now.
-But we want to move early_ioremap_page_table_range_init() out of
-init_memory_mapping() and only call it one time later, that will
-make page_table_range_init/page_table_kmap_check/alloc_low_page to
-use memblock to get page.
-
-memblock allocation for pages are from high to low.
-So will get panic from page_table_kmap_check() that has BUG_ON to do
-ordering checking.
-
-This patch add alloc_low_pages to make it possible to allocate serveral
-pages at first, and hand out pages one by one from low to high.
+Put it in mm/init.c, and call it from probe_page_mask().
+init_mem_mapping is calling probe_page_mask at first.
+So calling sequence is not changed.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/mm/init.c        |   33 +++++++++++++++++++++------------
- arch/x86/mm/mm_internal.h |    6 +++++-
- 2 files changed, 26 insertions(+), 13 deletions(-)
+ arch/x86/kernel/setup.c |   15 +--------------
+ arch/x86/mm/init.c      |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 21173fc..02cea14 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
- 
- static unsigned long min_pfn_mapped;
- 
--__ref void *alloc_low_page(void)
-+__ref void *alloc_low_pages(unsigned int num)
- {
- 	unsigned long pfn;
--	void *adr;
-+	int i;
- 
- #ifdef CONFIG_X86_64
- 	if (after_bootmem) {
--		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-+		unsigned int order;
- 
--		return adr;
-+		order = get_order((unsigned long)num << PAGE_SHIFT);
-+		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
-+						__GFP_ZERO, order);
- 	}
- #endif
- 
--	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-+	if ((pgt_buf_end + num) >= pgt_buf_top) {
- 		unsigned long ret;
- 		if (min_pfn_mapped >= max_pfn_mapped)
- 			panic("alloc_low_page: ran out of memory");
- 		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
- 					max_pfn_mapped << PAGE_SHIFT,
--					PAGE_SIZE, PAGE_SIZE);
-+					PAGE_SIZE * num , PAGE_SIZE);
- 		if (!ret)
- 			panic("alloc_low_page: can not alloc memory");
--		memblock_reserve(ret, PAGE_SIZE);
-+		memblock_reserve(ret, PAGE_SIZE * num);
- 		pfn = ret >> PAGE_SHIFT;
--	} else
--		pfn = pgt_buf_end++;
-+	} else {
-+		pfn = pgt_buf_end;
-+		pgt_buf_end += num;
-+	}
-+
-+	for (i = 0; i < num; i++) {
-+		void *adr;
-+
-+		adr = __va((pfn + i) << PAGE_SHIFT);
-+		clear_page(adr);
-+	}
- 
--	adr = __va(pfn * PAGE_SIZE);
--	clear_page(adr);
--	return adr;
-+	return __va(pfn << PAGE_SHIFT);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 2015194..85b62f1 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -282,18 +282,7 @@ void * __init extend_brk(size_t size, size_t align)
+ 	return ret;
  }
  
- /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-index b3f993a..7e3b88e 100644
---- a/arch/x86/mm/mm_internal.h
-+++ b/arch/x86/mm/mm_internal.h
-@@ -1,6 +1,10 @@
- #ifndef __X86_MM_INTERNAL_H
- #define __X86_MM_INTERNAL_H
+-#ifdef CONFIG_X86_64
+-static void __init init_gbpages(void)
+-{
+-	if (direct_gbpages && cpu_has_gbpages)
+-		printk(KERN_INFO "Using GB pages for direct mapping\n");
+-	else
+-		direct_gbpages = 0;
+-}
+-#else
+-static inline void init_gbpages(void)
+-{
+-}
++#ifdef CONFIG_X86_32
+ static void __init cleanup_highmap(void)
+ {
+ }
+@@ -933,8 +922,6 @@ void __init setup_arch(char **cmdline_p)
  
--void *alloc_low_page(void);
-+void *alloc_low_pages(unsigned int num);
-+static inline void *alloc_low_page(void)
+ 	setup_real_mode();
+ 
+-	init_gbpages();
+-
+ 	init_mem_mapping();
+ 
+ 	memblock.current_limit = get_max_mapped();
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 3cadf10..8168bf8 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -98,6 +98,16 @@ int direct_gbpages
+ #endif
+ ;
+ 
++static void __init init_gbpages(void)
 +{
-+	return alloc_low_pages(1);
++#ifdef CONFIG_X86_64
++	if (direct_gbpages && cpu_has_gbpages)
++		printk(KERN_INFO "Using GB pages for direct mapping\n");
++	else
++		direct_gbpages = 0;
++#endif
 +}
++
+ struct map_range {
+ 	unsigned long start;
+ 	unsigned long end;
+@@ -108,6 +118,8 @@ static int page_size_mask;
  
- #endif	/* __X86_MM_INTERNAL_H */
+ static void __init probe_page_size_mask(void)
+ {
++	init_gbpages();
++
+ #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
+ 	/*
+ 	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
 -- 
 1.7.7
 
