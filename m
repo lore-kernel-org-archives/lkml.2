@@ -1,69 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab2KQAu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 19:50:56 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40454 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753864Ab2KQAuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 19:50:55 -0500
-Message-ID: <1353113454.2512.21.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: add double empty line check
-From: Joe Perches <joe@perches.com>
-To: eilong@broadcom.com
-Cc: David Rientjes <rientjes@google.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Fri, 16 Nov 2012 16:50:54 -0800
-In-Reply-To: <1353096274.14327.9.camel@lb-tlvb-eilong.il.broadcom.com>
-References: <1353094919.14327.4.camel@lb-tlvb-eilong.il.broadcom.com>
-	 <alpine.DEB.2.00.1211161154280.2788@chino.kir.corp.google.com>
-	 <1353096274.14327.9.camel@lb-tlvb-eilong.il.broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754008Ab2KQAvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 19:51:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37876 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab2KQAvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Nov 2012 19:51:16 -0500
+Date: Fri, 16 Nov 2012 16:50:39 -0800
+From: tip-bot for Alexander Duyck <alexander.h.duyck@intel.com>
+Message-ID: <tip-0bdf525f04afd3a32c14e5a8778771f9c9e0f074@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        alexander.h.duyck@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com>
+References: <20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86:
+  Improve __phys_addr performance by making use of carry flags and inlining
+Git-Commit-ID: 0bdf525f04afd3a32c14e5a8778771f9c9e0f074
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Nov 2012 16:51:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-16 at 22:04 +0200, Eilon Greenstein wrote:
-> On Fri, 2012-11-16 at 11:55 -0800, David Rientjes wrote:
-> > On Fri, 16 Nov 2012, Eilon Greenstein wrote:
-> > 
-> > > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > > index 21a9f5d..7a9c153 100755
-> > > --- a/scripts/checkpatch.pl
-> > > +++ b/scripts/checkpatch.pl
-> > > @@ -3579,6 +3579,13 @@ sub process {
-> > >  			WARN("EXPORTED_WORLD_WRITABLE",
-> > >  			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
-> > >  		}
-> > > +
-> > > +# check for double empty lines
-> > > +		if ($line =~ /^\+\s*$/ &&
-> > > +		    ($prevline =~ /^\+?\s*$/ || $rawlines[$linenr] =~ /^\s*$/)) {
-> > > +			WARN("DOUBLE_EMPTY_LINE",
-> > > +			     "One empty line should be sufficient. Consider removing this one.\n" . $herecurr);
-> > > +		}
-> > >  	}
-> > >  
-> > >  	# If we have no input at all, then there is nothing to report on
-> > 
-> > This is fairly common in all the acpi code where variables declared in a 
-> > function are separated from the code in a function.
-> > 
-> 
-> Indeed, I see that you do use it in some functions.
-> 
-> Maybe we can limit it only to the networking tree (similar to the
-> networking comments style) or if the ACPI is the exception, we can apply
-> to all but ACPI.
+Commit-ID:  0bdf525f04afd3a32c14e5a8778771f9c9e0f074
+Gitweb:     http://git.kernel.org/tip/0bdf525f04afd3a32c14e5a8778771f9c9e0f074
+Author:     Alexander Duyck <alexander.h.duyck@intel.com>
+AuthorDate: Fri, 16 Nov 2012 13:53:51 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 16 Nov 2012 16:42:08 -0800
 
-I'm not sure this should be done.
-Double line spacing has some utility and
-is pretty common.
+x86: Improve __phys_addr performance by making use of carry flags and inlining
 
-Perhaps make this a --strict/CHK option
-and also perhaps make sure this isn't
-emitted on consecutive lines.
+This patch is meant to improve overall system performance when making use of
+the __phys_addr call.  To do this I have implemented several changes.
 
+First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
+similar to how this is currently handled in 32 bit.  However in order to do
+this it is required to export phys_base so that it is available if __phys_addr
+is used in kernel modules.
 
+The second change was to streamline the code by making use of the carry flag
+on an add operation instead of performing a compare on a 64 bit value.  The
+advantage to this is that it allows us to significantly reduce the overall
+size of the call.  On my Xeon E5 system the entire __phys_addr inline call
+consumes a little less than 32 bytes and 5 instructions.  I also applied
+similar logic to the debug version of the function.  My testing shows that the
+debug version of the function with this patch applied is slightly faster than
+the non-debug version without the patch.
+
+Finally I also applied the same logic changes to __virt_addr_valid since it
+used the same general code flow as __phys_addr and could achieve similar gains
+though these changes.
+
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Link: http://lkml.kernel.org/r/20121116215315.8521.46270.stgit@ahduyck-cp1.jf.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/page_64.h   | 14 ++++++++++++++
+ arch/x86/kernel/x8664_ksyms_64.c |  3 +++
+ arch/x86/mm/physaddr.c           | 40 +++++++++++++++++++++++++---------------
+ 3 files changed, 42 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
+index 4150999..5138174 100644
+--- a/arch/x86/include/asm/page_64.h
++++ b/arch/x86/include/asm/page_64.h
+@@ -9,7 +9,21 @@
+ extern unsigned long max_pfn;
+ extern unsigned long phys_base;
+ 
++static inline unsigned long __phys_addr_nodebug(unsigned long x)
++{
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
++
++	return x;
++}
++
++#ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
++#else
++#define __phys_addr(x)		__phys_addr_nodebug(x)
++#endif
+ 
+ #define __phys_reloc_hide(x)	(x)
+ 
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 1330dd1..b014d94 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ EXPORT_SYMBOL(memmove);
+ 
++#ifndef CONFIG_DEBUG_VIRTUAL
++EXPORT_SYMBOL(phys_base);
++#endif
+ EXPORT_SYMBOL(empty_zero_page);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
+index d2e2735..fd40d75 100644
+--- a/arch/x86/mm/physaddr.c
++++ b/arch/x86/mm/physaddr.c
+@@ -8,33 +8,43 @@
+ 
+ #ifdef CONFIG_X86_64
+ 
++#ifdef CONFIG_DEBUG_VIRTUAL
+ unsigned long __phys_addr(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
+-		x += phys_base;
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
+ 	} else {
+-		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
+-		x -= PAGE_OFFSET;
+-		VIRTUAL_BUG_ON(!phys_addr_valid(x));
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
+ 	}
++
+ 	return x;
+ }
+ EXPORT_SYMBOL(__phys_addr);
++#endif
+ 
+ bool __virt_addr_valid(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		if (x >= KERNEL_IMAGE_SIZE)
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		if (y >= KERNEL_IMAGE_SIZE)
+ 			return false;
+-		x += phys_base;
+ 	} else {
+-		if (x < PAGE_OFFSET)
+-			return false;
+-		x -= PAGE_OFFSET;
+-		if (!phys_addr_valid(x))
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		if ((x > y) || !phys_addr_valid(x))
+ 			return false;
+ 	}
+ 
