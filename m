@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab2KQOcb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 09:32:31 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:49854 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751868Ab2KQOca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 09:32:30 -0500
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Andy Whitcroft <apw@canonical.com>, joe@perches.com
-Cc: Constantine Shulyupin <const@MakeLinux.com>
-Subject: 
-Date: Sat, 17 Nov 2012 16:32:24 +0200
-Message-Id: <1353162744-489-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.126.70.233 authed with poster@makelinux.net}
+	id S1751897Ab2KQOe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 09:34:58 -0500
+Received: from void.printf.net ([89.145.121.20]:39345 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585Ab2KQOe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 09:34:57 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Trey Ramsay <tramsay@linux.vnet.ibm.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        Rich Rattanni <rattanni@gmail.com>,
+        Radovan Lekanovic <lekanovic@gmail.com>
+Subject: Re: [PATCH 1/1] mmc: Bad device can cause mmc driver to hang
+References: <87k3tpkz53.fsf@octavius.laptop.org>
+	<1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com>
+Date: Sat, 17 Nov 2012 09:34:50 -0500
+In-Reply-To: <1353079901-8773-1-git-send-email-tramsay@linux.vnet.ibm.com>
+	(Trey Ramsay's message of "Fri, 16 Nov 2012 09:31:41 -0600")
+Message-ID: <87ehjs9u2d.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 21f1095ce30b21f1729c64eb26b7921bbb3bcc8d Mon Sep 17 00:00:00 2001
-From: Constantine Shulyupin <const@MakeLinux.com>
-Date: Sat, 17 Nov 2012 14:27:18 +0200
-Subject: [PATCH v2] checkpatch: debugfs_remove() can take NULL
+Hi,
 
-debugfs_remove() and  debugfs_remove_recursive() can take a NULL, so let's check and warn about that.
+On Fri, Nov 16 2012, Trey Ramsay wrote:
+> There are infinite loops in the mmc code that can be caused by bad hardware.
+> The code will loop forever if the device never comes back from program mode,
+> R1_STATE_PRG, and it is not ready for data, R1_READY_FOR_DATA.
+>
+> A long timeout will be added to prevent the code from looping forever.
+> The timeout will occur if the device never comes back from program
+> state or the device never becomes ready for data.
+>
+> Signed-off-by: Trey Ramsay <tramsay@linux.vnet.ibm.com>
 
-Channegs since v1:
+Thanks for doing this; pushed to mmc-next for 3.8.
 
-- added debugfs_remove_recursive
-- all tests for pattenrs are "if (a) xxx(a)" are consolidates
-
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
----
- scripts/checkpatch.pl |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f18750e..2339b54 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3213,21 +3213,29 @@ sub process {
- 				$herecurr);
- 		}
- 
--# check for needless kfree() checks
-+# check for needless "if"
- 		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
- 			my $expr = $1;
-+# check for needless kfree() checks
- 			if ($line =~ /\bkfree\(\Q$expr\E\);/) {
- 				WARN("NEEDLESS_KFREE",
- 				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
- 			}
--		}
- # check for needless usb_free_urb() checks
--		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
--			my $expr = $1;
- 			if ($line =~ /\busb_free_urb\(\Q$expr\E\);/) {
- 				WARN("NEEDLESS_USB_FREE_URB",
- 				     "usb_free_urb(NULL) is safe this check is probably not required\n" . $hereprev);
- 			}
-+# check for needless debugfs_remove() checks
-+			if ($line =~ /\bdebugfs_remove\(\Q$expr\E\);/) {
-+				WARN("NEEDLESS_DEBUGFS_REMOVE",
-+				     "debugfs_remove(NULL) is safe this check is probably not required\n" . $hereprev);
-+			}
-+# check for needless debugfs_remove_recursive() checks
-+			if ($line =~ /\bdebugfs_remove_recursive\(\Q$expr\E\);/) {
-+				WARN("NEEDLESS_DEBUGFS_REMOVE",
-+				     "debugfs_remove_recursive(NULL) is safe this check is probably not required\n" . $hereprev);
-+			}
- 		}
- 
- # prefer usleep_range over udelay
+- Chris.
 -- 
-1.7.9.5
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
