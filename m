@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab2KQQiF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 11:38:05 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42423 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab2KQQiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 11:38:04 -0500
-From: Nick Kossifidis <mickflemm@gmail.com>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, Nick Kossifidis <mickflemm@gmail.com>
-Subject: [PATCH] random: Mix cputime from each thread that exits to the pool
-Date: Sat, 17 Nov 2012 18:37:29 +0200
-Message-Id: <1353170249-1004-1-git-send-email-mickflemm@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1752038Ab2KQQqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 11:46:09 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:55986 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751930Ab2KQQqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 11:46:07 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.7-rc7
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20121117164602.EFAF74266DC@whiskey.americas.sgi.com>
+Date: Sat, 17 Nov 2012 10:46:02 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a thread exits mix it's cputime (userspace + kernelspace) to the entropy pool.
+Hi Linus,
 
-We don't know how "random" this is, so we use add_device_randomness that doesn't mess
-with entropy count.
+   Please pull these 3 bug fixes for XFS.  This includes a fix for attribute
+   corruption, a fix for error handling in xfs_vm_writepage, and a fix for
+   reference counts on xfs_bufs.
 
-Signed-off-by: Nick Kossifidis <mickflemm@gmail.com>
----
- kernel/posix-cpu-timers.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Thanks,
+	Ben
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 125cb67..f07827a 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -9,6 +9,7 @@
- #include <asm/uaccess.h>
- #include <linux/kernel_stat.h>
- #include <trace/events/timer.h>
-+#include <linux/random.h>
- 
- /*
-  * Called after updating RLIMIT_CPU to run cpu timer and update
-@@ -494,6 +495,8 @@ static void cleanup_timers(struct list_head *head,
-  */
- void posix_cpu_timers_exit(struct task_struct *tsk)
- {
-+	add_device_randomness((const void*) &tsk->se.sum_exec_runtime,
-+						sizeof(unsigned long long));
- 	cleanup_timers(tsk->cpu_timers,
- 		       tsk->utime, tsk->stime, tsk->se.sum_exec_runtime);
- 
--- 
-1.7.8.6
+The following changes since commit 6ce377afd1755eae5c93410ca9a1121dfead7b87:
 
+  xfs: fix reading of wrapped log data (2012-11-08 11:10:51 -0600)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.7-rc7
+
+for you to fetch changes up to d69043c42d8c6414fa28ad18d99973aa6c1c2e24:
+
+  xfs: drop buffer io reference when a bad bio is built (2012-11-17 09:36:57 -0600)
+
+----------------------------------------------------------------
+xfs: bugfixes for 3.7-rc7
+
+- fix attr tree double split corruption
+- fix broken error handling in xfs_vm_writepage
+- drop buffer io reference when a bad bio is built
+
+----------------------------------------------------------------
+Dave Chinner (3):
+      xfs: fix attr tree double split corruption
+      xfs: fix broken error handling in xfs_vm_writepage
+      xfs: drop buffer io reference when a bad bio is built
+
+ fs/xfs/xfs_aops.c      | 54 ++++++++++++++++++++++++++++++++++++--------------
+ fs/xfs/xfs_attr_leaf.c | 20 +++++++++++++++++--
+ fs/xfs/xfs_buf.c       | 14 +++++++++++--
+ 3 files changed, 69 insertions(+), 19 deletions(-)
