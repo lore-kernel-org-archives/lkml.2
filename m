@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2KQGsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 01:48:47 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47959 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2KQGsp (ORCPT
+	id S1753004Ab2KQHKp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 02:10:45 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56157 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab2KQHKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 01:48:45 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Joe Perches <joe@perches.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH v2] staging/serqt_usb2: Refactor qt_status_change_check() in  serqt_usb2.c
-Date: Sat, 17 Nov 2012 15:48:35 +0900
-Message-Id: <1353134915-11265-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1353115941.6139.10.camel@joe-AO722>
-References: <1353115941.6139.10.camel@joe-AO722>
+	Sat, 17 Nov 2012 02:10:43 -0500
+Date: Sat, 17 Nov 2012 11:10:39 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
+        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
+Message-ID: <20121117071039.GA22855@moon>
+References: <20121114151937.344922058@openvz.org>
+ <20121114152239.936025193@openvz.org>
+ <20121116155603.2118394c.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121116155603.2118394c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify qt_status_change_check() and delete qt_status_change().
+On Fri, Nov 16, 2012 at 03:56:03PM -0800, Andrew Morton wrote:
+> 
+> This is a lousy output format.  It's sort-of like a sensible set of
+> name-value tuples: "name:value name:value name:value" but
+> 
+> a) it has lots of random pointless whitespace after the colons and
+> 
+> b) several of the labels have spaces in them, just to make life
+>    harder for parsing code and
+> 
+> c) inotify-wd is secretly printed in decimal while everything else
+>    is in hex.
+> 
+> What happens if we do something like the below (which will require a
+> changelog update)?
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/serqt_usb2/serqt_usb2.c |   53 +++++++++++++------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
+Looks good for me, Andrew. The only reason for such whitespace rich format
+was to make output column aligned. But it's fine to have name:val as well.
+I'll update. Thanks!
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index f68a855..13722b2 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -291,33 +291,6 @@ static void qt_interrupt_callback(struct urb *urb)
- 	/* FIXME */
- }
- 
--static int qt_status_change(unsigned int limit,
--			    unsigned char *data,
--			    int i,
--			    struct quatech_port *qt_port,
--			    struct usb_serial_port *port)
--{
--	void (*fn)(struct quatech_port *, unsigned char);
--
--	if (0x00 == data[i + 2]) {
--		dev_dbg(&port->dev, "Line status status.\n");
--		fn = ProcessLineStatus;
--	} else {
--		dev_dbg(&port->dev, "Modem status status.\n");
--		fn = ProcessModemStatus;
--	}
--
--	if (i > limit) {
--		dev_dbg(&port->dev,
--			"Illegal escape seuences in received data\n");
--		return 0;
--	}
--
--	(*fn)(qt_port, data[i + 3]);
--
--	return 1;
--}
--
- static void qt_status_change_check(struct tty_struct *tty,
- 				   struct urb *urb,
- 				   struct quatech_port *qt_port,
-@@ -334,11 +307,29 @@ static void qt_status_change_check(struct tty_struct *tty,
- 			flag = 0;
- 			switch (data[i + 2]) {
- 			case 0x00:
-+				if (i > (RxCount - 4)) {
-+					dev_dbg(&port->dev,
-+						"Illegal escape sequences in received data\n");
-+					break;
-+				}
-+
-+				i += 3;
-+				ProcessLineStatus(qt_port, data[i]);
-+
-+				flag = 1;
-+				break;
-+
- 			case 0x01:
--				flag = qt_status_change((RxCount - 4), data, i,
--							qt_port, port);
--				if (flag == 1)
--					i += 3;
-+				if (i > (RxCount - 4)) {
-+					dev_dbg(&port->dev,
-+						"Illegal escape sequences in received data\n");
-+					break;
-+				}
-+
-+				i += 3;
-+				ProcessModemStatus(qt_port, data[i]);
-+
-+				flag = 1;
- 				break;
- 
- 			case 0xff:
--- 
-1.7.9.5
-
+	Cyrill
