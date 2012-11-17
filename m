@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2KQDkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:40:17 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27309 "EHLO
+	id S1753968Ab2KQDkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:40:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36834 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab2KQDkO (ORCPT
+	with ESMTP id S1753837Ab2KQDkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:14 -0500
+	Fri, 16 Nov 2012 22:40:00 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,137 +14,149 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 04/46] x86, mm: Move init_memory_mapping calling out of setup.c
-Date: Fri, 16 Nov 2012 19:38:41 -0800
-Message-Id: <1353123563-3103-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 01/46] x86, mm: Add global page_size_mask and probe one time only
+Date: Fri, 16 Nov 2012 19:38:38 -0800
+Message-Id: <1353123563-3103-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now init_memory_mapping is called two times, later will be called for every
-ram ranges.
+Now we pass around use_gbpages and use_pse for calculating page table size,
+Later we will need to call init_memory_mapping for every ram range one by one,
+that mean those calculation will be done several times.
 
-Could put all related init_mem calling together and out of setup.c.
+Those information are the same for all ram range and could be stored in
+page_size_mask and could be probed it one time only.
 
-Actually, it reverts commit 1bbbbe7
-    x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
-will address that later with complete solution include handling hole under 4g.
+Move that probing code out of init_memory_mapping into separated function
+probe_page_size_mask(), and call it before all init_memory_mapping.
 
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/init.h    |    1 -
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |   27 +--------------------------
- arch/x86/mm/init.c             |   19 ++++++++++++++++++-
- 4 files changed, 20 insertions(+), 29 deletions(-)
+ arch/x86/include/asm/pgtable.h |    1 +
+ arch/x86/kernel/setup.c        |    1 +
+ arch/x86/mm/init.c             |   55 ++++++++++++++++++---------------------
+ 3 files changed, 27 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index adcc0ae..4f13998 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask);
- 
--
- extern unsigned long __initdata pgt_buf_start;
- extern unsigned long __meminitdata pgt_buf_end;
- extern unsigned long __meminitdata pgt_buf_top;
 diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 98ac76d..dd1a888 100644
+index a1f780d..98ac76d 100644
 --- a/arch/x86/include/asm/pgtable.h
 +++ b/arch/x86/include/asm/pgtable.h
-@@ -602,7 +602,7 @@ static inline int pgd_none(pgd_t pgd)
+@@ -602,6 +602,7 @@ static inline int pgd_none(pgd_t pgd)
  #ifndef __ASSEMBLY__
  
  extern int direct_gbpages;
--void probe_page_size_mask(void);
-+void init_mem_mapping(void);
++void probe_page_size_mask(void);
  
  /* local pte updates need not use xchg for locking */
  static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 01fb5f9..23b079f 100644
+index ca45696..01fb5f9 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -913,34 +913,9 @@ void __init setup_arch(char **cmdline_p)
+@@ -913,6 +913,7 @@ void __init setup_arch(char **cmdline_p)
  	setup_real_mode();
  
  	init_gbpages();
--	probe_page_size_mask();
++	probe_page_size_mask();
  
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	init_mem_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		int i;
--		unsigned long start, end;
--		unsigned long start_pfn, end_pfn;
--
--		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
--							 NULL) {
--
--			end = PFN_PHYS(end_pfn);
--			if (end <= (1UL<<32))
--				continue;
--
--			start = PFN_PHYS(start_pfn);
--			max_pfn_mapped = init_memory_mapping(
--						max((1UL<<32), start), end);
--		}
--
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
+ 	/* max_pfn_mapped is updated here */
+ 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 701abbc..9e17f9e 100644
+index d7aea41..aa5b0da 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -37,7 +37,7 @@ struct map_range {
+@@ -35,6 +35,7 @@ struct map_range {
+ 	unsigned page_size_mask;
+ };
  
- static int page_size_mask;
- 
--void probe_page_size_mask(void)
-+static void __init probe_page_size_mask(void)
- {
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
-@@ -315,6 +315,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	return ret >> PAGE_SHIFT;
++static int page_size_mask;
+ /*
+  * First calculate space needed for kernel direct mapping page tables to cover
+  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
+@@ -94,6 +95,30 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
  }
  
-+void __init init_mem_mapping(void)
++void probe_page_size_mask(void)
 +{
-+	probe_page_size_mask();
-+
-+	/* max_pfn_mapped is updated here */
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
++#if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
++	/*
++	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
++	 * This will simplify cpa(), which otherwise needs to support splitting
++	 * large pages into small in interrupt context, etc.
++	 */
++	if (direct_gbpages)
++		page_size_mask |= 1 << PG_LEVEL_1G;
++	if (cpu_has_pse)
++		page_size_mask |= 1 << PG_LEVEL_2M;
 +#endif
++
++	/* Enable PSE if available */
++	if (cpu_has_pse)
++		set_in_cr4(X86_CR4_PSE);
++
++	/* Enable PGE if available */
++	if (cpu_has_pge) {
++		set_in_cr4(X86_CR4_PGE);
++		__supported_pte_mask |= _PAGE_GLOBAL;
++	}
 +}
+ void __init native_pagetable_reserve(u64 start, u64 end)
+ {
+ 	memblock_reserve(start, end - start);
+@@ -129,45 +154,15 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 					       unsigned long end)
+ {
+-	unsigned long page_size_mask = 0;
+ 	unsigned long start_pfn, end_pfn;
+ 	unsigned long ret = 0;
+ 	unsigned long pos;
+-
+ 	struct map_range mr[NR_RANGE_MR];
+ 	int nr_range, i;
+-	int use_pse, use_gbpages;
  
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+ 	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+ 	       start, end - 1);
+ 
+-#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+-	/*
+-	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
+-	 * This will simplify cpa(), which otherwise needs to support splitting
+-	 * large pages into small in interrupt context, etc.
+-	 */
+-	use_pse = use_gbpages = 0;
+-#else
+-	use_pse = cpu_has_pse;
+-	use_gbpages = direct_gbpages;
+-#endif
+-
+-	/* Enable PSE if available */
+-	if (cpu_has_pse)
+-		set_in_cr4(X86_CR4_PSE);
+-
+-	/* Enable PGE if available */
+-	if (cpu_has_pge) {
+-		set_in_cr4(X86_CR4_PGE);
+-		__supported_pte_mask |= _PAGE_GLOBAL;
+-	}
+-
+-	if (use_gbpages)
+-		page_size_mask |= 1 << PG_LEVEL_1G;
+-	if (use_pse)
+-		page_size_mask |= 1 << PG_LEVEL_2M;
+-
+ 	memset(mr, 0, sizeof(mr));
+ 	nr_range = 0;
+ 
 -- 
 1.7.7
 
