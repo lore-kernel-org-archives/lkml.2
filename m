@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab2KQSKd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 13:10:33 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59487 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2KQSKc (ORCPT
+	id S1752102Ab2KQSU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 13:20:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47087 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab2KQSU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 13:10:32 -0500
-Message-ID: <50A7D2F0.1050901@linux.vnet.ibm.com>
-Date: Sat, 17 Nov 2012 23:39:52 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sat, 17 Nov 2012 13:20:26 -0500
+Message-ID: <50A7D524.2060809@gmail.com>
+Date: Sat, 17 Nov 2012 19:19:16 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, pjt@google.com,
-        vincent.guittot@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/5] sched: consider runnable load average in wake_affine
- and move_tasks
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com> <1353157457-3649-5-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1353157457-3649-5-git-send-email-alex.shi@intel.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Linaro-mm-sig] [PATCH] mm: skip watermarks check for already
+ isolated blocks in split_free_page()
+References: <1352357944-14830-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1352357944-14830-1-git-send-email-m.szyprowski@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12111718-6102-0000-0000-00000295A3D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+Hi,
 
-On 11/17/2012 06:34 PM, Alex Shi wrote:
-> Except using runnable load average in background, wake_affine and
-> move_tasks is also the key functions in load balance. We need consider
-> the runnable load average in them in order to the apple to apple load
-> comparison in load balance.
+On 11/08/2012 07:59 AM, Marek Szyprowski wrote:
+> Since commit 2139cbe627b8 ("cma: fix counting of isolated pages") free
+> pages in isolated pageblocks are not accounted to NR_FREE_PAGES counters,
+> so watermarks check is not required if one operates on a free page in
+> isolated pageblock.
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 > ---
->  kernel/sched/fair.c |   16 ++++++++++------
->  1 files changed, 10 insertions(+), 6 deletions(-)
+>  mm/page_alloc.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
 > 
-> @@ -4229,7 +4233,7 @@ static int move_tasks(struct lb_env *env)
->  		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
->  			goto next;
-> 
-> -		load = task_h_load(p);
-> +		load = task_h_load(p) * p->se.avg.load_avg_contrib;
-Shouldn't the above be just load = p->se.avg.load_avg_contrib? This
-metric already has considered p->se.load.weight.task_h_load(p) returns
-the same.
-> 
->  		if (sched_feat(LB_MIN) && load < 16 && !env->failed)
->  			goto next;
-> 
-Regards
-Preeti U Murthy
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index fd154fe..43ab09f 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1394,10 +1394,12 @@ int capture_free_page(struct page *page, int alloc_order, int migratetype)
+>  	zone = page_zone(page);
+>  	order = page_order(page);
+>  
+> -	/* Obey watermarks as if the page was being allocated */
+> -	watermark = low_wmark_pages(zone) + (1 << order);
+> -	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
+> -		return 0;
+> +	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE) {
 
+get_pageblock_migratetype(page) is also called later on in this function
+and assigned to the mt variable: maybe the assignment should be moved
+before (or inside) the above line?
+
+--
+Francesco
