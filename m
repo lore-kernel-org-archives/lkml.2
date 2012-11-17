@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab2KQNaS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 08:30:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:51924 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751102Ab2KQNaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 08:30:17 -0500
-Message-ID: <1353159017.12430.21.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: debugfs_remove() can take NULL
-From: Joe Perches <joe@perches.com>
-To: Constantine Shulyupin <const@MakeLinux.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Andy Whitcroft <apw@canonical.com>
-Date: Sat, 17 Nov 2012 05:30:17 -0800
-In-Reply-To: <1353155581-30852-1-git-send-email-const@MakeLinux.com>
-References: <1353155581-30852-1-git-send-email-const@MakeLinux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751776Ab2KQNyy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 08:54:54 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:37271 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585Ab2KQNyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 08:54:53 -0500
+Date: Sat, 17 Nov 2012 14:54:35 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] clk: mvebu: armada 370/XP add clock gating control
+ provider for DT
+Message-ID: <20121117135435.GA13479@lunn.ch>
+References: <1353014906-31566-6-git-send-email-andrew@lunn.ch>
+ <1353088920-17458-1-git-send-email-gregory.clement@free-electrons.com>
+ <1353088920-17458-2-git-send-email-gregory.clement@free-electrons.com>
+ <20121117082602.GF24569@lunn.ch>
+ <50A75BB4.4070003@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50A75BB4.4070003@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-17 at 14:33 +0200, Constantine Shulyupin wrote:
-> From: Constantine Shulyupin <const@MakeLinux.com>
+> > What is the ddr clock for? Does bad things happen if you turn it off?
+> > Kirkwood has a similar clock, dunit, which i decided not to export,
+> > since when you turn it off, the whole SoC locks up.
 > 
-> debugfs_remove() can take a NULL, so let's check and warn about that.
-> 
-> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
-> ---
->  scripts/checkpatch.pl |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index f18750e..c062476 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3221,6 +3221,14 @@ sub process {
->  				     "kfree(NULL) is safe this check is probably not required\n" . $hereprev);
->  			}
->  		}
-> +# check for needless debugfs_remove() checks
-> +		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
-> +			my $expr = $1;
-> +			if ($line =~ /\bdebugfs_remove\(\Q$expr\E\);/) {
-> +				WARN("NEEDLESS_DEBUGFS_REMOVE",
-> +				     "debugfs_remove(NULL) is safe this check is probably not required\n" . $hereprev);
-> +			}
-> +		}
->  # check for needless usb_free_urb() checks
->  		if ($prevline =~ /\bif\s*\(([^\)]*)\)/) {
->  			my $expr = $1;
+> Well of course if you code run in DDR then it could be a problem. But
+> I think it could be useful to turn it off when going to suspend, it
+> the DDR can do self-refresh. In this case it should be possible to run
+> the code from SRAM or L2 Cache.
 
-Perhaps debugfs_remove_recursive should be added too.
+O.K. Just watch out for the lateinit call in the clock framework.
 
-Please create a consolidated block of tests for these
-checks of:
-
-	if (foo)
-		something_with(foo)
-
-and add kfree, usb_free_urb and your debugfs_remove (and
-debugfs_remove_recursive?) to that block so that the
-"if ($prevline..." test is done only once per patch line.
-
-
-
+     Andrew
