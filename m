@@ -1,150 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2KQJwc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 04:52:32 -0500
-Received: from mga14.intel.com ([143.182.124.37]:2414 "EHLO mga14.intel.com"
+	id S1754059Ab2KQKBA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 05:01:00 -0500
+Received: from antcom.de ([188.40.178.216]:34417 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab2KQJw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 04:52:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.83,270,1352102400"; 
-   d="scan'208";a="169506099"
-Date: Sat, 17 Nov 2012 11:55:37 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jean Delvare <khali@linux-fr.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 3/3 UPDATED] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121117095537.GC17774@intel.com>
-References: <2439178.tCj2rUMYJS@vostro.rjw.lan>
- <20121116140357.5e0a6d6b@endymion.delvare>
- <1499062.QDd9DGofy9@vostro.rjw.lan>
- <20121116144256.55b49cae@endymion.delvare>
- <20121116141729.GS17774@intel.com>
- <20121116152332.GV17774@intel.com>
- <20121116174753.67d71043@endymion.delvare>
- <20121116172828.GY17774@intel.com>
- <CAErSpo6f4LtW0Sm8hs8bToyN8r8AhzrovJ_ybv62qDGP6+ABPA@mail.gmail.com>
- <20121117080354.GB17774@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121117080354.GB17774@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752617Ab2KQKA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Nov 2012 05:00:58 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 0/6 v7] gpio: Add block GPIO
+Date: Sat, 17 Nov 2012 10:59:47 +0100
+Message-Id: <1353146393-19312-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 17, 2012 at 10:03:54AM +0200, Mika Westerberg wrote:
-> On Fri, Nov 16, 2012 at 11:46:40PM -0700, Bjorn Helgaas wrote:
-> > On Fri, Nov 16, 2012 at 10:28 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> > > ...
-> > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > Date: Mon, 10 Sep 2012 12:12:32 +0300
-> > > Subject: [PATCH] i2c / ACPI: add ACPI enumeration support
-> > >
-> > > ACPI 5 introduced I2cSerialBus resource that makes it possible to enumerate
-> > > and configure the I2C slave devices behind the I2C controller. This patch
-> > > adds helper functions to support I2C slave enumeration.
-> > >
-> > > An ACPI enabled I2C controller driver only needs to call acpi_i2c_register_devices()
-> > > in order to get its slave devices enumerated, created and bound to the
-> > > corresponding ACPI handle.
-> > 
-> > I must admit I don't understand the strategy here.  Likely it's only
-> > because I haven't been paying enough attention, but I'll ask anyway in
-> > case anybody else is similarly confused.
-> > 
-> > The callchain when we enumerate these slave devices looks like this:
-> > 
-> >     acpi_i2c_register_devices(struct i2c_adapter *)
-> >       acpi_walk_namespace(adapter->dev.acpi_handle, acpi_i2c_add_device)
-> >         acpi_i2c_add_device
-> >           acpi_bus_get_device
-> >           acpi_bus_get_status
-> >           acpi_dev_get_resources(..., acpi_i2c_add_resource, ...)
-> >           <find IRQ, addr>
-> >           acpi_dev_free_resources
-> >           i2c_new_device
-> >             client = kzalloc
-> >             client->dev = ...
-> >             device_register(&client->dev)
-> > 
-> > Is the ACPI namespace in question something like the following?
-> > 
-> >     Device {                    # i2C master, i.e., the i2c_adapter
-> >       _HID PNPmmmm
-> >       Device {                  # I2C slave 1, i.e.,  a client
-> >         _HID PNPsss1
-> >         _CRS
-> >           SerialBus/I2C addr addr1, mode mode1
-> >           IRQ irq1
-> >       }
-> >       Device {                  # I2C slave 2
-> >         _HID PNPsss2
-> >         _CRS
-> >           SerialBus/I2C addr addr2, mode mode2
-> >           IRQ irq2
-> >       }
-> >     }
-> 
-> Yes.
-> 
-> > _CRS is a device configuration method, so I would expect that it
-> > exists within the scope of a Device() object.  The way I'm used to
-> > this working is for a driver to specify "I know about PNPsss1
-> > devices."
-> 
-> Yes.
-> 
-> > But it looks like acpi_i2c_register() walks the namespace below an i2c
-> > master device, registering a new i2c device (a slave) for every ACPI
-> > device node with a _CRS method that contains a SERIAL_BUS/TYPE_I2C
-> > descriptor.  It seems like you're basically claiming those devices
-> > nodes based on the contents of their _CRS, not based on their PNP IDs,
-> > which seems strange to me.
-> 
-> Yes, if we only matched the PNP IDs we would get bunch of PNP devices which
-> certainly doesn't help us to reuse the existing I2C drivers. So instead of
-> creating a new glue driver for ACPI or PNP device we added this enumeration
-> method that then creates the I2C devices, just like DT does.
+This set of patches adds:
 
-In other words, what this whole thing is trying to achieve is something
-along the lines of:
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Device interface for userland access (alternative to sysfs)
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access
+* Fix for race condition in gpiolib on device creation
 
-	- Instead of making PNP or ACPI devices out of every device in the
-	  ACPI namespace we use the resources returned by the _CRS
-	  method for a given device as a hint of what type of device it is.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+--
 
-	- If we find I2CSerialBus() we assume it is an I2C device and
-	  create i2c_device (and i2c_client) and register this to the I2C
-	  core.
+Changes since v6:
+* Changed realloc to list handling
+* Added mask to kernel API
+* Added device interface as userspace API
+* Changed sizeof() to BITS_PER_LONG
+* Fixed multiline comment style
+* Documented direction setting by the user
+* Documented order of handled chips in case of multiple chips in one block
 
-	- If we find SPISerialBus() we assume it is a SPI device and create
-	  corresponding spidevice and register it to the SPI core.
+Changes since v5:
+* Documented sysfs: elaborated on "exported" and "values" attributes
+* Documented sysfs: gpiochip is a separate class now
+* Aggregated driver support patches for block gpio into one single patch
+* Added gpio block driver support for twl6040 and pch
 
-	- Devices that don't have a bus are represented as platform devices
-	  (based on the table in drivers/acpi/scan.c). The reason for this
-	  is that most of the SoC devices have already platform driver so
-	  we can easily reuse the existing drivers.
+Changes since v4:
+* Documented word width
+* Bugfix: export/unexport on register/unregister
+* Using default dev_attrs for gpio_block_class
+* Fix gpiolib: race condition on device creation
+* Added driver support for ucb14500, vt8500, xilinx
 
-The implementation follows the Device Tree as much as possible so that
-adding support for DT and ACPI to a driver would be similar and thus easy
-for people who know either method.
+Changes since v3:
+* Added driver support for pca953x, em, pl061, max732x, pcf857x
+* Coding style improvements
+* Fixed krealloc memory leak in error case
+* sysfs: values in hex
+* Register blocks in a list
+* Narrowing lock scope
+* Use S_IWUSR and S_IRUGO instead of direct octal values
+* Use for_each_set_bit()
+* Change from unsigned to unsigned long for masks and values
 
-An alternative would be to create PNP or ACPI glue drivers for each device
-that then create the corresponding real device like platform or I2C which
-means that we need add much more lines of unnecessary code to the kernel
-compared to adding the ACPI/PNP IDs to the driver which takes only few
-lines of code.
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
 
-We still allow more complex configuration with the means of
-dev->acpi_handle. So for example if driver needs to call _DSM in order to
-retrieve some parameters for the device it can do so with the help of
-dev->acpi_handle.
+Changes since v1:
+* API change to 32/64 bit word, bit masks
+
+Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
+Plagniol-Villard, Mark Brown, Greg Kroah-Hartman and Grant Likely for
+reviewing!
+
+Roland Stigge (6):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpio: Add userland device interface to block GPIO
+ gpiolib: Fix default attributes for class
+ gpio: Add device tree support to block GPIO API
+ gpio: Add block gpio to several gpio drivers
+
+ Documentation/ABI/testing/dev-gpioblock               |   25 
+ Documentation/ABI/testing/sysfs-gpio                  |   29 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +
+ Documentation/gpio.txt                                |   57 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-em.c                                |   23 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   82 ++
+ drivers/gpio/gpio-max730x.c                           |   61 +
+ drivers/gpio/gpio-max732x.c                           |   59 +
+ drivers/gpio/gpio-pca953x.c                           |   64 +
+ drivers/gpio/gpio-pcf857x.c                           |   24 
+ drivers/gpio/gpio-pch.c                               |   27 
+ drivers/gpio/gpio-pl061.c                             |   17 
+ drivers/gpio/gpio-twl6040.c                           |   32 
+ drivers/gpio/gpio-ucb1400.c                           |   23 
+ drivers/gpio/gpio-vt8500.c                            |   24 
+ drivers/gpio/gpio-xilinx.c                            |   44 +
+ drivers/gpio/gpioblock-of.c                           |   84 ++
+ drivers/gpio/gpiolib.c                                |  627 ++++++++++++++++--
+ include/asm-generic/gpio.h                            |   28 
+ include/linux/gpio.h                                  |  115 +++
+ 22 files changed, 1490 insertions(+), 48 deletions(-)
