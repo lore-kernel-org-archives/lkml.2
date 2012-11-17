@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab2KQDki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Nov 2012 22:40:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16823 "EHLO
+	id S1754334Ab2KQDoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Nov 2012 22:44:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16872 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab2KQDkb (ORCPT
+	with ESMTP id S1754137Ab2KQDkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Nov 2012 22:40:31 -0500
+	Fri, 16 Nov 2012 22:40:39 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,116 +14,185 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v8 19/46] x86, mm: Don't clear page table if range is ram
-Date: Fri, 16 Nov 2012 19:38:56 -0800
-Message-Id: <1353123563-3103-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v8 24/46] x86, mm: Merge alloc_low_page between 64bit and 32bit
+Date: Fri, 16 Nov 2012 19:39:01 -0800
+Message-Id: <1353123563-3103-25-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we add code use buffer in BRK to pre-map buf for page table in
-following patch:
-	x86, mm: setup page table in top-down
-it should be safe to remove early_memmap for page table accessing.
-Instead we get panic with that.
+They are almost same except 64 bit need to handle after_bootmem case.
 
-It turns out that we clear the initial page table wrongly for next range
-that is separated by holes.
-And it only happens when we are trying to map ram range one by one.
-
-We need to check if the range is ram before clearing page table.
-
-We change the loop structure to remove the extra little loop and use
-one loop only, and in that loop will caculate next at first, and check if
-[addr,next) is covered by E820_RAM.
-
--v2: E820_RESERVED_KERN is treated as E820_RAM. EFI one change some E820_RAM
-     to that, so next kernel by kexec will know that range is used already.
+Add mm_internal.h to make that alloc_low_page() only to be accessible
+from arch/x86/mm/init*.c
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_64.c |   40 +++++++++++++++++++---------------------
- 1 files changed, 19 insertions(+), 21 deletions(-)
+ arch/x86/mm/init.c        |   34 ++++++++++++++++++++++++++++++++++
+ arch/x86/mm/init_32.c     |   26 ++------------------------
+ arch/x86/mm/init_64.c     |   32 ++------------------------------
+ arch/x86/mm/mm_internal.h |    6 ++++++
+ 4 files changed, 44 insertions(+), 54 deletions(-)
+ create mode 100644 arch/x86/mm/mm_internal.h
 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 2393d00..8481892 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -17,10 +17,44 @@
+ #include <asm/proto.h>
+ #include <asm/dma.h>		/* for MAX_DMA_PFN */
+ 
++#include "mm_internal.h"
++
+ unsigned long __initdata pgt_buf_start;
+ unsigned long __meminitdata pgt_buf_end;
+ unsigned long __meminitdata pgt_buf_top;
+ 
++__ref void *alloc_low_page(void)
++{
++	unsigned long pfn;
++	void *adr;
++
++#ifdef CONFIG_X86_64
++	if (after_bootmem) {
++		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
++
++		return adr;
++	}
++#endif
++
++	if ((pgt_buf_end + 1) >= pgt_buf_top) {
++		unsigned long ret;
++		if (min_pfn_mapped >= max_pfn_mapped)
++			panic("alloc_low_page: ran out of memory");
++		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
++					max_pfn_mapped << PAGE_SHIFT,
++					PAGE_SIZE, PAGE_SIZE);
++		if (!ret)
++			panic("alloc_low_page: can not alloc memory");
++		memblock_reserve(ret, PAGE_SIZE);
++		pfn = ret >> PAGE_SHIFT;
++	} else
++		pfn = pgt_buf_end++;
++
++	adr = __va(pfn * PAGE_SIZE);
++	clear_page(adr);
++	return adr;
++}
++
+ /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+ #define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
+ RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 7bb1106..a7f2df1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -53,36 +53,14 @@
+ #include <asm/page_types.h>
+ #include <asm/init.h>
+ 
++#include "mm_internal.h"
++
+ unsigned long highstart_pfn, highend_pfn;
+ 
+ static noinline int do_test_wp_bit(void);
+ 
+ bool __read_mostly __vmalloc_start_set = false;
+ 
+-static __init void *alloc_low_page(void)
+-{
+-	unsigned long pfn;
+-	void *adr;
+-
+-	if ((pgt_buf_end + 1) >= pgt_buf_top) {
+-		unsigned long ret;
+-		if (min_pfn_mapped >= max_pfn_mapped)
+-			panic("alloc_low_page: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE, PAGE_SIZE);
+-		if (!ret)
+-			panic("alloc_low_page: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE);
+-		pfn = ret >> PAGE_SHIFT;
+-	} else
+-		pfn = pgt_buf_end++;
+-
+-	adr = __va(pfn * PAGE_SIZE);
+-	clear_page(adr);
+-	return adr;
+-}
+-
+ /*
+  * Creates a middle page table and puts a pointer to it in the
+  * given global directory entry. This only returns the gd entry
 diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 869372a..fa28e3e 100644
+index 1960820..1d53def 100644
 --- a/arch/x86/mm/init_64.c
 +++ b/arch/x86/mm/init_64.c
-@@ -363,20 +363,20 @@ static unsigned long __meminit
+@@ -54,6 +54,8 @@
+ #include <asm/uv/uv.h>
+ #include <asm/setup.h>
+ 
++#include "mm_internal.h"
++
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -314,36 +316,6 @@ void __init cleanup_highmap(void)
+ 	}
+ }
+ 
+-static __ref void *alloc_low_page(void)
+-{
+-	unsigned long pfn;
+-	void *adr;
+-
+-	if (after_bootmem) {
+-		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+-
+-		return adr;
+-	}
+-
+-	if ((pgt_buf_end + 1) >= pgt_buf_top) {
+-		unsigned long ret;
+-		if (min_pfn_mapped >= max_pfn_mapped)
+-			panic("alloc_low_page: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE, PAGE_SIZE);
+-		if (!ret)
+-			panic("alloc_low_page: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE);
+-		pfn = ret >> PAGE_SHIFT;
+-	} else
+-		pfn = pgt_buf_end++;
+-
+-	adr = __va(pfn * PAGE_SIZE);
+-	clear_page(adr);
+-	return adr;
+-}
+-
+ static unsigned long __meminit
  phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
  	      pgprot_t prot)
- {
--	unsigned pages = 0;
-+	unsigned long pages = 0, next;
- 	unsigned long last_map_addr = end;
- 	int i;
- 
- 	pte_t *pte = pte_page + pte_index(addr);
- 
--	for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
--
-+	for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
-+		next = (addr & PAGE_MASK) + PAGE_SIZE;
- 		if (addr >= end) {
--			if (!after_bootmem) {
--				for(; i < PTRS_PER_PTE; i++, pte++)
--					set_pte(pte, __pte(0));
--			}
--			break;
-+			if (!after_bootmem &&
-+			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RESERVED_KERN))
-+				set_pte(pte, __pte(0));
-+			continue;
- 		}
- 
- 		/*
-@@ -419,16 +419,15 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		pte_t *pte;
- 		pgprot_t new_prot = prot;
- 
-+		next = (address & PMD_MASK) + PMD_SIZE;
- 		if (address >= end) {
--			if (!after_bootmem) {
--				for (; i < PTRS_PER_PMD; i++, pmd++)
--					set_pmd(pmd, __pmd(0));
--			}
--			break;
-+			if (!after_bootmem &&
-+			    !e820_any_mapped(address & PMD_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(address & PMD_MASK, next, E820_RESERVED_KERN))
-+				set_pmd(pmd, __pmd(0));
-+			continue;
- 		}
- 
--		next = (address & PMD_MASK) + PMD_SIZE;
--
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
-@@ -497,13 +496,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		pmd_t *pmd;
- 		pgprot_t prot = PAGE_KERNEL;
- 
--		if (addr >= end)
--			break;
--
- 		next = (addr & PUD_MASK) + PUD_SIZE;
--
--		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
--			set_pud(pud, __pud(0));
-+		if (addr >= end) {
-+			if (!after_bootmem &&
-+			    !e820_any_mapped(addr & PUD_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(addr & PUD_MASK, next, E820_RESERVED_KERN))
-+				set_pud(pud, __pud(0));
- 			continue;
- 		}
- 
+diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+new file mode 100644
+index 0000000..b3f993a
+--- /dev/null
++++ b/arch/x86/mm/mm_internal.h
+@@ -0,0 +1,6 @@
++#ifndef __X86_MM_INTERNAL_H
++#define __X86_MM_INTERNAL_H
++
++void *alloc_low_page(void);
++
++#endif	/* __X86_MM_INTERNAL_H */
 -- 
 1.7.7
 
