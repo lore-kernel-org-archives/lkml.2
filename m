@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2KRXXq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 18:23:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:34245 "EHLO mga11.intel.com"
+	id S1752722Ab2KRXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 18:44:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10342 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab2KRXXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 18:23:45 -0500
+	id S1752694Ab2KRXoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 18:44:55 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.83,275,1352102400"; 
-   d="scan'208";a="251087527"
-Date: Mon, 19 Nov 2012 00:23:42 +0100
+   d="scan'208";a="244081842"
+Date: Mon, 19 Nov 2012 00:44:50 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 RESEND 0/4] mfd: tps65910: use regmap irq framework
- for interrupt
-Message-ID: <20121118232342.GA18738@sortiz-mobl>
-References: <1352815439-26040-1-git-send-email-ldewangan@nvidia.com>
- <20121113195637.GQ27828@sortiz-mobl>
- <20121114012439.GF4415@opensource.wolfsonmicro.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH 1/6] mfd: da9052-core: Use regmap_irq_get_virq() and fix
+ the probe
+Message-ID: <20121118234450.GB18738@sortiz-mobl>
+References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121114012439.GF4415@opensource.wolfsonmicro.com>
+In-Reply-To: <1349320509-26930-1-git-send-email-festevam@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hi Fabio,
 
-On Wed, Nov 14, 2012 at 10:24:41AM +0900, Mark Brown wrote:
-> On Tue, Nov 13, 2012 at 08:56:37PM +0100, Samuel Ortiz wrote:
+On Thu, Oct 04, 2012 at 12:15:04AM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> > The patchset looks fine, but it should either go through Mark's tree or I
-> > should merge Mark's regmap_irq_get_domain patch to my for-next branch.
-> > Mark, any preference ?
+> On a mx53qsb dt-kernel the da9052-core driver fails to probe as follows:
 > 
-> I don't mind that much, there's a tag in my regmap tree you can pull in
-> to integrate or I can apply things just as easily.
-I merged your topic/domain branch into my for-next one and I applied Laxman
-patches on top of it, thanks.
+> da9052 1-0048: DA9052 ADC IRQ failed ret=-22
+> 
+> The reason for the error was due to passing only the offset as the interrupt
+> number in request_threaded_irq() without da9052->irq_base.
+> 
+> The recommended approach though is to use regmap_get_virq() to acquire the
+> interrupt number and this allows to get rid of da9052->irq_base.
+> 
+> Fix it and allow the driver to probe successfully.
+> 
+> Also provide a few more error logs and change the irq string to "adc-irq", so
+> that it appears as a single word in 'cat /proc/interrupts'
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  drivers/mfd/da9052-core.c |   34 +++++++++++++++++++---------------
+>  1 file changed, 19 insertions(+), 15 deletions(-)
+This patch and the next 5 ones are now applied to my for-next branch.
 
 Cheers,
 Samuel.
