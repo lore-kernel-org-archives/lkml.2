@@ -1,329 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab2KROab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59365 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2KROaO (ORCPT
+	id S1752429Ab2KROaa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:30:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36536 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab2KROaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:30:14 -0500
+	Sun, 18 Nov 2012 09:30:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/32] perf tests: Move test__open_syscall_event_on_all_cpus into separate object
-Date: Sun, 18 Nov 2012 11:29:28 -0300
-Message-Id: <1353248997-30763-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 26/32] perf ui: Add ui_progress__finish()
+Date: Sun, 18 Nov 2012 11:29:51 -0300
+Message-Id: <1353248997-30763-27-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Separating test__open_syscall_event_on_all_cpus test from the
-builtin-test into open-syscall-all-cpus object.
+Sometimes we need to know when the progress bar should disappear.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-4-git-send-email-jolsa@redhat.com
+Checking curr >= total wasn't enough since there're cases not met that
+condition for the last call.
+
+So add a new ->finish callback to identify this explicitly.  Currently
+only GTK frontend needs it.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1352813436-14173-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                      |    1 +
- tools/perf/tests/builtin-test.c          |  114 ----------------------------
- tools/perf/tests/open-syscall-all-cpus.c |  120 ++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                 |    1 +
- 4 files changed, 122 insertions(+), 114 deletions(-)
- create mode 100644 tools/perf/tests/open-syscall-all-cpus.c
+ tools/perf/ui/gtk/progress.c |    9 +++++++++
+ tools/perf/ui/progress.c     |    6 ++++++
+ tools/perf/ui/progress.h     |    2 ++
+ tools/perf/util/debug.h      |    1 +
+ tools/perf/util/session.c    |    1 +
+ 5 files changed, 19 insertions(+)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 69f582c..d413e89c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -433,6 +433,7 @@ LIB_OBJS += $(OUTPUT)tests/dso-data.o
- LIB_OBJS += $(OUTPUT)tests/attr.o
- LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall.o
-+LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
- LIB_OBJS += $(OUTPUT)tests/util.o
+diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
+index 903426f..482bcf3 100644
+--- a/tools/perf/ui/gtk/progress.c
++++ b/tools/perf/ui/gtk/progress.c
+@@ -40,8 +40,17 @@ static void gtk_progress_update(u64 curr, u64 total, const char *title)
+ 		gtk_main_iteration();
+ }
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b6b1e46..98e883b 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -29,120 +29,6 @@
- 
- #include <sched.h>
- 
--static int test__open_syscall_event_on_all_cpus(void)
--{
--	int err = -1, fd, cpu;
--	struct thread_map *threads;
--	struct cpu_map *cpus;
--	struct perf_evsel *evsel;
--	struct perf_event_attr attr;
--	unsigned int nr_open_calls = 111, i;
--	cpu_set_t cpu_set;
--	int id = trace_event__id("sys_enter_open");
--
--	if (id < 0) {
--		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
--		return -1;
--	}
--
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
--	if (threads == NULL) {
--		pr_debug("thread_map__new\n");
--		return -1;
--	}
--
--	cpus = cpu_map__new(NULL);
--	if (cpus == NULL) {
--		pr_debug("cpu_map__new\n");
--		goto out_thread_map_delete;
--	}
--
--
--	CPU_ZERO(&cpu_set);
--
--	memset(&attr, 0, sizeof(attr));
--	attr.type = PERF_TYPE_TRACEPOINT;
--	attr.config = id;
--	evsel = perf_evsel__new(&attr, 0);
--	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
--		goto out_thread_map_delete;
--	}
--
--	if (perf_evsel__open(evsel, cpus, threads) < 0) {
--		pr_debug("failed to open counter: %s, "
--			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
--			 strerror(errno));
--		goto out_evsel_delete;
--	}
--
--	for (cpu = 0; cpu < cpus->nr; ++cpu) {
--		unsigned int ncalls = nr_open_calls + cpu;
--		/*
--		 * XXX eventually lift this restriction in a way that
--		 * keeps perf building on older glibc installations
--		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
--		 * a reasonable upper limit tho :-)
--		 */
--		if (cpus->map[cpu] >= CPU_SETSIZE) {
--			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
--			continue;
--		}
--
--		CPU_SET(cpus->map[cpu], &cpu_set);
--		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
--			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
--				 cpus->map[cpu],
--				 strerror(errno));
--			goto out_close_fd;
--		}
--		for (i = 0; i < ncalls; ++i) {
--			fd = open("/etc/passwd", O_RDONLY);
--			close(fd);
--		}
--		CPU_CLR(cpus->map[cpu], &cpu_set);
--	}
--
--	/*
--	 * Here we need to explicitely preallocate the counts, as if
--	 * we use the auto allocation it will allocate just for 1 cpu,
--	 * as we start by cpu 0.
--	 */
--	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
--		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
--		goto out_close_fd;
--	}
--
--	err = 0;
--
--	for (cpu = 0; cpu < cpus->nr; ++cpu) {
--		unsigned int expected;
--
--		if (cpus->map[cpu] >= CPU_SETSIZE)
--			continue;
--
--		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
--			pr_debug("perf_evsel__read_on_cpu\n");
--			err = -1;
--			break;
--		}
--
--		expected = nr_open_calls + cpu;
--		if (evsel->counts->cpu[cpu].val != expected) {
--			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
--				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
--			err = -1;
--		}
--	}
--
--out_close_fd:
--	perf_evsel__close_fd(evsel, 1, threads->nr);
--out_evsel_delete:
--	perf_evsel__delete(evsel);
--out_thread_map_delete:
--	thread_map__delete(threads);
--	return err;
--}
- 
- /*
-  * This test will generate random numbers of calls to some getpid syscalls,
-diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
-new file mode 100644
-index 0000000..31072ab
---- /dev/null
-+++ b/tools/perf/tests/open-syscall-all-cpus.c
-@@ -0,0 +1,120 @@
-+#include "evsel.h"
-+#include "tests.h"
-+#include "thread_map.h"
-+#include "cpumap.h"
-+#include "debug.h"
-+
-+int test__open_syscall_event_on_all_cpus(void)
++static void gtk_progress_finish(void)
 +{
-+	int err = -1, fd, cpu;
-+	struct thread_map *threads;
-+	struct cpu_map *cpus;
-+	struct perf_evsel *evsel;
-+	struct perf_event_attr attr;
-+	unsigned int nr_open_calls = 111, i;
-+	cpu_set_t cpu_set;
-+	int id = trace_event__id("sys_enter_open");
++	/* this will also destroy all of its children */
++	gtk_widget_destroy(dialog);
 +
-+	if (id < 0) {
-+		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
-+		return -1;
-+	}
-+
-+	threads = thread_map__new(-1, getpid(), UINT_MAX);
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		return -1;
-+	}
-+
-+	cpus = cpu_map__new(NULL);
-+	if (cpus == NULL) {
-+		pr_debug("cpu_map__new\n");
-+		goto out_thread_map_delete;
-+	}
-+
-+
-+	CPU_ZERO(&cpu_set);
-+
-+	memset(&attr, 0, sizeof(attr));
-+	attr.type = PERF_TYPE_TRACEPOINT;
-+	attr.config = id;
-+	evsel = perf_evsel__new(&attr, 0);
-+	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		goto out_thread_map_delete;
-+	}
-+
-+	if (perf_evsel__open(evsel, cpus, threads) < 0) {
-+		pr_debug("failed to open counter: %s, "
-+			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
-+			 strerror(errno));
-+		goto out_evsel_delete;
-+	}
-+
-+	for (cpu = 0; cpu < cpus->nr; ++cpu) {
-+		unsigned int ncalls = nr_open_calls + cpu;
-+		/*
-+		 * XXX eventually lift this restriction in a way that
-+		 * keeps perf building on older glibc installations
-+		 * without CPU_ALLOC. 1024 cpus in 2010 still seems
-+		 * a reasonable upper limit tho :-)
-+		 */
-+		if (cpus->map[cpu] >= CPU_SETSIZE) {
-+			pr_debug("Ignoring CPU %d\n", cpus->map[cpu]);
-+			continue;
-+		}
-+
-+		CPU_SET(cpus->map[cpu], &cpu_set);
-+		if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
-+			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
-+				 cpus->map[cpu],
-+				 strerror(errno));
-+			goto out_close_fd;
-+		}
-+		for (i = 0; i < ncalls; ++i) {
-+			fd = open("/etc/passwd", O_RDONLY);
-+			close(fd);
-+		}
-+		CPU_CLR(cpus->map[cpu], &cpu_set);
-+	}
-+
-+	/*
-+	 * Here we need to explicitely preallocate the counts, as if
-+	 * we use the auto allocation it will allocate just for 1 cpu,
-+	 * as we start by cpu 0.
-+	 */
-+	if (perf_evsel__alloc_counts(evsel, cpus->nr) < 0) {
-+		pr_debug("perf_evsel__alloc_counts(ncpus=%d)\n", cpus->nr);
-+		goto out_close_fd;
-+	}
-+
-+	err = 0;
-+
-+	for (cpu = 0; cpu < cpus->nr; ++cpu) {
-+		unsigned int expected;
-+
-+		if (cpus->map[cpu] >= CPU_SETSIZE)
-+			continue;
-+
-+		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
-+			pr_debug("perf_evsel__read_on_cpu\n");
-+			err = -1;
-+			break;
-+		}
-+
-+		expected = nr_open_calls + cpu;
-+		if (evsel->counts->cpu[cpu].val != expected) {
-+			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
-+				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
-+			err = -1;
-+		}
-+	}
-+
-+out_close_fd:
-+	perf_evsel__close_fd(evsel, 1, threads->nr);
-+out_evsel_delete:
-+	perf_evsel__delete(evsel);
-+out_thread_map_delete:
-+	thread_map__delete(threads);
-+	return err;
++	dialog = NULL;
 +}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index bac133e..c2887f2 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -4,6 +4,7 @@
- /* Tests */
- int test__vmlinux_matches_kallsyms(void);
- int test__open_syscall_event(void);
-+int test__open_syscall_event_on_all_cpus(void);
++
+ static struct ui_progress gtk_progress_fns = {
+ 	.update		= gtk_progress_update,
++	.finish		= gtk_progress_finish,
+ };
  
- /* Util */
- int trace_event__id(const char *evname);
+ void perf_gtk__init_progress(void)
+diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
+index f5e4d1b..3ec69560 100644
+--- a/tools/perf/ui/progress.c
++++ b/tools/perf/ui/progress.c
+@@ -18,3 +18,9 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
+ {
+ 	return progress_fns->update(curr, total, title);
+ }
++
++void ui_progress__finish(void)
++{
++	if (progress_fns->finish)
++		progress_fns->finish();
++}
+diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
+index 717814b..257cc22 100644
+--- a/tools/perf/ui/progress.h
++++ b/tools/perf/ui/progress.h
+@@ -5,6 +5,7 @@
+ 
+ struct ui_progress {
+ 	void (*update)(u64, u64, const char *);
++	void (*finish)(void);
+ };
+ 
+ extern struct ui_progress *progress_fns;
+@@ -12,5 +13,6 @@ extern struct ui_progress *progress_fns;
+ void ui_progress__init(void);
+ 
+ void ui_progress__update(u64 curr, u64 total, const char *title);
++void ui_progress__finish(void);
+ 
+ #endif
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index dec9875..83e8d23 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -26,6 +26,7 @@ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ static inline void ui_progress__update(u64 curr __maybe_unused,
+ 				       u64 total __maybe_unused,
+ 				       const char *title __maybe_unused) {}
++static inline void ui_progress__finish(void) {}
+ 
+ #define ui__error(format, arg...) ui__warning(format, ##arg)
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 15abe40..ce6f511 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1458,6 +1458,7 @@ more:
+ 	session->ordered_samples.next_flush = ULLONG_MAX;
+ 	err = flush_sample_queue(session, tool);
+ out_err:
++	ui_progress__finish();
+ 	perf_session__warn_about_errors(session, tool);
+ 	perf_session_free_sample_buffers(session);
+ 	return err;
 -- 
 1.7.9.2.358.g22243
 
