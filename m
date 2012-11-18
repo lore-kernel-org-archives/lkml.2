@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab2KRBeW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 20:34:22 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56808 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab2KRBeV convert rfc822-to-8bit (ORCPT
+	id S1752562Ab2KRBpj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:45:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43970 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab2KRBph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 20:34:21 -0500
+	Sat, 17 Nov 2012 20:45:37 -0500
+Date: Sat, 17 Nov 2012 17:42:12 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Florian Fainelli <ffainelli@freebox.fr>, ccross@android.com,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        Maxime Bizon <mbizon@freebox.fr>, stable@vger.kernel.org
+Subject: Re: [PATCH v2] pstore/ram: fix undefined usage of
+ rounddown_pow_of_two(0)
+Message-ID: <20121118014212.GA5556@lizard.sbx05977.paloaca.wayport.net>
+References: <1350647942-5260-1-git-send-email-ffainelli@freebox.fr>
+ <1350897568-14262-1-git-send-email-ffainelli@freebox.fr>
+ <CAGXu5jJhsQ+yGgNRd-sitsusGsuyTjc_Q3DcoSDg4Q=MnJ4agw@mail.gmail.com>
 MIME-Version: 1.0
-Date: Sat, 17 Nov 2012 23:34:19 -0200
-Message-ID: <CACnwZYdSW5=MLBrOC_cD7b3AB_PcQeyjR=JPJnfPCzJapZbGEw@mail.gmail.com>
-Subject: =?UTF-8?B?ZHJpdmVycy91c2IvdXNiLXNrZWxldG9uLmM6MTE3OjM6IGVycm9yOiBsYWJlbCDigJhvdQ==?=
-	=?UTF-8?B?dF9lcnLigJkgdXNlZCBidXQgbm90IGRlZmluZQ==?=
-From: Thiago Farina <tfransosi@gmail.com>
-To: linux list <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, tom.leiming@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJhsQ+yGgNRd-sitsusGsuyTjc_Q3DcoSDg4Q=MnJ4agw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Oct 22, 2012 at 08:17:27AM -0700, Kees Cook wrote:
+> On Mon, Oct 22, 2012 at 2:19 AM, Florian Fainelli <ffainelli@freebox.fr> wrote:
+> > From: Maxime Bizon <mbizon@freebox.fr>
+> >
+> > record_size / console_size / ftrace_size can be 0 (this is how you
+> > disable the feature), but rounddown_pow_of_two(0) is undefined. As suggested
+> > by Kees Cook, use !is_power_of_2() as a condition to call rounddown_pow_of_two
+> > and avoid its undefined behavior on the value 0. This issue has been present
+> > since commit 1894a253 (ramoops: Move to fs/pstore/ram.c).
+> >
+> > CC: stable@vger.kernel.org
+> > Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+> > Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+> 
+> Thanks for the fix!
+> 
+> Acked-by: Kees Cook <keescook@chromium.org>
 
-When compiling this source file with the following command line I get
-this error:
-
-$ make drivers/usb/usb-skeleton.o
-drivers/usb/usb-skeleton.c: In function ‘skel_open’:
-drivers/usb/usb-skeleton.c:117:3: error: label ‘out_err’ used but not defined
-make[1]: *** [drivers/usb/usb-skeleton.o] Error 1
-make: *** [drivers/usb/usb-skeleton.o] Error 2
-
-Is this intentional? If not, what would be the right fix?
-
-Thank you,
+Applied, thanks!
