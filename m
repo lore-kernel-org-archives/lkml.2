@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab2KROfB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:35:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36571 "EHLO
+	id S1752554Ab2KROfA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:35:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36572 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab2KROaR (ORCPT
+	with ESMTP id S1752166Ab2KROaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/32] perf tools: Fix attributes for '{}' defined event groups
-Date: Sun, 18 Nov 2012 11:29:43 -0300
-Message-Id: <1353248997-30763-19-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/32] perf tests: Move test__rdpmc into separate object
+Date: Sun, 18 Nov 2012 11:29:31 -0300
+Message-Id: <1353248997-30763-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
@@ -30,208 +30,409 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Fixing events attributes for groups defined via '{}'.
-
-Currently 'enable_on_exec' attribute in record command and both
-'disabled ' and 'enable_on_exec' attributes in stat command are set
-based on the 'group' option. This eliminates proper setup for '{}'
-defined groups as they don't set 'group' option.
-
-Making above attributes values based on the 'evsel->leader' as this is
-common to both group definition.
-
-Moving perf_evlist__set_leader call within builtin-record ahead
-perf_evlist__config_attrs call, because the latter needs possible group
-leader links in place.
+Separating test__rdpmc test from the builtin-test
+into rdpmc object.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352741644-16809-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352508412-16914-7-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c               |    8 ++++++--
- tools/perf/builtin-stat.c                 |   11 ++++-------
- tools/perf/tests/attr/test-record-group1  |    4 +---
- tools/perf/tests/attr/test-stat-group1    |    6 ++----
- tools/perf/tests/open-syscall-tp-fields.c |    2 +-
- tools/perf/util/evlist.c                  |    6 ++----
- tools/perf/util/evsel.c                   |    8 +++-----
- tools/perf/util/evsel.h                   |    3 +--
- 8 files changed, 20 insertions(+), 28 deletions(-)
+ tools/perf/Makefile             |    1 +
+ tools/perf/tests/builtin-test.c |  168 -------------------------------------
+ tools/perf/tests/rdpmc.c        |  175 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |    1 +
+ 4 files changed, 177 insertions(+), 168 deletions(-)
+ create mode 100644 tools/perf/tests/rdpmc.c
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5783c32..3717027 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -230,11 +230,15 @@ static int perf_record__open(struct perf_record *rec)
- 	struct perf_record_opts *opts = &rec->opts;
- 	int rc = 0;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a2d6153..2e5197a 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -436,6 +436,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall.o
+ LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
+ LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
+ LIB_OBJS += $(OUTPUT)tests/perf-record.o
++LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+ LIB_OBJS += $(OUTPUT)tests/util.o
  
--	perf_evlist__config_attrs(evlist, opts);
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 7cb3928..1e9a0ea 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -30,174 +30,6 @@
+ #include <sched.h>
+ 
+ 
 -
-+	/*
-+	 * Set the evsel leader links before we configure attributes,
-+	 * since some might depend on this info.
-+	 */
- 	if (opts->group)
- 		perf_evlist__set_leader(evlist);
- 
-+	perf_evlist__config_attrs(evlist, opts);
-+
- 	list_for_each_entry(pos, &evlist->entries, node) {
- 		struct perf_event_attr *attr = &pos->attr;
- 		/*
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 6888960..557081e 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -129,8 +129,7 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
- 
--static int create_perf_stat_counter(struct perf_evsel *evsel,
--				    struct perf_evsel *first)
-+static int create_perf_stat_counter(struct perf_evsel *evsel)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	bool exclude_guest_missing = false;
-@@ -153,7 +152,7 @@ retry:
- 		return 0;
- 	}
- 
--	if (!perf_target__has_task(&target) && (!group || evsel == first)) {
-+	if (!perf_target__has_task(&target) && (!evsel->leader)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-@@ -272,7 +271,7 @@ static int read_counter(struct perf_evsel *counter)
- static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- {
- 	unsigned long long t0, t1;
--	struct perf_evsel *counter, *first;
-+	struct perf_evsel *counter;
- 	int status = 0;
- 	int child_ready_pipe[2], go_pipe[2];
- 	const bool forks = (argc > 0);
-@@ -332,10 +331,8 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- 	if (group)
- 		perf_evlist__set_leader(evsel_list);
- 
--	first = perf_evlist__first(evsel_list);
+-#if defined(__x86_64__) || defined(__i386__)
 -
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
--		if (create_perf_stat_counter(counter, first) < 0) {
-+		if (create_perf_stat_counter(counter) < 0) {
- 			/*
- 			 * PPC returns ENXIO for HW counters until 2.6.37
- 			 * (behavior changed with commit b0a873e).
-diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
-index 39bf860..013572f 100644
---- a/tools/perf/tests/attr/test-record-group1
-+++ b/tools/perf/tests/attr/test-record-group1
-@@ -15,6 +15,4 @@ config=1
- sample_type=327
- mmap=0
- comm=0
--# TODO this is disabled for --group option, enabled otherwise
--#      check why..
--enable_on_exec=1
-+enable_on_exec=0
-diff --git a/tools/perf/tests/attr/test-stat-group1 b/tools/perf/tests/attr/test-stat-group1
-index 5ae2718..2a1f86e 100644
---- a/tools/perf/tests/attr/test-stat-group1
-+++ b/tools/perf/tests/attr/test-stat-group1
-@@ -11,7 +11,5 @@ group_fd=-1
- fd=2
- group_fd=1
- config=1
--# TODO both disabled and enable_on_exec are disabled for --group option,
--#      enabled otherwise, check why..
--disabled=1
--enable_on_exec=1
-+disabled=0
-+enable_on_exec=0
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
-index b05b6a6..1c52fdc 100644
---- a/tools/perf/tests/open-syscall-tp-fields.c
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -41,7 +41,7 @@ int test__syscall_open_tp_fields(void)
- 		goto out_delete_evlist;
- 	}
- 
--	perf_evsel__config(evsel, &opts, evsel);
-+	perf_evsel__config(evsel, &opts);
- 
- 	evlist->threads->map[0] = getpid();
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a41dc4a..04acae0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -52,15 +52,13 @@ struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
- void perf_evlist__config_attrs(struct perf_evlist *evlist,
- 			       struct perf_record_opts *opts)
- {
--	struct perf_evsel *evsel, *first;
-+	struct perf_evsel *evsel;
- 
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
- 
--	first = perf_evlist__first(evlist);
+-#define barrier() asm volatile("" ::: "memory")
 -
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		perf_evsel__config(evsel, opts, first);
-+		perf_evsel__config(evsel, opts);
- 
- 		if (evlist->nr_entries > 1)
- 			evsel->attr.sample_type |= PERF_SAMPLE_ID;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 618d411..6d4a5f6 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -404,8 +404,8 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
- 	return evsel->name ?: "unknown";
- }
- 
--void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
--			struct perf_evsel *first)
-+void perf_evsel__config(struct perf_evsel *evsel,
-+			struct perf_record_opts *opts)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
-@@ -486,10 +486,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 	attr->mmap = track;
- 	attr->comm = track;
- 
--	if (perf_target__none(&opts->target) &&
--	    (!opts->group || evsel == first)) {
-+	if (perf_target__none(&opts->target) && (!evsel->leader))
- 		attr->enable_on_exec = 1;
+-static u64 rdpmc(unsigned int counter)
+-{
+-	unsigned int low, high;
+-
+-	asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
+-
+-	return low | ((u64)high) << 32;
+-}
+-
+-static u64 rdtsc(void)
+-{
+-	unsigned int low, high;
+-
+-	asm volatile("rdtsc" : "=a" (low), "=d" (high));
+-
+-	return low | ((u64)high) << 32;
+-}
+-
+-static u64 mmap_read_self(void *addr)
+-{
+-	struct perf_event_mmap_page *pc = addr;
+-	u32 seq, idx, time_mult = 0, time_shift = 0;
+-	u64 count, cyc = 0, time_offset = 0, enabled, running, delta;
+-
+-	do {
+-		seq = pc->lock;
+-		barrier();
+-
+-		enabled = pc->time_enabled;
+-		running = pc->time_running;
+-
+-		if (enabled != running) {
+-			cyc = rdtsc();
+-			time_mult = pc->time_mult;
+-			time_shift = pc->time_shift;
+-			time_offset = pc->time_offset;
+-		}
+-
+-		idx = pc->index;
+-		count = pc->offset;
+-		if (idx)
+-			count += rdpmc(idx - 1);
+-
+-		barrier();
+-	} while (pc->lock != seq);
+-
+-	if (enabled != running) {
+-		u64 quot, rem;
+-
+-		quot = (cyc >> time_shift);
+-		rem = cyc & ((1 << time_shift) - 1);
+-		delta = time_offset + quot * time_mult +
+-			((rem * time_mult) >> time_shift);
+-
+-		enabled += delta;
+-		if (idx)
+-			running += delta;
+-
+-		quot = count / running;
+-		rem = count % running;
+-		count = quot * enabled + (rem * enabled) / running;
 -	}
- }
+-
+-	return count;
+-}
+-
+-/*
+- * If the RDPMC instruction faults then signal this back to the test parent task:
+- */
+-static void segfault_handler(int sig __maybe_unused,
+-			     siginfo_t *info __maybe_unused,
+-			     void *uc __maybe_unused)
+-{
+-	exit(-1);
+-}
+-
+-static int __test__rdpmc(void)
+-{
+-	volatile int tmp = 0;
+-	u64 i, loops = 1000;
+-	int n;
+-	int fd;
+-	void *addr;
+-	struct perf_event_attr attr = {
+-		.type = PERF_TYPE_HARDWARE,
+-		.config = PERF_COUNT_HW_INSTRUCTIONS,
+-		.exclude_kernel = 1,
+-	};
+-	u64 delta_sum = 0;
+-        struct sigaction sa;
+-
+-	sigfillset(&sa.sa_mask);
+-	sa.sa_sigaction = segfault_handler;
+-	sigaction(SIGSEGV, &sa, NULL);
+-
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+-	if (fd < 0) {
+-		pr_err("Error: sys_perf_event_open() syscall returned "
+-		       "with %d (%s)\n", fd, strerror(errno));
+-		return -1;
+-	}
+-
+-	addr = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
+-	if (addr == (void *)(-1)) {
+-		pr_err("Error: mmap() syscall returned with (%s)\n",
+-		       strerror(errno));
+-		goto out_close;
+-	}
+-
+-	for (n = 0; n < 6; n++) {
+-		u64 stamp, now, delta;
+-
+-		stamp = mmap_read_self(addr);
+-
+-		for (i = 0; i < loops; i++)
+-			tmp++;
+-
+-		now = mmap_read_self(addr);
+-		loops *= 10;
+-
+-		delta = now - stamp;
+-		pr_debug("%14d: %14Lu\n", n, (long long)delta);
+-
+-		delta_sum += delta;
+-	}
+-
+-	munmap(addr, page_size);
+-	pr_debug("   ");
+-out_close:
+-	close(fd);
+-
+-	if (!delta_sum)
+-		return -1;
+-
+-	return 0;
+-}
+-
+-static int test__rdpmc(void)
+-{
+-	int status = 0;
+-	int wret = 0;
+-	int ret;
+-	int pid;
+-
+-	pid = fork();
+-	if (pid < 0)
+-		return -1;
+-
+-	if (!pid) {
+-		ret = __test__rdpmc();
+-
+-		exit(ret);
+-	}
+-
+-	wret = waitpid(pid, &status, 0);
+-	if (wret < 0 || status)
+-		return -1;
+-
+-	return 0;
+-}
+-
+-#endif
+-
+ static int test__perf_pmu(void)
+ {
+ 	return perf_pmu__test();
+diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
+new file mode 100644
+index 0000000..ff94886
+--- /dev/null
++++ b/tools/perf/tests/rdpmc.c
+@@ -0,0 +1,175 @@
++#include <unistd.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <sys/mman.h>
++#include "types.h"
++#include "perf.h"
++#include "debug.h"
++#include "tests.h"
++
++#if defined(__x86_64__) || defined(__i386__)
++
++#define barrier() asm volatile("" ::: "memory")
++
++static u64 rdpmc(unsigned int counter)
++{
++	unsigned int low, high;
++
++	asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
++
++	return low | ((u64)high) << 32;
++}
++
++static u64 rdtsc(void)
++{
++	unsigned int low, high;
++
++	asm volatile("rdtsc" : "=a" (low), "=d" (high));
++
++	return low | ((u64)high) << 32;
++}
++
++static u64 mmap_read_self(void *addr)
++{
++	struct perf_event_mmap_page *pc = addr;
++	u32 seq, idx, time_mult = 0, time_shift = 0;
++	u64 count, cyc = 0, time_offset = 0, enabled, running, delta;
++
++	do {
++		seq = pc->lock;
++		barrier();
++
++		enabled = pc->time_enabled;
++		running = pc->time_running;
++
++		if (enabled != running) {
++			cyc = rdtsc();
++			time_mult = pc->time_mult;
++			time_shift = pc->time_shift;
++			time_offset = pc->time_offset;
++		}
++
++		idx = pc->index;
++		count = pc->offset;
++		if (idx)
++			count += rdpmc(idx - 1);
++
++		barrier();
++	} while (pc->lock != seq);
++
++	if (enabled != running) {
++		u64 quot, rem;
++
++		quot = (cyc >> time_shift);
++		rem = cyc & ((1 << time_shift) - 1);
++		delta = time_offset + quot * time_mult +
++			((rem * time_mult) >> time_shift);
++
++		enabled += delta;
++		if (idx)
++			running += delta;
++
++		quot = count / running;
++		rem = count % running;
++		count = quot * enabled + (rem * enabled) / running;
++	}
++
++	return count;
++}
++
++/*
++ * If the RDPMC instruction faults then signal this back to the test parent task:
++ */
++static void segfault_handler(int sig __maybe_unused,
++			     siginfo_t *info __maybe_unused,
++			     void *uc __maybe_unused)
++{
++	exit(-1);
++}
++
++static int __test__rdpmc(void)
++{
++	volatile int tmp = 0;
++	u64 i, loops = 1000;
++	int n;
++	int fd;
++	void *addr;
++	struct perf_event_attr attr = {
++		.type = PERF_TYPE_HARDWARE,
++		.config = PERF_COUNT_HW_INSTRUCTIONS,
++		.exclude_kernel = 1,
++	};
++	u64 delta_sum = 0;
++        struct sigaction sa;
++
++	sigfillset(&sa.sa_mask);
++	sa.sa_sigaction = segfault_handler;
++	sigaction(SIGSEGV, &sa, NULL);
++
++	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	if (fd < 0) {
++		pr_err("Error: sys_perf_event_open() syscall returned "
++		       "with %d (%s)\n", fd, strerror(errno));
++		return -1;
++	}
++
++	addr = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
++	if (addr == (void *)(-1)) {
++		pr_err("Error: mmap() syscall returned with (%s)\n",
++		       strerror(errno));
++		goto out_close;
++	}
++
++	for (n = 0; n < 6; n++) {
++		u64 stamp, now, delta;
++
++		stamp = mmap_read_self(addr);
++
++		for (i = 0; i < loops; i++)
++			tmp++;
++
++		now = mmap_read_self(addr);
++		loops *= 10;
++
++		delta = now - stamp;
++		pr_debug("%14d: %14Lu\n", n, (long long)delta);
++
++		delta_sum += delta;
++	}
++
++	munmap(addr, page_size);
++	pr_debug("   ");
++out_close:
++	close(fd);
++
++	if (!delta_sum)
++		return -1;
++
++	return 0;
++}
++
++int test__rdpmc(void)
++{
++	int status = 0;
++	int wret = 0;
++	int ret;
++	int pid;
++
++	pid = fork();
++	if (pid < 0)
++		return -1;
++
++	if (!pid) {
++		ret = __test__rdpmc();
++
++		exit(ret);
++	}
++
++	wret = waitpid(pid, &status, 0);
++	if (wret < 0 || status)
++		return -1;
++
++	return 0;
++}
++
++#endif
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 374b039..03d428d 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -7,6 +7,7 @@ int test__open_syscall_event(void);
+ int test__open_syscall_event_on_all_cpus(void);
+ int test__basic_mmap(void);
+ int test__PERF_RECORD(void);
++int test__rdpmc(void);
  
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 6f94d6d..32d7ec7 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -92,8 +92,7 @@ void perf_evsel__exit(struct perf_evsel *evsel);
- void perf_evsel__delete(struct perf_evsel *evsel);
- 
- void perf_evsel__config(struct perf_evsel *evsel,
--			struct perf_record_opts *opts,
--			struct perf_evsel *first);
-+			struct perf_record_opts *opts);
- 
- bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
- 
+ /* Util */
+ int trace_event__id(const char *evname);
 -- 
 1.7.9.2.358.g22243
 
