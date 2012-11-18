@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab2KRPBQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 10:01:16 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:48059 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2KRPBP (ORCPT
+	id S1752275Ab2KRPPF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 10:15:05 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:51677 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab2KRPPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 10:01:15 -0500
-Message-ID: <50A8F837.7040700@acm.org>
-Date: Sun, 18 Nov 2012 16:01:11 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Arnaud Lacombe <lacombar@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Richard Weinberger <richard@nod.at>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kbuild: Unbreak cleaning external module build directory
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Nov 2012 10:15:04 -0500
+X-Nat-Received: from [202.181.97.72]:54368 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1353251680.11303
+To: dhowells@redhat.com
+Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        davej@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201211172227.BHB30739.OVOMFtFLHOFSQJ@I-love.SAKURA.ne.jp>
+	<3677.1353246785@warthog.procyon.org.uk>
+In-Reply-To: <3677.1353246785@warthog.procyon.org.uk>
+Message-Id: <201211190014.BGD00598.LFOFtQFHOOMVJS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 19 Nov 2012 00:14:40 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18112012 #8412787, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid that "$(MAKE) -C $(KDIR) M=$(PWD) clean" triggers the following
-error message when invoked from inside the Makefile of an external
-kernel module:
+David Howells wrote:
+> Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> 
+> > I get build error which complains that include/uapi/asm-generic/auxvec.h is
+> > missing although the file exists. I'm using gcc 3.3.5.
+> > This bug seems to not happen with gcc 4.x.
+> 
+> What configuration?
+> 
+> David
+> 
 
-rm: cannot remove 'System.map': Permission denied
-make[1]: *** [clean] Error 1
+It is available at http://I-love.SAKURA.ne.jp/tmp/config-3.7-rc6 .
+Workaround is to change to CONFIG_HEADERS_CHECK=n.
 
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
----
- Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Makefile b/Makefile
-index 9f6ca12..46b9be5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1252,7 +1252,7 @@ scripts: ;
- endif # KBUILD_EXTMOD
- 
- clean: $(clean-dirs)
--	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean
-+	$(Q)$(if $(KBUILD_EXTMOD),,$(CONFIG_SHELL) $(srctree)/scripts/link-vmlinux.sh clean)
- 	$(call cmd,rmdirs)
- 	$(call cmd,rmfiles)
- 	@find $(if $(KBUILD_EXTMOD), $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
--- 
-1.7.10.4
-
+Regards.
