@@ -1,328 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab2KROaX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59363 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab2KROaO (ORCPT
+	id S1752245Ab2KROaV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:30:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36542 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab2KROaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/32] perf tests: Move perf_evsel__roundtrip_name_test into separate object
-Date: Sun, 18 Nov 2012 11:29:32 -0300
-Message-Id: <1353248997-30763-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 27/32] perf ui: Always compile browser setup code
+Date: Sun, 18 Nov 2012 11:29:52 -0300
+Message-Id: <1353248997-30763-28-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Separating perf_evsel__roundtrip_name_test test from the builtin-test
-into evsel-roundtrip-name object.
+We now have proper fallback logic, so always build it regardless of TUI
+or GTK setting.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-8-git-send-email-jolsa@redhat.com
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1352813436-14173-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                     |    1 +
- tools/perf/tests/builtin-test.c         |  112 +-----------------------------
- tools/perf/tests/evsel-roundtrip-name.c |  114 +++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                |    1 +
- 4 files changed, 117 insertions(+), 111 deletions(-)
- create mode 100644 tools/perf/tests/evsel-roundtrip-name.c
+ tools/perf/Makefile     |    3 +--
+ tools/perf/ui/ui.h      |   28 ++++++++++++++++++++++++++++
+ tools/perf/util/cache.h |   39 +--------------------------------------
+ 3 files changed, 30 insertions(+), 40 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2e5197a..ad6fcb5 100644
+index 5a9075e..a7c6aa8 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -437,6 +437,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
- LIB_OBJS += $(OUTPUT)tests/rdpmc.o
-+LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/util.o
+@@ -422,6 +422,7 @@ LIB_OBJS += $(OUTPUT)util/intlist.o
+ LIB_OBJS += $(OUTPUT)util/vdso.o
+ LIB_OBJS += $(OUTPUT)util/stat.o
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 1e9a0ea..93f5e91 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -35,116 +35,6 @@ static int test__perf_pmu(void)
- 	return perf_pmu__test();
- }
++LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/progress.o
+ LIB_OBJS += $(OUTPUT)ui/hist.o
+@@ -612,7 +613,6 @@ ifndef NO_NEWT
+ 		BASIC_CFLAGS += -I/usr/include/slang
+ 		BASIC_CFLAGS += -DNEWT_SUPPORT
+ 		EXTLIBS += -lnewt -lslang
+-		LIB_OBJS += $(OUTPUT)ui/setup.o
+ 		LIB_OBJS += $(OUTPUT)ui/browser.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+@@ -651,7 +651,6 @@ ifndef NO_GTK2
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+ 		# Make sure that it'd be included only once.
+ 		ifeq ($(findstring -DNEWT_SUPPORT,$(BASIC_CFLAGS)),)
+-			LIB_OBJS += $(OUTPUT)ui/setup.o
+ 			LIB_OBJS += $(OUTPUT)ui/util.o
+ 		endif
+ 	endif
+diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
+index 7b67045..d86359c 100644
+--- a/tools/perf/ui/ui.h
++++ b/tools/perf/ui/ui.h
+@@ -3,9 +3,37 @@
  
--static int perf_evsel__roundtrip_cache_name_test(void)
--{
--	char name[128];
--	int type, op, err = 0, ret = 0, i, idx;
--	struct perf_evsel *evsel;
--        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--
--        if (evlist == NULL)
--                return -ENOMEM;
--
--	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
--		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
--			/* skip invalid cache type */
--			if (!perf_evsel__is_cache_op_valid(type, op))
--				continue;
--
--			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
--				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
--									name, sizeof(name));
--				err = parse_events(evlist, name, 0);
--				if (err)
--					ret = err;
--			}
--		}
--	}
--
--	idx = 0;
--	evsel = perf_evlist__first(evlist);
--
--	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
--		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
--			/* skip invalid cache type */
--			if (!perf_evsel__is_cache_op_valid(type, op))
--				continue;
--
--			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
--				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
--									name, sizeof(name));
--				if (evsel->idx != idx)
--					continue;
--
--				++idx;
--
--				if (strcmp(perf_evsel__name(evsel), name)) {
--					pr_debug("%s != %s\n", perf_evsel__name(evsel), name);
--					ret = -1;
--				}
--
--				evsel = perf_evsel__next(evsel);
--			}
--		}
--	}
--
--	perf_evlist__delete(evlist);
--	return ret;
--}
--
--static int __perf_evsel__name_array_test(const char *names[], int nr_names)
--{
--	int i, err;
--	struct perf_evsel *evsel;
--        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--
--        if (evlist == NULL)
--                return -ENOMEM;
--
--	for (i = 0; i < nr_names; ++i) {
--		err = parse_events(evlist, names[i], 0);
--		if (err) {
--			pr_debug("failed to parse event '%s', err %d\n",
--				 names[i], err);
--			goto out_delete_evlist;
--		}
--	}
--
--	err = 0;
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
--			--err;
--			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
--		}
--	}
--
--out_delete_evlist:
--	perf_evlist__delete(evlist);
--	return err;
--}
--
--#define perf_evsel__name_array_test(names) \
--	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
--
--static int perf_evsel__roundtrip_name_test(void)
--{
--	int err = 0, ret = 0;
--
--	err = perf_evsel__name_array_test(perf_evsel__hw_names);
--	if (err)
--		ret = err;
--
--	err = perf_evsel__name_array_test(perf_evsel__sw_names);
--	if (err)
--		ret = err;
--
--	err = perf_evsel__roundtrip_cache_name_test();
--	if (err)
--		ret = err;
--
--	return ret;
--}
--
- static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
- 				  int size, bool should_be_signed)
- {
-@@ -382,7 +272,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "roundtrip evsel->name check",
--		.func = perf_evsel__roundtrip_name_test,
-+		.func = test__perf_evsel__roundtrip_name_test,
- 	},
- 	{
- 		.desc = "Check parsing of sched tracepoints fields",
-diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
-new file mode 100644
-index 0000000..e61fc82
---- /dev/null
-+++ b/tools/perf/tests/evsel-roundtrip-name.c
-@@ -0,0 +1,114 @@
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "parse-events.h"
-+#include "tests.h"
-+
-+static int perf_evsel__roundtrip_cache_name_test(void)
-+{
-+	char name[128];
-+	int type, op, err = 0, ret = 0, i, idx;
-+	struct perf_evsel *evsel;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+        if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-+		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
-+			/* skip invalid cache type */
-+			if (!perf_evsel__is_cache_op_valid(type, op))
-+				continue;
-+
-+			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
-+				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
-+									name, sizeof(name));
-+				err = parse_events(evlist, name, 0);
-+				if (err)
-+					ret = err;
-+			}
-+		}
-+	}
-+
-+	idx = 0;
-+	evsel = perf_evlist__first(evlist);
-+
-+	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-+		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
-+			/* skip invalid cache type */
-+			if (!perf_evsel__is_cache_op_valid(type, op))
-+				continue;
-+
-+			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
-+				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
-+									name, sizeof(name));
-+				if (evsel->idx != idx)
-+					continue;
-+
-+				++idx;
-+
-+				if (strcmp(perf_evsel__name(evsel), name)) {
-+					pr_debug("%s != %s\n", perf_evsel__name(evsel), name);
-+					ret = -1;
-+				}
-+
-+				evsel = perf_evsel__next(evsel);
-+			}
-+		}
-+	}
-+
-+	perf_evlist__delete(evlist);
-+	return ret;
-+}
-+
-+static int __perf_evsel__name_array_test(const char *names[], int nr_names)
-+{
-+	int i, err;
-+	struct perf_evsel *evsel;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+        if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	for (i = 0; i < nr_names; ++i) {
-+		err = parse_events(evlist, names[i], 0);
-+		if (err) {
-+			pr_debug("failed to parse event '%s', err %d\n",
-+				 names[i], err);
-+			goto out_delete_evlist;
-+		}
-+	}
-+
-+	err = 0;
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
-+			--err;
-+			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
-+		}
-+	}
-+
-+out_delete_evlist:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-+
-+#define perf_evsel__name_array_test(names) \
-+	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
-+
-+int test__perf_evsel__roundtrip_name_test(void)
-+{
-+	int err = 0, ret = 0;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__hw_names);
-+	if (err)
-+		ret = err;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__sw_names);
-+	if (err)
-+		ret = err;
-+
-+	err = perf_evsel__roundtrip_cache_name_test();
-+	if (err)
-+		ret = err;
-+
-+	return ret;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 03d428d..5897dd1 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -8,6 +8,7 @@ int test__open_syscall_event_on_all_cpus(void);
- int test__basic_mmap(void);
- int test__PERF_RECORD(void);
- int test__rdpmc(void);
-+int test__perf_evsel__roundtrip_name_test(void);
+ #include <pthread.h>
+ #include <stdbool.h>
++#include <linux/compiler.h>
  
- /* Util */
- int trace_event__id(const char *evname);
+ extern pthread_mutex_t ui__lock;
+ 
++extern int use_browser;
++
++void setup_browser(bool fallback_to_pager);
++void exit_browser(bool wait_for_ok);
++
++#ifdef NEWT_SUPPORT
++int ui__init(void);
++void ui__exit(bool wait_for_ok);
++#else
++static inline int ui__init(void)
++{
++	return -1;
++}
++static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
++#endif
++
++#ifdef GTK2_SUPPORT
++int perf_gtk__init(void);
++void perf_gtk__exit(bool wait_for_ok);
++#else
++static inline int perf_gtk__init(void)
++{
++	return -1;
++}
++static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
++#endif
++
+ void ui__refresh_dimensions(bool force);
+ 
+ #endif /* _PERF_UI_H_ */
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 2bd5137..26e3672 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -5,6 +5,7 @@
+ #include "util.h"
+ #include "strbuf.h"
+ #include "../perf.h"
++#include "../ui/ui.h"
+ 
+ #define CMD_EXEC_PATH "--exec-path"
+ #define CMD_PERF_DIR "--perf-dir="
+@@ -31,44 +32,6 @@ extern const char *pager_program;
+ extern int pager_in_use(void);
+ extern int pager_use_color;
+ 
+-extern int use_browser;
+-
+-#if defined(NEWT_SUPPORT) || defined(GTK2_SUPPORT)
+-void setup_browser(bool fallback_to_pager);
+-void exit_browser(bool wait_for_ok);
+-
+-#ifdef NEWT_SUPPORT
+-int ui__init(void);
+-void ui__exit(bool wait_for_ok);
+-#else
+-static inline int ui__init(void)
+-{
+-	return -1;
+-}
+-static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
+-#endif
+-
+-#ifdef GTK2_SUPPORT
+-int perf_gtk__init(void);
+-void perf_gtk__exit(bool wait_for_ok);
+-#else
+-static inline int perf_gtk__init(void)
+-{
+-	return -1;
+-}
+-static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
+-#endif
+-
+-#else /* NEWT_SUPPORT || GTK2_SUPPORT */
+-
+-static inline void setup_browser(bool fallback_to_pager)
+-{
+-	if (fallback_to_pager)
+-		setup_pager();
+-}
+-static inline void exit_browser(bool wait_for_ok __maybe_unused) {}
+-#endif /* NEWT_SUPPORT || GTK2_SUPPORT */
+-
+ char *alias_lookup(const char *alias);
+ int split_cmdline(char *cmdline, const char ***argv);
+ 
 -- 
 1.7.9.2.358.g22243
 
