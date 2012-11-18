@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab2KRIft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 03:35:49 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42829 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab2KRIfs (ORCPT
+	id S1751484Ab2KRIlz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 03:41:55 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63077 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2KRIlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 03:35:48 -0500
+	Sun, 18 Nov 2012 03:41:53 -0500
+Message-ID: <50A89F08.7020307@gmail.com>
+Date: Sun, 18 Nov 2012 09:40:40 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <50A7E181.9040605@linux.vnet.ibm.com>
-References: <1353157457-3649-1-git-send-email-alex.shi@intel.com>
-	<50A7E181.9040605@linux.vnet.ibm.com>
-Date: Sun, 18 Nov 2012 16:35:48 +0800
-Message-ID: <CAGjg+kH0S-Gmm1U35WYKq=voGy4ksnYJt3Geb+jnrWYe_6NTYw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] enable runnable load avg in load balance
-From: Alex Shi <lkml.alex@gmail.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Alex Shi <alex.shi@intel.com>, mingo@redhat.com, peterz@infradead.org,
-        pjt@google.com, vincent.guittot@linaro.org,
-        linux-kernel@vger.kernel.org
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: linux-pm@vger.kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        g.trinabh@gmail.com, linaro-dev@lists.linaro.org, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl, jwerner@chromium.org,
+        akpm@linux-foundation.org, snanda@chromium.org
+Subject: Re: [RFC] cpuidle - remove the power_specified field in the driver
+References: <50831CA3.2020602@linaro.org> <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 3:12 AM, Preeti U Murthy
-<preeti@linux.vnet.ibm.com> wrote:
-> Hi Alex,
->
-> On 11/17/2012 06:34 PM, Alex Shi wrote:
->> This patchset try to consider runnable load avg when do cpu load comparison
->> in load balance.
->>
->> I had seen preeti's enabling before patch finished, but I still think considing
->> runnable load avg on rq is may a more natrual way.
->>
->> BTW, I am thinking if 2 times decay for cpu_load is too complicate? one for
->> runnable time, another for CPU_LOAD_IDX. I think I missed the decay reason
->> for CPU_LOAD_IDX. Could anyone like do me favor to give some hints of this?
->
-> The decay happening for CPU_LOAD_IDX is *more coarse grained* than the
-> decay that __update_entity_runnable_avg() is performing.While
-> __update_cpu_load() decays the rq->load.weight *for every jiffy*(~4ms)
-> passed so far without update of the load,
-> __update_entity_runnable_avg() decays the rq->load.weight *for every
-> 1ms* when called from update_rq_runnable_avg().
->
-> Before the introduction of PJT's series,__update_cpu_load() seems to be
-> the only place where decay of older rq load was happening(so as to give
-> the older load less importance in its relevance),but with the
-> introduction of PJT's series since the older rq load gets decayed in
-> __update_entity_runnable_avg() in a more fine grained fashion,perhaps
-> you are right,while the CPU_LOAD_IDX gets updated,we dont need to decay
-> the load once again here.
+Hi,
 
+On 11/12/2012 09:26 PM, Daniel Lezcano wrote:
+> This patch follows the discussion about reinitializing the power usage
+> when a C-state is added/removed.
+> 
+>  https://lkml.org/lkml/2012/10/16/518
+> 
+> We realized the power usage field is never filled and when it is
+> filled for tegra, the power_specified flag is not set making all these
+> values to be resetted when the driver is initialized with the set_power_state
+> function.
+> 
+> Julius and I feel this is over-engineered and the power_specified
+> flag could be simply removed and continue assuming the states are
+> backward sorted.
+> 
+> The menu governor select function is simplified as the power is ordered.
+> Actually the condition is always true with the current code.
+> 
+> The cpuidle_play_dead function is also simplified by doing a reverse lookup
+> on the array.
+> 
+> The set_power_states function is removed as it does no make sense anymore.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  drivers/cpuidle/cpuidle.c        |   17 ++++-------------
+>  drivers/cpuidle/driver.c         |   25 -------------------------
+>  drivers/cpuidle/governors/menu.c |    8 ++------
+>  include/linux/cpuidle.h          |    2 +-
+>  4 files changed, 7 insertions(+), 45 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 711dd83..f983262 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> -	int i, dead_state = -1;
+> -	int power_usage = -1;
+> +	int i;
+>  
+>  	if (!drv)
+>  		return -ENODEV;
+>  
+>  	/* Find lowest-power state that supports long-term idle */
+> -	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+> -		struct cpuidle_state *s = &drv->states[i];
+> -
+> -		if (s->power_usage < power_usage && s->enter_dead) {
+> -			power_usage = s->power_usage;
+> -			dead_state = i;
+> -		}
+> -	}
+> -
+> -	if (dead_state != -1)
+> -		return drv->states[dead_state].enter_dead(dev, dead_state);
+> +	for (i = drv->state_count; i >= CPUIDLE_DRIVER_STATE_START; i--)
+> +		if (drv->states[i].play_dead)
 
-If cpu_load is just a coarse decay, we can remove it. but it has
-different meaning for busy_idx, forkexec_idx, idle_idx, newidle_idx.
-each of them has different degree decay. that is the key part, but I
-has no idea of their value come from.
+I guess you meant drv->states[i].enter_dead
 
-Thanks!
+> +			return drv->states[i].enter_dead(dev, i);
+
+--
+Francesco
