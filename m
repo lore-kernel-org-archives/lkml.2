@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab2KRMav (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 07:30:51 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:65315 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2KRMau (ORCPT
+	id S1751942Ab2KRMbL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 07:31:11 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60218 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab2KRMbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 07:30:50 -0500
+	Sun, 18 Nov 2012 07:31:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121118042046.GA18226@lizard.sbx05977.paloaca.wayport.net>
-References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
-	<1349320509-26930-5-git-send-email-festevam@gmail.com>
-	<20121118042046.GA18226@lizard.sbx05977.paloaca.wayport.net>
-Date: Sun, 18 Nov 2012 10:30:49 -0200
-Message-ID: <CAOMZO5B-fwMadjvRpLCTwvXZadhQCk8LcDWXQRXD3joiL9qBug@mail.gmail.com>
-Subject: Re: [PATCH 5/6] power: da9052-battery: Convert to the new da9052
- interrupt functions
-From: Fabio Estevam <festevam@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        ashish.jangam@kpitcummins.com, dchen@diasemi.com, arnd@arndb.de,
-        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Reply-To: kerolasa@gmail.com
+Date: Sun, 18 Nov 2012 12:31:08 +0000
+X-Google-Sender-Auth: uQiRRe4yQbZdZKDTeSxtzITm9Tk
+Message-ID: <CAG27Bk1q5t590bvGg7Ka+2M-yWEMk_58sZsOxDKx-1XNn8mHww@mail.gmail.com>
+Subject: ipc: object information data in proc and sysfs
+From: Sami Kerola <kerolasa@iki.fi>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Doug Ledford <dledford@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Cc: Karel Zak <kzak@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 2:20 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+Hello,
 
-> It seems that the patch depends on other patches in this series.
->
-> I don't see it linux-next, so if anything, for the drivers/power part:
->
-> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+While back I started to look how to get util-linux ipcs(1) tool to
+read values from /proc instead of using IPC multiplex functions.  Most
+of the data ipcs(1) is interested is available in /proc, but there are
+few exceptions, such as
 
-Thanks, Anton. Yes, the mfd patches still need to be applied by Samuel
-so that all dependencies can be resolved.
+msgctl q_qbytes
+semctl getval
+semctl sempid
+semctl semncnt
+semctl semzcnt
 
-Samuel?
+The simplest thing to do would be to add values in /proc/sysvipc/msg
+and /proc/sysvipc/sem as additional fields, but that does not seem
+right, as it would result to ABI change.
 
-Thanks,
+More effort requiring change would be to add information in new sysfs
+paths.  The IPC facilities are using id's which could be used as
+placeholder directories for the data needed.  Something like
 
-Fabio Estevam
+/proc/sys/kernel/ipc/{m,s,q}/id/info
+                 ^^^^^^^^^^^^^^^^^^^
+
+That sort of structure would allow future extensions IPC data without
+much pain.  I also assume that subdirectories could allow a little
+more precise controls, and perhaps some selected values might be made
+writable in future.  If nothing else at least expressing in sensible
+format semaphore lock wait queues could make debugging tools, such as
+lslocks(8), more useful.
+
+I could give a try this change, but not without hearing the concept
+makes sense and could be considered part of upstream kernel (assuming
+my coding meets the usual quality criteria).
+
+Any thoughts, comments, recommendations?
+
+--
+   Sami Kerola
+   http://www.iki.fi/kerolasa/
