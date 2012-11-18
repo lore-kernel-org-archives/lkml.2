@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab2KROgc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:36:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab2KROaQ (ORCPT
+	id S1752776Ab2KROgm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:36:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59366 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2KROaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:30:16 -0500
+	Sun, 18 Nov 2012 09:30:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -15,14 +15,14 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/32] perf tests: Final cleanup for builtin-test move
-Date: Sun, 18 Nov 2012 11:29:36 -0300
-Message-Id: <1353248997-30763-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/32] perf tests: Move test__vmlinux_matches_kallsyms into separate object
+Date: Sun, 18 Nov 2012 11:29:26 -0300
+Message-Id: <1353248997-30763-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,7 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Final function renames to match test__* style and include cleanup.
+Separating test__vmlinux_matches_kallsyms test from the builtin-test
+into vmlinux-kallsyms object.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,199 +39,515 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-12-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352508412-16914-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/perf.h               |    1 -
- tools/perf/tests/attr.c         |    3 ++-
- tools/perf/tests/builtin-test.c |   34 +++++++---------------------------
- tools/perf/tests/dso-data.c     |    3 ++-
- tools/perf/tests/parse-events.c |    3 ++-
- tools/perf/tests/tests.h        |    3 +++
- tools/perf/util/parse-events.h  |    1 -
- tools/perf/util/symbol.h        |    1 -
- 8 files changed, 16 insertions(+), 33 deletions(-)
+ tools/perf/Makefile                 |    1 +
+ tools/perf/tests/builtin-test.c     |  223 +--------------------------------
+ tools/perf/tests/tests.h            |    6 +
+ tools/perf/tests/vmlinux-kallsyms.c |  230 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 239 insertions(+), 221 deletions(-)
+ create mode 100644 tools/perf/tests/tests.h
+ create mode 100644 tools/perf/tests/vmlinux-kallsyms.c
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 054182e..0047264 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -178,7 +178,6 @@ extern bool test_attr__enabled;
- void test_attr__init(void);
- void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
- 		     int fd, int group_fd, unsigned long flags);
--int  test_attr__run(void);
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index cca5bb8..7c7ba4d 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -431,6 +431,7 @@ LIB_OBJS += $(OUTPUT)arch/common.o
+ LIB_OBJS += $(OUTPUT)tests/parse-events.o
+ LIB_OBJS += $(OUTPUT)tests/dso-data.o
+ LIB_OBJS += $(OUTPUT)tests/attr.o
++LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
  
- static inline int
- sys_perf_event_open(struct perf_event_attr *attr,
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 6e2feee..25638a9 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -27,6 +27,7 @@
- #include "../perf.h"
- #include "util.h"
- #include "exec_cmd.h"
-+#include "tests.h"
- 
- #define ENV "PERF_TEST_ATTR"
- 
-@@ -151,7 +152,7 @@ static int run_dir(const char *d, const char *perf)
- 	return system(cmd);
- }
- 
--int test_attr__run(void)
-+int test__attr(void)
- {
- 	struct stat st;
- 	char path_perf[PATH_MAX];
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index d3b95e0..186f675 100644
+index 5d4354e..5bc9063 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -4,31 +4,11 @@
-  * Builtin regression testing command: ever growing number of sanity tests
-  */
- #include "builtin.h"
--
--#include "util/cache.h"
--#include "util/color.h"
--#include "util/debug.h"
--#include "util/debugfs.h"
--#include "util/evlist.h"
--#include "util/machine.h"
--#include "util/parse-options.h"
--#include "util/parse-events.h"
--#include "util/symbol.h"
--#include "util/thread_map.h"
--#include "util/pmu.h"
--#include "event-parse.h"
--#include "../../include/linux/hw_breakpoint.h"
--
--#include <sys/mman.h>
--
--#include "util/cpumap.h"
--#include "util/evsel.h"
--#include <sys/types.h>
--
- #include "tests.h"
--
--#include <sched.h>
--
-+#include "debug.h"
-+#include "color.h"
-+#include "parse-options.h"
-+#include "symbol.h"
+@@ -21,231 +21,12 @@
  
- static struct test {
- 	const char *desc;
-@@ -52,7 +32,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "parse events tests",
--		.func = parse_events__test,
-+		.func = test__parse_events,
- 	},
- #if defined(__x86_64__) || defined(__i386__)
- 	{
-@@ -70,7 +50,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "Test dso data interface",
--		.func = dso__test_data,
-+		.func = test__dso_data,
- 	},
- 	{
- 		.desc = "roundtrip evsel->name check",
-@@ -86,7 +66,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "struct perf_event_attr setup",
--		.func = test_attr__run,
-+		.func = test__attr,
- 	},
- 	{
- 		.func = NULL,
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 0cd42fc..b5198f5 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -8,6 +8,7 @@
+ #include <sys/mman.h>
  
- #include "machine.h"
- #include "symbol.h"
+-static int vmlinux_matches_kallsyms_filter(struct map *map __maybe_unused,
+-					   struct symbol *sym)
+-{
+-	bool *visited = symbol__priv(sym);
+-	*visited = true;
+-	return 0;
+-}
+-
+-static int test__vmlinux_matches_kallsyms(void)
+-{
+-	int err = -1;
+-	struct rb_node *nd;
+-	struct symbol *sym;
+-	struct map *kallsyms_map, *vmlinux_map;
+-	struct machine kallsyms, vmlinux;
+-	enum map_type type = MAP__FUNCTION;
+-	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
+-
+-	/*
+-	 * Step 1:
+-	 *
+-	 * Init the machines that will hold kernel, modules obtained from
+-	 * both vmlinux + .ko files and from /proc/kallsyms split by modules.
+-	 */
+-	machine__init(&kallsyms, "", HOST_KERNEL_ID);
+-	machine__init(&vmlinux, "", HOST_KERNEL_ID);
+-
+-	/*
+-	 * Step 2:
+-	 *
+-	 * Create the kernel maps for kallsyms and the DSO where we will then
+-	 * load /proc/kallsyms. Also create the modules maps from /proc/modules
+-	 * and find the .ko files that match them in /lib/modules/`uname -r`/.
+-	 */
+-	if (machine__create_kernel_maps(&kallsyms) < 0) {
+-		pr_debug("machine__create_kernel_maps ");
+-		return -1;
+-	}
+-
+-	/*
+-	 * Step 3:
+-	 *
+-	 * Load and split /proc/kallsyms into multiple maps, one per module.
+-	 */
+-	if (machine__load_kallsyms(&kallsyms, "/proc/kallsyms", type, NULL) <= 0) {
+-		pr_debug("dso__load_kallsyms ");
+-		goto out;
+-	}
+-
+-	/*
+-	 * Step 4:
+-	 *
+-	 * kallsyms will be internally on demand sorted by name so that we can
+-	 * find the reference relocation * symbol, i.e. the symbol we will use
+-	 * to see if the running kernel was relocated by checking if it has the
+-	 * same value in the vmlinux file we load.
+-	 */
+-	kallsyms_map = machine__kernel_map(&kallsyms, type);
+-
+-	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
+-	if (sym == NULL) {
+-		pr_debug("dso__find_symbol_by_name ");
+-		goto out;
+-	}
+-
+-	ref_reloc_sym.addr = sym->start;
+-
+-	/*
+-	 * Step 5:
+-	 *
+-	 * Now repeat step 2, this time for the vmlinux file we'll auto-locate.
+-	 */
+-	if (machine__create_kernel_maps(&vmlinux) < 0) {
+-		pr_debug("machine__create_kernel_maps ");
+-		goto out;
+-	}
+-
+-	vmlinux_map = machine__kernel_map(&vmlinux, type);
+-	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
+-
+-	/*
+-	 * Step 6:
+-	 *
+-	 * Locate a vmlinux file in the vmlinux path that has a buildid that
+-	 * matches the one of the running kernel.
+-	 *
+-	 * While doing that look if we find the ref reloc symbol, if we find it
+-	 * we'll have its ref_reloc_symbol.unrelocated_addr and then
+-	 * maps__reloc_vmlinux will notice and set proper ->[un]map_ip routines
+-	 * to fixup the symbols.
+-	 */
+-	if (machine__load_vmlinux_path(&vmlinux, type,
+-				       vmlinux_matches_kallsyms_filter) <= 0) {
+-		pr_debug("machine__load_vmlinux_path ");
+-		goto out;
+-	}
+-
+-	err = 0;
+-	/*
+-	 * Step 7:
+-	 *
+-	 * Now look at the symbols in the vmlinux DSO and check if we find all of them
+-	 * in the kallsyms dso. For the ones that are in both, check its names and
+-	 * end addresses too.
+-	 */
+-	for (nd = rb_first(&vmlinux_map->dso->symbols[type]); nd; nd = rb_next(nd)) {
+-		struct symbol *pair, *first_pair;
+-		bool backwards = true;
+-
+-		sym  = rb_entry(nd, struct symbol, rb_node);
+-
+-		if (sym->start == sym->end)
+-			continue;
+-
+-		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
+-		pair = first_pair;
+-
+-		if (pair && pair->start == sym->start) {
+-next_pair:
+-			if (strcmp(sym->name, pair->name) == 0) {
+-				/*
+-				 * kallsyms don't have the symbol end, so we
+-				 * set that by using the next symbol start - 1,
+-				 * in some cases we get this up to a page
+-				 * wrong, trace_kmalloc when I was developing
+-				 * this code was one such example, 2106 bytes
+-				 * off the real size. More than that and we
+-				 * _really_ have a problem.
+-				 */
+-				s64 skew = sym->end - pair->end;
+-				if (llabs(skew) < page_size)
+-					continue;
+-
+-				pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
+-					 sym->start, sym->name, sym->end, pair->end);
+-			} else {
+-				struct rb_node *nnd;
+-detour:
+-				nnd = backwards ? rb_prev(&pair->rb_node) :
+-						  rb_next(&pair->rb_node);
+-				if (nnd) {
+-					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+-
+-					if (next->start == sym->start) {
+-						pair = next;
+-						goto next_pair;
+-					}
+-				}
+-
+-				if (backwards) {
+-					backwards = false;
+-					pair = first_pair;
+-					goto detour;
+-				}
+-
+-				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
+-					 sym->start, sym->name, pair->name);
+-			}
+-		} else
+-			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
+-
+-		err = -1;
+-	}
+-
+-	if (!verbose)
+-		goto out;
+-
+-	pr_info("Maps only in vmlinux:\n");
+-
+-	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
+-		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
+-		/*
+-		 * If it is the kernel, kallsyms is always "[kernel.kallsyms]", while
+-		 * the kernel will have the path for the vmlinux file being used,
+-		 * so use the short name, less descriptive but the same ("[kernel]" in
+-		 * both cases.
+-		 */
+-		pair = map_groups__find_by_name(&kallsyms.kmaps, type,
+-						(pos->dso->kernel ?
+-							pos->dso->short_name :
+-							pos->dso->name));
+-		if (pair)
+-			pair->priv = 1;
+-		else
+-			map__fprintf(pos, stderr);
+-	}
+-
+-	pr_info("Maps in vmlinux with a different name in kallsyms:\n");
+-
+-	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
+-		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
+-
+-		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
+-		if (pair == NULL || pair->priv)
+-			continue;
+-
+-		if (pair->start == pos->start) {
+-			pair->priv = 1;
+-			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
+-				pos->start, pos->end, pos->pgoff, pos->dso->name);
+-			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
+-				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
+-					pair->start, pair->end, pair->pgoff);
+-			pr_info(" %s\n", pair->dso->name);
+-			pair->priv = 1;
+-		}
+-	}
+-
+-	pr_info("Maps only in kallsyms:\n");
+-
+-	for (nd = rb_first(&kallsyms.kmaps.maps[type]);
+-	     nd; nd = rb_next(nd)) {
+-		struct map *pos = rb_entry(nd, struct map, rb_node);
+-
+-		if (!pos->priv)
+-			map__fprintf(pos, stderr);
+-	}
+-out:
+-	return err;
+-}
+-
+ #include "util/cpumap.h"
+ #include "util/evsel.h"
+ #include <sys/types.h>
+ 
 +#include "tests.h"
- 
- #define TEST_ASSERT_VAL(text, cond) \
- do { \
-@@ -95,7 +96,7 @@ struct test_data_offset offsets[] = {
- 	},
- };
- 
--int dso__test_data(void)
-+int test__dso_data(void)
++
+ static int trace_event__id(const char *evname)
  {
- 	struct machine machine;
- 	struct dso *dso;
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index b49c2ee..f2a82d0 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -4,6 +4,7 @@
- #include "evlist.h"
- #include "sysfs.h"
- #include "../../../include/linux/hw_breakpoint.h"
-+#include "tests.h"
- 
- #define TEST_ASSERT_VAL(text, cond) \
- do { \
-@@ -1086,7 +1087,7 @@ static int test_pmu_events(void)
- 	return ret;
- }
- 
--int parse_events__test(void)
-+int test__parse_events(void)
- {
- 	int ret1, ret2 = 0;
- 
+ 	char *filename;
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 88a55df..fc121ed 100644
---- a/tools/perf/tests/tests.h
+new file mode 100644
+index 0000000..2223de5
+--- /dev/null
 +++ b/tools/perf/tests/tests.h
-@@ -12,6 +12,9 @@ int test__perf_evsel__roundtrip_name_test(void);
- int test__perf_evsel__tp_sched_test(void);
- int test__syscall_open_tp_fields(void);
- int test__pmu(void);
-+int test__attr(void);
-+int test__dso_data(void);
-+int test__parse_events(void);
- 
- /* Util */
- int trace_event__id(const char *evname);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ac9a6aa..f639937 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -99,7 +99,6 @@ void parse_events__set_leader(char *name, struct list_head *list);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(void *data, void *scanner, char const *msg);
--int parse_events__test(void);
- 
- void print_events(const char *event_glob, bool name_only);
- void print_events_type(u8 type);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 04ccf29..de68f98 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -224,7 +224,6 @@ size_t symbol__fprintf_symname(const struct symbol *sym, FILE *fp);
- size_t symbol__fprintf(struct symbol *sym, FILE *fp);
- bool symbol_type__is_a(char symbol_type, enum map_type map_type);
- 
--int dso__test_data(void);
- int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
- 		  struct symsrc *runtime_ss, symbol_filter_t filter,
- 		  int kmodule);
+@@ -0,0 +1,6 @@
++#ifndef TESTS_H
++#define TESTS_H
++
++int test__vmlinux_matches_kallsyms(void);
++
++#endif /* TESTS_H */
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+new file mode 100644
+index 0000000..0d1cdbe
+--- /dev/null
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -0,0 +1,230 @@
++#include <linux/compiler.h>
++#include <linux/rbtree.h>
++#include <string.h>
++#include "map.h"
++#include "symbol.h"
++#include "util.h"
++#include "tests.h"
++#include "debug.h"
++#include "machine.h"
++
++static int vmlinux_matches_kallsyms_filter(struct map *map __maybe_unused,
++					   struct symbol *sym)
++{
++	bool *visited = symbol__priv(sym);
++	*visited = true;
++	return 0;
++}
++
++int test__vmlinux_matches_kallsyms(void)
++{
++	int err = -1;
++	struct rb_node *nd;
++	struct symbol *sym;
++	struct map *kallsyms_map, *vmlinux_map;
++	struct machine kallsyms, vmlinux;
++	enum map_type type = MAP__FUNCTION;
++	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
++
++	/*
++	 * Step 1:
++	 *
++	 * Init the machines that will hold kernel, modules obtained from
++	 * both vmlinux + .ko files and from /proc/kallsyms split by modules.
++	 */
++	machine__init(&kallsyms, "", HOST_KERNEL_ID);
++	machine__init(&vmlinux, "", HOST_KERNEL_ID);
++
++	/*
++	 * Step 2:
++	 *
++	 * Create the kernel maps for kallsyms and the DSO where we will then
++	 * load /proc/kallsyms. Also create the modules maps from /proc/modules
++	 * and find the .ko files that match them in /lib/modules/`uname -r`/.
++	 */
++	if (machine__create_kernel_maps(&kallsyms) < 0) {
++		pr_debug("machine__create_kernel_maps ");
++		return -1;
++	}
++
++	/*
++	 * Step 3:
++	 *
++	 * Load and split /proc/kallsyms into multiple maps, one per module.
++	 */
++	if (machine__load_kallsyms(&kallsyms, "/proc/kallsyms", type, NULL) <= 0) {
++		pr_debug("dso__load_kallsyms ");
++		goto out;
++	}
++
++	/*
++	 * Step 4:
++	 *
++	 * kallsyms will be internally on demand sorted by name so that we can
++	 * find the reference relocation * symbol, i.e. the symbol we will use
++	 * to see if the running kernel was relocated by checking if it has the
++	 * same value in the vmlinux file we load.
++	 */
++	kallsyms_map = machine__kernel_map(&kallsyms, type);
++
++	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
++	if (sym == NULL) {
++		pr_debug("dso__find_symbol_by_name ");
++		goto out;
++	}
++
++	ref_reloc_sym.addr = sym->start;
++
++	/*
++	 * Step 5:
++	 *
++	 * Now repeat step 2, this time for the vmlinux file we'll auto-locate.
++	 */
++	if (machine__create_kernel_maps(&vmlinux) < 0) {
++		pr_debug("machine__create_kernel_maps ");
++		goto out;
++	}
++
++	vmlinux_map = machine__kernel_map(&vmlinux, type);
++	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
++
++	/*
++	 * Step 6:
++	 *
++	 * Locate a vmlinux file in the vmlinux path that has a buildid that
++	 * matches the one of the running kernel.
++	 *
++	 * While doing that look if we find the ref reloc symbol, if we find it
++	 * we'll have its ref_reloc_symbol.unrelocated_addr and then
++	 * maps__reloc_vmlinux will notice and set proper ->[un]map_ip routines
++	 * to fixup the symbols.
++	 */
++	if (machine__load_vmlinux_path(&vmlinux, type,
++				       vmlinux_matches_kallsyms_filter) <= 0) {
++		pr_debug("machine__load_vmlinux_path ");
++		goto out;
++	}
++
++	err = 0;
++	/*
++	 * Step 7:
++	 *
++	 * Now look at the symbols in the vmlinux DSO and check if we find all of them
++	 * in the kallsyms dso. For the ones that are in both, check its names and
++	 * end addresses too.
++	 */
++	for (nd = rb_first(&vmlinux_map->dso->symbols[type]); nd; nd = rb_next(nd)) {
++		struct symbol *pair, *first_pair;
++		bool backwards = true;
++
++		sym  = rb_entry(nd, struct symbol, rb_node);
++
++		if (sym->start == sym->end)
++			continue;
++
++		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++		pair = first_pair;
++
++		if (pair && pair->start == sym->start) {
++next_pair:
++			if (strcmp(sym->name, pair->name) == 0) {
++				/*
++				 * kallsyms don't have the symbol end, so we
++				 * set that by using the next symbol start - 1,
++				 * in some cases we get this up to a page
++				 * wrong, trace_kmalloc when I was developing
++				 * this code was one such example, 2106 bytes
++				 * off the real size. More than that and we
++				 * _really_ have a problem.
++				 */
++				s64 skew = sym->end - pair->end;
++				if (llabs(skew) < page_size)
++					continue;
++
++				pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
++					 sym->start, sym->name, sym->end, pair->end);
++			} else {
++				struct rb_node *nnd;
++detour:
++				nnd = backwards ? rb_prev(&pair->rb_node) :
++						  rb_next(&pair->rb_node);
++				if (nnd) {
++					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
++
++					if (next->start == sym->start) {
++						pair = next;
++						goto next_pair;
++					}
++				}
++
++				if (backwards) {
++					backwards = false;
++					pair = first_pair;
++					goto detour;
++				}
++
++				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
++					 sym->start, sym->name, pair->name);
++			}
++		} else
++			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
++
++		err = -1;
++	}
++
++	if (!verbose)
++		goto out;
++
++	pr_info("Maps only in vmlinux:\n");
++
++	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
++		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
++		/*
++		 * If it is the kernel, kallsyms is always "[kernel.kallsyms]", while
++		 * the kernel will have the path for the vmlinux file being used,
++		 * so use the short name, less descriptive but the same ("[kernel]" in
++		 * both cases.
++		 */
++		pair = map_groups__find_by_name(&kallsyms.kmaps, type,
++						(pos->dso->kernel ?
++							pos->dso->short_name :
++							pos->dso->name));
++		if (pair)
++			pair->priv = 1;
++		else
++			map__fprintf(pos, stderr);
++	}
++
++	pr_info("Maps in vmlinux with a different name in kallsyms:\n");
++
++	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
++		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
++
++		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
++		if (pair == NULL || pair->priv)
++			continue;
++
++		if (pair->start == pos->start) {
++			pair->priv = 1;
++			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
++				pos->start, pos->end, pos->pgoff, pos->dso->name);
++			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
++				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
++					pair->start, pair->end, pair->pgoff);
++			pr_info(" %s\n", pair->dso->name);
++			pair->priv = 1;
++		}
++	}
++
++	pr_info("Maps only in kallsyms:\n");
++
++	for (nd = rb_first(&kallsyms.kmaps.maps[type]);
++	     nd; nd = rb_next(nd)) {
++		struct map *pos = rb_entry(nd, struct map, rb_node);
++
++		if (!pos->priv)
++			map__fprintf(pos, stderr);
++	}
++out:
++	return err;
++}
 -- 
 1.7.9.2.358.g22243
 
