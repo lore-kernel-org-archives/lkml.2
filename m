@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab2KRTIE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 14:08:04 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53523 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab2KRTIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 14:08:02 -0500
-Message-ID: <50A9320D.4060700@suse.cz>
-Date: Sun, 18 Nov 2012 20:07:57 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752508Ab2KRTcQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 14:32:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321Ab2KRTcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 14:32:15 -0500
+Date: Sun, 18 Nov 2012 20:32:35 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm]
+	percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessari
+	ly.fix
+Message-ID: <20121118193235.GA9859@redhat.com>
+References: <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121111182744.GA25282@redhat.com> <20121116152219.d4acc6d0.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Zdenek Kabelac <zkabelac@redhat.com>
-CC: Mel Gorman <mgorman@suse.de>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Valdis.Kletnieks@vt.edu,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: kswapd0: excessive CPU usage
-References: <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz> <509C84ED.8090605@linux.vnet.ibm.com> <509CB9D1.6060704@redhat.com> <20121109090635.GG8218@suse.de> <509F6C2A.9060502@redhat.com> <20121112121956.GT8218@suse.de> <50A0F5F0.6090400@redhat.com> <20121112133139.GU8218@suse.de> <50A9304E.3020205@redhat.com>
-In-Reply-To: <50A9304E.3020205@redhat.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121116152219.d4acc6d0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2012 08:00 PM, Zdenek Kabelac wrote:
-> For some reason my machine went ouf of memory and OOM killed
-> firefox and then even whole Xsession.
-> 
-> Unsure whether it's related to those 2 patches - but I've never had
-> such OOM failure before.
+On 11/16, Andrew Morton wrote:
+>
+> On Sun, 11 Nov 2012 19:27:44 +0100
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> >  lib/percpu-rwsem.c |   35 +++++++++++++++++++++++++++++++++--
+>
+> y'know, this looks like a great pile of useless bloat for single-CPU
+> machines.  Maybe add a CONFIG_SMP=n variant which simply calls the
+> regular rwsem operations?
 
-As I wrote, this would be me:
-https://lkml.org/lkml/2012/11/15/150
+Yes, I thought about this and probably I'll send the patch...
 
-There is no -next tree for Friday which would contain the set already.
-So for now, it should be enough for you to apply:
-https://lkml.org/lkml/2012/11/15/95
+But note that the regular down_read() won't be actually faster if
+there is no writer, and it doesn't allow to add other features.
 
-Or, alternatively, if you use a brand new systemd, it likes to fork bomb
-using udev.
+I'll try to think, perhaps it would be enough to add a couple of
+"ifdef CONFIG_SMP" into this code, say, to avoid __percpu.
 
-thanks,
--- 
-js
-suse labs
+Oleg.
+
