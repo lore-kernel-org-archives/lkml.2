@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab2KRVLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 16:11:25 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:51931 "EHLO ogre.sisk.pl"
+	id S1752700Ab2KRVLV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 16:11:21 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:51941 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab2KRVLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752505Ab2KRVLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 16:11:02 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Mika Westerberg <mika.westerberg@linux.intel.com>
@@ -15,12 +15,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
         grant.likely@secretlab.ca, linus.walleij@linaro.org,
         mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/2] ACPI: Allow ACPI handles of devices to be initialized in advance
-Date: Sun, 18 Nov 2012 22:12:52 +0100
-Message-ID: <5604758.tWMNMRG2En@vostro.rjw.lan>
+Subject: [PATCH 0/2] ACPI: Simplify "glueing" to physical nodes (was: Re: [PATCH v2 3/3 UPDATED] i2c / ACPI: add ACPI enumeration support)
+Date: Sun, 18 Nov 2012 22:10:33 +0100
+Message-ID: <1758879.PKgPhTGcB7@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc6; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1758879.PKgPhTGcB7@vostro.rjw.lan>
-References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <20121118155539.GE17774@intel.com> <1758879.PKgPhTGcB7@vostro.rjw.lan>
+In-Reply-To: <20121118155539.GE17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com> <3790210.BPELRzTIaN@vostro.rjw.lan> <20121118155539.GE17774@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,135 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sunday, November 18, 2012 05:55:39 PM Mika Westerberg wrote:
+> On Sat, Nov 17, 2012 at 12:24:45PM +0100, Rafael J. Wysocki wrote:
+> > Well, maybe there is one.  Perhaps we can make acpi_platform_notify() 
+> > call acpi_bind_one() upfront and only if that fails, do the whole
+> > type->find_device() dance?  Of course, acpi_bind_one() would need to
+> > be modified slightly too, like in the patch below.
+> > 
+> > If we did that, acpi_i2c_add_device() would only need to assign acpi_handle
+> > as appropriate before calling i2c_new_device() (and analogously for SPI).
+> > 
+> > What do you think? 
+> 
+> This is certainly better than the thing we use currently. It makes adding
+> I2C and SPI support much shorter and simpler. If others don't object I
+> would suggest that we switch to use this method.
 
-Currently, the ACPI handles of devices are initialized from within
-device_add(), by acpi_bind_one() called from acpi_platform_notify()
-which first uses the .find_device() routine provided by the device's
-bus type to find the matching device node in the ACPI namespace.
-This is a source of some computational overhead and, moreover, the
-correctness of the result depends on the implementation of
-.find_device() which is known to fail occasionally for some bus types
-(e.g. PCI).  In some cases, however, the corresponding ACPI device
-node is known already before calling device_add() for the given
-struct device object and the whole .find_device() dance in
-acpi_platform_notify() is then simply unnecessary.
+OK, thanks.
 
-For this reason, make it possible to initialize the ACPI handles of
-devices before calling device_add() for them.  Modify
-acpi_platform_notify() to call acpi_bind_one() in advance to check
-the device's existing ACPI handle and skip the .find_device()
-search if that is successful.  Change acpi_bind_one() accordingly.
+The first of the following two patches is a slightly modified version of the
+one that you commented.  Patch [2/2] implements the idea for platform devices
+and since it modifies struct platform_device_info, I'm adding a CC to Greg.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/glue.c |   42 +++++++++++++++++++++++++++++++++---------
- 1 file changed, 33 insertions(+), 9 deletions(-)
+The patches are on top of current linux-pm.git/linux-next.
 
-Index: linux/drivers/acpi/glue.c
-===================================================================
---- linux.orig/drivers/acpi/glue.c
-+++ linux/drivers/acpi/glue.c
-@@ -135,41 +135,54 @@ static int acpi_bind_one(struct device *
- 	int retval = -EINVAL;
- 
- 	if (dev->acpi_handle) {
--		dev_warn(dev, "Drivers changed 'acpi_handle'\n");
--		return -EINVAL;
-+		if (handle) {
-+			dev_warn(dev, "ACPI handle is already set\n");
-+			return -EINVAL;
-+		} else {
-+			handle = dev->acpi_handle;
-+		}
- 	}
-+	if (!handle)
-+		return -EINVAL;
- 
- 	get_device(dev);
- 	status = acpi_bus_get_device(handle, &acpi_dev);
- 	if (ACPI_FAILURE(status))
- 		goto err;
- 
--	physical_node = kzalloc(sizeof(struct acpi_device_physical_node),
--		GFP_KERNEL);
-+	physical_node = kzalloc(sizeof(*physical_node), GFP_KERNEL);
- 	if (!physical_node) {
- 		retval = -ENOMEM;
- 		goto err;
- 	}
- 
- 	mutex_lock(&acpi_dev->physical_node_lock);
-+
-+	/* Sanity check. */
-+	list_for_each_entry(physical_node, &acpi_dev->physical_node_list, node)
-+		if (physical_node->dev == dev) {
-+			dev_warn(dev, "Already associated with ACPI node\n");
-+			goto err_free;
-+		}
-+
- 	/* allocate physical node id according to physical_node_id_bitmap */
- 	physical_node->node_id =
- 		find_first_zero_bit(acpi_dev->physical_node_id_bitmap,
- 		ACPI_MAX_PHYSICAL_NODE);
- 	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
- 		retval = -ENOSPC;
--		mutex_unlock(&acpi_dev->physical_node_lock);
--		kfree(physical_node);
--		goto err;
-+		goto err_free;
- 	}
- 
- 	set_bit(physical_node->node_id, acpi_dev->physical_node_id_bitmap);
- 	physical_node->dev = dev;
- 	list_add_tail(&physical_node->node, &acpi_dev->physical_node_list);
- 	acpi_dev->physical_node_count++;
-+
- 	mutex_unlock(&acpi_dev->physical_node_lock);
- 
--	dev->acpi_handle = handle;
-+	if (!dev->acpi_handle)
-+		dev->acpi_handle = handle;
- 
- 	if (!physical_node->node_id)
- 		strcpy(physical_node_name, PHYSICAL_NODE_STRING);
-@@ -187,8 +200,14 @@ static int acpi_bind_one(struct device *
- 	return 0;
- 
-  err:
-+	dev->acpi_handle = NULL;
- 	put_device(dev);
- 	return retval;
-+
-+ err_free:
-+	mutex_unlock(&acpi_dev->physical_node_lock);
-+	kfree(physical_node);
-+	goto err;
- }
- 
- static int acpi_unbind_one(struct device *dev)
-@@ -247,6 +266,10 @@ static int acpi_platform_notify(struct d
- 	acpi_handle handle;
- 	int ret = -EINVAL;
- 
-+	ret = acpi_bind_one(dev, NULL);
-+	if (!ret)
-+		goto out;
-+
- 	if (!dev->bus || !dev->parent) {
- 		/* bridge devices genernally haven't bus or parent */
- 		ret = acpi_find_bridge_device(dev, &handle);
-@@ -260,10 +283,11 @@ static int acpi_platform_notify(struct d
- 	}
- 	if ((ret = type->find_device(dev, &handle)) != 0)
- 		DBG("Can't get handler for %s\n", dev_name(dev));
--      end:
-+ end:
- 	if (!ret)
- 		acpi_bind_one(dev, handle);
- 
-+ out:
- #if ACPI_GLUE_DEBUG
- 	if (!ret) {
- 		struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+It looks like we may be able to use this approach for PCI too, in which case
+the whole .find_device() stuff won't be necessary any more.
 
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
