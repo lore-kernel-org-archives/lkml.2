@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab2KRJsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 04:48:10 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:35773 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab2KRJsH (ORCPT
+	id S1751854Ab2KRKCb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 05:02:31 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35298 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab2KRKC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 04:48:07 -0500
-Date: Sun, 18 Nov 2012 10:47:59 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.7 (take 3)
-Message-ID: <alpine.DEB.2.00.1211181044490.29846@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 18 Nov 2012 05:02:29 -0500
+Date: Sun, 18 Nov 2012 18:02:21 +0800
+From: Fu Wei <tekkamanninja@gmail.com>
+To: Harry Wei <harryxiyou@gmail.com>
+Cc: Greg Kroah Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Doc ML <linux-doc@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH]Documentation:Update Documentation/zh_CN/arm64/memory.txt
+Message-ID: <20121118100057.GA20057@Super-MAGI>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+This is a update of Chinese
+documentation:Documentation/zh_CN/arm64/memory.txt
 
-The following changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
-  Linus Torvalds (1):
-        Linux 3.7-rc6
+It is based on the modifications of Documentation/arm64/memory.txt in
+submission :"e3978cde".
 
-are available in the git repository at:
+Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
 
-  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+---
+ Documentation/zh_CN/arm64/memory.txt | 12 ++++++------
+ 1 个文件被修改，插入 6 行(+)，删除 6 行(-)
 
-Andreas Schwab (1):
-      m68k: fix sigset_t accessor functions
+diff --git a/Documentation/zh_CN/arm64/memory.txt b/Documentation/zh_CN/arm64/memory.txt
+index 2a74499..a5f6283 100644
+--- a/Documentation/zh_CN/arm64/memory.txt
++++ b/Documentation/zh_CN/arm64/memory.txt
+@@ -47,17 +47,17 @@ AArch64 Linux 内存布局：
+ -----------------------------------------------------------------------
+ 0000000000000000	0000007fffffffff	 512GB		用户空间
+ 
+-ffffff8000000000	ffffffbbfffcffff	~240GB		vmalloc
++ffffff8000000000	ffffffbbfffeffff	~240GB		vmalloc
+ 
+-ffffffbbfffd0000	ffffffbcfffdffff	  64KB		[防护页]
++ffffffbbffff0000	ffffffbbffffffff	  64KB		[防护页]
+ 
+-ffffffbbfffe0000	ffffffbcfffeffff	  64KB		PCI I/O 空间
++ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
+ 
+-ffffffbbffff0000	ffffffbcffffffff	  64KB		[防护页]
++ffffffbe00000000	ffffffbffbbfffff	  ~8GB		[防护页，未来用于 vmmemap]
+ 
+-ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
++ffffffbffbe00000	ffffffbffbe0ffff	  64KB		PCI I/O 空间
+ 
+-ffffffbe00000000	ffffffbffbffffff	  ~8GB		[防护页，未来用于 vmmemap]
++ffffffbbffff0000	ffffffbcffffffff	  ~2MB		[防护页]
+ 
+ ffffffbffc000000	ffffffbfffffffff	  64MB		模块
+ 
+-- 
+1.7.11.7
 
- arch/m68k/include/asm/signal.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-This is a bug fix for asm constraints that affect sending RT signals, also
-destined for -stable.
-
-Thanks for pulling!
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
