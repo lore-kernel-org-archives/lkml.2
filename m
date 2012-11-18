@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab2KRJG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 04:06:27 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36467 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2KRJGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 04:06:25 -0500
-Message-ID: <50A8A382.7020400@gmail.com>
-Date: Sun, 18 Nov 2012 09:59:46 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+	id S1751623Ab2KRJL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 04:11:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab2KRJL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 04:11:27 -0500
+Date: Sun, 18 Nov 2012 11:13:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jason Wang <jasowang@redhat.com>,
+        davem@davemloft.net, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        krkumar2@in.ibm.com, kvm@vger.kernel.org, edumazet@google.com
+Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
+Message-ID: <20121118091354.GA31775@redhat.com>
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+ <1351591403-23065-3-git-send-email-jasowang@redhat.com>
+ <87y5igyhyg.fsf@rustcorp.com.au>
+ <20121113064026.GA27416@redhat.com>
+ <1353112529.2743.83.camel@bwh-desktop.uk.solarflarecom.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] hostfs: fix a not needed double check
-References: <508276D3.5000708@gmail.com>
-In-Reply-To: <508276D3.5000708@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353112529.2743.83.camel@bwh-desktop.uk.solarflarecom.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/10/2012 12:02, Marco Stornelli ha scritto:
-> With the commit 3be2be0a32c18b0fd6d623cda63174a332ca0de1 we removed vmtruncate,
-> but actaully there is no need to call inode_newsize_ok() because the checks are
-> already done in inode_change_ok() at the begin of the function.
->
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> ---
->   fs/hostfs/hostfs_kern.c |    9 +--------
->   1 files changed, 1 insertions(+), 8 deletions(-)
->
-> diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
-> index 457addc..c9d5254 100644
-> --- a/fs/hostfs/hostfs_kern.c
-> +++ b/fs/hostfs/hostfs_kern.c
-> @@ -845,15 +845,8 @@ int hostfs_setattr(struct dentry *dentry, struct iattr *attr)
->   		return err;
->
->   	if ((attr->ia_valid & ATTR_SIZE) &&
-> -	    attr->ia_size != i_size_read(inode)) {
-> -		int error;
-> -
-> -		error = inode_newsize_ok(inode, attr->ia_size);
-> -		if (error)
-> -			return error;
-> -
-> +	    attr->ia_size != i_size_read(inode))
->   		truncate_setsize(inode, attr->ia_size);
-> -	}
->
->   	setattr_copy(inode, attr);
->   	mark_inode_dirty(inode);
->
+On Sat, Nov 17, 2012 at 12:35:29AM +0000, Ben Hutchings wrote:
+> On Tue, 2012-11-13 at 08:40 +0200, Michael S. Tsirkin wrote:
+> > On Mon, Nov 05, 2012 at 11:38:39AM +1030, Rusty Russell wrote:
+> > > > @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
+> > > >  {
+> > > >  	struct virtnet_info *vi = netdev_priv(dev);
+> > > >  
+> > > > -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
+> > > > -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
+> > > > +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
+> > > > +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
+> > > >  	ring->rx_pending = ring->rx_max_pending;
+> > > >  	ring->tx_pending = ring->tx_max_pending;
+> > > > -
+> > > >  }
+> > > 
+> > > This assumes all vqs are the same size.  I think this should probably
+> > > check: for mq mode, use the first vq, otherewise use the 0th.
+> > 
+> > For rx_pending/tx_pending I think what is required here is the
+> > actual number of outstanding buffers.
+> > Dave, Eric - right?
+> > 
+> > So this should be the total over all rings and to be useful,
+> > rx_max_pending/tx_max_pending should be the total too.
+> 
+> So far as I know, all current implementations use the number of
+> descriptors per ring here. virtio_net should be consistent with this.
+> 
+> Ben.
 
-Any feedback for this patch?
+Problem is, it could in theory be different between rings. I guess we
+could use the maximum.
 
-Marco
+What's the right thing to do for rx_pending - I am guessing
+we want the current outstanding packets right?
+
+
+> > > For bonus points, check this assertion at probe time.
+> > 
+> > Looks like we can easily support different queues too.
+> > 
+> 
+> -- 
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
