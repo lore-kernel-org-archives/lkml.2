@@ -1,204 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2KROdq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:33:46 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59387 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab2KROaT (ORCPT
+	id S1752512Ab2KROdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:33:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36581 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab2KROaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:19 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Borislav Petkov <bp@amd64.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/32] perf tools: Fix 'disabled' attribute config for record command
-Date: Sun, 18 Nov 2012 11:29:44 -0300
-Message-Id: <1353248997-30763-20-git-send-email-acme@infradead.org>
+Subject: [PATCH 30/32] tools: Pass the target in descend
+Date: Sun, 18 Nov 2012 11:29:55 -0300
+Message-Id: <1353248997-30763-31-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: David Howells <dhowells@redhat.com>
 
-Currently the record command sets all events initially as disabled.
+ Fixing:
 
-There's non conditional perf_evlist__enable call, that enables all
-events before we exec tracee program. That actually screws whole
-enable_on_exec logic, because the event is enabled before the traced
-program got executed.
+  [acme@sandy linux]$ cd tools
+  [acme@sandy tools]$ make clean
+      DESCEND power/cpupower
+    CC       lib/cpufreq.o
+    CC       lib/sysfs.o
+    LD       libcpupower.so.0.0.0
+    CC       utils/helpers/amd.o
+  utils/helpers/amd.c:7:21: error: pci/pci.h: No such file or directory
+  In file included from utils/helpers/amd.c:9:
+  ./utils/helpers/helpers.h:137: warning: ‘struct pci_access’ declared inside parameter list
+  ./utils/helpers/helpers.h:137: warning: its scope is only this definition or declaration, which is probably not what you want
+  ./utils/helpers/helpers.h:139: warning: ‘struct pci_access’ declared inside parameter list
+  utils/helpers/amd.c: In function ‘amd_pci_get_num_boost_states’:
+  utils/helpers/amd.c:120: warning: passing argument 1 of ‘pci_slot_func_init’ from incompatible pointer type
+  ./utils/helpers/helpers.h:138: note: expected ‘struct pci_access **’ but argument is of type ‘struct pci_access **’
+  utils/helpers/amd.c:125: warning: implicit declaration of function ‘pci_read_byte’
+  utils/helpers/amd.c:132: warning: implicit declaration of function ‘pci_cleanup’
+  make[1]: *** [utils/helpers/amd.o] Error 1
+  make: *** [cpupower_clean] Error 2
+  [acme@sandy tools]$
 
-What we actually want is:
-
-1) For any type of traced program:
-  - all independent events and group leaders are disabled
-  - all group members are enabled
-
-   Group members are ruled by group leaders. They need to
-   be enabled, because the group scheduling relies on that.
-
-2) For traced programs executed by perf:
-   - all independent events and group leaders have
-     enable_on_exec set
-   - we don't specifically enable or disable any event during
-     the record command
-
-   Independent events and group leaders are initially disabled
-   and get enabled by exec. Group members are ruled by group
-   leaders as stated in 1).
-
-3) For traced programs attached by perf (pid/tid):
-   - we specifically enable or disable all events during
-     the record command
-
-   When attaching events to already running traced we
-   enable/disable events specifically, as there's no
-   initial traced exec call.
-
-Fixing appropriate perf_event_attr test case to cover this change.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352741644-16809-3-git-send-email-jolsa@redhat.com
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-tviyimq6x6nm77sj5lt4t19f@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c              |   15 +++++++++--
- tools/perf/tests/attr/test-record-group  |    1 +
- tools/perf/tests/attr/test-record-group1 |    1 +
- tools/perf/util/evsel.c                  |   42 +++++++++++++++++++++++++++++-
- 4 files changed, 56 insertions(+), 3 deletions(-)
+ tools/scripts/Makefile.include |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 3717027..268b356 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -701,7 +701,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		}
- 	}
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index 87467b1..2964b96 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -51,7 +51,7 @@ endif
+ #
+ descend = \
+ 	+mkdir -p $(OUTPUT)$(1) && \
+-	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
++	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
  
--	perf_evlist__enable(evsel_list);
-+	/*
-+	 * When perf is starting the traced process, all the events
-+	 * (apart from group members) have enable_on_exec=1 set,
-+	 * so don't spoil it by prematurely enabling them.
-+	 */
-+	if (!perf_target__none(&opts->target))
-+		perf_evlist__enable(evsel_list);
- 
- 	/*
- 	 * Let the child rip
-@@ -724,7 +730,12 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 			waking++;
- 		}
- 
--		if (done)
-+		/*
-+		 * When perf is starting the traced process, at the end events
-+		 * die with the process and we wait for that. Thus no need to
-+		 * disable events in this case.
-+		 */
-+		if (done && !perf_target__none(&opts->target))
- 			perf_evlist__disable(evsel_list);
- 	}
- 
-diff --git a/tools/perf/tests/attr/test-record-group b/tools/perf/tests/attr/test-record-group
-index b945f77..a6599e9 100644
---- a/tools/perf/tests/attr/test-record-group
-+++ b/tools/perf/tests/attr/test-record-group
-@@ -15,3 +15,4 @@ sample_type=327
- mmap=0
- comm=0
- enable_on_exec=0
-+disabled=0
-diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
-index 013572f..5a8359d 100644
---- a/tools/perf/tests/attr/test-record-group1
-+++ b/tools/perf/tests/attr/test-record-group1
-@@ -16,3 +16,4 @@ sample_type=327
- mmap=0
- comm=0
- enable_on_exec=0
-+disabled=0
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6d4a5f6..fc4faaa 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -404,13 +404,40 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
- 	return evsel->name ?: "unknown";
- }
- 
-+/*
-+ * The enable_on_exec/disabled value strategy:
-+ *
-+ *  1) For any type of traced program:
-+ *    - all independent events and group leaders are disabled
-+ *    - all group members are enabled
-+ *
-+ *     Group members are ruled by group leaders. They need to
-+ *     be enabled, because the group scheduling relies on that.
-+ *
-+ *  2) For traced programs executed by perf:
-+ *     - all independent events and group leaders have
-+ *       enable_on_exec set
-+ *     - we don't specifically enable or disable any event during
-+ *       the record command
-+ *
-+ *     Independent events and group leaders are initially disabled
-+ *     and get enabled by exec. Group members are ruled by group
-+ *     leaders as stated in 1).
-+ *
-+ *  3) For traced programs attached by perf (pid/tid):
-+ *     - we specifically enable or disable all events during
-+ *       the record command
-+ *
-+ *     When attaching events to already running traced we
-+ *     enable/disable events specifically, as there's no
-+ *     initial traced exec call.
-+ */
- void perf_evsel__config(struct perf_evsel *evsel,
- 			struct perf_record_opts *opts)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
- 
--	attr->disabled = 1;
- 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
- 	attr->inherit	    = !opts->no_inherit;
- 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
-@@ -486,6 +513,19 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	attr->mmap = track;
- 	attr->comm = track;
- 
-+	/*
-+	 * XXX see the function comment above
-+	 *
-+	 * Disabling only independent events or group leaders,
-+	 * keeping group members enabled.
-+	 */
-+	if (!evsel->leader)
-+		attr->disabled = 1;
-+
-+	/*
-+	 * Setting enable_on_exec for independent events and
-+	 * group leaders for traced executed by perf.
-+	 */
- 	if (perf_target__none(&opts->target) && (!evsel->leader))
- 		attr->enable_on_exec = 1;
- }
+ QUIET_SUBDIR0  = +$(MAKE) $(COMMAND_O) -C # space to separate -C and subdir
+ QUIET_SUBDIR1  =
+@@ -72,6 +72,6 @@ ifndef V
+ 	descend = \
+ 		@echo '   ' DESCEND $(1); \
+ 		mkdir -p $(OUTPUT)$(1) && \
+-		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
++		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
+ endif
+ endif
 -- 
 1.7.9.2.358.g22243
 
