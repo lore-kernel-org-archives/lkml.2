@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2KROaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36536 "EHLO
+	id S1752397Ab2KROa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:30:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36535 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab2KROaN (ORCPT
+	with ESMTP id S1752126Ab2KROaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 26/32] perf ui: Add ui_progress__finish()
-Date: Sun, 18 Nov 2012 11:29:51 -0300
-Message-Id: <1353248997-30763-27-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/32] perf tools: Use sscanf for parsing /proc/pid/maps
+Date: Sun, 18 Nov 2012 11:29:42 -0300
+Message-Id: <1353248997-30763-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
@@ -26,109 +26,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Sometimes we need to know when the progress bar should disappear.
-
-Checking curr >= total wasn't enough since there're cases not met that
-condition for the last call.
-
-So add a new ->finish callback to identify this explicitly.  Currently
-only GTK frontend needs it.
+When reading those files to synthesize MMAP events.  It makes the code
+shorter and cleaner.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1352813436-14173-4-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1352643651-13891-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/progress.c |    9 +++++++++
- tools/perf/ui/progress.c     |    6 ++++++
- tools/perf/ui/progress.h     |    2 ++
- tools/perf/util/debug.h      |    1 +
- tools/perf/util/session.c    |    1 +
- 5 files changed, 19 insertions(+)
+ tools/perf/util/event.c |   74 ++++++++++++++++++++---------------------------
+ 1 file changed, 31 insertions(+), 43 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
-index 903426f..482bcf3 100644
---- a/tools/perf/ui/gtk/progress.c
-+++ b/tools/perf/ui/gtk/progress.c
-@@ -40,8 +40,17 @@ static void gtk_progress_update(u64 curr, u64 total, const char *title)
- 		gtk_main_iteration();
- }
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index ca9ca28..3cf2c3e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -193,55 +193,43 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 	event->header.misc = PERF_RECORD_MISC_USER;
  
-+static void gtk_progress_finish(void)
-+{
-+	/* this will also destroy all of its children */
-+	gtk_widget_destroy(dialog);
+ 	while (1) {
+-		char bf[BUFSIZ], *pbf = bf;
+-		int n;
++		char bf[BUFSIZ];
++		char prot[5];
++		char execname[PATH_MAX];
++		char anonstr[] = "//anon";
+ 		size_t size;
 +
-+	dialog = NULL;
-+}
+ 		if (fgets(bf, sizeof(bf), fp) == NULL)
+ 			break;
+ 
++		/* ensure null termination since stack will be reused. */
++		strcpy(execname, "");
 +
- static struct ui_progress gtk_progress_fns = {
- 	.update		= gtk_progress_update,
-+	.finish		= gtk_progress_finish,
- };
- 
- void perf_gtk__init_progress(void)
-diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
-index f5e4d1b..3ec69560 100644
---- a/tools/perf/ui/progress.c
-+++ b/tools/perf/ui/progress.c
-@@ -18,3 +18,9 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
- {
- 	return progress_fns->update(curr, total, title);
- }
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = hex2u64(pbf, &event->mmap.start);
+-		if (n < 0)
+-			continue;
+-		pbf += n + 1;
+-		n = hex2u64(pbf, &event->mmap.len);
+-		if (n < 0)
++		sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
++		       &event->mmap.start, &event->mmap.len, prot,
++		       &event->mmap.pgoff, execname);
 +
-+void ui_progress__finish(void)
-+{
-+	if (progress_fns->finish)
-+		progress_fns->finish();
-+}
-diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-index 717814b..257cc22 100644
---- a/tools/perf/ui/progress.h
-+++ b/tools/perf/ui/progress.h
-@@ -5,6 +5,7 @@
++		if (prot[2] != 'x')
+ 			continue;
+-		pbf += n + 3;
+-		if (*pbf == 'x') { /* vm_exec */
+-			char anonstr[] = "//anon\n";
+-			char *execname = strchr(bf, '/');
+-
+-			/* Catch VDSO */
+-			if (execname == NULL)
+-				execname = strstr(bf, "[vdso]");
+-
+-			/* Catch anonymous mmaps */
+-			if ((execname == NULL) && !strstr(bf, "["))
+-				execname = anonstr;
+-
+-			if (execname == NULL)
+-				continue;
+-
+-			pbf += 3;
+-			n = hex2u64(pbf, &event->mmap.pgoff);
+-
+-			size = strlen(execname);
+-			execname[size - 1] = '\0'; /* Remove \n */
+-			memcpy(event->mmap.filename, execname, size);
+-			size = PERF_ALIGN(size, sizeof(u64));
+-			event->mmap.len -= event->mmap.start;
+-			event->mmap.header.size = (sizeof(event->mmap) -
+-					        (sizeof(event->mmap.filename) - size));
+-			memset(event->mmap.filename + size, 0, machine->id_hdr_size);
+-			event->mmap.header.size += machine->id_hdr_size;
+-			event->mmap.pid = tgid;
+-			event->mmap.tid = pid;
+-
+-			if (process(tool, event, &synth_sample, machine) != 0) {
+-				rc = -1;
+-				break;
+-			}
++
++		if (!strcmp(execname, ""))
++			strcpy(execname, anonstr);
++
++		size = strlen(execname) + 1;
++		memcpy(event->mmap.filename, execname, size);
++		size = PERF_ALIGN(size, sizeof(u64));
++		event->mmap.len -= event->mmap.start;
++		event->mmap.header.size = (sizeof(event->mmap) -
++					   (sizeof(event->mmap.filename) - size));
++		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
++		event->mmap.header.size += machine->id_hdr_size;
++		event->mmap.pid = tgid;
++		event->mmap.tid = pid;
++
++		if (process(tool, event, &synth_sample, machine) != 0) {
++			rc = -1;
++			break;
+ 		}
+ 	}
  
- struct ui_progress {
- 	void (*update)(u64, u64, const char *);
-+	void (*finish)(void);
- };
- 
- extern struct ui_progress *progress_fns;
-@@ -12,5 +13,6 @@ extern struct ui_progress *progress_fns;
- void ui_progress__init(void);
- 
- void ui_progress__update(u64 curr, u64 total, const char *title);
-+void ui_progress__finish(void);
- 
- #endif
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index dec9875..83e8d23 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -26,6 +26,7 @@ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- static inline void ui_progress__update(u64 curr __maybe_unused,
- 				       u64 total __maybe_unused,
- 				       const char *title __maybe_unused) {}
-+static inline void ui_progress__finish(void) {}
- 
- #define ui__error(format, arg...) ui__warning(format, ##arg)
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 15abe40..ce6f511 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1458,6 +1458,7 @@ more:
- 	session->ordered_samples.next_flush = ULLONG_MAX;
- 	err = flush_sample_queue(session, tool);
- out_err:
-+	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
- 	perf_session_free_sample_buffers(session);
- 	return err;
 -- 
 1.7.9.2.358.g22243
 
