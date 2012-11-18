@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab2KROfA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:35:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36572 "EHLO
+	id S1752393Ab2KROgc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:36:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36566 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2KROaR (ORCPT
+	with ESMTP id S1752034Ab2KROaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:30:17 -0500
+	Sun, 18 Nov 2012 09:30:16 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/32] perf tests: Move test__rdpmc into separate object
-Date: Sun, 18 Nov 2012 11:29:31 -0300
-Message-Id: <1353248997-30763-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/32] perf tests: Final cleanup for builtin-test move
+Date: Sun, 18 Nov 2012 11:29:36 -0300
+Message-Id: <1353248997-30763-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
@@ -30,8 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Separating test__rdpmc test from the builtin-test
-into rdpmc object.
+Final function renames to match test__* style and include cleanup.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,400 +38,199 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-7-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352508412-16914-12-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |    1 +
- tools/perf/tests/builtin-test.c |  168 -------------------------------------
- tools/perf/tests/rdpmc.c        |  175 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |    1 +
- 4 files changed, 177 insertions(+), 168 deletions(-)
- create mode 100644 tools/perf/tests/rdpmc.c
+ tools/perf/perf.h               |    1 -
+ tools/perf/tests/attr.c         |    3 ++-
+ tools/perf/tests/builtin-test.c |   34 +++++++---------------------------
+ tools/perf/tests/dso-data.c     |    3 ++-
+ tools/perf/tests/parse-events.c |    3 ++-
+ tools/perf/tests/tests.h        |    3 +++
+ tools/perf/util/parse-events.h  |    1 -
+ tools/perf/util/symbol.h        |    1 -
+ 8 files changed, 16 insertions(+), 33 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a2d6153..2e5197a 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -436,6 +436,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
-+LIB_OBJS += $(OUTPUT)tests/rdpmc.o
- LIB_OBJS += $(OUTPUT)tests/util.o
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 054182e..0047264 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -178,7 +178,6 @@ extern bool test_attr__enabled;
+ void test_attr__init(void);
+ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 		     int fd, int group_fd, unsigned long flags);
+-int  test_attr__run(void);
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ static inline int
+ sys_perf_event_open(struct perf_event_attr *attr,
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index 6e2feee..25638a9 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -27,6 +27,7 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include "exec_cmd.h"
++#include "tests.h"
+ 
+ #define ENV "PERF_TEST_ATTR"
+ 
+@@ -151,7 +152,7 @@ static int run_dir(const char *d, const char *perf)
+ 	return system(cmd);
+ }
+ 
+-int test_attr__run(void)
++int test__attr(void)
+ {
+ 	struct stat st;
+ 	char path_perf[PATH_MAX];
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 7cb3928..1e9a0ea 100644
+index d3b95e0..186f675 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -30,174 +30,6 @@
- #include <sched.h>
- 
- 
+@@ -4,31 +4,11 @@
+  * Builtin regression testing command: ever growing number of sanity tests
+  */
+ #include "builtin.h"
 -
--#if defined(__x86_64__) || defined(__i386__)
+-#include "util/cache.h"
+-#include "util/color.h"
+-#include "util/debug.h"
+-#include "util/debugfs.h"
+-#include "util/evlist.h"
+-#include "util/machine.h"
+-#include "util/parse-options.h"
+-#include "util/parse-events.h"
+-#include "util/symbol.h"
+-#include "util/thread_map.h"
+-#include "util/pmu.h"
+-#include "event-parse.h"
+-#include "../../include/linux/hw_breakpoint.h"
 -
--#define barrier() asm volatile("" ::: "memory")
+-#include <sys/mman.h>
 -
--static u64 rdpmc(unsigned int counter)
--{
--	unsigned int low, high;
+-#include "util/cpumap.h"
+-#include "util/evsel.h"
+-#include <sys/types.h>
 -
--	asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
+ #include "tests.h"
 -
--	return low | ((u64)high) << 32;
--}
+-#include <sched.h>
 -
--static u64 rdtsc(void)
--{
--	unsigned int low, high;
--
--	asm volatile("rdtsc" : "=a" (low), "=d" (high));
--
--	return low | ((u64)high) << 32;
--}
--
--static u64 mmap_read_self(void *addr)
--{
--	struct perf_event_mmap_page *pc = addr;
--	u32 seq, idx, time_mult = 0, time_shift = 0;
--	u64 count, cyc = 0, time_offset = 0, enabled, running, delta;
--
--	do {
--		seq = pc->lock;
--		barrier();
--
--		enabled = pc->time_enabled;
--		running = pc->time_running;
--
--		if (enabled != running) {
--			cyc = rdtsc();
--			time_mult = pc->time_mult;
--			time_shift = pc->time_shift;
--			time_offset = pc->time_offset;
--		}
--
--		idx = pc->index;
--		count = pc->offset;
--		if (idx)
--			count += rdpmc(idx - 1);
--
--		barrier();
--	} while (pc->lock != seq);
--
--	if (enabled != running) {
--		u64 quot, rem;
--
--		quot = (cyc >> time_shift);
--		rem = cyc & ((1 << time_shift) - 1);
--		delta = time_offset + quot * time_mult +
--			((rem * time_mult) >> time_shift);
--
--		enabled += delta;
--		if (idx)
--			running += delta;
--
--		quot = count / running;
--		rem = count % running;
--		count = quot * enabled + (rem * enabled) / running;
--	}
--
--	return count;
--}
--
--/*
-- * If the RDPMC instruction faults then signal this back to the test parent task:
-- */
--static void segfault_handler(int sig __maybe_unused,
--			     siginfo_t *info __maybe_unused,
--			     void *uc __maybe_unused)
--{
--	exit(-1);
--}
--
--static int __test__rdpmc(void)
--{
--	volatile int tmp = 0;
--	u64 i, loops = 1000;
--	int n;
--	int fd;
--	void *addr;
--	struct perf_event_attr attr = {
--		.type = PERF_TYPE_HARDWARE,
--		.config = PERF_COUNT_HW_INSTRUCTIONS,
--		.exclude_kernel = 1,
--	};
--	u64 delta_sum = 0;
--        struct sigaction sa;
--
--	sigfillset(&sa.sa_mask);
--	sa.sa_sigaction = segfault_handler;
--	sigaction(SIGSEGV, &sa, NULL);
--
--	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
--	if (fd < 0) {
--		pr_err("Error: sys_perf_event_open() syscall returned "
--		       "with %d (%s)\n", fd, strerror(errno));
--		return -1;
--	}
--
--	addr = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
--	if (addr == (void *)(-1)) {
--		pr_err("Error: mmap() syscall returned with (%s)\n",
--		       strerror(errno));
--		goto out_close;
--	}
--
--	for (n = 0; n < 6; n++) {
--		u64 stamp, now, delta;
--
--		stamp = mmap_read_self(addr);
--
--		for (i = 0; i < loops; i++)
--			tmp++;
--
--		now = mmap_read_self(addr);
--		loops *= 10;
--
--		delta = now - stamp;
--		pr_debug("%14d: %14Lu\n", n, (long long)delta);
--
--		delta_sum += delta;
--	}
--
--	munmap(addr, page_size);
--	pr_debug("   ");
--out_close:
--	close(fd);
--
--	if (!delta_sum)
--		return -1;
--
--	return 0;
--}
--
--static int test__rdpmc(void)
--{
--	int status = 0;
--	int wret = 0;
--	int ret;
--	int pid;
--
--	pid = fork();
--	if (pid < 0)
--		return -1;
--
--	if (!pid) {
--		ret = __test__rdpmc();
--
--		exit(ret);
--	}
--
--	wret = waitpid(pid, &status, 0);
--	if (wret < 0 || status)
--		return -1;
--
--	return 0;
--}
--
--#endif
--
- static int test__perf_pmu(void)
- {
- 	return perf_pmu__test();
-diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
-new file mode 100644
-index 0000000..ff94886
---- /dev/null
-+++ b/tools/perf/tests/rdpmc.c
-@@ -0,0 +1,175 @@
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <sys/mman.h>
-+#include "types.h"
-+#include "perf.h"
 +#include "debug.h"
++#include "color.h"
++#include "parse-options.h"
++#include "symbol.h"
+ 
+ static struct test {
+ 	const char *desc;
+@@ -52,7 +32,7 @@ static struct test {
+ 	},
+ 	{
+ 		.desc = "parse events tests",
+-		.func = parse_events__test,
++		.func = test__parse_events,
+ 	},
+ #if defined(__x86_64__) || defined(__i386__)
+ 	{
+@@ -70,7 +50,7 @@ static struct test {
+ 	},
+ 	{
+ 		.desc = "Test dso data interface",
+-		.func = dso__test_data,
++		.func = test__dso_data,
+ 	},
+ 	{
+ 		.desc = "roundtrip evsel->name check",
+@@ -86,7 +66,7 @@ static struct test {
+ 	},
+ 	{
+ 		.desc = "struct perf_event_attr setup",
+-		.func = test_attr__run,
++		.func = test__attr,
+ 	},
+ 	{
+ 		.func = NULL,
+diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+index 0cd42fc..b5198f5 100644
+--- a/tools/perf/tests/dso-data.c
++++ b/tools/perf/tests/dso-data.c
+@@ -8,6 +8,7 @@
+ 
+ #include "machine.h"
+ #include "symbol.h"
 +#include "tests.h"
-+
-+#if defined(__x86_64__) || defined(__i386__)
-+
-+#define barrier() asm volatile("" ::: "memory")
-+
-+static u64 rdpmc(unsigned int counter)
-+{
-+	unsigned int low, high;
-+
-+	asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
-+
-+	return low | ((u64)high) << 32;
-+}
-+
-+static u64 rdtsc(void)
-+{
-+	unsigned int low, high;
-+
-+	asm volatile("rdtsc" : "=a" (low), "=d" (high));
-+
-+	return low | ((u64)high) << 32;
-+}
-+
-+static u64 mmap_read_self(void *addr)
-+{
-+	struct perf_event_mmap_page *pc = addr;
-+	u32 seq, idx, time_mult = 0, time_shift = 0;
-+	u64 count, cyc = 0, time_offset = 0, enabled, running, delta;
-+
-+	do {
-+		seq = pc->lock;
-+		barrier();
-+
-+		enabled = pc->time_enabled;
-+		running = pc->time_running;
-+
-+		if (enabled != running) {
-+			cyc = rdtsc();
-+			time_mult = pc->time_mult;
-+			time_shift = pc->time_shift;
-+			time_offset = pc->time_offset;
-+		}
-+
-+		idx = pc->index;
-+		count = pc->offset;
-+		if (idx)
-+			count += rdpmc(idx - 1);
-+
-+		barrier();
-+	} while (pc->lock != seq);
-+
-+	if (enabled != running) {
-+		u64 quot, rem;
-+
-+		quot = (cyc >> time_shift);
-+		rem = cyc & ((1 << time_shift) - 1);
-+		delta = time_offset + quot * time_mult +
-+			((rem * time_mult) >> time_shift);
-+
-+		enabled += delta;
-+		if (idx)
-+			running += delta;
-+
-+		quot = count / running;
-+		rem = count % running;
-+		count = quot * enabled + (rem * enabled) / running;
-+	}
-+
-+	return count;
-+}
-+
-+/*
-+ * If the RDPMC instruction faults then signal this back to the test parent task:
-+ */
-+static void segfault_handler(int sig __maybe_unused,
-+			     siginfo_t *info __maybe_unused,
-+			     void *uc __maybe_unused)
-+{
-+	exit(-1);
-+}
-+
-+static int __test__rdpmc(void)
-+{
-+	volatile int tmp = 0;
-+	u64 i, loops = 1000;
-+	int n;
-+	int fd;
-+	void *addr;
-+	struct perf_event_attr attr = {
-+		.type = PERF_TYPE_HARDWARE,
-+		.config = PERF_COUNT_HW_INSTRUCTIONS,
-+		.exclude_kernel = 1,
-+	};
-+	u64 delta_sum = 0;
-+        struct sigaction sa;
-+
-+	sigfillset(&sa.sa_mask);
-+	sa.sa_sigaction = segfault_handler;
-+	sigaction(SIGSEGV, &sa, NULL);
-+
-+	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-+	if (fd < 0) {
-+		pr_err("Error: sys_perf_event_open() syscall returned "
-+		       "with %d (%s)\n", fd, strerror(errno));
-+		return -1;
-+	}
-+
-+	addr = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
-+	if (addr == (void *)(-1)) {
-+		pr_err("Error: mmap() syscall returned with (%s)\n",
-+		       strerror(errno));
-+		goto out_close;
-+	}
-+
-+	for (n = 0; n < 6; n++) {
-+		u64 stamp, now, delta;
-+
-+		stamp = mmap_read_self(addr);
-+
-+		for (i = 0; i < loops; i++)
-+			tmp++;
-+
-+		now = mmap_read_self(addr);
-+		loops *= 10;
-+
-+		delta = now - stamp;
-+		pr_debug("%14d: %14Lu\n", n, (long long)delta);
-+
-+		delta_sum += delta;
-+	}
-+
-+	munmap(addr, page_size);
-+	pr_debug("   ");
-+out_close:
-+	close(fd);
-+
-+	if (!delta_sum)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+int test__rdpmc(void)
-+{
-+	int status = 0;
-+	int wret = 0;
-+	int ret;
-+	int pid;
-+
-+	pid = fork();
-+	if (pid < 0)
-+		return -1;
-+
-+	if (!pid) {
-+		ret = __test__rdpmc();
-+
-+		exit(ret);
-+	}
-+
-+	wret = waitpid(pid, &status, 0);
-+	if (wret < 0 || status)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+#endif
+ 
+ #define TEST_ASSERT_VAL(text, cond) \
+ do { \
+@@ -95,7 +96,7 @@ struct test_data_offset offsets[] = {
+ 	},
+ };
+ 
+-int dso__test_data(void)
++int test__dso_data(void)
+ {
+ 	struct machine machine;
+ 	struct dso *dso;
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index b49c2ee..f2a82d0 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -4,6 +4,7 @@
+ #include "evlist.h"
+ #include "sysfs.h"
+ #include "../../../include/linux/hw_breakpoint.h"
++#include "tests.h"
+ 
+ #define TEST_ASSERT_VAL(text, cond) \
+ do { \
+@@ -1086,7 +1087,7 @@ static int test_pmu_events(void)
+ 	return ret;
+ }
+ 
+-int parse_events__test(void)
++int test__parse_events(void)
+ {
+ 	int ret1, ret2 = 0;
+ 
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 374b039..03d428d 100644
+index 88a55df..fc121ed 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -7,6 +7,7 @@ int test__open_syscall_event(void);
- int test__open_syscall_event_on_all_cpus(void);
- int test__basic_mmap(void);
- int test__PERF_RECORD(void);
-+int test__rdpmc(void);
+@@ -12,6 +12,9 @@ int test__perf_evsel__roundtrip_name_test(void);
+ int test__perf_evsel__tp_sched_test(void);
+ int test__syscall_open_tp_fields(void);
+ int test__pmu(void);
++int test__attr(void);
++int test__dso_data(void);
++int test__parse_events(void);
  
  /* Util */
  int trace_event__id(const char *evname);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index ac9a6aa..f639937 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -99,7 +99,6 @@ void parse_events__set_leader(char *name, struct list_head *list);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+ void parse_events_error(void *data, void *scanner, char const *msg);
+-int parse_events__test(void);
+ 
+ void print_events(const char *event_glob, bool name_only);
+ void print_events_type(u8 type);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 04ccf29..de68f98 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -224,7 +224,6 @@ size_t symbol__fprintf_symname(const struct symbol *sym, FILE *fp);
+ size_t symbol__fprintf(struct symbol *sym, FILE *fp);
+ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+ 
+-int dso__test_data(void);
+ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
+ 		  struct symsrc *runtime_ss, symbol_filter_t filter,
+ 		  int kmodule);
 -- 
 1.7.9.2.358.g22243
 
