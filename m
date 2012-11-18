@@ -1,97 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab2KRIlz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 03:41:55 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63077 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2KRIlx (ORCPT
+	id S1751534Ab2KRI4p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 03:56:45 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34009 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2KRI4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 03:41:53 -0500
-Message-ID: <50A89F08.7020307@gmail.com>
-Date: Sun, 18 Nov 2012 09:40:40 +0100
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 18 Nov 2012 03:56:43 -0500
+Date: Sun, 18 Nov 2012 00:56:38 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-input@vger.kernel.org
+Subject: Re: 3.7-rc3: mouses stopped working
+Message-ID: <20121118085638.GA2331@core.coreip.homeip.net>
+References: <20121115132849.GA4062@elf.ucw.cz>
+ <alpine.LNX.2.00.1211151429240.15877@pobox.suse.cz>
+ <20121115140736.GA2651@elf.ucw.cz>
+ <alpine.LNX.2.00.1211151508350.15877@pobox.suse.cz>
+ <20121116013405.GA2002@elf.ucw.cz>
+ <alpine.LNX.2.00.1211161153290.20577@pobox.suse.cz>
+ <20121116122400.GA10994@elf.ucw.cz>
+ <alpine.LNX.2.00.1211161335180.20577@pobox.suse.cz>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-pm@vger.kernel.org, khilman@ti.com, deepthi@linux.vnet.ibm.com,
-        g.trinabh@gmail.com, linaro-dev@lists.linaro.org, len.brown@intel.com,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, jwerner@chromium.org,
-        akpm@linux-foundation.org, snanda@chromium.org
-Subject: Re: [RFC] cpuidle - remove the power_specified field in the driver
-References: <50831CA3.2020602@linaro.org> <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1352752016-3136-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1211161335180.20577@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Nov 16, 2012 at 01:37:31PM +0100, Jiri Kosina wrote:
+> On Fri, 16 Nov 2012, Pavel Machek wrote:
+> 
+> > > > root@amd:/tmp# uname -a
+> > > > Linux amd 3.7.0-rc5+ #236 SMP Thu Nov 15 20:07:26 CET 2012 i686 GNU/Linux
+> > > > root@amd:/tmp# cat /dev/input/mice
+> > > > cat: /dev/input/mice: No such device or address
+> > > > root@amd:/tmp# ls -al /dev/input/mice
+> > > > crw-rw---- 1 root root 13, 63 Apr 25  2010 /dev/input/mice
+> > > > root@amd:/tmp# 
+> > > 
+> > > Let's see whether this is /dev/input/mice issue or something else first.
+> > > 
+> > > Is anything coming out of corresponding /dev/input/eventX node?
+> > 
+> > /dev/input/mouse0 and /dev/input/mouse1 generate events when I move
+> > internal/USB mouse.
+> > 
+> > ls -al /dev/input/mouse0 
+> > crw-rw---- 1 root root 13, 32 Apr 25  2010 /dev/input/mouse0
+> > pavel@amd:/tmp$ ls -al /dev/input/mouse1
+> > crw------T 1 root root 13, 33 Aug 30 16:41 /dev/input/mouse1
+> > pavel@amd:/tmp$ 
+> > 
+> > > And /dev/hidrawX?
+> > 
+> > /dev/hidraw0 seems to correspond to USB mouse and generates
+> > events. Could not find hidraw corresponding to PS/2 mouse.
+> 
+> That is correct and expected behavior.
+> 
+> > So it seems to be "/dev/input/mice" issue. Does it work for you?
+> 
+> Yes, it works for me properly (testing with rc4+, 1b42fc4 more precisely). 
+> Even after disconnect/reconnect cycle of USB mouse, I am getting events 
+> properly from /dev/input/mice (frankly I am surprised that you noticed ... 
+> Xorg has been using evdev driver for ages already by default, right?)
+> 
+> What was the last kernel version that worked for you in this respect?
+> 
+> Adding Dmitry and linux-input.
 
-On 11/12/2012 09:26 PM, Daniel Lezcano wrote:
-> This patch follows the discussion about reinitializing the power usage
-> when a C-state is added/removed.
-> 
->  https://lkml.org/lkml/2012/10/16/518
-> 
-> We realized the power usage field is never filled and when it is
-> filled for tegra, the power_specified flag is not set making all these
-> values to be resetted when the driver is initialized with the set_power_state
-> function.
-> 
-> Julius and I feel this is over-engineered and the power_specified
-> flag could be simply removed and continue assuming the states are
-> backward sorted.
-> 
-> The menu governor select function is simplified as the power is ordered.
-> Actually the condition is always true with the current code.
-> 
-> The cpuidle_play_dead function is also simplified by doing a reverse lookup
-> on the array.
-> 
-> The set_power_states function is removed as it does no make sense anymore.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/cpuidle/cpuidle.c        |   17 ++++-------------
->  drivers/cpuidle/driver.c         |   25 -------------------------
->  drivers/cpuidle/governors/menu.c |    8 ++------
->  include/linux/cpuidle.h          |    2 +-
->  4 files changed, 7 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 711dd83..f983262 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
->  {
->  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
->  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-> -	int i, dead_state = -1;
-> -	int power_usage = -1;
-> +	int i;
->  
->  	if (!drv)
->  		return -ENODEV;
->  
->  	/* Find lowest-power state that supports long-term idle */
-> -	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
-> -		struct cpuidle_state *s = &drv->states[i];
-> -
-> -		if (s->power_usage < power_usage && s->enter_dead) {
-> -			power_usage = s->power_usage;
-> -			dead_state = i;
-> -		}
-> -	}
-> -
-> -	if (dead_state != -1)
-> -		return drv->states[dead_state].enter_dead(dev, dead_state);
-> +	for (i = drv->state_count; i >= CPUIDLE_DRIVER_STATE_START; i--)
-> +		if (drv->states[i].play_dead)
+Does the patch below help?
 
-I guess you meant drv->states[i].enter_dead
+Thanks.
 
-> +			return drv->states[i].enter_dead(dev, i);
+-- 
+Dmitry
 
---
-Francesco
+
+Input: mousedev - move /deb/input/mice to teh correct minor
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+When doing conversion to dynamic input numbers I inadvertently moved
+/dev/input/mice form c,13,63 to c,13,31. We need to fix this so that
+setups with statically populated /dev continue working.
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/mousedev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 8f02e3d..4c842c3 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -12,8 +12,8 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #define MOUSEDEV_MINOR_BASE	32
+-#define MOUSEDEV_MINORS		32
+-#define MOUSEDEV_MIX		31
++#define MOUSEDEV_MINORS		31
++#define MOUSEDEV_MIX		63
+ 
+ #include <linux/sched.h>
+ #include <linux/slab.h>
