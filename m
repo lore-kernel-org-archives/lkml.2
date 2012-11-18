@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2KRVC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 16:02:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50001 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2KRVC5 (ORCPT
+	id S1752683Ab2KRVEw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 16:04:52 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:63407 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab2KRVEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 16:02:57 -0500
-Date: Sun, 18 Nov 2012 21:02:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, monstr@monstr.eu,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: sigaltstack fun
-Message-ID: <20121118210253.GI16916@ZenIV.linux.org.uk>
-References: <CAHTX3d+Ou3_4tGqwyWFfNMSumPw2770_nhV_cTQa89k7+sxdHw@mail.gmail.com>
- <20121118054510.GE16916@ZenIV.linux.org.uk>
- <CA+55aFxncW2pEhsjg0AO9YKyvPaHyiXZMjoJZ1J8gA+8sH7HNw@mail.gmail.com>
- <20121118.140332.1273544560009594278.davem@davemloft.net>
- <20121118195921.GH16916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121118195921.GH16916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Nov 2012 16:04:49 -0500
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Nov 2012 16:04:49 EST
+From: pefoley2@verizon.net
+To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz
+Cc: Peter Foley <pefoley2@verizon.net>
+Subject: [PATCH 2/5] kbuild: silence rule for extra_certificates
+Date: Sun, 18 Nov 2012 15:05:14 -0500
+Message-id: <1353269117-39917-2-git-send-email-pefoley2@verizon.net>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1353269117-39917-1-git-send-email-pefoley2@verizon.net>
+References: <1353269117-39917-1-git-send-email-pefoley2@verizon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 07:59:21PM +0000, Al Viro wrote:
-> On Sun, Nov 18, 2012 at 02:03:32PM -0500, David Miller wrote:
-> > > I have absolutely no objections. sigaltstack has always been kind of
-> > > messy, and made worse by the fact that it gets effectively no testing
-> > > (because it's generally not used by normal code and even code that
-> > > uses it tends to use it only for very uncommon events). So forcing all
-> > > the sigaltstack code into generic code and at least avoiding the
-> > > "different architectures can get things subtly - or not so subtly -
-> > > wrong in different ways" sounds like a good thing.
-> > 
-> > FWIW, if folks are looking for testcases there are a small number in
-> > glibc, a quick grep shows:
-> > 
-> > nptl/tst-cancel20.c
-> > nptl/tst-cancel21.c
-> > nptl/tst-signal6.c
-> > debug/tst-longjmp_chk2.c
-> > 
-> > LTP probably has a bunch too.
-> 
-> Might be a good idea to start adding tests/* in the kernel tree, perhaps?
-> Ones in glibc had been present prior to the LGPLv3 clusterfuck, by the
-> look of it...
+From: Peter Foley <pefoley2@verizon.net>
 
-Incidentally, sparc64 is also broken the same way:
-sparc64:~# gcc sigreturn-test.c 
-sparc64:~# ./a.out 
-entering SIGUSR1 on altstack
-entering SIGUSR2 on altstack
-SIGUSR2 done
-SIGUSR1 done
-sparc64:~# gcc -m64 sigreturn-test.c 
-sparc64:~# ./a.out 
-entering SIGUSR1 on altstack
-entering SIGUSR2 on altstack
-SIGUSR2 done
-Segmentation fault
-sparc64:~#
+Silence the touch extra_certificates command
 
-32bit rt_sigreturn (in signal32.c) simply ignores all errors.  One in
-signal_64.c fails on *any* error from do_sigaltstack(), with the results
-above...
-
-sigreturn-test.c is what I've posted upthread.  I think this one is
--stable fodder.  It's not hard to deal with, fortunately.  Are you
-OK with the patch below?  Should be the minimal fix, getting rid of
-those segfaults and converting to usual semantics here...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
 ---
-diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
-index 867de2f..689e1ba 100644
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -295,9 +295,7 @@ void do_rt_sigreturn(struct pt_regs *regs)
- 		err |= restore_fpu_state(regs, fpu_save);
+ kernel/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 86e3285..18a0b61 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -137,7 +137,7 @@ ifeq ($(CONFIG_MODULE_SIG),y)
+ # Pull the signing certificate and any extra certificates into the kernel
+ #
+ extra_certificates:
+-	touch $@
++	@touch $@
  
- 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
--	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
--
--	if (err)
-+	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
- 		goto segv;
+ kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
  
- 	err |= __get_user(rwin_save, &sf->rwin_save);
+-- 
+1.8.0
+
