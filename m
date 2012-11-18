@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2KRSWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 13:22:49 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:40185 "EHLO londo.lunn.ch"
+	id S1752360Ab2KRSa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 13:30:28 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2353 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab2KRSWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 13:22:48 -0500
-Date: Sun, 18 Nov 2012 19:20:49 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Josh Coombs <josh.coombs@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>, wlanfae@realtek.com,
-        Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [Patch v1 1/1] RTL8712 alignment bug in 3.6.5 on ARM
-Message-ID: <20121118182049.GE14643@lunn.ch>
-References: <CAMW5UfYUi-Zz2r5K9GeVzShSub2rDJVuoWR56+89+ytaqo_uxQ@mail.gmail.com>
- <20121118174720.GX3290@n2100.arm.linux.org.uk>
- <CAMW5Ufb9D+BYGtZUWPBWKMtk11QMpR1N+2Q1yb4w_GdvV17p+w@mail.gmail.com>
+	id S1752073Ab2KRSa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 13:30:27 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <50A92935.5070802@broadcom.com>
+Date: Sun, 18 Nov 2012 19:30:13 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028
+ Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMW5Ufb9D+BYGtZUWPBWKMtk11QMpR1N+2Q1yb4w_GdvV17p+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Mark Ellis" <m@rkellis.com>
+cc: linux-kernel@vger.kernel.org,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Piotr Haber" <phaber@broadcom.com>
+Subject: Re: PROBLEM: REGRESSION in drivers/platform/x86/dell-laptop.c
+References: <50A8BCA6.7080102@rkellis.com>
+In-Reply-To: <50A8BCA6.7080102@rkellis.com>
+X-WSS-ID: 7CB7F7133R04751422-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> diff -ruN a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-> >> b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-> >> --- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-05
-> >> 03:57:06.000000000 -0500
-> >> +++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-13
-> >> 12:54:28.000000000 -0500
-> >> @@ -55,8 +55,8 @@
-> >>     NUM_STA + 4);
-> >>   if (pstapriv->pallocated_stainfo_buf == NULL)
-> >>   return _FAIL;
-> >> - pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
-> >> - ((addr_t)(pstapriv->pallocated_stainfo_buf) & 3);
-> >> + pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 8 -
-> >> + ((addr_t)(pstapriv->pallocated_stainfo_buf) & 7);
-> >
-> > Are you sure this is safe?  Is the allocated buffer large enough for
-> > those additional 4 bytes of alignment you're adding?
-> 
-> I'm not certain on that, I bumped the allocations at Andrew's
-> suggestion, but don't know enough to certify the changes as 100%
-> correct.
+On 11/18/2012 11:47 AM, Mark Ellis wrote:
+> 1. rfkill code removal causes hang
+>
+> 2. the rfkill code was removed from this driver in commit
+> 53039f222c548bfc119eea6df4dca2b57550e271 this results in my computer
+> hanging (dell n5050) if booting with the wireless (hardware) disabled.
+> downgrading this module to the version prior to this commit fixes the
+> issue.
 
-Its not correct.
+The commit you mention does not touch dell-laptop.c. The commit before 
+that one doe, but it is only adding code. Digging the tree I found this 
+one between kernel v3.4 and v3.5-rc1:
 
-The original code is:
+commit a6c2390cd6d2083d27a2359658e08f2d3df375ac
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Fri Jun 1 12:46:56 2012 -0400
 
-        pstapriv->pallocated_stainfo_buf = _malloc(sizeof(struct sta_info) *
-                                                   NUM_STA + 4);
-        if (pstapriv->pallocated_stainfo_buf == NULL)
-                return _FAIL;
-        pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
-                ((addr_t)(pstapriv->pallocated_stainfo_buf) & 3);
+     dell-laptop: Remove rfkill code
 
-The 4 in the _malloc() also needs increasing to 8.
+     The interface just doesn't work on some machines, and Dell haven't been
+     able to tell us either which machines those are or what we should be
+     doing instead. This would be fine, except it results in userspace 
+ending
+     up confused and general sadness. So let's just rip it out for now.
 
-    Andrew
+     Signed-off-by: Matthew Garrett <mjg@redhat.com>
+
+Actually, the behavior you describe and given you have a BCM4313 running 
+with brcmsmac I may point out that this driver has an issue coming up 
+with wireless disabled. This has been fixed in 3.7 kernel so you may 
+want to try:
+
+commit 82d8eba358badb466a4e988ecabf0668a8d92e9c
+Author: Piotr Haber <phaber@broadcom.com>
+Date:   Wed Sep 19 22:21:15 2012 +0200
+
+     brcmsmac: don't start device when RfKill is engaged
+
+     This patch fixes a bug when device is being started
+     while RfKill switch is engaged, leading to hang
+     due to partial initialization of hardware.
+
+     Tested-by: <dragonn@op.pl>
+     Reviewed-by: Arend van Spriel <arend@broadcom.com>
+     Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
+     Signed-off-by: Piotr Haber <phaber@broadcom.com>
+     Signed-off-by: Arend van Spriel <arend@broadcom.com>
+     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+
+Maybe I should resubmit it to stable. Now there is an idea.
+
+Gr. AvS
+
