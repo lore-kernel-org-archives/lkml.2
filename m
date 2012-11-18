@@ -1,145 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2KROa1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36537 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2KROaN (ORCPT
+	id S1752331Ab2KROa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:30:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59359 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab2KROaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/32] perf ui gtk: Implement ui_progress functions
-Date: Sun, 18 Nov 2012 11:29:50 -0300
-Message-Id: <1353248997-30763-26-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/32] perf tests: Move pmu tests into separate object
+Date: Sun, 18 Nov 2012 11:29:35 -0300
+Message-Id: <1353248997-30763-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Implement progress update function for GTK2 front end.
+Separating pmu's object tests into pmu object under tests directory.
 
-Note that since it will be called before gtk main loop so that we should
-call gtk event loop handler directly.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1352813436-14173-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1352508412-16914-11-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile          |    1 +
- tools/perf/ui/gtk/gtk.h      |    1 +
- tools/perf/ui/gtk/progress.c |   50 ++++++++++++++++++++++++++++++++++++++++++
- tools/perf/ui/gtk/setup.c    |    2 ++
- 4 files changed, 54 insertions(+)
- create mode 100644 tools/perf/ui/gtk/progress.c
+ tools/perf/Makefile             |    1 +
+ tools/perf/tests/builtin-test.c |    7 +-
+ tools/perf/tests/pmu.c          |  178 +++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |    1 +
+ tools/perf/util/pmu.c           |  185 ++-------------------------------------
+ tools/perf/util/pmu.h           |    4 +
+ 6 files changed, 191 insertions(+), 185 deletions(-)
+ create mode 100644 tools/perf/tests/pmu.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f8466b4..5a9075e 100644
+index 1e50559..9af012f 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -648,6 +648,7 @@ ifndef NO_GTK2
- 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
- 		# Make sure that it'd be included only once.
- 		ifeq ($(findstring -DNEWT_SUPPORT,$(BASIC_CFLAGS)),)
- 			LIB_OBJS += $(OUTPUT)ui/setup.o
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 687af0b..856320e 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -30,6 +30,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
- int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
+@@ -440,6 +440,7 @@ LIB_OBJS += $(OUTPUT)tests/perf-record.o
+ LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+ LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
+ LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
++LIB_OBJS += $(OUTPUT)tests/pmu.o
+ LIB_OBJS += $(OUTPUT)tests/util.o
  
- void perf_gtk__init_helpline(void);
-+void perf_gtk__init_progress(void);
- void perf_gtk__init_hpp(void);
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index bab8490..d3b95e0 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -30,11 +30,6 @@
+ #include <sched.h>
  
- #ifndef HAVE_GTK_INFO_BAR
-diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
+ 
+-static int test__perf_pmu(void)
+-{
+-	return perf_pmu__test();
+-}
+-
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -71,7 +66,7 @@ static struct test {
+ 	},
+ 	{
+ 		.desc = "Test perf pmu format parsing",
+-		.func = test__perf_pmu,
++		.func = test__pmu,
+ 	},
+ 	{
+ 		.desc = "Test dso data interface",
+diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
 new file mode 100644
-index 0000000..903426f
+index 0000000..a5f3798
 --- /dev/null
-+++ b/tools/perf/ui/gtk/progress.c
-@@ -0,0 +1,50 @@
-+#include <inttypes.h>
-+
-+#include "gtk.h"
-+#include "../progress.h"
++++ b/tools/perf/tests/pmu.c
+@@ -0,0 +1,178 @@
++#include "parse-events.h"
++#include "pmu.h"
 +#include "util.h"
++#include "tests.h"
 +
-+static GtkWidget *dialog;
-+static GtkWidget *progress;
-+
-+static void gtk_progress_update(u64 curr, u64 total, const char *title)
-+{
-+	double fraction = total ? 1.0 * curr / total : 0.0;
-+	char buf[1024];
-+
-+	if (dialog == NULL) {
-+		GtkWidget *vbox = gtk_vbox_new(TRUE, 5);
-+		GtkWidget *label = gtk_label_new(title);
-+
-+		dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-+		progress = gtk_progress_bar_new();
-+
-+		gtk_box_pack_start(GTK_BOX(vbox), label, TRUE, FALSE, 3);
-+		gtk_box_pack_start(GTK_BOX(vbox), progress, TRUE, TRUE, 3);
-+
-+		gtk_container_add(GTK_CONTAINER(dialog), vbox);
-+
-+		gtk_window_set_title(GTK_WINDOW(dialog), "perf");
-+		gtk_window_resize(GTK_WINDOW(dialog), 300, 80);
-+		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
-+
-+		gtk_widget_show_all(dialog);
-+	}
-+
-+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress), fraction);
-+	snprintf(buf, sizeof(buf), "%"PRIu64" / %"PRIu64, curr, total);
-+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress), buf);
-+
-+	/* we didn't call gtk_main yet, so do it manually */
-+	while (gtk_events_pending())
-+		gtk_main_iteration();
-+}
-+
-+static struct ui_progress gtk_progress_fns = {
-+	.update		= gtk_progress_update,
++/* Simulated format definitions. */
++static struct test_format {
++	const char *name;
++	const char *value;
++} test_formats[] = {
++	{ "krava01", "config:0-1,62-63\n", },
++	{ "krava02", "config:10-17\n", },
++	{ "krava03", "config:5\n", },
++	{ "krava11", "config1:0,2,4,6,8,20-28\n", },
++	{ "krava12", "config1:63\n", },
++	{ "krava13", "config1:45-47\n", },
++	{ "krava21", "config2:0-3,10-13,20-23,30-33,40-43,50-53,60-63\n", },
++	{ "krava22", "config2:8,18,48,58\n", },
++	{ "krava23", "config2:28-29,38\n", },
 +};
 +
-+void perf_gtk__init_progress(void)
-+{
-+	progress_fns = &gtk_progress_fns;
-+}
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 3c4c6ef..6c2dd2e 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -8,7 +8,9 @@ int perf_gtk__init(void)
- {
- 	perf_error__register(&perf_gtk_eops);
- 	perf_gtk__init_helpline();
-+	perf_gtk__init_progress();
- 	perf_gtk__init_hpp();
++#define TEST_FORMATS_CNT (sizeof(test_formats) / sizeof(struct test_format))
 +
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
++/* Simulated users input. */
++static struct parse_events__term test_terms[] = {
++	{
++		.config    = (char *) "krava01",
++		.val.num   = 15,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava02",
++		.val.num   = 170,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava03",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava11",
++		.val.num   = 27,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava12",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava13",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava21",
++		.val.num   = 119,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava22",
++		.val.num   = 11,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava23",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++};
++#define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
++
++/*
++ * Prepare format directory data, exported by kernel
++ * at /sys/bus/event_source/devices/<dev>/format.
++ */
++static char *test_format_dir_get(void)
++{
++	static char dir[PATH_MAX];
++	unsigned int i;
++
++	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
++	if (!mkdtemp(dir))
++		return NULL;
++
++	for (i = 0; i < TEST_FORMATS_CNT; i++) {
++		static char name[PATH_MAX];
++		struct test_format *format = &test_formats[i];
++		FILE *file;
++
++		snprintf(name, PATH_MAX, "%s/%s", dir, format->name);
++
++		file = fopen(name, "w");
++		if (!file)
++			return NULL;
++
++		if (1 != fwrite(format->value, strlen(format->value), 1, file))
++			break;
++
++		fclose(file);
++	}
++
++	return dir;
++}
++
++/* Cleanup format directory. */
++static int test_format_dir_put(char *dir)
++{
++	char buf[PATH_MAX];
++	snprintf(buf, PATH_MAX, "rm -f %s/*\n", dir);
++	if (system(buf))
++		return -1;
++
++	snprintf(buf, PATH_MAX, "rmdir %s\n", dir);
++	return system(buf);
++}
++
++static struct list_head *test_terms_list(void)
++{
++	static LIST_HEAD(terms);
++	unsigned int i;
++
++	for (i = 0; i < TERMS_CNT; i++)
++		list_add_tail(&test_terms[i].list, &terms);
++
++	return &terms;
++}
++
++#undef TERMS_CNT
++
++int test__pmu(void)
++{
++	char *format = test_format_dir_get();
++	LIST_HEAD(formats);
++	struct list_head *terms = test_terms_list();
++	int ret;
++
++	if (!format)
++		return -EINVAL;
++
++	do {
++		struct perf_event_attr attr;
++
++		memset(&attr, 0, sizeof(attr));
++
++		ret = perf_pmu__format_parse(format, &formats);
++		if (ret)
++			break;
++
++		ret = perf_pmu__config_terms(&formats, &attr, terms);
++		if (ret)
++			break;
++
++		ret = -EINVAL;
++
++		if (attr.config  != 0xc00000000002a823)
++			break;
++		if (attr.config1 != 0x8000400000000145)
++			break;
++		if (attr.config2 != 0x0400000020041d07)
++			break;
++
++		ret = 0;
++	} while (0);
++
++	test_format_dir_put(format);
++	return ret;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index f70f998..88a55df 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -11,6 +11,7 @@ int test__rdpmc(void);
+ int test__perf_evsel__roundtrip_name_test(void);
+ int test__perf_evsel__tp_sched_test(void);
+ int test__syscall_open_tp_fields(void);
++int test__pmu(void);
+ 
+ /* Util */
+ int trace_event__id(const char *evname);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 18e8480..9bdc60c 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -22,7 +22,7 @@ static LIST_HEAD(pmus);
+  * Parse & process all the sysfs attributes located under
+  * the directory specified in 'dir' parameter.
+  */
+-static int pmu_format_parse(char *dir, struct list_head *head)
++int perf_pmu__format_parse(char *dir, struct list_head *head)
+ {
+ 	struct dirent *evt_ent;
+ 	DIR *format_dir;
+@@ -77,7 +77,7 @@ static int pmu_format(char *name, struct list_head *format)
+ 	if (stat(path, &st) < 0)
+ 		return 0;	/* no error if format does not exist */
+ 
+-	if (pmu_format_parse(path, format))
++	if (perf_pmu__format_parse(path, format))
+ 		return -1;
+ 
+ 	return 0;
+@@ -446,8 +446,9 @@ static int pmu_config_term(struct list_head *formats,
+ 	return 0;
  }
+ 
+-static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
+-		      struct list_head *head_terms)
++int perf_pmu__config_terms(struct list_head *formats,
++			   struct perf_event_attr *attr,
++			   struct list_head *head_terms)
+ {
+ 	struct parse_events__term *term;
+ 
+@@ -467,7 +468,7 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms)
+ {
+ 	attr->type = pmu->type;
+-	return pmu_config(&pmu->format, attr, head_terms);
++	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
+ }
+ 
+ static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
+@@ -551,177 +552,3 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
+-
+-/* Simulated format definitions. */
+-static struct test_format {
+-	const char *name;
+-	const char *value;
+-} test_formats[] = {
+-	{ "krava01", "config:0-1,62-63\n", },
+-	{ "krava02", "config:10-17\n", },
+-	{ "krava03", "config:5\n", },
+-	{ "krava11", "config1:0,2,4,6,8,20-28\n", },
+-	{ "krava12", "config1:63\n", },
+-	{ "krava13", "config1:45-47\n", },
+-	{ "krava21", "config2:0-3,10-13,20-23,30-33,40-43,50-53,60-63\n", },
+-	{ "krava22", "config2:8,18,48,58\n", },
+-	{ "krava23", "config2:28-29,38\n", },
+-};
+-
+-#define TEST_FORMATS_CNT (sizeof(test_formats) / sizeof(struct test_format))
+-
+-/* Simulated users input. */
+-static struct parse_events__term test_terms[] = {
+-	{
+-		.config    = (char *) "krava01",
+-		.val.num   = 15,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava02",
+-		.val.num   = 170,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava03",
+-		.val.num   = 1,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava11",
+-		.val.num   = 27,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava12",
+-		.val.num   = 1,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava13",
+-		.val.num   = 2,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava21",
+-		.val.num   = 119,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava22",
+-		.val.num   = 11,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava23",
+-		.val.num   = 2,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-};
+-#define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
+-
+-/*
+- * Prepare format directory data, exported by kernel
+- * at /sys/bus/event_source/devices/<dev>/format.
+- */
+-static char *test_format_dir_get(void)
+-{
+-	static char dir[PATH_MAX];
+-	unsigned int i;
+-
+-	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
+-	if (!mkdtemp(dir))
+-		return NULL;
+-
+-	for (i = 0; i < TEST_FORMATS_CNT; i++) {
+-		static char name[PATH_MAX];
+-		struct test_format *format = &test_formats[i];
+-		FILE *file;
+-
+-		snprintf(name, PATH_MAX, "%s/%s", dir, format->name);
+-
+-		file = fopen(name, "w");
+-		if (!file)
+-			return NULL;
+-
+-		if (1 != fwrite(format->value, strlen(format->value), 1, file))
+-			break;
+-
+-		fclose(file);
+-	}
+-
+-	return dir;
+-}
+-
+-/* Cleanup format directory. */
+-static int test_format_dir_put(char *dir)
+-{
+-	char buf[PATH_MAX];
+-	snprintf(buf, PATH_MAX, "rm -f %s/*\n", dir);
+-	if (system(buf))
+-		return -1;
+-
+-	snprintf(buf, PATH_MAX, "rmdir %s\n", dir);
+-	return system(buf);
+-}
+-
+-static struct list_head *test_terms_list(void)
+-{
+-	static LIST_HEAD(terms);
+-	unsigned int i;
+-
+-	for (i = 0; i < TERMS_CNT; i++)
+-		list_add_tail(&test_terms[i].list, &terms);
+-
+-	return &terms;
+-}
+-
+-#undef TERMS_CNT
+-
+-int perf_pmu__test(void)
+-{
+-	char *format = test_format_dir_get();
+-	LIST_HEAD(formats);
+-	struct list_head *terms = test_terms_list();
+-	int ret;
+-
+-	if (!format)
+-		return -EINVAL;
+-
+-	do {
+-		struct perf_event_attr attr;
+-
+-		memset(&attr, 0, sizeof(attr));
+-
+-		ret = pmu_format_parse(format, &formats);
+-		if (ret)
+-			break;
+-
+-		ret = pmu_config(&formats, &attr, terms);
+-		if (ret)
+-			break;
+-
+-		ret = -EINVAL;
+-
+-		if (attr.config  != 0xc00000000002a823)
+-			break;
+-		if (attr.config1 != 0x8000400000000145)
+-			break;
+-		if (attr.config2 != 0x0400000020041d07)
+-			break;
+-
+-		ret = 0;
+-	} while (0);
+-
+-	test_format_dir_put(format);
+-	return ret;
+-}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 39f3aba..07d553f 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -37,6 +37,9 @@ struct perf_pmu {
+ struct perf_pmu *perf_pmu__find(char *name);
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
++int perf_pmu__config_terms(struct list_head *formats,
++			   struct perf_event_attr *attr,
++			   struct list_head *head_terms);
+ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+ 				struct list_head *head_terms);
+@@ -46,6 +49,7 @@ void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ int perf_pmu__new_format(struct list_head *list, char *name,
+ 			 int config, unsigned long *bits);
+ void perf_pmu__set_format(unsigned long *bits, long from, long to);
++int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
  
 -- 
 1.7.9.2.358.g22243
