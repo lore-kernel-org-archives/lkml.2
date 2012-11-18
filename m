@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab2KRJUp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 04:20:45 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37102 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2KRJUn (ORCPT
+	id S1751789Ab2KRJa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 04:30:56 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43734 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab2KRJay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 04:20:43 -0500
+	Sun, 18 Nov 2012 04:30:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1353230222-3464-1-git-send-email-geert@linux-m68k.org>
-References: <1353230222-3464-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 18 Nov 2012 10:20:42 +0100
-X-Google-Sender-Auth: kj_kCRiKLSvPRkfSPt4ZfBpVXEg
-Message-ID: <CAMuHMdXuoAhW=CLogzprPe+6=8Oe5y0J6SuZnYKQzhMv=dpuTg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.7-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, Linux-sh list <linux-sh@vger.kernel.org>
+In-Reply-To: <50A07768.5010704@redhat.com>
+References: <1352602102-2390-1-git-send-email-luming.yu@gmail.com>
+	<50A07768.5010704@redhat.com>
+Date: Sun, 18 Nov 2012 17:30:52 +0800
+Message-ID: <CAJRGBZymTYDi+hfDUcA2jLGb7iXeueEza5S=pMf2Qsxi81o84Q@mail.gmail.com>
+Subject: Re: [PATCH update 0/3] HW-latency: hardware latency test 0.10
+From: Luming Yu <luming.yu@gmail.com>
+To: arnd@arndb.de, Jon Masters <jcm@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 10:17 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.7-rc6 to v3.7-rc5[3], the summaries are:
->   - build errors: +2/-12
+On Mon, Nov 12, 2012 at 12:13 PM, Jon Masters <jcm@redhat.com> wrote:
+> On 11/10/2012 09:48 PM, Luming Yu wrote:
+>
+>> Update the previous patch series to ACK all comments I've recevied so far
+>> for the tool: e.g. 1.Acked Jon Masters in source code as many code are from
+>> jcm, thanks very much Jon. 2. squashed all changes against new file I added into
+>> one. 3. Make it useful on non-x86.
+>
+> Thanks for taking this and doing the heavy lifting to get it upstream! I
+> wrote the original SMI detector really for RT debug purposes as we had
+> OEM systems that would generate large latencies and it was easier to
+> prove the point with nice graphs showing where the BIOS was injecting
+> unwanted SMIs. Glad to see the work being done to make it more generic
+> in nature. Maybe I'll come back with some ARM patches ;)
+>
+> Actually this exercise was very informative because it has helped shape
+> my input on ARMv8 designs. I'm very keen to get away from a world in
+> which world+dog feature is implemented inside an SMI-like context. It
+> should be done via a dedicated management processor (on-chip) instead.
+>
+> Jon.
+>
 
-Just some broken dependencies, I guess:
+thanks Jon,
 
-2 regressions:
-  + arch/powerpc/sysdev/mpic.c: error: case label does not reduce to
-an integer constant:  => 890:9, 898:9, 886:9, 894:9
+ping Arnd,  would you take this into your tree?
 
-powerpc/powerpc-randconfig
+The value is when the feature finally done, we can finally have a
+reliable tool  to count on for automatically sorting out hardware
+problems and differences that really matter to designing your software
+stack on bare metal, which means a lot to many of us dedicated to
+hardware development/enabling as a software engineer, especially when
+you have two similar platforms and need to rule out hardware latency
+that could be the root cause.. in many case, people would have to dig
+into various specs and lost...
 
-  + error: "__ashrdi3" [fs/ext4/ext4.ko] undefined!:  => N/A
-
-sh4/sh-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5628/ (all 117 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5614/ (all 117 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I'd be glad to do anything to push this tool into upstream.  Please
+let me know your thoughts. Thanks !!!! /l
