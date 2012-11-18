@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab2KRTcQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 14:32:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29248 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab2KRTcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 14:32:15 -0500
-Date: Sun, 18 Nov 2012 20:32:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm]
-	percpu_rw_semaphore-reimplement-to-not-block-the-readers-unnecessari
-	ly.fix
-Message-ID: <20121118193235.GA9859@redhat.com>
-References: <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121108134805.GA23870@redhat.com> <20121108134849.GB23870@redhat.com> <20121108120700.42d438f2.akpm@linux-foundation.org> <20121111182744.GA25282@redhat.com> <20121116152219.d4acc6d0.akpm@linux-foundation.org>
+	id S1752558Ab2KRTdT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 14:33:19 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64358 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab2KRTdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 14:33:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121116152219.d4acc6d0.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAGjg+kGKagtybwb+dTW8QVyhrjrQmfyPM9tv8asFQsP=z39suw@mail.gmail.com>
+References: <1352826834-11774-1-git-send-email-mingo@kernel.org> <CAGjg+kGKagtybwb+dTW8QVyhrjrQmfyPM9tv8asFQsP=z39suw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 18 Nov 2012 09:32:57 -1000
+X-Google-Sender-Auth: iMLqWD7C-K3-w8JhoPIDCHedeXQ
+Message-ID: <CA+55aFwc2q+oRohTxgwdydMPvivXjajX970qEmO_-GP4SFdPdw@mail.gmail.com>
+Subject: Re: [PATCH 00/31] Latest numa/core patches, v15
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16, Andrew Morton wrote:
->
-> On Sun, 11 Nov 2012 19:27:44 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> >  lib/percpu-rwsem.c |   35 +++++++++++++++++++++++++++++++++--
->
-> y'know, this looks like a great pile of useless bloat for single-CPU
-> machines.  Maybe add a CONFIG_SMP=n variant which simply calls the
-> regular rwsem operations?
+On Fri, Nov 16, 2012 at 10:45 PM, Alex Shi <lkml.alex@gmail.com> wrote:
+> had caught a ops on my 2 sockets SNB EP server. but can not reproduce it.
+> send out as a reminder:
+> on tip/master, head : a7b7a8ad4476bb641c8455a4e0d7d0fd3eb86f90
 
-Yes, I thought about this and probably I'll send the patch...
+This is an independent bug, nothing to do with the NUMA stuff. Fixed
+in my tree now (commit 3587b1b097d70).
 
-But note that the regular down_read() won't be actually faster if
-there is no writer, and it doesn't allow to add other features.
+Of course, it's entirely possible that the NUMA patches are subtly
+buggy and helped trigger the fanotify OVERFLOW event that had this
+particular bug. But the oops itself is due to a real bug.
 
-I'll try to think, perhaps it would be enough to add a couple of
-"ifdef CONFIG_SMP" into this code, say, to avoid __percpu.
-
-Oleg.
-
+           Linus
