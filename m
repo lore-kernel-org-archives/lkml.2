@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2KROa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36535 "EHLO
+	id S1752360Ab2KROa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:30:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36537 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab2KROaN (ORCPT
+	with ESMTP id S1752023Ab2KROaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Nov 2012 09:30:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/32] perf tools: Use sscanf for parsing /proc/pid/maps
-Date: Sun, 18 Nov 2012 11:29:42 -0300
-Message-Id: <1353248997-30763-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 25/32] perf ui gtk: Implement ui_progress functions
+Date: Sun, 18 Nov 2012 11:29:50 -0300
+Message-Id: <1353248997-30763-26-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
@@ -26,111 +26,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-When reading those files to synthesize MMAP events.  It makes the code
-shorter and cleaner.
+Implement progress update function for GTK2 front end.
+
+Note that since it will be called before gtk main loop so that we should
+call gtk event loop handler directly.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1352643651-13891-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1352813436-14173-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c |   74 ++++++++++++++++++++---------------------------
- 1 file changed, 31 insertions(+), 43 deletions(-)
+ tools/perf/Makefile          |    1 +
+ tools/perf/ui/gtk/gtk.h      |    1 +
+ tools/perf/ui/gtk/progress.c |   50 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/ui/gtk/setup.c    |    2 ++
+ 4 files changed, 54 insertions(+)
+ create mode 100644 tools/perf/ui/gtk/progress.c
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index ca9ca28..3cf2c3e 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -193,55 +193,43 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 	event->header.misc = PERF_RECORD_MISC_USER;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f8466b4..5a9075e 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -648,6 +648,7 @@ ifndef NO_GTK2
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
++		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+ 		# Make sure that it'd be included only once.
+ 		ifeq ($(findstring -DNEWT_SUPPORT,$(BASIC_CFLAGS)),)
+ 			LIB_OBJS += $(OUTPUT)ui/setup.o
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 687af0b..856320e 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -30,6 +30,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
+ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
  
- 	while (1) {
--		char bf[BUFSIZ], *pbf = bf;
--		int n;
-+		char bf[BUFSIZ];
-+		char prot[5];
-+		char execname[PATH_MAX];
-+		char anonstr[] = "//anon";
- 		size_t size;
-+
- 		if (fgets(bf, sizeof(bf), fp) == NULL)
- 			break;
+ void perf_gtk__init_helpline(void);
++void perf_gtk__init_progress(void);
+ void perf_gtk__init_hpp(void);
  
-+		/* ensure null termination since stack will be reused. */
-+		strcpy(execname, "");
+ #ifndef HAVE_GTK_INFO_BAR
+diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
+new file mode 100644
+index 0000000..903426f
+--- /dev/null
++++ b/tools/perf/ui/gtk/progress.c
+@@ -0,0 +1,50 @@
++#include <inttypes.h>
 +
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = hex2u64(pbf, &event->mmap.start);
--		if (n < 0)
--			continue;
--		pbf += n + 1;
--		n = hex2u64(pbf, &event->mmap.len);
--		if (n < 0)
-+		sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
-+		       &event->mmap.start, &event->mmap.len, prot,
-+		       &event->mmap.pgoff, execname);
++#include "gtk.h"
++#include "../progress.h"
++#include "util.h"
 +
-+		if (prot[2] != 'x')
- 			continue;
--		pbf += n + 3;
--		if (*pbf == 'x') { /* vm_exec */
--			char anonstr[] = "//anon\n";
--			char *execname = strchr(bf, '/');
--
--			/* Catch VDSO */
--			if (execname == NULL)
--				execname = strstr(bf, "[vdso]");
--
--			/* Catch anonymous mmaps */
--			if ((execname == NULL) && !strstr(bf, "["))
--				execname = anonstr;
--
--			if (execname == NULL)
--				continue;
--
--			pbf += 3;
--			n = hex2u64(pbf, &event->mmap.pgoff);
--
--			size = strlen(execname);
--			execname[size - 1] = '\0'; /* Remove \n */
--			memcpy(event->mmap.filename, execname, size);
--			size = PERF_ALIGN(size, sizeof(u64));
--			event->mmap.len -= event->mmap.start;
--			event->mmap.header.size = (sizeof(event->mmap) -
--					        (sizeof(event->mmap.filename) - size));
--			memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--			event->mmap.header.size += machine->id_hdr_size;
--			event->mmap.pid = tgid;
--			event->mmap.tid = pid;
--
--			if (process(tool, event, &synth_sample, machine) != 0) {
--				rc = -1;
--				break;
--			}
++static GtkWidget *dialog;
++static GtkWidget *progress;
 +
-+		if (!strcmp(execname, ""))
-+			strcpy(execname, anonstr);
++static void gtk_progress_update(u64 curr, u64 total, const char *title)
++{
++	double fraction = total ? 1.0 * curr / total : 0.0;
++	char buf[1024];
 +
-+		size = strlen(execname) + 1;
-+		memcpy(event->mmap.filename, execname, size);
-+		size = PERF_ALIGN(size, sizeof(u64));
-+		event->mmap.len -= event->mmap.start;
-+		event->mmap.header.size = (sizeof(event->mmap) -
-+					   (sizeof(event->mmap.filename) - size));
-+		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
-+		event->mmap.header.size += machine->id_hdr_size;
-+		event->mmap.pid = tgid;
-+		event->mmap.tid = pid;
++	if (dialog == NULL) {
++		GtkWidget *vbox = gtk_vbox_new(TRUE, 5);
++		GtkWidget *label = gtk_label_new(title);
 +
-+		if (process(tool, event, &synth_sample, machine) != 0) {
-+			rc = -1;
-+			break;
- 		}
- 	}
++		dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
++		progress = gtk_progress_bar_new();
++
++		gtk_box_pack_start(GTK_BOX(vbox), label, TRUE, FALSE, 3);
++		gtk_box_pack_start(GTK_BOX(vbox), progress, TRUE, TRUE, 3);
++
++		gtk_container_add(GTK_CONTAINER(dialog), vbox);
++
++		gtk_window_set_title(GTK_WINDOW(dialog), "perf");
++		gtk_window_resize(GTK_WINDOW(dialog), 300, 80);
++		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
++
++		gtk_widget_show_all(dialog);
++	}
++
++	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress), fraction);
++	snprintf(buf, sizeof(buf), "%"PRIu64" / %"PRIu64, curr, total);
++	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress), buf);
++
++	/* we didn't call gtk_main yet, so do it manually */
++	while (gtk_events_pending())
++		gtk_main_iteration();
++}
++
++static struct ui_progress gtk_progress_fns = {
++	.update		= gtk_progress_update,
++};
++
++void perf_gtk__init_progress(void)
++{
++	progress_fns = &gtk_progress_fns;
++}
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index 3c4c6ef..6c2dd2e 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -8,7 +8,9 @@ int perf_gtk__init(void)
+ {
+ 	perf_error__register(&perf_gtk_eops);
+ 	perf_gtk__init_helpline();
++	perf_gtk__init_progress();
+ 	perf_gtk__init_hpp();
++
+ 	return gtk_init_check(NULL, NULL) ? 0 : -1;
+ }
  
 -- 
 1.7.9.2.358.g22243
