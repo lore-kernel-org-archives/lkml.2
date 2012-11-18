@@ -1,132 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2KRFpR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 00:45:17 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46062 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2KRFpP (ORCPT
+	id S1752681Ab2KRGX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 01:23:57 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32940 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab2KRGX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 00:45:15 -0500
-Date: Sun, 18 Nov 2012 05:45:10 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: sigaltstack fun (was Re: new execve/kernel_thread design)
-Message-ID: <20121118054510.GE16916@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
- <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
- <20121017160702.GY2616@ZenIV.linux.org.uk>
- <20121017161953.GZ2616@ZenIV.linux.org.uk>
- <CAHTX3dJN4Jun2KVXpda1wTrwkjT0mmH4fYmUUwq69d9sCTjXnA@mail.gmail.com>
- <20121115215529.GU2616@ZenIV.linux.org.uk>
- <CAHTX3d+Ou3_4tGqwyWFfNMSumPw2770_nhV_cTQa89k7+sxdHw@mail.gmail.com>
+	Sun, 18 Nov 2012 01:23:56 -0500
+Message-ID: <50A87EF0.3060706@gmail.com>
+Date: Sun, 18 Nov 2012 14:23:44 +0800
+From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHTX3d+Ou3_4tGqwyWFfNMSumPw2770_nhV_cTQa89k7+sxdHw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v6 10/12] thp: implement refcounting for huge zero page
+References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com> <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 08:59:25AM +0100, Michal Simek wrote:
-> Do you have set of tests which should run it?
-> 
-> 
-> > 2) your definition of current_pt_regs() is an exact copy of on in
-> > include/linux/ptrace.h; why is "microblaze: Define current_pt_regs"
-> > needed at all?  IOW, I'd rather added #include <linux/ptrace.h> to
-> > arch/microblaze/kernel/process.c instead...
-> 
-> Agree. Fixed.
-> 
-> I have updated that branch or I can send you patches if you like.
+On 11/16/2012 03:27 AM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
+> after the first allocation. Here's implementation of lockless refcounting
+> for huge zero page.
+>
+> We have two basic primitives: {get,put}_huge_zero_page(). They
+> manipulate reference counter.
+>
+> If counter is 0, get_huge_zero_page() allocates a new huge page and
+> takes two references: one for caller and one for shrinker. We free the
+> page only in shrinker callback if counter is 1 (only shrinker has the
+> reference).
+>
+> put_huge_zero_page() only decrements counter. Counter is never zero
+> in put_huge_zero_page() since shrinker holds on reference.
+>
+> Freeing huge zero page in shrinker callback helps to avoid frequent
+> allocate-free.
+>
+> Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
+> parallel (40 processes) read page faulting comparing to lazy huge page
+> allocation.  I think it's pretty reasonable for synthetic benchmark.
 
-Pulled; see #arch-microblaze in there (== beginning of your branch).
-As for the other things I'd like to see confirmed...  See #for-michal;
-4 commits in there had been hanging around for a long time and if
-you are OK with those, I'd like to see them gone into mainline,
-by whichever path you prefer.
+Hi Kirill,
 
-Another thing that looks like a bug - consider the following testcase:
+I see your and Andew's hot discussion in v4 resend thread.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-void handler(int n, siginfo_t *foo, void *bar)
-{
-	char *signame = n == SIGUSR1 ? "SIGUSR1" : "SIGUSR2";
-	stack_t stack;
-	sigaltstack(NULL, &stack);
-	printf("took %s%s\n", signame,
-		stack.ss_flags == SS_ONSTACK ? " on altstack" : "");
-	if (n == SIGUSR1)
-		raise(SIGUSR2);
-	printf("%s done\n", signame);
-}
+"I also tried another scenario: usemem -n16 100M -r 1000. It creates 
+real memory pressure - no easy reclaimable memory. This time callback 
+called with nr_to_scan > 0 and we freed hzp. "
 
-main()
-{
-	struct sigaction s = {
-		.sa_sigaction = handler,
-		.sa_flags = SA_ONSTACK | SA_SIGINFO
-	};
-	stack_t stack = {.ss_sp = malloc(16384), .ss_size = 16384};
-	sigaction(SIGUSR2, &s, NULL);
-	sigaction(SIGUSR1, &s, NULL);
-	sigaltstack(&stack, NULL);
-	raise(SIGUSR1);
-}
+What's "usemem"? Is it a tool and how to get it? It's hard for me to 
+find nr_to_scan > 0 in every callset, how can nr_to_scan > 0 in your 
+scenario?
 
-Should print
-took SIGUSR1 on altstack
-took SIGUSR2 on altstack
-SIGUSR2 done
-SIGUSR1 done
-- we raise SIGUSR1, it's marked onstack, we flip to altstack, raise SIGUSR2
-and we are still on altstack, obviously.  Now, think what happens on the
-way *out* - rt_sigreturn from the second handler will call do_sigaltstack(),
-passing it the saved altstack settings... and the user stack pointer we'll
-get once we return to caller.  I.e. something within the altstack.  Which
-will give you -EPERM.  Which will have microblaze sys_rt_sigreturn() force-feed
-you SIGSEGV, AFAICS.
+Regards,
+Jaegeuk
 
-IOW, there's a reason why rt_sigreturn implementations ignore -EPERM from
-do_sigaltstack().  A bad one, but...  FWIW, sigaltstack handling is a mess
-right now:
-	* every architecture has the sucker done separately, even though
-there's very little point doing so; worse yet, they tend to come with
-asm wrappers from hell, all for no good reason - we need to get userland
-stack pointer and that's done in all kinds of messy ways.
-	* biarch ones have compat versions that ought to be mergable as
-well.
-	* rt_sigreturn instances call do_sigaltstack() and ignore just
-about everything; -EFAULT is not ignored, but realistically it's impossible
-to hit - you'd need a race with munmap() ripping the stack page from under
-you just as you've almost finished with sigreturn.  Accesses on both sides
-of that stack_t had been done by that point, so nothing short of such munmap()
-would do.  Everything else *is* ignored, or we are screwed.  AFAICS, that's
-what microblaze has stepped into.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>   mm/huge_memory.c | 112 ++++++++++++++++++++++++++++++++++++++++++-------------
+>   1 file changed, 87 insertions(+), 25 deletions(-)
+>
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index bad9c8f..923ea75 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -18,6 +18,7 @@
+>   #include <linux/freezer.h>
+>   #include <linux/mman.h>
+>   #include <linux/pagemap.h>
+> +#include <linux/shrinker.h>
+>   #include <asm/tlb.h>
+>   #include <asm/pgalloc.h>
+>   #include "internal.h"
+> @@ -47,7 +48,6 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
+>   /* during fragmentation poll the hugepage allocator once every minute */
+>   static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
+>   static struct task_struct *khugepaged_thread __read_mostly;
+> -static unsigned long huge_zero_pfn __read_mostly;
+>   static DEFINE_MUTEX(khugepaged_mutex);
+>   static DEFINE_SPINLOCK(khugepaged_mm_lock);
+>   static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+> @@ -160,31 +160,74 @@ static int start_khugepaged(void)
+>   	return err;
+>   }
+>   
+> -static int init_huge_zero_pfn(void)
+> +static atomic_t huge_zero_refcount;
+> +static unsigned long huge_zero_pfn __read_mostly;
+> +
+> +static inline bool is_huge_zero_pfn(unsigned long pfn)
+>   {
+> -	struct page *hpage;
+> -	unsigned long pfn;
+> +	unsigned long zero_pfn = ACCESS_ONCE(huge_zero_pfn);
+> +	return zero_pfn && pfn == zero_pfn;
+> +}
+> +
+> +static inline bool is_huge_zero_pmd(pmd_t pmd)
+> +{
+> +	return is_huge_zero_pfn(pmd_pfn(pmd));
+> +}
+> +
+> +static unsigned long get_huge_zero_page(void)
+> +{
+> +	struct page *zero_page;
+> +retry:
+> +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
+> +		return ACCESS_ONCE(huge_zero_pfn);
+>   
+> -	hpage = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
+> +	zero_page = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
+>   			HPAGE_PMD_ORDER);
+> -	if (!hpage)
+> -		return -ENOMEM;
+> -	pfn = page_to_pfn(hpage);
+> -	if (cmpxchg(&huge_zero_pfn, 0, pfn))
+> -		__free_page(hpage);
+> -	return 0;
+> +	if (!zero_page)
+> +		return 0;
+> +	preempt_disable();
+> +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
+> +		preempt_enable();
+> +		__free_page(zero_page);
+> +		goto retry;
+> +	}
+> +
+> +	/* We take additional reference here. It will be put back by shrinker */
+> +	atomic_set(&huge_zero_refcount, 2);
+> +	preempt_enable();
+> +	return ACCESS_ONCE(huge_zero_pfn);
+>   }
+>   
+> -static inline bool is_huge_zero_pfn(unsigned long pfn)
+> +static void put_huge_zero_page(void)
+>   {
+> -	return huge_zero_pfn && pfn == huge_zero_pfn;
+> +	/*
+> +	 * Counter should never go to zero here. Only shrinker can put
+> +	 * last reference.
+> +	 */
+> +	BUG_ON(atomic_dec_and_test(&huge_zero_refcount));
+>   }
+>   
+> -static inline bool is_huge_zero_pmd(pmd_t pmd)
+> +static int shrink_huge_zero_page(struct shrinker *shrink,
+> +		struct shrink_control *sc)
+>   {
+> -	return is_huge_zero_pfn(pmd_pfn(pmd));
+> +	if (!sc->nr_to_scan)
+> +		/* we can free zero page only if last reference remains */
+> +		return atomic_read(&huge_zero_refcount) == 1 ? HPAGE_PMD_NR : 0;
+> +
+> +	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+> +		unsigned long zero_pfn = xchg(&huge_zero_pfn, 0);
+> +		BUG_ON(zero_pfn == 0);
+> +		__free_page(__pfn_to_page(zero_pfn));
+> +	}
+> +
+> +	return 0;
+>   }
+>   
+> +static struct shrinker huge_zero_page_shrinker = {
+> +	.shrink = shrink_huge_zero_page,
+> +	.seeks = DEFAULT_SEEKS,
+> +};
+> +
+>   #ifdef CONFIG_SYSFS
+>   
+>   static ssize_t double_flag_show(struct kobject *kobj,
+> @@ -576,6 +619,8 @@ static int __init hugepage_init(void)
+>   		goto out;
+>   	}
+>   
+> +	register_shrinker(&huge_zero_page_shrinker);
+> +
+>   	/*
+>   	 * By default disable transparent hugepages on smaller systems,
+>   	 * where the extra memory used could hurt more than TLB overhead
+> @@ -698,10 +743,11 @@ static inline struct page *alloc_hugepage(int defrag)
+>   #endif
+>   
+>   static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+> -		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
+> +		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
+> +		unsigned long zero_pfn)
+>   {
+>   	pmd_t entry;
+> -	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
+> +	entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
+>   	entry = pmd_wrprotect(entry);
+>   	entry = pmd_mkhuge(entry);
+>   	set_pmd_at(mm, haddr, pmd, entry);
+> @@ -724,15 +770,19 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   			return VM_FAULT_OOM;
+>   		if (!(flags & FAULT_FLAG_WRITE)) {
+>   			pgtable_t pgtable;
+> -			if (unlikely(!huge_zero_pfn && init_huge_zero_pfn())) {
+> -				count_vm_event(THP_FAULT_FALLBACK);
+> -				goto out;
+> -			}
+> +			unsigned long zero_pfn;
+>   			pgtable = pte_alloc_one(mm, haddr);
+>   			if (unlikely(!pgtable))
+>   				goto out;
+> +			zero_pfn = get_huge_zero_page();
+> +			if (unlikely(!zero_pfn)) {
+> +				pte_free(mm, pgtable);
+> +				count_vm_event(THP_FAULT_FALLBACK);
+> +				goto out;
+> +			}
+>   			spin_lock(&mm->page_table_lock);
+> -			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
+> +			set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+> +					zero_pfn);
+>   			spin_unlock(&mm->page_table_lock);
+>   			return 0;
+>   		}
+> @@ -806,7 +856,15 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+>   	 * a page table.
+>   	 */
+>   	if (is_huge_zero_pmd(pmd)) {
+> -		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
+> +		unsigned long zero_pfn;
+> +		/*
+> +		 * get_huge_zero_page() will never allocate a new page here,
+> +		 * since we already have a zero page to copy. It just takes a
+> +		 * reference.
+> +		 */
+> +		zero_pfn = get_huge_zero_page();
+> +		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
+> +				zero_pfn);
+>   		ret = 0;
+>   		goto out_unlock;
+>   	}
+> @@ -894,6 +952,7 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
+>   	smp_wmb(); /* make pte visible before pmd */
+>   	pmd_populate(mm, pmd, pgtable);
+>   	spin_unlock(&mm->page_table_lock);
+> +	put_huge_zero_page();
+>   
+>   	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+>   
+> @@ -1095,9 +1154,10 @@ alloc:
+>   		page_add_new_anon_rmap(new_page, vma, haddr);
+>   		set_pmd_at(mm, haddr, pmd, entry);
+>   		update_mmu_cache_pmd(vma, address, pmd);
+> -		if (is_huge_zero_pmd(orig_pmd))
+> +		if (is_huge_zero_pmd(orig_pmd)) {
+>   			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+> -		else {
+> +			put_huge_zero_page();
+> +		} else {
+>   			VM_BUG_ON(!PageHead(page));
+>   			page_remove_rmap(page);
+>   			put_page(page);
+> @@ -1174,6 +1234,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>   		if (is_huge_zero_pmd(orig_pmd)) {
+>   			tlb->mm->nr_ptes--;
+>   			spin_unlock(&tlb->mm->page_table_lock);
+> +			put_huge_zero_page();
+>   		} else {
+>   			page = pmd_page(orig_pmd);
+>   			page_remove_rmap(page);
+> @@ -2531,6 +2592,7 @@ static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+>   	}
+>   	smp_wmb(); /* make pte visible before pmd */
+>   	pmd_populate(mm, pmd, pgtable);
+> +	put_huge_zero_page();
+>   }
+>   
+>   void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
 
-As far as I can tell, the sane way to deal with that would be to introduce
-(mandatory) helper that would give you the current userland stack pointer.
-It's almost always either user_stack_pointer(current_pt_regs()) or rdusp().
-There are few exceptions - itanic has user_stack_pointer giving the backing
-store of register stack instead of desired r12 and several architectures
-lack user_stack_pointer() even though the stack pointer is saved in pt_regs
-and helper is trivial to add.  That dealt with, we can take sys_sigaltstack()
-to kernel/signal.c unconditionally.  And kill the wrappers on almost everything.
-The next step is unifying compat variants; AFAICS, that's also not a problem.
-Then we need bool restore_altstack(const stack_t __user *) and compat
-counterpart - originally with "call do_sigaltstack(), fail if and only if
-it has returned -EFAULT", then a saner behaviour ("if we are not asked to
-change the current settings, just succeed and to hell with on_sig_stack()
-check; any other error case means that sigframe had been deliberately messed
-with and deserves a failure").
-
-Linus, do you have any objections to the above?  FWIW, I've a tentative
-patchset in that direction (most of it from the last cycle); right now
-it + stuff currently in signal.git#for-next is at -3.4KLoC and I hadn't
-dealt with the biarch side of things yet...
