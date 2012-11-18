@@ -1,288 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2KRGX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 01:23:57 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32940 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2KRGX4 (ORCPT
+	id S1751818Ab2KRHJy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 02:09:54 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38114 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab2KRHJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 01:23:56 -0500
-Message-ID: <50A87EF0.3060706@gmail.com>
-Date: Sun, 18 Nov 2012 14:23:44 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v6 10/12] thp: implement refcounting for huge zero page
-References: <1353007622-18393-1-git-send-email-kirill.shutemov@linux.intel.com> <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1353007622-18393-11-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Nov 2012 02:09:52 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 00/13] x86, boot, 64bit: Add support for loading ramdisk and bzImage high
+Date: Sat, 17 Nov 2012 23:09:18 -0800
+Message-Id: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2012 03:27 AM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> after the first allocation. Here's implementation of lockless refcounting
-> for huge zero page.
->
-> We have two basic primitives: {get,put}_huge_zero_page(). They
-> manipulate reference counter.
->
-> If counter is 0, get_huge_zero_page() allocates a new huge page and
-> takes two references: one for caller and one for shrinker. We free the
-> page only in shrinker callback if counter is 1 (only shrinker has the
-> reference).
->
-> put_huge_zero_page() only decrements counter. Counter is never zero
-> in put_huge_zero_page() since shrinker holds on reference.
->
-> Freeing huge zero page in shrinker callback helps to avoid frequent
-> allocate-free.
->
-> Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
-> parallel (40 processes) read page faulting comparing to lazy huge page
-> allocation.  I think it's pretty reasonable for synthetic benchmark.
+Now we have limit kdump reseved under 896M, because kexec has the limitation.
+and also bzImage need to stay under 4g.
 
-Hi Kirill,
+To make kexec/kdump could use range above 4g, we need to make bzImage and
+ramdisk could be loaded above 4g.
+During booting bzImage will be unpacked on same postion and stay high.
 
-I see your and Andew's hot discussion in v4 resend thread.
+The patches add field in boot header to
+1. get info about ramdisk position info above 4g from bootloader/kexec
+2. set code64_start_offset in header for bzImage and bootloader/kexec load
+   could check that to decide if need to put bzImage high.
 
-"I also tried another scenario: usemem -n16 100M -r 1000. It creates 
-real memory pressure - no easy reclaimable memory. This time callback 
-called with nr_to_scan > 0 and we freed hzp. "
+This patches is tested with kexec tools with local changes and they are sent
+to kexec list.
 
-What's "usemem"? Is it a tool and how to get it? It's hard for me to 
-find nr_to_scan > 0 in every callset, how can nr_to_scan > 0 in your 
-scenario?
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
 
-Regards,
-Jaegeuk
+and it is on top of for-x86-mm
 
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->   mm/huge_memory.c | 112 ++++++++++++++++++++++++++++++++++++++++++-------------
->   1 file changed, 87 insertions(+), 25 deletions(-)
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index bad9c8f..923ea75 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -18,6 +18,7 @@
->   #include <linux/freezer.h>
->   #include <linux/mman.h>
->   #include <linux/pagemap.h>
-> +#include <linux/shrinker.h>
->   #include <asm/tlb.h>
->   #include <asm/pgalloc.h>
->   #include "internal.h"
-> @@ -47,7 +48,6 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
->   /* during fragmentation poll the hugepage allocator once every minute */
->   static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
->   static struct task_struct *khugepaged_thread __read_mostly;
-> -static unsigned long huge_zero_pfn __read_mostly;
->   static DEFINE_MUTEX(khugepaged_mutex);
->   static DEFINE_SPINLOCK(khugepaged_mm_lock);
->   static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
-> @@ -160,31 +160,74 @@ static int start_khugepaged(void)
->   	return err;
->   }
->   
-> -static int init_huge_zero_pfn(void)
-> +static atomic_t huge_zero_refcount;
-> +static unsigned long huge_zero_pfn __read_mostly;
-> +
-> +static inline bool is_huge_zero_pfn(unsigned long pfn)
->   {
-> -	struct page *hpage;
-> -	unsigned long pfn;
-> +	unsigned long zero_pfn = ACCESS_ONCE(huge_zero_pfn);
-> +	return zero_pfn && pfn == zero_pfn;
-> +}
-> +
-> +static inline bool is_huge_zero_pmd(pmd_t pmd)
-> +{
-> +	return is_huge_zero_pfn(pmd_pfn(pmd));
-> +}
-> +
-> +static unsigned long get_huge_zero_page(void)
-> +{
-> +	struct page *zero_page;
-> +retry:
-> +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
-> +		return ACCESS_ONCE(huge_zero_pfn);
->   
-> -	hpage = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
-> +	zero_page = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
->   			HPAGE_PMD_ORDER);
-> -	if (!hpage)
-> -		return -ENOMEM;
-> -	pfn = page_to_pfn(hpage);
-> -	if (cmpxchg(&huge_zero_pfn, 0, pfn))
-> -		__free_page(hpage);
-> -	return 0;
-> +	if (!zero_page)
-> +		return 0;
-> +	preempt_disable();
-> +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-> +		preempt_enable();
-> +		__free_page(zero_page);
-> +		goto retry;
-> +	}
-> +
-> +	/* We take additional reference here. It will be put back by shrinker */
-> +	atomic_set(&huge_zero_refcount, 2);
-> +	preempt_enable();
-> +	return ACCESS_ONCE(huge_zero_pfn);
->   }
->   
-> -static inline bool is_huge_zero_pfn(unsigned long pfn)
-> +static void put_huge_zero_page(void)
->   {
-> -	return huge_zero_pfn && pfn == huge_zero_pfn;
-> +	/*
-> +	 * Counter should never go to zero here. Only shrinker can put
-> +	 * last reference.
-> +	 */
-> +	BUG_ON(atomic_dec_and_test(&huge_zero_refcount));
->   }
->   
-> -static inline bool is_huge_zero_pmd(pmd_t pmd)
-> +static int shrink_huge_zero_page(struct shrinker *shrink,
-> +		struct shrink_control *sc)
->   {
-> -	return is_huge_zero_pfn(pmd_pfn(pmd));
-> +	if (!sc->nr_to_scan)
-> +		/* we can free zero page only if last reference remains */
-> +		return atomic_read(&huge_zero_refcount) == 1 ? HPAGE_PMD_NR : 0;
-> +
-> +	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
-> +		unsigned long zero_pfn = xchg(&huge_zero_pfn, 0);
-> +		BUG_ON(zero_pfn == 0);
-> +		__free_page(__pfn_to_page(zero_pfn));
-> +	}
-> +
-> +	return 0;
->   }
->   
-> +static struct shrinker huge_zero_page_shrinker = {
-> +	.shrink = shrink_huge_zero_page,
-> +	.seeks = DEFAULT_SEEKS,
-> +};
-> +
->   #ifdef CONFIG_SYSFS
->   
->   static ssize_t double_flag_show(struct kobject *kobj,
-> @@ -576,6 +619,8 @@ static int __init hugepage_init(void)
->   		goto out;
->   	}
->   
-> +	register_shrinker(&huge_zero_page_shrinker);
-> +
->   	/*
->   	 * By default disable transparent hugepages on smaller systems,
->   	 * where the extra memory used could hurt more than TLB overhead
-> @@ -698,10 +743,11 @@ static inline struct page *alloc_hugepage(int defrag)
->   #endif
->   
->   static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
-> -		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
-> +		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
-> +		unsigned long zero_pfn)
->   {
->   	pmd_t entry;
-> -	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
-> +	entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
->   	entry = pmd_wrprotect(entry);
->   	entry = pmd_mkhuge(entry);
->   	set_pmd_at(mm, haddr, pmd, entry);
-> @@ -724,15 +770,19 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   			return VM_FAULT_OOM;
->   		if (!(flags & FAULT_FLAG_WRITE)) {
->   			pgtable_t pgtable;
-> -			if (unlikely(!huge_zero_pfn && init_huge_zero_pfn())) {
-> -				count_vm_event(THP_FAULT_FALLBACK);
-> -				goto out;
-> -			}
-> +			unsigned long zero_pfn;
->   			pgtable = pte_alloc_one(mm, haddr);
->   			if (unlikely(!pgtable))
->   				goto out;
-> +			zero_pfn = get_huge_zero_page();
-> +			if (unlikely(!zero_pfn)) {
-> +				pte_free(mm, pgtable);
-> +				count_vm_event(THP_FAULT_FALLBACK);
-> +				goto out;
-> +			}
->   			spin_lock(&mm->page_table_lock);
-> -			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
-> +			set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-> +					zero_pfn);
->   			spin_unlock(&mm->page_table_lock);
->   			return 0;
->   		}
-> @@ -806,7 +856,15 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->   	 * a page table.
->   	 */
->   	if (is_huge_zero_pmd(pmd)) {
-> -		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
-> +		unsigned long zero_pfn;
-> +		/*
-> +		 * get_huge_zero_page() will never allocate a new page here,
-> +		 * since we already have a zero page to copy. It just takes a
-> +		 * reference.
-> +		 */
-> +		zero_pfn = get_huge_zero_page();
-> +		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
-> +				zero_pfn);
->   		ret = 0;
->   		goto out_unlock;
->   	}
-> @@ -894,6 +952,7 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
->   	smp_wmb(); /* make pte visible before pmd */
->   	pmd_populate(mm, pmd, pgtable);
->   	spin_unlock(&mm->page_table_lock);
-> +	put_huge_zero_page();
->   
->   	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
->   
-> @@ -1095,9 +1154,10 @@ alloc:
->   		page_add_new_anon_rmap(new_page, vma, haddr);
->   		set_pmd_at(mm, haddr, pmd, entry);
->   		update_mmu_cache_pmd(vma, address, pmd);
-> -		if (is_huge_zero_pmd(orig_pmd))
-> +		if (is_huge_zero_pmd(orig_pmd)) {
->   			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
-> -		else {
-> +			put_huge_zero_page();
-> +		} else {
->   			VM_BUG_ON(!PageHead(page));
->   			page_remove_rmap(page);
->   			put_page(page);
-> @@ -1174,6 +1234,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
->   		if (is_huge_zero_pmd(orig_pmd)) {
->   			tlb->mm->nr_ptes--;
->   			spin_unlock(&tlb->mm->page_table_lock);
-> +			put_huge_zero_page();
->   		} else {
->   			page = pmd_page(orig_pmd);
->   			page_remove_rmap(page);
-> @@ -2531,6 +2592,7 @@ static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
->   	}
->   	smp_wmb(); /* make pte visible before pmd */
->   	pmd_populate(mm, pmd, pgtable);
-> +	put_huge_zero_page();
->   }
->   
->   void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
+-v2: add ext_cmd_line_ptr support, and handle boot_param/cmd_line is above
+     4G case.
+
+Thanks
+
+Yinghai
+
+Yinghai Lu (13):
+  x86, boot: move verify_cpu.S after 0x200
+  x86, boot: Move lldt/ltr out of 64bit code section
+  x86: Add macro for 64bit entry startup_64
+  x86, 64bit: set extra ident page table for whole kernel range
+  x86, 64bit: add support for loading kernel above 512G
+  x86: Merge early_reserve_initrd for 32bit and 64bit
+  x86: add get_ramdisk_image/size
+  x86, boot: add get_cmd_line_ptr()
+  x86, boot: Don't check if cmd_line_ptr is accessible in misc/decompressor()
+  x86, boot: update cmd_line_ptr to unsigned long
+  x86: use io_remap to access real_mode_data
+  x86, boot: add fields to support load bzImage and ramdisk high
+  x86: remove 1024g limitation for kexec buffer on 64bit
+
+ Documentation/x86/boot.txt         |   39 +++++++++++++++++++++++++
+ arch/x86/boot/boot.h               |   18 +++++++++--
+ arch/x86/boot/cmdline.c            |   12 ++++----
+ arch/x86/boot/compressed/cmdline.c |   13 +++++++-
+ arch/x86/boot/compressed/head_64.S |   16 ++++++----
+ arch/x86/boot/header.S             |    8 ++++-
+ arch/x86/include/asm/boot.h        |    2 +
+ arch/x86/include/asm/bootparam.h   |    4 ++
+ arch/x86/include/asm/kexec.h       |    6 ++--
+ arch/x86/kernel/head32.c           |   11 -------
+ arch/x86/kernel/head64.c           |   42 +++++++++++++++++----------
+ arch/x86/kernel/head_64.S          |   49 +++++++++++++++++++++++++------
+ arch/x86/kernel/setup.c            |   55 +++++++++++++++++++++++++++++------
+ 13 files changed, 207 insertions(+), 68 deletions(-)
+
+-- 
+1.7.7
 
