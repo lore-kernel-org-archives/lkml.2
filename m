@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2KRHJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 02:09:56 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38116 "EHLO
+	id S1752242Ab2KRHJz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 02:09:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38115 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab2KRHJx (ORCPT
+	with ESMTP id S1751466Ab2KRHJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 02:09:53 -0500
+	Sun, 18 Nov 2012 02:09:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 07/13] x86: add get_ramdisk_image/size
-Date: Sat, 17 Nov 2012 23:09:25 -0800
-Message-Id: <1353222571-31544-8-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Zachary Amsden <zamsden@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v2 02/13] x86, boot: Move lldt/ltr out of 64bit code section
+Date: Sat, 17 Nov 2012 23:09:20 -0800
+Message-Id: <1353222571-31544-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
 References: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There several places to find ramdisk information early for reserving
-and relocating.
+commit 08da5a2ca
 
-Use functions to make code more readable and consistent.
+    x86_64: Early segment setup for VT
 
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+add lldt/ltr to clean more segments.
+
+Those code are put in code64, and it is using gdt that is only
+loaded from code32 path.
+
+That breaks booting with 64bit bootloader that does not go through
+code32 path, and get at startup_64 directly, so they have different
+gdt.
+
+Move those lines into code32 after their gdt is loaded.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Zachary Amsden <zamsden@gmail.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+ arch/x86/boot/compressed/head_64.S |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ee6d267..194e151 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -298,12 +298,25 @@ static void __init reserve_brk(void)
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2c3cee4..375af23 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -154,6 +154,12 @@ ENTRY(startup_32)
+ 	btsl	$_EFER_LME, %eax
+ 	wrmsr
  
- #ifdef CONFIG_BLK_DEV_INITRD
- 
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	/* After gdt is loaded */
++	xorl	%eax, %eax
++	lldt	%ax
++	movl    $0x20, %eax
++	ltr	%ax
 +
-+	return ramdisk_image;
-+}
-+static u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -342,8 +355,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
+ 	/*
+ 	 * Setup for the jump to 64bit mode
+ 	 *
+@@ -245,9 +251,6 @@ preferred_addr:
+ 	movl	%eax, %ss
+ 	movl	%eax, %fs
+ 	movl	%eax, %gs
+-	lldt	%ax
+-	movl    $0x20, %eax
+-	ltr	%ax
  
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -367,8 +380,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -380,8 +393,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
+ 	/*
+ 	 * Compute the decompressed kernel start address.  It is where
 -- 
 1.7.7
 
