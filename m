@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab2KRA6K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 19:58:10 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48608 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab2KRA6I (ORCPT
+	id S1752541Ab2KRBFA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:05:00 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:61769 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab2KRBE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 19:58:08 -0500
-Message-ID: <50A83289.6020108@gmail.com>
-Date: Sun, 18 Nov 2012 08:57:45 +0800
-From: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils> <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com> <alpine.LNX.2.00.1211061521230.6954@eggly.anvils> <50A30ADD.9000209@gmail.com> <alpine.LNX.2.00.1211131935410.30540@eggly.anvils> <50A49C46.9040406@gmail.com> <alpine.LNX.2.00.1211151126440.9273@eggly.anvils> <50A6089B.7010708@gmail.com> <alpine.LNX.2.00.1211162018010.1164@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1211162018010.1164@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 17 Nov 2012 20:04:59 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Anish Kumar <anish198519851985@gmail.com>
+Subject: [GIT PULL v2] printk: Make it usable on nohz cpus
+Date: Sun, 18 Nov 2012 02:04:43 +0100
+Message-Id: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2012 12:48 PM, Hugh Dickins wrote:
-> Further offtopic..
+Ingo,
 
-Thanks for your explanation, Hugh. :-)
+Please pull the printk support in dynticks mode patches that can
+be found at:
 
->
-> On Fri, 16 Nov 2012, Jaegeuk Hanse wrote:
->> Some questions about your shmem/tmpfs: misc and fallocate patchset.
->>
->> - Since shmem_setattr can truncate tmpfs files, why need add another similar
->> codes in function shmem_fallocate? What's the trick?
-> I don't know if I understand you.  In general, hole-punching is different
-> from truncation.  Supporting the hole-punch mode of the fallocate system
-> call is different from supporting truncation.  They're closely related,
-> and share code, but meet different specifications.
+  git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git tags/printk-dynticks-for-mingo-v2
 
-What's the different between shmem/tmpfs hole-punching and 
-truncate_setsize/truncate_pagecache?
-Do you mean one is punch hole in the file and the other one is shrink or 
-extent the size of a file?
+for you to fetch changes up to 74876a98a87a115254b3a66a14b27320b7f0acaa:
 
->> - in tmpfs: support fallocate preallocation patch changelog:
->>    "Christoph Hellwig: What for exactly?  Please explain why preallocating on
->> tmpfs would make any sense.
->>    Kay Sievers: To be able to safely use mmap(), regarding SIGBUS, on files on
->> the /dev/shm filesystem.  The glibc fallback loop for -ENOSYS [or
->> -EOPNOTSUPP] on fallocate is just ugly."
->>    Could shmem/tmpfs fallocate prevent one process truncate the file which the
->> second process mmap() and get SIGBUS when the second process access mmap but
->> out of current size of file?
-> Again, I don't know if I understand you.  fallocate does not prevent
-> truncation or races or SIGBUS.  I believe that Kay meant that without
-> using fallocate to allocate the memory in advance, systemd found it hard
-> to protect itself from the possibility of getting a SIGBUS, if access to
-> a shmem mapping happened to run out of memory/space in the middle.
+  printk: Wake up klogd using irq_work (2012-11-18 01:01:49 +0100)
 
-IIUC, it will return VM_xxx_OOM instead of SIGBUS if run out of memory. 
-Then how can get SIGBUS in this scene?
+It is based on v3.7-rc4.
 
-Regards,
-Jaegeuk
+Changes since previous pull request include support for irq work flush
+on CPU offlining and acks from Steve. The rest hasn't changed except some
+comment fix.
 
-> I never grasped why writing the file in advance was not good enough:
-> fallocate happened to be what they hoped to use, and it was hard to
-> deny it, given that tmpfs already supported hole-punching, and was
-> about to convert to the fallocate interface for that.
-> Hugh
+Thanks.
 
+----------------------------------------------------------------
+Support for printk in dynticks mode:
+
+* Fix two races in irq work claiming
+
+* Generalize irq_work support to all archs
+
+* Don't stop tick with irq works pending. This
+fix is generally useful and concerns archs that
+can't raise self IPIs.
+
+* Flush irq works before CPU offlining.
+
+* Introduce "lazy" irq works that can wait for the
+next tick to be executed, unless it's stopped.
+
+* Implement klogd wake up using irq work. This
+removes the ad-hoc printk_tick()/printk_needs_cpu()
+hooks and make it working even in dynticks mode.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+----------------------------------------------------------------
+Frederic Weisbecker (7):
+      irq_work: Fix racy IRQ_WORK_BUSY flag setting
+      irq_work: Fix racy check on work pending flag
+      irq_work: Remove CONFIG_HAVE_IRQ_WORK
+      nohz: Add API to check tick state
+      irq_work: Don't stop the tick with pending works
+      irq_work: Make self-IPIs optable
+      printk: Wake up klogd using irq_work
+
+Steven Rostedt (2):
+      irq_work: Flush work on CPU_DYING
+      irq_work: Warn if there's still work on cpu_down
+
+ arch/alpha/Kconfig                  |    1 -
+ arch/arm/Kconfig                    |    1 -
+ arch/arm64/Kconfig                  |    1 -
+ arch/blackfin/Kconfig               |    1 -
+ arch/frv/Kconfig                    |    1 -
+ arch/hexagon/Kconfig                |    1 -
+ arch/mips/Kconfig                   |    1 -
+ arch/parisc/Kconfig                 |    1 -
+ arch/powerpc/Kconfig                |    1 -
+ arch/s390/Kconfig                   |    1 -
+ arch/sh/Kconfig                     |    1 -
+ arch/sparc/Kconfig                  |    1 -
+ arch/x86/Kconfig                    |    1 -
+ drivers/staging/iio/trigger/Kconfig |    1 -
+ include/linux/irq_work.h            |   20 ++++++
+ include/linux/printk.h              |    3 -
+ include/linux/tick.h                |   17 ++++-
+ init/Kconfig                        |    5 +-
+ kernel/irq_work.c                   |  131 ++++++++++++++++++++++++++---------
+ kernel/printk.c                     |   36 +++++-----
+ kernel/time/tick-sched.c            |    7 +-
+ kernel/timer.c                      |    1 -
+ 22 files changed, 161 insertions(+), 73 deletions(-)
