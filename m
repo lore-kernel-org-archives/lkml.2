@@ -1,39 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab2KRVSj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 16:18:39 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52542 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2KRVSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 16:18:36 -0500
-Date: Sun, 18 Nov 2012 16:18:33 -0500 (EST)
-Message-Id: <20121118.161833.985081954687473276.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: torvalds@linux-foundation.org, monstr@monstr.eu,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: sigaltstack fun
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121118210253.GI16916@ZenIV.linux.org.uk>
-References: <20121118.140332.1273544560009594278.davem@davemloft.net>
-	<20121118195921.GH16916@ZenIV.linux.org.uk>
-	<20121118210253.GI16916@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752683Ab2KRV7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 16:59:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45349 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752500Ab2KRV7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 16:59:11 -0500
+Date: Sun, 18 Nov 2012 22:59:06 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Fixed wrong sysfs attr size for koneplus
+ tcu.
+In-Reply-To: <1353184031.4973.9.camel@neuromancer.tessier-ashpool>
+Message-ID: <alpine.LNX.2.00.1211182259000.20577@pobox.suse.cz>
+References: <1353184031.4973.9.camel@neuromancer.tessier-ashpool>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Sun, 18 Nov 2012 21:02:53 +0000
+On Sat, 17 Nov 2012, Stefan Achatz wrote:
 
-> Are you OK with the patch below?  Should be the minimal fix, getting
-> rid of those segfaults and converting to usual semantics here...
-> 
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> More thorough testing revealed a typo in last koneplus cleanups.
 
-Yep, looks fine:
+Applied.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+-- 
+Jiri Kosina
+SUSE Labs
