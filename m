@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab2KRNjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 08:39:51 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45377 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751900Ab2KRNju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 08:39:50 -0500
-X-Sasl-enc: 62mzY5rpjmjfu2rrgTUPV5j7MRjkI7Ey7dW5XrWHi6+q 1353245989
-Message-ID: <50A8E521.10509@imap.cc>
-Date: Sun, 18 Nov 2012 14:39:45 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+	id S1752003Ab2KRNxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 08:53:15 -0500
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:15577 "EHLO
+	qualcomm.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751900Ab2KRNxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 08:53:14 -0500
+X-Greylist: delayed 14606 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Nov 2012 08:53:12 EST
+From: Vladimir Kondratiev <vkondrat@qti.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+Cc: "John W . Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org,
+        "Luis R . Rodriguez" <rodrigue@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+Date: Sun, 18 Nov 2012 15:51:26 +0200
+Message-ID: <1367870.EsNpLZfRqp@lx-vladimir>
+Organization: Qualcomm
+User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <3304277.iqgq3GH3Yo@lx-vladimir>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com> <29414886.frl7IkqOMP@lx-vladimir> <3304277.iqgq3GH3Yo@lx-vladimir>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH 9/9] TTY: call tty_port_destroy in the rest of drivers
-References: <1352969396-23760-1-git-send-email-jslaby@suse.cz> <1352969396-23760-10-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1352969396-23760-10-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig5FC300D5944C0CB2D9E5E09D"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig5FC300D5944C0CB2D9E5E09D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sunday, November 18, 2012 11:47:58 AM Vladimir Kondratiev wrote:
+> On Wednesday, November 14, 2012 07:27:47 PM Vladimir Kondratiev wrote:
+> > +#define dynamic_hex_dump(prefix_str, prefix_type, rowsize,     \
+> > +                        groupsize, buf, len, ascii)            \
+> > +do {                                                           \
+> > +       DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, prefix_str);  \
+> > +       if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))  \
+> > +               print_hex_dump(KERN_DEBUG, prefix_str,          \
+> > +                              prefix_type, rowsize, groupsize, \
+> > +                              buf, len, ascii);                \
+> > +} while (0)
+> 
+> There is some problem with the code above. There are existing drivers
+> that use print_hex_dump_bytes() with the prefix_str built dynamically,
+> like this (see drivers/tty/ipwireless/hardware.c:362)
+> 
+> static void dump_data_bytes(const char *type, const unsigned char *data,
+> 			    unsigned length)
+> {
+> 	char prefix[56];
+> 
+> 	sprintf(prefix, IPWIRELESS_PCCARD_NAME ": %s %s ",
+> 			type, data_type(data, length));
+> 	print_hex_dump_bytes(prefix, 0, (void *)data,
+> 			length < DUMP_MAX_BYTES ? length : DUMP_MAX_BYTES);
+> }
+> 
+> In this case, prefix_str is not constant, and this solution will not
+> work.
+> 
+> I see 2 drivers that use dynamic prefix:
+> 
+> - mentioned above drivers/tty/ipwireless/hardware.c
+> - drivers/isdn/hardware/mISDN/
+> 
+> I see several options:
+> 
+> 1) require prefix_str to be constant. Patch code mentioned. For example,
+> code above may reads:
+> 
+> static void dump_data_bytes(const char *type, const unsigned char *data,
+> 			    unsigned length)
+> {
+> 	pr_debug(IPWIRELESS_PCCARD_NAME ": %s %s\n",
+> 			type, data_type(data, length));
+> 	print_hex_dump_bytes(IPWIRELESS_PCCARD_NAME, 0, (void *)data,
+> 			length < DUMP_MAX_BYTES ? length : DUMP_MAX_BYTES);
+> }
+> 
+> 2) introduce fixed format string in DEFINE_DYNAMIC_DEBUG_METADATA, like
+> 
+> DEFINE_DYNAMIC_DEBUG_METADATA((descriptor, "hexdump");
+> 
+> 3) remove print_hex_dump_bytes from this patch
+> 
+> I think 1) is the best, opinions?
+> 
+> Thanks, Vladimir
 
-Hi Jiri,
-
-Two remarks wrt the Gigaset driver.
-
-Am 15.11.2012 09:49, schrieb Jiri Slaby:
-> diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/commo=
-n.c
-> index 30a6b17..bc9d89a 100644
-> --- a/drivers/isdn/gigaset/common.c
-> +++ b/drivers/isdn/gigaset/common.c
-> @@ -518,6 +518,7 @@ f_bcs:	gig_dbg(DEBUG_INIT, "freeing bcs[]");
->  	kfree(cs->bcs);
->  f_cs:	gig_dbg(DEBUG_INIT, "freeing cs");
->  	mutex_unlock(&cs->mutex);
-> +	tty_port_destroy(&cs->port);
->  	free_cs(cs);
->  }
->  EXPORT_SYMBOL_GPL(gigaset_freecs);
-
-It is not ok to call tty_port_destroy() unconditionally here.
-gigaset_freecs() may be called from gigaset_initcs() before
-the tty_port_init(&cs->port) call if a memory allocation fails.
-This is best fixed by moving that call to case 1 of the preceding
-switch statement because cs_init >=3D 1 covers exactly the cases
-where the tty_port_init(&cs->port) call has already been passed.
-
-> @@ -751,14 +752,14 @@ struct cardstate *gigaset_initcs(struct gigaset_d=
-river *drv, int channels,
->  	gig_dbg(DEBUG_INIT, "setting up iif");
->  	if (gigaset_isdn_regdev(cs, modulename) < 0) {
->  		pr_err("error registering ISDN device\n");
-> -		goto error;
-> +		goto error_port;
->  	}
-> =20
->  	make_valid(cs, VALID_ID);
->  	++cs->cs_init;
->  	gig_dbg(DEBUG_INIT, "setting up hw");
->  	if (cs->ops->initcshw(cs) < 0)
-> -		goto error;
-> +		goto error_port;
-> =20
->  	++cs->cs_init;
-> =20
-> @@ -773,7 +774,7 @@ struct cardstate *gigaset_initcs(struct gigaset_dri=
-ver *drv, int channels,
->  		gig_dbg(DEBUG_INIT, "setting up bcs[%d]", i);
->  		if (gigaset_initbcs(cs->bcs + i, cs, i) < 0) {
->  			pr_err("could not allocate channel %d data\n", i);
-> -			goto error;
-> +			goto error_port;
->  		}
->  	}
-> =20
-> @@ -786,7 +787,8 @@ struct cardstate *gigaset_initcs(struct gigaset_dri=
-ver *drv, int channels,
-> =20
->  	gig_dbg(DEBUG_INIT, "cs initialized");
->  	return cs;
-> -
-> +error_port:
-> +	tty_port_destroy(&cs->port);
->  error:
->  	gig_dbg(DEBUG_INIT, "failed");
->  	gigaset_freecs(cs);
-
-You have already added a tty_port_destroy() call to gigaset_freecs(cs)
-above. Adding another one here will lead to the port being destroyed
-twice in this code path.
-
-Thanks,
-Tilman
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+In case of option 1), patches follows. Note there is change in the initial patch as well (I forgot to exclude print_hex_dump_bytes() from compilation in hexdump.c. Please, comment.
 
 
---------------enig5FC300D5944C0CB2D9E5E09D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iEYEARECAAYFAlCo5SMACgkQQ3+did9BuFvTmQCfUrq6LNK94DUTHiiTjhIb+vLx
-R90AmwV4CzPtRXtx1Oe5RbSXV4q5kQeN
-=pmtg
------END PGP SIGNATURE-----
-
---------------enig5FC300D5944C0CB2D9E5E09D--
