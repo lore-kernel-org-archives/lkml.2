@@ -1,415 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab2KRPZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 10:25:49 -0500
+	id S1752300Ab2KRPZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 10:25:40 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:58821 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab2KRPZr (ORCPT
+	with ESMTP id S1752241Ab2KRPZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 10:25:47 -0500
+	Sun, 18 Nov 2012 10:25:38 -0500
 From: Hitoshi Mitake <h.mitake@gmail.com>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, Hitoshi Mitake <h.mitake@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Darren Hart <dvhltc@us.ibm.com>, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH 2/3] perf bench: port futex_wait.c of futextest to perf bench
-Date: Mon, 19 Nov 2012 00:24:31 +0900
-Message-Id: <1353252272-5480-3-git-send-email-h.mitake@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=201/3=5D=20tools=3A=20add=20new=20headers=20for=20futex=20and=20atomic=20operations?=
+Date: Mon, 19 Nov 2012 00:24:30 +0900
+Message-Id: <1353252272-5480-2-git-send-email-h.mitake@gmail.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1353252272-5480-1-git-send-email-h.mitake@gmail.com>
 References: <1353252272-5480-1-git-send-email-h.mitake@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ports futex_wait.c of futextest[1] to perf bench, as
-subsystem "futex" and its command "wait". This measures performance of
-iterations of FUTEX_WAIT, unit is kilo iteration of lock and unlock
-per second. Iterations, numbers of threads and futexes can be
-specified with command line options: -i for iteration, -t for number
-of threads, -f for number of futexes.
+This patch adds two new header files in tools/ directory. The purpose
+of adding these two headers is supporting futextest and perf bench
+futex in the kernel tree. But these can be utilized by other purposes
+because they are generalized enough.
 
-example of usage:
-| # Running futex/wait benchmark...
-| # 256 threads and 1 futexes (256 threads for 1 futex)
-| 7.15s user, 60.24s system, 8.56s wall, 7.87 cores
-| Result: 11682 Kiter/s
+This patch produces 4 checkpatch warns because of typedefing and
+volatile declaration. But I think these warns are not essential
+problems. If these are not acceptable, I'll seek other way.
 
-[1]: http://git.kernel.org/?p=linux/kernel/git/dvhart/futextest.git
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Darren Hart <dvhltc@us.ibm.com>
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
 ---
- tools/perf/Makefile           |    1 +
- tools/perf/bench/bench.h      |    1 +
- tools/perf/bench/futex-wait.c |  295 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/builtin-bench.c    |   13 ++
- 4 files changed, 310 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/bench/futex-wait.c
+ tools/include/tools/atomic.h |   95 ++++++++++++++
+ tools/include/tools/futex.h  |  278 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 373 insertions(+), 0 deletions(-)
+ create mode 100644 tools/include/tools/atomic.h
+ create mode 100644 tools/include/tools/futex.h
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index cca5bb8..5c395a3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -443,6 +443,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
- endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
-+BUILTIN_OBJS += $(OUTPUT)bench/futex-wait.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
- BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index 8f89998..f188b1d 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -6,6 +6,7 @@ extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
- extern int bench_mem_memcpy(int argc, const char **argv,
- 			    const char *prefix __maybe_unused);
- extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
-+extern int bench_futex_wait(int argc, const char **argv, const char *prefix);
- 
- #define BENCH_FORMAT_DEFAULT_STR	"default"
- #define BENCH_FORMAT_DEFAULT		0
-diff --git a/tools/perf/bench/futex-wait.c b/tools/perf/bench/futex-wait.c
+diff --git a/tools/include/tools/atomic.h b/tools/include/tools/atomic.h
 new file mode 100644
-index 0000000..ef21f62
+index 0000000..8e52957
 --- /dev/null
-+++ b/tools/perf/bench/futex-wait.c
-@@ -0,0 +1,295 @@
-+/*
-+ * futex-wait.c
++++ b/tools/include/tools/atomic.h
+@@ -0,0 +1,95 @@
++/******************************************************************************
 + *
-+ * Measure FUTEX_WAIT operations per second.
-+ * based on futex_wait.c of futextest by Darren Hart <dvhart@linux.intel.com>
-+ * and Michel Lespinasse <walken@google.com>
++ *   Copyright © International Business Machines  Corp., 2009
 + *
-+ * ported to perf bench by Hitoshi Mitake <h.mitake@gmail.com>
++ *   This program is free software;  you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2 of the License, or
++ *   (at your option) any later version.
 + *
-+ * original futextest:
-+ * http://git.kernel.org/?p=linux/kernel/git/dvhart/futextest.git
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY;  without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
++ *   the GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program;  if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * NAME
++ *      atomic.h
++ *
++ * DESCRIPTION
++ *      GCC atomic builtin wrappers
++ *      http://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html
++ *
++ * AUTHOR
++ *      Darren Hart <dvhltc@us.ibm.com>
++ *
++ * HISTORY
++ *      2009-Nov-17: Initial version by Darren Hart <dvhltc@us.ibm.com>
++ *
++ *****************************************************************************/
++
++#ifndef _ATOMIC_H
++#define _ATOMIC_H
++
++typedef struct {
++	volatile int val;
++} atomic_t;
++
++#define ATOMIC_INITIALIZER { 0 }
++
++/**
++ * atomic_cmpxchg() - Atomic compare and exchange
++ * @uaddr:	The address of the futex to be modified
++ * @oldval:	The expected value of the futex
++ * @newval:	The new value to try and assign the futex
++ *
++ * Return the old value of addr->val.
 + */
++static inline int
++atomic_cmpxchg(atomic_t *addr, int oldval, int newval)
++{
++	return __sync_val_compare_and_swap(&addr->val, oldval, newval);
++}
 +
-+#include "../perf.h"
-+#include "../util.h"
-+#include "../util/parse-options.h"
++/**
++ * atomic_inc() - Atomic incrememnt
++ * @addr:	Address of the variable to increment
++ *
++ * Return the new value of addr->val.
++ */
++static inline int
++atomic_inc(atomic_t *addr)
++{
++	return __sync_add_and_fetch(&addr->val, 1);
++}
 +
-+#include "../../include/tools/futex.h"
-+#include "../../include/tools/atomic.h"
++/**
++ * atomic_dec() - Atomic decrement
++ * @addr:	Address of the variable to decrement
++ *
++ * Return the new value of addr-val.
++ */
++static inline int
++atomic_dec(atomic_t *addr)
++{
++	return __sync_sub_and_fetch(&addr->val, 1);
++}
 +
-+#include "bench.h"
++/**
++ * atomic_set() - Atomic set
++ * @addr:	Address of the variable to set
++ * @newval:	New value for the atomic_t
++ *
++ * Return the new value of addr->val.
++ */
++static inline int
++atomic_set(atomic_t *addr, int newval)
++{
++	addr->val = newval;
++	return newval;
++}
 +
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <pthread.h>
-+#include <sys/times.h>
-+#include <sys/poll.h>
++#endif
+diff --git a/tools/include/tools/futex.h b/tools/include/tools/futex.h
+new file mode 100644
+index 0000000..9986189
+--- /dev/null
++++ b/tools/include/tools/futex.h
+@@ -0,0 +1,278 @@
++/******************************************************************************
++ *
++ *   Copyright © International Business Machines  Corp., 2009
++ *
++ *   This program is free software;  you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2 of the License, or
++ *   (at your option) any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY;  without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
++ *   the GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program;  if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * NAME
++ *      futex.h
++ *
++ * DESCRIPTION
++ *      Glibc independent futex library for testing kernel functionality.
++ *
++ * AUTHOR
++ *      Darren Hart <dvhltc@us.ibm.com>
++ *
++ * HISTORY
++ *      2009-Nov-6: Initial version by Darren Hart <dvhltc@us.ibm.com>
++ *
++ *****************************************************************************/
++
++#ifndef _FUTEX_H
++#define _FUTEX_H
++
 +#include <unistd.h>
++#include <sys/syscall.h>
 +#include <sys/types.h>
-+#include <sys/socket.h>
-+
 +#include <linux/futex.h>
 +
-+#ifndef _GNU_SOURCE
-+#define _GNU_SOURCE
++typedef volatile u_int32_t futex_t;
++#define FUTEX_INITIALIZER 0
++
++/* Define the newer op codes if the system header file is not up to date. */
++#ifndef FUTEX_WAIT_BITSET
++#define FUTEX_WAIT_BITSET		9
 +#endif
-+#include <poll.h>
++#ifndef FUTEX_WAKE_BITSET
++#define FUTEX_WAKE_BITSET		10
++#endif
++#ifndef FUTEX_WAIT_REQUEUE_PI
++#define FUTEX_WAIT_REQUEUE_PI		11
++#endif
++#ifndef FUTEX_CMP_REQUEUE_PI
++#define FUTEX_CMP_REQUEUE_PI		12
++#endif
++#ifndef FUTEX_WAIT_REQUEUE_PI_PRIVATE
++#define FUTEX_WAIT_REQUEUE_PI_PRIVATE	(FUTEX_WAIT_REQUEUE_PI | \
++					 FUTEX_PRIVATE_FLAG)
++#endif
++#ifndef FUTEX_REQUEUE_PI_PRIVATE
++#define FUTEX_CMP_REQUEUE_PI_PRIVATE	(FUTEX_CMP_REQUEUE_PI | \
++					 FUTEX_PRIVATE_FLAG)
++#endif
 +
-+struct thread_barrier {
-+	futex_t threads;
-+	futex_t unblock;
-+};
++/**
++ * futex() - SYS_futex syscall wrapper
++ * @uaddr:	address of first futex
++ * @op:		futex op code
++ * @val:	typically expected value of uaddr, but varies by op
++ * @timeout:	typically an absolute struct timespec (except where noted
++ *		otherwise). Overloaded by some ops
++ * @uaddr2:	address of second futex for some ops\
++ * @val3:	varies by op
++ * @opflags:	flags to be bitwise OR'd with op, such as FUTEX_PRIVATE_FLAG
++ *
++ * futex() is used by all the following futex op wrappers. It can also be
++ * used for misuse and abuse testing. Generally, the specific op wrappers
++ * should be used instead. It is a macro instead of an static inline function as
++ * some of the types over overloaded (timeout is used for nr_requeue for
++ * example).
++ *
++ * These argument descriptions are the defaults for all
++ * like-named arguments in the following wrappers except where noted below.
++ */
++#define futex(uaddr, op, val, timeout, uaddr2, val3, opflags) \
++	syscall(SYS_futex, uaddr, op | opflags, val, timeout, uaddr2, val3)
 +
-+struct worker_ctx {
-+	futex_t *futex;
-+	unsigned int iterations;
-+
-+	int readyfd, wakefd;
-+
-+	struct thread_barrier *barrier_before, *barrier_after;
-+};
-+
-+static void fdpair(int fds[2])
++/**
++ * futex_wait() - block on uaddr with optional timeout
++ * @timeout:	relative timeout
++ */
++static inline int
++futex_wait(futex_t *uaddr, futex_t val, struct timespec *timeout, int opflags)
 +{
-+	if (pipe(fds) == 0)
-+		return;
-+
-+	die("pipe() failed");
++	return futex(uaddr, FUTEX_WAIT, val, timeout, NULL, 0, opflags);
 +}
 +
-+static inline void futex_wait_lock(futex_t *futex)
++/**
++ * futex_wake() - wake one or more tasks blocked on uaddr
++ * @nr_wake:	wake up to this many tasks
++ */
++static inline int
++futex_wake(futex_t *uaddr, int nr_wake, int opflags)
 +{
-+	int status = *futex;
-+	if (status == 0)
-+		status = futex_cmpxchg(futex, 0, 1);
-+	while (status != 0) {
-+		if (status == 1)
-+			status = futex_cmpxchg(futex, 1, 2);
-+		if (status != 0) {
-+			futex_wait(futex, 2, NULL, FUTEX_PRIVATE_FLAG);
-+			status = *futex;
-+		}
-+		if (status == 0)
-+			status = futex_cmpxchg(futex, 0, 2);
-+	}
++	return futex(uaddr, FUTEX_WAKE, nr_wake, NULL, NULL, 0, opflags);
 +}
 +
-+static inline void futex_cmpxchg_unlock(futex_t *futex)
++/**
++ * futex_wait_bitset() - block on uaddr with bitset
++ * @bitset:	bitset to be used with futex_wake_bitset
++ */
++static inline int
++futex_wait_bitset(futex_t *uaddr, futex_t val, struct timespec *timeout,
++		  u_int32_t bitset, int opflags)
 +{
-+	int status = *futex;
-+	if (status == 1)
-+		status = futex_cmpxchg(futex, 1, 0);
-+	if (status == 2) {
-+		futex_cmpxchg(futex, 2, 0);
-+		futex_wake(futex, 1, FUTEX_PRIVATE_FLAG);
-+	}
++	return futex(uaddr, FUTEX_WAIT_BITSET, val, timeout, NULL, bitset,
++		     opflags);
 +}
 +
-+/* Called by main thread to initialize barrier */
-+static void barrier_init(struct thread_barrier *barrier, int threads)
++/**
++ * futex_wake_bitset() - wake one or more tasks blocked on uaddr with bitset
++ * @bitset:	bitset to compare with that used in futex_wait_bitset
++ */
++static inline int
++futex_wake_bitset(futex_t *uaddr, int nr_wake, u_int32_t bitset, int opflags)
 +{
-+	barrier->threads = threads;
-+	barrier->unblock = 0;
++	return futex(uaddr, FUTEX_WAKE_BITSET, nr_wake, NULL, NULL, bitset,
++		     opflags);
 +}
 +
-+/* Called by worker threads to synchronize with main thread */
-+static int barrier_sync(struct thread_barrier *barrier)
++/**
++ * futex_lock_pi() - block on uaddr as a PI mutex
++ * @detect:	whether (1) or not (0) to perform deadlock detection
++ */
++static inline int
++futex_lock_pi(futex_t *uaddr, struct timespec *timeout, int detect,
++	      int opflags)
 +{
-+	futex_dec(&barrier->threads);
-+	if (barrier->threads == 0)
-+		futex_wake(&barrier->threads, 1, FUTEX_PRIVATE_FLAG);
-+	while (barrier->unblock == 0)
-+		futex_wait(&barrier->unblock, 0, NULL, FUTEX_PRIVATE_FLAG);
-+	return barrier->unblock;
++	return futex(uaddr, FUTEX_LOCK_PI, detect, timeout, NULL, 0, opflags);
 +}
 +
-+/* Called by main thread to wait for all workers to reach sync point */
-+static void barrier_wait(struct thread_barrier *barrier)
++/**
++ * futex_unlock_pi() - release uaddr as a PI mutex, waking the top waiter
++ */
++static inline int
++futex_unlock_pi(futex_t *uaddr, int opflags)
 +{
-+	int threads;
-+	while ((threads = barrier->threads) > 0)
-+		futex_wait(&barrier->threads, threads, NULL,
-+			   FUTEX_PRIVATE_FLAG);
++	return futex(uaddr, FUTEX_UNLOCK_PI, 0, NULL, NULL, 0, opflags);
 +}
 +
-+/* Called by main thread to unblock worker threads from their sync point */
-+static void barrier_unblock(struct thread_barrier *barrier, int value)
++/**
++ * futex_wake_op() - FIXME: COME UP WITH A GOOD ONE LINE DESCRIPTION
++ */
++static inline int
++futex_wake_op(futex_t *uaddr, futex_t *uaddr2, int nr_wake, int nr_wake2,
++	      int wake_op, int opflags)
 +{
-+	barrier->unblock = value;
-+	futex_wake(&barrier->unblock, INT_MAX, FUTEX_PRIVATE_FLAG);
++	return futex(uaddr, FUTEX_WAKE_OP, nr_wake, nr_wake2, uaddr2, wake_op,
++		     opflags);
 +}
 +
-+static bool use_futex_for_sync;
-+
-+static void *worker(void *arg)
++/**
++ * futex_requeue() - requeue without expected value comparison, deprecated
++ * @nr_wake:	wake up to this many tasks
++ * @nr_requeue:	requeue up to this many tasks
++ *
++ * Due to its inherently racy implementation, futex_requeue() is deprecated in
++ * favor of futex_cmp_requeue().
++ */
++static inline int
++futex_requeue(futex_t *uaddr, futex_t *uaddr2, int nr_wake, int nr_requeue,
++	      int opflags)
 +{
-+	char dummy;
-+	int iterations;
-+	futex_t *futex;
-+
-+	struct worker_ctx *ctx = (struct worker_ctx *)arg;
-+	struct pollfd pollfd = { .fd = ctx->wakefd, .events = POLLIN };
-+
-+	iterations = ctx->iterations;
-+	futex = ctx->futex;
-+	/* currently, we have nothing to prepare */
-+	if (use_futex_for_sync) {
-+		barrier_sync(ctx->barrier_before);
-+	} else {
-+		if (write(ctx->readyfd, &dummy, 1) != 1)
-+			die("write() on readyfd failed");
-+
-+		if (poll(&pollfd, 1, -1) != 1)
-+			die("poll() failed");
-+	}
-+
-+	while (iterations--) {
-+		futex_wait_lock(futex);
-+		futex_cmpxchg_unlock(futex);
-+	}
-+
-+	if (use_futex_for_sync)
-+		barrier_sync(ctx->barrier_after);
-+
-+	return NULL;
++	return futex(uaddr, FUTEX_REQUEUE, nr_wake, nr_requeue, uaddr2, 0,
++		     opflags);
 +}
 +
-+static int iterations = 100000000;
-+static int threads = 256;
-+/* futexes are fairly distributed for threads */
-+static int futexes = 1;
-+
-+static const struct option options[] = {
-+	OPT_INTEGER('i', "iterations", &iterations,
-+		    "number of locking and unlocking"),
-+	OPT_INTEGER('t', "threads", &threads,
-+		    "number of worker threads"),
-+	OPT_INTEGER('f', "futexes", &futexes,
-+		"number of futexes, the condition"
-+		"threads % futexes == 0 must be true"),
-+	OPT_BOOLEAN('s', "futex-for-sync", &use_futex_for_sync,
-+		"use futex for sync between main thread and worker threads"),
-+	OPT_END()
-+};
-+
-+static const char * const bench_futex_wait_usage[] = {
-+	"perf bench futex wait <options>",
-+	NULL
-+};
-+
-+int bench_futex_wait(int argc, const char **argv,
-+		const char *prefix __maybe_unused)
++/**
++ * futex_cmp_requeue() - requeue tasks from uaddr to uaddr2
++ * @nr_wake:	wake up to this many tasks
++ * @nr_requeue:	requeue up to this many tasks
++ */
++static inline int
++futex_cmp_requeue(futex_t *uaddr, futex_t val, futex_t *uaddr2, int nr_wake,
++		  int nr_requeue, int opflags)
 +{
-+	int i;
-+	char buf;
-+	int wakefds[2], readyfds[2];
-+	pthread_t *pth_tab;
-+	struct worker_ctx *ctx_tab;
-+	futex_t *futex_tab;
-+
-+	struct thread_barrier barrier_before, barrier_after;
-+
-+	clock_t before, after;
-+	struct tms tms_before, tms_after;
-+	int wall, user, system_time;
-+	double tick;
-+
-+	argc = parse_options(argc, argv, options,
-+			     bench_futex_wait_usage, 0);
-+
-+	if (threads % futexes)
-+		die("threads %% futexes must be 0");
-+
-+	if (use_futex_for_sync) {
-+		barrier_init(&barrier_before, threads);
-+		barrier_init(&barrier_after, threads);
-+	} else {
-+		fdpair(wakefds);
-+		fdpair(readyfds);
-+	}
-+
-+	pth_tab = calloc(sizeof(pthread_t), threads);
-+	if (!pth_tab)
-+		die("calloc() for pthread descriptors failed");
-+	ctx_tab = calloc(sizeof(struct worker_ctx), threads);
-+	if (!ctx_tab)
-+		die("calloc() for worker contexts failed");
-+	futex_tab = calloc(sizeof(futex_t), futexes);
-+	if (!futex_tab)
-+		die("calloc() for futexes failed");
-+
-+	for (i = 0; i < threads; i++) {
-+		ctx_tab[i].futex = &futex_tab[i % futexes];
-+		ctx_tab[i].iterations = iterations / threads;
-+
-+		ctx_tab[i].readyfd = readyfds[1];
-+		ctx_tab[i].wakefd = wakefds[0];
-+
-+		if (use_futex_for_sync) {
-+			ctx_tab[i].barrier_before = &barrier_before;
-+			ctx_tab[i].barrier_after = &barrier_after;
-+		}
-+
-+		if (pthread_create(&pth_tab[i], NULL, worker, &ctx_tab[i]))
-+			die("pthread_create() for creating workers failed");
-+	}
-+
-+	if (use_futex_for_sync) {
-+		barrier_wait(&barrier_before);
-+	} else {
-+		for (i = 0; i < threads; i++) {
-+			if (read(readyfds[0], &buf, 1) != 1)
-+				die("read() for ready failed");
-+		}
-+	}
-+
-+	before = times(&tms_before);
-+
-+	if (use_futex_for_sync) {
-+		barrier_unblock(&barrier_before, 1);
-+	} else {
-+		if (write(wakefds[1], &buf, 1) != 1)
-+			die("write() for waking up workers failed");
-+	}
-+
-+	if (use_futex_for_sync) {
-+		barrier_wait(&barrier_after);
-+	} else {
-+		for (i = 0; i < threads; i++)
-+			pthread_join(pth_tab[i], NULL);
-+	}
-+
-+	after = times(&tms_after);
-+
-+	wall = after - before;
-+	user = tms_after.tms_utime - tms_before.tms_utime;
-+	system_time = tms_after.tms_stime - tms_before.tms_stime;
-+	tick = 1.0 / sysconf(_SC_CLK_TCK);
-+
-+	switch (bench_format) {
-+	case BENCH_FORMAT_DEFAULT:
-+		printf("# %d threads and %d futexes (%d threads for 1 futex)\n",
-+			threads, futexes, threads / futexes);
-+		printf("%.2fs user, %.2fs system, %.2fs wall, %.2f cores\n",
-+			user * tick, system_time * tick, wall * tick,
-+			wall ? (user + system_time) * 1. / wall : 1.);
-+		printf("Result: %.0f Kiter/s\n",
-+			iterations / (wall * tick * 1000));
-+		break;
-+	case BENCH_FORMAT_SIMPLE:
-+		printf("%.0f Kiter/s\n",
-+			iterations / (wall * tick * 1000));
-+		break;
-+	default:
-+		/* reaching here is something disaster */
-+		die("Unknown format:%d\n", bench_format);
-+		break;
-+	}
-+
-+	free((void *)pth_tab);
-+	free((void *)ctx_tab);
-+	free((void *)futex_tab);
-+
-+	return 0;
++	return futex(uaddr, FUTEX_CMP_REQUEUE, nr_wake, nr_requeue, uaddr2,
++		     val, opflags);
 +}
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index cae9a5f..0533736 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -61,6 +61,16 @@ static struct bench_suite mem_suites[] = {
- 	  NULL             }
- };
- 
-+static struct bench_suite futex_suites[] = {
-+	{ "wait",
-+	  "futex wait",
-+	  bench_futex_wait },
-+	suite_all,
-+	{ NULL,
-+	  NULL,
-+	  NULL             }
-+};
 +
- struct bench_subsys {
- 	const char *name;
- 	const char *summary;
-@@ -74,6 +84,9 @@ static struct bench_subsys subsystems[] = {
- 	{ "mem",
- 	  "memory access performance",
- 	  mem_suites },
-+	{ "futex",
-+	  "futex performance",
-+	  futex_suites },
- 	{ "all",		/* sentinel: easy for help */
- 	  "all benchmark subsystem",
- 	  NULL },
++/**
++ * futex_wait_requeue_pi() - block on uaddr and prepare to requeue to uaddr2
++ * @uaddr:	non-PI futex source
++ * @uaddr2:	PI futex target
++ *
++ * This is the first half of the requeue_pi mechanism. It shall always be
++ * paired with futex_cmp_requeue_pi().
++ */
++static inline int
++futex_wait_requeue_pi(futex_t *uaddr, futex_t val, futex_t *uaddr2,
++		      struct timespec *timeout, int opflags)
++{
++	return futex(uaddr, FUTEX_WAIT_REQUEUE_PI, val, timeout, uaddr2, 0,
++		     opflags);
++}
++
++/**
++ * futex_cmp_requeue_pi() - requeue tasks from uaddr to uaddr2 (PI aware)
++ * @uaddr:	non-PI futex source
++ * @uaddr2:	PI futex target
++ * @nr_wake:	wake up to this many tasks
++ * @nr_requeue:	requeue up to this many tasks
++ */
++static inline int
++futex_cmp_requeue_pi(futex_t *uaddr, futex_t val, futex_t *uaddr2, int nr_wake,
++		     int nr_requeue, int opflags)
++{
++	return futex(uaddr, FUTEX_CMP_REQUEUE_PI, nr_wake, nr_requeue, uaddr2,
++		val, opflags);
++}
++
++/**
++ * futex_cmpxchg() - atomic compare and exchange
++ * @uaddr:	The address of the futex to be modified
++ * @oldval:	The expected value of the futex
++ * @newval:	The new value to try and assign the futex
++ *
++ * Implement cmpxchg using gcc atomic builtins.
++ * http://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html
++ *
++ * Return the old futex value.
++ */
++static inline u_int32_t
++futex_cmpxchg(futex_t *uaddr, u_int32_t oldval, u_int32_t newval)
++{
++	return __sync_val_compare_and_swap(uaddr, oldval, newval);
++}
++
++/**
++ * futex_dec() - atomic decrement of the futex value
++ * @uaddr:	The address of the futex to be modified
++ *
++ * Return the new futex value.
++ */
++static inline u_int32_t
++futex_dec(futex_t *uaddr)
++{
++	return __sync_sub_and_fetch(uaddr, 1);
++}
++
++/**
++ * futex_inc() - atomic increment of the futex value
++ * @uaddr:	the address of the futex to be modified
++ *
++ * Return the new futex value.
++ */
++static inline u_int32_t
++futex_inc(futex_t *uaddr)
++{
++	return __sync_add_and_fetch(uaddr, 1);
++}
++
++/**
++ * futex_set() - atomic decrement of the futex value
++ * @uaddr:	the address of the futex to be modified
++ * @newval:	New value for the atomic_t
++ *
++ * Return the new futex value.
++ */
++static inline u_int32_t
++futex_set(futex_t *uaddr, u_int32_t newval)
++{
++	*uaddr = newval;
++	return newval;
++}
++
++#endif	/* _FUTEX_H */
 -- 
 1.7.5.1
 
