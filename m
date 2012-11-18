@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab2KRBFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 20:05:05 -0500
+	id S1752754Ab2KRBG5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:06:57 -0500
 Received: from mail-we0-f174.google.com ([74.125.82.174]:51386 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab2KRBFB (ORCPT
+	with ESMTP id S1752547Ab2KRBFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 20:05:01 -0500
+	Sat, 17 Nov 2012 20:05:04 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,11 +15,10 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anish Kumar <anish198519851985@gmail.com>
-Subject: [PATCH 1/9] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-Date: Sun, 18 Nov 2012 02:04:44 +0100
-Message-Id: <1353200692-6039-2-git-send-email-fweisbec@gmail.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 3/9] irq_work: Remove CONFIG_HAVE_IRQ_WORK
+Date: Sun, 18 Nov 2012 02:04:46 +0100
+Message-Id: <1353200692-6039-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
 References: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
@@ -27,78 +26,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQ_WORK_BUSY flag is set right before we execute the
-work. Once this flag value is set, the work enters a
-claimable state again.
+irq work can run on any arch even without IPI
+support because of the hook on update_process_times().
 
-So if we have specific data to compute in our work, we ensure it's
-either handled by another CPU or locally by enqueuing the work again.
-This state machine is guanranteed by atomic operations on the flags.
+So lets remove HAVE_IRQ_WORK because it doesn't reflect
+any backend requirement.
 
-So when we set IRQ_WORK_BUSY without using an xchg-like operation,
-we break this guarantee as in the following summarized scenario:
-
-        CPU 1                                   CPU 2
-        -----                                   -----
-                                                (flags = 0)
-                                                old_flags = flags;
-        (flags = 0)
-        cmpxchg(flags, old_flags,
-                old_flags | IRQ_WORK_FLAGS)
-        (flags = 3)
-        [...]
-        flags = IRQ_WORK_BUSY
-        (flags = 2)
-        func()
-                                                (sees flags = 3)
-                                                cmpxchg(flags, old_flags,
-                                                        old_flags | IRQ_WORK_FLAGS)
-                                                (give up)
-
-        cmpxchg(flags, 2, 0);
-        (flags = 0)
-
-CPU 1 claims a work and executes it, so it sets IRQ_WORK_BUSY and
-the work is again in a claimable state. Now CPU 2 has new data to process
-and try to claim that work but it may see a stale value of the flags
-and think the work is still pending somewhere that will handle our data.
-This is because CPU 1 doesn't set IRQ_WORK_BUSY atomically.
-
-As a result, the data expected to be handle by CPU 2 won't get handled.
-
-To fix this, use xchg() to set IRQ_WORK_BUSY, this way we ensure the CPU 2
-will see the correct value with cmpxchg() using the expected ordering.
-
-Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Anish Kumar <anish198519851985@gmail.com>
 ---
- kernel/irq_work.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ arch/alpha/Kconfig                  |    1 -
+ arch/arm/Kconfig                    |    1 -
+ arch/arm64/Kconfig                  |    1 -
+ arch/blackfin/Kconfig               |    1 -
+ arch/frv/Kconfig                    |    1 -
+ arch/hexagon/Kconfig                |    1 -
+ arch/mips/Kconfig                   |    1 -
+ arch/parisc/Kconfig                 |    1 -
+ arch/powerpc/Kconfig                |    1 -
+ arch/s390/Kconfig                   |    1 -
+ arch/sh/Kconfig                     |    1 -
+ arch/sparc/Kconfig                  |    1 -
+ arch/x86/Kconfig                    |    1 -
+ drivers/staging/iio/trigger/Kconfig |    1 -
+ init/Kconfig                        |    4 ----
+ 15 files changed, 0 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 1588e3b..57be1a6 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -119,8 +119,11 @@ void irq_work_run(void)
- 		/*
- 		 * Clear the PENDING bit, after this point the @work
- 		 * can be re-used.
-+		 * Make it immediately visible so that other CPUs trying
-+		 * to claim that work don't rely on us to handle their data
-+		 * while we are in the middle of the func.
- 		 */
--		work->flags = IRQ_WORK_BUSY;
-+		xchg(&work->flags, IRQ_WORK_BUSY);
- 		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index 5dd7f5d..e56c2d1 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -5,7 +5,6 @@ config ALPHA
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+ 	select HAVE_SYSCALL_WRAPPERS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_DMA_ATTRS
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ade7e92..22d378b 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -36,7 +36,6 @@ config ARM
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
+ 	select HAVE_IDE if PCI || ISA || PCMCIA
+-	select HAVE_IRQ_WORK
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZMA
+ 	select HAVE_KERNEL_LZO
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index ef54a59..dd50d72 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -17,7 +17,6 @@ config ARM64
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_SPARSE_IRQ
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index b6f3ad5..86f891f 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -24,7 +24,6 @@ config BLACKFIN
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	select HAVE_IDE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_KERNEL_GZIP if RAMKERNEL
+ 	select HAVE_KERNEL_BZIP2 if RAMKERNEL
+ 	select HAVE_KERNEL_LZMA if RAMKERNEL
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index df2eb4b..c44fd6e 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -3,7 +3,6 @@ config FRV
+ 	default y
+ 	select HAVE_IDE
+ 	select HAVE_ARCH_TRACEHOOK
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_UID16
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 0744f7d..40a3185 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -14,7 +14,6 @@ config HEXAGON
+ 	# select HAVE_CLK
+ 	# select IRQ_PER_CPU
+ 	# select GENERIC_PENDING_IRQ if SMP
+-	select HAVE_IRQ_WORK
+ 	select GENERIC_ATOMIC64
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index dba9390..3d86d69 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -4,7 +4,6 @@ config MIPS
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_ARCH_KGDB
+diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+index 11def45..8f0df47 100644
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -9,7 +9,6 @@ config PARISC
+ 	select RTC_DRV_GENERIC
+ 	select INIT_ALL_POSSIBLE
+ 	select BUG
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select GENERIC_ATOMIC64 if !64BIT
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index a902a5c..a90f0c9 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -118,7 +118,6 @@ config PPC
+ 	select HAVE_SYSCALL_WRAPPERS if PPC64
+ 	select GENERIC_ATOMIC64 if PPC32
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 5dba755..0816ff0 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -78,7 +78,6 @@ config S390
+ 	select HAVE_KVM if 64BIT
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select INIT_ALL_POSSIBLE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_DEBUG_KMEMLEAK
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index babc2b8..996e008 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -11,7 +11,6 @@ config SUPERH
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_DMA_ATTRS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_DEBUG_BUGVERBOSE
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index b6b442b..05a478f 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -22,7 +22,6 @@ config SPARC
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select RTC_CLASS
+ 	select RTC_DRV_M48T59
+-	select HAVE_IRQ_WORK
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_ARCH_JUMP_LABEL
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 46c3bff..c13e07a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -26,7 +26,6 @@ config X86
+ 	select HAVE_OPROFILE
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_IOREMAP_PROT
+ 	select HAVE_KPROBES
+ 	select HAVE_MEMBLOCK
+diff --git a/drivers/staging/iio/trigger/Kconfig b/drivers/staging/iio/trigger/Kconfig
+index 7d32075..d44d3ad 100644
+--- a/drivers/staging/iio/trigger/Kconfig
++++ b/drivers/staging/iio/trigger/Kconfig
+@@ -21,7 +21,6 @@ config IIO_GPIO_TRIGGER
+ config IIO_SYSFS_TRIGGER
+ 	tristate "SYSFS trigger"
+ 	depends on SYSFS
+-	depends on HAVE_IRQ_WORK
+ 	select IRQ_WORK
+ 	help
+ 	  Provides support for using SYSFS entry as IIO triggers.
+diff --git a/init/Kconfig b/init/Kconfig
+index 6fdd6e3..cdc152c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -20,12 +20,8 @@ config CONSTRUCTORS
+ 	bool
+ 	depends on !UML
+ 
+-config HAVE_IRQ_WORK
+-	bool
+-
+ config IRQ_WORK
+ 	bool
+-	depends on HAVE_IRQ_WORK
+ 
+ config BUILDTIME_EXTABLE_SORT
+ 	bool
 -- 
 1.7.5.4
 
