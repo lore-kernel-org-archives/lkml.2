@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab2KROZl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:25:41 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50610 "EHLO
+	id S1752081Ab2KRO31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:29:27 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34159 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2KROZk (ORCPT
+	with ESMTP id S1751954Ab2KRO30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:25:40 -0500
-Date: Sun, 18 Nov 2012 06:25:34 -0800
+	Sun, 18 Nov 2012 09:29:26 -0500
+Date: Sun, 18 Nov 2012 06:29:20 -0800
 From: Tejun Heo <tj@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
-        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch,
-        lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] netcls_cgroup: implement hierarchy
- support
-Message-ID: <20121118142534.GF7306@mtj.dyndns.org>
-References: <1353123062-23193-1-git-send-email-tj@kernel.org>
- <20121117.220421.1904738911212014470.davem@davemloft.net>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: fuse-devel@lists.sourceforge.net, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] cuse: use mutex as registration lock instead of
+ spinlocks
+Message-ID: <20121118142920.GG7306@mtj.dyndns.org>
+References: <1353152748-6867-1-git-send-email-dh.herrmann@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121117.220421.1904738911212014470.davem@davemloft.net>
+In-Reply-To: <1353152748-6867-1-git-send-email-dh.herrmann@googlemail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, David.
 
-On Sat, Nov 17, 2012 at 10:04:21PM -0500, David Miller wrote:
-> > This patchset implements proper hierarchy support for netcls_cgroup.
-> > Pretty simliar to the netprio one[3].  Simpler as each cgroup has
-> > single config value instead of array of them.
-> > 
-> > This patchset contains the following three patches.
-> > 
-> >  0001-netcls_cgroup-introduce-netcls_mutex.patch
-> >  0002-netcls_cgroup-introduce-cgroup_cls_state-is_local.patch
-> >  0003-netcls_cgroup-implement-proper-hierarchy-support.patch
-> > 
-> > This patchset is on top of
+On Sat, Nov 17, 2012 at 12:45:47PM +0100, David Herrmann wrote:
+> We need to check for name-collisions during cuse-device registration. To
+> avoid race-conditions, this needs to be protected during the whole device
+> registration. Therefore, replace the spinlocks by mutexes first so we can
+> safely extend the locked regions to include more expensive or sleeping
+> code paths.
 > 
-> I guess you therefore want to put it through your cgroup tree?
+> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+> @@ -114,14 +113,18 @@ static int cuse_open(struct inode *inode, struct file *file)
+>  	int rc;
+>  
+>  	/* look up and get the connection */
+> -	spin_lock(&cuse_lock);
+> +	rc = mutex_lock_interruptible(&cuse_lock);
 
-Yeap.
+Well, the above can't hurt but it doesn't help anything either given
+the narrow scope of the lock.  Eh well, I guess it's okay either way.
 
-> Acked-by: David S. Miller <davem@davemloft.net>
-
-Great, I forgot to cc you on netprio_cgroup changes.  It's similar to
-this one but larger partly because the configuration is per
-cgroup-netdev pair.  Would it be okay to route the following through
-the cgroup tree?
-
-  https://lkml.org/lkml/2012/11/16/514
+Acked-by: Tejun Heo <tj@kernel.org>
 
 Thanks.
 
