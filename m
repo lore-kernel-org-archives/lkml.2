@@ -1,198 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2KRRDI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 12:03:08 -0500
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:34178 "EHLO
-	qualcomm.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752408Ab2KRRDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 12:03:07 -0500
-From: Vladimir Kondratiev <vkondrat@qti.qualcomm.com>
-To: Joe Perches <joe@perches.com>
-Cc: "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "Luis R . Rodriguez" <rodrigue@qca.qualcomm.com>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
-Date: Sun, 18 Nov 2012 19:01:18 +0200
-Message-ID: <2748656.Zh8WY0OSmS@lx-vladimir>
-Organization: Qualcomm
-User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1380367.3QOKJVXxFC@lx-vladimir>
-References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com> <1353249531.15959.10.camel@joe-AO722> <1380367.3QOKJVXxFC@lx-vladimir>
+	id S1752688Ab2KRRGm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 12:06:42 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:65096 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab2KRRGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 12:06:40 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Date: Sun, 18 Nov 2012 12:06:40 -0500
+Message-ID: <CAMW5UfYUi-Zz2r5K9GeVzShSub2rDJVuoWR56+89+ytaqo_uxQ@mail.gmail.com>
+Subject: [Patch v1 1/1] RTL8712 alignment bug in 3.6.5 on ARM
+From: Josh Coombs <josh.coombs@gmail.com>
+To: linux ARM <linux-arm-kernel@lists.infradead.org>, wlanfae@realtek.com,
+        Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 18, 2012 05:43:07 PM Vladimir Kondratiev wrote:
-> On Sunday, November 18, 2012 06:38:51 AM Joe Perches wrote:
-> > Another option could be testing __builtin_constant_p(prefix)
-> 
-> You mean something like below? Yes, it will work as well.
-> 
-> Pro: don't need to change existing code
-> (drop [PATCH 2/2] dynamic_debug: use constant format in
-> print_hex_dump_bytes())
-> 
-> Cons: format in dynamic metadata will be useless
-> 
-> What looks better?
-> 
-> ---
-> #define dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
-> 			 groupsize, buf, len, ascii)		\
-> do {								\
-> 	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, 		\
-> 		__builtin_constant_p(prefix_str) ? prefix_str : "hexdump");\
-> 	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
-> 		print_hex_dump(KERN_DEBUG, prefix_str,		\
-> 			       prefix_type, rowsize, groupsize,	\
-> 			       buf, len, ascii);		\
-> } while (0)
+Starting with 3.6.5 on a Marvell Kirkwood based GoFlex Net I began
+observing scheduler bugs when using a USB based RTL8712 WiFi NIC.
+These would eventually overwhelm systemd's logger under moderate
+network activity and crash the box.
 
-In case this option wins, patch follows. There is no need for
-2-nd one to fix existing drivers.
+[   64.312377] BUG: scheduling while atomic: crond/151/0x40000300
+[   79.771862] BUG: scheduling while atomic: swapper/0/0x40000500
+[   81.826267] BUG: scheduling while atomic: swapper/0/0x40000500
+[   90.330911] BUG: scheduling while atomic: swapper/0/0x40000500
 
+Working with Andrew Lunn we dug in further with full stack traces:
 
->From 42bea6be2b3899eac1ed3f48eb955a4d83960cf5 Mon Sep 17 00:00:00 2001
-From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Date: Sun, 18 Nov 2012 18:56:29 +0200
-Subject: [PATCH] dynamic_debug: dynamic hex dump
+[   53.173973] IPv6: ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+[   54.191655] BUG: scheduling while atomic: crond/144/0x40000300
+[   54.197537] Modules linked in: rmd160 sha1_generic hmac
+blowfish_generic blowfish_common sr_mod cdrom fbcon bitblit softcursor
+font udlfb syscopyarea sysfillrect sysimgblt fb_sys_fops fb
+hid_generic snd_usb_audio snd_usbmidi_lib snd_hwdep mct_u232
+snd_rawmidi snd_seq_device snd_pcm snd_page_alloc usbhid usbserial
+snd_timer snd hid soundcore mv_cesa cryptodev(O) ipv6 autofs4
+[   54.231214] [<c000d020>] (unwind_backtrace+0x0/0xe0) from
+[<c03fd1d0>] (__schedule_bug+0x48/0x60)
+[   54.240171] [<c03fd1d0>] (__schedule_bug+0x48/0x60) from
+[<c0401258>] (__schedule+0x4c/0x4bc)
+[   54.248773] [<c0401258>] (__schedule+0x4c/0x4bc) from [<c003b470>]
+(__cond_resched+0x24/0x34)
+[   54.257365] [<c003b470>] (__cond_resched+0x24/0x34) from
+[<c040175c>] (_cond_resched+0x3c/0x44)
+[   54.266134] [<c040175c>] (_cond_resched+0x3c/0x44) from
+[<c0010288>] (do_alignment+0x29c/0x784)
+[   54.274895] [<c0010288>] (do_alignment+0x29c/0x784) from
+[<c00083d8>] (do_DataAbort+0x34/0x98)
+[   54.283571] [<c00083d8>] (do_DataAbort+0x34/0x98) from [<c04022d8>]
+(__dabt_svc+0x38/0x60)
+[   54.291891] Exception stack(0xc4575ac8 to 0xc4575b10)
+[   54.296976] 5ac0:                   00000138 00000000 00000000
+00000000 c781c200 00000000
+[   54.305209] 5ae0: c7020338 c7000440 c70806e4 0000090e c781c238
+c781c220 00000002 c4575b10
+[   54.313438] 5b00: c035f994 c035f4bc 60000013 ffffffff
+[   54.318536] [<c04022d8>] (__dabt_svc+0x38/0x60) from [<c035f4bc>]
+(r8712_xmitframe_coalesce+0x388/0x8a0)
+[   54.328092] [<c035f4bc>] (r8712_xmitframe_coalesce+0x388/0x8a0)
+from [<c0360648>] (r8712_xmit_direct+0x18/0x40)
+[   54.338256] [<c0360648>] (r8712_xmit_direct+0x18/0x40) from
+[<c035feb4>] (r8712_pre_xmit+0xac/0xb4)
+[   54.347373] [<c035feb4>] (r8712_pre_xmit+0xac/0xb4) from
+[<c035a930>] (r8712_xmit_entry+0x70/0xf0)
+[   54.356410] [<c035a930>] (r8712_xmit_entry+0x70/0xf0) from
+[<c03771cc>] (dev_hard_start_xmit+0x440/0x67c)
+[   54.366056] [<c03771cc>] (dev_hard_start_xmit+0x440/0x67c) from
+[<c038cac4>] (sch_direct_xmit+0x50/0x1a4)
+[   54.375694] [<c038cac4>] (sch_direct_xmit+0x50/0x1a4) from
+[<c03776f4>] (dev_queue_xmit+0x2ec/0x4d8)
+[   54.384993] [<c03776f4>] (dev_queue_xmit+0x2ec/0x4d8) from
+[<bf00c5bc>] (ip6_finish_output2+0x294/0x344 [ipv6])
+[   54.395288] [<bf00c5bc>] (ip6_finish_output2+0x294/0x344 [ipv6])
+from [<bf01ea38>] (ndisc_send_skb+0x110/0x1f4 [ipv6])
+[   54.406202] [<bf01ea38>] (ndisc_send_skb+0x110/0x1f4 [ipv6]) from
+[<bf01f6f8>] (ndisc_send_rs+0x3c/0x44 [ipv6])
+[   54.416493] [<bf01f6f8>] (ndisc_send_rs+0x3c/0x44 [ipv6]) from
+[<bf013470>] (addrconf_dad_completed+0x80/0xc0 [ipv6])
+[   54.427289] [<bf013470>] (addrconf_dad_completed+0x80/0xc0 [ipv6])
+from [<bf013520>] (addrconf_dad_timer+0x70/0x10c [ipv6])
+[   54.438563] [<bf013520>] (addrconf_dad_timer+0x70/0x10c [ipv6])
+from [<c002211c>] (run_timer_softirq+0x1b0/0x2fc)
+[   54.448904] [<c002211c>] (run_timer_softirq+0x1b0/0x2fc) from
+[<c001be6c>] (__do_softirq+0xa0/0x1f8)
+[   54.458103] [<c001be6c>] (__do_softirq+0xa0/0x1f8) from
+[<c001c340>] (irq_exit+0x40/0x8c)
+[   54.466345] [<c001c340>] (irq_exit+0x40/0x8c) from [<c00094d8>]
+(handle_IRQ+0x64/0x84)
+[   54.474322] [<c00094d8>] (handle_IRQ+0x64/0x84) from [<c0402334>]
+(__irq_svc+0x34/0x78)
+[   54.482389] [<c0402334>] (__irq_svc+0x34/0x78) from [<c00be630>]
+(lookup_fast+0x74/0x258)
+[   54.490615] [<c00be630>] (lookup_fast+0x74/0x258) from [<c00c0274>]
+(path_lookupat+0xfc/0x71c)
+[   54.499286] [<c00c0274>] (path_lookupat+0xfc/0x71c) from
+[<c00c08b0>] (do_path_lookup+0x1c/0x5c)
+[   54.508138] [<c00c08b0>] (do_path_lookup+0x1c/0x5c) from
+[<c00c26ec>] (user_path_at_empty+0x54/0x8c)
+[   54.517338] [<c00c26ec>] (user_path_at_empty+0x54/0x8c) from
+[<c00c2734>] (user_path_at+0x10/0x14)
+[   54.526368] [<c00c2734>] (user_path_at+0x10/0x14) from [<c00b95d4>]
+(vfs_fstatat+0x2c/0x5c)
+[   54.534789] [<c00b95d4>] (vfs_fstatat+0x2c/0x5c) from [<c00b97f8>]
+(sys_stat64+0x14/0x30)
+[   54.543027] [<c00b97f8>] (sys_stat64+0x14/0x30) from [<c0008c60>]
+(ret_fast_syscall+0x0/0x2c)
+[   54.831585] BUG: scheduling while atomic: crond/144/0x40000300
+[   54.837464] Modules linked in: rmd160 sha1_generic hmac
+blowfish_generic blowfish_common sr_mod cdrom fbcon bitblit softcursor
+font udlfb syscopyarea sysfillrect sysimgblt fb_sys_fops fb
+hid_generic snd_usb_audio snd_usbmidi_lib snd_hwdep mct_u232
+snd_rawmidi snd_seq_device snd_pcm snd_page_alloc usbhid usbserial
+snd_timer snd hid soundcore mv_cesa cryptodev(O) ipv6 autofs4
+[   54.871168] [<c000d020>] (unwind_backtrace+0x0/0xe0) from
+[<c03fd1d0>] (__schedule_bug+0x48/0x60)
+[   54.880117] [<c03fd1d0>] (__schedule_bug+0x48/0x60) from
+[<c0401258>] (__schedule+0x4c/0x4bc)
+[   54.888714] [<c0401258>] (__schedule+0x4c/0x4bc) from [<c003b470>]
+(__cond_resched+0x24/0x34)
+[   54.897309] [<c003b470>] (__cond_resched+0x24/0x34) from
+[<c040175c>] (_cond_resched+0x3c/0x44)
+[   54.906079] [<c040175c>] (_cond_resched+0x3c/0x44) from
+[<c0010288>] (do_alignment+0x29c/0x784)
+[   54.914839] [<c0010288>] (do_alignment+0x29c/0x784) from
+[<c00083d8>] (do_DataAbort+0x34/0x98)
+[   54.923515] [<c00083d8>] (do_DataAbort+0x34/0x98) from [<c04022d8>]
+(__dabt_svc+0x38/0x60)
+[   54.931832] Exception stack(0xc4575b28 to 0xc4575b70)
+[   54.936917] 5b20:                   00000138 00000000 00000000
+00000000 c781a200 00000000
+[   54.945153] 5b40: c70203dc c7000440 c70806e4 0000090e c781a238
+c781a220 00000016 c4575b70
+[   54.953381] 5b60: c035f994 c035f4bc 60000013 ffffffff
+[   54.958490] [<c04022d8>] (__dabt_svc+0x38/0x60) from [<c035f4bc>]
+(r8712_xmitframe_coalesce+0x388/0x8a0)
+[   54.968045] [<c035f4bc>] (r8712_xmitframe_coalesce+0x388/0x8a0)
+from [<c0360648>] (r8712_xmit_direct+0x18/0x40)
+[   54.978209] [<c0360648>] (r8712_xmit_direct+0x18/0x40) from
+[<c035feb4>] (r8712_pre_xmit+0xac/0xb4)
+[   54.987320] [<c035feb4>] (r8712_pre_xmit+0xac/0xb4) from
+[<c035a930>] (r8712_xmit_entry+0x70/0xf0)
+[   54.996354] [<c035a930>] (r8712_xmit_entry+0x70/0xf0) from
+[<c03771cc>] (dev_hard_start_xmit+0x440/0x67c)
+[   55.005998] [<c03771cc>] (dev_hard_start_xmit+0x440/0x67c) from
+[<c038cac4>] (sch_direct_xmit+0x50/0x1a4)
+[   55.015636] [<c038cac4>] (sch_direct_xmit+0x50/0x1a4) from
+[<c03776f4>] (dev_queue_xmit+0x2ec/0x4d8)
+[   55.024971] [<c03776f4>] (dev_queue_xmit+0x2ec/0x4d8) from
+[<bf027c34>] (mld_sendpack+0x184/0x300 [ipv6])
+[   55.034774] [<bf027c34>] (mld_sendpack+0x184/0x300 [ipv6]) from
+[<bf028380>] (mld_ifc_timer_expire+0x1e8/0x234 [ipv6])
+[   55.045636] [<bf028380>] (mld_ifc_timer_expire+0x1e8/0x234 [ipv6])
+from [<c002211c>] (run_timer_softirq+0x1b0/0x2fc)
+[   55.056238] [<c002211c>] (run_timer_softirq+0x1b0/0x2fc) from
+[<c001be6c>] (__do_softirq+0xa0/0x1f8)
+[   55.065448] [<c001be6c>] (__do_softirq+0xa0/0x1f8) from
+[<c001c340>] (irq_exit+0x40/0x8c)
+[   55.073691] [<c001c340>] (irq_exit+0x40/0x8c) from [<c00094d8>]
+(handle_IRQ+0x64/0x84)
+[   55.081668] [<c00094d8>] (handle_IRQ+0x64/0x84) from [<c0402334>]
+(__irq_svc+0x34/0x78)
+[   55.089725] [<c0402334>] (__irq_svc+0x34/0x78) from [<c00bfe6c>]
+(path_init+0x4/0x310)
+[   55.097707] [<c00bfe6c>] (path_init+0x4/0x310) from [<c00c01a4>]
+(path_lookupat+0x2c/0x71c)
+[   55.106120] [<c00c01a4>] (path_lookupat+0x2c/0x71c) from
+[<c00c08b0>] (do_path_lookup+0x1c/0x5c)
+[   55.114970] [<c00c08b0>] (do_path_lookup+0x1c/0x5c) from
+[<c00c26ec>] (user_path_at_empty+0x54/0x8c)
+[   55.124170] [<c00c26ec>] (user_path_at_empty+0x54/0x8c) from
+[<c00c2734>] (user_path_at+0x10/0x14)
+[   55.133202] [<c00c2734>] (user_path_at+0x10/0x14) from [<c00b95d4>]
+(vfs_fstatat+0x2c/0x5c)
+[   55.141622] [<c00b95d4>] (vfs_fstatat+0x2c/0x5c) from [<c00b97f8>]
+(sys_stat64+0x14/0x30)
+[   55.149846] [<c00b97f8>] (sys_stat64+0x14/0x30) from [<c0008c60>]
+(ret_fast_syscall+0x0/0x2c)
 
-Introduce print_hex_dump_debug() that can be dynamically controlled, similar to
-pr_debug.
+This pointed to a non-aligned access, which my patch below corrects.
+I've verified 3.6.4 does not show these symptoms, 3.6.5 and 3.6.6 do,
+with the patch below the bug goes away on my system.
 
-Also, make print_hex_dump_bytes() dynamically controlled
+Tested-by: Joshua Coombs <josh.coombs@gmail.com>
+--
 
-Implement only 'p' flag (_DPRINTK_FLAGS_PRINT) to keep it simple since hex dump prints
-multiple lines and long prefix would impact readability.
-To provide line/file etc. information, use pr_debug or similar
-before/after print_hex_dump_debug()
-
-Signed-off-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
----
- Documentation/dynamic-debug-howto.txt |   15 +++++++++++++--
- include/linux/dynamic_debug.h         |   11 +++++++++++
- include/linux/printk.h                |   17 +++++++++++++++++
- lib/hexdump.c                         |    4 +++-
- 4 files changed, 44 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 6e16849..72322c6 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -6,8 +6,16 @@ This document describes how to use the dynamic debug (dyndbg) feature.
- 
- Dynamic debug is designed to allow you to dynamically enable/disable
- kernel code to obtain additional kernel information.  Currently, if
--CONFIG_DYNAMIC_DEBUG is set, then all pr_debug()/dev_dbg() calls can
--be dynamically enabled per-callsite.
-+CONFIG_DYNAMIC_DEBUG is set, then all pr_debug()/dev_dbg() and
-+print_hex_dump_debug()/print_hex_dump_bytes() calls can be dynamically
-+enabled per-callsite.
-+
-+If CONFIG_DYNAMIC_DEBUG is not set, print_hex_dump_debug() is just
-+shortcut for print_hex_dump(KERN_DEBUG).
-+
-+For print_hex_dump_debug()/print_hex_dump_bytes(), format string is
-+its 'prefix_str' argument, if it is constant string; or "hexdump"
-+in case 'prefix_str' is build dynamically.
- 
- Dynamic debug has even more useful features:
- 
-@@ -202,6 +210,9 @@ The flags are:
-   t    Include thread ID in messages not generated from interrupt context
-   _    No flags are set. (Or'd with others on input)
- 
-+For print_hex_dump_debug() and print_hex_dump_bytes(), only 'p' flag
-+have meaning, other flags ignored.
-+
- For display, the flags are preceded by '='
- (mnemonic: what the flags are currently equal to).
- 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 6dd4787..2fe93b2 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -95,6 +95,17 @@ do {								\
- 				     ##__VA_ARGS__);		\
- } while (0)
- 
-+#define dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
-+			 groupsize, buf, len, ascii)		\
-+do {								\
-+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,		\
-+		__builtin_constant_p(prefix_str) ? prefix_str : "hexdump");\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
-+		print_hex_dump(KERN_DEBUG, prefix_str,		\
-+			       prefix_type, rowsize, groupsize,	\
-+			       buf, len, ascii);		\
-+} while (0)
-+
- #else
- 
- #include <linux/string.h>
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 9afc01e..02c95cf 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -321,8 +321,13 @@ extern void hex_dump_to_buffer(const void *buf, size_t len,
- extern void print_hex_dump(const char *level, const char *prefix_str,
- 			   int prefix_type, int rowsize, int groupsize,
- 			   const void *buf, size_t len, bool ascii);
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define print_hex_dump_bytes(prefix_str, prefix_type, buf, len)	\
-+	dynamic_hex_dump(prefix_str, prefix_type, 16, 1, buf, len, true)
-+#else
- extern void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
- 				 const void *buf, size_t len);
-+#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
- #else
- static inline void print_hex_dump(const char *level, const char *prefix_str,
- 				  int prefix_type, int rowsize, int groupsize,
-@@ -336,4 +341,16 @@ static inline void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
- 
- #endif
- 
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,	\
-+			     groupsize, buf, len, ascii)	\
-+	dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
-+			 groupsize, buf, len, ascii)
-+#else
-+#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,		\
-+			     groupsize, buf, len, ascii)		\
-+	print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, rowsize,	\
-+		       groupsize, buf, len, ascii)
-+#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
-+
- #endif
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index 6540d65..3f0494c 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -227,6 +227,7 @@ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
- }
- EXPORT_SYMBOL(print_hex_dump);
- 
-+#if !defined(CONFIG_DYNAMIC_DEBUG)
- /**
-  * print_hex_dump_bytes - shorthand form of print_hex_dump() with default params
-  * @prefix_str: string to prefix each line with;
-@@ -246,4 +247,5 @@ void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
- 		       buf, len, true);
- }
- EXPORT_SYMBOL(print_hex_dump_bytes);
--#endif
-+#endif /* !defined(CONFIG_DYNAMIC_DEBUG) */
-+#endif /* defined(CONFIG_PRINTK) */
--- 
-1.7.10.4
-
-
+diff -ruN a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+--- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-05
+03:57:06.000000000 -0500
++++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-13
+12:54:28.000000000 -0500
+@@ -55,8 +55,8 @@
+    NUM_STA + 4);
+  if (pstapriv->pallocated_stainfo_buf == NULL)
+  return _FAIL;
+- pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
+- ((addr_t)(pstapriv->pallocated_stainfo_buf) & 3);
++ pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 8 -
++ ((addr_t)(pstapriv->pallocated_stainfo_buf) & 7);
+  _init_queue(&pstapriv->free_sta_queue);
+  spin_lock_init(&pstapriv->sta_hash_lock);
+  pstapriv->asoc_sta_count = 0;
