@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab2KRTFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 14:05:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab2KRTFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 14:05:13 -0500
-Date: Mon, 19 Nov 2012 00:34:39 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Kees Cook <keescook@chromium.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-In-Reply-To: <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1211182211350.5012@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk>
- <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz> <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
- <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz> <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com> <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz> <CAGXu5j+ObQAPBruUGpM2Vu_Fr91dNwdmy=ryJ2bOmm18qJEWnQ@mail.gmail.com>
- <alpine.LFD.2.02.1211161804520.16891@wniryva.cad.erqung.pbz> <CAGXu5jLQxmTvpELQQNX7C4-N8c73p99uYkx5GHvnuOgMhMph0Q@mail.gmail.com>
+	id S1752530Ab2KRTIE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 14:08:04 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53523 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267Ab2KRTIC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 14:08:02 -0500
+Message-ID: <50A9320D.4060700@suse.cz>
+Date: Sun, 18 Nov 2012 20:07:57 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Zdenek Kabelac <zkabelac@redhat.com>
+CC: Mel Gorman <mgorman@suse.de>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>, Valdis.Kletnieks@vt.edu,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: kswapd0: excessive CPU usage
+References: <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz> <509C84ED.8090605@linux.vnet.ibm.com> <509CB9D1.6060704@redhat.com> <20121109090635.GG8218@suse.de> <509F6C2A.9060502@redhat.com> <20121112121956.GT8218@suse.de> <50A0F5F0.6090400@redhat.com> <20121112133139.GU8218@suse.de> <50A9304E.3020205@redhat.com>
+In-Reply-To: <50A9304E.3020205@redhat.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+-- On Fri, 16 Nov 2012, Kees Cook wrote --+
-| Hrm? It should be showing only the live heap-allocated interp -- are
-| you seeing uninitialized contents?
+On 11/18/2012 08:00 PM, Zdenek Kabelac wrote:
+> For some reason my machine went ouf of memory and OOM killed
+> firefox and then even whole Xsession.
+> 
+> Unsure whether it's related to those 2 patches - but I've never had
+> such OOM failure before.
 
- I don't see uninitialised content; I see interpreter names from previous 
-iterations. Which was the case earlier as well. The - interp - array is 
-initialised with the interpreter name, before being assigned to bprm->interp.
+As I wrote, this would be me:
+https://lkml.org/lkml/2012/11/15/150
 
-These - interp - bytes are *leaked* because after 4 recursions, when 
-load_script returns -ENOEXEC, - bprm->interp - becomes invalid for it starts 
-pointing to an invalid stack memory location.
- 	
-Crux of the problem is in the fact that the recursion limit - 
-BINPRM_MAX_RECURSION(4) - exceeds after ones been rightly adhered to.
+There is no -next tree for Friday which would contain the set already.
+So for now, it should be enough for you to apply:
+https://lkml.org/lkml/2012/11/15/95
 
-	(bprm->recursion_depth > BINPRM_MAX_RECURSION))
-                return -ENOEXEC;
+Or, alternatively, if you use a brand new systemd, it likes to fork bomb
+using udev.
 
-This check fails due to specific condition, which still exists.
-
-Dynamically allocating memory fixes the leak by making the memory area live 
-and valid.
-
-It does not fix the problem which caused the leak in the first place by 
-exceeding the BINPRM_MAX_RECURSION, not by 1 or 2 but possible 2^6 
-recursions. Isn't that performance hit?
-
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+thanks,
+-- 
+js
+suse labs
