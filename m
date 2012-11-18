@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2KRBGW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 20:06:22 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63051 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab2KRBFK (ORCPT
+	id S1752737Ab2KRBGV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:06:21 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51386 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab2KRBFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 20:05:10 -0500
+	Sat, 17 Nov 2012 20:05:11 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 6/9] irq_work: Flush work on CPU_DYING
-Date: Sun, 18 Nov 2012 02:04:49 +0100
-Message-Id: <1353200692-6039-7-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 7/9] irq_work: Warn if there's still work on cpu_down
+Date: Sun, 18 Nov 2012 02:04:50 +0100
+Message-Id: <1353200692-6039-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
 References: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
@@ -27,12 +27,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <rostedt@goodmis.org>
 
-In order not to offline a CPU with pending irq works, flush the
-queue from CPU_DYING. The notifier is called by stop_machine on
-the CPU that is going down. The code will not be called from irq context
-(so things like get_irq_regs() wont work) but I'm not sure what the
-requirements are for irq_work in that regard (Peter?). But irqs are
-disabled and the CPU is about to go offline. Might as well flush the work.
+If we are in nohz and there's still irq_work to be done when the idle
+task is about to go offline, give a nasty warning. Everything should
+have been flushed from the CPU_DYING notifier already. Further attempts
+to enqueue an irq_work are buggy because irqs are disabled by
+__cpu_disable(). The best we can do is to report the issue to the user.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -42,96 +41,23 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/irq_work.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 45 insertions(+), 6 deletions(-)
+ kernel/irq_work.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index b3c113a..4ed1749 100644
+index 4ed1749..480f747 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
-@@ -12,6 +12,8 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/irqflags.h>
-+#include <linux/cpu.h>
-+#include <linux/notifier.h>
- #include <asm/processor.h>
+@@ -109,6 +109,9 @@ bool irq_work_needs_cpu(void)
+ 	if (llist_empty(this_list))
+ 		return false;
  
- /*
-@@ -110,11 +112,7 @@ bool irq_work_needs_cpu(void)
++	/* All work should have been flushed before going offline */
++	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
++
  	return true;
  }
  
--/*
-- * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-- * context with local IRQs disabled.
-- */
--void irq_work_run(void)
-+static void __irq_work_run(void)
- {
- 	struct irq_work *work;
- 	struct llist_head *this_list;
-@@ -124,7 +122,6 @@ void irq_work_run(void)
- 	if (llist_empty(this_list))
- 		return;
- 
--	BUG_ON(!in_irq());
- 	BUG_ON(!irqs_disabled());
- 
- 	llnode = llist_del_all(this_list);
-@@ -149,6 +146,16 @@ void irq_work_run(void)
- 		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
- 	}
- }
-+
-+/*
-+ * Run the irq_work entries on this cpu. Requires to be ran from hardirq
-+ * context with local IRQs disabled.
-+ */
-+void irq_work_run(void)
-+{
-+	BUG_ON(!in_irq());
-+	__irq_work_run();
-+}
- EXPORT_SYMBOL_GPL(irq_work_run);
- 
- /*
-@@ -163,3 +170,35 @@ void irq_work_sync(struct irq_work *work)
- 		cpu_relax();
- }
- EXPORT_SYMBOL_GPL(irq_work_sync);
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int irq_work_cpu_notify(struct notifier_block *self,
-+			       unsigned long action, void *hcpu)
-+{
-+	long cpu = (long)hcpu;
-+
-+	switch (action) {
-+	case CPU_DYING:
-+		/* Called from stop_machine */
-+		if (WARN_ON_ONCE(cpu != smp_processor_id()))
-+			break;
-+		__irq_work_run();
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block cpu_notify;
-+
-+static __init int irq_work_init_cpu_notifier(void)
-+{
-+	cpu_notify.notifier_call = irq_work_cpu_notify;
-+	cpu_notify.priority = 0;
-+	register_cpu_notifier(&cpu_notify);
-+	return 0;
-+}
-+device_initcall(irq_work_init_cpu_notifier);
-+
-+#endif /* CONFIG_HOTPLUG_CPU */
 -- 
 1.7.5.4
 
