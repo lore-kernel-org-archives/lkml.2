@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab2KRBFA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 20:05:00 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61769 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab2KRBE7 (ORCPT
+	id S1752630Ab2KRBFG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:05:06 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51386 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab2KRBFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 20:04:59 -0500
+	Sat, 17 Nov 2012 20:05:02 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,89 +17,99 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Anish Kumar <anish198519851985@gmail.com>
-Subject: [GIT PULL v2] printk: Make it usable on nohz cpus
-Date: Sun, 18 Nov 2012 02:04:43 +0100
-Message-Id: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/9] irq_work: Fix racy check on work pending flag
+Date: Sun, 18 Nov 2012 02:04:45 +0100
+Message-Id: <1353200692-6039-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
+References: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Work claiming wants to be SMP-safe.
 
-Please pull the printk support in dynticks mode patches that can
-be found at:
+And by the time we try to claim a work, if it is already executing
+concurrently on another CPU, we want to succeed the claiming and queue
+the work again because the other CPU may have missed the data we wanted
+to handle in our work if it's about to complete there.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git tags/printk-dynticks-for-mingo-v2
+This scenario is summarized below:
 
-for you to fetch changes up to 74876a98a87a115254b3a66a14b27320b7f0acaa:
+        CPU 1                                   CPU 2
+        -----                                   -----
+        (flags = 0)
+        cmpxchg(flags, 0, IRQ_WORK_FLAGS)
+        (flags = 3)
+        [...]
+        xchg(flags, IRQ_WORK_BUSY)
+        (flags = 2)
+        func()
+                                                if (flags & IRQ_WORK_PENDING)
+                                                        (not true)
+                                                cmpxchg(flags, flags, IRQ_WORK_FLAGS)
+                                                (flags = 3)
+                                                [...]
+        cmpxchg(flags, IRQ_WORK_BUSY, 0);
+        (fail, pending on CPU 2)
 
-  printk: Wake up klogd using irq_work (2012-11-18 01:01:49 +0100)
+This state machine is synchronized using [cmp]xchg() on the flags.
+As such, the early IRQ_WORK_PENDING check in CPU 2 above is racy.
+By the time we check it, we may be dealing with a stale value because
+we aren't using an atomic accessor. As a result, CPU 2 may "see"
+that the work is still pending on another CPU while it may be
+actually completing the work function exection already, leaving
+our data unprocessed.
 
-It is based on v3.7-rc4.
+To fix this, we start by speculating about the value we wish to be
+in the work->flags but we only make any conclusion after the value
+returned by the cmpxchg() call that either claims the work or let
+the current owner handle the pending work for us.
 
-Changes since previous pull request include support for irq work flush
-on CPU offlining and acks from Steve. The rest hasn't changed except some
-comment fix.
-
-Thanks.
-
-----------------------------------------------------------------
-Support for printk in dynticks mode:
-
-* Fix two races in irq work claiming
-
-* Generalize irq_work support to all archs
-
-* Don't stop tick with irq works pending. This
-fix is generally useful and concerns archs that
-can't raise self IPIs.
-
-* Flush irq works before CPU offlining.
-
-* Introduce "lazy" irq works that can wait for the
-next tick to be executed, unless it's stopped.
-
-* Implement klogd wake up using irq work. This
-removes the ad-hoc printk_tick()/printk_needs_cpu()
-hooks and make it working even in dynticks mode.
-
+Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Anish Kumar <anish198519851985@gmail.com>
+---
+ kernel/irq_work.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-----------------------------------------------------------------
-Frederic Weisbecker (7):
-      irq_work: Fix racy IRQ_WORK_BUSY flag setting
-      irq_work: Fix racy check on work pending flag
-      irq_work: Remove CONFIG_HAVE_IRQ_WORK
-      nohz: Add API to check tick state
-      irq_work: Don't stop the tick with pending works
-      irq_work: Make self-IPIs optable
-      printk: Wake up klogd using irq_work
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 57be1a6..64eddd5 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -34,15 +34,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+  */
+ static bool irq_work_claim(struct irq_work *work)
+ {
+-	unsigned long flags, nflags;
++	unsigned long flags, oflags, nflags;
+ 
++	/*
++	 * Start with our best wish as a premise but only trust any
++	 * flag value after cmpxchg() result.
++	 */
++	flags = work->flags & ~IRQ_WORK_PENDING;
+ 	for (;;) {
+-		flags = work->flags;
+-		if (flags & IRQ_WORK_PENDING)
+-			return false;
+ 		nflags = flags | IRQ_WORK_FLAGS;
+-		if (cmpxchg(&work->flags, flags, nflags) == flags)
++		oflags = cmpxchg(&work->flags, flags, nflags);
++		if (oflags == flags)
+ 			break;
++		if (oflags & IRQ_WORK_PENDING)
++			return false;
++		flags = oflags;
+ 		cpu_relax();
+ 	}
+ 
+-- 
+1.7.5.4
 
-Steven Rostedt (2):
-      irq_work: Flush work on CPU_DYING
-      irq_work: Warn if there's still work on cpu_down
-
- arch/alpha/Kconfig                  |    1 -
- arch/arm/Kconfig                    |    1 -
- arch/arm64/Kconfig                  |    1 -
- arch/blackfin/Kconfig               |    1 -
- arch/frv/Kconfig                    |    1 -
- arch/hexagon/Kconfig                |    1 -
- arch/mips/Kconfig                   |    1 -
- arch/parisc/Kconfig                 |    1 -
- arch/powerpc/Kconfig                |    1 -
- arch/s390/Kconfig                   |    1 -
- arch/sh/Kconfig                     |    1 -
- arch/sparc/Kconfig                  |    1 -
- arch/x86/Kconfig                    |    1 -
- drivers/staging/iio/trigger/Kconfig |    1 -
- include/linux/irq_work.h            |   20 ++++++
- include/linux/printk.h              |    3 -
- include/linux/tick.h                |   17 ++++-
- init/Kconfig                        |    5 +-
- kernel/irq_work.c                   |  131 ++++++++++++++++++++++++++---------
- kernel/printk.c                     |   36 +++++-----
- kernel/time/tick-sched.c            |    7 +-
- kernel/timer.c                      |    1 -
- 22 files changed, 161 insertions(+), 73 deletions(-)
