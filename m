@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2KRSa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 13:30:28 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:2353 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752073Ab2KRSa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 13:30:27 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50A92935.5070802@broadcom.com>
-Date: Sun, 18 Nov 2012 19:30:13 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028
- Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "Mark Ellis" <m@rkellis.com>
-cc: linux-kernel@vger.kernel.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Piotr Haber" <phaber@broadcom.com>
-Subject: Re: PROBLEM: REGRESSION in drivers/platform/x86/dell-laptop.c
-References: <50A8BCA6.7080102@rkellis.com>
-In-Reply-To: <50A8BCA6.7080102@rkellis.com>
-X-WSS-ID: 7CB7F7133R04751422-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+	id S1752412Ab2KRSfm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 13:35:42 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33698 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752219Ab2KRSfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 13:35:41 -0500
+Message-ID: <1353263740.28214.2.camel@joe-AO722>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+From: Joe Perches <joe@perches.com>
+To: Vladimir Kondratiev <vkondrat@qti.qualcomm.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 18 Nov 2012 10:35:40 -0800
+In-Reply-To: <2748656.Zh8WY0OSmS@lx-vladimir>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com>
+	 <1353249531.15959.10.camel@joe-AO722> <1380367.3QOKJVXxFC@lx-vladimir>
+	 <2748656.Zh8WY0OSmS@lx-vladimir>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2012 11:47 AM, Mark Ellis wrote:
-> 1. rfkill code removal causes hang
->
-> 2. the rfkill code was removed from this driver in commit
-> 53039f222c548bfc119eea6df4dca2b57550e271 this results in my computer
-> hanging (dell n5050) if booting with the wireless (hardware) disabled.
-> downgrading this module to the version prior to this commit fixes the
-> issue.
+On Sun, 2012-11-18 at 19:01 +0200, Vladimir Kondratiev wrote:
+> In case this option wins, patch follows. There is no need for
+> 2-nd one to fix existing drivers.
 
-The commit you mention does not touch dell-laptop.c. The commit before 
-that one doe, but it is only adding code. Digging the tree I found this 
-one between kernel v3.4 and v3.5-rc1:
+Thanks Vladimir.
 
-commit a6c2390cd6d2083d27a2359658e08f2d3df375ac
-Author: Matthew Garrett <mjg@redhat.com>
-Date:   Fri Jun 1 12:46:56 2012 -0400
-
-     dell-laptop: Remove rfkill code
-
-     The interface just doesn't work on some machines, and Dell haven't been
-     able to tell us either which machines those are or what we should be
-     doing instead. This would be fine, except it results in userspace 
-ending
-     up confused and general sadness. So let's just rip it out for now.
-
-     Signed-off-by: Matthew Garrett <mjg@redhat.com>
-
-Actually, the behavior you describe and given you have a BCM4313 running 
-with brcmsmac I may point out that this driver has an issue coming up 
-with wireless disabled. This has been fixed in 3.7 kernel so you may 
-want to try:
-
-commit 82d8eba358badb466a4e988ecabf0668a8d92e9c
-Author: Piotr Haber <phaber@broadcom.com>
-Date:   Wed Sep 19 22:21:15 2012 +0200
-
-     brcmsmac: don't start device when RfKill is engaged
-
-     This patch fixes a bug when device is being started
-     while RfKill switch is engaged, leading to hang
-     due to partial initialization of hardware.
-
-     Tested-by: <dragonn@op.pl>
-     Reviewed-by: Arend van Spriel <arend@broadcom.com>
-     Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
-     Signed-off-by: Piotr Haber <phaber@broadcom.com>
-     Signed-off-by: Arend van Spriel <arend@broadcom.com>
-     Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-Maybe I should resubmit it to stable. Now there is an idea.
-
-Gr. AvS
 
