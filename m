@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab2KRPox (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 10:44:53 -0500
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:34851 "EHLO
-	qualcomm.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752260Ab2KRPow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 10:44:52 -0500
-From: Vladimir Kondratiev <vkondrat@qti.qualcomm.com>
-To: Joe Perches <joe@perches.com>
-Cc: "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "Luis R . Rodriguez" <rodrigue@qca.qualcomm.com>,
-        Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
-Date: Sun, 18 Nov 2012 17:43:07 +0200
-Message-ID: <1380367.3QOKJVXxFC@lx-vladimir>
-Organization: Qualcomm
-User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1353249531.15959.10.camel@joe-AO722>
-References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com> <3304277.iqgq3GH3Yo@lx-vladimir> <1353249531.15959.10.camel@joe-AO722>
+	id S1752411Ab2KRPwc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 10:52:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63848 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113Ab2KRPwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 10:52:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.83,275,1352102400"; 
+   d="scan'208";a="243985891"
+Date: Sun, 18 Nov 2012 17:55:39 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jean Delvare <khali@linux-fr.org>,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 3/3 UPDATED] i2c / ACPI: add ACPI enumeration support
+Message-ID: <20121118155539.GE17774@intel.com>
+References: <1352977397-2280-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAErSpo6f4LtW0Sm8hs8bToyN8r8AhzrovJ_ybv62qDGP6+ABPA@mail.gmail.com>
+ <20121117080354.GB17774@intel.com>
+ <3790210.BPELRzTIaN@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3790210.BPELRzTIaN@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 18, 2012 06:38:51 AM Joe Perches wrote:
-> Another option could be testing __builtin_constant_p(prefix)
+On Sat, Nov 17, 2012 at 12:24:45PM +0100, Rafael J. Wysocki wrote:
+> Well, maybe there is one.  Perhaps we can make acpi_platform_notify() 
+> call acpi_bind_one() upfront and only if that fails, do the whole
+> type->find_device() dance?  Of course, acpi_bind_one() would need to
+> be modified slightly too, like in the patch below.
+> 
+> If we did that, acpi_i2c_add_device() would only need to assign acpi_handle
+> as appropriate before calling i2c_new_device() (and analogously for SPI).
+> 
+> What do you think? 
 
-You mean something like below? Yes, it will work as well.
-
-Pro: don't need to change existing code 
-(drop [PATCH 2/2] dynamic_debug: use constant format in print_hex_dump_bytes())
-
-Cons: format in dynamic metadata will be useless
-
-What looks better?
-
----
-#define dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
-			 groupsize, buf, len, ascii)		\
-do {								\
-	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, 		\
-		__builtin_constant_p(prefix_str) ? prefix_str : "hexdump");\
-	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
-		print_hex_dump(KERN_DEBUG, prefix_str,		\
-			       prefix_type, rowsize, groupsize,	\
-			       buf, len, ascii);		\
-} while (0)
-
-
-
+This is certainly better than the thing we use currently. It makes adding
+I2C and SPI support much shorter and simpler. If others don't object I
+would suggest that we switch to use this method.
