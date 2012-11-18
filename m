@@ -1,689 +1,748 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab2KRKYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 05:24:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35562 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab2KRKYk (ORCPT
+	id S1751484Ab2KRKrM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 05:47:12 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab2KRKrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 05:24:40 -0500
+	Sun, 18 Nov 2012 05:47:09 -0500
+Message-ID: <50A8BCA6.7080102@rkellis.com>
+Date: Sun, 18 Nov 2012 18:47:02 +0800
+From: Mark Ellis <m@rkellis.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-In-Reply-To: <CAPVoSvQATjAVu-D477mrr6K9d0FeY7sH27cH-zNBYMJcRoUY0Q@mail.gmail.com>
-References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
-	<20121029222613.GU29378@dastard>
-	<CAPVoSvQATjAVu-D477mrr6K9d0FeY7sH27cH-zNBYMJcRoUY0Q@mail.gmail.com>
-Date: Sun, 18 Nov 2012 11:24:39 +0100
-Message-ID: <CAPVoSvRks32ZM7n6U8but-vEj622TEFqAFdxXqS_6mRxyv=0Ew@mail.gmail.com>
-Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: REGRESSION in drivers/platform/x86/dell-laptop.c
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 9:37 PM, Torsten Kaiser
-<just.for.lkml@googlemail.com> wrote:
-> I will keep LOCKDEP enabled on that system, and if there really is
-> another splat, I will report back here. But I rather doubt that this
-> will be needed.
+1. rfkill code removal causes hang
 
-After the patch, I did not see this problem again, but today I found
-another LOCKDEP report that also looks XFS related.
-I found it twice in the logs, and as both were slightly different, I
-will attach both versions.
+2. the rfkill code was removed from this driver in commit 
+53039f222c548bfc119eea6df4dca2b57550e271 this results in my computer 
+hanging (dell n5050) if booting with the wireless (hardware) disabled. 
+downgrading this module to the version prior to this commit fixes the issue.
 
+3. modules, laptop, dell-laptop, rfkill
 
-Nov  6 21:57:09 thoregon kernel: [ 9941.104345]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104350]
-=================================
-Nov  6 21:57:09 thoregon kernel: [ 9941.104351] [ INFO: inconsistent
-lock state ]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104353] 3.7.0-rc4 #1 Not tainted
-Nov  6 21:57:09 thoregon kernel: [ 9941.104354]
----------------------------------
-Nov  6 21:57:09 thoregon kernel: [ 9941.104355] inconsistent
-{RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-Nov  6 21:57:09 thoregon kernel: [ 9941.104357] kswapd0/725
-[HC0[0]:SC0[0]:HE1:SE1] takes:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104359]
-(&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e8164>]
-xfs_ilock+0x84/0xb0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104366] {RECLAIM_FS-ON-W}
-state was registered at:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104367]   [<ffffffff8108137e>]
-mark_held_locks+0x7e/0x130
-Nov  6 21:57:09 thoregon kernel: [ 9941.104371]   [<ffffffff81081a63>]
-lockdep_trace_alloc+0x63/0xc0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104373]   [<ffffffff810b5a55>]
-__alloc_pages_nodemask+0x75/0x800
-Nov  6 21:57:09 thoregon kernel: [ 9941.104375]   [<ffffffff810b6262>]
-__get_free_pages+0x12/0x40
-Nov  6 21:57:09 thoregon kernel: [ 9941.104377]   [<ffffffff8102d7f0>]
-pte_alloc_one_kernel+0x10/0x20
-Nov  6 21:57:09 thoregon kernel: [ 9941.104380]   [<ffffffff810cc3e6>]
-__pte_alloc_kernel+0x16/0x90
-Nov  6 21:57:09 thoregon kernel: [ 9941.104382]   [<ffffffff810d9f37>]
-vmap_page_range_noflush+0x287/0x320
-Nov  6 21:57:09 thoregon kernel: [ 9941.104385]   [<ffffffff810dbe54>]
-vm_map_ram+0x694/0x770
-Nov  6 21:57:09 thoregon kernel: [ 9941.104386]   [<ffffffff811e1316>]
-_xfs_buf_map_pages+0x46/0xe0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104389]   [<ffffffff811e222a>]
-xfs_buf_get_map+0x8a/0x130
-Nov  6 21:57:09 thoregon kernel: [ 9941.104391]   [<ffffffff81233ab9>]
-xfs_trans_get_buf_map+0xa9/0xd0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104393]   [<ffffffff8121e5a9>]
-xfs_ifree_cluster+0x129/0x670
-Nov  6 21:57:09 thoregon kernel: [ 9941.104396]   [<ffffffff8121fbc9>]
-xfs_ifree+0xe9/0xf0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104398]   [<ffffffff811f4d2f>]
-xfs_inactive+0x2af/0x480
-Nov  6 21:57:09 thoregon kernel: [ 9941.104400]   [<ffffffff811efe00>]
-xfs_fs_evict_inode+0x70/0x80
-Nov  6 21:57:09 thoregon kernel: [ 9941.104402]   [<ffffffff8110cb8f>]
-evict+0xaf/0x1b0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104405]   [<ffffffff8110cd95>]
-iput+0x105/0x210
-Nov  6 21:57:09 thoregon kernel: [ 9941.104406]   [<ffffffff81107ba0>]
-d_delete+0x150/0x190
-Nov  6 21:57:09 thoregon kernel: [ 9941.104408]   [<ffffffff810ff8a7>]
-vfs_rmdir+0x107/0x120
-Nov  6 21:57:09 thoregon kernel: [ 9941.104411]   [<ffffffff810ff9a4>]
-do_rmdir+0xe4/0x130
-Nov  6 21:57:09 thoregon kernel: [ 9941.104413]   [<ffffffff81101c01>]
-sys_rmdir+0x11/0x20
-Nov  6 21:57:09 thoregon kernel: [ 9941.104415]   [<ffffffff816b2d12>]
-system_call_fastpath+0x16/0x1b
-Nov  6 21:57:09 thoregon kernel: [ 9941.104417] irq event stamp: 18505
-Nov  6 21:57:09 thoregon kernel: [ 9941.104418] hardirqs last  enabled
-at (18505): [<ffffffff816aec5d>] mutex_trylock+0xfd/0x170
-Nov  6 21:57:09 thoregon kernel: [ 9941.104421] hardirqs last disabled
-at (18504): [<ffffffff816aeb9e>] mutex_trylock+0x3e/0x170
-Nov  6 21:57:09 thoregon kernel: [ 9941.104423] softirqs last  enabled
-at (18492): [<ffffffff81042fb1>] __do_softirq+0x111/0x170
-Nov  6 21:57:09 thoregon kernel: [ 9941.104426] softirqs last disabled
-at (18477): [<ffffffff816b3e3c>] call_softirq+0x1c/0x30
-Nov  6 21:57:09 thoregon kernel: [ 9941.104428]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104428] other info that might
-help us debug this:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104429]  Possible unsafe
-locking scenario:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104429]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104430]        CPU0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104431]        ----
-Nov  6 21:57:09 thoregon kernel: [ 9941.104432]   lock(&(&ip->i_lock)->mr_lock);
-Nov  6 21:57:09 thoregon kernel: [ 9941.104433]   <Interrupt>
-Nov  6 21:57:09 thoregon kernel: [ 9941.104434]
-lock(&(&ip->i_lock)->mr_lock);
-Nov  6 21:57:09 thoregon kernel: [ 9941.104435]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104435]  *** DEADLOCK ***
-Nov  6 21:57:09 thoregon kernel: [ 9941.104435]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104437] 3 locks held by kswapd0/725:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104438]  #0:
-(shrinker_rwsem){++++..}, at: [<ffffffff810bbd22>]
-shrink_slab+0x32/0x1f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104442]  #1:
-(&type->s_umount_key#20){++++.+}, at: [<ffffffff810f5a8e>]
-grab_super_passive+0x3e/0x90
-Nov  6 21:57:09 thoregon kernel: [ 9941.104446]  #2:
-(&pag->pag_ici_reclaim_lock){+.+...}, at: [<ffffffff811f28ac>]
-xfs_reclaim_inodes_ag+0xbc/0x4f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104449]
-Nov  6 21:57:09 thoregon kernel: [ 9941.104449] stack backtrace:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104451] Pid: 725, comm:
-kswapd0 Not tainted 3.7.0-rc4 #1
-Nov  6 21:57:09 thoregon kernel: [ 9941.104452] Call Trace:
-Nov  6 21:57:09 thoregon kernel: [ 9941.104456]  [<ffffffff816a829c>]
-print_usage_bug+0x1f5/0x206
-Nov  6 21:57:09 thoregon kernel: [ 9941.104460]  [<ffffffff8100ed8a>]
-? save_stack_trace+0x2a/0x50
-Nov  6 21:57:09 thoregon kernel: [ 9941.104462]  [<ffffffff8107e9fd>]
-mark_lock+0x28d/0x2f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104464]  [<ffffffff8107de30>]
-? print_irq_inversion_bug.part.37+0x1f0/0x1f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104466]  [<ffffffff8107efdf>]
-__lock_acquire+0x57f/0x1c00
-Nov  6 21:57:09 thoregon kernel: [ 9941.104468]  [<ffffffff8107c899>]
-? __lock_is_held+0x59/0x70
-Nov  6 21:57:09 thoregon kernel: [ 9941.104470]  [<ffffffff81080b55>]
-lock_acquire+0x55/0x70
-Nov  6 21:57:09 thoregon kernel: [ 9941.104472]  [<ffffffff811e8164>]
-? xfs_ilock+0x84/0xb0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104476]  [<ffffffff8106126a>]
-down_write_nested+0x4a/0x70
-Nov  6 21:57:09 thoregon kernel: [ 9941.104477]  [<ffffffff811e8164>]
-? xfs_ilock+0x84/0xb0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104479]  [<ffffffff811e8164>]
-xfs_ilock+0x84/0xb0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104481]  [<ffffffff811f1ce6>]
-xfs_reclaim_inode+0x136/0x340
-Nov  6 21:57:09 thoregon kernel: [ 9941.104483]  [<ffffffff811f2aaf>]
-xfs_reclaim_inodes_ag+0x2bf/0x4f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104485]  [<ffffffff811f28d0>]
-? xfs_reclaim_inodes_ag+0xe0/0x4f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104487]  [<ffffffff811f2e1e>]
-xfs_reclaim_inodes_nr+0x2e/0x40
-Nov  6 21:57:09 thoregon kernel: [ 9941.104489]  [<ffffffff811ef6f0>]
-xfs_fs_free_cached_objects+0x10/0x20
-Nov  6 21:57:09 thoregon kernel: [ 9941.104491]  [<ffffffff810f5bf3>]
-prune_super+0x113/0x1a0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104493]  [<ffffffff810bbe0e>]
-shrink_slab+0x11e/0x1f0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104496]  [<ffffffff810be400>]
-kswapd+0x690/0xa10
-Nov  6 21:57:09 thoregon kernel: [ 9941.104498]  [<ffffffff8105ca30>]
-? __init_waitqueue_head+0x60/0x60
-Nov  6 21:57:09 thoregon kernel: [ 9941.104500]  [<ffffffff810bdd70>]
-? shrink_lruvec+0x540/0x540
-Nov  6 21:57:09 thoregon kernel: [ 9941.104502]  [<ffffffff8105c246>]
-kthread+0xd6/0xe0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104504]  [<ffffffff816b1efb>]
-? _raw_spin_unlock_irq+0x2b/0x50
-Nov  6 21:57:09 thoregon kernel: [ 9941.104506]  [<ffffffff8105c170>]
-? flush_kthread_worker+0xe0/0xe0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104508]  [<ffffffff816b2c6c>]
-ret_from_fork+0x7c/0xb0
-Nov  6 21:57:09 thoregon kernel: [ 9941.104510]  [<ffffffff8105c170>]
-? flush_kthread_worker+0xe0/0xe0
+4. Linux version 3.6-trunk-rt-amd64 (debian-kernel@lists.debian.org) 
+(gcc version 4.6.3 (Debian 4.6.3-1) ) #1 SMP PREEMPT RT Debian 
+3.6.6-1~experimental.1
 
-Nov 17 14:07:38 thoregon kernel: [66571.610863]
-Nov 17 14:07:38 thoregon kernel: [66571.610869]
-=========================================================
-Nov 17 14:07:38 thoregon kernel: [66571.610870] [ INFO: possible irq
-lock inversion dependency detected ]
-Nov 17 14:07:38 thoregon kernel: [66571.610873] 3.7.0-rc5 #1 Not tainted
-Nov 17 14:07:38 thoregon kernel: [66571.610874]
----------------------------------------------------------
-Nov 17 14:07:38 thoregon kernel: [66571.610875] cc1/21330 just changed
-the state of lock:
-Nov 17 14:07:38 thoregon kernel: [66571.610877]
-(sb_internal){.+.+.?}, at: [<ffffffff8122b138>]
-xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:38 thoregon kernel: [66571.610885] but this lock took
-another, RECLAIM_FS-unsafe lock in the past:
-Nov 17 14:07:38 thoregon kernel: [66571.610886]
-(&(&ip->i_lock)->mr_lock/1){+.+.+.}
-Nov 17 14:07:38 thoregon kernel: [66571.610886]
-Nov 17 14:07:39 thoregon kernel: [66571.610886] and interrupts could
-create inverse lock ordering between them.
-Nov 17 14:07:39 thoregon kernel: [66571.610886]
-Nov 17 14:07:39 thoregon kernel: [66571.610890]
-Nov 17 14:07:39 thoregon kernel: [66571.610890] other info that might
-help us debug this:
-Nov 17 14:07:39 thoregon kernel: [66571.610891]  Possible interrupt
-unsafe locking scenario:
-Nov 17 14:07:39 thoregon kernel: [66571.610891]
-Nov 17 14:07:39 thoregon kernel: [66571.610892]        CPU0
-        CPU1
-Nov 17 14:07:39 thoregon kernel: [66571.610893]        ----
-        ----
-Nov 17 14:07:39 thoregon kernel: [66571.610894]
-lock(&(&ip->i_lock)->mr_lock/1);
-Nov 17 14:07:39 thoregon kernel: [66571.610896]
-        local_irq_disable();
-Nov 17 14:07:39 thoregon kernel: [66571.610897]
-        lock(sb_internal);
-Nov 17 14:07:39 thoregon kernel: [66571.610898]
-        lock(&(&ip->i_lock)->mr_lock/1);
-Nov 17 14:07:39 thoregon kernel: [66571.610900]   <Interrupt>
-Nov 17 14:07:39 thoregon kernel: [66571.610901]     lock(sb_internal);
-Nov 17 14:07:39 thoregon kernel: [66571.610902]
-Nov 17 14:07:39 thoregon kernel: [66571.610902]  *** DEADLOCK ***
-Nov 17 14:07:39 thoregon kernel: [66571.610902]
-Nov 17 14:07:39 thoregon kernel: [66571.610904] 3 locks held by cc1/21330:
-Nov 17 14:07:39 thoregon kernel: [66571.610905]  #0:
-(&mm->mmap_sem){++++++}, at: [<ffffffff81029d8b>]
-__do_page_fault+0xfb/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.610910]  #1:
-(shrinker_rwsem){++++..}, at: [<ffffffff810bbd02>]
-shrink_slab+0x32/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.610915]  #2:
-(&type->s_umount_key#20){++++.+}, at: [<ffffffff810f5a7e>]
-grab_super_passive+0x3e/0x90
-Nov 17 14:07:39 thoregon kernel: [66571.610921]
-Nov 17 14:07:39 thoregon kernel: [66571.610921] the shortest
-dependencies between 2nd lock and 1st lock:
-Nov 17 14:07:39 thoregon kernel: [66571.610927]  ->
-(&(&ip->i_lock)->mr_lock/1){+.+.+.} ops: 169649 {
-Nov 17 14:07:39 thoregon kernel: [66571.610931]     HARDIRQ-ON-W at:
-Nov 17 14:07:39 thoregon kernel: [66571.610932]
-[<ffffffff8107f091>] __lock_acquire+0x631/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.610935]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.610937]
-[<ffffffff8106126a>] down_write_nested+0x4a/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.610941]
-[<ffffffff811e8164>] xfs_ilock+0x84/0xb0
-Nov 17 14:07:39 thoregon kernel: [66571.610944]
-[<ffffffff811f51a4>] xfs_create+0x1d4/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.610946]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.610948]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.610950]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.610953]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.610955]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.610957]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.610959]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.610962]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.610964]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.610967]     SOFTIRQ-ON-W at:
-Nov 17 14:07:39 thoregon kernel: [66571.610968]
-[<ffffffff8107f0c7>] __lock_acquire+0x667/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.610970]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.610972]
-[<ffffffff8106126a>] down_write_nested+0x4a/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.610974]
-[<ffffffff811e8164>] xfs_ilock+0x84/0xb0
-Nov 17 14:07:39 thoregon kernel: [66571.610976]
-[<ffffffff811f51a4>] xfs_create+0x1d4/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.610977]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.610979]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.610981]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.610983]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.610985]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.610987]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.610989]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.610991]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.610993]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.610995]     RECLAIM_FS-ON-W at:
-Nov 17 14:07:39 thoregon kernel: [66571.610996]
-  [<ffffffff8108137e>] mark_held_locks+0x7e/0x130
-Nov 17 14:07:39 thoregon kernel: [66571.610998]
-  [<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.610999]
-  [<ffffffff810e9dc5>] kmem_cache_alloc+0x35/0xe0
-Nov 17 14:07:39 thoregon kernel: [66571.611002]
-  [<ffffffff810dba21>] vm_map_ram+0x271/0x770
-Nov 17 14:07:39 thoregon kernel: [66571.611004]
-  [<ffffffff811e12b6>] _xfs_buf_map_pages+0x46/0xe0
-Nov 17 14:07:39 thoregon kernel: [66571.611008]
-  [<ffffffff811e21ca>] xfs_buf_get_map+0x8a/0x130
-Nov 17 14:07:39 thoregon kernel: [66571.611009]
-  [<ffffffff81233989>] xfs_trans_get_buf_map+0xa9/0xd0
-Nov 17 14:07:39 thoregon kernel: [66571.611011]
-  [<ffffffff8121bc2d>] xfs_ialloc_inode_init+0xcd/0x1d0
-Nov 17 14:07:39 thoregon kernel: [66571.611015]
-  [<ffffffff8121c16f>] xfs_ialloc_ag_alloc+0x18f/0x500
-Nov 17 14:07:39 thoregon kernel: [66571.611017]
-  [<ffffffff8121d955>] xfs_dialloc+0x185/0x2a0
-Nov 17 14:07:39 thoregon kernel: [66571.611019]
-  [<ffffffff8121f068>] xfs_ialloc+0x58/0x650
-Nov 17 14:07:39 thoregon kernel: [66571.611021]
-  [<ffffffff811f3995>] xfs_dir_ialloc+0x65/0x270
-Nov 17 14:07:39 thoregon kernel: [66571.611023]
-  [<ffffffff811f537c>] xfs_create+0x3ac/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611024]
-  [<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611026]
-  [<ffffffff811ecb61>] xfs_vn_mkdir+0x11/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611028]
-  [<ffffffff8110016f>] vfs_mkdir+0x7f/0xd0
-Nov 17 14:07:39 thoregon kernel: [66571.611030]
-  [<ffffffff81101b83>] sys_mkdirat+0x43/0x80
-Nov 17 14:07:39 thoregon kernel: [66571.611032]
-  [<ffffffff81101bd4>] sys_mkdir+0x14/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611034]
-  [<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611036]     INITIAL USE at:
-Nov 17 14:07:39 thoregon kernel: [66571.611037]
-[<ffffffff8107ed49>] __lock_acquire+0x2e9/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611038]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611040]
-[<ffffffff8106126a>] down_write_nested+0x4a/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611042]
-[<ffffffff811e8164>] xfs_ilock+0x84/0xb0
-Nov 17 14:07:39 thoregon kernel: [66571.611044]
-[<ffffffff811f51a4>] xfs_create+0x1d4/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611046]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611047]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611049]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611051]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611053]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611055]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611057]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611059]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611061]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611063]   }
-Nov 17 14:07:39 thoregon kernel: [66571.611064]   ... key      at:
-[<ffffffff825b4b81>] __key.41357+0x1/0x8
-Nov 17 14:07:39 thoregon kernel: [66571.611066]   ... acquired at:
-Nov 17 14:07:39 thoregon kernel: [66571.611067]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611069]
-[<ffffffff8106126a>] down_write_nested+0x4a/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611071]
-[<ffffffff811e8164>] xfs_ilock+0x84/0xb0
-Nov 17 14:07:39 thoregon kernel: [66571.611073]
-[<ffffffff811f51a4>] xfs_create+0x1d4/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611074]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611076]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611078]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611080]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611082]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611084]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611086]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611088]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611090]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611091]
-Nov 17 14:07:39 thoregon kernel: [66571.611092] ->
-(sb_internal){.+.+.?} ops: 1341531 {
-Nov 17 14:07:39 thoregon kernel: [66571.611095]    HARDIRQ-ON-R at:
-Nov 17 14:07:39 thoregon kernel: [66571.611096]
-[<ffffffff8107ef6a>] __lock_acquire+0x50a/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611098]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611100]
-[<ffffffff810f451b>] __sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611102]
-[<ffffffff8122b138>] xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611104]
-[<ffffffff811f5157>] xfs_create+0x187/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611105]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611107]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611109]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611111]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611113]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611115]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611117]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611119]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611121]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611123]    SOFTIRQ-ON-R at:
-Nov 17 14:07:39 thoregon kernel: [66571.611124]
-[<ffffffff8107f0c7>] __lock_acquire+0x667/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611126]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611128]
-[<ffffffff810f451b>] __sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611130]
-[<ffffffff8122b138>] xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611132]
-[<ffffffff811f5157>] xfs_create+0x187/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611133]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611135]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611137]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611139]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611141]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611143]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611145]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611147]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611149]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611151]    IN-RECLAIM_FS-R at:
-Nov 17 14:07:39 thoregon kernel: [66571.611152]
-[<ffffffff8107efdf>] __lock_acquire+0x57f/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611154]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611156]
-[<ffffffff810f451b>] __sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611158]
-[<ffffffff8122b138>] xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611159]
-[<ffffffff811f3e64>] xfs_free_eofblocks+0x104/0x250
-Nov 17 14:07:39 thoregon kernel: [66571.611161]
-[<ffffffff811f4b39>] xfs_inactive+0xa9/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611163]
-[<ffffffff811efe10>] xfs_fs_evict_inode+0x70/0x80
-Nov 17 14:07:39 thoregon kernel: [66571.611165]
-[<ffffffff8110cb7f>] evict+0xaf/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611168]
-[<ffffffff8110d209>] dispose_list+0x39/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611170]
-[<ffffffff8110dc63>] prune_icache_sb+0x183/0x340
-Nov 17 14:07:39 thoregon kernel: [66571.611172]
-[<ffffffff810f5bc3>] prune_super+0xf3/0x1a0
-Nov 17 14:07:39 thoregon kernel: [66571.611173]
-[<ffffffff810bbdee>] shrink_slab+0x11e/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.611175]
-[<ffffffff810be98f>] try_to_free_pages+0x21f/0x4e0
-Nov 17 14:07:39 thoregon kernel: [66571.611177]
-[<ffffffff810b5ec6>] __alloc_pages_nodemask+0x506/0x800
-Nov 17 14:07:39 thoregon kernel: [66571.611179]
-[<ffffffff810ce56e>] handle_pte_fault+0x5ae/0x7a0
-Nov 17 14:07:39 thoregon kernel: [66571.611182]
-[<ffffffff810cf769>] handle_mm_fault+0x1f9/0x2a0
-Nov 17 14:07:39 thoregon kernel: [66571.611184]
-[<ffffffff81029dfc>] __do_page_fault+0x16c/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611186]
-[<ffffffff8102a139>] do_page_fault+0x9/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611188]
-[<ffffffff816b287f>] page_fault+0x1f/0x30
-Nov 17 14:07:39 thoregon kernel: [66571.611190]    RECLAIM_FS-ON-R at:
-Nov 17 14:07:39 thoregon kernel: [66571.611191]
-[<ffffffff8108137e>] mark_held_locks+0x7e/0x130
-Nov 17 14:07:39 thoregon kernel: [66571.611193]
-[<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611195]
-[<ffffffff810e9dc5>] kmem_cache_alloc+0x35/0xe0
-Nov 17 14:07:39 thoregon kernel: [66571.611197]
-[<ffffffff811f6d4f>] kmem_zone_alloc+0x5f/0xe0
-Nov 17 14:07:39 thoregon kernel: [66571.611198]
-[<ffffffff811f6de8>] kmem_zone_zalloc+0x18/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611200]
-[<ffffffff8122b0b2>] _xfs_trans_alloc+0x32/0x90
-Nov 17 14:07:39 thoregon kernel: [66571.611202]
-[<ffffffff8122b148>] xfs_trans_alloc+0x38/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611204]
-[<ffffffff811f5157>] xfs_create+0x187/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611205]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611207]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611209]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611211]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611213]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611215]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611217]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611219]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611221]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611223]    INITIAL USE at:
-Nov 17 14:07:39 thoregon kernel: [66571.611224]
-[<ffffffff8107ed49>] __lock_acquire+0x2e9/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611225]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611227]
-[<ffffffff810f451b>] __sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611229]
-[<ffffffff8122b138>] xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611231]
-[<ffffffff811f5157>] xfs_create+0x187/0x5a0
-Nov 17 14:07:39 thoregon kernel: [66571.611232]
-[<ffffffff811eca2a>] xfs_vn_mknod+0x8a/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611234]
-[<ffffffff811ecb7e>] xfs_vn_create+0xe/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611236]
-[<ffffffff81100322>] vfs_create+0x72/0xc0
-Nov 17 14:07:39 thoregon kernel: [66571.611238]
-[<ffffffff81100b7e>] do_last.isra.69+0x80e/0xc80
-Nov 17 14:07:39 thoregon kernel: [66571.611240]
-[<ffffffff8110109b>] path_openat.isra.70+0xab/0x490
-Nov 17 14:07:39 thoregon kernel: [66571.611242]
-[<ffffffff8110183d>] do_filp_open+0x3d/0xa0
-Nov 17 14:07:39 thoregon kernel: [66571.611244]
-[<ffffffff810f2129>] do_sys_open+0xf9/0x1e0
-Nov 17 14:07:39 thoregon kernel: [66571.611246]
-[<ffffffff810f222c>] sys_open+0x1c/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611248]
-[<ffffffff816b2e52>] system_call_fastpath+0x16/0x1b
-Nov 17 14:07:39 thoregon kernel: [66571.611250]  }
-Nov 17 14:07:39 thoregon kernel: [66571.611251]  ... key      at:
-[<ffffffff81c34e40>] xfs_fs_type+0x60/0x80
-Nov 17 14:07:39 thoregon kernel: [66571.611254]  ... acquired at:
-Nov 17 14:07:39 thoregon kernel: [66571.611254]
-[<ffffffff8107df3b>] check_usage_forwards+0x10b/0x140
-Nov 17 14:07:39 thoregon kernel: [66571.611256]
-[<ffffffff8107e900>] mark_lock+0x190/0x2f0
-Nov 17 14:07:39 thoregon kernel: [66571.611258]
-[<ffffffff8107efdf>] __lock_acquire+0x57f/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611260]
-[<ffffffff81080b55>] lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611261]
-[<ffffffff810f451b>] __sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611263]
-[<ffffffff8122b138>] xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611265]
-[<ffffffff811f3e64>] xfs_free_eofblocks+0x104/0x250
-Nov 17 14:07:39 thoregon kernel: [66571.611266]
-[<ffffffff811f4b39>] xfs_inactive+0xa9/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611268]
-[<ffffffff811efe10>] xfs_fs_evict_inode+0x70/0x80
-Nov 17 14:07:39 thoregon kernel: [66571.611270]
-[<ffffffff8110cb7f>] evict+0xaf/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611271]
-[<ffffffff8110d209>] dispose_list+0x39/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611273]
-[<ffffffff8110dc63>] prune_icache_sb+0x183/0x340
-Nov 17 14:07:39 thoregon kernel: [66571.611275]
-[<ffffffff810f5bc3>] prune_super+0xf3/0x1a0
-Nov 17 14:07:39 thoregon kernel: [66571.611277]
-[<ffffffff810bbdee>] shrink_slab+0x11e/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.611278]
-[<ffffffff810be98f>] try_to_free_pages+0x21f/0x4e0
-Nov 17 14:07:39 thoregon kernel: [66571.611280]
-[<ffffffff810b5ec6>] __alloc_pages_nodemask+0x506/0x800
-Nov 17 14:07:39 thoregon kernel: [66571.611282]
-[<ffffffff810ce56e>] handle_pte_fault+0x5ae/0x7a0
-Nov 17 14:07:39 thoregon kernel: [66571.611284]
-[<ffffffff810cf769>] handle_mm_fault+0x1f9/0x2a0
-Nov 17 14:07:39 thoregon kernel: [66571.611286]
-[<ffffffff81029dfc>] __do_page_fault+0x16c/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611287]
-[<ffffffff8102a139>] do_page_fault+0x9/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611289]
-[<ffffffff816b287f>] page_fault+0x1f/0x30
-Nov 17 14:07:39 thoregon kernel: [66571.611291]
-Nov 17 14:07:39 thoregon kernel: [66571.611292]
-Nov 17 14:07:39 thoregon kernel: [66571.611292] stack backtrace:
-Nov 17 14:07:39 thoregon kernel: [66571.611294] Pid: 21330, comm: cc1
-Not tainted 3.7.0-rc5 #1
-Nov 17 14:07:39 thoregon kernel: [66571.611295] Call Trace:
-Nov 17 14:07:39 thoregon kernel: [66571.611298]  [<ffffffff8107de28>]
-print_irq_inversion_bug.part.37+0x1e8/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.611300]  [<ffffffff8107df3b>]
-check_usage_forwards+0x10b/0x140
-Nov 17 14:07:39 thoregon kernel: [66571.611303]  [<ffffffff8107e900>]
-mark_lock+0x190/0x2f0
-Nov 17 14:07:39 thoregon kernel: [66571.611306]  [<ffffffff8150406e>]
-? dm_request+0x2e/0x2a0
-Nov 17 14:07:39 thoregon kernel: [66571.611308]  [<ffffffff8107de30>]
-? print_irq_inversion_bug.part.37+0x1f0/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.611310]  [<ffffffff8107efdf>]
-__lock_acquire+0x57f/0x1c00
-Nov 17 14:07:39 thoregon kernel: [66571.611313]  [<ffffffff812202f4>]
-? xfs_iext_bno_to_ext+0x84/0x160
-Nov 17 14:07:39 thoregon kernel: [66571.611316]  [<ffffffff8120a023>]
-? xfs_bmbt_get_all+0x13/0x20
-Nov 17 14:07:39 thoregon kernel: [66571.611318]  [<ffffffff81200fb4>]
-? xfs_bmap_search_multi_extents+0xa4/0x110
-Nov 17 14:07:39 thoregon kernel: [66571.611320]  [<ffffffff81080b55>]
-lock_acquire+0x55/0x70
-Nov 17 14:07:39 thoregon kernel: [66571.611322]  [<ffffffff8122b138>]
-? xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611324]  [<ffffffff810f451b>]
-__sb_start_write+0xab/0x190
-Nov 17 14:07:39 thoregon kernel: [66571.611326]  [<ffffffff8122b138>]
-? xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611328]  [<ffffffff8122b138>]
-? xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611330]  [<ffffffff8122b138>]
-xfs_trans_alloc+0x28/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611332]  [<ffffffff811f3e64>]
-xfs_free_eofblocks+0x104/0x250
-Nov 17 14:07:39 thoregon kernel: [66571.611334]  [<ffffffff816b204b>]
-? _raw_spin_unlock_irq+0x2b/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611336]  [<ffffffff811f4b39>]
-xfs_inactive+0xa9/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611337]  [<ffffffff816b204b>]
-? _raw_spin_unlock_irq+0x2b/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611340]  [<ffffffff811efe10>]
-xfs_fs_evict_inode+0x70/0x80
-Nov 17 14:07:39 thoregon kernel: [66571.611342]  [<ffffffff8110cb7f>]
-evict+0xaf/0x1b0
-Nov 17 14:07:39 thoregon kernel: [66571.611344]  [<ffffffff8110d209>]
-dispose_list+0x39/0x50
-Nov 17 14:07:39 thoregon kernel: [66571.611346]  [<ffffffff8110dc63>]
-prune_icache_sb+0x183/0x340
-Nov 17 14:07:39 thoregon kernel: [66571.611347]  [<ffffffff810f5bc3>]
-prune_super+0xf3/0x1a0
-Nov 17 14:07:39 thoregon kernel: [66571.611349]  [<ffffffff810bbdee>]
-shrink_slab+0x11e/0x1f0
-Nov 17 14:07:39 thoregon kernel: [66571.611352]  [<ffffffff810be98f>]
-try_to_free_pages+0x21f/0x4e0
-Nov 17 14:07:39 thoregon kernel: [66571.611354]  [<ffffffff810b5ec6>]
-__alloc_pages_nodemask+0x506/0x800
-Nov 17 14:07:39 thoregon kernel: [66571.611356]  [<ffffffff810b9e40>]
-? lru_deactivate_fn+0x1c0/0x1c0
-Nov 17 14:07:39 thoregon kernel: [66571.611358]  [<ffffffff810ce56e>]
-handle_pte_fault+0x5ae/0x7a0
-Nov 17 14:07:39 thoregon kernel: [66571.611360]  [<ffffffff810cf769>]
-handle_mm_fault+0x1f9/0x2a0
-Nov 17 14:07:39 thoregon kernel: [66571.611363]  [<ffffffff81029dfc>]
-__do_page_fault+0x16c/0x480
-Nov 17 14:07:39 thoregon kernel: [66571.611366]  [<ffffffff8129c7ad>]
-? trace_hardirqs_off_thunk+0x3a/0x3c
-Nov 17 14:07:39 thoregon kernel: [66571.611368]  [<ffffffff8102a139>]
-do_page_fault+0x9/0x10
-Nov 17 14:07:39 thoregon kernel: [66571.611370]  [<ffffffff816b287f>]
-page_fault+0x1f/0x30
+5. n/a
+
+6. n/a
+
+7. dell laptop (n5050) with wireless disabled
+
+7.1.
+Linux laptop 3.6-trunk-rt-amd64 #1 SMP PREEMPT RT Debian 
+3.6.6-1~experimental.1 x86_64 GNU/Linux
+
+Gnu C                  4.7
+Gnu make               3.81
+binutils               2.22
+util-linux             scripts/ver_linux: 23: scripts/ver_linux: 
+fdformat: not found
+mount                  support
+module-init-tools      found
+Linux C Library        2.13
+Dynamic linker (ldd)   2.13
+Procps                 3.3.4
+Kbd                    1.15.3
+Sh-utils               8.20
+Modules Loaded         cpufreq_userspace cpufreq_conservative 
+cpufreq_powersave cpufreq_stats xt_tcpudp xt_conntrack iptable_filter 
+iptable_mangle ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 
+nf_defrag_ipv4 nf_conntrack iptable_raw ip_tables x_tables pci_stub 
+vboxpci vboxnetadp vboxnetflt vboxdrv snd_hda_codec_hdmi 
+snd_hda_codec_idt iTCO_wdt iTCO_vendor_support joydev arc4 dell_laptop 
+dcdbas brcmsmac cordic brcmutil mac80211 cfg80211 rfkill dell_wmi 
+sparse_keymap coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel 
+aesni_intel aes_x86_64 aes_generic ablk_helper cryptd evdev microcode 
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm 
+psmouse snd_page_alloc serio_raw snd_seq_midi snd_seq_midi_event lpc_ich 
+i2c_i801 mfd_core snd_rawmidi snd_seq snd_seq_device i915 snd_timer 
+acpi_cpufreq drm_kms_helper bcma video wmi mperf snd battery drm ac 
+i2c_algo_bit soundcore i2c_core button processor loop fuse autofs4 ext4 
+crc16 jbd2 mbcache sg sr_mod sd_mod crc_t10dif cdrom thermal ahci 
+thermal_sys libahci ehci_hcd libata usbcore scsi_mod usb_common
+
+7.2.
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 42
+model name	: Intel(R) Core(TM) i5-2430M CPU @ 2.40GHz
+stepping	: 7
+microcode	: 0x1b
+cpu MHz		: 800.000
+cache size	: 3072 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 2
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx 
+rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology 
+nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 
+ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer 
+aes xsave avx lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow 
+vnmi flexpriority ept vpid
+bogomips	: 4789.50
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 42
+model name	: Intel(R) Core(TM) i5-2430M CPU @ 2.40GHz
+stepping	: 7
+microcode	: 0x1b
+cpu MHz		: 800.000
+cache size	: 3072 KB
+physical id	: 0
+siblings	: 4
+core id		: 1
+cpu cores	: 2
+apicid		: 2
+initial apicid	: 2
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx 
+rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology 
+nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 
+ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer 
+aes xsave avx lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow 
+vnmi flexpriority ept vpid
+bogomips	: 4789.50
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+processor	: 2
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 42
+model name	: Intel(R) Core(TM) i5-2430M CPU @ 2.40GHz
+stepping	: 7
+microcode	: 0x1b
+cpu MHz		: 800.000
+cache size	: 3072 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 2
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx 
+rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology 
+nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 
+ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer 
+aes xsave avx lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow 
+vnmi flexpriority ept vpid
+bogomips	: 4789.50
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+processor	: 3
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 42
+model name	: Intel(R) Core(TM) i5-2430M CPU @ 2.40GHz
+stepping	: 7
+microcode	: 0x1b
+cpu MHz		: 800.000
+cache size	: 3072 KB
+physical id	: 0
+siblings	: 4
+core id		: 1
+cpu cores	: 2
+apicid		: 3
+initial apicid	: 3
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx 
+rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology 
+nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 
+ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer 
+aes xsave avx lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow 
+vnmi flexpriority ept vpid
+bogomips	: 4789.50
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+7.3.
+cpufreq_userspace 12576 0 - Live 0xffffffffa0793000
+cpufreq_conservative 13147 0 - Live 0xffffffffa078e000
+cpufreq_powersave 12454 4 - Live 0xffffffffa0789000
+cpufreq_stats 12866 0 - Live 0xffffffffa0784000
+xt_tcpudp 12570 4 - Live 0xffffffffa077f000
+xt_conntrack 12681 3 - Live 0xffffffffa077a000
+iptable_filter 12536 1 - Live 0xffffffffa0775000
+iptable_mangle 12536 0 - Live 0xffffffffa0770000
+ipt_MASQUERADE 12594 3 - Live 0xffffffffa076b000
+iptable_nat 12928 1 - Live 0xffffffffa075a000
+nf_nat 18222 2 ipt_MASQUERADE,iptable_nat, Live 0xffffffffa0765000
+nf_conntrack_ipv4 18549 6 iptable_nat,nf_nat, Live 0xffffffffa0754000
+nf_defrag_ipv4 12483 1 nf_conntrack_ipv4, Live 0xffffffffa0760000
+nf_conntrack 62257 5 
+xt_conntrack,ipt_MASQUERADE,iptable_nat,nf_nat,nf_conntrack_ipv4, Live 
+0xffffffffa0743000
+iptable_raw 12524 0 - Live 0xffffffffa05b1000
+ip_tables 22042 4 iptable_filter,iptable_mangle,iptable_nat,iptable_raw, 
+Live 0xffffffffa05b7000
+x_tables 18998 8 
+xt_tcpudp,xt_conntrack,iptable_filter,iptable_mangle,ipt_MASQUERADE,iptable_nat,iptable_raw,ip_tables, 
+Live 0xffffffffa05ab000
+pci_stub 12429 1 - Live 0xffffffffa049b000
+vboxpci 19066 0 - Live 0xffffffffa05a5000 (O)
+vboxnetadp 25443 0 - Live 0xffffffffa0346000 (O)
+vboxnetflt 23571 0 - Live 0xffffffffa02a3000 (O)
+vboxdrv 190101 3 vboxpci,vboxnetadp,vboxnetflt, Live 0xffffffffa0575000 (O)
+snd_hda_codec_hdmi 31054 1 - Live 0xffffffffa02c6000
+snd_hda_codec_idt 53728 1 - Live 0xffffffffa0294000
+iTCO_wdt 12831 0 - Live 0xffffffffa028f000
+iTCO_vendor_support 12704 1 iTCO_wdt, Live 0xffffffffa0222000
+joydev 17190 0 - Live 0xffffffffa056f000
+arc4 12543 2 - Live 0xffffffffa0496000
+dell_laptop 21216 0 - Live 0xffffffffa0568000 (O)
+dcdbas 13307 1 dell_laptop, Live 0xffffffffa0491000
+brcmsmac 454647 0 - Live 0xffffffffa04f8000
+cordic 12313 1 brcmsmac, Live 0xffffffffa0459000
+brcmutil 12824 1 brcmsmac, Live 0xffffffffa0465000
+mac80211 353465 1 brcmsmac, Live 0xffffffffa04a0000
+cfg80211 151586 2 brcmsmac,mac80211, Live 0xffffffffa046a000
+rfkill 18972 3 dell_laptop,cfg80211, Live 0xffffffffa045f000
+dell_wmi 12477 0 - Live 0xffffffffa036b000
+sparse_keymap 12760 1 dell_wmi, Live 0xffffffffa0366000
+coretemp 12898 0 - Live 0xffffffffa038d000
+kvm_intel 118157 0 - Live 0xffffffffa0416000
+kvm 312876 1 kvm_intel, Live 0xffffffffa03a9000
+crc32c_intel 12747 0 - Live 0xffffffffa0388000
+ghash_clmulni_intel 12981 0 - Live 0xffffffffa0357000
+aesni_intel 50249 2 - Live 0xffffffffa039b000
+aes_x86_64 16796 1 aesni_intel, Live 0xffffffffa0370000
+aes_generic 33026 2 aesni_intel,aes_x86_64, Live 0xffffffffa035c000
+ablk_helper 12572 1 aesni_intel, Live 0xffffffffa0352000
+cryptd 14561 3 ghash_clmulni_intel,aesni_intel,ablk_helper, Live 
+0xffffffffa0383000
+evdev 17486 19 - Live 0xffffffffa0379000
+microcode 25859 0 - Live 0xffffffffa033e000
+snd_hda_intel 30560 7 - Live 0xffffffffa0319000
+snd_hda_codec 87759 3 
+snd_hda_codec_hdmi,snd_hda_codec_idt,snd_hda_intel, Live 0xffffffffa0327000
+snd_hwdep 13150 1 snd_hda_codec, Live 0xffffffffa0322000
+snd_pcm_oss 37023 0 - Live 0xffffffffa030e000
+snd_mixer_oss 17879 3 snd_pcm_oss, Live 0xffffffffa02f4000
+snd_pcm 64011 4 
+snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec,snd_pcm_oss, Live 
+0xffffffffa02fd000
+psmouse 69224 0 - Live 0xffffffffa02e2000
+snd_page_alloc 12969 2 snd_hda_intel,snd_pcm, Live 0xffffffffa02d9000
+serio_raw 12938 0 - Live 0xffffffffa02d4000
+snd_seq_midi 12848 0 - Live 0xffffffffa02cf000
+snd_seq_midi_event 13316 1 snd_seq_midi, Live 0xffffffffa01a1000
+lpc_ich 16665 0 - Live 0xffffffffa02b8000
+i2c_i801 16949 0 - Live 0xffffffffa01ff000
+mfd_core 12601 1 lpc_ich, Live 0xffffffffa01f5000
+snd_rawmidi 22945 1 snd_seq_midi, Live 0xffffffffa02bf000
+snd_seq 45096 2 snd_seq_midi,snd_seq_midi_event, Live 0xffffffffa02ab000
+snd_seq_device 13176 3 snd_seq_midi,snd_rawmidi,snd_seq, Live 
+0xffffffffa017b000
+i915 421299 2 - Live 0xffffffffa0227000
+snd_timer 22841 2 snd_pcm,snd_seq, Live 0xffffffffa0213000
+acpi_cpufreq 12935 1 - Live 0xffffffffa01fa000
+drm_kms_helper 27228 1 i915, Live 0xffffffffa01ed000
+bcma 32685 1 brcmsmac, Live 0xffffffffa01a6000
+video 17629 1 i915, Live 0xffffffffa0187000
+wmi 13243 1 dell_wmi, Live 0xffffffffa0176000
+mperf 12453 1 acpi_cpufreq, Live 0xffffffffa021d000
+snd 53001 22 
+snd_hda_codec_hdmi,snd_hda_codec_idt,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm_oss,snd_mixer_oss,snd_pcm,snd_rawmidi,snd_seq,snd_seq_device,snd_timer, 
+Live 0xffffffffa0205000
+battery 13109 0 - Live 0xffffffffa0182000
+drm 197836 3 i915,drm_kms_helper, Live 0xffffffffa01bb000
+ac 12624 0 - Live 0xffffffffa01b6000
+i2c_algo_bit 12841 1 i915, Live 0xffffffffa0197000
+soundcore 13026 3 snd, Live 0xffffffffa018e000
+i2c_core 23958 5 i2c_i801,i915,drm_kms_helper,drm,i2c_algo_bit, Live 
+0xffffffffa01af000
+button 12937 1 i915, Live 0xffffffffa019c000
+processor 28491 1 acpi_cpufreq, Live 0xffffffffa0167000
+loop 22468 0 - Live 0xffffffffa016f000
+fuse 66340 1 - Live 0xffffffffa0155000
+autofs4 27604 2 - Live 0xffffffffa00d9000
+ext4 370897 2 - Live 0xffffffffa00f9000
+crc16 12343 1 ext4, Live 0xffffffffa0071000
+jbd2 75311 1 ext4, Live 0xffffffffa00e5000
+mbcache 13065 1 ext4, Live 0xffffffffa0082000
+sg 25925 0 - Live 0xffffffffa00d1000
+sr_mod 21944 0 - Live 0xffffffffa00ca000
+sd_mod 36245 3 - Live 0xffffffffa00c0000
+crc_t10dif 12348 1 sd_mod, Live 0xffffffffa00bb000
+cdrom 35401 1 sr_mod, Live 0xffffffffa00b1000
+thermal 17383 0 - Live 0xffffffffa00ab000
+ahci 25008 2 - Live 0xffffffffa0069000
+thermal_sys 18184 3 video,processor,thermal, Live 0xffffffffa003b000
+libahci 22820 1 ahci, Live 0xffffffffa0030000
+ehci_hcd 40382 0 - Live 0xffffffffa0077000
+libata 141082 2 ahci,libahci, Live 0xffffffffa0087000
+usbcore 129022 1 ehci_hcd, Live 0xffffffffa0044000
+scsi_mod 162496 4 sg,sr_mod,sd_mod,libata, Live 0xffffffffa0007000
+usb_common 12354 1 usbcore, Live 0xffffffffa0000000
+
+7.5.
+00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor 
+Family DRAM Controller (rev 09)
+	Subsystem: Dell Device 0504
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort+ >SERR- <PERR- INTx-
+	Latency: 0
+	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
+
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core 
+Processor Family Integrated Graphics Controller (rev 09) (prog-if 00 
+[VGA controller])
+	Subsystem: Dell Device 0504
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 42
+	Region 0: Memory at f6800000 (64-bit, non-prefetchable) [size=4M]
+	Region 2: Memory at e0000000 (64-bit, prefetchable) [size=256M]
+	Region 4: I/O ports at f000 [size=64]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+		Address: fee0f00c  Data: 4191
+	Capabilities: [d0] Power Management version 2
+		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [a4] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP-
+	Kernel driver in use: i915
+
+00:16.0 Communication controller: Intel Corporation 6 Series/C200 Series 
+Chipset Family MEI Controller #1 (rev 04)
+	Subsystem: Dell Device 0504
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 11
+	Region 0: Memory at f7e0a000 (64-bit, non-prefetchable) [size=16]
+	Capabilities: [50] Power Management version 3
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [8c] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+
+00:1a.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset 
+Family USB Enhanced Host Controller #2 (rev 05) (prog-if 20 [EHCI])
+	Subsystem: Dell Device 0504
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 16
+	Region 0: Memory at f7e08000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA 
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Capabilities: [98] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP-
+	Kernel driver in use: ehci_hcd
+
+00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset 
+Family High Definition Audio Controller (rev 05)
+	Subsystem: Dell Device 0504
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin A routed to IRQ 43
+	Region 0: Memory at f7e00000 (64-bit, non-prefetchable) [size=16K]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA 
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
+		Address: 00000000fee0f00c  Data: 41c1
+	Capabilities: [70] Express (v1) Root Complex Integrated Endpoint, MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+			ExtTag- RBE- FLReset+
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #0, Speed unknown, Width x0, ASPM unknown, Latency L0 
+<64ns, L1 <1us
+			ClockPM- Surprise- LLActRep- BwNot-
+		LnkCtl:	ASPM Disabled; Disabled- Retrain- CommClk-
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed unknown, Width x0, TrErr- Train- SlotClk- DLActive- 
+BWMgmt- ABWMgmt-
+	Capabilities: [100 v1] Virtual Channel
+		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+		Arb:	Fixed- WRR32- WRR64- WRR128-
+		Ctrl:	ArbSelect=Fixed
+		Status:	InProgress-
+		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=01
+			Status:	NegoPending- InProgress-
+		VC1:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+			Ctrl:	Enable+ ID=1 ArbSelect=Fixed TC/VC=22
+			Status:	NegoPending- InProgress-
+	Capabilities: [130 v1] Root Complex Link
+		Desc:	PortNumber=0f ComponentID=00 EltType=Config
+		Link0:	Desc:	TargetPort=00 TargetComponent=00 AssocRCRB- 
+LinkType=MemMapped LinkValid+
+			Addr:	00000000fed1c000
+	Kernel driver in use: snd_hda_intel
+
+00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset 
+Family PCI Express Root Port 1 (rev b5) (prog-if 00 [Normal decode])
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Bus: primary=00, secondary=03, subordinate=04, sec-latency=0
+	I/O behind bridge: 0000f000-00000fff
+	Memory behind bridge: fff00000-000fffff
+	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
+	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort+ <SERR- <PERR-
+	BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+	Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+			ExtTag- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #1, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <1us, 
+L1 <16us
+			ClockPM- Surprise- LLActRep+ BwNot-
+		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk-
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x0, TrErr- Train- SlotClk+ DLActive- 
+BWMgmt- ABWMgmt-
+		SltCap:	AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
+			Slot #0, PowerLimit 10.000W; Interlock- NoCompl+
+		SltCtl:	Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
+			Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
+		SltSta:	Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet- Interlock-
+			Changed: MRL- PresDet- LinkState-
+		RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
+		RootCap: CRSVisible-
+		RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+		DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
+		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
+Selectable De-emphasis: -6dB
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
+ComplianceSOS-
+			 Compliance De-emphasis: -6dB
+		LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, 
+EqualizationPhase1-
+			 EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+		Address: 00000000  Data: 0000
+	Capabilities: [90] Subsystem: Dell Device 0504
+	Capabilities: [a0] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=0 PME-
+	Kernel driver in use: pcieport
+
+00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset 
+Family PCI Express Root Port 4 (rev b5) (prog-if 00 [Normal decode])
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Bus: primary=00, secondary=09, subordinate=0a, sec-latency=0
+	I/O behind bridge: 0000f000-00000fff
+	Memory behind bridge: f7d00000-f7dfffff
+	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
+	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort+ <SERR- <PERR-
+	BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+	Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+			ExtTag- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #4, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 
+<512ns, L1 <16us
+			ClockPM- Surprise- LLActRep+ BwNot-
+		LnkCtl:	ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ 
+BWMgmt+ ABWMgmt-
+		SltCap:	AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
+			Slot #3, PowerLimit 10.000W; Interlock- NoCompl+
+		SltCtl:	Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
+			Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
+		SltSta:	Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
+			Changed: MRL- PresDet- LinkState+
+		RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
+		RootCap: CRSVisible-
+		RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+		DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
+		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
+Selectable De-emphasis: -6dB
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
+ComplianceSOS-
+			 Compliance De-emphasis: -6dB
+		LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, 
+EqualizationPhase1-
+			 EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+		Address: 00000000  Data: 0000
+	Capabilities: [90] Subsystem: Dell Device 0504
+	Capabilities: [a0] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Kernel driver in use: pcieport
+
+00:1c.7 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset 
+Family PCI Express Root Port 8 (rev b5) (prog-if 00 [Normal decode])
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Bus: primary=00, secondary=11, subordinate=1f, sec-latency=0
+	I/O behind bridge: 0000d000-0000efff
+	Memory behind bridge: f6c00000-f7cfffff
+	Prefetchable memory behind bridge: 00000000f0000000-00000000f10fffff
+	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- <SERR- <PERR-
+	BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+	Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+			ExtTag- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #8, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <1us, 
+L1 <16us
+			ClockPM- Surprise- LLActRep+ BwNot-
+		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk-
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x0, TrErr- Train- SlotClk+ DLActive- 
+BWMgmt- ABWMgmt-
+		SltCap:	AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug+ Surprise+
+			Slot #7, PowerLimit 10.000W; Interlock- NoCompl+
+		SltCtl:	Enable: AttnBtn- PwrFlt- MRL- PresDet+ CmdCplt- HPIrq+ LinkChg-
+			Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
+		SltSta:	Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet- Interlock-
+			Changed: MRL- PresDet- LinkState-
+		RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
+		RootCap: CRSVisible-
+		RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+		DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
+		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
+		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
+Selectable De-emphasis: -6dB
+			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
+ComplianceSOS-
+			 Compliance De-emphasis: -6dB
+		LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, 
+EqualizationPhase1-
+			 EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+		Address: fee0f00c  Data: 4171
+	Capabilities: [90] Subsystem: Dell Device 0504
+	Capabilities: [a0] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=0 PME-
+	Kernel driver in use: pcieport
+
+00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset 
+Family USB Enhanced Host Controller #1 (rev 05) (prog-if 20 [EHCI])
+	Subsystem: Dell Device 0504
+	Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Interrupt: pin A routed to IRQ 23
+	Region 0: Memory at f7e07000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA 
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D3 NoSoftRst- PME-Enable+ DSel=0 DScale=0 PME-
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Capabilities: [98] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP-
+	Kernel driver in use: ehci_hcd
+
+00:1f.0 ISA bridge: Intel Corporation HM67 Express Chipset Family LPC 
+Controller (rev 05)
+	Subsystem: Dell Device 0504
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
+	Kernel driver in use: lpc_ich
+
+00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series Chipset 
+Family 6 port SATA AHCI Controller (rev 05) (prog-if 01 [AHCI 1.0])
+	Subsystem: Dell Device 0504
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx+
+	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin B routed to IRQ 41
+	Region 0: I/O ports at f0b0 [size=8]
+	Region 1: I/O ports at f0a0 [size=4]
+	Region 2: I/O ports at f090 [size=8]
+	Region 3: I/O ports at f080 [size=4]
+	Region 4: I/O ports at f060 [size=32]
+	Region 5: Memory at f7e06000 (32-bit, non-prefetchable) [size=2K]
+	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+		Address: fee0f00c  Data: 4181
+	Capabilities: [70] Power Management version 3
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold-)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
+	Capabilities: [b0] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP-
+	Kernel driver in use: ahci
+
+00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family 
+SMBus Controller (rev 05)
+	Subsystem: Dell Device 0504
+	Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Interrupt: pin C routed to IRQ 18
+	Region 0: Memory at f7e05000 (64-bit, non-prefetchable) [size=256]
+	Region 4: I/O ports at f040 [size=32]
+
+09:00.0 Network controller: Broadcom Corporation BCM4313 802.11b/g/n 
+Wireless LAN Controller (rev 01)
+	Subsystem: Dell Device 0012
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
+<MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin A routed to IRQ 19
+	Region 0: Memory at f7d00000 (64-bit, non-prefetchable) [size=16K]
+	Capabilities: [40] Power Management version 3
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=2 PME-
+	Capabilities: [58] Vendor Specific Information: Len=78 <?>
+	Capabilities: [48] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Capabilities: [d0] Express (v1) Endpoint, MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
+			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 
+<4us, L1 <64us
+			ClockPM+ Surprise- LLActRep+ BwNot-
+		LnkCtl:	ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ 
+BWMgmt- ABWMgmt-
+	Capabilities: [100 v1] Advanced Error Reporting
+		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
+MalfTLP- ECRC- UnsupReq- ACSViol-
+		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
+MalfTLP- ECRC- UnsupReq- ACSViol-
+		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ 
+MalfTLP+ ECRC- UnsupReq- ACSViol-
+		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+		AERCap:	First Error Pointer: 14, GenCap+ CGenEn- ChkCap+ ChkEn-
+	Capabilities: [13c v1] Virtual Channel
+		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+		Arb:	Fixed- WRR32- WRR64- WRR128-
+		Ctrl:	ArbSelect=Fixed
+		Status:	InProgress-
+		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+			Status:	NegoPending- InProgress-
+	Capabilities: [160 v1] Device Serial Number 00-00-e5-ff-ff-db-94-39
+	Capabilities: [16c v1] Power Budgeting <?>
+	Kernel driver in use: bcma-pci-bridge
+
+7.6. n/a
+
+7.7. n/a
+
+workaround, reverse patch dell-laptop.c and recompile
+
+p.s. I hope this is ok, I've never sent a kernel bug report before, feel 
+free to contact me if you need more info etc
+
+Thanks,
+
+Mark
