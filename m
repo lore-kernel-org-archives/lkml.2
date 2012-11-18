@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2KRBFM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Nov 2012 20:05:12 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:42374 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab2KRBFG (ORCPT
+	id S1752804Ab2KRBGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Nov 2012 20:06:22 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63051 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab2KRBFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Nov 2012 20:05:06 -0500
+	Sat, 17 Nov 2012 20:05:10 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 4/9] nohz: Add API to check tick state
-Date: Sun, 18 Nov 2012 02:04:47 +0100
-Message-Id: <1353200692-6039-5-git-send-email-fweisbec@gmail.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 6/9] irq_work: Flush work on CPU_DYING
+Date: Sun, 18 Nov 2012 02:04:49 +0100
+Message-Id: <1353200692-6039-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
 References: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
@@ -26,76 +25,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need some quick way to check if the CPU has stopped
-its tick. This will be useful to implement the printk tick
-using the irq work subsystem.
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+In order not to offline a CPU with pending irq works, flush the
+queue from CPU_DYING. The notifier is called by stop_machine on
+the CPU that is going down. The code will not be called from irq context
+(so things like get_irq_regs() wont work) but I'm not sure what the
+requirements are for irq_work in that regard (Peter?). But irqs are
+disabled and the CPU is about to go offline. Might as well flush the work.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/tick.h     |   17 ++++++++++++++++-
- kernel/time/tick-sched.c |    2 +-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ kernel/irq_work.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 45 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f37fceb..2307dd3 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -8,6 +8,8 @@
- 
- #include <linux/clockchips.h>
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index b3c113a..4ed1749 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -12,6 +12,8 @@
+ #include <linux/percpu.h>
+ #include <linux/hardirq.h>
  #include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/hrtimer.h>
++#include <linux/cpu.h>
++#include <linux/notifier.h>
+ #include <asm/processor.h>
  
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
+ /*
+@@ -110,11 +112,7 @@ bool irq_work_needs_cpu(void)
+ 	return true;
+ }
  
-@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+-/*
+- * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+- * context with local IRQs disabled.
+- */
+-void irq_work_run(void)
++static void __irq_work_run(void)
+ {
+ 	struct irq_work *work;
+ 	struct llist_head *this_list;
+@@ -124,7 +122,6 @@ void irq_work_run(void)
+ 	if (llist_empty(this_list))
+ 		return;
  
- # ifdef CONFIG_NO_HZ
-+DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
+-	BUG_ON(!in_irq());
+ 	BUG_ON(!irqs_disabled());
+ 
+ 	llnode = llist_del_all(this_list);
+@@ -149,6 +146,16 @@ void irq_work_run(void)
+ 		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
+ 	}
+ }
 +
-+static inline int tick_nohz_tick_stopped(void)
++/*
++ * Run the irq_work entries on this cpu. Requires to be ran from hardirq
++ * context with local IRQs disabled.
++ */
++void irq_work_run(void)
 +{
-+	return __this_cpu_read(tick_cpu_sched.tick_stopped);
++	BUG_ON(!in_irq());
++	__irq_work_run();
++}
+ EXPORT_SYMBOL_GPL(irq_work_run);
+ 
+ /*
+@@ -163,3 +170,35 @@ void irq_work_sync(struct irq_work *work)
+ 		cpu_relax();
+ }
+ EXPORT_SYMBOL_GPL(irq_work_sync);
++
++#ifdef CONFIG_HOTPLUG_CPU
++static int irq_work_cpu_notify(struct notifier_block *self,
++			       unsigned long action, void *hcpu)
++{
++	long cpu = (long)hcpu;
++
++	switch (action) {
++	case CPU_DYING:
++		/* Called from stop_machine */
++		if (WARN_ON_ONCE(cpu != smp_processor_id()))
++			break;
++		__irq_work_run();
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
 +}
 +
- extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
--# else
++static struct notifier_block cpu_notify;
 +
-+# else /* !CONFIG_NO_HZ */
-+static inline int tick_nohz_tick_stopped(void)
++static __init int irq_work_init_cpu_notifier(void)
 +{
++	cpu_notify.notifier_call = irq_work_cpu_notify;
++	cpu_notify.priority = 0;
++	register_cpu_notifier(&cpu_notify);
 +	return 0;
 +}
++device_initcall(irq_work_init_cpu_notifier);
 +
- static inline void tick_nohz_idle_enter(void) { }
- static inline void tick_nohz_idle_exit(void) { }
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index a402608..9e945aa 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -28,7 +28,7 @@
- /*
-  * Per cpu nohz control structure
-  */
--static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
-+DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
- 
- /*
-  * The time, when the last jiffy update happened. Protected by xtime_lock.
++#endif /* CONFIG_HOTPLUG_CPU */
 -- 
 1.7.5.4
 
