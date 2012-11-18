@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab2KROGd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:06:33 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34061 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2KROGc (ORCPT
+	id S1752072Ab2KROWI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:22:08 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:56250 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2KROWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:06:32 -0500
+	Sun, 18 Nov 2012 09:22:06 -0500
+Date: Sun, 18 Nov 2012 09:21:57 -0500 (EST)
+From: Tomas Hozza <thozza@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com
+Message-ID: <1900142520.231739.1353248517842.JavaMail.root@redhat.com>
+In-Reply-To: <20121115233909.GA17580@kroah.com>
+Subject: Re: [PATCH] tools: hv: Netlink source address validation allows DoS
 MIME-Version: 1.0
-In-Reply-To: <20121118034117.GA2604@kroah.com>
-References: <CACnwZYdSW5=MLBrOC_cD7b3AB_PcQeyjR=JPJnfPCzJapZbGEw@mail.gmail.com>
-	<20121118034117.GA2604@kroah.com>
-Date: Sun, 18 Nov 2012 12:06:31 -0200
-Message-ID: <CACnwZYcbaTbRX7_tv5x1yPNbPwPkp4nT=upBCatYEgp0YESYYw@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IGRyaXZlcnMvdXNiL3VzYi1za2VsZXRvbi5jOjExNzozOiBlcnJvcjogbGFiZWwg?=
-	=?UTF-8?B?4oCYb3V0X2VycuKAmSB1c2VkIGJ1dCBub3QgZGVmaW5l?=
-From: Thiago Farina <tfransosi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux list <linux-kernel@vger.kernel.org>, tom.leiming@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.36.4.227]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 18, 2012 at 1:41 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->> If not, what would be the right fix?
->
-> Properly define out_err.
->
-> I thought this all got fixed up recently, what kernel version are you
-> looking at?
->
-That might explain why I'm seeing this.
+Hello.
 
-Because I'm building the kernel I checked out from
-git://github.com/torvalds/linux.git, currently at commit f4a75d2e
-(Linux 3.7-rc6).
+Just FYI there is already a CVE name CVE-2012-5532 for this issue.
+
+Regards,
+Tomas Hozza
+
+----- Original Message -----
+> On Thu, Nov 08, 2012 at 10:53:29AM +0100, Tomas Hozza wrote:
+> > The source code without this patch caused hypervkvpd to exit when
+> > it processed
+> > a spoofed Netlink packet which has been sent from an untrusted
+> > local user.
+> > Now Netlink messages with a non-zero nl_pid source address are
+> > ignored
+> > and a warning is printed into the syslog.
+> > 
+> > Signed-off-by: Tomas Hozza <thozza@redhat.com>
+> > Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+> > ---
+> >  tools/hv/hv_kvp_daemon.c | 8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> > index 13c2a14..c1d9102 100755
+> 
+> Why are you setting a .c file to executable permissions?  Something
+> is
+> really wrong here...
+> 
+> greg k-h
+> 
