@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2KRPcc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 10:32:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40646 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2KRPcb (ORCPT
+	id S1752315Ab2KRPgl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 10:36:41 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47307 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab2KRPgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 10:32:31 -0500
-From: Daniel Koch <koch.daniel.89@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Missing device driver for T&M Mouse by hanvon
-Date: Sun, 18 Nov 2012 16:31:39 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-X-Face: gLA2EAuZeb"Bnz`y6J7VCjR&1ea\y]9&Rg;V,!~k5|sQ3TuQ8_(
- =?utf-8?q?Tys9rAM9F=5F=23=7C*M=7DCUcj=0A=09c6=5BG2=5E?=,F3jQ?8=YH1bx\p4'z.n/^f$zn|,y:v@3-I8cQRS(
- =?utf-8?q?kE1v=5E=3Av8qT72D=7C/=5FPZbLP9C=0A=09NMLQe=3BOfR8d?=
+	Sun, 18 Nov 2012 10:36:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211181631.43460.koch.daniel.89@googlemail.com>
+In-Reply-To: <CAGDaZ_qF03zB2XTF2nXtsPh1Zf90zVn-ZaoZSNAQg7BGyYEaww@mail.gmail.com>
+References: <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+	<m2pq45qu0s.fsf@firstfloor.org>
+	<508A8D31.9000106@redhat.com>
+	<20121026132601.GC9886@gmail.com>
+	<20121026144502.6e94643e@dull>
+	<20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
+	<508BE459.2080406@redhat.com>
+	<20121029165705.GA4693@x1.osrc.amd.com>
+	<CA+55aFzbwaHxWPkJ-t-TEh9hUwmA+D-unHGuJ7FPx7ULmrwKMg@mail.gmail.com>
+	<20121117145015.GF16441@x1.osrc.amd.com>
+	<CA+55aFxunZ94QkhxUKB0iJ0p1mFuWGzr0mR8icM=XJZadcSuRw@mail.gmail.com>
+	<50A7AC33.5060308@redhat.com>
+	<CAGDaZ_qF03zB2XTF2nXtsPh1Zf90zVn-ZaoZSNAQg7BGyYEaww@mail.gmail.com>
+Date: Sun, 18 Nov 2012 07:29:30 -0800
+Message-ID: <CANN689GJN0Gnm-h43oBW4Da_ALoZZAbcN-fNWE4VN8xB4UcZ_g@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
+From: Michel Lespinasse <walken@google.com>
+To: Shentino <shentino@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Florian Fainelli <florian@openwrt.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Sat, Nov 17, 2012 at 1:53 PM, Shentino <shentino@gmail.com> wrote:
+> I'm actually curious if the architecture docs/software developer
+> manuals for IA-32 mandate any TLB invalidations on a #PF
+>
+> Is there any official vendor documentation on the subject?
 
-I want to report that devices like this:
-http://www.hanwang.com.cn/product/tmouse_mk222.htm
+Yes. Quoting a prior email:
 
-are currently not supported by the kernel. I was able to get the signal using 
-usbmon. But i will need someone who could help me to write a module for linux. 
-Especially because i do not have access to that device on my own.
+Actually, it is architected on x86. This was first described in the
+intel appnote 317080 "TLBs, Paging-Structure Caches, and Their
+Invalidation", last paragraph of section 5.1. Nowadays, the same
+contents are buried somewhere in Volume 3 of the architecture manual
+(in my copy: 4.10.4.1 Operations that Invalidate TLBs and
+Paging-Structure Caches)
 
-Here is some analysis :
+> And perhaps equally valid, should we trust it if it exists?
 
-lsusb:
-Bus 003 Device 003: ID 0b57:7211 Beijing HanwangTechnology Co., Ltd 
+I know that Intel has been very careful in documenting the architected
+TLB behaviors and did it with the understanding that people should be
+able to depend on what's being written up there.
 
-Vendor: 0b57
-Device: 7211
-
-
-f0834680 759139936 C Ii:3:003:2 -75:8 10 = 02814f01 80010280 4f01
-This is with pressure on the pad 
-
-f0834680 759163932 C Ii:3:003:2 -75:8 10 = 02804f01 80010280 4f01
-This is without pressure on the pad
-
-f0834780 761875833 C Ii:3:003:1 0:8 10 = 010000fe 00010100 0000
-This is mouse movement
-
-f0834780 761963826 C Ii:3:003:1 0:8 10 = 01010100 00010000 0000
-This is left button pressed
-
-f0834780 763011793 C Ii:3:003:1 0:8 10 = 0102ff00 00010000 0000
-This is right button pressed
-
-
-
----
-Daniel Koch
-GPG: 83DE 2C48 5A9F 9992 843A 0EAD 3B2D 7E8F 13F4 9C39
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
