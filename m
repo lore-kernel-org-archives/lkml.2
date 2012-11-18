@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab2KRQgf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 11:36:35 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:49997 "EHLO
+	id S1752700Ab2KRQgu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 11:36:50 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:50003 "EHLO
 	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab2KRQgd (ORCPT
+	with ESMTP id S1752438Ab2KRQge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 11:36:33 -0500
+	Sun, 18 Nov 2012 11:36:34 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: =?UTF-8?q?=5BPATCH=20v4=202/4=5D=20mfd=3A=20introduce=20retu-mfd=20driver?=
-Date: Sun, 18 Nov 2012 18:36:20 +0200
-Message-Id: <1353256582-12166-3-git-send-email-aaro.koskinen@iki.fi>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=20v4=204/4=5D=20input=3A=20misc=3A=20introduce=20retu-pwrbutton?=
+Date: Sun, 18 Nov 2012 18:36:22 +0200
+Message-Id: <1353256582-12166-5-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353256582-12166-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1353256582-12166-1-git-send-email-aaro.koskinen@iki.fi>
@@ -23,67 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Retu is a multi-function device found on Nokia Internet Tablets
-implementing at least watchdog, RTC, headset detection and power button
-functionality.
+Add Retu power button driver.
 
-This patch implements minimum functionality providing register access,
-IRQ handling and power off functions.
-
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-input@vger.kernel.org
 Acked-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/mfd/Kconfig      |    9 ++
- drivers/mfd/Makefile     |    1 +
- drivers/mfd/retu-mfd.c   |  264 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/retu.h |   22 ++++
- 4 files changed, 296 insertions(+)
- create mode 100644 drivers/mfd/retu-mfd.c
- create mode 100644 include/linux/mfd/retu.h
+ drivers/input/misc/Kconfig          |   10 ++++
+ drivers/input/misc/Makefile         |    1 +
+ drivers/input/misc/retu-pwrbutton.c |  102 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 113 insertions(+)
+ create mode 100644 drivers/input/misc/retu-pwrbutton.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index acab3ef..7528c5e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1044,6 +1044,15 @@ config MFD_PALMAS
- 	  If you say yes here you get support for the Palmas
- 	  series of PMIC chips from Texas Instruments.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7c0f1ec..e5be189 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -367,6 +367,16 @@ config INPUT_CM109
+ 	  To compile this driver as a module, choose M here: the module will be
+ 	  called cm109.
  
-+config MFD_RETU
-+	tristate "Support for Retu multi-function device"
-+	select MFD_CORE
-+	depends on I2C
-+	select REGMAP_IRQ
++config INPUT_RETU_PWRBUTTON
++	tristate "Retu Power button Driver"
++	depends on MFD_RETU
 +	help
-+	  Retu is a multi-function device found on Nokia Internet Tablets
-+	  (770, N800 and N810).
++	  Say Y here if you want to enable power key reporting via the
++	  Retu chips found in Nokia Internet Tablets (770, N800, N810).
 +
- endmenu
- endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index d8ccb63..ad7879f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -138,3 +138,4 @@ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
- obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
- obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
- obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
-+obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
-diff --git a/drivers/mfd/retu-mfd.c b/drivers/mfd/retu-mfd.c
++	  To compile this driver as a module, choose M here. The module will
++	  be called retu-pwrbutton.
++
+ config INPUT_TWL4030_PWRBUTTON
+ 	tristate "TWL4030 Power button Driver"
+ 	depends on TWL4030_CORE
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 83fe6f5..4fbee0d 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+ obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
+ obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
++obj-$(CONFIG_INPUT_RETU_PWRBUTTON)	+= retu-pwrbutton.o
+ obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
+ obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
+ obj-$(CONFIG_INPUT_SPARCSPKR)		+= sparcspkr.o
+diff --git a/drivers/input/misc/retu-pwrbutton.c b/drivers/input/misc/retu-pwrbutton.c
 new file mode 100644
-index 0000000..7ff4a37
+index 0000000..043a12b
 --- /dev/null
-+++ b/drivers/mfd/retu-mfd.c
-@@ -0,0 +1,264 @@
++++ b/drivers/input/misc/retu-pwrbutton.c
+@@ -0,0 +1,102 @@
 +/*
-+ * Retu MFD driver
++ * Retu power button driver.
 + *
-+ * Copyright (C) 2004, 2005 Nokia Corporation
++ * Copyright (C) 2004-2010 Nokia Corporation
 + *
-+ * Based on code written by Juha Yrjölä, David Weinehall and Mikko Ylinen.
++ * Original code written by Ari Saastamoinen, Juha Yrjölä and Felipe Balbi.
 + * Rewritten by Aaro Koskinen.
 + *
 + * This file is subject to the terms and conditions of the GNU General
@@ -96,280 +94,90 @@ index 0000000..7ff4a37
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/i2c.h>
 +#include <linux/irq.h>
 +#include <linux/init.h>
 +#include <linux/slab.h>
-+#include <linux/mutex.h>
++#include <linux/errno.h>
++#include <linux/input.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
 +#include <linux/mfd/retu.h>
 +#include <linux/interrupt.h>
-+#include <linux/moduleparam.h>
++#include <linux/platform_device.h>
 +
-+/* Registers */
-+#define RETU_REG_ASICR		0x00		/* ASIC ID and revision */
-+#define RETU_REG_ASICR_VILMA	(1 << 7)	/* Bit indicating Vilma */
-+#define RETU_REG_IDR		0x01		/* Interrupt ID */
-+#define RETU_REG_IMR		0x02		/* Interrupt mask */
++#define RETU_STATUS_PWRONX (1 << 5)
 +
-+/* Interrupt sources */
-+#define RETU_INT_PWR		0		/* Power button */
-+
-+struct retu_dev {
-+	struct regmap			*regmap;
-+	struct device			*dev;
-+	struct mutex			mutex;
-+	struct regmap_irq_chip_data	*irq_data;
-+};
-+
-+static struct resource retu_pwrbutton_res[] = {
-+	{
-+		.name	= "retu-pwrbutton",
-+		.start	= RETU_INT_PWR,
-+		.end	= RETU_INT_PWR,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct mfd_cell retu_devs[] = {
-+	{
-+		.name		= "retu-wdt"
-+	},
-+	{
-+		.name		= "retu-pwrbutton",
-+		.resources	= retu_pwrbutton_res,
-+		.num_resources	= ARRAY_SIZE(retu_pwrbutton_res),
-+	}
-+};
-+
-+static struct regmap_irq retu_irqs[] = {
-+	[RETU_INT_PWR] = {
-+		.mask = 1 << RETU_INT_PWR,
-+	}
-+};
-+
-+static struct regmap_irq_chip retu_irq_chip = {
-+	.name		= "RETU",
-+	.irqs		= retu_irqs,
-+	.num_irqs	= ARRAY_SIZE(retu_irqs),
-+	.num_regs	= 1,
-+	.status_base	= RETU_REG_IDR,
-+	.mask_base	= RETU_REG_IMR,
-+	.ack_base	= RETU_REG_IDR,
-+};
-+
-+/* Retu device registered for the power off. */
-+static struct retu_dev *retu_pm_power_off;
-+
-+int retu_read(struct retu_dev *rdev, u8 reg)
++static irqreturn_t retu_pwrbutton_irq(int irq, void *_pwr)
 +{
-+	int ret;
-+	int value;
++	bool state;
++	struct input_dev *idev = _pwr;
++	struct retu_dev *rdev = input_get_drvdata(idev);
 +
-+	mutex_lock(&rdev->mutex);
-+	ret = regmap_read(rdev->regmap, reg, &value);
-+	mutex_unlock(&rdev->mutex);
++	state = !(retu_read(rdev, RETU_REG_STATUS) & RETU_STATUS_PWRONX);
++	input_report_key(idev, KEY_POWER, state);
++	input_sync(idev);
 +
-+	return ret ? ret : value;
++	return IRQ_HANDLED;
 +}
-+EXPORT_SYMBOL_GPL(retu_read);
 +
-+int retu_write(struct retu_dev *rdev, u8 reg, u16 data)
++static int __devinit retu_pwrbutton_probe(struct platform_device *pdev)
 +{
++	struct retu_dev *rdev = dev_get_drvdata(pdev->dev.parent);
++	struct input_dev *idev;
 +	int ret;
 +
-+	mutex_lock(&rdev->mutex);
-+	ret = regmap_write(rdev->regmap, reg, data);
-+	mutex_unlock(&rdev->mutex);
++	idev = input_allocate_device();
++	if (!idev)
++		return -ENOMEM;
++
++	idev->evbit[0]				= BIT_MASK(EV_KEY);
++	idev->keybit[BIT_WORD(KEY_POWER)]	= BIT_MASK(KEY_POWER);
++	idev->name				= "retu-pwrbutton";
++
++	platform_set_drvdata(pdev, idev);
++	input_set_drvdata(idev, rdev);
++
++	ret = input_register_device(idev);
++	if (ret < 0) {
++		input_free_device(idev);
++		return ret;
++	}
++
++	ret = devm_request_threaded_irq(&pdev->dev, platform_get_irq(pdev, 0),
++					NULL, retu_pwrbutton_irq, 0,
++					"retu-pwrbutton", idev);
++	if (ret < 0)
++		input_unregister_device(idev);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(retu_write);
 +
-+static void retu_power_off(void)
++static int __devexit retu_pwrbutton_remove(struct platform_device *pdev)
 +{
-+	struct retu_dev *rdev = retu_pm_power_off;
-+	int reg;
++	struct input_dev *idev = platform_get_drvdata(pdev);
 +
-+	mutex_lock(&retu_pm_power_off->mutex);
-+
-+	/* Ignore power button state */
-+	regmap_read(rdev->regmap, RETU_REG_CC1, &reg);
-+	regmap_write(rdev->regmap, RETU_REG_CC1, reg | 2);
-+
-+	/* Expire watchdog immediately */
-+	regmap_write(rdev->regmap, RETU_REG_WATCHDOG, 0);
-+
-+	/* Wait for poweroff */
-+	for (;;)
-+		cpu_relax();
-+
-+	mutex_unlock(&retu_pm_power_off->mutex);
-+}
-+
-+static int retu_regmap_read(void *context, const void *reg, size_t reg_size,
-+			    void *val, size_t val_size)
-+{
-+	int ret;
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	BUG_ON(reg_size != 1 || val_size != 2);
-+
-+	ret = i2c_smbus_read_word_data(i2c, *(u8 const *)reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	*(u16 *)val = ret;
-+	return 0;
-+}
-+
-+static int retu_regmap_write(void *context, const void *data, size_t count)
-+{
-+	u8 reg;
-+	u16 val;
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	BUG_ON(count != sizeof(reg) + sizeof(val));
-+	memcpy(&reg, data, sizeof(reg));
-+	memcpy(&val, data + sizeof(reg), sizeof(val));
-+	return i2c_smbus_write_word_data(i2c, reg, val);
-+}
-+
-+static struct regmap_bus retu_bus = {
-+	.read = retu_regmap_read,
-+	.write = retu_regmap_write,
-+	.val_format_endian_default = REGMAP_ENDIAN_NATIVE,
-+};
-+
-+static struct regmap_config retu_config = {
-+	.reg_bits = 8,
-+	.val_bits = 16,
-+};
-+
-+static int __devinit retu_probe(struct i2c_client *i2c,
-+				const struct i2c_device_id *id)
-+{
-+	struct retu_dev *rdev;
-+	int ret;
-+
-+	rdev = devm_kzalloc(&i2c->dev, sizeof(*rdev), GFP_KERNEL);
-+	if (rdev == NULL)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, rdev);
-+	rdev->dev = &i2c->dev;
-+	mutex_init(&rdev->mutex);
-+	rdev->regmap = devm_regmap_init(&i2c->dev, &retu_bus, &i2c->dev,
-+					&retu_config);
-+	if (IS_ERR(rdev->regmap))
-+		return PTR_ERR(rdev->regmap);
-+
-+	ret = retu_read(rdev, RETU_REG_ASICR);
-+	if (ret < 0) {
-+		dev_err(rdev->dev, "could not read Retu revision: %d\n", ret);
-+		return ret;
-+	}
-+
-+	dev_info(rdev->dev, "Retu%s v%d.%d found\n",
-+		 (ret & RETU_REG_ASICR_VILMA) ? " & Vilma" : "",
-+		 (ret >> 4) & 0x7, ret & 0xf);
-+
-+	/* Mask all RETU interrupts. */
-+	ret = retu_write(rdev, RETU_REG_IMR, 0xffff);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = regmap_add_irq_chip(rdev->regmap, i2c->irq, IRQF_ONESHOT, -1,
-+				  &retu_irq_chip, &rdev->irq_data);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = mfd_add_devices(rdev->dev, -1, retu_devs, ARRAY_SIZE(retu_devs),
-+			      NULL, regmap_irq_chip_get_base(rdev->irq_data),
-+			      NULL);
-+	if (ret < 0) {
-+		regmap_del_irq_chip(i2c->irq, rdev->irq_data);
-+		return ret;
-+	}
-+
-+	if (!pm_power_off) {
-+		retu_pm_power_off = rdev;
-+		pm_power_off	  = retu_power_off;
-+	}
++	disable_irq(platform_get_irq(pdev, 0));
++	input_unregister_device(idev);
 +
 +	return 0;
 +}
 +
-+static int __devexit retu_remove(struct i2c_client *i2c)
-+{
-+	struct retu_dev *rdev = i2c_get_clientdata(i2c);
-+
-+	if (retu_pm_power_off == rdev) {
-+		pm_power_off	  = NULL;
-+		retu_pm_power_off = NULL;
-+	}
-+	mfd_remove_devices(rdev->dev);
-+	regmap_del_irq_chip(i2c->irq, rdev->irq_data);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id retu_id[] = {
-+	{ "retu-mfd", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, retu_id);
-+
-+static struct i2c_driver retu_driver = {
++static struct platform_driver retu_pwrbutton_driver = {
++	.probe		= retu_pwrbutton_probe,
++	.remove		= __devexit_p(retu_pwrbutton_remove),
 +	.driver		= {
-+		.name = "retu-mfd",
-+		.owner = THIS_MODULE,
++		.name	= "retu-pwrbutton",
++		.owner	= THIS_MODULE,
 +	},
-+	.probe		= retu_probe,
-+	.remove		= retu_remove,
-+	.id_table	= retu_id,
 +};
-+module_i2c_driver(retu_driver);
++module_platform_driver(retu_pwrbutton_driver);
 +
-+MODULE_DESCRIPTION("Retu MFD driver");
-+MODULE_AUTHOR("Juha Yrjölä");
-+MODULE_AUTHOR("David Weinehall");
-+MODULE_AUTHOR("Mikko Ylinen");
++MODULE_ALIAS("platform:retu-pwrbutton");
++MODULE_DESCRIPTION("Retu Power Button");
++MODULE_AUTHOR("Ari Saastamoinen");
++MODULE_AUTHOR("Felipe Balbi");
 +MODULE_AUTHOR("Aaro Koskinen <aaro.koskinen@iki.fi>");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/retu.h b/include/linux/mfd/retu.h
-new file mode 100644
-index 0000000..1e2715d
---- /dev/null
-+++ b/include/linux/mfd/retu.h
-@@ -0,0 +1,22 @@
-+/*
-+ * Retu MFD driver interface
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License. See the file "COPYING" in the main directory of this
-+ * archive for more details.
-+ */
-+
-+#ifndef __LINUX_MFD_RETU_H
-+#define __LINUX_MFD_RETU_H
-+
-+struct retu_dev;
-+
-+int retu_read(struct retu_dev *, u8);
-+int retu_write(struct retu_dev *, u8, u16);
-+
-+/* Registers */
-+#define RETU_REG_WATCHDOG	0x17		/* Watchdog */
-+#define RETU_REG_CC1		0x0d		/* Common control register 1 */
-+#define RETU_REG_STATUS		0x16		/* Status register */
-+
-+#endif /* __LINUX_MFD_RETU_H */
 -- 
 1.7.10.4
 
