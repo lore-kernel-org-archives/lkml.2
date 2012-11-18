@@ -1,175 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab2KROaV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36542 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab2KROaO (ORCPT
+	id S1752473Ab2KROdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:33:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59391 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab2KROaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:30:14 -0500
+	Sun, 18 Nov 2012 09:30:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>, linuxppc-dev@ozlabs.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 27/32] perf ui: Always compile browser setup code
-Date: Sun, 18 Nov 2012 11:29:52 -0300
-Message-Id: <1353248997-30763-28-git-send-email-acme@infradead.org>
+Subject: [PATCH 31/32] perf powerpc: Use uapi/unistd.h to fix build error
+Date: Sun, 18 Nov 2012 11:29:56 -0300
+Message-Id: <1353248997-30763-32-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-We now have proper fallback logic, so always build it regardless of TUI
-or GTK setting.
+Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1352813436-14173-5-git-send-email-namhyung@kernel.org
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20121107191818.GA16211@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile     |    3 +--
- tools/perf/ui/ui.h      |   28 ++++++++++++++++++++++++++++
- tools/perf/util/cache.h |   39 +--------------------------------------
- 3 files changed, 30 insertions(+), 40 deletions(-)
+ tools/perf/perf.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5a9075e..a7c6aa8 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -422,6 +422,7 @@ LIB_OBJS += $(OUTPUT)util/intlist.o
- LIB_OBJS += $(OUTPUT)util/vdso.o
- LIB_OBJS += $(OUTPUT)util/stat.o
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 0047264..f53ee0b 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -26,7 +26,7 @@ void get_term_dimensions(struct winsize *ws);
+ #endif
  
-+LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
- LIB_OBJS += $(OUTPUT)ui/progress.o
- LIB_OBJS += $(OUTPUT)ui/hist.o
-@@ -612,7 +613,6 @@ ifndef NO_NEWT
- 		BASIC_CFLAGS += -I/usr/include/slang
- 		BASIC_CFLAGS += -DNEWT_SUPPORT
- 		EXTLIBS += -lnewt -lslang
--		LIB_OBJS += $(OUTPUT)ui/setup.o
- 		LIB_OBJS += $(OUTPUT)ui/browser.o
- 		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
- 		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
-@@ -651,7 +651,6 @@ ifndef NO_GTK2
- 		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
- 		# Make sure that it'd be included only once.
- 		ifeq ($(findstring -DNEWT_SUPPORT,$(BASIC_CFLAGS)),)
--			LIB_OBJS += $(OUTPUT)ui/setup.o
- 			LIB_OBJS += $(OUTPUT)ui/util.o
- 		endif
- 	endif
-diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
-index 7b67045..d86359c 100644
---- a/tools/perf/ui/ui.h
-+++ b/tools/perf/ui/ui.h
-@@ -3,9 +3,37 @@
- 
- #include <pthread.h>
- #include <stdbool.h>
-+#include <linux/compiler.h>
- 
- extern pthread_mutex_t ui__lock;
- 
-+extern int use_browser;
-+
-+void setup_browser(bool fallback_to_pager);
-+void exit_browser(bool wait_for_ok);
-+
-+#ifdef NEWT_SUPPORT
-+int ui__init(void);
-+void ui__exit(bool wait_for_ok);
-+#else
-+static inline int ui__init(void)
-+{
-+	return -1;
-+}
-+static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
-+#endif
-+
-+#ifdef GTK2_SUPPORT
-+int perf_gtk__init(void);
-+void perf_gtk__exit(bool wait_for_ok);
-+#else
-+static inline int perf_gtk__init(void)
-+{
-+	return -1;
-+}
-+static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
-+#endif
-+
- void ui__refresh_dimensions(bool force);
- 
- #endif /* _PERF_UI_H_ */
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 2bd5137..26e3672 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -5,6 +5,7 @@
- #include "util.h"
- #include "strbuf.h"
- #include "../perf.h"
-+#include "../ui/ui.h"
- 
- #define CMD_EXEC_PATH "--exec-path"
- #define CMD_PERF_DIR "--perf-dir="
-@@ -31,44 +32,6 @@ extern const char *pager_program;
- extern int pager_in_use(void);
- extern int pager_use_color;
- 
--extern int use_browser;
--
--#if defined(NEWT_SUPPORT) || defined(GTK2_SUPPORT)
--void setup_browser(bool fallback_to_pager);
--void exit_browser(bool wait_for_ok);
--
--#ifdef NEWT_SUPPORT
--int ui__init(void);
--void ui__exit(bool wait_for_ok);
--#else
--static inline int ui__init(void)
--{
--	return -1;
--}
--static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
--#endif
--
--#ifdef GTK2_SUPPORT
--int perf_gtk__init(void);
--void perf_gtk__exit(bool wait_for_ok);
--#else
--static inline int perf_gtk__init(void)
--{
--	return -1;
--}
--static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
--#endif
--
--#else /* NEWT_SUPPORT || GTK2_SUPPORT */
--
--static inline void setup_browser(bool fallback_to_pager)
--{
--	if (fallback_to_pager)
--		setup_pager();
--}
--static inline void exit_browser(bool wait_for_ok __maybe_unused) {}
--#endif /* NEWT_SUPPORT || GTK2_SUPPORT */
--
- char *alias_lookup(const char *alias);
- int split_cmdline(char *cmdline, const char ***argv);
- 
+ #ifdef __powerpc__
+-#include "../../arch/powerpc/include/asm/unistd.h"
++#include "../../arch/powerpc/include/uapi/asm/unistd.h"
+ #define rmb()		asm volatile ("sync" ::: "memory")
+ #define cpu_relax()	asm volatile ("" ::: "memory");
+ #define CPUINFO_PROC	"cpu"
 -- 
 1.7.9.2.358.g22243
 
