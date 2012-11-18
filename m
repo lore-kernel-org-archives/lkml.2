@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2KROaT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 09:30:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59364 "EHLO
+	id S1752242Ab2KROdq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 09:33:46 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59387 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab2KROaO (ORCPT
+	with ESMTP id S1752204Ab2KROaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 09:30:14 -0500
+	Sun, 18 Nov 2012 09:30:19 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/32] perf tests: Move test__open_syscall_event into separate object
-Date: Sun, 18 Nov 2012 11:29:27 -0300
-Message-Id: <1353248997-30763-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 19/32] perf tools: Fix 'disabled' attribute config for record command
+Date: Sun, 18 Nov 2012 11:29:44 -0300
+Message-Id: <1353248997-30763-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1353248997-30763-1-git-send-email-acme@infradead.org>
 References: <1353248997-30763-1-git-send-email-acme@infradead.org>
@@ -30,262 +30,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Separating test__open_syscall_event test from the builtin-test into
-open-syscall object.
+Currently the record command sets all events initially as disabled.
 
-Adding util object under tests directory to gather help functions common
-to more tests.
+There's non conditional perf_evlist__enable call, that enables all
+events before we exec tracee program. That actually screws whole
+enable_on_exec logic, because the event is enabled before the traced
+program got executed.
+
+What we actually want is:
+
+1) For any type of traced program:
+  - all independent events and group leaders are disabled
+  - all group members are enabled
+
+   Group members are ruled by group leaders. They need to
+   be enabled, because the group scheduling relies on that.
+
+2) For traced programs executed by perf:
+   - all independent events and group leaders have
+     enable_on_exec set
+   - we don't specifically enable or disable any event during
+     the record command
+
+   Independent events and group leaders are initially disabled
+   and get enabled by exec. Group members are ruled by group
+   leaders as stated in 1).
+
+3) For traced programs attached by perf (pid/tid):
+   - we specifically enable or disable all events during
+     the record command
+
+   When attaching events to already running traced we
+   enable/disable events specifically, as there's no
+   initial traced exec call.
+
+Fixing appropriate perf_event_attr test case to cover this change.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352741644-16809-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |    2 +
- tools/perf/tests/builtin-test.c |   84 ---------------------------------------
- tools/perf/tests/open-syscall.c |   66 ++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |    5 +++
- tools/perf/tests/util.c         |   30 ++++++++++++++
- 5 files changed, 103 insertions(+), 84 deletions(-)
- create mode 100644 tools/perf/tests/open-syscall.c
- create mode 100644 tools/perf/tests/util.c
+ tools/perf/builtin-record.c              |   15 +++++++++--
+ tools/perf/tests/attr/test-record-group  |    1 +
+ tools/perf/tests/attr/test-record-group1 |    1 +
+ tools/perf/util/evsel.c                  |   42 +++++++++++++++++++++++++++++-
+ 4 files changed, 56 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7c7ba4d..69f582c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -432,6 +432,8 @@ LIB_OBJS += $(OUTPUT)tests/parse-events.o
- LIB_OBJS += $(OUTPUT)tests/dso-data.o
- LIB_OBJS += $(OUTPUT)tests/attr.o
- LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
-+LIB_OBJS += $(OUTPUT)tests/open-syscall.o
-+LIB_OBJS += $(OUTPUT)tests/util.o
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 3717027..268b356 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -701,7 +701,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		}
+ 	}
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 5bc9063..b6b1e46 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -27,90 +27,6 @@
+-	perf_evlist__enable(evsel_list);
++	/*
++	 * When perf is starting the traced process, all the events
++	 * (apart from group members) have enable_on_exec=1 set,
++	 * so don't spoil it by prematurely enabling them.
++	 */
++	if (!perf_target__none(&opts->target))
++		perf_evlist__enable(evsel_list);
  
- #include "tests.h"
+ 	/*
+ 	 * Let the child rip
+@@ -724,7 +730,12 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 			waking++;
+ 		}
  
--static int trace_event__id(const char *evname)
--{
--	char *filename;
--	int err = -1, fd;
--
--	if (asprintf(&filename,
--		     "%s/syscalls/%s/id",
--		     tracing_events_path, evname) < 0)
--		return -1;
--
--	fd = open(filename, O_RDONLY);
--	if (fd >= 0) {
--		char id[16];
--		if (read(fd, id, sizeof(id)) > 0)
--			err = atoi(id);
--		close(fd);
--	}
--
--	free(filename);
--	return err;
--}
--
--static int test__open_syscall_event(void)
--{
--	int err = -1, fd;
--	struct thread_map *threads;
--	struct perf_evsel *evsel;
--	struct perf_event_attr attr;
--	unsigned int nr_open_calls = 111, i;
--	int id = trace_event__id("sys_enter_open");
--
--	if (id < 0) {
--		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
--		return -1;
--	}
--
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
--	if (threads == NULL) {
--		pr_debug("thread_map__new\n");
--		return -1;
--	}
--
--	memset(&attr, 0, sizeof(attr));
--	attr.type = PERF_TYPE_TRACEPOINT;
--	attr.config = id;
--	evsel = perf_evsel__new(&attr, 0);
--	if (evsel == NULL) {
--		pr_debug("perf_evsel__new\n");
--		goto out_thread_map_delete;
--	}
--
--	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
--		pr_debug("failed to open counter: %s, "
--			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
--			 strerror(errno));
--		goto out_evsel_delete;
--	}
--
--	for (i = 0; i < nr_open_calls; ++i) {
--		fd = open("/etc/passwd", O_RDONLY);
--		close(fd);
--	}
--
--	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
--		pr_debug("perf_evsel__read_on_cpu\n");
--		goto out_close_fd;
--	}
--
--	if (evsel->counts->cpu[0].val != nr_open_calls) {
--		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %" PRIu64 "\n",
--			 nr_open_calls, evsel->counts->cpu[0].val);
--		goto out_close_fd;
--	}
--
--	err = 0;
--out_close_fd:
--	perf_evsel__close_fd(evsel, 1, threads->nr);
--out_evsel_delete:
--	perf_evsel__delete(evsel);
--out_thread_map_delete:
--	thread_map__delete(threads);
--	return err;
--}
--
- #include <sched.h>
+-		if (done)
++		/*
++		 * When perf is starting the traced process, at the end events
++		 * die with the process and we wait for that. Thus no need to
++		 * disable events in this case.
++		 */
++		if (done && !perf_target__none(&opts->target))
+ 			perf_evlist__disable(evsel_list);
+ 	}
  
- static int test__open_syscall_event_on_all_cpus(void)
-diff --git a/tools/perf/tests/open-syscall.c b/tools/perf/tests/open-syscall.c
-new file mode 100644
-index 0000000..98be8b5
---- /dev/null
-+++ b/tools/perf/tests/open-syscall.c
-@@ -0,0 +1,66 @@
-+#include "thread_map.h"
-+#include "evsel.h"
-+#include "debug.h"
-+#include "tests.h"
-+
-+int test__open_syscall_event(void)
-+{
-+	int err = -1, fd;
-+	struct thread_map *threads;
-+	struct perf_evsel *evsel;
-+	struct perf_event_attr attr;
-+	unsigned int nr_open_calls = 111, i;
-+	int id = trace_event__id("sys_enter_open");
-+
-+	if (id < 0) {
-+		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
-+		return -1;
-+	}
-+
-+	threads = thread_map__new(-1, getpid(), UINT_MAX);
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		return -1;
-+	}
-+
-+	memset(&attr, 0, sizeof(attr));
-+	attr.type = PERF_TYPE_TRACEPOINT;
-+	attr.config = id;
-+	evsel = perf_evsel__new(&attr, 0);
-+	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		goto out_thread_map_delete;
-+	}
-+
-+	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
-+		pr_debug("failed to open counter: %s, "
-+			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
-+			 strerror(errno));
-+		goto out_evsel_delete;
-+	}
-+
-+	for (i = 0; i < nr_open_calls; ++i) {
-+		fd = open("/etc/passwd", O_RDONLY);
-+		close(fd);
-+	}
-+
-+	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
-+		pr_debug("perf_evsel__read_on_cpu\n");
-+		goto out_close_fd;
-+	}
-+
-+	if (evsel->counts->cpu[0].val != nr_open_calls) {
-+		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %" PRIu64 "\n",
-+			 nr_open_calls, evsel->counts->cpu[0].val);
-+		goto out_close_fd;
-+	}
-+
-+	err = 0;
-+out_close_fd:
-+	perf_evsel__close_fd(evsel, 1, threads->nr);
-+out_evsel_delete:
-+	perf_evsel__delete(evsel);
-+out_thread_map_delete:
-+	thread_map__delete(threads);
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 2223de5..bac133e 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -1,6 +1,11 @@
- #ifndef TESTS_H
- #define TESTS_H
+diff --git a/tools/perf/tests/attr/test-record-group b/tools/perf/tests/attr/test-record-group
+index b945f77..a6599e9 100644
+--- a/tools/perf/tests/attr/test-record-group
++++ b/tools/perf/tests/attr/test-record-group
+@@ -15,3 +15,4 @@ sample_type=327
+ mmap=0
+ comm=0
+ enable_on_exec=0
++disabled=0
+diff --git a/tools/perf/tests/attr/test-record-group1 b/tools/perf/tests/attr/test-record-group1
+index 013572f..5a8359d 100644
+--- a/tools/perf/tests/attr/test-record-group1
++++ b/tools/perf/tests/attr/test-record-group1
+@@ -16,3 +16,4 @@ sample_type=327
+ mmap=0
+ comm=0
+ enable_on_exec=0
++disabled=0
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 6d4a5f6..fc4faaa 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -404,13 +404,40 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 	return evsel->name ?: "unknown";
+ }
  
-+/* Tests */
- int test__vmlinux_matches_kallsyms(void);
-+int test__open_syscall_event(void);
-+
-+/* Util */
-+int trace_event__id(const char *evname);
++/*
++ * The enable_on_exec/disabled value strategy:
++ *
++ *  1) For any type of traced program:
++ *    - all independent events and group leaders are disabled
++ *    - all group members are enabled
++ *
++ *     Group members are ruled by group leaders. They need to
++ *     be enabled, because the group scheduling relies on that.
++ *
++ *  2) For traced programs executed by perf:
++ *     - all independent events and group leaders have
++ *       enable_on_exec set
++ *     - we don't specifically enable or disable any event during
++ *       the record command
++ *
++ *     Independent events and group leaders are initially disabled
++ *     and get enabled by exec. Group members are ruled by group
++ *     leaders as stated in 1).
++ *
++ *  3) For traced programs attached by perf (pid/tid):
++ *     - we specifically enable or disable all events during
++ *       the record command
++ *
++ *     When attaching events to already running traced we
++ *     enable/disable events specifically, as there's no
++ *     initial traced exec call.
++ */
+ void perf_evsel__config(struct perf_evsel *evsel,
+ 			struct perf_record_opts *opts)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
  
- #endif /* TESTS_H */
-diff --git a/tools/perf/tests/util.c b/tools/perf/tests/util.c
-new file mode 100644
-index 0000000..748f2e8
---- /dev/null
-+++ b/tools/perf/tests/util.c
-@@ -0,0 +1,30 @@
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include "tests.h"
-+#include "debugfs.h"
+-	attr->disabled = 1;
+ 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
+ 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
+@@ -486,6 +513,19 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
++	/*
++	 * XXX see the function comment above
++	 *
++	 * Disabling only independent events or group leaders,
++	 * keeping group members enabled.
++	 */
++	if (!evsel->leader)
++		attr->disabled = 1;
 +
-+int trace_event__id(const char *evname)
-+{
-+	char *filename;
-+	int err = -1, fd;
-+
-+	if (asprintf(&filename,
-+		     "%s/syscalls/%s/id",
-+		     tracing_events_path, evname) < 0)
-+		return -1;
-+
-+	fd = open(filename, O_RDONLY);
-+	if (fd >= 0) {
-+		char id[16];
-+		if (read(fd, id, sizeof(id)) > 0)
-+			err = atoi(id);
-+		close(fd);
-+	}
-+
-+	free(filename);
-+	return err;
-+}
++	/*
++	 * Setting enable_on_exec for independent events and
++	 * group leaders for traced executed by perf.
++	 */
+ 	if (perf_target__none(&opts->target) && (!evsel->leader))
+ 		attr->enable_on_exec = 1;
+ }
 -- 
 1.7.9.2.358.g22243
 
