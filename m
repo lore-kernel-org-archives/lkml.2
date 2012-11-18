@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab2KRTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 14:02:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25422 "EHLO mx1.redhat.com"
+	id S1752685Ab2KRTDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 14:03:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab2KRTC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 14:02:56 -0500
-Date: Sun, 18 Nov 2012 20:03:21 +0100
+	id S1752639Ab2KRTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Nov 2012 14:02:59 -0500
+Date: Sun, 18 Nov 2012 20:03:24 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Anton Arapov <anton@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -16,8 +16,8 @@ Cc: Anton Arapov <anton@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] percpu_rw_semaphore: add the lockdep annotations
-Message-ID: <20121118190321.GA9684@redhat.com>
+Subject: [PATCH 3/3] percpu_rw_semaphore: introduce CONFIG_PERCPU_RWSEM
+Message-ID: <20121118190324.GA9691@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,117 +27,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the lockdep annotations. Not only this can help to find the
-potential problems, we do not want the false warnings if, say,
-the task takes two different percpu_rw_semaphore's for reading.
-IOW, at least ->rw_sem should not use a single class.
-
-This patch exposes this internal lock to lockdep so that it
-represents the whole percpu_rw_semaphore. This way we do not
-need to add another "fake" ->lockdep_map and lock_class_key.
-More importantly, this also makes the output from lockdep much
-more understandable if it finds the problem.
-
-In short, with this patch from lockdep pov percpu_down_read()
-and percpu_up_read() acquire/release ->rw_sem for reading, this
-matches the actual semantics. This abuses __up_read() but I hope
-this is fine and in fact I'd like to have down_read_no_lockdep()
-as well, percpu_down_read_recursive_readers() will need it.
+Currently only block_dev and uprobes use percpu_rw_semaphore,
+add the config option selected by BLOCK || UPROBES.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/percpu-rwsem.h |   10 +++++++++-
- lib/percpu-rwsem.c           |   21 +++++++++++++++++----
- 2 files changed, 26 insertions(+), 5 deletions(-)
+ arch/Kconfig  |    1 +
+ block/Kconfig |    1 +
+ lib/Kconfig   |    3 +++
+ lib/Makefile  |    3 ++-
+ 4 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/percpu-rwsem.h b/include/linux/percpu-rwsem.h
-index d2146a4..3e88c9a 100644
---- a/include/linux/percpu-rwsem.h
-+++ b/include/linux/percpu-rwsem.h
-@@ -5,6 +5,7 @@
- #include <linux/rwsem.h>
- #include <linux/percpu.h>
- #include <linux/wait.h>
-+#include <linux/lockdep.h>
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 366ec06..cf4efe6 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -80,6 +80,7 @@ config UPROBES
+ 	bool "Transparent user-space probes (EXPERIMENTAL)"
+ 	depends on UPROBE_EVENT && PERF_EVENTS
+ 	default n
++	select PERCPU_RWSEM
+ 	help
+ 	  Uprobes is the user-space counterpart to kprobes: they
+ 	  enable instrumentation applications (such as 'perf probe')
+diff --git a/block/Kconfig b/block/Kconfig
+index a7e40a7..4a85ccf 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -4,6 +4,7 @@
+ menuconfig BLOCK
+        bool "Enable the block layer" if EXPERT
+        default y
++       select PERCPU_RWSEM
+        help
+ 	 Provide block layer support for the kernel.
  
- struct percpu_rw_semaphore {
- 	unsigned int __percpu	*fast_read_ctr;
-@@ -20,7 +21,14 @@ extern void percpu_up_read(struct percpu_rw_semaphore *);
- extern void percpu_down_write(struct percpu_rw_semaphore *);
- extern void percpu_up_write(struct percpu_rw_semaphore *);
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 4b31a46..75cdb77 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -42,6 +42,9 @@ config GENERIC_IO
+ config STMP_DEVICE
+ 	bool
  
--extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
-+extern int __percpu_init_rwsem(struct percpu_rw_semaphore *,
-+				const char *, struct lock_class_key *);
- extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
- 
-+#define percpu_init_rwsem(brw)	\
-+({								\
-+	static struct lock_class_key rwsem_key;			\
-+	__percpu_init_rwsem(brw, #brw, &rwsem_key);		\
-+})
++config PERCPU_RWSEM
++	boolean
 +
- #endif
-diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
-index e5a146e..ba2708f 100644
---- a/lib/percpu-rwsem.c
-+++ b/lib/percpu-rwsem.c
-@@ -2,18 +2,21 @@
- #include <linux/rwsem.h>
- #include <linux/percpu.h>
- #include <linux/wait.h>
-+#include <linux/lockdep.h>
- #include <linux/percpu-rwsem.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
- #include <linux/errno.h>
+ config CRC_CCITT
+ 	tristate "CRC-CCITT functions"
+ 	help
+diff --git a/lib/Makefile b/lib/Makefile
+index 4dad4a7..20f7eda 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o percpu-rwsem.o
++	 is_single_threaded.o plist.o decompress.o
  
--int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
-+int __percpu_init_rwsem(struct percpu_rw_semaphore *brw,
-+			const char *name, struct lock_class_key *rwsem_key)
- {
- 	brw->fast_read_ctr = alloc_percpu(int);
- 	if (unlikely(!brw->fast_read_ctr))
- 		return -ENOMEM;
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+@@ -40,6 +40,7 @@ obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
+ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
+ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
++lib-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
  
--	init_rwsem(&brw->rw_sem);
-+	/* ->rw_sem represents the whole percpu_rw_semaphore for lockdep */
-+	__init_rwsem(&brw->rw_sem, name, rwsem_key);
- 	atomic_set(&brw->write_ctr, 0);
- 	atomic_set(&brw->slow_read_ctr, 0);
- 	init_waitqueue_head(&brw->write_waitq);
-@@ -66,19 +69,29 @@ static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
- /*
-  * Like the normal down_read() this is not recursive, the writer can
-  * come after the first percpu_down_read() and create the deadlock.
-+ *
-+ * Note: returns with lock_is_held(brw->rw_sem) == T for lockdep,
-+ * percpu_up_read() does rwsem_release(). This pairs with the usage
-+ * of ->rw_sem in percpu_down/up_write().
-  */
- void percpu_down_read(struct percpu_rw_semaphore *brw)
- {
--	if (likely(update_fast_ctr(brw, +1)))
-+	might_sleep();
-+	if (likely(update_fast_ctr(brw, +1))) {
-+		rwsem_acquire_read(&brw->rw_sem.dep_map, 0, 0, _RET_IP_);
- 		return;
-+	}
- 
- 	down_read(&brw->rw_sem);
- 	atomic_inc(&brw->slow_read_ctr);
--	up_read(&brw->rw_sem);
-+	/* avoid up_read()->rwsem_release() */
-+	__up_read(&brw->rw_sem);
- }
- 
- void percpu_up_read(struct percpu_rw_semaphore *brw)
- {
-+	rwsem_release(&brw->rw_sem.dep_map, 1, _RET_IP_);
-+
- 	if (likely(update_fast_ctr(brw, -1)))
- 		return;
- 
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
 -- 
 1.5.5.1
 
