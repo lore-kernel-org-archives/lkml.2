@@ -1,84 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2KSUJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 15:09:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17775 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab2KSUJE (ORCPT
+	id S1754809Ab2KSUQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 15:16:12 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54848 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab2KSUQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 15:09:04 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, ordex@autistici.org
-Cc: davem@davemloft.net, b.a.t.m.a.n@lists.open-mesh.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] net, batman: don't crash on zero length strings in routing_algo
-Date: Mon, 19 Nov 2012 15:08:15 -0500
-Message-Id: <1353355695-23252-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 19 Nov 2012 15:16:11 -0500
+MIME-Version: 1.0
+From: Ronny Meeus <ronny.meeus@gmail.com>
+Date: Mon, 19 Nov 2012 21:15:50 +0100
+Message-ID: <CAMJ=MEdyKaTFhON6aWujmzWTn8vmyoChVSOxfL5iYqQobdxVxg@mail.gmail.com>
+Subject: Question about idle time in /proc/stat
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code that works with routing_algo assumes that the string passed is non
-empty, this assumption is wrong:
+Hello
 
-sh-4.2# echo -ne '\0' > /sys/module/batman_adv/parameters/routing_algo
-[   34.531340] BUG: unable to handle kernel paging request at ffff880015142fff
-[   34.539191] IP: [<ffffffff8390ac7a>] batadv_param_set_ra+0x3a/0x90
-[   34.541128] PGD 5027063 PUD 502b063 PMD 1bfc6067 PTE 15142160
-[   34.541128] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   34.541128] CPU 0
-[   34.541128] Pid: 6612, comm: sh Tainted: G        W    3.7.0-rc6-sasha-00024-g33da443-dirty #157
-[   34.541128] RIP: 0010:[<ffffffff8390ac7a>]  [<ffffffff8390ac7a>] batadv_param_set_ra+0x3a/0x90
-[   34.541128] RSP: 0018:ffff880014f81e48  EFLAGS: 00010292
-[   34.541128] RAX: 000000000000003b RBX: ffff880015143000 RCX: 0000000000000006
-[   34.550025] RDX: 0000000000000006 RSI: ffff8800151cb960 RDI: 0000000000000282
-[   34.550025] RBP: ffff880014f81e68 R08: 0000000000000003 R09: 0000000000000000
-[   34.550025] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880015142fff
-[   34.550025] R13: ffffffff84e6b390 R14: ffff880014f86a00 R15: ffffffff83c35170
-[   34.550025] FS:  00007f9ebc796700(0000) GS:ffff88001a600000(0000) knlGS:0000000000000000
-[   34.550025] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   34.550025] CR2: ffff880015142fff CR3: 000000001522f000 CR4: 00000000000406f0
-[   34.550025] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   34.550025] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   34.550025] Process sh (pid: 6612, threadinfo ffff880014f80000, task ffff8800151cb000)
-[   34.550025] Stack:
-[   34.550025]  ffff880014f81e68 ffff8800198ee020 0000000000000001 ffff880015143000
-[   34.550025]  ffff880014f81e98 ffffffff81133776 ffff880014f81ea8 ffff880014f86a20
-[   34.550025]  ffff880014f81f50 ffff880019d86d20 ffff880014f81ea8 ffffffff811335f8
-[   34.550025] Call Trace:
-[   34.550025]  [<ffffffff81133776>] param_attr_store+0x46/0x80
-[   34.550025]  [<ffffffff811335f8>] module_attr_store+0x18/0x40
-[   34.550025]  [<ffffffff812ed751>] sysfs_write_file+0x101/0x170
-[   34.550025]  [<ffffffff8126fcb8>] vfs_write+0xb8/0x180
-[   34.550025]  [<ffffffff8126fe70>] sys_write+0x50/0xa0
-[   34.550025]  [<ffffffff83b30018>] tracesys+0xe1/0xe6
-[   34.550025] Code: 4c 89 65 f0 4c 89 6d f8 49 89 f5 e8 71 c5 0b fe 48 c7 c7 38 2e df 84 4c 8d 60 ff 48 89 c6 31 c0 4c 89 e2 49 01 dc e8 a6 d8 15 00 <41> 80 3c 24 0a 75 05 41 c6 04 24 00 48 89 df e8 62 ff ff ff 48
-[   34.550025] RIP  [<ffffffff8390ac7a>] batadv_param_set_ra+0x3a/0x90
-[   34.550025]  RSP <ffff880014f81e48>
-[   34.550025] CR2: ffff880015142fff
-[   34.550025] ---[ end trace 6c53b662c574774b ]---
+I have an created an application that measures the cpuload consumed by
+the tasks within a process.
+For this I use the file /proc/stat and /proc/<pid>/tasks/<tid>/stat
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+The cpuload monitor is a very simple application that just executes in
+a loop a sleep command, followed by retrieving the information about
+all the tasks belonging to the process.
+What I observe is that there is a big difference in the idle time
+available in the /proc/stat file.
+
+This is the Linux version I use:
+Linux version 2.6.36.4 (meeusr@devws156) (gcc version 4.4.3
+(crosstool-NG 1.15.2 - buildroot 2012.05-hga35945e88d23) ) #1 SMP
+PREEMPT Wed Oct 10 08:41:17 CEST 2012
+Please note that this is a kernel that contains patches of FreeScale.
+
+The application is running on a P4040:
+platform        : P4080 DS
+model           : fsl,P4080DS
+Memory          : 2016 MB
+
+I do not know whether it is relevant but I'm using a tickless kernel
+
+I created a small test program that contains the essence of the problem:
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void utime_delay_micro_seconds(unsigned long useconds )
+{
+  struct timespec req;
+  req.tv_sec = useconds / 1000000;
+  req.tv_nsec = (useconds - (req.tv_sec * 1000000)) * 1000;
+  nanosleep(&req, NULL);
+}
+
+int main(void)
+{
+  unsigned long
+delta,user=0,niceuser=0,system=0,idleload=0,user1,niceuser1,system1,idleload1;
+
+  while (1)
+  {
+    struct timeval tp,tp1;
+    FILE *statfile;
+
+    utime_delay_micro_seconds(1000000);
+
+    gettimeofday(&tp,NULL);
+
+    statfile = fopen("/proc/stat", "r+");
+    fscanf(statfile,"cpu %ld %ld %ld
+%ld",&user1,&niceuser1,&system1,&idleload1);
+    fclose(statfile);
+
+    gettimeofday(&tp1,NULL);
+    delta = (tp1.tv_sec - tp.tv_sec) + (tp1.tv_usec - tp.tv_usec);
+
+    printf("%ld:%ld Delta=%ld User=%ld NiceUser=%ld System=%ld
+Idle=%ld\n",tp.tv_sec,tp.tv_usec,delta,
+           user1-user,niceuser1-niceuser,system1-system,idleload1-idleload);
+
+    user=user1;
+    niceuser=niceuser1;
+    system=system1;
+    idleload=idleload1;
+  }
+  return 0;
+}
+
+The output is the following (I skipped a few lines since the initial
+measurement is not correct):
+
+2181820:130777 Delta=889 User=39 NiceUser=0 System=5 Idle=356
+2181821:131720 Delta=875 User=39 NiceUser=0 System=6 Idle=356
+2181822:132650 Delta=892 User=40 NiceUser=0 System=5 Idle=356
+2181823:133598 Delta=874 User=38 NiceUser=0 System=6 Idle=357
+2181824:134527 Delta=880 User=38 NiceUser=0 System=6 Idle=356
+2181825:135460 Delta=876 User=39 NiceUser=0 System=5 Idle=356
+2181826:136390 Delta=882 User=39 NiceUser=0 System=5 Idle=356
+2181827:137333 Delta=909 User=40 NiceUser=0 System=9 Idle=396
+2181828:138303 Delta=895 User=39 NiceUser=0 System=5 Idle=256
+2181829:139255 Delta=893 User=39 NiceUser=0 System=5 Idle=256
+2181830:140206 Delta=893 User=39 NiceUser=0 System=5 Idle=256
+2181831:141155 Delta=891 User=38 NiceUser=0 System=6 Idle=256
+2181832:142103 Delta=869 User=39 NiceUser=0 System=5 Idle=257
+2181833:143051 Delta=868 User=39 NiceUser=0 System=5 Idle=256
+2181834:143976 Delta=886 User=38 NiceUser=0 System=6 Idle=256
+2181835:144919 Delta=890 User=39 NiceUser=0 System=5 Idle=256
+2181836:145866 Delta=887 User=38 NiceUser=0 System=6 Idle=256
+2181837:146814 Delta=906 User=41 NiceUser=0 System=8 Idle=1254
+2181838:147782 Delta=891 User=38 NiceUser=0 System=6 Idle=256
+2181839:148729 Delta=892 User=39 NiceUser=0 System=5 Idle=256
+2181840:149678 Delta=891 User=39 NiceUser=0 System=5 Idle=256
+2181841:150626 Delta=888 User=38 NiceUser=0 System=6 Idle=256
+2181842:151571 Delta=889 User=39 NiceUser=0 System=5 Idle=257
+2181843:152515 Delta=885 User=39 NiceUser=0 System=5 Idle=256
+2181844:153457 Delta=890 User=38 NiceUser=0 System=6 Idle=256
+2181845:154403 Delta=885 User=39 NiceUser=0 System=5 Idle=256
+2181846:155343 Delta=886 User=39 NiceUser=0 System=5 Idle=256
+2181847:156288 Delta=907 User=40 NiceUser=0 System=9 Idle=1253
+2181848:157257 Delta=891 User=39 NiceUser=0 System=5 Idle=256
+2181849:158204 Delta=888 User=39 NiceUser=0 System=6 Idle=256
+2181850:159150 Delta=895 User=38 NiceUser=0 System=6 Idle=256
+2181851:160102 Delta=871 User=39 NiceUser=0 System=4 Idle=257
+2181852:161054 Delta=876 User=39 NiceUser=0 System=6 Idle=255
+2181853:161989 Delta=883 User=39 NiceUser=0 System=5 Idle=257
+2181854:162932 Delta=891 User=39 NiceUser=0 System=5 Idle=267
+2181855:163878 Delta=887 User=39 NiceUser=0 System=6 Idle=245
+2181856:164821 Delta=889 User=39 NiceUser=0 System=5 Idle=256
+2181857:165769 Delta=910 User=40 NiceUser=0 System=9 Idle=1253
+2181858:166740 Delta=890 User=39 NiceUser=0 System=5 Idle=256
+2181859:167686 Delta=884 User=38 NiceUser=0 System=5 Idle=256
+2181860:168627 Delta=888 User=39 NiceUser=0 System=6 Idle=263
+
+
+The first column is the timestamp returned by gettimeofday. This is
+nicely incrementing 1 second at a time.
+The Delta shows how long it took to execute the processing of the stat file.
+
+Since this is a 4 core machine, I would expect that the sum of
+User,NiceUser,System and Idle is 400 (100 Ticks per core).
+In some samples this is correct, while in other samples, the sum is
+only something like 300 while in one of the next samples the idle time
+suddenly increases to 1253.
+So it looks like the time it has lost before is recovered in that one sample.
+
+Can somebody explain what the issue is and how it can be resolved?
+
+Thanks
+
 ---
- net/batman-adv/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/batman-adv/main.c b/net/batman-adv/main.c
-index dc33a0c..3b8e368 100644
---- a/net/batman-adv/main.c
-+++ b/net/batman-adv/main.c
-@@ -426,7 +426,7 @@ static int batadv_param_set_ra(const char *val, const struct kernel_param *kp)
- 	char *algo_name = (char *)val;
- 	size_t name_len = strlen(algo_name);
- 
--	if (algo_name[name_len - 1] == '\n')
-+	if (name_len > 0 && algo_name[name_len - 1] == '\n')
- 		algo_name[name_len - 1] = '\0';
- 
- 	bat_algo_ops = batadv_algo_get(algo_name);
--- 
-1.8.0
-
+Ronny
