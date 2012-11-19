@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2KSFkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:40:42 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:28904 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab2KSFkk (ORCPT
+	id S1753169Ab2KSFk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:40:58 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41685 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab2KSF31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:40:40 -0500
-Message-ID: <50A9C649.9080602@huawei.com>
-Date: Mon, 19 Nov 2012 13:40:25 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cgroup, cpuset: remove cgroup_subsys->post_clone()
-References: <20121113202714.GA21185@mtj.dyndns.org> <20121113202745.GB21185@mtj.dyndns.org>
-In-Reply-To: <20121113202745.GB21185@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Mon, 19 Nov 2012 00:29:27 -0500
+X-Originating-IP: 217.70.178.131
+X-Originating-IP: 50.43.39.152
+From: Josh Triplett <josh@joshtriplett.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Cc: Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 13/58] RCU: Make rcu_is_cpu_rrupt_from_idle helper functions static
+Date: Sun, 18 Nov 2012 21:27:52 -0800
+Message-Id: <1353302917-13995-14-git-send-email-josh@joshtriplett.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
+References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/14 4:27, Tejun Heo wrote:
->>From bbf2566f9f4fc79ff3320e83cafb69533efc9ea0 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Tue, 13 Nov 2012 12:21:50 -0800
-> 
-> Currently CGRP_CPUSET_CLONE_CHILDREN triggers ->post_clone().  Now
-> that clone_children is cpuset specific, there's no reason to have this
-> rather odd option activation mechanism in cgroup core.  cpuset can
-> check the flag from its ->css_allocate() and take the necessary
-> action.
-> 
-> Move cpuset_post_clone() logic to the end of cpuset_css_alloc() and
-> remove cgroup_subsys->post_clone().
-> 
-> Loosely based on Glauber's "generalize post_clone into post_create"
-> patch.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Original-patch-by: Glauber Costa <glommer@parallels.com>
-> Original-patch: <1351686554-22592-2-git-send-email-glommer@parallels.com>
-> Cc: Glauber Costa <glommer@parallels.com>
+Both rcutiny and rcutree define a helper funtion
+rcu_is_cpu_rrupt_from_idle, each used exactly once, later in the same
+file.  Declare these helper functions static.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutiny.c |    2 +-
+ kernel/rcutree.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index e4c6a59..0e506c3 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -193,7 +193,7 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
+  * interrupts don't count, we must be running at the first interrupt
+  * level.
+  */
+-int rcu_is_cpu_rrupt_from_idle(void)
++static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+ 	return rcu_dynticks_nesting <= 0;
+ }
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 74df86b..70d9b6e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -783,7 +783,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
+  * interrupt from idle, return true.  The caller must have at least
+  * disabled preemption.
+  */
+-int rcu_is_cpu_rrupt_from_idle(void)
++static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+ 	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
+ }
+-- 
+1.7.10.4
 
