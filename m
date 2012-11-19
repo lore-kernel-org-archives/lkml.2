@@ -1,195 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab2KSHhd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 02:37:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab2KSHhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 02:37:32 -0500
-Message-ID: <50A9E26E.3070305@redhat.com>
-Date: Mon, 19 Nov 2012 15:40:30 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: mst@redhat.com, davem@davemloft.net,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        krkumar2@in.ibm.com, kvm@vger.kernel.org
-Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com> <1351591403-23065-3-git-send-email-jasowang@redhat.com> <87y5igyhyg.fsf@rustcorp.com.au>
-In-Reply-To: <87y5igyhyg.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753049Ab2KSHjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 02:39:40 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:43653 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752560Ab2KSHjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Nov 2012 02:39:39 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, anton.vorontsov@linaro.org, dwmw2@infradead.org,
+        sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v3 4/7] mfd: max8925: support dt for power supply
+Date: Mon, 19 Nov 2012 15:39:12 +0800
+Message-Id: <1353310752-13212-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 19 Nov 2012 07:37:58.0503 (UTC) FILETIME=[CBDF8F70:01CDC628]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 09:08 AM, Rusty Russell wrote:
-> Jason Wang <jasowang@redhat.com> writes:
->> +struct virtnet_info {
->> +	u16 num_queue_pairs;		/* # of RX/TX vq pairs */
->> +	u16 total_queue_pairs;
->> +
->> +	struct send_queue *sq;
->> +	struct receive_queue *rq;
->> +	struct virtqueue *cvq;
->> +
->> +	struct virtio_device *vdev;
->> +	struct net_device *dev;
->> +	unsigned int status;
-> status seems unused?
->
+From: Qing Xu <qingx@marvell.com>
 
-It's used for tacking the status of the device (e.g in 
-virtnet_config_changed_work() ).
->> +static const struct ethtool_ops virtnet_ethtool_ops;
-> Strange hoist, but I can't tell from the patch if this is necessary.
-> Assume it is.
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ drivers/power/max8925_power.c |   50 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 49 insertions(+), 1 deletions(-)
 
-Sorry, this line should belong to patch 3/3.
->
->> +static inline int vq2txq(struct virtqueue *vq)
->> +{
->> +	int index = virtqueue_get_queue_index(vq);
->> +	return index == 1 ? 0 : (index - 3) / 2;
->> +}
->> +
->> +static inline int txq2vq(int txq)
->> +{
->> +	return txq ? 2 * txq + 3 : 1;
->> +}
->> +
->> +static inline int vq2rxq(struct virtqueue *vq)
->> +{
->> +	int index = virtqueue_get_queue_index(vq);
->> +	return index ? (index - 2) / 2 : 0;
->> +}
->> +
->> +static inline int rxq2vq(int rxq)
->> +{
->> +	return rxq ? 2 * rxq + 2 : 0;
->> +}
->> +
->>   static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
-> I know skb_vnet_hdr() does it, but I generally dislike inline in C
-> files; gcc is generally smart enough these days, and inline suppresses
-> unused function warnings.
-
-Ok, I will remove the inline here.
-> I guess these mappings have to work even when we're switching from mq to
-> single queue mode; otherwise we could simplify them using a 'bool mq'
-> flag.
-
-Yes, it still work when switching to sq. And what makes it looks strange 
-is because we reserve the virtqueues for single queue mode and also 
-reserve vq 3. But it does not bring much benefit, need more thought.
->
->> +static int virtnet_set_queues(struct virtnet_info *vi)
->> +{
->> +	struct scatterlist sg;
->> +	struct virtio_net_ctrl_steering s;
->> +	struct net_device *dev = vi->dev;
->> +
->> +	if (vi->num_queue_pairs == 1) {
->> +		s.current_steering_rule = VIRTIO_NET_CTRL_STEERING_SINGLE;
->> +		s.current_steering_param = 1;
->> +	} else {
->> +		s.current_steering_rule =
->> +			VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX;
->> +		s.current_steering_param = vi->num_queue_pairs;
->> +	}
-> (BTW, VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX etc not defined anywhere?)
-
-It's defined in include/uapi/linux/virtio_net.h
->
-> Hmm, it's not clear that anything other than RX_FOLLOWS_TX will ever
-> make sense, so this is really just turning mq on and off.
-
-Currently, when multiqueue is enabled for tuntap, it does tx follow rx. 
-So when guest driver specify the RX_FOLLOWS_TX, qemu would just enable 
-multiqueue for tuntap and this policy could be done by tuntap.
->
-> Unfortunately, we can't turn feature bits on and off after startup, so
-> if we want this level of control (and I think we do), there does need to
-> be a mechanism.
->
-> Michael?  I'd prefer this to be further simplfied, to just
-> disable/enable.  We can extend it later, but for now the second
-> parameter is redundant, ie.:
->
->          struct virtio_net_ctrl_steering {
->                  u8 mode; /* 0 == off, 1 == on */
->          } __attribute__((packed));
->
-
-We may need more policy in the future, so maybe a 
-VIRTIO_NET_CTRL_STEERING_NONE is ok?
->> @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->>   
->> -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
->> -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
->> +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
->> +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
->>   	ring->rx_pending = ring->rx_max_pending;
->>   	ring->tx_pending = ring->tx_max_pending;
->> -
->>   }
-> This assumes all vqs are the same size.  I think this should probably
-> check: for mq mode, use the first vq, otherewise use the 0th.
-
-Ok, but I don't see the reason that we need different size for mq.
->
-> For bonus points, check this assertion at probe time.
->
->> +	/*
->> +	 * We expect 1 RX virtqueue followed by 1 TX virtqueue, followd by
->> +	 * possible control virtqueue, followed by 1 reserved vq, followed
->> +	 * by RX/TX queue pairs used in multiqueue mode.
->> +	 */
->> +	if (vi->total_queue_pairs == 1)
->> +		total_vqs = 2 + virtio_has_feature(vi->vdev,
->> +						   VIRTIO_NET_F_CTRL_VQ);
->> +	else
->> +		total_vqs = 2 * vi->total_queue_pairs + 2;
-> What's the allergy to odd numbers?  Why the reserved queue?
-
-It was suggested by Michael to let the vq calculation easier, but it 
-seems does not help much. So it's better not reserve virtqueue in next 
-version.
->> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->> +		vi->has_cvq = true;
->> +
->> +	/* Use single tx/rx queue pair as default */
->> +	vi->num_queue_pairs = 1;
->> +	vi->total_queue_pairs = num_queue_pairs;
->> +
->> +	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
->> +	err = virtnet_setup_vqs(vi);
->>   	if (err)
->>   		goto free_stats;
->>   
->> +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) &&
->> +	    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
->> +		dev->features |= NETIF_F_HW_VLAN_FILTER;
-> We should be using has_cvq here...
-
-Sure.
->
->> -#ifdef CONFIG_PM
->> -static int virtnet_freeze(struct virtio_device *vdev)
->> +static void virtnet_stop(struct virtnet_info *vi)
-> I think you still want this under CONFIG_PM, right?  Doesn't seem used
-> elsewhere.
-
-Yes, will fix this.
->
-> Cheers,
-> Rusty.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index daa333b..2d77107 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -426,6 +426,54 @@ static __devexit int max8925_deinit_charger(struct max8925_power_info *info)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static struct max8925_power_pdata *
++max8925_power_dt_init(struct platform_device *pdev)
++{
++	struct device_node *nproot = pdev->dev.parent->of_node;
++	struct device_node *np;
++	int batt_detect;
++	int topoff_threshold;
++	int fast_charge;
++	int no_temp_support;
++	int no_insert_detect;
++	struct max8925_power_pdata *pdata;
++
++	if (!nproot)
++		return pdev->dev.platform_data;
++
++	np = of_find_node_by_name(nproot, "charger");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find charger node\n");
++		return NULL;
++	}
++
++	pdata = devm_kzalloc(&pdev->dev,
++			sizeof(struct max8925_power_pdata),
++			GFP_KERNEL);
++
++	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
++	of_property_read_u32(np, "batt-detect", &batt_detect);
++	of_property_read_u32(np, "fast-charge", &fast_charge);
++	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
++	of_property_read_u32(np, "no-temp-support", &no_temp_support);
++
++	pdata->batt_detect = batt_detect;
++	pdata->fast_charge = fast_charge;
++	pdata->topoff_threshold = topoff_threshold;
++	pdata->no_insert_detect = no_insert_detect;
++	pdata->no_temp_support = no_temp_support;
++
++	return pdata;
++}
++#else
++static struct max8925_power_pdata *
++max8925_power_dt_init(struct platform_device *pdev)
++{
++	return pdev->dev.platform_data;
++}
++#endif
++
+ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -433,7 +481,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ 	struct max8925_power_info *info;
+ 	int ret;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = max8925_power_dt_init(pdev);
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "platform data isn't assigned to "
+ 			"power supply\n");
+-- 
+1.7.0.4
 
