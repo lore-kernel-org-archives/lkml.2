@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2KSWxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 17:53:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61632 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab2KSWxi (ORCPT
+	id S1753320Ab2KSW7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 17:59:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44556 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab2KSW7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 17:53:38 -0500
+	Mon, 19 Nov 2012 17:59:08 -0500
+Date: Mon, 19 Nov 2012 15:00:06 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
+        linux-rdma@vger.kernel.org
+Subject: Re: [PATCH 407/493] infiniband: remove use of __devexit
+Message-ID: <20121119230006.GA2523@kroah.com>
+References: <1353349642-3677-1-git-send-email-wfp5p@virginia.edu>
+ <1353349642-3677-407-git-send-email-wfp5p@virginia.edu>
+ <20121119200921.GD1556@obsidianresearch.com>
+ <20121119201938.GA5614@kroah.com>
+ <20121119214922.GA5636@obsidianresearch.com>
+ <20121119220632.GA1946@kroah.com>
+ <20121119224845.GB5636@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <50AAB5E8.5070807@zytor.com>
-References: <1353222571-31544-1-git-send-email-yinghai@kernel.org>
-	<1353222571-31544-4-git-send-email-yinghai@kernel.org>
-	<50AAB5E8.5070807@zytor.com>
-Date: Mon, 19 Nov 2012 14:53:36 -0800
-X-Google-Sender-Auth: RBDCCRx2L3BjmodmrkEF8hsnOng
-Message-ID: <CAE9FiQV=G=5zAqv7EiUnb=O7znxuieiCawfgomv9aPNwVAV4uQ@mail.gmail.com>
-Subject: Re: [PATCH v2 03/13] x86: Add macro for 64bit entry startup_64
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121119224845.GB5636@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 2:42 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/17/2012 11:09 PM, Yinghai Lu wrote:
->> We will add one 64bit entry for bzImage in boot header struct.
->>
->> the contents in that field will be offset of startup_64.
->>
->> Add macro for offset of startup_64 to keep two places consistent.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Matt Fleming <matt.fleming@intel.com>
->> ---
->>  arch/x86/boot/compressed/head_64.S |    2 +-
->>  arch/x86/include/asm/boot.h        |    2 ++
->>  2 files changed, 3 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
->> index 375af23..e4964dd 100644
->> --- a/arch/x86/boot/compressed/head_64.S
->> +++ b/arch/x86/boot/compressed/head_64.S
->> @@ -195,7 +195,7 @@ no_longmode:
->>        * it may change in the future.
->>        */
->>       .code64
->> -     .org 0x200
->> +     .org BOOT_CODE64_START_OFFSET
->>  ENTRY(startup_64)
->>       /*
->>        * We come here either from startup_32 or directly from a
->> diff --git a/arch/x86/include/asm/boot.h b/arch/x86/include/asm/boot.h
->> index b13fe63..ef36497 100644
->> --- a/arch/x86/include/asm/boot.h
->> +++ b/arch/x86/include/asm/boot.h
->> @@ -38,8 +38,10 @@
->>
->>  #ifdef CONFIG_X86_64
->>  #define BOOT_STACK_SIZE      0x4000
->> +#define BOOT_CODE64_START_OFFSET 0x200
->>  #else
->>  #define BOOT_STACK_SIZE      0x1000
->> +#define BOOT_CODE64_START_OFFSET 0
->>  #endif
->>
->
-> We can't change the 0x200 value, ever, because there are already things
-> that use the 64-bit entry point.  As such, these macros and the bzImage
-> fields are pointless; let's not bother and instead document the 0x200 as
-> the permanently fixed address of the 64-bit entry point.
+On Mon, Nov 19, 2012 at 03:48:45PM -0700, Jason Gunthorpe wrote:
+> On Mon, Nov 19, 2012 at 02:06:32PM -0800, Greg KH wrote:
+> 
+> > > 5k isn't a lot, but in the context of 'I have to figure out how to
+> > > trim ~1MB off the 3.6 kernel to run it in our smallest hardware' it is
+> > > the wrong direction :(
+> > 
+> > It is only 0.138% in the "wrong" direction.  Seriously, that's a very
+> > tiny percentage here, for an option that people _always_ get wrong, and
+> > almost no system does not need.  The number of bugs we have had in this
+> > area is huge, and by fixing this option like this, it takes them all
+> > away.
+> 
+> Sure, it isn't a lot. I don't have any idea about problems
+> CONFIG_HOTPLUG causes, but it seems alot of work has gone into making
+> this option over the years (the patch to remove it is huge), is there
+> no other way to get what you want?
 
-ok,
+The patch overall, is only 7kb or so.  It's the fact that it is just
+removing the __dev* markings all over the tree that makes it so "big".
+The big change is just in a very few places in the kernel core that
+actually do something different depending on CONFIG_HOTPLUG or not.
 
-any other field, in header struct field that we can use to tell
-bzImage could be used that
-0x200 directly?
+I could just leave things alone, with CONFIG_HOTPLUG always enabled, but
+then people will continue to blindly use the __dev* markings, getting it
+wrong at times, but never realizing that they don't do anything anymore.
 
-hardware_subarch?
+Because they don't do anything anymore, the right thing to do is just
+remove them, which is what Bill's patches do.
+
+Hope this helps explain things better.
+
+thanks,
+
+greg k-h
