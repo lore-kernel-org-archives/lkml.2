@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2KSFk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 00:40:58 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41685 "EHLO
+	id S1753158Ab2KSFl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 00:41:26 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39324 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab2KSF31 (ORCPT
+	with ESMTP id S1752999Ab2KSF3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 00:29:27 -0500
-X-Originating-IP: 217.70.178.131
+	Mon, 19 Nov 2012 00:29:22 -0500
+X-Originating-IP: 217.70.178.141
 X-Originating-IP: 50.43.39.152
 From: Josh Triplett <josh@joshtriplett.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
 Cc: Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 13/58] RCU: Make rcu_is_cpu_rrupt_from_idle helper functions static
-Date: Sun, 18 Nov 2012 21:27:52 -0800
-Message-Id: <1353302917-13995-14-git-send-email-josh@joshtriplett.org>
+Subject: [PATCH 11/58] tty: Mark sysfs_attr_ns static
+Date: Sun, 18 Nov 2012 21:27:50 -0800
+Message-Id: <1353302917-13995-12-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
 References: <1353302917-13995-1-git-send-email-josh@joshtriplett.org>
@@ -25,42 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both rcutiny and rcutree define a helper funtion
-rcu_is_cpu_rrupt_from_idle, each used exactly once, later in the same
-file.  Declare these helper functions static.
+Nothing outside of fs/sysfs/file.c references this function, so mark it static.
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutiny.c |    2 +-
- kernel/rcutree.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/sysfs/file.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index e4c6a59..0e506c3 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -193,7 +193,7 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
-  * interrupts don't count, we must be running at the first interrupt
-  * level.
-  */
--int rcu_is_cpu_rrupt_from_idle(void)
-+static int rcu_is_cpu_rrupt_from_idle(void)
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 00012e3..602f56d 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -485,8 +485,8 @@ const struct file_operations sysfs_file_operations = {
+ 	.poll		= sysfs_poll,
+ };
+ 
+-int sysfs_attr_ns(struct kobject *kobj, const struct attribute *attr,
+-		  const void **pns)
++static int sysfs_attr_ns(struct kobject *kobj, const struct attribute *attr,
++			 const void **pns)
  {
- 	return rcu_dynticks_nesting <= 0;
- }
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 74df86b..70d9b6e 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -783,7 +783,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
-  * interrupt from idle, return true.  The caller must have at least
-  * disabled preemption.
-  */
--int rcu_is_cpu_rrupt_from_idle(void)
-+static int rcu_is_cpu_rrupt_from_idle(void)
- {
- 	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
- }
+ 	struct sysfs_dirent *dir_sd = kobj->sd;
+ 	const struct sysfs_ops *ops;
 -- 
 1.7.10.4
 
