@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab2KSDiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Nov 2012 22:38:00 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62701 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab2KSDh6 (ORCPT
+	id S1752816Ab2KSDtN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Nov 2012 22:49:13 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37696 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab2KSDtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Nov 2012 22:37:58 -0500
+	Sun, 18 Nov 2012 22:49:12 -0500
+Date: Sun, 18 Nov 2012 19:46:00 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
+Cc: rob.herring@calxeda.com, lee.jones@linaro.org, francescolavra.fl@gmail.com,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 0/4] Implement device tree support for ab8500 BM Devices
+Message-ID: <20121119034600.GP29066@lizard.sbx05977.paloaca.wayport.net>
+References: <1351698033-8980-1-git-send-email-rajanikanth.hv@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20121118182049.GE14643@lunn.ch>
-References: <CAMW5UfYUi-Zz2r5K9GeVzShSub2rDJVuoWR56+89+ytaqo_uxQ@mail.gmail.com>
-	<20121118174720.GX3290@n2100.arm.linux.org.uk>
-	<CAMW5Ufb9D+BYGtZUWPBWKMtk11QMpR1N+2Q1yb4w_GdvV17p+w@mail.gmail.com>
-	<20121118182049.GE14643@lunn.ch>
-Date: Sun, 18 Nov 2012 22:37:58 -0500
-Message-ID: <CAMW5UfbzxaiRq_KVMYB3uY1H2bLeV_gkYG5a9AOB5bxJ5+smog@mail.gmail.com>
-Subject: Re: [Patch v1 1/1] RTL8712 alignment bug in 3.6.5 on ARM
-From: Josh Coombs <josh.coombs@gmail.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>, wlanfae@realtek.com,
-        Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1351698033-8980-1-git-send-email-rajanikanth.hv@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the _malloc() adjusted as suggested, I'm still not seeing
-scheduler bugs tracing back to the rtl8172 driver.  I am however
-seeing allocation errors occasionally now in cryptodev on my test
-system, so all is still not right.  This behavior was not present in
-3.6.4, I haven't seen it in the 3.7 release candidates, I'm going to
-see if I can nail down the exact commit that introduced this issue
-with git-bisect to see if there is something that was masking the
-problem that's been removed, or something unexpected, etc.  I'll
-report back once I have more info.
+On Wed, Oct 31, 2012 at 03:40:29PM +0000, Rajanikanth H.V wrote:
+> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+> 
+> This patch-set adds device tree binding for ab8500 battery-managed
+> devices. Removes the redundant platform structure maintained
+> across bm devices and implements common DT probe routine across all the
+> modules.
 
-Josh C
+Thanks for the patches, Rajanikanth.
 
-On Sun, Nov 18, 2012 at 1:20 PM, Andrew Lunn <andrew@lunn.ch> wrote:
->> >> diff -ruN a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
->> >> b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
->> >> --- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-05
->> >> 03:57:06.000000000 -0500
->> >> +++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c 2012-11-13
->> >> 12:54:28.000000000 -0500
->> >> @@ -55,8 +55,8 @@
->> >>     NUM_STA + 4);
->> >>   if (pstapriv->pallocated_stainfo_buf == NULL)
->> >>   return _FAIL;
->> >> - pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
->> >> - ((addr_t)(pstapriv->pallocated_stainfo_buf) & 3);
->> >> + pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 8 -
->> >> + ((addr_t)(pstapriv->pallocated_stainfo_buf) & 7);
->> >
->> > Are you sure this is safe?  Is the allocated buffer large enough for
->> > those additional 4 bytes of alignment you're adding?
->>
->> I'm not certain on that, I bumped the allocations at Andrew's
->> suggestion, but don't know enough to certify the changes as 100%
->> correct.
->
-> Its not correct.
->
-> The original code is:
->
->         pstapriv->pallocated_stainfo_buf = _malloc(sizeof(struct sta_info) *
->                                                    NUM_STA + 4);
->         if (pstapriv->pallocated_stainfo_buf == NULL)
->                 return _FAIL;
->         pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
->                 ((addr_t)(pstapriv->pallocated_stainfo_buf) & 3);
->
-> The 4 in the _malloc() also needs increasing to 8.
->
->     Andrew
+The mfd changes seemed very minor, so I impudently applied the patches to
+the battery tree. :)
+
+(But I'm bouncing the patches to Samuel and Mark anyway, jfyi.)
+
+p.s.
+
+FWIW, I fixed these warnings.
+
+  CHECK   drivers/power/ab8500_bmdata.c
+drivers/power/ab8500_bmdata.c:146:23: warning: symbol 'temp_to_batres_tbl_thermistor' was not declared. Should it be static?
+drivers/power/ab8500_bmdata.c:160:23: warning: symbol 'temp_to_batres_tbl_ext_thermistor' was not declared. Should it be static?
+drivers/power/ab8500_bmdata.c:171:23: warning: symbol 'temp_to_batres_tbl_9100' was not declared. Should it be static?
+drivers/power/ab8500_bmdata.c:181:28: warning: symbol 'bat_type_thermistor' was not declared. Should it be static?
+drivers/power/ab8500_bmdata.c:267:28: warning: symbol 'bat_type_ext_thermistor' was not declared. Should it be static?
+
+Plus fixed a few stylistic issues.
+
+Thanks,
+Anton.
