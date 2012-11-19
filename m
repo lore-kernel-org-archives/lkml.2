@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2KSR3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:29:30 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48422 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab2KSR33 (ORCPT
+	id S1753233Ab2KSRad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:30:33 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50621 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab2KSRab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:29:29 -0500
-Message-ID: <50AA6C76.3000606@atmel.com>
-Date: Mon, 19 Nov 2012 18:29:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 12:30:31 -0500
+Date: Mon, 19 Nov 2012 09:30:26 -0800
+From: Tejun Heo <tj@kernel.org>
+To: daniel.wagner@bmw-carit.de, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, nhorman@tuxdriver.com, tgraf@suug.ch
+Cc: davem@davemloft.net, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] netcls_cgroup: introduce cgroup_cls_state->is_local
+Message-ID: <20121119173026.GJ15971@htj.dyndns.org>
+References: <1353123062-23193-1-git-send-email-tj@kernel.org>
+ <1353123062-23193-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
-Subject: Re: [GIT PULL] at91: fixes for 3.7-rc7
-References: <50AA5ED5.8090901@atmel.com> <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
-In-Reply-To: <CAOesGMjAYtEkmEYnzCQ4G821BWG9D6LHvgt5aOMJgus_hzFkRA@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353123062-23193-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 05:52 PM, Olof Johansson :
-> Hi Nicolas,
-> 
-> On Mon, Nov 19, 2012 at 8:31 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->> Arnd, Olof,
->>
->> Here is another "fixes" pull request for AT91. It enables the sd/mmc driver
->> for Device Tree enabled platforms. Those patches where part of a series that
->> was split in two for reaching upstream: the MMC part is already in Linus' tree
->> and this is the arm-soc part.
->> I have placed these patches on top of the fixes that you already have for AT91.
-> 
-> What regressions do these fixes resolve?
-> 
-> It looks more like they are DT-enablement patches to me, and thus 3.8
-> material, not 3.7. I'll be happy to queue them up in next/dt though.
+cs->is_local will be used to indicate whether the cgroup has its own
+configuration or inherited from the parent.  It's set when classid is
+configured by writing a positive value to cgroup file
+"net_cls.classid" and cleared when a negative value is written.
 
-Hi Olof,
+is_local is visible to userland via cgroup file "net_cls.is_local" so
+that userland can know whether a cgroup has its config or not.
 
-You are right, it does not strictly fixes a regression and we were late
-for including these patches which are around since end of July...
-I still sent this pull-request to enable more people to use device tree
-on AT91 for the upcoming release.
+This patch doesn't yet change hierarchy behavior.  The next patch will
+use is_local to implement proper hierarchy.
 
-If you do not take it for 3.7, maybe we will have to queue these patches
-on top of our AT91 pinctrl work (on Linus Walleij side), so, you do need
-to queue this one for the moment...
+v2: Daniel pointed out that cftype->write_u64() accepts base prefix
+    (e.g. 0x10 for 16).  Updated "%lld" to "%lli".
 
-Best regards,
--- 
-Nicolas Ferre
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Daniel Wagner <wagi@monom.org>
+---
+ include/net/cls_cgroup.h |    1 +
+ net/sched/cls_cgroup.c   |   23 ++++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+--- a/include/net/cls_cgroup.h
++++ b/include/net/cls_cgroup.h
+@@ -22,6 +22,7 @@ struct cgroup_cls_state
+ {
+ 	struct cgroup_subsys_state css;
+ 	u32 classid;
++	bool is_local;	/* class id is explicitly configured for this cgroup */
+ };
+ 
+ extern void sock_update_classid(struct sock *sk);
+--- a/net/sched/cls_cgroup.c
++++ b/net/sched/cls_cgroup.c
+@@ -70,19 +70,36 @@ static u64 read_classid(struct cgroup *c
+ 	return cgrp_cls_state(cgrp)->classid;
+ }
+ 
+-static int write_classid(struct cgroup *cgrp, struct cftype *cft, u64 value)
++static int write_classid(struct cgroup *cgrp, struct cftype *cft,
++			 const char *buf)
+ {
++	struct cgroup_cls_state *cs = cgrp_cls_state(cgrp);
++	s64 v;
++
++	if (sscanf(buf, "%lli", &v) != 1)
++		return -EINVAL;
++
+ 	mutex_lock(&netcls_mutex);
+-	cgrp_cls_state(cgrp)->classid = (u32) value;
++	cs->classid = clamp_val(v, 0, UINT_MAX);
++	cs->is_local = v >= 0;
+ 	mutex_unlock(&netcls_mutex);
+ 	return 0;
+ }
+ 
++static u64 read_is_local(struct cgroup *cgrp, struct cftype *cft)
++{
++	return cgrp_cls_state(cgrp)->is_local;
++}
++
+ static struct cftype ss_files[] = {
+ 	{
+ 		.name = "classid",
+ 		.read_u64 = read_classid,
+-		.write_u64 = write_classid,
++		.write_string = write_classid,
++	},
++	{
++		.name = "is_local",
++		.read_u64 = read_is_local,
+ 	},
+ 	{ }	/* terminate */
+ };
