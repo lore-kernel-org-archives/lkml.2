@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab2KSRrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Nov 2012 12:47:24 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:16125 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab2KSRrX (ORCPT
+	id S1753958Ab2KSRuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Nov 2012 12:50:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46997 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab2KSRuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Nov 2012 12:47:23 -0500
-Message-ID: <50AA70A8.7020204@atmel.com>
-Date: Mon, 19 Nov 2012 18:47:20 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 19 Nov 2012 12:50:02 -0500
+Date: Mon, 19 Nov 2012 11:49:52 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH review 03/16] userns: Allow chown and setgid preservation
+Message-ID: <20121119174951.GA1883@serge-ThinkPad-X130e>
+References: <87lidx8wbo.fsf@xmission.com>
+ <1353337961-12962-1-git-send-email-ebiederm@xmission.com>
+ <1353337961-12962-3-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>
-Subject: [GIT PULL] at91: DT material for 3.8
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353337961-12962-3-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> - Allow chown if CAP_CHOWN is present in the current user namespace
+>   and the uid of the inode maps into the current user namespace, and
+>   the destination uid or gid maps into the current user namespace.
+> 
+> - Allow perserving setgid when changing an inode if CAP_FSETID is
+>   present in the current user namespace and the owner of the file has
+>   a mapping into the current user namespace.
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Here is a little update on the DT front for AT91. The biggest part
-will come from the pinctrl which is located in Linus Walleij's git tree.
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
-
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-for-next-dt
-
-for you to fetch changes up to 824b43968fed4b5a200cfef06129c0470eef306a:
-
-  ARM: at91/dts: evk-pro3: enable watchdog (2012-11-16 15:48:48 +0100)
-
-----------------------------------------------------------------
-More DT material for AT91:
-
-- conversion of watchdog to DT
-- usart definition for evk-pro3 board
-
-----------------------------------------------------------------
-Fabio Porcedda (4):
-      ARM: at91: dt: evk-pro3: enable uart0 and uart2
-      watchdog: at91sam9_wdt: add device tree support
-      ARM: at91/dts: add at91sam9_wdt driver to at91sam926x, at91sam9g45
-      ARM: at91/dts: evk-pro3: enable watchdog
-
- Documentation/devicetree/bindings/watchdog/atmel-wdt.txt | 15 +++++++++++++++
- arch/arm/boot/dts/at91sam9260.dtsi                       |  6 ++++++
- arch/arm/boot/dts/at91sam9263.dtsi                       |  6 ++++++
- arch/arm/boot/dts/at91sam9g45.dtsi                       |  6 ++++++
- arch/arm/boot/dts/evk-pro3.dts                           | 12 ++++++++++++
- drivers/watchdog/at91sam9_wdt.c                          | 11 +++++++++++
- 6 files changed, 56 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-
-Thanks, bye,
--- 
-Nicolas Ferre
+> ---
+>  fs/attr.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/attr.c b/fs/attr.c
+> index cce7df5..1449adb 100644
+> --- a/fs/attr.c
+> +++ b/fs/attr.c
+> @@ -49,14 +49,15 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
+>  	/* Make sure a caller can chown. */
+>  	if ((ia_valid & ATTR_UID) &&
+>  	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+> -	     !uid_eq(attr->ia_uid, inode->i_uid)) && !capable(CAP_CHOWN))
+> +	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
+> +	    !inode_capable(inode, CAP_CHOWN))
+>  		return -EPERM;
+>  
+>  	/* Make sure caller can chgrp. */
+>  	if ((ia_valid & ATTR_GID) &&
+>  	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+>  	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
+> -	    !capable(CAP_CHOWN))
+> +	    !inode_capable(inode, CAP_CHOWN))
+>  		return -EPERM;
+>  
+>  	/* Make sure a caller can chmod. */
+> @@ -65,7 +66,8 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
+>  			return -EPERM;
+>  		/* Also check the setgid bit! */
+>  		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
+> -				inode->i_gid) && !capable(CAP_FSETID))
+> +				inode->i_gid) &&
+> +		    !inode_capable(inode, CAP_FSETID))
+>  			attr->ia_mode &= ~S_ISGID;
+>  	}
+>  
+> @@ -157,7 +159,8 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
+>  	if (ia_valid & ATTR_MODE) {
+>  		umode_t mode = attr->ia_mode;
+>  
+> -		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+> +		if (!in_group_p(inode->i_gid) &&
+> +		    !inode_capable(inode, CAP_FSETID))
+>  			mode &= ~S_ISGID;
+>  		inode->i_mode = mode;
+>  	}
+> -- 
+> 1.7.5.4
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
